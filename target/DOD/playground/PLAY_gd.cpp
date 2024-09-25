@@ -5,7 +5,7 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-
+// Run logic on arguments to test new features --------------------------------
 TEST_CASE( "[gd] arguments", "[gd]" ) {
    std::cout << "check `arguments` methods" << std::endl;
 
@@ -16,9 +16,10 @@ TEST_CASE( "[gd] arguments", "[gd]" ) {
    auto uTypeNumber = arguments_["four"].type_number();                                            REQUIRE( uTypeNumber == gd::types::eTypeNumberInt64);
 
    arguments_.clear();
-   stringTemplate = "one=1&one=1&one=1&one=1&one=1";
+   stringTemplate = "one=1&one=1&one=1&one=1&one=1&two=2&one=1";
    vectorPair = gd::utf8::split_pair( stringTemplate, '=', '&', gd::utf8::tag_string_view{});
    arguments_.append( vectorPair, gd::argument::tag_parse_type{});
+   auto vectorOne = arguments_.get_argument_all("one");                                            REQUIRE( vectorOne.size() == 6 );
 }
 
 
