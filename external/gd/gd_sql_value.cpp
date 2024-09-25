@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "gd_utf8.hpp"
+#include "gd_utf8.h"
 #include "gd_parse.h"
 
 #include "gd_sql_value.h"

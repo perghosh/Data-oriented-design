@@ -32,7 +32,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#include "gd_utf8.hpp"
+#include "gd_utf8.h"
 
 #include "gd_log_logger_printer.h"
 

@@ -66,6 +66,8 @@ TEST_CASE( "Write pair with doubles into sqlite database", "[Write]" ) {
 
 #pragma once
 
+#ifdef GD_DATABASE_SQLITE_USE
+
 #include <cassert>
 #include <cstring>
 #include <functional>
@@ -612,3 +614,5 @@ public:
 };
 
 _GD_DATABASE_SQLITE_END
+
+#endif // GD_DATABASE_SQLITE_USE

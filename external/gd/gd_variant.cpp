@@ -4,7 +4,7 @@
 
 
 #include "gd_types.h"
-#include "gd_utf8.hpp"
+#include "gd_utf8.h"
 #include "gd_variant_view.h"
 #include "gd_variant.h"
 

@@ -6,7 +6,7 @@
 
 #include "gd_types.h"
 
-#include "gd_utf8.hpp"
+#include "gd_utf8.h"
 
 #if defined( __clang__ )
    #pragma clang diagnostic ignored "-Wunused-variable"
