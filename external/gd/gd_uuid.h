@@ -7,7 +7,7 @@
 #include <memory>
 #include <random>
 
-#include "gd_utf8.hpp"
+#include "gd_utf8.h"
 
 #if defined(__APPLE__) && defined(__GNUG__) && !defined(__clang__)
 

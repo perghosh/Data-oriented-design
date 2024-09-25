@@ -2,7 +2,7 @@
 #include <cmath>
 #include <cwchar>
 
-#include "gd_utf8.hpp"
+#include "gd_utf8.h"
 #include "gd_variant_view.h"
 
 

@@ -8,7 +8,7 @@
 
 #include <sys/stat.h>
 
-#include "gd_utf8.hpp"
+#include "gd_utf8.h"
 
 #ifdef WIN32
 

@@ -1,5 +1,6 @@
-#include <vector>
+#ifdef GD_DATABASE_SQLITE_USE
 
+#include <vector>
 
 #include "gd_database_sqlite.h"
 
@@ -1089,3 +1090,5 @@ gd::variant database_i::get_insert_key()
 
 _GD_DATABASE_SQLITE_END
 
+
+#endif // GD_DATABASE_SQLITE_USE
