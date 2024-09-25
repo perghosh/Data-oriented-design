@@ -40,6 +40,15 @@ enum enumFormat
    eTABLE         = 5,
 };
 
+/// The reach for values added to command, reach means priority
+enum enumPriority
+{
+   ePriorityStack = 0x01,     ///< like the closest stack value, removed when command is executed
+   ePriorityCommand= 0x02,    ///< follow command
+   ePriorityGlobal= 0x04,     ///< global reach within command
+   ePriorityAll   = 0x07,
+};
+
 struct body_i : public unknown_i
 {
    virtual unsigned type() = 0;
