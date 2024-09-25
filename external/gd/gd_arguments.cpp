@@ -1074,10 +1074,17 @@ arguments& arguments::append_argument(const std::string_view stringName, const s
 {
    gd::variant_view v_ = stringValue;
    unsigned uTypeGroup = gd::types::detect_ctypegroup_g( stringValue );
-   if( uTypeGroup == gd::types::eTypeGroupInteger ) v_.convert_to( gd::types::type_g( "int64" ) );
-   else if( uTypeGroup == gd::types::eTypeGroupInteger ) v_.convert_to( gd::types::type_g( "double" ) );
-
-   append_argument( stringName, v_ );
+   if( uTypeGroup == gd::types::eTypeGroupInteger )
+   {
+      auto to_ = v_.convert_to( gd::types::type_g( "int64" ) );
+      append_argument( stringName, to_ );
+   }
+   else if( uTypeGroup == gd::types::eTypeGroupInteger )
+   {
+      auto to_ = v_.convert_to( gd::types::type_g( "double" ) );
+      append_argument( stringName, to_ );
+   }
+   else { append_argument( stringName, v_ ); }
 
    return *this;
 }
@@ -1751,8 +1758,10 @@ size_t arguments::size() const
 void arguments::clear()
 {
    if( is_owner() ) delete[] m_pBuffer;
-   m_bOwner = false;
-   m_pBuffer = nullptr;
+   m_bOwner    = false;
+   m_pBuffer   = nullptr;
+   m_uLength   = 0;
+   m_uBufferLength = 0;
 }
 
 
