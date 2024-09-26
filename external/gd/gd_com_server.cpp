@@ -28,61 +28,40 @@ unsigned command::release()
    return (unsigned)m_iReference; 
 }
 
-/** ---------------------------------------------------------------------------
- * @brief Add global arguments to command
- * @param argumentsGlobal list of arguments to add as global
- * @return true if ok, false and error information if something is wroing
- */
-std::pair<bool, std::string> command::add_arguments( const gd::argument::arguments* pargumentsGlobal )
+std::pair<bool, std::string> command::add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsVariable ) 
 {
-   if( m_argumentsGlobal.empty() == true ) { m_argumentsGlobal = *pargumentsGlobal; }
-   else
+
+
+   // ## Check for integer, if integer this number represents any of the locality (priority) numbers.
+   //    stack is the highest priority
+   if( variantviewLocality.is_integer() == true )
    {
-      m_argumentsGlobal += *pargumentsGlobal;
+      unsigned uPriority = variantviewLocality.as_uint();                                          assert( uPriority >= ePriorityStack && uPriority <= ePriorityGlobal );
+      if( uPriority == ePriorityStack )
+      {
+         m_vectorArgument.insert( m_vectorArgument.cbegin(), arguments( ePriorityStack, *pargumentsVariable ) ); // add first in argument vector
+      }
+      else
+      {
+         auto uPosition = find_last_priority_position( uPriority );
+         m_vectorArgument.insert( m_vectorArgument.cbegin() + uPosition, arguments( uPriority, *pargumentsVariable ) ); // add first in argument vector
+      }
+   }
+   // ## if string then it is probably related to command key value
+   else if( variantviewLocality.is_string() == true )
+   {
+
    }
 
    return { true, "" };
 }
+
 
 std::pair<bool, std::string> command::add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal )
 {
-   int iIndex = (int)m_vectorLocal.size();
-   m_vectorLocal.push_back( arguments( iIndex, stringKey, stringCommand, *pargumentsLocal ) );
-   return { true, "" };
-}
-
-/** ---------------------------------------------------------------------------
- * @brief add command arguments without key, to access this match index
- * @param pargumentsLocal arguments for local command
- * @return true if ok, false and error information on error
- */
-std::pair<bool, std::string> command::add_command_arguments( const gd::argument::arguments* pargumentsLocal )
-{
-   std::string stringKey = std::to_string( m_vectorLocal.size() );
-   m_vectorLocal.push_back( std::pair<std::string, gd::argument::arguments>( stringKey, *pargumentsLocal ) );
-
-   return { true, "" };
-}
-
-
-
-/** ---------------------------------------------------------------------------
- * @brief add local arguments for specific command
- * @param stringName command name
- * @param pargumentsLocal arguments for local command
- * @return true if ok, false and error information on error
- */
-std::pair<bool, std::string> command::add_command_arguments( const std::string_view& stringName, const gd::argument::arguments* pargumentsLocal )
-{
-   gd::argument::arguments* parguments = find( stringName );
-   if( parguments != nullptr )
-   {
-      *parguments += *pargumentsLocal;
-   }
-   else
-   {
-      m_vectorLocal.push_back( std::pair<std::string, gd::argument::arguments>( stringName, *pargumentsLocal ) );
-   }
+   int iIndex = (int)m_vectorArgument.size();
+   m_vectorArgument.push_back( arguments( stringKey, stringCommand, *pargumentsLocal ) );
+   m_vectorArgument.back().set_index( iIndex );
    return { true, "" };
 }
 
@@ -90,7 +69,7 @@ std::pair<bool, std::string> command::add_command_arguments( const std::string_v
 /// get pointer to internal arguments
 void command::get_arguments( gd::argument::arguments** ppargumentsGlobal )
 {                                                                                                  assert( ppargumentsGlobal );
-   *ppargumentsGlobal = &m_argumentsGlobal;
+   //*ppargumentsGlobal = &m_argumentsGlobal;
 }
 
 /** ---------------------------------------------------------------------------
@@ -101,14 +80,24 @@ void command::get_arguments( gd::argument::arguments** ppargumentsGlobal )
 gd::variant_view command::get_argument( const gd::variant_view& index_ )
 {
    gd::variant_view value_;
-   if( index_.is_string() == true )
+
+   if( index_.is_string() )
    {
-      value_ = m_argumentsGlobal[index_.as_string_view()].as_variant_view();
+      std::string_view stringName = index_.as_string_view();
+      for( auto it : m_vectorArgument )
+      {
+         if( it.get_priority() != ePriorityCommand )                           // not for command values, only stack and global
+         {
+            const gd::argument::arguments& arguments_ = it.get_arguments();
+            if( arguments_.exists( stringName ) == true )
+            {
+               value_ = arguments_[stringName].as_variant_view();
+               break;
+            }
+         }
+      }
    }
-   else
-   {                                                                                               assert( m_argumentsGlobal.size() > index_.as_uint() );
-      value_ = m_argumentsGlobal[index_.as_uint()].as_variant_view();
-   }
+
    return value_;
 }
 
@@ -127,16 +116,39 @@ std::pair<bool, std::string> command::get_arguments( const std::variant<size_t, 
       if( pargumentsFind != nullptr ) { parguments_->append( *pargumentsFind ); }
    }
    else
-   {                                                                                               assert( get<0>( index_ ) < m_vectorLocal.size() );
+   {                                                                                               assert( get<0>( index_ ) < m_vectorArgument.size() );
       auto uIndex = get<0>( index_ );
-      const auto& arguments_ = m_vectorLocal.at( uIndex );
+      const auto& arguments_ = m_vectorArgument.at( uIndex );
       parguments_->append( arguments_.get_arguments() );
    }
 
    return { true, "" };
 }
 
+/**
+ * @brief Find last position for priority among arguments
+ * Arguments are ordered in priority, it starts with low and increase
+ * global priority is the highest value
+ * @param uPriority 
+ * @return size_t index to last position for priority
+ */
+size_t command::find_last_priority_position( unsigned uPriority ) const
+{
+   unsigned uPositionPriority = ePriorityStack; // stack priority is allways first
+   auto itPosition = m_vectorArgument.begin();
 
+   while( itPosition != std::end( m_vectorArgument ) )
+   {                                                                                               assert( itPosition->get_priority() >= uPositionPriority ); // need to be in priority order
+      uPositionPriority = itPosition->get_priority();
+      
+      // if next priority is larger then jump out, we have the last position
+      if( uPriority < uPositionPriority ) { break;  }
+      
+      itPosition++;
+   }
+
+   return std::distance( m_vectorArgument.begin(), itPosition );
+}
 
 
 
@@ -163,8 +175,8 @@ unsigned server::release()
 }
 
 std::pair<bool, std::string> server::get( const std::string_view* pstringCommandList, const gd::argument::arguments* pargumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse )
-{                                                                                                  assert( pcommand != nullptr );
-   pcommand->add_arguments( pargumentsParameter );
+{
+   if( pargumentsParameter != nullptr && pargumentsParameter->empty() == false ) pcommand->add_arguments(  ePriorityStack, pargumentsParameter );
 
    auto vectorCommands = gd::utf8::split( *pstringCommandList, m_uSplitChar );
    for( auto itCommand : vectorCommands )
