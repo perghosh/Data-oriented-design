@@ -838,6 +838,22 @@ namespace gd {
          return vector_;
       }
 
+      void split_pair( const char* pbBegin, const char* pbEnd, char chSplit, char chSplitPair, std::vector< std::pair<std::string,std::string> >& vectorPair );
+      inline void split_pair( const std::string_view& stringText, char chSplit, char chSplitPair, std::vector< std::pair<std::string,std::string> >& vectorPair ) {
+         split_pair( stringText.data(), stringText.data() + stringText.length(), chSplit, chSplitPair, vectorPair );
+      }
+      inline std::vector< std::pair<std::string,std::string> > split_pair( const char* pbBegin, const char* pbEnd, char chSplit, char chSplitPair, tag_string ) {
+         std::vector< std::pair<std::string,std::string> > vector_;
+         split_pair( pbBegin, pbEnd, chSplit, chSplitPair, vector_ );
+         return vector_;
+      }
+      inline std::vector< std::pair<std::string,std::string> > split_pair( const std::string_view& stringText, char chSplit, char chSplitPair, tag_string ) {
+         std::vector< std::pair<std::string,std::string> > vector_;
+         split_pair( stringText, chSplit, chSplitPair, vector_ );
+         return vector_;
+      }
+
+
 
       // ## mid methods, select text between something
 
