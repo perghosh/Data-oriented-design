@@ -2601,41 +2601,6 @@ namespace gd {
          }
       }
 
-      /** ---------------------------------------------------------------------
-       * @brief Split string into pairs of strings and store these pairs in vector
-       * Two characters is needed, one to split string into parts with pair and 
-       * character that split each part into a pair of strings
-       * @code
-         std::vector< std::pair<std::string_view,std::string_view> > vectorPair;
-         std::string stringTemplate = "one=1&two=2&three=3&four=4";
-         gd::utf8::split_pair( stringTemplate.data(), stringTemplate.data() + stringTemplate.length(), '=', '&', vectorPair ); REQUIRE( vectorPair.size() == 4 );
-       * @endcode
-       * @param pbBegin 
-       * @param pbEnd 
-       * @param chSplit 
-       * @param chSplitPair 
-       * @param vectorPair 
-       */
-      void split_pair( const char* pbBegin, const char* pbEnd, char chSplit, char chSplitPair, std::vector< std::pair<std::string_view,std::string_view> >& vectorPair )
-      {
-         // ## Split texts between pairs
-         std::vector<std::string_view> vectorPart;
-         split( pbBegin, pbEnd, chSplitPair, vectorPart );
-
-         std::vector<std::string_view> vector_;
-         for( auto it : vectorPart )
-         {
-            split( it, chSplit, vector_ );
-
-            if( vector_.size() == 2 )
-            {
-               // Add first and second value to vector with pairs
-               vectorPair.push_back( std::pair<std::string_view,std::string_view>( vector_.at( 0 ), vector_.at( 1 ) ) );
-            }
-
-            vector_.clear();
-         }
-      }
 
       /** ---------------------------------------------------------------------
        * @brief Split string into vector of string_view parts for each split offset positions
@@ -2740,6 +2705,95 @@ namespace gd {
          return std::string_view( pbsz_, pbszEnd - pbsz_ );
       }
 
+      /** ---------------------------------------------------------------------
+      * @brief Split string into pairs of strings and store these pairs in vector
+      * Two characters is needed, one to split string into parts with pair and 
+      * character that split each part into a pair of strings
+      * @code
+      std::vector< std::pair<std::string_view,std::string_view> > vectorPair;
+      std::string stringTemplate = "one=1&two=2&three=3&four=4";
+      gd::utf8::split_pair( stringTemplate.data(), stringTemplate.data() + stringTemplate.length(), '=', '&', vectorPair ); REQUIRE( vectorPair.size() == 4 );
+      * @endcode
+      * @param pbBegin start position of string
+      * @param pbEnd end position of string
+      * @param chSplit character to split parts into first and second
+      * @param chSplitPair character to split parts into pairs
+      * @param vectorPair reference to vector where pairs are placed
+      */
+      void split_pair( const char* pbBegin, const char* pbEnd, char chSplit, char chSplitPair, std::vector< std::pair<std::string_view,std::string_view> >& vectorPair )
+      {
+         // ## Split texts between pairs
+         std::vector<std::string_view> vectorPart;
+         split( pbBegin, pbEnd, chSplitPair, vectorPart );
+
+         std::vector<std::string_view> vector_;
+         for( auto it : vectorPart )
+         {
+            split( it, chSplit, vector_ );
+
+            if( vector_.size() >= 2 )
+            {
+               // Add first and second value to vector with pairs
+               vectorPair.push_back( std::pair<std::string_view,std::string_view>( vector_.at( 0 ), vector_.at( 1 ) ) );
+            }
+            else if( vector_.size() == 1 )
+            {
+               // Add single value and empty for last
+               vectorPair.push_back( std::pair<std::string_view,std::string_view>( vector_.at( 0 ), std::string_view() ) );
+            }
+            else
+            {
+               vectorPair.push_back( std::pair<std::string,std::string>( std::string_view(), std::string_view() ) );
+            }
+
+            vector_.clear();
+         }
+      }
+
+      /** ---------------------------------------------------------------------
+      * @brief Split string into pairs of strings and store these pairs in vector
+      * Two characters is needed, one to split string into parts with pair and 
+      * character that split each part into a pair of strings
+      * @code
+      std::vector< std::pair<std::string,std::string> > vectorPair;
+      std::string stringTemplate = "one=1&two=2&three=3&four=4";
+      gd::utf8::split_pair( stringTemplate.data(), stringTemplate.data() + stringTemplate.length(), '=', '&', vectorPair ); REQUIRE( vectorPair.size() == 4 );
+      * @endcode
+      * @param pbBegin start position of string
+      * @param pbEnd end position of string
+      * @param chSplit character to split parts into first and second
+      * @param chSplitPair character to split parts into pairs
+      * @param vectorPair reference to vector where pairs are placed
+      */
+      void split_pair( const char* pbBegin, const char* pbEnd, char chSplit, char chSplitPair, std::vector< std::pair<std::string,std::string> >& vectorPair )
+      {
+         // ## Split texts between pairs
+         std::vector<std::string_view> vectorPart;
+         split( pbBegin, pbEnd, chSplitPair, vectorPart );
+
+         std::vector<std::string_view> vector_;
+         for( auto it : vectorPart )
+         {
+            split( it, chSplit, vector_ );
+
+            if( vector_.size() >= 2 )
+            {
+               // Add first and second value to vector with pairs
+               vectorPair.push_back( std::pair<std::string,std::string>( vector_.at( 0 ), vector_.at( 1 ) ) );
+            }
+            else if( vector_.size() == 1 )
+            {
+               // Add single value and empty for last
+               vectorPair.push_back( std::pair<std::string,std::string>( vector_.at( 0 ), std::string() ) );
+            }
+            else
+            {
+               vectorPair.push_back( std::pair<std::string,std::string>( std::string(), std::string() ) );
+            }
+
+            vector_.clear();
+         }
+      }
 
       /** ---------------------------------------------------------------------
        * @brief Extract text betweend selected characters
