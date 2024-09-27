@@ -3,6 +3,9 @@
 Code in the gd namespace can't be dependent of anything external, only core C++ is needed to use gd code.
 There are some database objects that is turned on based on macros but the rest is default c++.
 
+**Note: The file `gd_types.h` in this folder is very very important**
+Almost all other code in the gd folder is based on the type system found in `gd_types.h`
+
 ### Main files
 `gd_types.h` - the type system for gd is found here, constants etc  
 `gd_variant.h` and `gd_variant_view.h` - these are the main value objects that is used to store values  
