@@ -908,6 +908,7 @@ public:
 
    /// return all values for name
    [[nodiscard]] std::vector<argument> get_argument_all(std::string_view stringName) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName); }
+   [[nodiscard]] std::vector<gd::variant_view> get_argument_all(std::string_view stringName, tag_view) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{}); }
 
    std::vector<argument> get_argument( std::vector< std::string_view > vectorName ) const;
 
@@ -1017,6 +1018,7 @@ public:
    static unsigned int get_total_param_length_s(const_pointer pPosition);
    static unsigned int get_total_param_length_s(std::string_view stringName, const argument argumentValue);
    static std::vector<argument> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName);
+   static std::vector<gd::variant_view> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
 
    /// ## move methods
    /// move pointer to next value in buffer

@@ -1,6 +1,6 @@
 #include <variant>
 
-#include "gd/gd_utf8.hpp"
+#include "gd/gd_utf8.h"
 #include "gd_com_server.h"
 
 _GD_BEGIN
@@ -50,7 +50,19 @@ std::pair<bool, std::string> command::add_arguments( const gd::variant_view& var
    // ## if string then it is probably related to command key value
    else if( variantviewLocality.is_string() == true )
    {
+      unsigned uPriority = ePriorityStack;
+      std::string_view stringPriority = variantviewLocality.as_string_view();
+      if( stringPriority == "global" ) uPriority = ePriorityGlobal;
 
+      if( uPriority == ePriorityStack )
+      {
+         m_vectorArgument.insert( m_vectorArgument.cbegin(), arguments( ePriorityStack, *pargumentsVariable ) ); // add first in argument vector
+      }
+      else
+      {
+         auto uPosition = find_last_priority_position( uPriority );
+         m_vectorArgument.insert( m_vectorArgument.cbegin() + uPosition, arguments( uPriority, *pargumentsVariable ) ); // add first in argument vector
+      }
    }
 
    return { true, "" };
@@ -124,6 +136,63 @@ std::pair<bool, std::string> command::get_arguments( const std::variant<size_t, 
 
    return { true, "" };
 }
+
+std::pair<bool, std::string> command::query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ )
+{
+   if( uPriority == 0 ) uPriority = uPriorityAll_g;
+
+   gd::variant_view value_;
+
+   if( selector_.is_string() )
+   {
+      std::string_view stringName = selector_.as_string_view();
+      for( auto it : m_vectorArgument )
+      {
+         if( (it.get_priority() & uPriority) == 0 ) continue;
+
+         if( it.get_priority() != ePriorityCommand )                           // not for command values, only stack and global
+         {
+            const gd::argument::arguments& arguments_ = it.get_arguments();
+            if( arguments_.exists( stringName ) == true  )
+            {
+               value_ = arguments_[stringName].as_variant_view();
+               if( pvariantview_ != nullptr ) *pvariantview_ = value_;
+               return { true, "" };
+            }
+         }
+      }
+   }
+   else if( selector_.is_integer() == true )
+   {
+      unsigned uIndex = selector_.as_uint();
+      
+   }
+
+   return { false, "" };
+}
+
+std::pair<bool, std::string> command::query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue )
+{
+   if( selector_.is_string() )
+   {
+      std::string_view stringName = selector_.as_string_view();
+      for( auto it : m_vectorArgument )
+      {
+         if( it.get_priority() != ePriorityCommand )                           // not for command values, only stack and global
+         {
+            const gd::argument::arguments& arguments_ = it.get_arguments();
+            if( arguments_.exists( stringName ) == true)
+            {
+               auto vector_ = arguments_.get_argument_all( stringName, gd::argument::arguments::tag_view{} );
+               if( pvectorValue != nullptr ) pvectorValue->insert( pvectorValue->end(), vector_.begin(), vector_.end());
+            }
+         }
+      }
+   }
+
+   return { true, "" };
+}
+
 
 /**
  * @brief Find last position for priority among arguments

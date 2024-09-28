@@ -71,6 +71,8 @@ struct command_i : public unknown_i
    virtual void get_arguments( gd::argument::arguments** ppargumentsGlobal ) = 0;
    virtual gd::variant_view get_argument( const gd::variant_view& index_ ) = 0;
    virtual std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) = 0;
+   virtual std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) = 0;
+   virtual std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) = 0;
 };    
 
 struct response_i : public unknown_i
@@ -123,6 +125,8 @@ struct command : public command_i
    void get_arguments( gd::argument::arguments** ppargumentsGlobal ) override { *ppargumentsGlobal = nullptr; }
    gd::variant_view get_argument( const gd::variant_view& index_ ) override { return gd::variant_view(); }
    std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override { return { true, "" }; }
+   std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override { return { true, "" }; }
+   std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override { return { true, "" }; }
 };
 
 /** ---------------------------------------------------------------------------
@@ -257,6 +261,9 @@ struct command : public gd::com::server::command_i
    void get_arguments( gd::argument::arguments** ppargumentsGlobal ) override;
    gd::variant_view get_argument( const gd::variant_view& index_ ) override;
    std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override;
+   std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override;
+   std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override;
+
 
    /// find pointer to arguments for name (should match any of command name found in command object)
    const gd::argument::arguments* find( const std::string_view& stringName ) const;   
