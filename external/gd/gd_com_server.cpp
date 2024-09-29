@@ -30,8 +30,6 @@ unsigned command::release()
 
 std::pair<bool, std::string> command::add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsVariable ) 
 {
-
-
    // ## Check for integer, if integer this number represents any of the locality (priority) numbers.
    //    stack is the highest priority
    if( variantviewLocality.is_integer() == true )
@@ -68,6 +66,46 @@ std::pair<bool, std::string> command::add_arguments( const gd::variant_view& var
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Parse value from string that is in query-string format
+ * This method parses values similar to values passed in url like `level=0&level=1&level=2&format=xml`
+ * @param variantviewLocality level for parsed values
+ * @param stringQueryString string to parse
+ * @return true if ok, false and error informaton if error
+ */
+std::pair<bool, std::string> command::add_querystring( const gd::variant_view& variantviewLocality, const std::string_view& stringQueryString )
+{
+   gd::argument::arguments argumentsQueryString;
+   auto vectorArgument = gd::utf8::split_pair( stringQueryString, '=', '&', gd::utf8::tag_string{} );
+   argumentsQueryString.append( vectorArgument, gd::argument::tag_parse_type{} );
+   return add_arguments( variantviewLocality, &argumentsQueryString );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Wrapper to extract command and arguments from url
+ * @param stringQueryString url formated string used to extract command and arguments from
+ * @return 
+ */
+std::vector<std::string_view> command::add_querystring(const std::string_view& stringQueryString) 
+{
+   std::vector<std::string_view> vectorCommand;
+   std::string_view stringCommand;
+   auto position_ = stringQueryString.find('?');
+   if( position_ != std::string_view::npos )
+   {
+      stringCommand = stringQueryString.substr( 0, position_ );
+      std::string_view stringArguments( stringQueryString.substr( position_ + 1 ) );
+      add_querystring( ePriorityStack, stringArguments );
+   }
+   else
+   {
+      stringCommand = stringQueryString;
+   }
+
+   vectorCommand = gd::utf8::split( stringCommand, '/' );
+
+   return vectorCommand;
+}
 
 std::pair<bool, std::string> command::add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal )
 {
