@@ -63,6 +63,13 @@ struct body_i : public unknown_i
 
 // command format - command/sub-command/sub-sub-command
 
+/** ---------------------------------------------------------------------------
+ * @brief command information, what to execute in `server`
+ * 
+ * command interface is used to hold information about what type of operations to execute in server.
+ * command is used command sequance to execute, this can be from one to any number of commands and these
+ * commands are passed to server. server is trversing commans sent and executes them in order
+ */
 struct command_i : public unknown_i
 {
    virtual server_i* get_server() = 0;
@@ -255,6 +262,11 @@ struct command : public gd::com::server::command_i
    server_i* get_server() override { return m_pserver; }
    /// add global arguments, all commands in command object are able to use global arguments
    std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsGlobal ) override;
+   /// add query string variables as stack values
+   std::pair<bool, std::string> add_querystring( const gd::variant_view& variantviewLocality, const std::string_view& stringQueryString );
+   /// Wraper to manage full url sent internally, no runtime error checks
+   std::vector< std::string_view > add_querystring( const std::string_view& stringQueryString );
+
    /// add command and arguments for that command
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) override;
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );
