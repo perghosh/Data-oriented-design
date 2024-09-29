@@ -3,7 +3,7 @@
 Code in the gd namespace can't be dependent of anything external, only core C++ is needed to use gd code.
 There are some database objects that is turned on based on macros but the rest is default c++.
 
-**Note: The file `gd_types.h` in this folder is very very important**
+**Note**: The file `gd_types.h` in this folder is very very important
 Almost all other code in the gd folder is based on the type system found in `gd_types.h`
 
 ### Main files
@@ -21,3 +21,4 @@ Almost all other code in the gd folder is based on the type system found in `gd_
 | `gd_table_io` | Read and Write information to and from table objects in different formats, like console, csv, sql and more |
 | `gd_variant` | Variant object are able to store any C++ primitive value and some common extended data types, variant holds meta data about value and can be used to generalise logic |
 | `gd_types` | GD core type constants, all code in GD depends on same type system that is defined there. <br> `gd_types` also contains name and methods to compare type names, could also be used in other situations because they are highly optimized. |
+| `gd_utf8` | String operations, there are a lot of operations working with strings, focus on utf8 formats but should work on almost all utf8 and ascii strings |
