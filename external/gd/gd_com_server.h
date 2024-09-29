@@ -274,6 +274,8 @@ struct command : public gd::com::server::command_i
    gd::variant_view get_argument( const gd::variant_view& index_ ) override;
    std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override;
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override;
+   /// wrapper to select first value for name
+   gd::variant_view query_select( const std::string_view& stringSelector );
    std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override;
 
 

@@ -209,6 +209,24 @@ std::pair<bool, std::string> command::query_select( unsigned uPriority, const gd
    return { false, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief wrapper to simplify query_select to get value from variable name
+ * @param stringSelector name for value to select
+ * @return gd::variant_view value for selector name or null if not found
+ */
+gd::variant_view command::query_select( const std::string_view& stringSelector )
+{
+   gd::variant_view variantviewValue;
+   // try to find in stack
+   auto result_ = query_select( ePriorityStack, stringSelector, &variantviewValue );
+   if( result_.first == false )
+   {
+      query_select( ePriorityGlobal, stringSelector, &variantviewValue );   
+   }
+
+   return variantviewValue;
+}
+
 std::pair<bool, std::string> command::query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue )
 {
    if( selector_.is_string() )

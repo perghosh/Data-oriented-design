@@ -1,7 +1,7 @@
 #include <iterator>
 #include <cwchar>
 
-#include "gd_utf8.hpp"  
+#include "gd_utf8.h"  
 
 #include "gd_arguments.h"  
 
@@ -2111,16 +2111,16 @@ unsigned int arguments::get_total_param_length_s(const_pointer pPosition)
 /// return all matching values (same name) in vector
 std::vector<arguments::argument> arguments::get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName)
 {                                                                                                  assert( pBegin <= pEnd );
-std::vector<argument> vectorArgument;
-if( pBegin != nullptr )
-{
-   do
+   std::vector<argument> vectorArgument;
+   if( pBegin != nullptr )
    {
-      if( compare_name_s( pBegin, stringName ) == true ) vectorArgument.push_back( get_argument_s( pBegin ) );
-   } while( (pBegin = next_s( pBegin )) < pEnd );
-}
+      do
+      {
+         if( compare_name_s( pBegin, stringName ) == true ) vectorArgument.push_back( get_argument_s( pBegin ) );
+      } while( (pBegin = next_s( pBegin )) < pEnd );
+   }
 
-return vectorArgument;
+   return vectorArgument;
 }
 
 /// return all matching values (same name) in vector
