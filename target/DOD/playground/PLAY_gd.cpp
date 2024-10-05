@@ -5,6 +5,24 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+struct Test
+{
+public:
+
+   Test(gd::variant variantName) 
+   {
+      m_variantName = variantName;
+   }
+
+   void Return()
+   {
+      std::cout << "Variant as int: " << m_variantName.as_int() << " Variant as double: " << m_variantName.as_double() << std::endl;
+   }
+
+   gd::variant m_variantName;
+
+};
+
 // Run logic on arguments to test new features --------------------------------
 TEST_CASE( "[gd] arguments", "[gd]" ) {
    std::cout << "check `arguments` methods" << std::endl;
@@ -24,8 +42,21 @@ TEST_CASE( "[gd] arguments", "[gd]" ) {
 
 
 TEST_CASE( "[gd] kevin 01", "[gd]" ) {
-   gd::variant variantName = "1 2 3 4 5 6 7";
+   Test test("3.99");
+
+   test.Return();
+   
+   gd::variant variantName = "102 3 4 5 6 7";
    std::cout << variantName.as_string() << " : " << variantName.as_double() << " : " << variantName.as_int() << "\n";
+
+   variantName = 100.99;
+
+   std::cout << variantName.as_string() << " : " << variantName.as_double() << " : " << variantName.as_int() << "\n";
+
+   gd::argument::arguments arguments_;
+   arguments_.append("Kevin", 17);
+   arguments_.append("Nathalie", "Gustafsson");
+   std::cout << arguments_["Nathalie"].as_string() << std::endl;
 
    std::cout << "end\n";
 }
