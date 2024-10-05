@@ -5,7 +5,7 @@
 #include <string>
 #include <string_view>
 
-
+#include "gd_types.h"
 #include "gd_arguments.h"
 #include "gd_variant_view.h"
 
@@ -43,14 +43,37 @@ enum enumFormat
 /// The reach for values added to command, reach means priority
 enum enumPriority
 {
-   ePriorityStack    = 0x01,     ///< like the closest stack value, removed when command is executed
-   ePriorityCommand  = 0x02,     ///< follow command
-   ePriorityGlobal   = 0x04,     ///< global reach within command
+   ePriorityUnknown  = 0,
+   ePriorityRegister = 0x01,     ///< register is the highest priority, named like this to mimic programming (only one register sequance is allowed)
+   ePriorityStack    = 0x02,     ///< like the closest stack value, removed when command is executed
+   ePriorityCommand  = 0x04,     ///< follow command
+   ePriorityGlobal   = 0x08,     ///< global reach within command
 
    ePriorityMAX      = ePriorityGlobal, ///< max priority value
 };
 
-constexpr unsigned uPriorityAll_g = ePriorityStack + ePriorityCommand + ePriorityGlobal;
+/// get priority contant from string 
+constexpr enumPriority priority_g( const std::string_view& stringPriority )
+{                                                                                                  assert( stringPriority.length() >= 3 );
+   using namespace gd::types::detail;
+   enumPriority ePriority = ePriorityUnknown;
+
+   uint32_t uPriorityName = hash_type( stringPriority );
+   switch( uPriorityName )
+   {
+   case hash_type("unkn"): ePriority = ePriorityUnknown;  break;               // unknown (0)
+   case hash_type("regi"): ePriority = ePriorityRegister;  break;              // register priority, highest type
+   case hash_type("stac"): ePriority = ePriorityStack;  break;                 // stack priority, like lokals
+   case hash_type("comm"): ePriority = ePriorityCommand;  break;               // command or members for specific named command
+   case hash_type("glob"): ePriority = ePriorityGlobal;  break;                // globals, accessible for all
+   default: assert(false);
+   }
+
+   return ePriority;
+}
+
+/// all flags, used this to mask
+constexpr unsigned uPriorityAll_g = ePriorityRegister + ePriorityStack + ePriorityCommand + ePriorityGlobal;
 
 
 struct body_i : public unknown_i
@@ -73,13 +96,14 @@ struct body_i : public unknown_i
 struct command_i : public unknown_i
 {
    virtual server_i* get_server() = 0;
-   virtual std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsGlobal ) = 0;
+   virtual std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsValue ) = 0;
    virtual std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) = 0;
-   virtual void get_arguments( gd::argument::arguments** ppargumentsGlobal ) = 0;
    virtual gd::variant_view get_argument( const gd::variant_view& index_ ) = 0;
+   virtual gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) = 0;
    virtual std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) = 0;
    virtual std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) = 0;
    virtual std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) = 0;
+   virtual void clear( const gd::variant_view& variantviewType ) = 0;
 };    
 
 struct response_i : public unknown_i
@@ -129,11 +153,12 @@ struct command : public command_i
    unsigned release() override { return 0; }
    std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsGlobal ) override { return { true, "" }; }
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsGlobal ) override { return { true, "" }; }
-   void get_arguments( gd::argument::arguments** ppargumentsGlobal ) override { *ppargumentsGlobal = nullptr; }
    gd::variant_view get_argument( const gd::variant_view& index_ ) override { return gd::variant_view(); }
+   gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override { return gd::argument::arguments(); }
    std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override { return { true, "" }; }
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override { return { true, "" }; }
    std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override { return { true, "" }; }
+   void clear( const gd::variant_view& variantviewType ) override {}
 };
 
 /** ---------------------------------------------------------------------------
@@ -220,7 +245,7 @@ struct command : public gd::com::server::command_i
       arguments( const std::pair< std::string, gd::argument::arguments >& pair_ ): m_stringKey(pair_.first), m_arguments( pair_.second ) {}
 
       arguments( const arguments& o ) { common_construct( o ); }
-      arguments( const arguments&& o ) noexcept { common_construct( std::move( o ) ); }
+      arguments( arguments&& o ) noexcept { common_construct( std::move( o ) ); }
 
       arguments& operator=( const arguments& o ) { common_construct( o ); return *this; }
       arguments& operator=( arguments&& o ) noexcept { common_construct( std::move( o ) ); return *this; }
@@ -228,7 +253,7 @@ struct command : public gd::com::server::command_i
       void common_construct( const arguments& o ) {
          m_uPriority = o.m_uPriority; m_iCommandIndex = o.m_iCommandIndex; m_stringKey = o.m_stringKey; m_stringCommand = o.m_stringCommand; m_arguments = o.m_arguments;
       }
-      void common_construct( const arguments&& o ) noexcept {
+      void common_construct( arguments&& o ) noexcept {
          m_uPriority = o.m_uPriority; m_iCommandIndex = o.m_iCommandIndex; m_stringKey = std::move( o.m_stringKey ); m_stringCommand = std::move( o.m_stringCommand ); m_arguments = std::move( o.m_arguments );
       }
 
@@ -240,6 +265,7 @@ struct command : public gd::com::server::command_i
       bool operator==( const std::string_view& stringMatch ) const { return m_stringKey == stringMatch; }
 
       // ## get/set operations
+      const std::string& get_key() const { return m_stringKey; }
       const gd::argument::arguments& get_arguments() const { return m_arguments; }
       unsigned get_priority() const { return m_uPriority; }
       void set_index( int iIndex ) { m_iCommandIndex = iIndex; }
@@ -255,11 +281,16 @@ struct command : public gd::com::server::command_i
    command( gd::com::server::server_i* pserver ): m_pserver( pserver ) {}
    virtual ~command() {}
 
+   // ## unknown_i interface
+
    int32_t query_interface(const gd::com::guid& guidId, void** ppObject) override;
    unsigned add_reference() override { m_iReference++; return (unsigned)m_iReference; }
    unsigned release() override;
 
+   // ## get/set
+
    server_i* get_server() override { return m_pserver; }
+   void set_command( const std::string_view& stringCommand ) { m_stringCommand = stringCommand; }
    /// add global arguments, all commands in command object are able to use global arguments
    std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsGlobal ) override;
    /// add query string variables as stack values
@@ -270,13 +301,17 @@ struct command : public gd::com::server::command_i
    /// add command and arguments for that command
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) override;
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );
-   void get_arguments( gd::argument::arguments** ppargumentsGlobal ) override;
+   //void get_arguments( gd::argument::arguments** ppargumentsGlobal ) override;
    gd::variant_view get_argument( const gd::variant_view& index_ ) override;
+   gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override;
    std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override;
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override;
    /// wrapper to select first value for name
    gd::variant_view query_select( const std::string_view& stringSelector );
    std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override;
+
+   /// Clear internal data in command, based on whats passed different type of data can be cleared
+   void clear( const gd::variant_view& variantviewToClear );
 
 
    /// find pointer to arguments for name (should match any of command name found in command object)
@@ -333,6 +368,7 @@ struct server : public gd::com::server::server_i
    std::pair<bool, std::string> get( const char* pbszCommand, response_i* presponse ) override { return { true, "" }; } 
    virtual std::pair<bool, std::string> get( const std::string_view* stringCommandList, const gd::argument::arguments* pargumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse );
    std::pair<bool, std::string> get( const std::string_view& stringCommandList, const gd::argument::arguments& argumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse ); 
+   std::pair<bool, std::string> get( const std::string_view& stringCommandList, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse ); 
    void add_error( const std::variant<std::string_view, const gd::argument::arguments*>& error_ ) override;
    unsigned get_error( std::vector< std::string >* pvectorError, bool bRemove ) override;
 
@@ -353,6 +389,12 @@ struct server : public gd::com::server::server_i
 inline std::pair<bool, std::string> server::get( const std::string_view& stringCommandList, const gd::argument::arguments& argumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse ) {
    return get( &stringCommandList, &argumentsParameter, pcommand, presponse );
 }
+
+/// Wrapper for interface method used to call `get` command sending command as string and arguments
+inline std::pair<bool, std::string> server::get( const std::string_view& stringCommandList, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse ) {
+   return get( &stringCommandList, nullptr, pcommand, presponse );
+}
+
 
 
 } } } // com::server::router

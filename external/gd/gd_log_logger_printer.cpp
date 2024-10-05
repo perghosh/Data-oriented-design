@@ -299,9 +299,10 @@ bool printer_console::print(const message& message)
          }
          stringPrintMessage = std::move( temp_ );
       }
+
+      stringMessage += stringPrintMessage;                                     // append log message to final message to print
    }
 
-   stringMessage += stringPrintMessage;                                        // append log message to final message to print
 
    if( bChangeColor == true ) stringMessage += std::wstring_view{ L"\033[39m" };// reset color
 

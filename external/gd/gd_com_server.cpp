@@ -30,6 +30,18 @@ unsigned command::release()
 
 std::pair<bool, std::string> command::add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsVariable ) 
 {
+   unsigned uPriority = ePriorityStack;
+
+   if( variantviewLocality.is_string() == true )
+   {
+      uPriority = priority_g( variantviewLocality.as_string_view() );
+   }
+   else 
+   {
+      uPriority = variantviewLocality.as_uint();
+   }
+
+
    // ## Check for integer, if integer this number represents any of the locality (priority) numbers.
    //    stack is the highest priority
    if( variantviewLocality.is_integer() == true )
@@ -115,13 +127,6 @@ std::pair<bool, std::string> command::add_command( const std::string_view& strin
    return { true, "" };
 }
 
-/// ---------------------------------------------------------------------------
-/// get pointer to internal arguments
-void command::get_arguments( gd::argument::arguments** ppargumentsGlobal )
-{                                                                                                  assert( ppargumentsGlobal );
-   //*ppargumentsGlobal = &m_argumentsGlobal;
-}
-
 /** ---------------------------------------------------------------------------
  * @brief get global argument from command object
  * @param index_ {string|integer} index to argument to return
@@ -134,11 +139,11 @@ gd::variant_view command::get_argument( const gd::variant_view& index_ )
    if( index_.is_string() )
    {
       std::string_view stringName = index_.as_string_view();
-      for( auto it : m_vectorArgument )
+      for( auto it = std::begin( m_vectorArgument ), itEnd = std::end( m_vectorArgument ); it != itEnd; it++ )
       {
-         if( it.get_priority() != ePriorityCommand )                           // not for command values, only stack and global
+         if( it->get_priority() != ePriorityCommand )                          // not for command values, only stack and global
          {
-            const gd::argument::arguments& arguments_ = it.get_arguments();
+            const gd::argument::arguments& arguments_ = it->get_arguments();
             if( arguments_.exists( stringName ) == true )
             {
                value_ = arguments_[stringName].as_variant_view();
@@ -149,6 +154,29 @@ gd::variant_view command::get_argument( const gd::variant_view& index_ )
    }
 
    return value_;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief return all data in command. mostly stack and global values
+ * @param index_ 
+ * @return 
+ */
+gd::argument::arguments command::get_all_arguments( const gd::variant_view& index_ )
+{
+   gd::argument::arguments argumentsReturn;
+   for( auto it = std::begin( m_vectorArgument ), itEnd = std::end( m_vectorArgument ); it != itEnd; it++ )
+   {
+      if( it->get_priority() != ePriorityCommand ) 
+      {
+         const gd::argument::arguments& arguments_ = it->get_arguments();
+         if( arguments_.empty() == false )
+         {
+            argumentsReturn += arguments_;
+         }
+      }
+   }
+
+   return argumentsReturn;
 }
 
 /** ---------------------------------------------------------------------------
@@ -249,6 +277,46 @@ std::pair<bool, std::string> command::query_select_all( const gd::variant_view& 
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief clear values used to execute commands
+ * @param variantviewToClear what to delete, if number then `ePriorityStack`, `ePriorityCommand`, `ePriorityGlobal` are valid
+ *        if string then "stack", "gommand", "global"
+ */
+void command::clear( const gd::variant_view& variantviewToClear )
+{
+   unsigned uType = 0;
+
+   if( variantviewToClear.is_string() == true )
+   {
+      std::string_view stringType = variantviewToClear.as_string_view();
+      if( stringType == "stack" ) uType = ePriorityStack;
+      else if( stringType == "command" ) uType = ePriorityCommand;
+      else if( stringType == "global" ) uType = ePriorityGlobal;
+      else
+      {
+         for( auto it = std::begin( m_vectorArgument ), itEnd = std::end( m_vectorArgument ); it != itEnd; it++ )
+         {
+            if( it->get_key() == stringType )
+            {
+               it = m_vectorArgument.erase( it );
+            }
+         }
+      }
+   }
+   else
+   {
+      uType = variantviewToClear.as_uint();
+   }
+
+   // ## Clear values in vector holding command values
+   m_vectorArgument.erase(std::remove_if(m_vectorArgument.begin(), m_vectorArgument.end(), 
+      [uType](const arguments a_ ) 
+      { 
+         bool b_ = (a_.get_priority() & uType) != 0;
+         return b_;
+      }), m_vectorArgument.end());
+}
+
 
 /**
  * @brief Find last position for priority among arguments
@@ -283,7 +351,7 @@ size_t command::find_last_priority_position( unsigned uPriority ) const
 
 int32_t server::query_interface( const gd::com::guid& guidId, void** ppObject )
 {
-   return gd::com::S_Ok;
+   return gd::com::E_NoInterface;
 }
 
 /// release decrease reference counter and if down to 0 object is deleted
@@ -301,7 +369,20 @@ unsigned server::release()
 
 std::pair<bool, std::string> server::get( const std::string_view* pstringCommandList, const gd::argument::arguments* pargumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse )
 {
-   if( pargumentsParameter != nullptr && pargumentsParameter->empty() == false ) pcommand->add_arguments(  ePriorityStack, pargumentsParameter );
+   if( pargumentsParameter != nullptr && pargumentsParameter->empty() == false )
+   {
+      {
+         auto s0 = (*pargumentsParameter)["query"];
+         auto s = s0.as_string();
+         std::string stringtest( s );
+      }
+      pcommand->add_arguments(  ePriorityStack, pargumentsParameter );
+      {
+         auto s0 = pcommand->get_argument( "query" );
+         auto s = s0.as_string();
+         std::string stringtest( s );
+      }
+   }
 
    auto vectorCommands = gd::utf8::split( *pstringCommandList, m_uSplitChar );
    for( auto itCommand : vectorCommands )
