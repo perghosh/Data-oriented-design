@@ -57,6 +57,6 @@ TEST_CASE( "[gd] kevin 01", "[gd]" ) {
    arguments_.append("Kevin", 17);
    arguments_.append("Nathalie", "Gustafsson");
    std::cout << arguments_["Nathalie"].as_string() << std::endl;
-
+                                
    std::cout << "end\n";
 }
