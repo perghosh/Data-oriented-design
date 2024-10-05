@@ -23,3 +23,9 @@ TEST_CASE( "[gd] arguments", "[gd]" ) {
 }
 
 
+TEST_CASE( "[gd] kevin 01", "[gd]" ) {
+   gd::variant variantName = "1 2 3 4 5 6 7";
+   std::cout << variantName.as_string() << " : " << variantName.as_double() << " : " << variantName.as_int() << "\n";
+
+   std::cout << "end\n";
+}
