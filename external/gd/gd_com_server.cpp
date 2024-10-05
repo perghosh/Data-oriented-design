@@ -343,6 +343,153 @@ size_t command::find_last_priority_position( unsigned uPriority ) const
    return std::distance( m_vectorArgument.begin(), itPosition );
 }
 
+// ================================================================================================
+// ======================================================================================= response
+// ================================================================================================
+
+int32_t response::query_interface( const gd::com::guid& guidId, void** ppObject )
+{
+   return gd::com::E_NoInterface;
+}
+
+/// release decrease reference counter and if down to 0 object is deleted
+unsigned response::release() 
+{                                                                                                  assert( m_iReference > 0 );
+   m_iReference--; 
+   if( m_iReference == 0 )
+   {
+      delete this;
+      return 0;
+   }
+
+   return (unsigned)m_iReference; 
+}
+
+std::pair<bool, std::string> response::add( const gd::variant_view& key_, const gd::argument::arguments& argumentsValue )
+{
+   //m_vectorValue.push_back( { key_.as_string(), argumentsValue } );
+   return { true, "" };
+}
+
+std::pair<bool, std::string> response::add( const gd::variant_view& key_, const gd::argument::arguments&& argumentsValue )
+{
+   //m_vectorValue.push_back( { key_.as_string(), std::move(argumentsValue) } );
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+* @brief Add to collection of return values
+* This method adds return values, values that are not named, just values harvested
+* from methods executed that return one single value
+* @param variantValue value added as return value
+* @return true if ok, false and error information on error
+*/
+std::pair<bool, std::string> response::add_return( gd::variant&& variantValue ) 
+{
+   m_vectorReturn.push_back( std::move( variantValue ) );
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get pointer to internal arguments value that holds return data from called methods
+ * @param index_ index to internal arguments value with return information
+ * @param ppArguments pointer to pointer for arguments thet gets pointer to arguments object
+ * @return true if ok, false and error information on error
+ */
+std::pair<bool, std::string> response::get(const gd::variant_view& index_, gd::argument::arguments** ppArguments)
+{                                                                                                  assert( ppArguments != nullptr );
+/*
+   size_t uIndex = 0;
+   if(index_.is_integer() == true) { uIndex = index_.as_uint64(); }
+   else
+   {
+      std::string stringCommand = index_.as_string();
+      for(size_t u = 0, uMax = m_vectorValue.size(); u < uMax; u++)
+      {
+
+         std::pair<std::string, gd::argument::arguments>* ppair_ = &m_vectorValue.at( u );
+         if(stringCommand == ppair_->first )
+         {
+            *ppArguments = &ppair_->second;
+            return { true, "" };
+         }
+      }
+   }
+
+   if(m_vectorValue.size() > uIndex)
+   {
+      // ## Get pointer to internal arguments object with return information from method.
+      //    Internal list holds returned data and full name (path) for command
+      std::pair<std::string, gd::argument::arguments>* ppair_ = &m_vectorValue.at( uIndex );
+      *ppArguments = &ppair_->second;
+      return { true, "" };                                                     // returns ok, arguments for index was found
+   }
+  */
+   return { false, index_.as_string() };
+}
+
+
+/// ---------------------------------------------------------------------------
+/// get pointer to load for index or name
+std::pair<bool, std::string> response::get_body( const std::variant<uint64_t, std::string_view>& index_, gd::com::server::body_i** ppload_ )
+{
+   if( index_.index() == 0 )
+   {                                                                                               
+      uint64_t uIndex = std::get<0>( index_ );                                                     assert( uIndex < get_body_count() );
+      body_i* pload = m_vectorBody.at( uIndex );
+      pload->add_reference();
+      *ppload_ = pload;
+   }
+   else
+   {
+      std::string_view stringName = std::get<1>( index_ );
+      for( auto it : m_vectorBody )
+      {
+         if( ((body_i*)it)->name() == stringName )
+         {
+            it->add_reference();
+            *ppload_ = it;
+            return { true, "" };      
+         }
+      }
+   }
+
+   return { false, std::string( "`get_body` invalid index, no load found" ) };
+}
+
+/// ---------------------------------------------------------------------------
+/// add load to response object
+std::pair<bool,std::string> response::add_body( gd::com::server::body_i* pload_)
+{  
+   pload_->add_reference();
+   m_vectorBody.push_back( pload_ );
+   return { true, "" };
+}
+
+/// ---------------------------------------------------------------------------
+/// Get number of loads in response
+uint64_t response::get_body_count()
+{
+   return (uint64_t)m_vectorBody.size();
+}
+
+/// Clear all internal data
+void response::clear_all()
+{
+   m_vectorReturn.clear();
+
+   // ## release interface for load added to response
+   for( auto it : m_vectorBody )
+   {
+      it->release();
+   }
+   m_vectorBody.clear();
+}
+
+
+
+
+
 
 
 // ================================================================================================

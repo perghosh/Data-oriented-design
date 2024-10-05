@@ -79,6 +79,7 @@ constexpr unsigned uPriorityAll_g = ePriorityRegister + ePriorityStack + ePriori
 struct body_i : public unknown_i
 {
    virtual unsigned type() = 0;
+   virtual std::string_view name() = 0;
    virtual std::string_view type_name() = 0;
    virtual void* get() = 0;
    virtual void destroy() = 0;
@@ -172,6 +173,7 @@ struct body : public body_i
    unsigned release() override { return 0; }
 
    unsigned type() override { return 0; }
+   std::string_view name() override { return std::string_view(); }
    std::string_view type_name() override { return std::string_view(); }
    void* get() override { return nullptr; };
    void destroy() override {};
@@ -342,6 +344,40 @@ inline gd::argument::arguments* command::find( const std::string_view& stringKey
    for( auto& it : m_vectorArgument ) { if( it == stringKey ) return (gd::argument::arguments*)it; }
    return nullptr;
 }
+
+// ================================================================================================
+// ======================================================================================= response
+// ================================================================================================
+
+struct response : public gd::com::server::response
+{
+   int32_t query_interface(const gd::com::guid& guidId, void** ppObject) override;
+   unsigned add_reference() override { m_iReference++; return (unsigned)m_iReference; }
+   unsigned release() override;
+
+   // ## response_i
+   /// return number of return objects
+   uint64_t size() override { return 0; }
+   /// add response data to internal list of respons information
+   std::pair<bool, std::string> add( const gd::variant_view& key_, const gd::argument::arguments& argumentsValue ) override;
+   std::pair<bool, std::string> add( const gd::variant_view& key_, const gd::argument::arguments&& argumentsValue ) override;
+   std::pair<bool, std::string> add_return( gd::variant&& variantValue ) override;
+   /// Get response data for index (named index that should match id in arguments or index)
+   std::pair<bool, std::string> get( const gd::variant_view& index_, gd::argument::arguments** ppArguments ) override;
+   std::pair<bool, std::string> get_body( const std::variant<size_t, std::string_view>& index_, gd::com::server::body_i** ppload_ ) override;
+   std::pair<bool, std::string> add_body( gd::com::server::body_i* pload_ ) override;
+   uint64_t get_body_count() override;
+   void clear_all() override;
+
+   
+   int m_iReference = 1;
+   std::vector<gd::variant> m_vectorReturn;
+   std::vector< gd::com::server::body_i* > m_vectorBody;
+};
+
+// ================================================================================================
+// ======================================================================================= server
+// ================================================================================================
 
 /** ---------------------------------------------------------------------------
  * \brief server implementation that with similar logics found in web routers
