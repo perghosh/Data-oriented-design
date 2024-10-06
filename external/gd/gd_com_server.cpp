@@ -28,54 +28,67 @@ unsigned command::release()
    return (unsigned)m_iReference; 
 }
 
-std::pair<bool, std::string> command::add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsVariable ) 
+/** ---------------------------------------------------------------------------
+ * @brief add arguments to internal list with arguments objects
+ * command may hold a lot of arguments and these could be used depending on how
+ * command's are packed. theare may be global, command arguments, stack or register
+ * these type of arguments have different priorities, register is the first/highest
+ * @param variantviewPriority pr
+ * @param pargumentsVariable 
+ * @return 
+ */
+std::pair<bool, std::string> command::add_arguments( const gd::variant_view& variantviewPriority, const gd::argument::arguments* pargumentsVariable ) 
 {
    unsigned uPriority = ePriorityStack;
 
-   if( variantviewLocality.is_string() == true )
+   if( variantviewPriority.is_string() == true )
    {
-      uPriority = priority_g( variantviewLocality.as_string_view() );
+      uPriority = priority_g( variantviewPriority.as_string_view() );
    }
    else 
    {
-      uPriority = variantviewLocality.as_uint();
+      uPriority = variantviewPriority.as_uint();
    }
 
-
-   // ## Check for integer, if integer this number represents any of the locality (priority) numbers.
-   //    stack is the highest priority
-   if( variantviewLocality.is_integer() == true )
+   if( (uPriority & ePriorityRegister) != 0 )                                  // register has top priority and only one register arguments is allowed
    {
-      unsigned uPriority = variantviewLocality.as_uint();                                          assert( uPriority >= ePriorityStack && uPriority <= ePriorityGlobal );
-      if( uPriority == ePriorityStack )
-      {
-         m_vectorArgument.insert( m_vectorArgument.cbegin(), arguments( ePriorityStack, *pargumentsVariable ) ); // add first in argument vector
-      }
-      else
-      {
-         auto uPosition = find_last_priority_position( uPriority );
-         m_vectorArgument.insert( m_vectorArgument.cbegin() + uPosition, arguments( uPriority, *pargumentsVariable ) ); // add first in argument vector
-      }
+      arguments_remove( ePriorityRegister );                                   // only one register item, remove rest
+      m_vectorArgument.push_back( arguments( uPriority, *pargumentsVariable ) );
    }
-   // ## if string then it is probably related to command key value
-   else if( variantviewLocality.is_string() == true )
+   else
    {
-      unsigned uPriority = ePriorityStack;
-      std::string_view stringPriority = variantviewLocality.as_string_view();
-      if( stringPriority == "global" ) uPriority = ePriorityGlobal;
-
-      if( uPriority == ePriorityStack )
+      for(auto it = m_vectorArgument.rbegin(); it != m_vectorArgument.rend(); it++)
       {
-         m_vectorArgument.insert( m_vectorArgument.cbegin(), arguments( ePriorityStack, *pargumentsVariable ) ); // add first in argument vector
-      }
-      else
-      {
-         auto uPosition = find_last_priority_position( uPriority );
-         m_vectorArgument.insert( m_vectorArgument.cbegin() + uPosition, arguments( uPriority, *pargumentsVariable ) ); // add first in argument vector
+         if(it->get_priority() & uPriority)
+         {                                                                                         assert( !(uPriority & ePriorityRegister) ); // never register here, should be handled before
+            m_vectorArgument.insert( it.base() + 1, arguments(uPriority, *pargumentsVariable));
+            break;
+         }
       }
    }
 
    return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief remove arguments in vector with priority flag
+ * @param uPriority flags for arguments to remove
+ */
+void command::arguments_remove(unsigned uPriority)
+{
+   /// loop backwards because it is a bit faster
+   for( auto it = m_vectorArgument.rbegin(); it != m_vectorArgument.rend(); ) 
+   {
+      if( it->get_priority() & uPriority )
+      {
+         // tricky for removing backwards iterators
+         it = std::vector<arguments>::reverse_iterator( m_vectorArgument.erase( (it + 1).base() ));
+      }
+      else
+      {
+         it++;
+      }
+   }
 }
 
 /** ---------------------------------------------------------------------------
@@ -107,7 +120,7 @@ std::vector<std::string_view> command::add_querystring(const std::string_view& s
    {
       stringCommand = stringQueryString.substr( 0, position_ );
       std::string_view stringArguments( stringQueryString.substr( position_ + 1 ) );
-      add_querystring( ePriorityStack, stringArguments );
+      add_querystring( ePriorityRegister, stringArguments );                   // query string arguments have the highest priority
    }
    else
    {

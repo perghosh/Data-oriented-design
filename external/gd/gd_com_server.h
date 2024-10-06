@@ -294,9 +294,10 @@ struct command : public gd::com::server::command_i
    server_i* get_server() override { return m_pserver; }
    void set_command( const std::string_view& stringCommand ) { m_stringCommand = stringCommand; }
    /// add global arguments, all commands in command object are able to use global arguments
-   std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsGlobal ) override;
+   std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewPriority, const gd::argument::arguments* pargumentsGlobal ) override;
+   void arguments_remove( unsigned uPriority );
    /// add query string variables as stack values
-   std::pair<bool, std::string> add_querystring( const gd::variant_view& variantviewLocality, const std::string_view& stringQueryString );
+   std::pair<bool, std::string> add_querystring( const gd::variant_view& variantviewPriority, const std::string_view& stringQueryString );
    /// Wraper to manage full url sent internally, no runtime error checks
    std::vector< std::string_view > add_querystring( const std::string_view& stringQueryString );
 
@@ -410,8 +411,11 @@ struct server : public gd::com::server::server_i
 
    template<typename FUNCTION>
    void callback_add( FUNCTION&& callback_ ) { m_vectorCallback.push_back( std::forward<FUNCTION>( callback_ ) ); }
+   /// check if callbacks are added to server
    bool callback_empty() const { return m_vectorCallback.empty(); }
+   /// return number of callbacks added to server
    std::size_t callback_size() const { return m_vectorCallback.size(); }
+   /// remove all callbacks
    void callback_clear() { return m_vectorCallback.clear(); }
 
 // ## attributes ----------------------------------------------------------------
