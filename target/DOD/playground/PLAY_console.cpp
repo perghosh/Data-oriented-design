@@ -48,11 +48,13 @@ struct console
    }
 
 // ## methods -----------------------------------------------------------------
-   void move( uint32_t uRow, uint32_t uColumn ) { m_pairPosition = { uRow, uColumn }; update(); }
+   void move( uint32_t uRow, uint32_t uColumn ) { m_pairPosition = { uRow, uColumn }; position_update(); }
 
    void print( const std::string_view& stringText ) { std::puts( stringText.data() ); }
+   void print_at( uint32_t uRow, uint32_t uColumn, const std::string_view& stringText );
 
-   void update() { printf("\033[%d;%dH", m_pairPosition.first, m_pairPosition.second); }
+   void position_set( uint32_t uRow, uint32_t uColumn ) { printf("\033[%d;%dH", uRow, uColumn); }
+   void position_update() { printf("\033[%d;%dH", m_pairPosition.first, m_pairPosition.second); }
 
    void color() { std::puts("\033[0m" ); }
    void color( unsigned uColor ) { printf("\033[%dm", uColor ); }
@@ -65,16 +67,24 @@ struct console
 
 };
 
+inline void console::print_at(uint32_t uRow, uint32_t uColumn, const std::string_view& stringText) {
+   position_set( uRow, uColumn );
+   print( stringText );
+   position_update();
+}
+
 
 TEST_CASE( "[console] 01", "[console]" ) {
-   console consoleRow( ::GetStdHandle( STD_OUTPUT_HANDLE ) );
+   console console_( ::GetStdHandle( STD_OUTPUT_HANDLE ) );
 
-   consoleRow.color( console::GREEN );
+   console_.color( console::GREEN );
    for( unsigned u = 0; u < 10; u++ )
    {
-      consoleRow.move( u, u );
-      consoleRow.print( "XXXXXXXXXXX" );
+      console_.move( u, u );
+      console_.print( "XXXXXXXXXXX" );
    }
-   consoleRow.color();
-   consoleRow.print( "\nReady\n" );
+   console_.color();
+   console_.print( "\nReady\n" );
+   console_.print_at( 1, 40, "SCORE: 100" );
+   console_.print( "====================================================================" );
 }
