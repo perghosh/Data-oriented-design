@@ -86,5 +86,5 @@ TEST_CASE( "[console] 01", "[console]" ) {
    console_.color();
    console_.print( "\nReady\n" );
    console_.print_at( 1, 40, "SCORE: 100" );
-   console_.print( "====================================================================" );
+   console_.print( "\n//////////////////////////////////////////////////////////" );
 }
