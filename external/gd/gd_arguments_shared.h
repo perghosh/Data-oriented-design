@@ -272,7 +272,7 @@ public:
 
       int get_reference_count() const { return m_iReferenceCount; }
       int add_reference() { m_iReferenceCount++; return m_iReferenceCount; }
-      void release() {                                                                             assert( m_iReferenceCount > 0 );
+      void release() {                                                                             assert( m_iReferenceCount > 0 ); assert( this != &m_buffer_s );
          m_iReferenceCount--;
          if(m_iReferenceCount == 0)
          {
@@ -624,11 +624,11 @@ public:
    arguments(std::vector<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}   
 
    // copy
-   arguments(const arguments& o) { release(); common_construct(o); }
+   arguments(const arguments& o) { common_construct(o); }
    arguments(arguments&& o) noexcept { common_construct((arguments&&)o); }
    // assign
-   arguments& operator=(const arguments& o) { clear(); common_construct(o); return *this; }
-   arguments& operator=(arguments&& o) noexcept { clear(); common_construct(o); return *this; }
+   arguments& operator=(const arguments& o) { common_construct(o); return *this; }
+   arguments& operator=(arguments&& o) noexcept { common_construct(o); return *this; }
 
    arguments& operator=(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair);
 
@@ -639,7 +639,7 @@ public:
 protected:
    // common copy
    void common_construct(const arguments& o) {
-      m_pbuffer->release();
+      if( is_null() == false) m_pbuffer->release();
       if( o.is_null() == false )
       {
          m_pbuffer = o.m_pbuffer;
@@ -652,6 +652,8 @@ protected:
    }
 
    void common_construct(arguments&& o) noexcept {
+      if( is_null() == false) m_pbuffer->release();
+      m_pbuffer->release();
       m_pbuffer = o.m_pbuffer;
       o.m_pbuffer = &m_buffer_s;
    }
