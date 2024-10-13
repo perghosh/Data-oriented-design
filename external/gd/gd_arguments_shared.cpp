@@ -1643,19 +1643,6 @@ void arguments::remove(const_pointer pPosition)
    m_uLength -= uSize;                                                           assert((int)m_uLength >= 0);
 }
 
-arguments::pointer arguments::_reserve_no_copy(unsigned int uCount)
-{
-   unsigned char* pBuffer = new unsigned char[uCount];
-
-   if( is_owner() ) delete m_pBuffer;
-
-   m_uLength = 0;
-   m_bOwner = true;
-   m_pBuffer = pBuffer;
-   m_uBufferLength = uCount;
-
-   return pBuffer;
-}
 
 // TODO: Implement resize in order to be able to modify a value in arguments object
 /*----------------------------------------------------------------------------- resize */ /**
@@ -1772,11 +1759,8 @@ size_t arguments::size() const
 */
 void arguments::clear()
 {
-   if( is_owner() ) delete[] m_pBuffer;
-   m_bOwner    = false;
-   m_pBuffer   = nullptr;
-   m_uLength   = 0;
-   m_uBufferLength = 0;
+   m_pbuffer->release();
+   m_pbuffer = &m_buffer_s;
 }
 
 
