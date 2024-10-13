@@ -74,9 +74,22 @@ struct tag_parse_type{};                                                       /
 
 
 /**
- * \brief
+ * \brief arguments in shared namespace focus on performance and arguments holds a reference counter
  *
- *
+ * If you need to store a lot of arguments objects or need store large amount of data then
+ * the arguments in shared namespace works better compared to arguments found in argument namespace.
+ * 
+ * ## memory layout
+ * [type and length for name][name in chars][type and length for data]{[length for non primitive types]}[value data]
+ * shorter version
+ * [uint32][name][uint32]{[uint32]}[data]
+ * 
+ * Values are store in one single buffer, and each value know its type and the length for the value is also known before value data is found.
+ * Because of lengths are store it is fast to move between values in arguments object. Also the data length is
+ * store for the specific type in order to generate proper object value for type.
+ * Example: strings need to store the zero ending, but that isn't used to get the
+ * string lenght. so data length for "123" is four bytes becuase zero ending is stored.
+ * But the value is prefixed with length that matches date and there fore the value 3 is stored in front of "123".
  *
  \code
  \endcode
