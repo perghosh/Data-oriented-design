@@ -690,6 +690,35 @@ constexpr std::string_view type_name_g(uint32_t uType)
    return std::string_view();
 }
 
+constexpr uint32_t typenumber_to_type_g(uint32_t uType)
+{
+   switch( uType & 0x000000ff )
+   {
+   case eTypeNumberUnknown: return eTypeUnknown;
+   case eTypeNumberBool: return eTypeBool;
+   case eTypeNumberInt8: return eTypeInt8;
+   case eTypeNumberInt16: return eTypeInt16;
+   case eTypeNumberInt32: return eTypeInt32;
+   case eTypeNumberInt64: return eTypeInt64;
+   case eTypeNumberUInt8: return eTypeUInt8;
+   case eTypeNumberUInt16: return eTypeUInt16;
+   case eTypeNumberUInt32: return eTypeUInt32;
+   case eTypeNumberUInt64: return eTypeUInt64;
+   case eTypeNumberFloat: return eTypeCFloat;
+   case eTypeNumberDouble: return eTypeCDouble;
+   case eTypeNumberGuid:  return eTypeGuid;
+   case eTypeNumberUtf8String: return eTypeUtf8String;
+   case eTypeNumberUtf32String: return eTypeUtf32String;
+   case eTypeNumberString: return eTypeString;
+   case eTypeNumberWString: return eTypeWString;
+   case eTypeNumberBinary:  return eTypeBinary;
+      break;
+   default: assert(false);
+   }
+
+   return eTypeUnknown;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Convert type names to vector with type numbers

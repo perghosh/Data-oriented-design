@@ -34,5 +34,16 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
    uTwo = arguments_["two"];
    uTwo = uOne + uOne;
 
+   {
+      gd::argument::shared::arguments arguments_;
+      arguments_.append("ten", "1");
+      //std::string_view stringTen = arguments_["ten"].as_string_view();
+      arguments_.append("ten2", "1");
+      arguments_.append("ten3", "1");
+      arguments_.append("ten4", "1");
+      auto uCount = arguments_.size();
+      std::string_view stringTen = arguments_["ten3"].as_string_view();
+   }
+
    auto uCount = arguments_.size();
 }

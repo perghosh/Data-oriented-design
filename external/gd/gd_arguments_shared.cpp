@@ -86,6 +86,11 @@ arguments::const_pointer arguments::move_to_value_s(const_pointer pPosition)
 
       pPosition += sizeof( uint32_t ) + uLength;
    }
+#ifndef NDEBUG
+   u_ = *(uint32_t*)pPosition;
+   eType = (enumCType)(u_ >> 24);
+   auto typename_d = gd::types::type_name_g( eType & eTypeNumber_MASK );
+#endif
    return pPosition;
 }
 
@@ -995,13 +1000,14 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
  */
 arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argument_type uType, const_pointer pBuffer, unsigned int uLength)
 {                                                                                                  assert(m_pbuffer->get_reference_count() <= 1); 
-#ifdef _DEBUG
-   enumCType debug_eCType = (enumCType)(uType & ~eTypeNumber_MASK);            // get absolute variable type
+#ifndef NDEBUG
+   enumCType eType_d = (enumCType)(uType & ~eTypeNumber_MASK);                 // get absolute variable type
+   auto typename_d = gd::types::type_name_g( eType_d );
 #endif // _DEBUG
 
    uint64_t uReserveLength = buffer_size();                                    // current buffer size
    uReserveLength += uNameLength + (sizeof( uint16_t ) * 2);                   // name if any and length value for name
-   uReserveLength += uLength;                                                  // value length
+   uReserveLength += uLength + sizeof(uint32_t) * 2;                           // value length (and prefix value length for strings)
    uReserveLength += sizeof( uint16_t ) + sizeof(uint32_t);                    // value type and value length if needed
    uReserveLength = (uReserveLength + 3) & ~3;                                 // align
       
@@ -1011,35 +1017,63 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
    reserve( uReserveLength );
 
    auto uPosition = buffer_size();                                             assert( uPosition % 4 == 0 );
+#ifndef NDEBUG
+   auto uBegin_d = uPosition;
+#endif // _DEBUG
    auto pdata_ = buffer_data();
 
    uint32_t uTypeAndSize = (eType_ParameterName << 24) | uNameLength;
    *(uint32_t*)(pdata_ + uPosition) = uTypeAndSize;                            // set name type
-   uPosition += sizeof( uint32_t );
+   uPosition += sizeof( uint32_t );                                            // move past key type and length (stored in 32 bit value)
    memcpy(&pdata_[uPosition], pbszName, uNameLength);                          // copy name
+   if( uNameLength % sizeof(uint32_t) != 0 ) uNameLength = (uNameLength + 3) & ~3;// align if needed
    uPosition += uNameLength;                                                   // add length for name
-   uPosition = (uPosition + 3) & ~3;                                           // align to four byte boundary 
                                                                                assert( uPosition % 4 == 0 );
-   uTypeAndSize = (uType << 24) | uLength;
-   *(uint32_t*)(pdata_ + uPosition) = uTypeAndSize;                            // set type and size
-   uPosition += sizeof( uint32_t );
-
    if( (uType & eValueLength) == 0 )                                           // if type doesn't have specified length flag then just copy data into buffer
    {
-      memcpy(&pdata_[uPosition], pBuffer, uLength);
-      if( (uLength % sizeof( uint32_t )) == 0 ) uPosition += uLength;
-      else uPosition += (uLength + 3) & ~3;                                    // add length and align
-      buffer_set_size( uPosition );
-                                                                                                   assert(m_uLength <= m_uBufferLength);
-      return *this;
+      uint32_t uValueLength = uLength;
+      if( uLength % sizeof(uint32_t) != 0 ) uLength  = (uLength + 3) & ~3;
+      uTypeAndSize = (uType << 24) | uLength;
+      *(uint32_t*)(pdata_ + uPosition) = uTypeAndSize;                         // set type and size
+      uPosition += sizeof( uint32_t );
+
+      memcpy(&pdata_[uPosition], pBuffer, uValueLength);
+      uPosition += uLength;                                                    // add aligned length
+      buffer_set_size( uPosition );                                            assert(buffer_size() < buffer_buffer_size());
+   }
+   else
+   {
+      uint32_t uValueLength = uLength;                                         // value length in bytes (storage needed to hold data)
+      uLength += sizeof( uint32_t );                                           // add value length to total value size
+      if( uLength  % sizeof(uint32_t) != 0 ) uLength  = (uLength + 3) & ~3;    // align if needed
+      uTypeAndSize = (uType << 24) | uLength;                                  // set value type and length in 32 bit value
+      *(uint32_t*)(pdata_ + uPosition) = uTypeAndSize;                         // set type and size
+      uPosition += sizeof( uint32_t );                                         // move past type and size
+
+      uint32_t uCompleteType = gd::types::typenumber_to_type_g( uType & ~eType_MASK );
+
+      // ## fix size to the actual length for value, this is to improve the speed
+      //    generating value objects from data
+      if(uCompleteType & gd::types::eTypeGroupString)
+      {
+         if(( uType & eTypeNumber_MASK ) == eTypeNumberWString)
+         {                                                                                         assert( (uValueLength % 2) == 0 );
+            uValueLength = uValueLength >> 1;                                  // unicode string, length is cut in half
+         }
+         uValueLength--;                                                       // remove the zero terminator for length
+      }
+
+      *(uint32_t*)(pdata_ + uPosition) = uValueLength;
+      //uPosition += sizeof( uint32_t );                                         // move past length value for data
+      memcpy(&pdata_[uPosition], pBuffer, uLength);                            // copy data
+      //uPosition += (uLength + 3) & ~3;                                         // add and align
+      uPosition += uLength;                                                    // move past data for value (length and data)
+      buffer_set_size( uPosition );                                            assert(buffer_size() < buffer_buffer_size());
    }
 
-   //*(uint32_t*)&m_pBuffer[m_uLength] = (uint32_t)uLength;                        // set length for data
-   //m_uLength += sizeof(uint32_t);
-   memcpy(&pdata_[uPosition], pBuffer, uLength);                               // copy data
-   uPosition += (uLength + 3) & ~3;                                            // add and align
-   buffer_set_size( uPosition );
-
+#ifndef NDEBUG
+   auto uValueSize_d = uPosition - uBegin_d;
+#endif // _DEBUG
    return *this;
 }
 
@@ -1608,7 +1642,7 @@ bool arguments::reserve(uint64_t uCount)
       buffer_release();
       m_pbuffer = (buffer*)pdata_;
 
-      uBufferSize -= sizeof( buffer );
+      uBufferSize -= sizeof( buffer );                                         // decrease actual buffer data size with buffer, first in buffer is tha class buffer
       m_pbuffer->buffer_size( uBufferSize );
 
       return true;
@@ -2187,11 +2221,20 @@ arguments::pointer arguments::next_s(pointer pPosition)
  */
 arguments::const_pointer arguments::next_s(const_pointer pPosition) 
 {
+#ifndef NDEBUG
+   const_pointer pbegin_d = pPosition;
+#endif
    pPosition = arguments::move_to_value_s(pPosition);
    uint32_t u_ = *(uint32_t*)pPosition;
    uint32_t uType = u_ >> 24;                                                  // get value type
-   uint32_t uLength = u_ & 0x00FFFFFF;
-   pPosition += sizeof(uint32_t);
+#ifndef NDEBUG
+   auto typename_d = gd::types::type_name_g( uType & ~eTypeNumber_MASK );
+#endif
+   // Total value buffer storage length for value
+   uint32_t uLength = u_ & 0x00FFFFFF;                                                             assert( (uLength % 4) == 0 ); // has to be aligend 
+   pPosition += sizeof( uint32_t );                                            // move past type and length information
+   pPosition += uLength;                                                       // move past value length
+/*
    if( (uType & eType_MASK) == 0 )
    {
       if( uType < eTypeNumberString ) 
@@ -2215,6 +2258,10 @@ arguments::const_pointer arguments::next_s(const_pointer pPosition)
          assert( false );
       }
    }
+   */
+#ifndef NDEBUG
+   uint64_t uValueSize = pPosition - pbegin_d;
+#endif
 
    return pPosition;
 }
