@@ -626,21 +626,21 @@ public:
 protected:
    // common copy
    void common_construct(const arguments& o) {
-      if( o.m_uLength )
+      m_pbuffer->release();
+      if( o.is_null() == false )
       {
-         reserve_no_copy(o.m_uLength);
-         memcpy(m_pBuffer, o.m_pBuffer, o.m_uLength);
+         m_pbuffer = o.m_pbuffer;
+         m_pbuffer->add_reference();
       }
-      m_bOwner = o.m_bOwner;
-      m_uLength = o.m_uLength;
+      else
+      {
+         m_pbuffer = &m_buffer_s;
+      }
    }
 
    void common_construct(arguments&& o) noexcept {
-      memcpy(this, &o, sizeof(arguments));
-      o.m_pBuffer = nullptr;
-      o.m_bOwner = false;
-      o.m_uLength = 0;
-      o.m_uBufferLength = 0;
+      m_pbuffer = o.m_pbuffer;
+      o.m_pbuffer = &m_buffer_s;
    }
 
    void zero() { release(); };
@@ -687,11 +687,11 @@ public:
 /** \name GET/SET
 *///@{
 /// return start position to buffer where values are stored
-   pointer get_buffer_start() { return m_pBuffer; }
-   const_pointer get_buffer_start() const { return m_pBuffer; }
+   pointer get_buffer_start() { return m_pbuffer->data(); }
+   const_pointer get_buffer_start() const { return m_pbuffer->data(); }
    /// return last position for buffer where values are stored
-   pointer get_buffer_end() { return m_pBuffer + m_uLength; }
-   const_pointer get_buffer_end() const { return buffer_data() + m_uLength; }
+   pointer get_buffer_end() { return m_pbuffer->data() + m_pbuffer->size(); }
+   const_pointer get_buffer_end() const { return m_pbuffer->data() + m_pbuffer->size(); }
 //@}
 
 /** \name OPERATION
@@ -829,7 +829,7 @@ public:
    const_iterator begin() const { return const_iterator( this, m_pbuffer->data() ); }
    const_iterator end() const { return const_iterator( nullptr ); }
 
-   [[nodiscard]] unsigned int capacity() const { assert(m_pBuffer != nullptr); return m_uBufferLength; }
+   [[nodiscard]] uint64_t capacity() const { return buffer_buffer_size(); }
 
 /** \name COUNT
 *///@{
@@ -909,7 +909,7 @@ public:
 /** \name ARGUMENT
 * get argument value from arguments
 *///@{
-   [[nodiscard]] argument get_argument() const { return get_argument_s(m_pBuffer); }
+   [[nodiscard]] argument get_argument() const { if( buffer_size() ) return get_argument_s(buffer_data()); else return argument();  }
    [[nodiscard]] argument get_argument(const_pointer pPosition) const {                assert( verify_d(pPosition) );
       return get_argument_s(pPosition); 
    }
@@ -998,11 +998,6 @@ public:
    void remove(const_pointer pPosition);
    void remove(const_iterator it) { remove(it); }
    /// make sure internal buffer can hold specified number of bytes, no copying just reserving data
-   pointer reserve_no_copy(unsigned int uCount) {
-      if( is_owner() == false || m_pBuffer == nullptr || uCount > m_uBufferLength ) { return _reserve_no_copy(uCount + (uCount >> 1)); }
-      return m_pBuffer;
-   }
-   pointer _reserve_no_copy(unsigned int uCount);
 
    /// Resize one argument within arguments object, do not use this if you do not know how arguments work!!
    int resize(pointer pPosition, int iOffset, int iNewOffset);
