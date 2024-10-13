@@ -2,6 +2,7 @@
 file(GLOB external_gd ${CMAKE_SOURCE_DIR}/external/gd/*.cpp)
 file(GLOB external_gd_core 
    ${CMAKE_SOURCE_DIR}/external/gd/gd_arguments.cpp
+   ${CMAKE_SOURCE_DIR}/external/gd/gd_arguments_shared.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_file.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_parse.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_sql_value.cpp
