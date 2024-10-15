@@ -229,7 +229,10 @@ public:
    gd::variant get_variant( const std::string_view& stringName ) const;
    gd::variant_view get_variant_view( const std::string_view& stringName ) const noexcept;
    gd::variant_view get_variant_view( const std::string_view* pstringName ) const noexcept;
+   gd::variant_view get_variant_view( const std::string_view& stringName, unsigned uindex ) const noexcept;
+   gd::variant_view get_variant_view( const std::string_view* pstringName, unsigned uindex ) const noexcept;
    gd::variant_view get_variant_view( const std::initializer_list<std::string_view>& stringName ) const noexcept;
+
    std::vector<gd::variant> get_variant_all( const std::string_view& stringName ) const;
    std::vector<gd::variant_view> get_variant_view_all( const std::string_view& stringName ) const;
 

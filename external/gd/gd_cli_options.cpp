@@ -253,6 +253,21 @@ gd::variant_view options::get_variant_view( const std::string_view* ptringName )
    return value_;
 }
 
+/// return option value based on index if multiple options with same name
+gd::variant_view options::get_variant_view( const std::string_view& stringName, unsigned uIndex ) const noexcept
+{                                                                                                  assert( stringName.empty() == false );
+   auto value_ = m_argumentsValue.find_argument( stringName, uIndex );
+   return value_;
+}
+
+/// return option value based on index if multiple options with same name
+gd::variant_view options::get_variant_view( const std::string_view* pstringName, unsigned uIndex ) const noexcept
+{                                                                                                  assert( pstringName->empty() == false );
+   auto value_ = m_argumentsValue.find_argument( *pstringName, uIndex );
+   return value_;
+}
+
+
 /// return option value for first found name or empty value if not found
 gd::variant_view options::get_variant_view(const std::initializer_list<std::string_view>& listName) const noexcept
 {
