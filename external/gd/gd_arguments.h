@@ -806,6 +806,7 @@ public:
    [[nodiscard]] const_pointer find(const std::string_view& stringName) const;
    [[nodiscard]] const_pointer find(std::string_view stringName, const_pointer pPosition) const;
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch) const;
+   [[nodiscard]] const_pointer find( const std::string_view& stringName, unsigned uIndex ) const;
 
    [[nodiscard]] std::pair<argument,argument> find_pair(const std::string_view& stringName) const;
 
@@ -813,6 +814,11 @@ public:
    /// find param value for name
    [[nodiscard]] argument find_argument(std::string_view stringName) const {
       const_pointer pPosition = find(stringName);
+      if( pPosition ) return get_argument_s(pPosition);
+      return argument();
+   }
+   [[nodiscard]] argument find_argument(std::string_view stringName, unsigned uIndex) const {
+      const_pointer pPosition = find(stringName, uIndex);
       if( pPosition ) return get_argument_s(pPosition);
       return argument();
    }
