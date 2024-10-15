@@ -52,12 +52,12 @@ mdtable
 
 
 
-#ifndef _GD_ARGUMENT_BEGIN
-#define _GD_ARGUMENT_BEGIN namespace gd::argument {
-#define _GD_ARGUMENT_END }
-_GD_ARGUMENT_BEGIN
+#ifndef _GD_ARGUMENT_SHARED_BEGIN
+#define _GD_ARGUMENT_SHARED_BEGIN namespace gd::argument::shared {
+#define _GD_ARGUMENT_SHARED_END }
+_GD_ARGUMENT_SHARED_BEGIN
 #else
-_GD_ARGUMENT_BEGIN
+_GD_ARGUMENT_SHARED_BEGIN
 #endif
 
 struct tag_list {};                                                            ///< operations that use some sort of container class in stl  
@@ -74,9 +74,22 @@ struct tag_parse_type{};                                                       /
 
 
 /**
- * \brief
+ * \brief arguments in shared namespace focus on performance and arguments holds a reference counter
  *
- *
+ * If you need to store a lot of arguments objects or need store large amount of data then
+ * the arguments in shared namespace works better compared to arguments found in argument namespace.
+ * 
+ * ## memory layout
+ * [type and length for name][name in chars][type and length for data]{[length for non primitive types]}[value data]
+ * shorter version
+ * [uint32][name][uint32]{[uint32]}[data]
+ * 
+ * Values are store in one single buffer, and each value know its type and the length for the value is also known before value data is found.
+ * Because of lengths are store it is fast to move between values in arguments object. Also the data length is
+ * store for the specific type in order to generate proper object value for type.
+ * Example: strings need to store the zero ending, but that isn't used to get the
+ * string lenght. so data length for "123" is four bytes becuase zero ending is stored.
+ * But the value is prefixed with length that matches date and there fore the value 3 is stored in front of "123".
  *
  \code
  \endcode
@@ -114,7 +127,7 @@ public:
 
    struct view_tag {};                                                         // tag dispatcher used when working with view objects (not owning its data)
    struct tag_view {};                                                         // tag dispatcher used when working with view objects (not owning its data)
-   struct no_initializer_list_tag {};                                          // do not select initializer_list versions
+   struct tag_no_initializer_list {};                                          // do not select initializer_list versions
    struct tag_name {};                                                         // tag dispatcher for name related operations
    struct tag_description {};                                                  // tag dispatcher where description is usefull
 
@@ -175,7 +188,7 @@ public:
 
       eValueName = 0b00100000,
       eValueLength = 0b01000000,
-      eValueArray = 0b10000000,
+      eValueLengthBig = 0b10000000,
 
       eType_MASK = 0b11100000,      // mask for name, length and array markers in byte
       eCType_MASK = 0xffffff00,     // mask to extract byte from full 32 bit number
@@ -237,6 +250,45 @@ public:
    };
 
 public:
+
+   /**
+    * \brief
+    *
+    *
+    */
+   struct buffer
+   {
+      // ## construction -------------------------------------------------------------
+
+      buffer(): m_uSize( 0 ), m_uBufferSize( 0 ), m_iReferenceCount( 1 ) {}
+      buffer( uint64_t uSize, uint64_t uBufferSize ): m_uSize( uSize ), m_uBufferSize( uBufferSize ), m_iReferenceCount( 1 ) {}
+      ~buffer() {}
+
+      uint64_t size() const { return m_uSize; }
+      void size( uint64_t uSize ) { assert( uSize <= m_uBufferSize ); m_uSize = uSize; }
+      uint64_t buffer_size() const { return m_uBufferSize; }
+      void buffer_size( uint64_t uBufferSize ) { m_uBufferSize = uBufferSize; }
+      uint8_t* data() const { return (uint8_t*)(this) + sizeof(buffer); }
+
+      int get_reference_count() const { return m_iReferenceCount; }
+      int add_reference() { m_iReferenceCount++; return m_iReferenceCount; }
+      void release() {                                                                             assert( m_iReferenceCount > 0 ); assert( this != &m_buffer_s );
+         m_iReferenceCount--;
+         if(m_iReferenceCount == 0)
+         {
+            delete [] (uint8_t*)this;
+         }
+      }
+
+      // ## attributes
+      uint64_t m_uSize;             ///< used size in buffer
+      uint64_t m_uBufferSize;       ///< total buffer size
+      int      m_iReferenceCount;
+   };
+
+
+
+
    struct argument
    {
       union value;   // forward declare
@@ -551,11 +603,11 @@ public:
 
    // ## construction -------------------------------------------------------------
 public:
-   arguments() { buffer_set(); }
+   arguments() {}
 
    /** Set buffer and size, use this to avoid heap allocations (if internal data grows over buffer size you will get heap allocation)  */
-   arguments(pointer pBuffer, unsigned int uSize) : m_bOwner(false), m_pBuffer(pBuffer), m_uLength(0), m_uBufferLength(uSize) {}
-   arguments(const std::string_view& stringName, const gd::variant& variantValue, no_initializer_list_tag);
+   //arguments(pointer pBuffer, unsigned int uSize) : m_bOwner(false), m_pBuffer(pBuffer), m_uLength(0), m_uBufferLength(uSize) {}
+   arguments(const std::string_view& stringName, const gd::variant& variantValue, tag_no_initializer_list );
 
 
    arguments(std::pair<std::string_view, gd::variant> pairArgument);
@@ -572,11 +624,11 @@ public:
    arguments(std::vector<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}   
 
    // copy
-   arguments(const arguments& o) { buffer_set(); common_construct(o); }
+   arguments(const arguments& o) { common_construct(o); }
    arguments(arguments&& o) noexcept { common_construct((arguments&&)o); }
    // assign
-   arguments& operator=(const arguments& o) { clear(); common_construct(o); return *this; }
-   arguments& operator=(arguments&& o) noexcept { clear(); common_construct(o); return *this; }
+   arguments& operator=(const arguments& o) { common_construct(o); return *this; }
+   arguments& operator=(arguments&& o) noexcept { common_construct(o); return *this; }
 
    arguments& operator=(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair);
 
@@ -587,24 +639,28 @@ public:
 protected:
    // common copy
    void common_construct(const arguments& o) {
-      if( o.m_uLength )
+      if( is_null() == false) m_pbuffer->release();
+      if( o.is_null() == false )
       {
-         reserve_no_copy(o.m_uLength);
-         memcpy(m_pBuffer, o.m_pBuffer, o.m_uLength);
+         m_pbuffer = o.m_pbuffer;
+         m_pbuffer->add_reference();
       }
-      m_bOwner = o.m_bOwner;
-      m_uLength = o.m_uLength;
+      else
+      {
+         m_pbuffer = &m_buffer_s;
+      }
    }
 
    void common_construct(arguments&& o) noexcept {
-      memcpy(this, &o, sizeof(arguments));
-      o.m_pBuffer = nullptr;
-      o.m_bOwner = false;
-      o.m_uLength = 0;
-      o.m_uBufferLength = 0;
+      if( is_null() == false) m_pbuffer->release();
+      m_pbuffer->release();
+      m_pbuffer = o.m_pbuffer;
+      o.m_pbuffer = &m_buffer_s;
    }
 
-   void zero() { buffer_set(); };
+   void zero() { release(); };
+   void release() { if( is_null() == false ) { m_pbuffer->release(); m_pbuffer = &m_buffer_s; } }
+   bool is_null() const { return m_pbuffer == &m_buffer_s; }
 
    // ## operator -----------------------------------------------------------------
 public:
@@ -646,11 +702,11 @@ public:
 /** \name GET/SET
 *///@{
 /// return start position to buffer where values are stored
-   pointer get_buffer_start() { return m_pBuffer; }
-   const_pointer get_buffer_start() const { return m_pBuffer; }
+   pointer get_buffer_start() { return m_pbuffer->data(); }
+   const_pointer get_buffer_start() const { return m_pbuffer->data(); }
    /// return last position for buffer where values are stored
-   pointer get_buffer_end() { return m_pBuffer + m_uLength; }
-   const_pointer get_buffer_end() const { return m_pBuffer + m_uLength; }
+   pointer get_buffer_end() { return m_pbuffer->data() + m_pbuffer->size(); }
+   const_pointer get_buffer_end() const { return m_pbuffer->data() + m_pbuffer->size(); }
 //@}
 
 /** \name OPERATION
@@ -785,14 +841,14 @@ public:
 
    // TODO: Implement set methods
 
-   const_iterator begin() const { return const_iterator( this, m_pBuffer ); }
+   const_iterator begin() const { return const_iterator( this, m_pbuffer->data() ); }
    const_iterator end() const { return const_iterator( nullptr ); }
 
-   [[nodiscard]] unsigned int capacity() const { assert(m_pBuffer != nullptr); return m_uBufferLength; }
+   [[nodiscard]] uint64_t capacity() const { return buffer_buffer_size(); }
 
 /** \name COUNT
 *///@{
-   bool empty() const noexcept { return m_uLength == 0; }
+   bool empty() const noexcept { return m_pbuffer->size() == 0; }
    size_t size( tag_memory ) const noexcept { return m_uLength; }
    unsigned int count(std::string_view stringName) const;
 //@}
@@ -806,7 +862,6 @@ public:
    [[nodiscard]] const_pointer find(const std::string_view& stringName) const;
    [[nodiscard]] const_pointer find(std::string_view stringName, const_pointer pPosition) const;
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch) const;
-   [[nodiscard]] const_pointer find( const std::string_view& stringName, unsigned uIndex ) const;
 
    [[nodiscard]] std::pair<argument,argument> find_pair(const std::string_view& stringName) const;
 
@@ -814,11 +869,6 @@ public:
    /// find param value for name
    [[nodiscard]] argument find_argument(std::string_view stringName) const {
       const_pointer pPosition = find(stringName);
-      if( pPosition ) return get_argument_s(pPosition);
-      return argument();
-   }
-   [[nodiscard]] argument find_argument(std::string_view stringName, unsigned uIndex) const {
-      const_pointer pPosition = find(stringName, uIndex);
       if( pPosition ) return get_argument_s(pPosition);
       return argument();
    }
@@ -847,15 +897,15 @@ public:
 /** \name MOVE move pointer between values in arguments
 * move operations used to move between values, can't go back. only forward
 *///@{
-   [[nodiscard]] pointer next() { return m_uLength > 0 ? m_pBuffer : nullptr; }
-   [[nodiscard]] const_pointer next() const { return m_uLength > 0 ? m_pBuffer : nullptr; }
+   [[nodiscard]] pointer next() { return m_pbuffer->size() > 0 ? m_pbuffer->data() : nullptr; }
+   [[nodiscard]] const_pointer next() const { return m_pbuffer->size() > 0 ? m_pbuffer->data() : nullptr; }
    [[nodiscard]] pointer next(pointer pPosition) {                               assert( verify_d(pPosition) );
       auto p = next_s(pPosition);
-      return p < get_buffer_end() ? p : nullptr;
+      return p < buffer_data_end() ? p : nullptr;
    }
    [[nodiscard]] const_pointer next(const_pointer pPosition) const {             assert( verify_d(pPosition) );
       auto p = next_s(pPosition);
-      return p < get_buffer_end() ? p : nullptr;
+      return p < buffer_data_end() ? p : nullptr;
    }
 //@}
 
@@ -874,7 +924,7 @@ public:
 /** \name ARGUMENT
 * get argument value from arguments
 *///@{
-   [[nodiscard]] argument get_argument() const { return get_argument_s(m_pBuffer); }
+   [[nodiscard]] argument get_argument() const { if( buffer_size() ) return get_argument_s(buffer_data()); else return argument();  }
    [[nodiscard]] argument get_argument(const_pointer pPosition) const {                assert( verify_d(pPosition) );
       return get_argument_s(pPosition); 
    }
@@ -950,24 +1000,19 @@ public:
 
 
 #if defined(_DEBUG) || defined(DEBUG) || !defined(NODEBUG)
-   bool verify_d(const_pointer pPosition) const { return pPosition >= m_pBuffer && pPosition < (m_pBuffer + m_uLength) ? true : false; }
+   bool verify_d(const_pointer pPosition) const { return pPosition >= m_pbuffer->data() && pPosition < ( m_pbuffer->data() + m_pbuffer->size() ) ? true : false; }
 #endif
 //@}
 
 /** \name BUFFER
 *///@{
    /// make sure internal buffer can hold specified number of bytes, buffer data is copied if increased
-   bool reserve(unsigned int uCount);
+   bool reserve(uint64_t uCount);
    /// Remove param starting at position, remember that if you are string positions in buffer they are invalidated with this method
    void remove( const std::string_view& stringName );
    void remove(const_pointer pPosition);
    void remove(const_iterator it) { remove(it); }
    /// make sure internal buffer can hold specified number of bytes, no copying just reserving data
-   pointer reserve_no_copy(unsigned int uCount) {
-      if( is_owner() == false || m_pBuffer == nullptr || uCount > m_uBufferLength ) { return _reserve_no_copy(uCount + (uCount >> 1)); }
-      return m_pBuffer;
-   }
-   pointer _reserve_no_copy(unsigned int uCount);
 
    /// Resize one argument within arguments object, do not use this if you do not know how arguments work!!
    int resize(pointer pPosition, int iOffset, int iNewOffset);
@@ -975,9 +1020,10 @@ public:
    void shrink_to_fit();
 //@}
 
-   static bool is_name_s(const_pointer pPosition) {
-      assert(*pPosition != 0);
-      return *pPosition == arguments::eType_ParameterName;
+   static bool is_name_s(const_pointer pPosition) {                                                assert(*pPosition != 0);
+      uint32_t uType = *(uint32_t*)pPosition;
+      uType = uType >> 24;
+      return uType == arguments::eType_ParameterName;
    }
    std::string_view get_name(const_pointer pPosition) { return get_name_s( pPosition ); }
 
@@ -1012,8 +1058,9 @@ public:
 
    /// ## name and type methods
    static std::string_view get_name_s(const_pointer pPosition) {                                   assert(arguments::is_name_s(pPosition));
-      pPosition++;                                                               // move past type (now on name length)
-      return std::string_view(reinterpret_cast<const char*>(pPosition + 1), *pPosition);// generate string_view for name
+      const char* pbszName = (const char*)pPosition + sizeof( uint32_t );
+      uint32_t uLength = *(uint32_t*)pPosition & 0x00FFFFFF;
+      return std::string_view(pbszName, uLength);// generate string_view for name
    }
 
    /// ## argument methods
@@ -1084,8 +1131,8 @@ public:
    }
 
    /// Create arguments object from arguments
-   static arguments create_s(const std::string_view& stringName, const gd::variant& variantValue, no_initializer_list_tag) {
-      arguments A(stringName, variantValue, no_initializer_list_tag{});
+   static arguments create_s(const std::string_view& stringName, const gd::variant& variantValue, tag_no_initializer_list) {
+      arguments A(stringName, variantValue, tag_no_initializer_list{});
       return A;
    }
 
@@ -1146,20 +1193,20 @@ public:
 
 // ## 
 public:
-   struct buffer
-   {
-      unsigned int   m_uFlags;         ///< flags for arguments states (eg "owner" of memory etc.)
-      unsigned int   m_uLength;        ///< length in use
-      unsigned int   m_uBufferLength;  ///< length for byte array
-      int            m_iReferenceCount;///< used for reference counting
-      pointer        m_pBuffer;        ///< pointer to byte array
-   };
-
-   void buffer_set() { memset( this, 0, sizeof( arguments ) ); }
-   void buffer_set( pointer p_ ) { m_pBuffer = p_; }
-   void buffer_delete() { if( is_owner() ) delete [] m_pBuffer; }
-   pointer buffer_data() { return m_pBuffer; }
-   const_pointer buffer_data() const { return m_pBuffer; }
+   void buffer_delete() { if( m_pbuffer != &m_buffer_s ) { m_pbuffer->release(); m_pbuffer = &m_buffer_s; }  }
+   pointer buffer_data() { return m_pbuffer->data(); }
+   const_pointer buffer_data() const { return m_pbuffer->data(); }
+   const_pointer buffer_data_end() const { return m_pbuffer->data() + m_pbuffer->size(); }
+   uint64_t buffer_size() const { return m_pbuffer->size(); }
+   uint64_t buffer_buffer_size() const { return m_pbuffer->buffer_size(); }
+   void buffer_set_size( uint64_t uSize ) { m_pbuffer->size( uSize ); }
+   void buffer_release() { 
+      if( is_null() == false ) 
+      {
+         m_pbuffer->release();
+         m_pbuffer = &m_buffer_s;
+      }
+   }
 
 
 
@@ -1169,6 +1216,10 @@ public:
    pointer        m_pBuffer;     ///< pointer to byte array
    unsigned int   m_uLength;     ///< length in use
    unsigned int   m_uBufferLength;///< length for byte array
+
+   buffer* m_pbuffer = &m_buffer_s;
+
+   inline static buffer m_buffer_s{ 0ull, 0ull };
 
    static size_type npos;
 
@@ -1393,9 +1444,9 @@ constexpr std::string_view arguments::type_name_s(uint32_t uType)
 }
 
 
-_GD_ARGUMENT_END
+_GD_ARGUMENT_SHARED_END
 
-_GD_ARGUMENT_BEGIN
+_GD_ARGUMENT_SHARED_BEGIN
 namespace debug {
    std::string print( const arguments::argument& argumentToPrint );
    std::string print( const arguments& argumentsToPrint );
@@ -1403,7 +1454,7 @@ namespace debug {
    std::string print( const std::vector<arguments>& vectorToPrint );
    //std::string print( const std::vector<arguments>* vectorToPrint );
 }
-_GD_ARGUMENT_END
+_GD_ARGUMENT_SHARED_END
 
 
 #if defined(__clang__)

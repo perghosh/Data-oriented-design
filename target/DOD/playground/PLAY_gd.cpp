@@ -1,27 +1,11 @@
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
+#include "gd/gd_arguments_shared.h"
+
 
 #include "main.h"
 
 #include "catch2/catch_amalgamated.hpp"
-
-struct Test
-{
-public:
-
-   Test(gd::variant variantName) 
-   {
-      m_variantName = variantName;
-   }
-
-   void Return()
-   {
-      std::cout << "Variant as int: " << m_variantName.as_int() << " Variant as double: " << m_variantName.as_double() << std::endl;
-   }
-
-   gd::variant m_variantName;
-
-};
 
 // Run logic on arguments to test new features --------------------------------
 TEST_CASE( "[gd] arguments", "[gd]" ) {
@@ -41,23 +25,25 @@ TEST_CASE( "[gd] arguments", "[gd]" ) {
 }
 
 
-TEST_CASE( "[gd] kevin 01", "[gd]" ) {
-   Test test("3.99");
+TEST_CASE( "[gd] arguments shared", "[gd]" ) {
+   gd::argument::shared::arguments arguments_( "one", 1, gd::argument::shared::arguments::tag_no_initializer_list{});
+   arguments_.append( "two", 222 );
 
-   test.Return();
-   
-   gd::variant variantName = "102 3 4 5 6 7";
-   std::cout << variantName.as_string() << " : " << variantName.as_double() << " : " << variantName.as_int() << "\n";
+   uint32_t uOne = arguments_["one"];
+   uint32_t uTwo = uOne + uOne;
+   uTwo = arguments_["two"];
+   uTwo = uOne + uOne;
 
-   variantName = 100.99;
+   {
+      gd::argument::shared::arguments arguments_;
+      arguments_.append("ten", "1");
+      //std::string_view stringTen = arguments_["ten"].as_string_view();
+      arguments_.append("ten2", "1");
+      arguments_.append("ten3", "1");
+      arguments_.append("ten4", "1");
+      auto uCount = arguments_.size();
+      std::string_view stringTen = arguments_["ten3"].as_string_view();
+   }
 
-   std::cout << variantName.as_string() << " : " << variantName.as_double() << " : " << variantName.as_int() << "\n";
-
-   gd::argument::arguments arguments_;
-   arguments_.append("Kevin", 17);
-   arguments_.append("Nathalie", "Gustafsson");
-   std::cout << arguments_["Nathalie"].as_string() << std::endl;
-   std::cout << arguments_["Kevin"].as_string() << std::endl;
-
-   std::cout << "end\n";
+   auto uCount = arguments_.size();
 }

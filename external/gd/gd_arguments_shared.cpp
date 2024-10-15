@@ -1,9 +1,9 @@
 #include <iterator>
 #include <cwchar>
 
-#include "gd_utf8.hpp"  
+#include "gd_utf8.h"  
 
-#include "gd_arguments.h"  
+#include "gd_arguments_shared.h"  
 
 
 
@@ -25,7 +25,7 @@
 
 
 
-_GD_ARGUMENT_BEGIN
+_GD_ARGUMENT_SHARED_BEGIN
 
 /*----------------------------------------------------------------------------- move_to_value */ /**
  * Moves pointer to value part in argument
@@ -50,23 +50,19 @@ arguments::pointer arguments::move_to_value_s(pointer pPosition)
 
 arguments::pointer arguments::move_to_value_data_s(pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
-   uint8_t uType = *pPosition;                                                 // get value type
-   pPosition++;                                                                                    assert( (uType & eType_MASK) < CType_MAX );// check type
-   if( (uType & eType_MASK) != 0 )
-   {
-      pPosition += sizeof(uint32_t);
-   }
+   uint32_t u_ = *(uint32_t*)pPosition;
+   enumCType eType = (enumCType)(u_ >> 24);
+   pPosition += sizeof(uint32_t);
+
    return pPosition;
 }
 
 arguments::const_pointer arguments::move_to_value_data_s(const_pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
-   uint8_t uType = *pPosition;                                                 // get value type
-   pPosition++;                                                                                    assert( (uType & eType_MASK) < CType_MAX );// check type
-   if( (uType & eType_MASK) != 0 )
-   {
-      pPosition += sizeof(uint32_t);
-   }
+   uint32_t u_ = *(uint32_t*)pPosition;
+   enumCType eType = (enumCType)(u_ >> 24);
+   pPosition += sizeof(uint32_t);
+
    return pPosition;
 }
 
@@ -75,19 +71,26 @@ arguments::const_pointer arguments::move_to_value_data_s(const_pointer pPosition
  * Moves pointer to value part in argument
  * If argument has a name and position pointer is at the name, then use this method
  * to move position to value part.
- * \note first byte for name part is number identifying parameter name, next byte is name lenght
+ * \note first byte for name part is number identifying parameter name, next byte is name length
  * \param pPosition position that is moved if it is on name
  * \return arguments::const_pointer returns pointer to value
  */
 arguments::const_pointer arguments::move_to_value_s(const_pointer pPosition)
 {
-   enumCType eType = (enumCType)*pPosition;                                    // get section type
+   uint32_t u_ = *(uint32_t*)pPosition;
+   enumCType eType = (enumCType)(u_ >> 24);                                    // get section type
    if( eType == eType_ParameterName )
    {
-      pPosition++;
-      uint8_t uNameLength = *pPosition + 1;                                    // get name length and add one for byte that holds how many characters name has (it is not zero based)
-      pPosition += uNameLength;
+      uint32_t uLength = u_ & 0x00FFFFFF;
+      if( (uLength % 4) != 0 ) uLength = (uLength + 3) & ~3;
+
+      pPosition += sizeof( uint32_t ) + uLength;
    }
+#ifndef NDEBUG
+   u_ = *(uint32_t*)pPosition;
+   eType = (enumCType)(u_ >> 24);
+   auto typename_d = gd::types::type_name_g( eType & eTypeNumber_MASK );
+#endif
    return pPosition;
 }
 
@@ -844,7 +847,7 @@ arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>>
    for( auto it : listPair ) append_argument( it, view_tag{} );
 }
 
-arguments::arguments(const std::string_view& stringName, const gd::variant& variantValue, arguments::no_initializer_list_tag)
+arguments::arguments(const std::string_view& stringName, const gd::variant& variantValue, arguments::tag_no_initializer_list)
 {
    zero();
    append_argument(stringName, variantValue);
@@ -996,38 +999,81 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
  * \return arguments& argument object for nested calls
  */
 arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argument_type uType, const_pointer pBuffer, unsigned int uLength)
-{                                                                                                  assert(strlen(pbszName) < 255); assert(m_uLength < 0xffffff); assert(uLength < 0xffffff);
-#ifdef _DEBUG
-   enumCType debug_eCType = (enumCType)(uType & ~eTypeNumber_MASK);            // get absolute variable type
+{                                                                                                  assert(m_pbuffer->get_reference_count() <= 1); 
+#ifndef NDEBUG
+   enumCType eType_d = (enumCType)(uType & ~eTypeNumber_MASK);                 // get absolute variable type
+   auto typename_d = gd::types::type_name_g( eType_d );
 #endif // _DEBUG
+
+   uint64_t uReserveLength = buffer_size();                                    // current buffer size
+   uReserveLength += uNameLength + (sizeof( uint16_t ) * 2);                   // name if any and length value for name
+   uReserveLength += uLength + sizeof(uint32_t) * 2;                           // value length (and prefix value length for strings)
+   uReserveLength += sizeof( uint16_t ) + sizeof(uint32_t);                    // value type and value length if needed
+   uReserveLength = (uReserveLength + 3) & ~3;                                 // align
+      
 
    // reserve data for name, length for name, name type and data type
    // [current length][data length][name length][type + length + zero ending (=argument_type*3)][length value if data isn't primitive type]
-   reserve(m_uLength + uLength + uNameLength + sizeof(argument_type) * 3 + sizeof(uint32_t));
+   reserve( uReserveLength );
 
-   m_pBuffer[m_uLength] = eType_ParameterName;                                 // set name type
-   m_uLength++;
-   m_pBuffer[m_uLength] = (uint8_t)uNameLength;                                // set length for name
-   m_uLength++;
-   memcpy(&m_pBuffer[m_uLength], pbszName, uNameLength);                       // copy name
-   m_uLength += uNameLength;                                                   // add length for name
+   auto uPosition = buffer_size();                                             assert( uPosition % 4 == 0 );
+#ifndef NDEBUG
+   auto uBegin_d = uPosition;
+#endif // _DEBUG
+   auto pdata_ = buffer_data();
 
-   m_pBuffer[m_uLength] = uType;                                               // set value type
-   m_uLength++;
-
+   uint32_t uTypeAndSize = (eType_ParameterName << 24) | uNameLength;
+   *(uint32_t*)(pdata_ + uPosition) = uTypeAndSize;                            // set name type
+   uPosition += sizeof( uint32_t );                                            // move past key type and length (stored in 32 bit value)
+   memcpy(&pdata_[uPosition], pbszName, uNameLength);                          // copy name
+   if( uNameLength % sizeof(uint32_t) != 0 ) uNameLength = (uNameLength + 3) & ~3;// align if needed
+   uPosition += uNameLength;                                                   // add length for name
+                                                                               assert( uPosition % 4 == 0 );
    if( (uType & eValueLength) == 0 )                                           // if type doesn't have specified length flag then just copy data into buffer
    {
-      memcpy(&m_pBuffer[m_uLength], pBuffer, uLength);
-      m_uLength += uLength;
-                                                                                                   assert(m_uLength <= m_uBufferLength);
-      return *this;
+      uint32_t uValueLength = uLength;
+      if( uLength % sizeof(uint32_t) != 0 ) uLength  = (uLength + 3) & ~3;
+      uTypeAndSize = (uType << 24) | uLength;
+      *(uint32_t*)(pdata_ + uPosition) = uTypeAndSize;                         // set type and size
+      uPosition += sizeof( uint32_t );
+
+      memcpy(&pdata_[uPosition], pBuffer, uValueLength);
+      uPosition += uLength;                                                    // add aligned length
+      buffer_set_size( uPosition );                                            assert(buffer_size() < buffer_buffer_size());
+   }
+   else
+   {
+      uint32_t uValueLength = uLength;                                         // value length in bytes (storage needed to hold data)
+      uLength += sizeof( uint32_t );                                           // add value length to total value size
+      if( uLength  % sizeof(uint32_t) != 0 ) uLength  = (uLength + 3) & ~3;    // align if needed
+      uTypeAndSize = (uType << 24) | uLength;                                  // set value type and length in 32 bit value
+      *(uint32_t*)(pdata_ + uPosition) = uTypeAndSize;                         // set type and size
+      uPosition += sizeof( uint32_t );                                         // move past type and size
+
+      uint32_t uCompleteType = gd::types::typenumber_to_type_g( uType & ~eType_MASK );
+
+      // ## fix size to the actual length for value, this is to improve the speed
+      //    generating value objects from data
+      if(uCompleteType & gd::types::eTypeGroupString)
+      {
+         if(( uType & eTypeNumber_MASK ) == eTypeNumberWString)
+         {                                                                                         assert( (uValueLength % 2) == 0 );
+            uValueLength = uValueLength >> 1;                                  // unicode string, length is cut in half
+         }
+         uValueLength--;                                                       // remove the zero terminator for length
+      }
+
+      *(uint32_t*)(pdata_ + uPosition) = uValueLength;
+      //uPosition += sizeof( uint32_t );                                         // move past length value for data
+      memcpy(&pdata_[uPosition], pBuffer, uLength);                            // copy data
+      //uPosition += (uLength + 3) & ~3;                                         // add and align
+      uPosition += uLength;                                                    // move past data for value (length and data)
+      buffer_set_size( uPosition );                                            assert(buffer_size() < buffer_buffer_size());
    }
 
-   *(uint32_t*)&m_pBuffer[m_uLength] = (uint32_t)uLength;                        // set length for data
-   m_uLength += sizeof(uint32_t);
-   memcpy(&m_pBuffer[m_uLength], pBuffer, uLength);                              // copy data
-   m_uLength += uLength;                                                                           assert(m_uLength <= m_uBufferLength);
-
+#ifndef NDEBUG
+   auto uValueSize_d = uPosition - uBegin_d;
+#endif // _DEBUG
    return *this;
 }
 
@@ -1123,7 +1169,7 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
    argument argumentOld = arguments::get_argument_s(pPosition);
 
    // check if type is equal and fixed length, then just copy new value over the old one.
-   if( arguments::compare_type_s(argumentOld, uType) == true && (uType & (eValueLength|eValueArray)) == 0 )
+   if( arguments::compare_type_s(argumentOld, uType) == true && (uType & (eValueLength|eValueLengthBig)) == 0 )
    {
       pPosition = move_to_value_s( pPosition );
       pPosition = move_to_value_data_s( pPosition );                           assert(pPosition < get_buffer_end());
@@ -1177,7 +1223,7 @@ arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBu
    // get current argument
    argument argumentOld = arguments::get_argument_s(pPosition);
    auto pPositionValue = move_to_value_s(pPosition);
-   if( arguments::compare_type_s(argumentOld, uType) == true && (uType & (eValueLength | eValueArray)) == 0 )
+   if( arguments::compare_type_s(argumentOld, uType) == true && (uType & (eValueLength | eValueLengthBig)) == 0 )
    {
       memcpy(pPositionValue, pBuffer, uLength);
    }
@@ -1342,30 +1388,6 @@ arguments::const_pointer arguments::find(const std::pair<std::string_view, gd::v
    {
       argument argumentFind = get_argument_s(pPosition);
       if( argumentFind.compare( pairMatch.second ) == true ) return pPosition;
-   }
-
-   return nullptr;
-}
-
-/** ---------------------------------------------------------------------------
- * @brief Find nth argument with key name
- * @param stringName name for value
- * @param uIndex nth value to return
- * @return gd::argument::arguments::const_pointer pointer to value
- */
-arguments::const_pointer arguments::find( const std::string_view& stringName, unsigned uIndex ) const 
-{                                                                                                  assert( uIndex < 0x00A0'0000 ); // realistic ?
-   for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
-   {
-      if( arguments::is_name_s(pPosition) == true )
-      {
-         auto key_ = arguments::get_name_s(pPosition);
-         if( key_ == stringName )
-         {
-            if( uIndex == 0 ) return pPosition;
-            uIndex--;
-         }
-      }
    }
 
    return nullptr;
@@ -1605,20 +1627,23 @@ std::string arguments::print( const_iterator itBegin, const_iterator itEnd, std:
  * \param uCount number of bytes to reserve
  * \return bool true if new buffer is allocated, false if not
  */
-bool arguments::reserve(unsigned int uCount)
-{
-   if( uCount > m_uBufferLength )
+bool arguments::reserve(uint64_t uCount)
+{                                                                                                  assert( (uCount % 4) == 0 );
+   if( uCount > buffer_buffer_size() )
    {
-      uCount += (uCount >> 1);
-      if( uCount > 32 ) uCount += (64 - (uCount % 64));                          // align to 64 byte blocks
-      unsigned char* pBuffer = new unsigned char[uCount];
+      uint64_t uBufferSize = (sizeof( buffer ) + uCount + ( uCount >> 1 ) + 63) & ~63;             // calculate new size and align to 64 byte
+      uint8_t* pdata_ = new unsigned char[uBufferSize];
 
-      if( m_uLength > 0 ) memcpy(pBuffer, m_pBuffer, m_uLength);
-      if( is_owner() ) delete m_pBuffer;
+      uint64_t uOldSize = sizeof( buffer );
+      uOldSize += buffer_size();
 
-      m_bOwner = true;
-      m_pBuffer = pBuffer;
-      m_uBufferLength = uCount;
+      memcpy(pdata_, m_pbuffer, uOldSize);
+
+      buffer_release();
+      m_pbuffer = (buffer*)pdata_;
+
+      uBufferSize -= sizeof( buffer );                                         // decrease actual buffer data size with buffer, first in buffer is tha class buffer
+      m_pbuffer->buffer_size( uBufferSize );
 
       return true;
    }
@@ -1652,19 +1677,6 @@ void arguments::remove(const_pointer pPosition)
    m_uLength -= uSize;                                                           assert((int)m_uLength >= 0);
 }
 
-arguments::pointer arguments::_reserve_no_copy(unsigned int uCount)
-{
-   unsigned char* pBuffer = new unsigned char[uCount];
-
-   if( is_owner() ) delete m_pBuffer;
-
-   m_uLength = 0;
-   m_bOwner = true;
-   m_pBuffer = pBuffer;
-   m_uBufferLength = uCount;
-
-   return pBuffer;
-}
 
 // TODO: Implement resize in order to be able to modify a value in arguments object
 /*----------------------------------------------------------------------------- resize */ /**
@@ -1781,11 +1793,8 @@ size_t arguments::size() const
 */
 void arguments::clear()
 {
-   if( is_owner() ) delete[] m_pBuffer;
-   m_bOwner    = false;
-   m_pBuffer   = nullptr;
-   m_uLength   = 0;
-   m_uBufferLength = 0;
+   m_pbuffer->release();
+   m_pbuffer = &m_buffer_s;
 }
 
 
@@ -2066,8 +2075,12 @@ bool arguments::compare_s(const argument& v1, const gd::variant_view v2)
  */
 arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition)
 {
-   arguments::enumCType eCType = (arguments::enumCType)*pPosition;
-   pPosition++;
+   uint32_t u_ = *(uint32_t*)pPosition;
+   arguments::enumCType eCType = (arguments::enumCType)(u_ >> 24);
+   uint32_t uLength = u_ & 0x00FFFFFF;
+
+   pPosition += sizeof(uint32_t);
+   
    switch( eCType )
    {
    case arguments::eTypeNumberUnknown: return arguments::argument();
@@ -2102,8 +2115,8 @@ arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition
 
    case arguments::eType_ParameterName:
    {
-      pPosition += *pPosition;
-      pPosition++;
+      if( (uLength % 4) != 0 ) uLength = (uLength + 3) & ~3;
+      pPosition += uLength;
       return get_argument_s(pPosition);
    }
    break;
@@ -2168,7 +2181,7 @@ std::vector<gd::variant_view> arguments::get_argument_all_s(const_pointer pBegin
  * \param argumentValue value store for name
  * \return unsigned int number of bytes needed to store value in internal buffer
  */
-unsigned int gd::argument::arguments::get_total_param_length_s(std::string_view stringName, const argument argumentValue)
+unsigned int arguments::get_total_param_length_s(std::string_view stringName, const argument argumentValue)
 {
    return 1 + (unsigned int)stringName.length() + sizeof_s(argumentValue);
 }
@@ -2208,35 +2221,47 @@ arguments::pointer arguments::next_s(pointer pPosition)
  */
 arguments::const_pointer arguments::next_s(const_pointer pPosition) 
 {
+#ifndef NDEBUG
+   const_pointer pbegin_d = pPosition;
+#endif
    pPosition = arguments::move_to_value_s(pPosition);
-   uint8_t uType = *pPosition;                                                   // get value type
-   pPosition++;                                                                  // move past type
+   uint32_t u_ = *(uint32_t*)pPosition;
+   uint32_t uType = u_ >> 24;                                                  // get value type
+#ifndef NDEBUG
+   auto typename_d = gd::types::type_name_g( uType & ~eTypeNumber_MASK );
+#endif
+   // Total value buffer storage length for value
+   uint32_t uLength = u_ & 0x00FFFFFF;                                                             assert( (uLength % 4) == 0 ); // has to be aligend 
+   pPosition += sizeof( uint32_t );                                            // move past type and length information
+   pPosition += uLength;                                                       // move past value length
+/*
    if( (uType & eType_MASK) == 0 )
    {
-      if( uType < eTypeNumberString ) { pPosition += ctype_size[uType]; }
-      else
-      {
-         if( uType == eTypeNumberString ||
-            uType == eTypeNumberUtf8String ) pPosition += strlen((const char*)pPosition) + 1;
-         else if( uType == eTypeNumberString ) pPosition += wcslen((const wchar_t*)pPosition) * 2 + 2;
-         else if( uType == eTypeNumberUtf32String )
-         {
-            unsigned uLength = 0;
-            while( *((const char32_t*)pPosition + uLength) ) uLength++;
-            pPosition += (uLength + 1) * sizeof(char32_t);
-         }
-         else assert(false);
+      if( uType < eTypeNumberString ) 
+      { 
+         uLength = ctype_size[uType];
       }
+      
+      if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
+      pPosition += uLength;
    }
    else
    {
       if( uType & eValueLength )
       {
-         uint32_t uLength = *(uint32_t*)pPosition;
-         pPosition += sizeof(uint32_t);
+         if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
          pPosition += uLength;
       }
+      else
+      {
+         // TODO: implement big length
+         assert( false );
+      }
    }
+   */
+#ifndef NDEBUG
+   uint64_t uValueSize = pPosition - pbegin_d;
+#endif
 
    return pPosition;
 }
@@ -2315,7 +2340,7 @@ void arguments::print_value_s( const_pointer pPosition, std::string& stringPrint
  * \param uValueLength length needed to store value
  * \return unsigned int calculated length needed to store value in arguments buffer
  */
-unsigned int gd::argument::arguments::sizeof_s(uint32_t uNameLength, param_type uType, unsigned int uValueLength)
+unsigned int arguments::sizeof_s(uint32_t uNameLength, param_type uType, unsigned int uValueLength)
 {
    unsigned int uSize = 3;                                                       // 3 - one byte for name type, one byte for name length, and one byte for value type
    uSize += uNameLength;                                                         // add name length
@@ -2736,9 +2761,9 @@ std::pair<bool, std::string> arguments::exists_s( const arguments& argumentsVali
 
 
 
-_GD_ARGUMENT_END
+_GD_ARGUMENT_SHARED_END
 
-_GD_ARGUMENT_BEGIN
+_GD_ARGUMENT_SHARED_BEGIN
 namespace debug {
 
    /** ------------------------------------------------------------------------
@@ -2835,4 +2860,4 @@ namespace debug {
    */
 
 }
-_GD_ARGUMENT_END
+_GD_ARGUMENT_SHARED_END
