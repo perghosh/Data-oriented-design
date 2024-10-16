@@ -532,28 +532,28 @@ public:
    {
       typedef const_iterator     self;
 
-      const_iterator() : m_pArguments(nullptr), m_pPosition(nullptr) {}
+      const_iterator() : m_parguments(nullptr), m_pPosition(nullptr) {}
       const_iterator(arguments::const_pointer pPosition ): m_pPosition(pPosition) {}
-      const_iterator(const arguments* pparams, arguments::const_pointer pPosition) : m_pArguments(pparams), m_pPosition(pPosition) {}
-      const_iterator(const const_iterator& o) { m_pArguments = o.m_pArguments; m_pPosition = o.m_pPosition; }
-      const_iterator& operator=(const const_iterator& o) { m_pArguments = o.m_pArguments; m_pPosition = o.m_pPosition; return *this; }
+      const_iterator(const arguments* pparams, arguments::const_pointer pPosition) : m_parguments(pparams), m_pPosition(pPosition) {}
+      const_iterator(const const_iterator& o) { m_parguments = o.m_parguments; m_pPosition = o.m_pPosition; }
+      const_iterator& operator=(const const_iterator& o) { m_parguments = o.m_parguments; m_pPosition = o.m_pPosition; return *this; }
 
-      argument operator*() const {                                                                 assert( m_pArguments->verify_d( m_pPosition ));
+      argument operator*() const {                                                                 assert( m_parguments->verify_d( m_pPosition ));
          return get_argument();
       }
-      self& operator++() {                                                                         assert( m_pArguments->verify_d( m_pPosition ));
-         m_pPosition = m_pArguments->next(m_pPosition); return *this;
+      self& operator++() {                                                                         assert( m_parguments->verify_d( m_pPosition ));
+         m_pPosition = m_parguments->next(m_pPosition); return *this;
       }
-      self& operator++(int) {                                                                      assert( m_pArguments->verify_d( m_pPosition ));
-         m_pPosition = m_pArguments->next(m_pPosition); return *this;
+      self& operator++(int) {                                                                      assert( m_parguments->verify_d( m_pPosition ));
+         m_pPosition = m_parguments->next(m_pPosition); return *this;
       }
       bool operator==(const_iterator& o) { return m_pPosition == o.m_pPosition; }
       bool operator!=(const_iterator& o) { return m_pPosition != o.m_pPosition; }
 
-      operator const arguments*() const { return m_pArguments; }
+      operator const arguments*() const { return m_parguments; }
       operator arguments::const_pointer() const { return m_pPosition; }
 
-      std::string name() const {                                                                   assert( m_pArguments->verify_d( m_pPosition ));
+      std::string name() const {                                                                   assert( m_parguments->verify_d( m_pPosition ));
          if( arguments::is_name_s(m_pPosition) == true )
          {
             return std::string(arguments::get_name_s(m_pPosition));
@@ -561,7 +561,7 @@ public:
          return std::string();
       }
 
-      std::string_view name(view_tag) const {                                                      assert( m_pArguments->verify_d( m_pPosition ));
+      std::string_view name(view_tag) const {                                                      assert( m_parguments->verify_d( m_pPosition ));
          if( arguments::is_name_s(m_pPosition) == true )
          {
             return arguments::get_name_s(m_pPosition);
@@ -578,12 +578,13 @@ public:
       }
 
       argument get_argument() {
-         return arguments::get_argument_s(m_pPosition);
+         auto v_ =arguments::get_argument_s(m_pPosition);
+         return v_;
       }
       const argument get_argument() const { 
-         return arguments::get_argument_s(m_pPosition);
+         auto v_ =arguments::get_argument_s(m_pPosition);
+         return v_;
       }
-
 
       template<std::size_t uIndex>
       auto get() const
@@ -596,7 +597,7 @@ public:
 
       // attributes
    public:
-      const arguments* m_pArguments;
+      const shared::arguments* m_parguments;
       arguments::const_pointer m_pPosition;
    };
 
@@ -689,9 +690,9 @@ public:
       return { "", gd::variant_view() };
    }
 
-   arguments& operator+=( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument( pairArgument, view_tag{} ); }
+   arguments& operator+=( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument( pairArgument, tag_view{} ); }
 
-   arguments operator<<(const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, view_tag{}); }
+   arguments operator<<(const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
 
    /// Append values from another arguments object
    arguments& operator+=( const arguments& arguments_ ) { return append( arguments_ ); }
@@ -735,6 +736,12 @@ public:
    arguments& append(const char8_t* v) { return append((eTypeNumberUtf8String | eValueLength), (const_pointer)v, (unsigned int)strlen( (const char*)v ) + 1); }
    arguments& append(const char8_t* v, unsigned uLength) { return append((eTypeNumberUtf8String | eValueLength), (const_pointer)v, uLength + 1); }
 #endif
+   template<typename VALUE, typename... NEXT>
+   void append_many(VALUE value_, NEXT... next_) { 
+      append( value_ ); 
+      if constexpr (sizeof...(next_) > 0) { append_many( next_... ); }
+   }
+
 
    arguments& append(param_type uType, const_pointer pBuffer, unsigned int uLength);
 
@@ -787,15 +794,17 @@ public:
    }
 
    arguments& append_argument(const std::string_view& stringName, const gd::variant_view& variantValue);
+   arguments& append_argument(const std::string_view& stringName, const gd::variant_view& variantValue, tag_view) { return append_argument( stringName, variantValue ); }
 
    arguments& append_argument(const std::pair<std::string_view, gd::variant>& pairArgument) {
       return append_argument(pairArgument.first, pairArgument.second);
    }
-   arguments& append_argument(const std::pair<std::string_view, gd::variant_view>& pairArgument, view_tag) {
-      return append_argument(pairArgument.first, pairArgument.second);
+
+   arguments& append_argument(const std::pair<std::string_view, gd::variant_view>& pairArgument) {
+      return append_argument(pairArgument.first, pairArgument.second );
    }
    arguments& append_argument(const std::pair<std::string_view, gd::variant_view>& pairArgument, tag_view) {
-      return append_argument(pairArgument.first, pairArgument.second);
+      return append_argument(pairArgument.first, pairArgument.second );
    }
    arguments& append_argument(const std::string_view stringName, const std::string_view& stringValue, tag_parse_type );
 
@@ -841,7 +850,7 @@ public:
 
    // TODO: Implement set methods
 
-   const_iterator begin() const { return const_iterator( this, m_pbuffer->data() ); }
+   const_iterator begin() const { return const_iterator( this, buffer_data() ); }
    const_iterator end() const { return const_iterator( nullptr ); }
 
    [[nodiscard]] uint64_t capacity() const { return buffer_buffer_size(); }
@@ -966,6 +975,7 @@ public:
    /// return all values for name
    [[nodiscard]] std::vector<argument> get_argument_all(std::string_view stringName) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName); }
    [[nodiscard]] std::vector<gd::variant_view> get_argument_all(std::string_view stringName, tag_view) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
+   [[nodiscard]] std::vector<gd::variant_view> get_argument_section(std::string_view stringName, tag_view) const { return get_argument_section_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
 
    std::vector<argument> get_argument( std::vector< std::string_view > vectorName ) const;
 
@@ -1073,6 +1083,7 @@ public:
    static unsigned int get_total_param_length_s(std::string_view stringName, const argument argumentValue);
    static std::vector<argument> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName);
    static std::vector<gd::variant_view> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
+   static std::vector<gd::variant_view> get_argument_section_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
 
    /// ## move methods
    /// move pointer to next value in buffer
@@ -1096,6 +1107,14 @@ public:
    }
 
    /// ## Append arguments
+
+   /*
+   template<typename FIRST, typename... NEXT>
+   static void append_s(arguments& rArguments, const FIRST& value_, NEXT... next_) { 
+      rArguments.append(value_); 
+      append_s(rArguments, ...next_);
+   }
+   */
 
    /// append pair to arguments
    static void append_argument_s(arguments& arguments, const std::pair<std::string_view, gd::variant>& pairArgument) {
