@@ -38,9 +38,11 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
       gd::argument::shared::arguments arguments_;
       arguments_.append("ten", "1");
       //std::string_view stringTen = arguments_["ten"].as_string_view();
-      arguments_.append("ten2", "1");
-      arguments_.append("ten3", "1");
-      arguments_.append("ten4", "1");
+      arguments_.append("ten2", "2");
+      arguments_.append("ten3", "3");
+      arguments_.append("ten4", "4");
+      auto s_ = arguments_["ten"].as_string_view();
+      s_ = arguments_["ten2"].as_string_view();
       auto uCount = arguments_.size();
       std::string_view stringTen = arguments_["ten3"].as_string_view();
 
@@ -96,8 +98,8 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
       std::cout << gd::debug::print( vector_ ) << "\n";
 
       // TODO: fix names (length isn't set)
-      //vector_ = arguments_.get_argument_section( "names", arguments::tag_view{} );
-      //std::cout << gd::debug::print( vector_ ) << "\n";
+      vector_ = arguments_.get_argument_section( "names", arguments::tag_view{} );
+      std::cout << gd::debug::print( vector_ ) << "\n";
 
    }
 
