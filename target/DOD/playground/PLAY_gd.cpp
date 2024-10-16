@@ -43,7 +43,64 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
       arguments_.append("ten4", "1");
       auto uCount = arguments_.size();
       std::string_view stringTen = arguments_["ten3"].as_string_view();
+
+      auto argumentsCopy = arguments_;
    }
+
+   {
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("## End section - adding three numbers ");
+
+      gd::argument::shared::arguments arguments_;
+      arguments_.append( 100 );
+      arguments_.append( 200 );
+      arguments_.append( 300 );
+
+      uint32_t u_ = arguments_[1];
+      auto uCount = arguments_.size();
+   }
+
+   {
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("## End section - adding three numbers in one method");
+
+      gd::argument::shared::arguments arguments_;
+      arguments_.append_many( 100, 200, 300);
+
+      uint32_t u_ = arguments_[0u];
+      auto uCount = arguments_.size();
+
+      for(auto it = std::begin( arguments_ ), itEnd = std::end( arguments_ ); it != itEnd; ++it )
+      {
+         uint32_t u_ = *it;
+         std::cout << "number: " << u_ << "\n";
+      }
+
+      for(auto it : arguments_)
+      {
+         uint32_t u_ = it;
+         std::cout << "number: " << u_ << "\n";
+      }
+   }
+
+   {
+      using namespace gd::argument::shared;
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("## End section - get vector for name values");
+      gd::argument::shared::arguments arguments_;
+      arguments_.append_argument( "values", 0, arguments::tag_view{});
+      arguments_.append_many( 100, 200, 300);
+      arguments_.append_argument( "sum", 0u, arguments::tag_view{} );
+
+      arguments_.append_argument("names", "0", arguments::tag_view{});
+      arguments_.append_many("100", "200", "300");
+
+      auto vector_ = arguments_.get_argument_section( "values", arguments::tag_view{} );
+      std::cout << gd::debug::print( vector_ ) << "\n";
+
+      // TODO: fix names (length isn't set)
+      //vector_ = arguments_.get_argument_section( "names", arguments::tag_view{} );
+      //std::cout << gd::debug::print( vector_ ) << "\n";
+
+   }
+
 
    auto uCount = arguments_.size();
 }
