@@ -1019,8 +1019,9 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
       }
 
       *(uint32_t*)(pdata_ + uPosition) = uValueLength;
+      uPosition += sizeof( uint32_t );                                         // move past length value for data
       memcpy(&pdata_[uPosition], pBuffer, uLength);                            // copy data
-      uPosition += uLength;                                                    // move past data for value (length and data)
+      uPosition += uLength - sizeof( uint32_t );                               // move past data for value (length and data)
       buffer_set_size( uPosition );                                            assert(buffer_size() < buffer_buffer_size());
    }
 
@@ -1112,10 +1113,9 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
       }
 
       *(uint32_t*)(pdata_ + uPosition) = uValueLength;
-      //uPosition += sizeof( uint32_t );                                         // move past length value for data
+      uPosition += sizeof( uint32_t );                                         // move past length value for data
       memcpy(&pdata_[uPosition], pBuffer, uLength);                            // copy data
-      //uPosition += (uLength + 3) & ~3;                                         // add and align
-      uPosition += uLength;                                                    // move past data for value (length and data)
+      uPosition += uLength - sizeof( uint32_t );                               // move past data for value (length and data)
       buffer_set_size( uPosition );                                            assert(buffer_size() < buffer_buffer_size());
    }
 
@@ -2613,14 +2613,20 @@ gd::variant_view arguments::get_variant_view_s(const arguments::argument& argume
    case arguments::eTypeNumberGuid:
       return gd::variant_view(value.pbsz, (size_t)argumentValue.length());
       break;
-   case arguments::eTypeNumberString:
-      return gd::variant_view(value.pbsz, (size_t)argumentValue.length() - sizeof(char) );
+   case arguments::eTypeNumberString: {                                                            assert( (size_t)value.pbsz % 4 == 0 );
+         size_t uSize = (size_t)*(uint32_t*)(value.pbsz - sizeof(uint32_t));
+         return gd::variant_view(value.pbsz, uSize );
+      }
       break;
-   case arguments::eTypeNumberUtf8String:
-      return gd::variant_view( variant_type::utf8( value.pbsz, (size_t)argumentValue.length() - sizeof(char)) );
+   case arguments::eTypeNumberUtf8String: {
+         size_t uSize = (size_t)*(uint32_t*)(value.pbsz - sizeof(uint32_t));
+         return gd::variant_view( variant_type::utf8( value.pbsz, uSize ) );
+      }
       break;
-   case arguments::eTypeNumberWString:
-      return gd::variant_view(value.pwsz, (size_t)argumentValue.length() - sizeof(wchar_t));
+   case arguments::eTypeNumberWString: {
+         size_t uSize = (size_t)*(uint32_t*)(value.pwsz - sizeof(uint32_t));
+         return gd::variant_view(value.pwsz, uSize);
+      }
       break;
    default:
       assert(false);
