@@ -37,7 +37,6 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
    {
       gd::argument::shared::arguments arguments_;
       arguments_.append("ten", "1");
-      //std::string_view stringTen = arguments_["ten"].as_string_view();
       arguments_.append("ten2", "2");
       arguments_.append("ten3", "3");
       arguments_.append("ten4", "4");
@@ -50,7 +49,7 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
    }
 
    {
-      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("## End section - adding three numbers ");
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("\n## End section - adding three numbers ");
 
       gd::argument::shared::arguments arguments_;
       arguments_.append( 100 );
@@ -62,7 +61,7 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
    }
 
    {
-      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("## End section - adding three numbers in one method");
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("\n## End section - adding three numbers in one method");
 
       gd::argument::shared::arguments arguments_;
       arguments_.append_many( 100, 200, 300);
@@ -85,22 +84,20 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
 
    {
       using namespace gd::argument::shared;
-      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("## End section - get vector for name values");
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("\n## End section - get vector for name values");
       gd::argument::shared::arguments arguments_;
       arguments_.append_argument( "values", 0, arguments::tag_view{});
-      arguments_.append_many( 100, 200, 300);
+      arguments_.append_many( 100, 200, 300, 400, 500 );
       arguments_.append_argument( "sum", 0u, arguments::tag_view{} );
 
-      arguments_.append_argument("names", "0", arguments::tag_view{});
-      arguments_.append_many("100", "200", "300");
+      arguments_.append_argument("names", "name value", arguments::tag_view{});
+      arguments_.append_many("100 as text", "200 as text", "300 as text");
 
       auto vector_ = arguments_.get_argument_section( "values", arguments::tag_view{} );
       std::cout << gd::debug::print( vector_ ) << "\n";
 
-      // TODO: fix names (length isn't set)
       vector_ = arguments_.get_argument_section( "names", arguments::tag_view{} );
       std::cout << gd::debug::print( vector_ ) << "\n";
-
    }
 
 
