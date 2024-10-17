@@ -51,11 +51,19 @@ std::pair<bool, std::string> delete_file_g( const std::string_view& stringFileNa
 std::pair<bool, std::string> get_known_folder_path_g(const std::string_view& stringFolderId);
 std::pair<bool, std::wstring> get_known_folder_wpath_g(const std::string_view& stringFolderId);
 
+/// fix path to make it work, removes double // or \\ and converts to correct divider based on os
+std::string fix_path_g( const std::string_view& stringPath );
+
 // ## `closest` are used to find nearest folder in the parent hierarchy
 
 std::pair<bool, std::string> closest_having_file_g(const std::string_view& stringPath, const std::string_view& stringFindFile);
 std::pair<bool, std::string> closest_having_file_g(const std::string_view& stringPath, const std::string_view& stringFindFile, const std::string_view& stringAppend);
 std::pair<bool, std::string> closest_having_file_g(const std::string_view& stringPath, const std::string_view& stringFindFile, const std::string_view& stringAppend, unsigned uOption );
+
+// ## traverse
+
+/// get parent folder
+std::string parent_g( const std::string_view& stringPath, unsigned uLevel );
 
 // ## files in folder
 
@@ -79,6 +87,7 @@ void file_close_g( int iFileHandle );
 
 // ## `file` name logic
 bool is_directory_separator_g( char chCharacter );
+bool is_directory_separator_g( const std::string_view& stringPath );
 
 // ### 
 

@@ -86,46 +86,64 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
    int iOptionState = state_unknown;                 
    int iPositionalArgument = -1;                                               // if argument is set as positional
 
+#ifndef NDEBUG
+   std::string stringCommand_d;
+   const char* pbszCommand_d = nullptr;
+   if( poptionsRoot != nullptr ) { stringCommand_d = poptionsRoot->name(); pbszCommand_d = stringCommand_d.c_str(); }
+#endif   
+
    // ## Loop arguments sent to application (starts at 1, first is the application name)
    for( int iPosition = m_uFirstToken; iPosition != iArgumentCount; iPosition++ )
    {
       const char* pbszArgument = ppbszArgumentValue[iPosition];                // current argument
 
-      if( pbszArgument[0] == '-' && pbszArgument[1] == '-' )                   // found option
+      bool bOption = false;      // test if option
+      bool bMayBeFlag = false;   // if no option then test for flag or abreviated option
+      if( pbszArgument[0] == '-' && pbszArgument[1] == '-' ) bOption = true;
+      else if( is_single_dash() == true && pbszArgument[0] == '-' ) { bOption = true; bMayBeFlag = true; }
+
+      if( bOption == true )                                                    // found option
       {
-         const char* pbszFindArgument = pbszArgument + (sizeof "--" - 1);
+         const char* pbszFindArgument = pbszArgument + 1;                      // move past first dash
+         if( *pbszFindArgument == '-' ) pbszFindArgument++;
          poptionActive = find( pbszFindArgument );                             // move to argument name
 
-         if(poptionActive == nullptr)
+         if(poptionActive == nullptr && bMayBeFlag == false )
          {
             if( is_parent() == true && poptionsRoot != nullptr ) poptionActive = poptionsRoot->find( pbszFindArgument );
          }
          
-
-         if( poptionActive == nullptr && is_flag( eFlagUnchecked ) == false )// unknown argument and we do not allow unknown arguments?
+         // ## if no option found and single dash options is not allowed 
+         if( poptionActive != nullptr )
          {
-            return error_s( { "Unknown option : ", pbszArgument } );
-         }
-
-         iOptionState = state_option;                                          // set function state to `option`
-
-         // ## option values should hold a matching value, read value and add option
-         if( iOptionState == state_option )
-         {
-            iPosition++;
-            if( iPosition != iArgumentCount )
+            if( poptionActive == nullptr && is_flag( eFlagUnchecked ) == false )// unknown argument and we do not allow unknown arguments?
             {
-               const char* pbszValue = ppbszArgumentValue[iPosition];
-               if( poptionActive != nullptr ) add_value( poptionActive, pbszValue );// add value for option if option is found (when all options are allowed it could be option that do not exist)
-               iOptionState = state_unknown;
+               return error_s( { "Unknown option : ", pbszArgument } );
             }
-            else
+
+            iOptionState = state_option;                                       // set function state to `option`
+
+            // ## option values should hold a matching value, read value and add option
+            if( iOptionState == state_option )
             {
-               return error_s( { "miss match arguments and values: ", pbszArgument} );
+               iPosition++;
+               if( iPosition != iArgumentCount )
+               {
+                  const char* pbszValue = ppbszArgumentValue[iPosition];
+                  if( poptionActive != nullptr ) add_value( poptionActive, pbszValue );// add value for option if option is found (when all options are allowed it could be option that do not exist)
+                  iOptionState = state_unknown;
+               }
+               else
+               {
+                  return error_s( { "miss match arguments and values: ", pbszArgument} );
+               }
             }
+
+            continue;                                                          // continue with loop
          }
       }
-      else if( pbszArgument[0] == '-' )                                        // find abbreviated option
+      
+      if( pbszArgument[0] == '-'  )                                            // find abbreviated option
       {
          pbszArgument++;                                                       // move to character
 

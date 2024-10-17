@@ -47,6 +47,7 @@ public:
       eFlagActive          = 0b0000'0000'0000'0001,
       eFlagParent          = 0b0000'0000'0000'0010,   ///< if options should find valid option values in parent
       eFlagUnchecked       = 0b0000'0000'0000'0100,   ///< when parsing argument values 
+      eFlagSingleDash      = 0b0000'0000'0000'0100,   ///< option value marked with single dash is allowed
    };
 
    enum enumOptionFlag
@@ -183,6 +184,8 @@ public:
    bool is_parent() const { return is_flag( eFlagParent ); }
    void set_active() { set_flag( eFlagActive, 0 ); }
    bool is_sub() const;
+   /// Check if single dash options is allowed
+   bool is_single_dash() const { return is_flag( eFlagSingleDash ); }
 
 //@}
 
@@ -319,13 +322,15 @@ public:
    /// return flag
    static constexpr unsigned flag_s( const std::string_view& stringFlag )
    {
+      // ## flags for complete object
       if( stringFlag == "active" )           return eFlagActive;
       else if( stringFlag == "parent" )      return eFlagParent;
       else if( stringFlag == "unchecked" )   return eFlagUnchecked;
+      else if( stringFlag == "single-dash" ) return eFlagSingleDash;
 
-      else if( stringFlag == "global" )       return eOptionFlagGlobal;
+      // ## flags for each option
+      else if( stringFlag == "global" )      return eOptionFlagGlobal;
       else if( stringFlag == "single" )      return eOptionFlagSingle;
-
                                                                                                    assert( false );
       return 0;
    }
