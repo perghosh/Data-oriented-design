@@ -264,6 +264,39 @@ std::pair<bool, std::wstring> get_known_folder_wpath_g(const std::string_view& s
    return { true, stringFolderPath };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief  try to fix path for current os
+ * Removes double folder separators and convert to right separator for os
+ * @param stringPath path to be fixed
+ * @return std::string fixed path
+ */
+std::string fix_path_g( const std::string_view& stringPath )
+{
+   char chPrevious = 0;
+   std::string stringFixedPath;
+
+   if( stringPath.empty() == true ) return stringFixedPath;
+
+   for( auto it : stringPath )
+   {
+      if( it == '/' || it == '\\' ) 
+      {
+         // if double // or \\ then do not add to final path
+         if( chPrevious != it ) { stringFixedPath += it; }
+      }
+      else
+      {
+         stringFixedPath += it;
+      }
+
+      chPrevious = it;
+   }
+
+   stringFixedPath = normalize_path_for_os_g( stringFixedPath );
+
+   return stringFixedPath;
+}
+
 
 /*----------------------------------------------------------------------------- closest_having_file_g */ /**
  * Try to find first parent folder containing specified file
@@ -330,6 +363,25 @@ std::pair<bool, std::string> closest_having_file_g( const std::string_view& stri
    }
 
    return {false, std::string()};
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief get parent paths from current
+ * @param stringPath from path where to go from
+ * @param uParentCount number of parent levels to traverse
+ * @return std::string path name for parent folder method traversed to
+ */
+std::string parent_g( const std::string_view& stringPath, unsigned uParentCount )
+{                                                                                                  assert( std::filesystem::exists( stringPath ) == true ); assert( uParentCount < 100 );
+   std::filesystem::path pathGoto(stringPath);
+
+   while( uParentCount > 0 )
+   {
+      pathGoto = pathGoto.parent_path();
+      uParentCount--;
+   }
+
+   return pathGoto.string();
 }
 
 
@@ -545,11 +597,32 @@ void file_close_g( int iFileHandle )
 /** ---------------------------------------------------------------------------
  * @brief check if character is used to split folder names
  * @param chCharacter character to check
- * @return true if character is used to split folder namens in paths
-*/
+ * @return true if character is used to split folder names in directories
+ */
 bool is_directory_separator_g( char chCharacter )
 {
    if( chCharacter == '/' || chCharacter == '\\' ) return true;
+   return false;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief check if character is used to split folder names
+ * @code
+ * std::string stringPath = "/home/username/test/";
+ * bool bSeparator = is_directory_separator_g( stringPath );      assert( bSeparator == true );
+ * stringPath = "/home/username/test";
+ * bSeparator = is_directory_separator_g( stringPath );           assert( bSeparator == false );
+ * @endcode
+ * @param stringPath check if last character in string is a directory separator
+ * @return true if character is used to split directory names in paths
+ */
+bool is_directory_separator_g( const std::string_view& stringPath )
+{
+   if( stringPath.empty() == false )
+   {
+      return is_directory_separator_g( stringPath.back() );
+   }
+
    return false;
 }
 
