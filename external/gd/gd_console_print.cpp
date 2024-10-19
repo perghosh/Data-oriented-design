@@ -7,7 +7,7 @@ _GD_CONSOLE_BEGIN
 // ----------------------------------------------------------------------------
 
 
-uint8_t device::m_uFillCharacter = ' ';
+uint8_t device::m_uFillCharacter_s = ' ';
 
 std::pair<bool, std::string> device::create()
 {
@@ -71,30 +71,45 @@ std::pair<bool, std::string> device::render(std::string& stringPrint)
    return { true, "" };
 }
 
-void device::scroll_y(int32_t iOffset)
-{                                                                                                  assert( (iOffset & ~(-1)) < m_uRowCount); // no meaning to scroll if everything is scrolled
-   unsigned uRowCountToMove = (unsigned)iOffset;
-   int iMoveOffset = iOffset * m_uColumnCount;
+/** ---------------------------------------------------------------------------
+ * @brief Scroll device up or down
+ * Scolling up or down is same as moving data in device number of rows x columns within
+ * buffers. draw buffer and color buffer.
+ * @param iOffsetRow number of rows to scroll up or down (negative = down)
+ */
+void device::scroll_y(int32_t iOffsetRow)
+{                                                                                                  assert( iOffsetRow );
+   unsigned uRowCountToMove = iOffsetRow > 0 ? iOffsetRow : iOffsetRow * -1;                       assert( uRowCountToMove < m_uRowCount); // no meaning to scroll if everything is scrolled
+   unsigned uMoveOffset = uRowCountToMove * m_uColumnCount;
+   unsigned uDeltaToFrom = (m_uRowCount - uRowCountToMove) * m_uColumnCount;   // number of characters that are over written
 
-   uint8_t* puTo = nullptr;
-   uint8_t* puFrom = nullptr;
-   if(iMoveOffset > 0)
-   {
-      puTo = m_puDrawBuffer;
-      puFrom = puTo + iMoveOffset;
-   }
-   else
-   {
-      iMoveOffset &= ~(-1);
-      puTo = m_puDrawBuffer + iMoveOffset;
-      puFrom = m_puDrawBuffer;
-   }
+   // ## move data within buffers that is used to create output
+   // @param puBuffer pointer to buffer where data is moved to simulate scrolling
+   // @param iOffsetRow how many rows to scroll
+   // @param uClear character used to fill the empty space after movement of data
+   auto move_and_clear_ = [this](uint8_t* puBuffer, int32_t iOffsetRow, uint8_t uClear ) -> void {
+      unsigned uRowCountToMove = iOffsetRow > 0 ? iOffsetRow : iOffsetRow * -1;                    assert( uRowCountToMove < m_uRowCount); // no meaning to scroll if everything is scrolled
+      unsigned uMoveOffset = uRowCountToMove * m_uColumnCount;
+      unsigned uDeltaToFrom = (m_uRowCount - uRowCountToMove) * m_uColumnCount;// number of characters that are over written
+      
+      uint8_t* puTo = puBuffer;
+      uint8_t* puFrom = puTo + uMoveOffset;
+      uint8_t* puClear = puTo + uDeltaToFrom;
+      if(iOffsetRow < 0)                                                       // reverse if moving "down" (scroll up)
+      {
+         puTo = puBuffer + uMoveOffset;
+         puFrom = puBuffer;
+         puClear = puFrom;
+      }
 
-   unsigned uMoveCount = (m_uRowCount - uRowCountToMove) * m_uColumnCount;
-   memmove( puTo, puFrom, uMoveCount );
+      unsigned uMoveCount = (m_uRowCount - uRowCountToMove) * m_uColumnCount;  // number of characters in block to move
+      memmove( puTo, puFrom, uMoveCount );                                     // move data within buffer
+      memset( puClear, m_uFillCharacter, uRowCountToMove * m_uColumnCount );   // fill the space where data has been moved from
+   };
 
-   uint8_t* puClear = puTo + uMoveCount;
-   memset( puClear, m_uFillCharacter, uRowCountToMove * m_uColumnCount );
+   move_and_clear_( m_puDrawBuffer, iOffsetRow, m_uFillCharacter );
+   move_and_clear_( m_puColorBuffer, iOffsetRow, 0 );
+
 }
 
 device::position& device::position::operator=(const std::string_view& string_)
