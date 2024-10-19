@@ -49,6 +49,23 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
    }
 
+   uCount = 10;
+   while( uCount > 0 )
+   {
+      deviceWorm.scroll_y( 1 );
+      std::string stringPrint;
+
+      caretLeftTop.render( stringPrint );
+      std::cout << stringPrint;
+      stringPrint.clear();
+      deviceWorm.render( stringPrint );
+      std::cout << stringPrint;
+
+      uCount--;
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+   }
+
+
    
 
 
