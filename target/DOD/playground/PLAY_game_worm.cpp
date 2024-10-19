@@ -15,8 +15,9 @@
 
 
 TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
+   const unsigned uRowCount = 15;
    gd::console::caret caretLeftTop;
-   gd::console::device deviceWorm( 10, 80 );
+   gd::console::device deviceWorm( 15, 80 );
    deviceWorm.create();
 
    std::random_device randomdevice;
@@ -49,10 +50,10 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
    }
 
-   uCount = 10;
+   uCount = 15;
    while( uCount > 0 )
    {
-      deviceWorm.scroll_y( 1 );
+      deviceWorm.scroll_y( -1 );
       std::string stringPrint;
 
       caretLeftTop.render( stringPrint );

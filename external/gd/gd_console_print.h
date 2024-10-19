@@ -177,8 +177,9 @@ public:
    uint8_t* m_puColorBuffer = nullptr;
    unsigned m_uRowCount;
    unsigned m_uColumnCount;
+   uint8_t m_uFillCharacter = m_uFillCharacter_s;
 
-   static uint8_t m_uFillCharacter;
+   static uint8_t m_uFillCharacter_s;
 
 // ## free functions ------------------------------------------------------------
 public:
