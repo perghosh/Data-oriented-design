@@ -23,6 +23,12 @@
    _GD_CONSOLE_BEGIN
 #endif
 
+#ifndef NDEBUG
+      #  define ASSIGN_D( add_to_, from_ ) (add_to_ = from_)
+#else
+#  define ASSIGN_D ((void)0)
+#endif
+
 // ----------------------------------------------------------------------------
 // --------------------------------------------------------------------- device
 // ----------------------------------------------------------------------------
@@ -41,6 +47,33 @@ class device
 {
 public:
 
+
+   /**
+    * \brief
+    *
+    *
+    */
+   struct position
+   {
+      // ## construction -------------------------------------------------------------
+
+      position() {}
+      position( uint8_t* puPosition ): m_puPosition(puPosition) {}
+      ~position() {}
+
+      position& operator=( char ch ) { *m_puPosition = ch; return *this; }
+      position& operator=( const std::string_view& string_ );
+
+      // ## attributes
+      uint8_t* m_puPosition = nullptr;
+#ifndef NDEBUG
+      const device* m_pdevice_d = nullptr;
+      position& operator=( const device* p_ ) { m_pdevice_d = p_; return *this; }
+#endif
+   };
+
+
+
    /**
     * \brief
     *
@@ -54,12 +87,20 @@ public:
       row( uint8_t* puRow, unsigned uLength ): m_puRow(puRow), m_uLength(uLength) {}
       ~row() {}
 
-      uint8_t& operator[]( unsigned uColumn ) { assert( uColumn < m_uLength ); return *(m_puRow + uColumn); }
-      uint8_t operator[]( unsigned uColumn ) const { assert( uColumn < m_uLength ); return *(m_puRow + uColumn); }
+      position operator[]( unsigned uColumn ) {                                                    assert( uColumn < m_uLength );
+         position position_(m_puRow + uColumn);  ASSIGN_D( position_, m_pdevice_d ); return position_;
+      }
+      const position operator[]( unsigned uColumn ) const {                                        assert( uColumn < m_uLength ); 
+         position position_(m_puRow + uColumn);  ASSIGN_D( position_, m_pdevice_d ); return position_;
+      }
 
    // ## attributes
       uint8_t* m_puRow;
       unsigned m_uLength;
+#ifndef NDEBUG
+      const device* m_pdevice_d = nullptr;
+      row& operator=( const device* p_ ) { m_pdevice_d = p_; return *this; }
+#endif
    };
 
 
@@ -84,7 +125,7 @@ private:
 
 // ## operator -----------------------------------------------------------------
 public:
-   row operator[]( unsigned uRow ) { return row( offset( uRow ), m_uColumnCount ); }
+   row operator[]( unsigned uRow ) { row row_( offset( uRow ), m_uColumnCount ); ASSIGN_D( row_, this ); return row_; }
 
 
 // ## methods ------------------------------------------------------------------
@@ -111,12 +152,15 @@ protected:
 *///@{
    uint8_t* offset( unsigned uRow ) const;
    uint8_t* offset( unsigned uRow, unsigned uColumn ) const;
+   uint8_t* buffer_begin() const { return m_puDrawBuffer; }
+   uint8_t* buffer_end() const { return (m_puDrawBuffer + (m_uRowCount * m_uColumnCount)); }
 //@}
 
 public:
 /** \name DEBUG
 *///@{
-
+   /// validate pointer to be within draw buffer for device
+   bool validate_position_d( const uint8_t* pposition_ ) const { return ( pposition_ >= buffer_begin() && pposition_ < buffer_end() ); }
 //@}
 
 

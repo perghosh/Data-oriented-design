@@ -24,6 +24,8 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
    std::uniform_int_distribution<> UIDRow(0, 9);
    std::uniform_int_distribution<> UIDColumn(0, 79);
 
+   deviceWorm[0][0] = "** Code sample showing how to draw on device **";
+
    unsigned uCount = 100;
 
    while( uCount > 0 )
@@ -44,8 +46,10 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
       std::cout << stringPrint;
 
       uCount--;
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
    }
+
+   
 
 
 

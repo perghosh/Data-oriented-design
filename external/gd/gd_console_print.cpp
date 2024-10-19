@@ -41,6 +41,7 @@ void device::clear()
    m_puColorBuffer = nullptr;
 }
 
+
 std::pair<bool, std::string> device::render(std::string& stringPrint)
 {
    decltype( m_puRowBuffer ) puRow;
@@ -69,6 +70,13 @@ std::pair<bool, std::string> device::render(std::string& stringPrint)
 
    return { true, "" };
 }
+
+device::position& device::position::operator=(const std::string_view& string_)
+{                                                                                                  assert( m_pdevice_d->validate_position_d(m_puPosition + string_.length()) == true );
+   memcpy( m_puPosition, string_.data(), string_.length() );
+   return *this;
+}
+
 
 // ----------------------------------------------------------------------------
 // ---------------------------------------------------------------------- caret
