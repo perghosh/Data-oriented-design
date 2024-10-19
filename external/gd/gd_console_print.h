@@ -147,6 +147,12 @@ public:
 
 //@}
 
+/** \name DEVICE manipulation
+*///@{
+   void scroll_y( int iOffset );
+//@}
+
+
 protected:
 /** \name INTERNAL
 *///@{

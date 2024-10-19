@@ -71,6 +71,32 @@ std::pair<bool, std::string> device::render(std::string& stringPrint)
    return { true, "" };
 }
 
+void device::scroll_y(int32_t iOffset)
+{                                                                                                  assert( (iOffset & ~(-1)) < m_uRowCount); // no meaning to scroll if everything is scrolled
+   unsigned uRowCountToMove = (unsigned)iOffset;
+   int iMoveOffset = iOffset * m_uColumnCount;
+
+   uint8_t* puTo = nullptr;
+   uint8_t* puFrom = nullptr;
+   if(iMoveOffset > 0)
+   {
+      puTo = m_puDrawBuffer;
+      puFrom = puTo + iMoveOffset;
+   }
+   else
+   {
+      iMoveOffset &= ~(-1);
+      puTo = m_puDrawBuffer + iMoveOffset;
+      puFrom = m_puDrawBuffer;
+   }
+
+   unsigned uMoveCount = (m_uRowCount - uRowCountToMove) * m_uColumnCount;
+   memmove( puTo, puFrom, uMoveCount );
+
+   uint8_t* puClear = puTo + uMoveCount;
+   memset( puClear, m_uFillCharacter, uRowCountToMove * m_uColumnCount );
+}
+
 device::position& device::position::operator=(const std::string_view& string_)
 {                                                                                                  assert( m_pdevice_d->validate_position_d(m_puPosition + string_.length()) == true );
    memcpy( m_puPosition, string_.data(), string_.length() );
