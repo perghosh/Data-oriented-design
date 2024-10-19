@@ -208,6 +208,8 @@ public:
    
    /// parse single string, splits string into parts and parse as normal
    std::pair<bool, std::string> parse( const std::string_view& stringArgument, const std::string_view& stringSplit );
+   std::pair<bool, std::string> parse( const std::vector<std::string>& vectorArgument );
+
 
    template <typename VALUE>
    void add_value( const option* poption, const VALUE& v ) { assert( poption != nullptr ); add_value( poption->name(), v); }
@@ -226,6 +228,11 @@ public:
 
    /// empty is same as no arguments values added
    bool empty() const noexcept { return m_argumentsValue.empty(); }
+
+   /// remove values in options
+   void clear() { m_argumentsValue.clear(); }
+   /// remove all values, also from sub options
+   void clear_all();
 
    // ## get parsed values
 
@@ -368,12 +375,21 @@ inline options::option* options::find( const std::string_view& stringName ) {
    return nullptr;
 }
 
+/// find options for selected name
 inline const options::option* options::find( const std::string_view& stringName ) const {
    for( auto it = std::begin( m_vectorOption ), itEnd = std::end( m_vectorOption ); it != itEnd; it++ ) {
       if( it->name() == stringName ) return &(*it);
    }
 
    return nullptr;
+}
+
+/// clear data from all sub options and root options
+inline void options::clear_all() {
+   for( auto it = std::begin( m_vectorSubOption ), itEnd = std::end( m_vectorSubOption ); it != itEnd; it++ ) {
+      it->clear();
+   }
+   clear();
 }
 
 

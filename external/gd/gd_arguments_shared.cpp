@@ -956,11 +956,19 @@ std::pair<bool, std::string> arguments::append(const std::string_view& stringVal
    return { true, "" };
 }
 
+
 inline uint32_t align32_g( uint32_t uLength ) 
 {
    if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
    return uLength;
 }
+
+inline uint64_t align32_g( uint64_t uLength ) 
+{
+   if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
+   return uLength;
+}
+
 
 /*-----------------------------------------------------------------------------
  * Add typed argument to binary stream of bytes
@@ -1036,7 +1044,7 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
 /*----------------------------------------------------------------------------- append */ /**
  * Add typed value to arguments
  * @note This methods does the "meat" adding named values to arguments, it is advanced".
- *       To understand this method you need to know the internal memory strucuture of `arguments`
+ *       To understand this method you need to know the internal memory structure of `arguments`
  *       and know how the CPU works, it is optimized. Each value is typed and holds its size
  *       to make it faster to move from one value to next.
  * 
@@ -1069,12 +1077,12 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
    uReserveLength = align32_g( uReserveLength );                               // align
       
    // reserve data for name, length for name, name type, data type and data value
-   // [current length][data length][name length][type + length + zero ending (=argument_type*3)][length value if data isn't primitive type]
+   // uReserveLength should be enough for -> [name type][name length][name text][value type]{native value length}[value data]
    reserve( uReserveLength );
 
    auto uPosition = buffer_size();                                                                 assert( uPosition % 4 == 0 );
 #ifndef NDEBUG
-   auto uBegin_d = uPosition;
+   auto uBegin_d = uPosition;                                                  // keep position to check total length for value in debug
 #endif // _DEBUG
    auto pdata_ = buffer_data();
 

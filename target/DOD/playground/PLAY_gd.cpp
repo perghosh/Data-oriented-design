@@ -1,4 +1,5 @@
 #include "gd/gd_utf8.h"
+#include "gd/gd_cli_options.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
 
@@ -102,4 +103,42 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
 
 
    auto uCount = arguments_.size();
+}
+
+
+TEST_CASE( "[gd] cli options test", "[gd]" ) {
+   gd::cli::options optionsApplication("application");
+
+   {
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("\n## gd_cli_options section ending - tested simple ");
+      gd::cli::options options_( "merge", "description text" );
+      options_.add({"source_database_path", 's', "Path to database to merge from"});
+      options_.add({"destination", 'd', "Path to database to merge into (shorter version)"});
+      options_.add({"source", "Path to database to merge from (shorter version)"});
+      options_.add({"destination_database_path", "Path to database to merge into"});
+      options_.add({"merge_to", "if a third database is set where database is merge to"});
+      options_.add({"folder", "set root folder that is relative to other files set when to merge"});
+      optionsApplication.sub_add( std::move( options_ ) );
+
+      std::vector<std::string> vectorArgument = {"executable, this is skipped", "merge", "--destination", "C:\\" };
+      auto [bOk, stringError] = optionsApplication.parse( vectorArgument );                        REQUIRE( bOk == true );
+      REQUIRE( optionsApplication.sub_get("merge")["destination"].as_string() == "C:\\" );
+      optionsApplication.clear_all();
+
+      vectorArgument = {"executable, this is skipped", "merge", "--destination", "D:\\" };
+      std::tie(bOk, stringError) = optionsApplication.parse( vectorArgument );                     REQUIRE( bOk == true );
+      REQUIRE( optionsApplication.sub_get("merge")["destination"].as_string() == "D:\\" );
+      optionsApplication.clear_all();
+
+      vectorArgument = {"executable, this is skipped", "merge", "-destination", "D:\\" };
+      std::tie(bOk, stringError) = optionsApplication.parse( vectorArgument );                     REQUIRE( bOk == false );
+      optionsApplication.clear_all();
+
+      optionsApplication.sub_find("merge")->set_flag( gd::cli::options::eFlagSingleDash, 0 ); 
+      vectorArgument = {"executable, this is skipped", "merge", "-destination", "D:\\" };
+      std::tie(bOk, stringError) = optionsApplication.parse( vectorArgument );                     REQUIRE( bOk == true );
+      REQUIRE( optionsApplication.sub_get("merge")["destination"].as_string() == "D:\\" );
+      optionsApplication.clear_all();
+      optionsApplication.sub_find("merge")->set_flag( 0, gd::cli::options::eFlagSingleDash ); 
+   }
 }

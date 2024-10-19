@@ -85,11 +85,13 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
 
    int iOptionState = state_unknown;                 
    int iPositionalArgument = -1;                                               // if argument is set as positional
+   bool bAllowPositional = true;                                               // if positional arguments are alowed, when first named argument is found this is disabled
 
 #ifndef NDEBUG
    std::string stringCommand_d;
    const char* pbszCommand_d = nullptr;
-   if( poptionsRoot != nullptr ) { stringCommand_d = poptionsRoot->name(); pbszCommand_d = stringCommand_d.c_str(); }
+   stringCommand_d = name(); 
+   pbszCommand_d = stringCommand_d.c_str();
 #endif   
 
    // ## Loop arguments sent to application (starts at 1, first is the application name)
@@ -104,6 +106,7 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
 
       if( bOption == true )                                                    // found option
       {
+         bAllowPositional = false;                                             // no more positional arguments are allowed
          const char* pbszFindArgument = pbszArgument + 1;                      // move past first dash
          if( *pbszFindArgument == '-' ) pbszFindArgument++;
          poptionActive = find( pbszFindArgument );                             // move to argument name
@@ -146,6 +149,7 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
       if( pbszArgument[0] == '-'  )                                            // find abbreviated option
       {
          pbszArgument++;                                                       // move to character
+         bAllowPositional = false;                                             // no more positional arguments are allowed
 
          // ## try to find option flag
          poptionActive = find( pbszArgument );
@@ -197,7 +201,7 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
          // ## try to set as positional argument
          if( iPositionalArgument == -1 ) iPositionalArgument = 0;
 
-         if((size_t)iPositionalArgument < size() )
+         if( bAllowPositional == true && (size_t)iPositionalArgument < size() )
          {
             const option* poptionPositional = at( iPositionalArgument );
             add_value( poptionPositional, pbszArgument );
@@ -242,7 +246,7 @@ std::pair<bool, std::string> options::parse(const std::string_view& stringArgume
          ppbszArgument[std::distance( std::begin(vectorArgument), it )] = it->c_str();
       }
 
-      result_ = parse( vectorArgument.size(), ppbszArgument, nullptr );
+      result_ = parse( (int)vectorArgument.size(), ppbszArgument, nullptr );
 
 
       delete [] ppbszArgument;
@@ -250,6 +254,31 @@ std::pair<bool, std::string> options::parse(const std::string_view& stringArgume
 
    return result_;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief parse vector with string objects acting similar to parsing arguments passed to applications executed in console
+ * @param vectorArgument vector with string to parse 
+ * @return true if ok, false and error information on error
+ */
+std::pair<bool, std::string> options::parse(const std::vector<std::string>& vectorArgument)
+{                                                                                                  assert( vectorArgument.empty() == false );
+   const char** ppbszArgument = nullptr;
+   std::pair<bool, std::string> result_( true, "" );
+
+   std::unique_ptr<const char*, decltype([](auto p_){ delete [] p_; } )> ppArguments( new const char*[vectorArgument.size()]);
+
+   for(auto it = std::begin(vectorArgument), itEnd = std::end(vectorArgument); it != itEnd; it++)
+   {
+      ppArguments.get()[std::distance( std::begin(vectorArgument), it )] = it->c_str();
+   }
+
+   ppbszArgument = ppArguments.get();
+   result_ = parse( (int)vectorArgument.size(), ppbszArgument, nullptr );
+
+   return result_;
+}
+
+
 
 gd::variant options::get_variant( const std::string_view& stringName ) const 
 {                                                                                                  assert( stringName.empty() == false );
