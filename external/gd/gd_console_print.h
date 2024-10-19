@@ -23,6 +23,11 @@
    _GD_CONSOLE_BEGIN
 #endif
 
+// ----------------------------------------------------------------------------
+// --------------------------------------------------------------------- device
+// ----------------------------------------------------------------------------
+
+
 
 /**
  * \brief
@@ -155,5 +160,50 @@ inline uint64_t device::calculate_device_size_s( unsigned uRowCount, unsigned uC
 inline uint64_t device::calculate_device_size_s( const device& device_ ) {
    return calculate_device_size_s( device_.get_row_count(), device_.get_column_count() );
 }
+
+
+// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------- caret
+// ----------------------------------------------------------------------------
+
+/**
+ * \brief
+ *
+ *
+ */
+struct caret
+{
+// ## construction ------------------------------------------------------------
+   caret(): m_uRow(0), m_uColumn(0) {}
+   caret( unsigned uRow, unsigned uColumn ): m_uRow(uRow), m_uColumn(uColumn) {}
+
+   // copy
+   caret(const caret& o) { common_construct(o); }
+   caret(caret&& o) noexcept { common_construct(std::move(o)); }
+   // assign
+   caret& operator=(const caret& o) { common_construct(o); return *this; }
+   caret& operator=(caret&& o) noexcept { common_construct(std::move(o)); return *this; }
+
+   ~caret() {}
+   // common copy
+   void common_construct(const caret& o) { m_uRow = o.m_uRow; m_uColumn = o.m_uColumn; }
+
+// ## methods -----------------------------------------------------------------
+
+   void render( std::string& stringPrint );
+
+/** \name DEBUG
+*///@{
+
+//@}
+
+// ## attributes --------------------------------------------------------------
+   unsigned m_uRow;
+   unsigned m_uColumn;
+
+// ## free functions ----------------------------------------------------------
+
+};
+
 
 _GD_CONSOLE_END

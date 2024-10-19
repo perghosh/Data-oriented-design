@@ -2,7 +2,12 @@
 
 _GD_CONSOLE_BEGIN
 
-uint8_t device::m_uFillCharacter = '.';
+// ----------------------------------------------------------------------------
+// --------------------------------------------------------------------- device
+// ----------------------------------------------------------------------------
+
+
+uint8_t device::m_uFillCharacter = ' ';
 
 std::pair<bool, std::string> device::create()
 {
@@ -65,7 +70,28 @@ std::pair<bool, std::string> device::render(std::string& stringPrint)
    return { true, "" };
 }
 
+// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------- caret
+// ----------------------------------------------------------------------------
 
+/// Generate string to position where caret should be placed
+void caret::render(std::string& stringPrint)
+{
+   std::string stringPrint_;
+
+   stringPrint_ += std::string_view{ "\033[" };
+   stringPrint_ += std::to_string( m_uRow );
+   stringPrint_ += std::string_view{ ";" };
+   stringPrint_ += std::to_string( m_uColumn );
+   stringPrint_ += std::string_view{ "H" };
+
+   if(stringPrint.empty() == true) { stringPrint = std::move( stringPrint_ ); }
+   else
+   {
+      stringPrint += stringPrint_;
+   }
+}
 
 
 _GD_CONSOLE_END
+
