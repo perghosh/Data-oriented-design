@@ -40,6 +40,7 @@
 
 struct tag_color{};      ///< logic to work with color
 
+struct tag_format_cli{}; ///< format for cli 
 
 // ----------------------------------------------------------------------------
 // --------------------------------------------------------------------- device
@@ -132,8 +133,8 @@ public:
    ~device() {}
 private:
    // common copy
-   void common_construct(const device& o) {}
-   void common_construct(device&& o) noexcept {}
+   void common_construct(const device& o);
+   void common_construct(device&& o) noexcept;
 
 // ## operator -----------------------------------------------------------------
 public:
@@ -146,8 +147,8 @@ public:
 *///@{
    unsigned get_row_count() const { return m_uRowCount; }
    unsigned get_column_count() const { return m_uColumnCount; }
-   uint8_t at( unsigned uRow, unsigned uColumn );
-   uint8_t at( unsigned uRow, unsigned uColumn, tag_color );
+   uint8_t at( unsigned uRow, unsigned uColumn ) const;
+   uint8_t at( unsigned uRow, unsigned uColumn, tag_color ) const;
    void set_color( unsigned uRow, unsigned uColumn, uint8_t uColor );
 //@}
 
@@ -157,7 +158,8 @@ public:
 
    void clear();
 
-   std::pair<bool, std::string> render( std::string& stringPrint );
+   std::pair<bool, std::string> render( std::string& stringPrint ) const;
+   std::string render( tag_format_cli ) const;
 
 //@}
 
@@ -201,17 +203,18 @@ public:
 public:
    static uint64_t calculate_device_size_s( unsigned uRowCount, unsigned uColumnCount );
    static uint64_t calculate_device_size_s( const device& device_ );
+   static uint64_t calculate_row_buffer_size_s( unsigned uColumnCount );
 
 };
 
 /// get character at row and column position
-inline uint8_t device::at(unsigned uRow, unsigned uColumn) {                                       assert( m_puDrawBuffer != nullptr );
+inline uint8_t device::at(unsigned uRow, unsigned uColumn) const {                                 assert( m_puDrawBuffer != nullptr );
    auto uPosition = uRow * m_uColumnCount + uColumn;
    return m_puDrawBuffer[ uPosition ];
 }
 
 /// get color at row and column position
-inline uint8_t device::at(unsigned uRow, unsigned uColumn, tag_color) {                            assert( m_puDrawBuffer != nullptr );
+inline uint8_t device::at(unsigned uRow, unsigned uColumn, tag_color) const {                      assert( m_puDrawBuffer != nullptr );
    auto uPosition = uRow * m_uColumnCount + uColumn;
    return m_puColorBuffer[ uPosition ];
 }
@@ -240,6 +243,10 @@ inline uint64_t device::calculate_device_size_s( unsigned uRowCount, unsigned uC
 
 inline uint64_t device::calculate_device_size_s( const device& device_ ) {
    return calculate_device_size_s( device_.get_row_count(), device_.get_column_count() );
+}
+
+inline uint64_t device::calculate_row_buffer_size_s(unsigned uColumnCount) {
+   return uColumnCount * 8 + 1;
 }
 
 
@@ -271,7 +278,8 @@ struct caret
 
 // ## methods -----------------------------------------------------------------
 
-   void render( std::string& stringPrint );
+   void render( std::string& stringPrint ) const;
+   std::string render( tag_format_cli ) const;
 
 /** \name DEBUG
 *///@{

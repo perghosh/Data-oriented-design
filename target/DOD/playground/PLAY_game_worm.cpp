@@ -24,8 +24,8 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
 
    std::random_device randomdevice;
    std::mt19937 mt19937RandomNumber(randomdevice()); 
-   std::uniform_int_distribution<> UIDRow(0, 9);
-   std::uniform_int_distribution<> UIDColumn(0, 69);
+   std::uniform_int_distribution<> UIDRow(0, uRowCount - 1);
+   std::uniform_int_distribution<> UIDColumn(0, uColumnCount - 1);
 
    deviceWorm[0][0] = "** Code sample showing how to draw on device **";
    deviceWorm.set_color( 3, 20, gd::console::enumColor::eColorOrange4Bis );
@@ -54,6 +54,8 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
    }
 
+   gd::console::device deviceWorm2( deviceWorm );
+
    uCount = 15;
    while( uCount > 0 )
    {
@@ -69,6 +71,9 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
       uCount--;
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
    }
+
+   std::cout << caretLeftTop.render( gd::console::tag_format_cli{});
+   std::cout << deviceWorm2.render( gd::console::tag_format_cli{});
 
 
    

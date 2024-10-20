@@ -9,13 +9,46 @@ _GD_CONSOLE_BEGIN
 
 uint8_t device::m_uFillCharacter_s = ' ';
 
+void device::common_construct(const device& o)
+{
+   m_uFlags = o.m_uFlags;
+   m_uColumnCount = o.m_uColumnCount;
+   m_uRowCount = o.m_uRowCount;
+   m_uFillCharacter = o.m_uFillCharacter;
+
+   uint64_t uDeviceSize = calculate_device_size_s( o );
+   m_puDrawBuffer = new uint8_t[ uDeviceSize ];
+   m_puColorBuffer = new uint8_t[ uDeviceSize ];
+
+   memcpy( m_puDrawBuffer, o.m_puDrawBuffer, uDeviceSize );
+   memcpy( m_puColorBuffer, o.m_puColorBuffer, uDeviceSize );
+
+   uint64_t uRowBufferSize = calculate_row_buffer_size_s( o.m_uColumnCount );
+   m_puRowBuffer = new uint8_t[ uRowBufferSize ];
+   memcpy( m_puRowBuffer, o.m_puRowBuffer, uRowBufferSize );
+}
+
+void device::common_construct(device&& o) noexcept
+{
+   m_uFlags = o.m_uFlags; o.m_uFlags = 0;
+   m_uColumnCount = o.m_uColumnCount; o.m_uColumnCount = 0;
+   m_uRowCount = o.m_uRowCount; o.m_uRowCount = 0;
+   m_uFillCharacter = o.m_uFillCharacter; o.m_uFillCharacter = 0;
+
+   m_puDrawBuffer = o.m_puDrawBuffer; o.m_puDrawBuffer = nullptr;
+   m_puColorBuffer = o.m_puColorBuffer; o.m_puColorBuffer = nullptr;
+   m_puRowBuffer = o.m_puRowBuffer; o.m_puRowBuffer = nullptr;
+}
+
+
 std::pair<bool, std::string> device::create()
 {
    clear();
 
    auto uDeviceSize = calculate_device_size_s( *this );
+   unsigned uRowBufferSize = calculate_row_buffer_size_s( m_uColumnCount );
 
-   m_puRowBuffer = new uint8_t[ m_uColumnCount * 5 + 1 ];                      // temporary row used to produce output
+   m_puRowBuffer = new uint8_t[ uRowBufferSize ];                              // temporary row used to produce output
 
    m_puDrawBuffer = new uint8_t[ uDeviceSize ];
    m_puColorBuffer = new uint8_t[ uDeviceSize ];
@@ -42,7 +75,12 @@ void device::clear()
 }
 
 
-std::pair<bool, std::string> device::render(std::string& stringPrint)
+/** ---------------------------------------------------------------------------
+ * @brief render device to print
+ * @param stringPrint string getting information to print
+ * @return true if ok, false and error information on error
+ */
+std::pair<bool, std::string> device::render(std::string& stringPrint) const
 {
    uint8_t uActiveColor = 0;
    decltype( m_puRowBuffer ) puRow;
@@ -84,6 +122,15 @@ std::pair<bool, std::string> device::render(std::string& stringPrint)
    }
 
    return { true, "" };
+}
+
+/// simplified method to work with rendering
+std::string device::render(tag_format_cli) const
+{
+   std::string stringPrint;
+   auto [bOk, stringError] = render( stringPrint );                                                assert( bOk );
+
+   return stringPrint;
 }
 
 /** ---------------------------------------------------------------------------
@@ -139,7 +186,7 @@ device::position& device::position::operator=(const std::string_view& string_)
 // ----------------------------------------------------------------------------
 
 /// Generate string to position where caret should be placed
-void caret::render(std::string& stringPrint)
+void caret::render(std::string& stringPrint) const
 {
    std::string stringPrint_;
 
@@ -155,6 +202,16 @@ void caret::render(std::string& stringPrint)
       stringPrint += stringPrint_;
    }
 }
+
+/// simplified method to work with rendering
+std::string caret::render(tag_format_cli) const
+{
+   std::string stringPrint;
+   render( stringPrint ); 
+
+   return stringPrint;
+}
+
 
 
 _GD_CONSOLE_END
