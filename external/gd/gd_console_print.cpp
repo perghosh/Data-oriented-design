@@ -44,14 +44,29 @@ void device::clear()
 
 std::pair<bool, std::string> device::render(std::string& stringPrint)
 {
+   uint8_t uActiveColor = 0;
    decltype( m_puRowBuffer ) puRow;
    std::string stringPrint_;
+   std::string stringTemp;
+
+   stringPrint_ = "\033[0m";
 
    for( unsigned uRow = 0; uRow < m_uRowCount; uRow++ )
    {
       puRow = m_puRowBuffer;
       for( unsigned uColumn = 0; uColumn < m_uColumnCount; uColumn++ )
       {
+         auto uColor = at( uRow, uColumn, tag_color{});
+         if(uColor != 0 && uColor != uActiveColor)
+         {
+            stringTemp = "\033[38;5;";
+            stringTemp += std::to_string( uColor );
+            stringTemp += 'm';
+            memcpy( puRow, stringTemp.data(), stringTemp.length() );
+            puRow += stringTemp.length();
+            uActiveColor = uColor;
+         }
+
          *puRow = at( uRow, uColumn );
          puRow++;
       }
@@ -104,7 +119,7 @@ void device::scroll_y(int32_t iOffsetRow)
 
       unsigned uMoveCount = (m_uRowCount - uRowCountToMove) * m_uColumnCount;  // number of characters in block to move
       memmove( puTo, puFrom, uMoveCount );                                     // move data within buffer
-      memset( puClear, m_uFillCharacter, uRowCountToMove * m_uColumnCount );   // fill the space where data has been moved from
+      memset( puClear, uClear, uRowCountToMove * m_uColumnCount );             // fill the space where data has been moved from
    };
 
    move_and_clear_( m_puDrawBuffer, iOffsetRow, m_uFillCharacter );
