@@ -7,6 +7,7 @@
 #include "gd/gd_variant.h"
 #include "gd/gd_table_column-buffer.h"
 #include "gd/gd_console_print.h"
+#include "gd/gd_console_style.h"
 
 
 #include "main.h"
@@ -16,16 +17,19 @@
 
 TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
    const unsigned uRowCount = 15;
+   const unsigned uColumnCount = 80;
    gd::console::caret caretLeftTop;
-   gd::console::device deviceWorm( 15, 80 );
+   gd::console::device deviceWorm( uRowCount, uColumnCount );
    deviceWorm.create();
 
    std::random_device randomdevice;
    std::mt19937 mt19937RandomNumber(randomdevice()); 
    std::uniform_int_distribution<> UIDRow(0, 9);
-   std::uniform_int_distribution<> UIDColumn(0, 79);
+   std::uniform_int_distribution<> UIDColumn(0, 69);
 
    deviceWorm[0][0] = "** Code sample showing how to draw on device **";
+   deviceWorm.set_color( 3, 20, gd::console::enumColor::eColorOrange4Bis );
+   deviceWorm.set_color( 6, 20, gd::console::enumColor::eColorDarkMagenta );
 
    unsigned uCount = 100;
 

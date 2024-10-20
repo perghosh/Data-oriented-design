@@ -3,6 +3,14 @@
 * 
 * \brief 
 * 
+* Information about console 
+* Format switching between different colors
+* `\033[<style>;<foreground_color>;<background_color>m`
+* 
+* \033[38;5;<color_code>m  // Set foreground (text) color
+* \033[48;5;<color_code>m  // Set background color
+
+* 
 */
 
 
@@ -28,6 +36,10 @@
 #else
 #  define ASSIGN_D ((void)0)
 #endif
+
+
+struct tag_color{};      ///< logic to work with color
+
 
 // ----------------------------------------------------------------------------
 // --------------------------------------------------------------------- device
@@ -135,6 +147,8 @@ public:
    unsigned get_row_count() const { return m_uRowCount; }
    unsigned get_column_count() const { return m_uColumnCount; }
    uint8_t at( unsigned uRow, unsigned uColumn );
+   uint8_t at( unsigned uRow, unsigned uColumn, tag_color );
+   void set_color( unsigned uRow, unsigned uColumn, uint8_t uColor );
 //@}
 
 /** \name OPERATION
@@ -149,7 +163,8 @@ public:
 
 /** \name DEVICE manipulation
 *///@{
-   void scroll_y( int iOffset );
+   /// Scroll device up or down number of rows
+   void scroll_y( int32_t iOffsetRow );
 //@}
 
 
@@ -172,11 +187,12 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   unsigned m_uFlags = 0;
+   unsigned m_uRowCount;
+   unsigned m_uColumnCount;
    uint8_t* m_puRowBuffer = nullptr; 
    uint8_t* m_puDrawBuffer = nullptr;
    uint8_t* m_puColorBuffer = nullptr;
-   unsigned m_uRowCount;
-   unsigned m_uColumnCount;
    uint8_t m_uFillCharacter = m_uFillCharacter_s;
 
    static uint8_t m_uFillCharacter_s;
@@ -188,9 +204,23 @@ public:
 
 };
 
+/// get character at row and column position
 inline uint8_t device::at(unsigned uRow, unsigned uColumn) {                                       assert( m_puDrawBuffer != nullptr );
    auto uPosition = uRow * m_uColumnCount + uColumn;
    return m_puDrawBuffer[ uPosition ];
+}
+
+/// get color at row and column position
+inline uint8_t device::at(unsigned uRow, unsigned uColumn, tag_color) {                            assert( m_puDrawBuffer != nullptr );
+   auto uPosition = uRow * m_uColumnCount + uColumn;
+   return m_puColorBuffer[ uPosition ];
+}
+
+
+/// Set color at index
+inline void device::set_color(unsigned uRow, unsigned uColumn, uint8_t uColor) {                   assert( m_puDrawBuffer != nullptr );
+   auto uPosition = uRow * m_uColumnCount + uColumn;
+   *(m_puColorBuffer + uPosition) = uColor;
 }
 
 /// calculate position in device buffer and return pointer
