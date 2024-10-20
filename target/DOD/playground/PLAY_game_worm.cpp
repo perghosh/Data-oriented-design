@@ -26,10 +26,11 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
    std::mt19937 mt19937RandomNumber(randomdevice()); 
    std::uniform_int_distribution<> UIDRow(0, uRowCount - 1);
    std::uniform_int_distribution<> UIDColumn(0, uColumnCount - 1);
+   std::uniform_int_distribution<> UIDColor(16, 255);
 
    deviceWorm[0][0] = "** Code sample showing how to draw on device **";
-   deviceWorm.set_color( 3, 20, gd::console::enumColor::eColorOrange4Bis );
-   deviceWorm.set_color( 6, 20, gd::console::enumColor::eColorDarkMagenta );
+   //deviceWorm.set_color( 3, 20, gd::console::enumColor::eColorOrange4Bis );
+   //deviceWorm.set_color( 6, 20, gd::console::enumColor::eColorDarkMagenta );
 
    unsigned uCount = 100;
 
@@ -37,8 +38,10 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
    {
       unsigned uRow = UIDRow( mt19937RandomNumber );
       unsigned uColumn = UIDColumn( mt19937RandomNumber );
+      unsigned uColor = UIDColor( mt19937RandomNumber );
 
       deviceWorm[uRow][uColumn] = 'X';
+      deviceWorm.set_color( uRow, uColor, uColor );
 
       std::string stringPrint;
 
