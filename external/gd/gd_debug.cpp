@@ -1,6 +1,6 @@
 #include "gd_debug.h"
 
-_GDB_BEGIN
+_GDD_BEGIN
 
 
 
@@ -45,4 +45,4 @@ bool buffer_find(const uint8_t* pubuffer, uint32_t uFind, size_t uEnd)
    return buffer_find( pubuffer, vectorFind, uEnd );
 }
 
-_GDB_END
+_GDD_END
