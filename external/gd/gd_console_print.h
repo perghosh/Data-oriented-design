@@ -135,6 +135,7 @@ private:
    // common copy
    void common_construct(const device& o);
    void common_construct(device&& o) noexcept;
+   void create_buffers( bool bInitialize );
 
 // ## operator -----------------------------------------------------------------
 public:
@@ -221,8 +222,8 @@ inline uint8_t device::at(unsigned uRow, unsigned uColumn, tag_color) const {   
 
 
 /// Set color at index
-inline void device::set_color(unsigned uRow, unsigned uColumn, uint8_t uColor) {                   assert( m_puColorBuffer != nullptr ); assert( uRow < m_uRowCount );
-   auto uPosition = (uRow * m_uColumnCount) + uColumn;
+inline void device::set_color(unsigned uRow, unsigned uColumn, uint8_t uColor) {                   assert( m_puColorBuffer != nullptr ); assert( uRow < m_uRowCount ); assert( uColumn < m_uColumnCount );
+   auto uPosition = (uRow * m_uColumnCount) + uColumn;                                             assert( uPosition < calculate_device_size_s( *this ) );
    *(m_puColorBuffer + uPosition) = uColor;
 }
 

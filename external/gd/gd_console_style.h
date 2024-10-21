@@ -10,6 +10,7 @@
    _GD_CONSOLE_BEGIN
 #endif
 
+/// color names for colors from 16 - 255
 enum enumColor : uint8_t 
 {
    eColorAquamarine1        = 122,
