@@ -46,7 +46,7 @@ std::pair<bool, std::string> device::create()
    clear();
 
    auto uDeviceSize = calculate_device_size_s( *this );
-   unsigned uRowBufferSize = calculate_row_buffer_size_s( m_uColumnCount );
+   uint64_t uRowBufferSize = calculate_row_buffer_size_s( m_uColumnCount );
 
    m_puRowBuffer = new uint8_t[ uRowBufferSize ];                              // temporary row used to produce output
 
@@ -91,6 +91,9 @@ std::pair<bool, std::string> device::render(std::string& stringPrint) const
 
    for( unsigned uRow = 0; uRow < m_uRowCount; uRow++ )
    {
+#ifndef NDEBUG
+      const char* pbszBuffer_d = (const char*)m_puRowBuffer;
+#endif
       puRow = m_puRowBuffer;
       for( unsigned uColumn = 0; uColumn < m_uColumnCount; uColumn++ )
       {
@@ -112,6 +115,8 @@ std::pair<bool, std::string> device::render(std::string& stringPrint) const
       puRow++;
 
       size_t uLength = puRow - m_puRowBuffer;
+      //m_puRowBuffer[uLength] = '\0';
+      //stringPrint_ += (const char*)m_puRowBuffer;
       stringPrint_.append( (const char*)m_puRowBuffer, uLength );
    }
 
