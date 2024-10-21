@@ -12,8 +12,8 @@
 
 #ifdef _WIN32
 #  include "windows.h"  // Windows
-#  undef min;
-#  undef max;
+#  undef min
+#  undef max
 #elif __linux__
 #  include <unistd.h>  // Linux
 #endif
@@ -52,8 +52,8 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
 
    while( uCount > 0 )
    {
-      unsigned uRow = UIDRow( mt19937RandomNumber );
-      unsigned uColumn = UIDColumn( mt19937RandomNumber );
+      unsigned uRow = UIDRow( mt19937RandomNumber );                                               assert( uRow < uRowCount );
+      unsigned uColumn = UIDColumn( mt19937RandomNumber );                                         assert( uColumn < uColumnCount );
       unsigned uColor = UIDColor( mt19937RandomNumber );
 
       deviceWorm[uRow][uColumn] = 'X';
@@ -71,7 +71,7 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
 
       uCount--;
       // std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      sleep_g( 20 );
+      //sleep_g( 20 );
 
    }
 
@@ -91,7 +91,7 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
 
       uCount--;
       //std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      sleep_g( 50 );
+      //sleep_g( 50 );
    }
 
    std::cout << caretLeftTop.render( gd::console::tag_format_cli{});
