@@ -46,9 +46,6 @@ std::pair<bool, std::string> device::create()
    clear();
 
    auto uDeviceSize = calculate_device_size_s( *this );
-   uint64_t uRowBufferSize = calculate_row_buffer_size_s( m_uColumnCount );
-
-   m_puRowBuffer = new uint8_t[ uRowBufferSize ];                              // temporary row used to produce output
 
    m_puDrawBuffer = new uint8_t[ uDeviceSize ];
    m_puColorBuffer = new uint8_t[ uDeviceSize ];
@@ -56,6 +53,8 @@ std::pair<bool, std::string> device::create()
    memset( m_puDrawBuffer, m_uFillCharacter, uDeviceSize );
    memset( m_puColorBuffer, 0, uDeviceSize );
 
+   auto uRowBufferSize = calculate_row_buffer_size_s( m_uColumnCount );
+   m_puRowBuffer = new uint8_t[ uRowBufferSize ];                              // temporary row used to produce output
 
    return { true, "" };
 }
