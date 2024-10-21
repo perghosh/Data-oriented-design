@@ -13,10 +13,10 @@ _GDB_BEGIN
  */
 bool buffer_find(const uint8_t* pubuffer, const std::vector<uint8_t>& vectorFind, size_t uEnd)
 {
-   const uint8_t* pubufferEnd = pbuffer;
+   const uint8_t* pubufferEnd = pubuffer;
    const uint8_t* pufind = vectorFind.data();
 
-   const uint8_t* puposition = pbuffer;
+   const uint8_t* puposition = pubuffer;
    while(puposition < pubufferEnd)
    {
       if(*puposition == *pufind && memcmp(puposition, pufind, vectorFind.size()) == 0)
