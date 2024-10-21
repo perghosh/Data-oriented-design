@@ -1,3 +1,4 @@
+#include "gd_debug.h"
 #include "gd_console_print.h"
 
 _GD_CONSOLE_BEGIN

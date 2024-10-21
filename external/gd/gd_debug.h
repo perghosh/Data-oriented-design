@@ -25,19 +25,17 @@
 
 
 
-#ifndef _GDB_BEGIN
-#define _GDB_BEGIN namespace gdd {
-#define _GDB_END }
-_GDB_BEGIN
+#ifndef _GDD_BEGIN
+   #define _GDD_BEGIN namespace gdd {
+   #define _GDD_END }
+   _GDD_BEGIN
 #else
-_GDB_BEGIN
+   _GDD_BEGIN
 #endif
-
-_GDB_BEGIN
 
 // ## Buffer checks
 
 bool buffer_find( const uint8_t* pubuffer, const std::vector<uint8_t>& vectorFind, size_t uEnd );
 bool buffer_find( const uint8_t* pubuffer, uint32_t uFind, size_t uEnd );
 
-_GDB_END
+_GDD_END
