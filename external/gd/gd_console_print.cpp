@@ -9,6 +9,7 @@ _GD_CONSOLE_BEGIN
 
 uint8_t device::m_uFillCharacter_s = ' ';
 
+/// copy device data from one device to another (this)
 void device::common_construct(const device& o)
 {
    m_uFlags = o.m_uFlags;
@@ -16,18 +17,17 @@ void device::common_construct(const device& o)
    m_uRowCount = o.m_uRowCount;
    m_uFillCharacter = o.m_uFillCharacter;
 
-   uint64_t uDeviceSize = calculate_device_size_s( o );
-   m_puDrawBuffer = new uint8_t[ uDeviceSize ];
-   m_puColorBuffer = new uint8_t[ uDeviceSize ];
+   create_buffers( false );
 
+   uint64_t uDeviceSize = calculate_device_size_s( o );
    memcpy( m_puDrawBuffer, o.m_puDrawBuffer, uDeviceSize );
    memcpy( m_puColorBuffer, o.m_puColorBuffer, uDeviceSize );
 
    uint64_t uRowBufferSize = calculate_row_buffer_size_s( o.m_uColumnCount );
-   m_puRowBuffer = new uint8_t[ uRowBufferSize ];
    memcpy( m_puRowBuffer, o.m_puRowBuffer, uRowBufferSize );
 }
 
+/// moves data from one device to another (this)
 void device::common_construct(device&& o) noexcept
 {
    m_uFlags = o.m_uFlags; o.m_uFlags = 0;
@@ -40,21 +40,32 @@ void device::common_construct(device&& o) noexcept
    m_puRowBuffer = o.m_puRowBuffer; o.m_puRowBuffer = nullptr;
 }
 
+/// create internal buffers for used by device
+void device::create_buffers( bool bInitialize )
+{
+   auto uDeviceSize = calculate_device_size_s( *this );
+   m_puDrawBuffer = new uint8_t[ uDeviceSize ];
+   m_puColorBuffer = new uint8_t[ uDeviceSize ];
 
+   auto uRowBufferSize = calculate_row_buffer_size_s( m_uColumnCount );
+   m_puRowBuffer = new uint8_t[ uRowBufferSize ];                              // temporary row used to produce output
+
+   if( bInitialize == true )
+   {
+      memset( m_puDrawBuffer, m_uFillCharacter, uDeviceSize );
+      memset( m_puColorBuffer, 0, uDeviceSize );
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief prepare and create device for printing
+ * @return true if ok, false and error information if error
+ */
 std::pair<bool, std::string> device::create()
 {
    clear();
 
-   auto uDeviceSize = calculate_device_size_s( *this );
-
-   m_puDrawBuffer = new uint8_t[ uDeviceSize ];
-   m_puColorBuffer = new uint8_t[ uDeviceSize ];
-
-   memset( m_puDrawBuffer, m_uFillCharacter, uDeviceSize );
-   memset( m_puColorBuffer, 0, uDeviceSize );
-
-   auto uRowBufferSize = calculate_row_buffer_size_s( m_uColumnCount );
-   m_puRowBuffer = new uint8_t[ uRowBufferSize ];                              // temporary row used to produce output
+   create_buffers( true );
 
    return { true, "" };
 }
