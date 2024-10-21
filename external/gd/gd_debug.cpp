@@ -32,7 +32,7 @@ bool buffer_find(const uint8_t* pubuffer, const std::vector<uint8_t>& vectorFind
 
 bool buffer_find(const uint8_t* pubuffer, uint32_t uFind, size_t uEnd)
 {
-   const std::vector<uint8_t> vectorFind;
+   std::vector<uint8_t> vectorFind;
    uint8_t uAdd = (uFind >> 24) & 0xFF;
    vectorFind.push_back( uAdd );
    uAdd = (uFind >> 16) & 0xFF;
