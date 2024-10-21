@@ -100,7 +100,7 @@ public:
       row( uint8_t* puRow, unsigned uLength ): m_puRow(puRow), m_uLength(uLength) {}
       ~row() {}
 
-      position operator[]( unsigned uColumn ) {                                                    assert( uColumn < m_uLength );
+      position operator[]( unsigned uColumn ) {                                                    assert( uColumn < m_uLength ); assert( m_pdevice_d->validate_position_d( m_puRow + uColumn ) );
          position position_(m_puRow + uColumn);  ASSIGN_D( position_, m_pdevice_d ); return position_;
       }
       const position operator[]( unsigned uColumn ) const {                                        assert( uColumn < m_uLength ); 
@@ -130,7 +130,7 @@ public:
    device& operator=(const device& o) { common_construct(o); return *this; }
    device& operator=(device&& o) noexcept { common_construct(std::move(o)); return *this; }
 
-   ~device() {}
+   ~device() { clear(); }
 private:
    // common copy
    void common_construct(const device& o);
@@ -246,7 +246,7 @@ inline uint64_t device::calculate_device_size_s( const device& device_ ) {
 }
 
 inline uint64_t device::calculate_row_buffer_size_s(unsigned uColumnCount) {
-   return uColumnCount * 8 + 1;
+   return (uColumnCount * 12) + 1;
 }
 
 
