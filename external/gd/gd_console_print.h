@@ -221,8 +221,8 @@ inline uint8_t device::at(unsigned uRow, unsigned uColumn, tag_color) const {   
 
 
 /// Set color at index
-inline void device::set_color(unsigned uRow, unsigned uColumn, uint8_t uColor) {                   assert( m_puDrawBuffer != nullptr );
-   auto uPosition = uRow * m_uColumnCount + uColumn;
+inline void device::set_color(unsigned uRow, unsigned uColumn, uint8_t uColor) {                   assert( m_puColorBuffer != nullptr ); assert( uRow < m_uRowCount );
+   auto uPosition = (uRow * m_uColumnCount) + uColumn;
    *(m_puColorBuffer + uPosition) = uColor;
 }
 

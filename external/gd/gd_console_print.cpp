@@ -87,6 +87,7 @@ std::pair<bool, std::string> device::render(std::string& stringPrint) const
    std::string stringPrint_;
    std::string stringTemp;
 
+   stringPrint_.reserve( calculate_device_size_s( *this ) );
    stringPrint_ = "\033[0m";
 
    for( unsigned uRow = 0; uRow < m_uRowCount; uRow++ )
