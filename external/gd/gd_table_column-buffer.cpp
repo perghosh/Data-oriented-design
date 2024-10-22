@@ -217,7 +217,7 @@ table_column_buffer::table_column_buffer(const table_column_buffer& o, const ran
    : m_puData{}
 {
    std::vector< unsigned > vectorColumn;
-   for( auto it = rangeCopy.c1(); it < rangeCopy.c2(); it++ ) vectorColumn.push_back( it );
+   for( auto it = rangeCopy.c1(); it < rangeCopy.c2(); it++ ) vectorColumn.push_back( (unsigned)it );
 
    common_construct( o, vectorColumn, tag_columns{});
    prepare();
@@ -2745,6 +2745,23 @@ int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std
    for( unsigned uColumn = 0; uColumn < vectorFind.size(); uColumn++ )
    {
       vectorFind_.push_back( { uColumn, vectorFind.at( uColumn ) } );
+   }
+
+   int64_t iRow = find( uStartRow, uCount, vectorFind_ );
+   return iRow;
+}
+
+/// find row with matching values
+int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind) const
+{                                                                                                  assert( (uStartRow + uCount) <= get_row_count() );
+   // ## convert to column index
+   std::vector<std::pair<unsigned, gd::variant_view>> vectorFind_;
+   for( size_t u = 0; u < vectorFind.size(); u++ )
+   {
+      const auto& pair_ = vectorFind.at( u );
+      std::string_view stringColumn = pair_.first;
+      auto uColumn = column_get_index( stringColumn );
+      vectorFind_.push_back( { uColumn, pair_.second } );
    }
 
    int64_t iRow = find( uStartRow, uCount, vectorFind_ );
