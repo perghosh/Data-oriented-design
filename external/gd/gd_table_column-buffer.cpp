@@ -2712,9 +2712,49 @@ range table_column_buffer::find_variant_view( unsigned uColumn, bool bAscending,
 
 
 /** ---------------------------------------------------------------------------
+ * @brief find row with matching values in row from vector with column index and value to match
+ * @param uStartRow where to start searching for matching row
+ * @param uCount number of rows to match
+ * @param vectorFind vector with column index and matching value to match against row with same values
+ * @return int64_t index to row where values are found or -1 if not found
+ */
+int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std::vector<std::pair<unsigned, gd::variant_view>>& vectorFind) const noexcept
+{                                                                                                  assert( (uStartRow + uCount) <= get_row_count() );
+   auto itFindBegin = std::begin( vectorFind );
+   auto itFindEnd = std::end( vectorFind );
+
+   for( uint64_t uRow = uStartRow, uEnd = uStartRow + uCount; uRow < uEnd; uRow++ )
+   {
+      bool bFound = true;
+      for( auto it = itFindBegin; it != itFindEnd; it++ )
+      {
+         auto variantviewValue = cell_get_variant_view( uRow, it->first );
+         if( it->second != variantviewValue ) { bFound = false; break; }
+      }
+
+      if( bFound == true ) return uRow;
+   }
+
+   return -1;
+}
+
+/// find row with matching values
+int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std::vector<gd::variant_view>& vectorFind) const
+{                                                                                                  assert( (uStartRow + uCount) <= get_row_count() );
+   std::vector<std::pair<unsigned, gd::variant_view>> vectorFind_;
+   for( unsigned uColumn = 0; uColumn < vectorFind.size(); uColumn++ )
+   {
+      vectorFind_.push_back( { uColumn, vectorFind.at( uColumn ) } );
+   }
+
+   int64_t iRow = find( uStartRow, uCount, vectorFind_ );
+   return iRow;
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Finds first row that isn't marked as in use
  * @param uStartRow index where to start search for free row
- * @return 
+ * @return int64_t index to row that is free or -1 if no free rows
 */
 int64_t table_column_buffer::find_first_free_row( uint64_t uStartRow ) const
 {                                                                                                  assert( m_puMetaData != nullptr ); assert( is_rowstatus() == true );

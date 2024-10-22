@@ -779,6 +779,11 @@ public:
    int64_t find_variant_view( const std::string_view& stringName, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( column_get_index( stringName ), 0, get_row_count(), variantviewFind); }
    range find_variant_view( unsigned uColumn, bool bAscending, const gd::variant_view& variantviewFind, tag_range ) const noexcept { return find_variant_view( uColumn, bAscending, 0, get_row_count(), variantviewFind, tag_range{}); }
 
+   
+   int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<unsigned, gd::variant_view> >& vectorFind ) const noexcept;
+   int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector<gd::variant_view>& vectorFind ) const;
+   int64_t find( const std::vector<gd::variant_view>& vectorFind ) const { return find( 0, get_row_count(), vectorFind ); }
+
    /// Find first row marked as free (flag `eRowStateUse` is not used)
    int64_t find_first_free_row( uint64_t uStartRow ) const;
    int64_t find_first_free_row() const { return find_first_free_row( 0 ); }
