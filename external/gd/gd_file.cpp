@@ -268,28 +268,29 @@ std::pair<bool, std::wstring> get_known_folder_wpath_g(const std::string_view& s
  * @brief  try to fix path for current os
  * Removes double folder separators and convert to right separator for os
  * @param stringPath path to be fixed
+ * @param uOffset where to start in string to fix path
  * @return std::string fixed path
  */
-std::string fix_path_g( const std::string_view& stringPath )
+std::string fix_path_g( const std::string_view& stringPath, unsigned uOffset )
 {
    char chPrevious = 0;
    std::string stringFixedPath;
 
    if( stringPath.empty() == true ) return stringFixedPath;
 
-   for( auto it : stringPath )
+   for( auto it = stringPath.begin() + uOffset, itEnd = stringPath.end(); it != itEnd; it++ )
    {
-      if( it == '/' || it == '\\' ) 
+      if( *it == '/' || *it == '\\' ) 
       {
          // if double // or \\ then do not add to final path
-         if( chPrevious != it ) { stringFixedPath += it; }
+         if( chPrevious != *it ) { stringFixedPath += *it; }
       }
       else
       {
-         stringFixedPath += it;
+         stringFixedPath += *it;
       }
 
-      chPrevious = it;
+      chPrevious = *it;
    }
 
    stringFixedPath = normalize_path_for_os_g( stringFixedPath );

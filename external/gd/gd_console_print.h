@@ -9,7 +9,8 @@
 * 
 * \033[38;5;<color_code>m  // Set foreground (text) color
 * \033[48;5;<color_code>m  // Set background color
-
+* 
+* `tcgetattr` and `tcsetattr` is used to set console behaviour
 * 
 */
 

@@ -1,4 +1,4 @@
-#include "gd_cli_options.h"
+#include <memory>
 #include <sstream>
 
 #include "gd_parse.h"
@@ -96,7 +96,7 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
 
    // ## Loop arguments sent to application (starts at 1, first is the application name)
    for( int iPosition = m_uFirstToken; iPosition != iArgumentCount; iPosition++ )
-   {
+   {                                                                                               assert( iPosition < iArgumentCount ); // iPosition cant pass iArgumentCount
       const char* pbszArgument = ppbszArgumentValue[iPosition];                // current argument
 
       bool bOption = false;      // test if option
@@ -122,6 +122,14 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
             if( poptionActive == nullptr && is_flag( eFlagUnchecked ) == false )// unknown argument and we do not allow unknown arguments?
             {
                return error_s( { "Unknown option : ", pbszArgument } );
+            }
+
+            // ## check for flag if single dash is allowed
+            if( bMayBeFlag == true && poptionActive->is_flag() == true )
+            {
+               add_value( poptionActive, true );
+               iOptionState = state_unknown;
+               continue;
             }
 
             iOptionState = state_option;                                       // set function state to `option`
@@ -303,17 +311,16 @@ gd::variant_view options::get_variant_view( const std::string_view* ptringName )
 /// return option value based on index if multiple options with same name
 gd::variant_view options::get_variant_view( const std::string_view& stringName, unsigned uIndex ) const noexcept
 {                                                                                                  assert( stringName.empty() == false );
-   auto value_ = m_argumentsValue.find_argument( stringName, uIndex );
+   auto value_ = m_argumentsValue.find_argument( stringName, uIndex ).as_variant_view();
    return value_;
 }
 
 /// return option value based on index if multiple options with same name
 gd::variant_view options::get_variant_view( const std::string_view* pstringName, unsigned uIndex ) const noexcept
 {                                                                                                  assert( pstringName->empty() == false );
-   auto value_ = m_argumentsValue.find_argument( *pstringName, uIndex );
+   auto value_ = m_argumentsValue.find_argument( *pstringName, uIndex ).as_variant_view();
    return value_;
 }
-
 
 /// return option value for first found name or empty value if not found
 gd::variant_view options::get_variant_view(const std::initializer_list<std::string_view>& listName) const noexcept
@@ -326,7 +333,6 @@ gd::variant_view options::get_variant_view(const std::initializer_list<std::stri
 
    return gd::variant_view();
 }
-
 
 /** ---------------------------------------------------------------------------
  * @brief get all values for name as variant's in list

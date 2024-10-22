@@ -52,7 +52,8 @@ std::pair<bool, std::string> get_known_folder_path_g(const std::string_view& str
 std::pair<bool, std::wstring> get_known_folder_wpath_g(const std::string_view& stringFolderId);
 
 /// fix path to make it work, removes double // or \\ and converts to correct divider based on os
-std::string fix_path_g( const std::string_view& stringPath );
+std::string fix_path_g( const std::string_view& stringPath, unsigned uOffset );
+inline std::string fix_path_g( const std::string_view& stringPath ) { return fix_path_g( stringPath, 0 ); }
 
 // ## `closest` are used to find nearest folder in the parent hierarchy
 
