@@ -18,7 +18,7 @@ TEST_CASE( "[fake_data] 01", "[fake_data]" ) {
    std::string stringAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
    std::random_device randomdevice;
    std::mt19937 mt19937Alphabet(randomdevice());
-   std::uniform_int_distribution<> UIDAlphabet(0, stringAlphabet.size() - 1);
+   std::uniform_int_distribution<> UIDAlphabet(0, (unsigned)stringAlphabet.size() - 1);
    std::uniform_int_distribution<> UIDCount(5, 40);
 
    dto::table tableText( "int64,key;double,currency;string,50,namey;string,20,city", tag_parse{}, tag_prepare{});
@@ -34,5 +34,8 @@ TEST_CASE( "[fake_data] 01", "[fake_data]" ) {
 
    auto vectorValue = tableText.row_get_variant_view( 500 );
    int64_t iRow = tableText.find( vectorValue );                                                   REQUIRE( iRow == 500 );
+
+   vectorValue = tableText.row_get_variant_view( 700 );
+   iRow = tableText.find({ { "key", vectorValue[0] }, { "currency", vectorValue[1]} });            REQUIRE(iRow == 700);
    
 }

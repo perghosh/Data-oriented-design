@@ -669,8 +669,6 @@ public:
    void row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize, std::vector<gd::variant_view>& vectorValue ) const;
    void row_get_variant_view( uint64_t uRow, const std::vector<unsigned>& vectorIndex, std::vector<gd::variant_view>& vectorValue ) const { row_get_variant_view( uRow, vectorIndex.data(), (unsigned)vectorIndex.size(), vectorValue ); }
 
-   std::vector<gd::variant_view> row_get_variant_view( uint64_t uRow, unsigned uFirstColumn, unsigned uCount );
-
    int64_t row_get_variant_view( unsigned uColumn, const gd::variant_view& variantviewFind, std::vector<gd::variant_view>& vectorValue ) const;
 
    /// @name get values in row packed in arguments object
@@ -783,6 +781,8 @@ public:
    int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<unsigned, gd::variant_view> >& vectorFind ) const noexcept;
    int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector<gd::variant_view>& vectorFind ) const;
    int64_t find( const std::vector<gd::variant_view>& vectorFind ) const { return find( 0, get_row_count(), vectorFind ); }
+   int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind ) const;
+   int64_t find( const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind ) const { return find( 0, get_row_count(), vectorFind ); }
 
    /// Find first row marked as free (flag `eRowStateUse` is not used)
    int64_t find_first_free_row( uint64_t uStartRow ) const;

@@ -2620,6 +2620,63 @@ std::vector<uint64_t> table::find_all(const std::vector< std::pair<std::string_v
    return vectorResult;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief find row with matching values in row from vector with column index and value to match
+ * @param uStartRow where to start searching for matching row
+ * @param uCount number of rows to match
+ * @param vectorFind vector with column index and matching value to match against row with same values
+ * @return int64_t index to row where values are found or -1 if not found
+ */
+int64_t table::find(uint64_t uStartRow, uint64_t uCount, const std::vector<std::pair<unsigned, gd::variant_view>>& vectorFind) const noexcept
+{                                                                                                  assert( (uStartRow + uCount) <= get_row_count() );
+   auto itFindBegin = std::begin( vectorFind );
+   auto itFindEnd = std::end( vectorFind );
+
+   for( uint64_t uRow = uStartRow, uEnd = uStartRow + uCount; uRow < uEnd; uRow++ )
+   {
+      bool bFound = true;
+      for( auto it = itFindBegin; it != itFindEnd; it++ )
+      {
+         auto variantviewValue = cell_get_variant_view( uRow, it->first );
+         if( it->second != variantviewValue ) { bFound = false; break; }
+      }
+
+      if( bFound == true ) return uRow;
+   }
+
+   return -1;
+}
+
+/// find row with matching values
+int64_t table::find(uint64_t uStartRow, uint64_t uCount, const std::vector<gd::variant_view>& vectorFind) const
+{                                                                                                  assert( (uStartRow + uCount) <= get_row_count() );
+   std::vector<std::pair<unsigned, gd::variant_view>> vectorFind_;
+   for( unsigned uColumn = 0; uColumn < vectorFind.size(); uColumn++ )
+   {
+      vectorFind_.push_back( { uColumn, vectorFind.at( uColumn ) } );
+   }
+
+   int64_t iRow = find( uStartRow, uCount, vectorFind_ );
+   return iRow;
+}
+
+/// find row with matching values
+int64_t table::find(uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind) const
+{                                                                                                  assert( (uStartRow + uCount) <= get_row_count() );
+   // ## convert to column index
+   std::vector<std::pair<unsigned, gd::variant_view>> vectorFind_;
+   for( size_t u = 0; u < vectorFind.size(); u++ )
+   {
+      const auto& pair_ = vectorFind.at( u );
+      std::string_view stringColumn = pair_.first;
+      auto uColumn = column_get_index( stringColumn );
+      vectorFind_.push_back( { uColumn, pair_.second } );
+   }
+
+   int64_t iRow = find( uStartRow, uCount, vectorFind_ );
+   return iRow;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Finds first row that isn't marked as in use

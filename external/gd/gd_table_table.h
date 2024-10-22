@@ -652,6 +652,12 @@ public:
    std::vector<uint64_t> find_all( const std::vector< std::pair<unsigned, gd::variant_view> >& vectorFilter ) const;
    std::vector<uint64_t> find_all( const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFilter ) const;
 
+   int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<unsigned, gd::variant_view> >& vectorFind ) const noexcept;
+   int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector<gd::variant_view>& vectorFind ) const;
+   int64_t find( const std::vector<gd::variant_view>& vectorFind ) const { return find( 0, get_row_count(), vectorFind ); }
+   int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind ) const;
+   int64_t find( const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind ) const { return find( 0, get_row_count(), vectorFind ); }
+
 
    /// Find first row marked as free (flag `eRowStateUse` is not used)
    int64_t find_first_free_row( uint64_t uStartRow ) const;
