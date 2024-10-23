@@ -37,5 +37,4 @@ TEST_CASE( "[fake_data] 01", "[fake_data]" ) {
 
    vectorValue = tableText.row_get_variant_view( 700 );
    iRow = tableText.find({ { "key", vectorValue[0] }, { "currency", vectorValue[1]} });            REQUIRE(iRow == 700);
-   
 }
