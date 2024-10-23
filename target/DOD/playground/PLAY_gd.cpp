@@ -142,3 +142,82 @@ TEST_CASE( "[gd] cli options test", "[gd]" ) {
       optionsApplication.sub_find("merge")->set_flag( 0, gd::cli::options::eFlagSingleDash ); 
    }
 }
+
+TEST_CASE( "[gd] arguments equal to shared", "[gd]" ) {
+   gd::argument::arguments arguments_( "one", 1, gd::argument::arguments::tag_no_initializer_list{});
+   arguments_.append( "two", 222 );
+
+   uint32_t uOne = arguments_["one"];
+   uint32_t uTwo = uOne + uOne;
+   uTwo = arguments_["two"];
+   uTwo = uOne + uOne;
+
+   {
+      gd::argument::shared::arguments arguments_;
+      arguments_.append("ten", "1");
+      arguments_.append("ten2", "2");
+      arguments_.append("ten3", "3");
+      arguments_.append("ten4", "4");
+      auto s_ = arguments_["ten"].as_string_view();
+      s_ = arguments_["ten2"].as_string_view();
+      auto uCount = arguments_.size();
+      std::string_view stringTen = arguments_["ten3"].as_string_view();
+
+      auto argumentsCopy = arguments_;
+   }
+
+   {
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("\n## End section - adding three numbers ");
+
+      gd::argument::arguments arguments_;
+      arguments_.append( 100 );
+      arguments_.append( 200 );
+      arguments_.append( 300 );
+
+      uint32_t u_ = arguments_[1];
+      auto uCount = arguments_.size();
+   }
+
+   {
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("\n## End section - adding three numbers in one method");
+
+      gd::argument::arguments arguments_;
+      arguments_.append_many( 100, 200, 300);
+
+      uint32_t u_ = arguments_[0u];
+      auto uCount = arguments_.size();
+
+      for(auto it = std::begin( arguments_ ), itEnd = std::end( arguments_ ); it != itEnd; ++it )
+      {
+         uint32_t u_ = *it;
+         std::cout << "number: " << u_ << "\n";
+      }
+
+      for(auto it : arguments_)
+      {
+         uint32_t u_ = it;
+         std::cout << "number: " << u_ << "\n";
+      }
+   }
+
+   {
+      using namespace gd::argument;
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("\n## End section - get vector for name values");
+      gd::argument::arguments arguments_;
+      arguments_.append_argument( "values", 0, arguments::tag_view{});
+      arguments_.append_many( 100, 200, 300, 400, 500 );
+      arguments_.append_argument( "sum", 0u, arguments::tag_view{} );
+
+      arguments_.append_argument("names", "name value", arguments::tag_view{});
+      arguments_.append_many("100 as text", "200 as text", "300 as text");
+
+      auto vector_ = arguments_.get_argument_section( "values", arguments::tag_view{} );
+      std::cout << gd::debug::print( vector_ ) << "\n";
+
+      vector_ = arguments_.get_argument_section( "names", arguments::tag_view{} );
+      std::cout << gd::debug::print( vector_ ) << "\n";
+   }
+
+
+   auto uCount = arguments_.size();
+}

@@ -607,7 +607,6 @@ public:
    arguments() {}
 
    /** Set buffer and size, use this to avoid heap allocations (if internal data grows over buffer size you will get heap allocation)  */
-   //arguments(pointer pBuffer, unsigned int uSize) : m_bOwner(false), m_pBuffer(pBuffer), m_uLength(0), m_uBufferLength(uSize) {}
    arguments(const std::string_view& stringName, const gd::variant& variantValue, tag_no_initializer_list );
 
 

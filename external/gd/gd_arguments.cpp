@@ -844,7 +844,7 @@ arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>>
    for( auto it : listPair ) append_argument( it, view_tag{} );
 }
 
-arguments::arguments(const std::string_view& stringName, const gd::variant& variantValue, arguments::no_initializer_list_tag)
+arguments::arguments(const std::string_view& stringName, const gd::variant& variantValue, arguments::tag_no_initializer_list)
 {
    zero();
    append_argument(stringName, variantValue);
@@ -2161,6 +2161,34 @@ std::vector<gd::variant_view> arguments::get_argument_all_s(const_pointer pBegin
 
    return vectorArgument;
 }
+
+/// return all values from name and traling values with no name
+/// this is handy if you store a list or lists of values in arguments object and they start with some name
+std::vector<gd::variant_view> arguments::get_argument_section_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view)
+{
+   std::vector<gd::variant_view> vectorArgument;
+   if( pBegin != nullptr )
+   {
+      do
+      {
+         if( compare_name_s( pBegin, stringName ) == true )                    // found name ?
+         {
+            vectorArgument.push_back( get_argument_s( pBegin ).as_variant_view() );// push value for name
+
+            // push all trailing values that isn't named
+            while( (pBegin = next_s( pBegin )) < pEnd && is_name_s( pBegin ) == false ) 
+            { 
+               vectorArgument.push_back( get_argument_s( pBegin ).as_variant_view() ); 
+            }
+
+            return vectorArgument;
+         }
+      } while( (pBegin = next_s( pBegin )) < pEnd );
+   }
+
+   return vectorArgument;
+}
+
 
 /*----------------------------------------------------------------------------- get_total_param_length_s */ /**
  * Calculate number of bytes needed to store named value in internal buffer used by arguments object

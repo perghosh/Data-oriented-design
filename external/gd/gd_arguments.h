@@ -114,7 +114,7 @@ public:
 
    struct view_tag {};                                                         // tag dispatcher used when working with view objects (not owning its data)
    struct tag_view {};                                                         // tag dispatcher used when working with view objects (not owning its data)
-   struct no_initializer_list_tag {};                                          // do not select initializer_list versions
+   struct tag_no_initializer_list {};                                          // do not select initializer_list versions
    struct tag_name {};                                                         // tag dispatcher for name related operations
    struct tag_description {};                                                  // tag dispatcher where description is usefull
 
@@ -555,7 +555,7 @@ public:
 
    /** Set buffer and size, use this to avoid heap allocations (if internal data grows over buffer size you will get heap allocation)  */
    arguments(pointer pBuffer, unsigned int uSize) : m_bOwner(false), m_pBuffer(pBuffer), m_uLength(0), m_uBufferLength(uSize) {}
-   arguments(const std::string_view& stringName, const gd::variant& variantValue, no_initializer_list_tag);
+   arguments(const std::string_view& stringName, const gd::variant& variantValue, tag_no_initializer_list);
 
 
    arguments(std::pair<std::string_view, gd::variant> pairArgument);
@@ -580,10 +580,7 @@ public:
 
    arguments& operator=(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair);
 
-   ~arguments() { 
-      buffer_delete();
-      //if( m_bOwner ) delete[] m_pBuffer;
-   }
+   ~arguments() { buffer_delete(); }
 protected:
    // common copy
    void common_construct(const arguments& o) {
@@ -679,6 +676,11 @@ public:
    arguments& append(const char8_t* v) { return append((eTypeNumberUtf8String | eValueLength), (const_pointer)v, (unsigned int)strlen( (const char*)v ) + 1); }
    arguments& append(const char8_t* v, unsigned uLength) { return append((eTypeNumberUtf8String | eValueLength), (const_pointer)v, uLength + 1); }
 #endif
+   template<typename VALUE, typename... NEXT>
+   void append_many(VALUE value_, NEXT... next_) { 
+      append( value_ ); 
+      if constexpr (sizeof...(next_) > 0) { append_many( next_... ); }
+   }
 
    arguments& append(param_type uType, const_pointer pBuffer, unsigned int uLength);
 
@@ -731,6 +733,7 @@ public:
    }
 
    arguments& append_argument(const std::string_view& stringName, const gd::variant_view& variantValue);
+   arguments& append_argument(const std::string_view& stringName, const gd::variant_view& variantValue, tag_view) { return append_argument( stringName, variantValue ); }
 
    arguments& append_argument(const std::pair<std::string_view, gd::variant>& pairArgument) {
       return append_argument(pairArgument.first, pairArgument.second);
@@ -916,6 +919,7 @@ public:
    /// return all values for name
    [[nodiscard]] std::vector<argument> get_argument_all(std::string_view stringName) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName); }
    [[nodiscard]] std::vector<gd::variant_view> get_argument_all(std::string_view stringName, tag_view) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
+   [[nodiscard]] std::vector<gd::variant_view> get_argument_section(std::string_view stringName, tag_view) const { return get_argument_section_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
 
    std::vector<argument> get_argument( std::vector< std::string_view > vectorName ) const;
 
@@ -1026,6 +1030,7 @@ public:
    static unsigned int get_total_param_length_s(std::string_view stringName, const argument argumentValue);
    static std::vector<argument> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName);
    static std::vector<gd::variant_view> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
+   static std::vector<gd::variant_view> get_argument_section_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
 
    /// ## move methods
    /// move pointer to next value in buffer
@@ -1084,8 +1089,8 @@ public:
    }
 
    /// Create arguments object from arguments
-   static arguments create_s(const std::string_view& stringName, const gd::variant& variantValue, no_initializer_list_tag) {
-      arguments A(stringName, variantValue, no_initializer_list_tag{});
+   static arguments create_s(const std::string_view& stringName, const gd::variant& variantValue, tag_no_initializer_list) {
+      arguments A(stringName, variantValue, tag_no_initializer_list{});
       return A;
    }
 
