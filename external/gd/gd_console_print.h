@@ -167,6 +167,16 @@ public:
 
 /** \name DEVICE manipulation
 *///@{
+
+   // ## fill area with chars and/or color
+
+   void fill( unsigned uRow, unsigned uColumn, unsigned uHeight, unsigned uWidth, uint8_t uCharacter );
+   void fill( unsigned uRow, unsigned uColumn, unsigned uHeight, unsigned uWidth, char iCharacter ) { fill( uRow, uColumn, uHeight, uWidth, (uint8_t)iCharacter ); }
+   void fill( uint8_t uCharacter ) { fill( 0, 0, m_uRowCount, m_uColumnCount, uCharacter ); }
+   void fill( char iCharacter ) { fill( 0, 0, m_uRowCount, m_uColumnCount, (uint8_t)iCharacter ); };
+
+   // ## scroll
+
    /// Scroll device up or down number of rows
    void scroll_y( int32_t iOffsetRow );
 //@}
@@ -192,11 +202,12 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    unsigned m_uFlags = 0;
-   unsigned m_uRowCount;
-   unsigned m_uColumnCount;
-   uint8_t* m_puRowBuffer = nullptr; 
-   uint8_t* m_puDrawBuffer = nullptr;
-   uint8_t* m_puColorBuffer = nullptr;
+   unsigned m_uRowCount;                     ///< number of rows in device
+   unsigned m_uColumnCount;                  ///< number of columns in device
+   uint8_t* m_puRowBuffer = nullptr;         ///< temporary buffer used when to render device
+   uint8_t* m_puDrawBuffer = nullptr;        ///< device buffer used to store characters to draw
+   uint8_t* m_puColorBuffer = nullptr;       ///< device buffer storing color
+   uint8_t* m_puBackgroundBuffer = nullptr;  ///< device buffer storing background color
    uint8_t m_uFillCharacter = m_uFillCharacter_s;
 
    static uint8_t m_uFillCharacter_s;

@@ -150,6 +150,19 @@ std::string device::render(tag_format_cli) const
    return stringPrint;
 }
 
+void device::fill( unsigned uRow, unsigned uColumn, unsigned uHeight, unsigned uWidth, uint8_t uCharacter )
+{                                                                                                  assert( (uRow + uHeight) <= m_uRowCount ); assert( (uColumn + uWidth) <= m_uColumnCount ); assert( m_puDrawBuffer != nullptr );
+   uint8_t* puBuffer = m_puDrawBuffer;
+   for(unsigned uRowPosition = uRow, uRowMax = uRow + uHeight; uRowPosition < uRowMax; uRowPosition++)
+   {
+      for(unsigned uColumnPosition = uColumn, uColumnMax = uColumn + uWidth; uColumnPosition < uColumnMax; uColumnPosition++)
+      {
+         puBuffer = offset( uRowPosition, uColumnPosition );
+         *puBuffer = uCharacter;
+      }
+   }
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Scroll device up or down
  * Scolling up or down is same as moving data in device number of rows x columns within

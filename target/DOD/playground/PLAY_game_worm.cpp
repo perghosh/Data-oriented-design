@@ -89,7 +89,14 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
    }
 
+   deviceWorm = deviceWorm2;
+   {
+      std::cout << caretLeftTop.render( gd::console::tag_format_cli{});
+      std::cout << deviceWorm.render( gd::console::tag_format_cli{});
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      deviceWorm.fill( 0, uColumnCount / 4, uRowCount, uColumnCount / 2, ' ' );
+      std::cout << caretLeftTop.render( gd::console::tag_format_cli{});
+      std::cout << deviceWorm.render( gd::console::tag_format_cli{});
+   }
 
-   std::cout << caretLeftTop.render( gd::console::tag_format_cli{});
-   std::cout << deviceWorm2.render( gd::console::tag_format_cli{});
 }
