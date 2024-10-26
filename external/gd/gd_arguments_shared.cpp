@@ -37,13 +37,20 @@ _GD_ARGUMENT_SHARED_BEGIN
  */
 arguments::pointer arguments::move_to_value_s(pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
-   enumCType eType = (enumCType)*pPosition;                                    // get section type
+   uint32_t u_ = *(uint32_t*)pPosition;
+   enumCType eType = (enumCType)(u_ >> 24);                                    // get section type
    if( eType == eType_ParameterName )
    {
-      pPosition++;
-      uint8_t uNameLength = *pPosition + 1;                                    // get name length and add one for byte that holds how many characters name has (it is not zero based)
-      pPosition += uNameLength;
+      uint32_t uLength = u_ & 0x00FFFFFF;
+      if( (uLength % 4) != 0 ) uLength = (uLength + 3) & ~3;
+
+      pPosition += sizeof( uint32_t ) + uLength;
    }
+#ifndef NDEBUG
+   u_ = *(uint32_t*)pPosition;
+   eType = (enumCType)(u_ >> 24);
+   auto typename_d = gd::types::type_name_g( eType & ~eTypeNumber_MASK );
+#endif
    return pPosition;
 }
 
@@ -2283,23 +2290,22 @@ unsigned int arguments::get_total_param_length_s(std::string_view stringName, co
  */
 arguments::pointer arguments::next_s(pointer pPosition) 
 {
-   pPosition = arguments::move_to_value_s(pPosition);
-   uint8_t uType = *pPosition;                                                   // get value type
-   pPosition++;                                                                  // move past type
-   if( (uType & eType_MASK) == 0 )
-   {
-      pPosition += ctype_size[uType];
-   }
-   else
-   {
-      if( uType & eValueLength )
-      {
-         uint32_t uLength = *(uint32_t*)pPosition;
-         pPosition += sizeof(uint32_t);
-         pPosition += uLength;
-      }
-   }
-
+#ifndef NDEBUG
+   const_pointer pbegin_d = pPosition;
+#endif
+   pPosition = arguments::move_to_value_s(pPosition);                          // go to value
+   uint32_t u_ = *(uint32_t*)pPosition;                                        // get type and length
+   uint32_t uType = u_ >> 24;                                                  // get value type
+#ifndef NDEBUG
+   auto typename_d = gd::types::type_name_g( uType & ~eTypeNumber_MASK );
+#endif
+   // Total value buffer storage length for value
+   uint32_t uLength = u_ & 0x00FFFFFF;                                                             assert( (uLength % 4) == 0 ); // has to be aligend 
+   pPosition += sizeof( uint32_t );                                            // move past type and length information
+   pPosition += uLength;                                                       // move past value length
+#ifndef NDEBUG
+   uint64_t uValueSize_d = pPosition - pbegin_d;
+#endif
    return pPosition;
 }
 
@@ -2349,7 +2355,7 @@ arguments::const_pointer arguments::next_s(const_pointer pPosition)
    }
    */
 #ifndef NDEBUG
-   uint64_t uValueSize = pPosition - pbegin_d;
+   uint64_t uValueSize_d = pPosition - pbegin_d;
 #endif
 
    return pPosition;

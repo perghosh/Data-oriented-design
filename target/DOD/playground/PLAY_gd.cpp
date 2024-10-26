@@ -101,6 +101,19 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
       std::cout << gd::debug::print( vector_ ) << "\n";
    }
 
+   {
+      using namespace gd::argument::shared;
+      std::unique_ptr<const char, decltype([](auto p_){ std::cout << p_ << std::endl; } )> quit_("\n## End section - resize values executed");
+      gd::argument::shared::arguments arguments_;
+      arguments_.append("1", 1);
+      arguments_.append("2", "2");
+      arguments_.append("3", 3);
+
+      auto value_ = arguments_["2"].as_string();
+
+      arguments_.set( "2", "22222" );
+   }
+
 
    auto uCount = arguments_.size();
 }
