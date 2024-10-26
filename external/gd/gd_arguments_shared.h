@@ -907,11 +907,11 @@ public:
 *///@{
    [[nodiscard]] pointer next() { return m_pbuffer->size() > 0 ? m_pbuffer->data() : nullptr; }
    [[nodiscard]] const_pointer next() const { return m_pbuffer->size() > 0 ? m_pbuffer->data() : nullptr; }
-   [[nodiscard]] pointer next(pointer pPosition) {                               assert( verify_d(pPosition) );
+   [[nodiscard]] pointer next(pointer pPosition) {                             assert( verify_d(pPosition) );
       auto p = next_s(pPosition);
       return p < buffer_data_end() ? p : nullptr;
    }
-   [[nodiscard]] const_pointer next(const_pointer pPosition) const {             assert( verify_d(pPosition) );
+   [[nodiscard]] const_pointer next(const_pointer pPosition) const {           assert( verify_d(pPosition) );
       auto p = next_s(pPosition);
       return p < buffer_data_end() ? p : nullptr;
    }

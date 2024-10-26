@@ -43,14 +43,15 @@ struct tag_color{};      ///< logic to work with color
 
 struct tag_format_cli{}; ///< format for cli 
 
+struct tag_height{};    ///< height operations
+struct tag_width{};     ///< width operations
+
 // ----------------------------------------------------------------------------
 // --------------------------------------------------------------------- device
 // ----------------------------------------------------------------------------
 
-
-
 /**
- * \brief
+ * \brief device is like a drawing plate. It holds core memory buffers to draw on
  *
  *
  *
@@ -86,12 +87,8 @@ public:
 #endif
    };
 
-
-
    /**
     * \brief
-    *
-    *
     */
    struct row
    {
@@ -152,6 +149,9 @@ public:
    uint8_t at( unsigned uRow, unsigned uColumn ) const;
    uint8_t at( unsigned uRow, unsigned uColumn, tag_color ) const;
    void set_color( unsigned uRow, unsigned uColumn, uint8_t uColor );
+
+   unsigned height() const { return m_uRowCount; }
+   unsigned width() const { return m_uColumnCount; }
 //@}
 
 /** \name OPERATION
@@ -262,15 +262,80 @@ inline uint64_t device::calculate_row_buffer_size_s(unsigned uColumnCount) {
    return (uColumnCount * 12) + 1;
 }
 
-
 // ----------------------------------------------------------------------------
-// ---------------------------------------------------------------------- caret
+// ----------------------------------------------------------------------- view
 // ----------------------------------------------------------------------------
 
 /**
  * \brief
  *
  *
+ *
+ \code
+ \endcode
+ */
+class view
+{
+// ## construction -------------------------------------------------------------
+public:
+   view(): m_uRow(0), m_uColumn(0), m_uHeight(0), m_uWidth(0) {}
+   view( const device& device_ ): m_uRow(0), m_uColumn(0), m_uHeight(device_.height()), m_uWidth(device_.width()) {}
+   // copy
+   view(const view& o) { common_construct(o); }
+   view(view&& o) noexcept { common_construct(std::move(o)); }
+   // assign
+   view& operator=(const view& o) { common_construct(o); return *this; }
+   view& operator=(view&& o) noexcept { common_construct(std::move(o)); return *this; }
+
+   ~view() {}
+private:
+   // common copy
+   void common_construct(const view& o) {}
+   void common_construct(view&& o) noexcept {}
+
+// ## operator -----------------------------------------------------------------
+public:
+
+
+// ## methods ------------------------------------------------------------------
+public:
+/** \name GET/SET
+*///@{
+
+//@}
+
+/** \name OPERATION
+*///@{
+   void move( int iRowOffset, int iColumnOffset );
+
+//@}
+
+protected:
+/** \name INTERNAL
+*///@{
+
+//@}
+
+// ## attributes ----------------------------------------------------------------
+public:
+   unsigned m_uRow;                     ///< number of rows in device
+   unsigned m_uColumn;                  ///< number of columns in device
+   unsigned m_uHeight;
+   unsigned m_uWidth;
+
+};
+
+inline void view::move(int iRowOffset, int iColumnOffset) {
+
+}
+
+
+// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------- caret
+// ----------------------------------------------------------------------------
+
+/**
+ * \brief caret is for positioning in console
  */
 struct caret
 {
