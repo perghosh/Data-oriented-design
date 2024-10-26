@@ -85,11 +85,19 @@ struct tag_parse_type{};                                                       /
  * [uint32][name][uint32]{[uint32]}[data]
  * 
  * Values are store in one single buffer, and each value know its type and the length for the value is also known before value data is found.
- * Because of lengths are store it is fast to move between values in arguments object. Also the data length is
- * store for the specific type in order to generate proper object value for type.
+ * Because lengths are stored it is fast to move between values in arguments object. Also the data length is
+ * stored for the specific type in order to generate proper object value for type.
  * Example: strings need to store the zero ending, but that isn't used to get the
  * string lenght. so data length for "123" is four bytes becuase zero ending is stored.
  * But the value is prefixed with length that matches date and there fore the value 3 is stored in front of "123".
+ * 
+ * Example: Show memory layout for named char* value
+ * - type and length for name                                    : 01 02 03 04
+ * - name data                                                   : number of bytes needed to store name
+ * - align with 32 bit value
+ * - type and length for value                                   : 01 02 03 04
+ * - value data                                                  : number of bytes needed to store value
+ * - align with 32 bit value
  *
  \code
  \endcode
@@ -185,6 +193,8 @@ public:
 
 
       eType_ParameterName,         // special type for parameter names
+
+      CItem_MAX,
 
       eValueName = 0b00100000,
       eValueLength = 0b01000000,
@@ -1107,14 +1117,6 @@ public:
 
    /// ## Append arguments
 
-   /*
-   template<typename FIRST, typename... NEXT>
-   static void append_s(arguments& rArguments, const FIRST& value_, NEXT... next_) { 
-      rArguments.append(value_); 
-      append_s(rArguments, ...next_);
-   }
-   */
-
    /// append pair to arguments
    static void append_argument_s(arguments& arguments, const std::pair<std::string_view, gd::variant>& pairArgument) {
       arguments.append_argument(pairArgument);
@@ -1163,9 +1165,10 @@ public:
    static void print_value_s(const_pointer pPosition, std::string& stringPrint);
 
    /// ## find out type for value
-   constexpr static unsigned int type_s(unsigned int uType) { return uType & ~eType_MASK; } // only type (no size)
-   constexpr static unsigned int ctype_s(unsigned int uType) { return uType & ~eCType_MASK; } // last byte (type and size)
-   constexpr static unsigned int type_number_s(unsigned int uType) { return uType & ~eTypeNumber_MASK; }
+   constexpr static unsigned int type_s(const_pointer pPosition) noexcept;
+   constexpr static unsigned int type_s(unsigned int uType) noexcept { return uType & ~eType_MASK; } // only type (no size)
+   constexpr static unsigned int ctype_s(unsigned int uType) noexcept { return uType & ~eCType_MASK; } // last byte (type and size)
+   constexpr static unsigned int type_number_s(unsigned int uType) noexcept { return uType & ~eTypeNumber_MASK; }
    constexpr static std::string_view type_name_s(uint32_t uType);
    
 
@@ -1431,7 +1434,15 @@ inline bool arguments::compare(const std::string_view& stringName, const argumen
 // ================================================================================= FREE FUNCTIONS
 // ================================================================================================
 
+/// get type number from position, make sure position points to type
+constexpr unsigned int arguments::type_s(const_pointer pPosition) noexcept {
+   uint32_t u_ = *(uint32_t*)pPosition;
+   uint32_t uType = (u_ >> 24) & ~eType_MASK;                                  // get value type
+                                                                                                   assert( uType < CItem_MAX );
+   return uType;
+}
 
+/// return type as text name
 constexpr std::string_view arguments::type_name_s(uint32_t uType)
 {
    const auto uNumberType = uType &  ~arguments::eTypeNumber_MASK;

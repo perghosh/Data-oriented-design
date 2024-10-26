@@ -27,6 +27,19 @@
 
 _GD_ARGUMENT_SHARED_BEGIN
 
+inline uint32_t align32_g( uint32_t uLength ) 
+{
+   if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
+   return uLength;
+}
+
+inline uint64_t align32_g( uint64_t uLength ) 
+{
+   if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
+   return uLength;
+}
+
+
 /*----------------------------------------------------------------------------- move_to_value */ /**
  * Moves pointer to value part in argument
  * If argument has a name and position pointer is at the name, then use this method
@@ -42,7 +55,7 @@ arguments::pointer arguments::move_to_value_s(pointer pPosition)
    if( eType == eType_ParameterName )
    {
       uint32_t uLength = u_ & 0x00FFFFFF;
-      if( (uLength % 4) != 0 ) uLength = (uLength + 3) & ~3;
+      uLength = align32_g( uLength );
 
       pPosition += sizeof( uint32_t ) + uLength;
    }
@@ -54,20 +67,21 @@ arguments::pointer arguments::move_to_value_s(pointer pPosition)
    return pPosition;
 }
 
-
+/// move past name to value data (dont use this if pointer is not on name for value)
 arguments::pointer arguments::move_to_value_data_s(pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
    uint32_t u_ = *(uint32_t*)pPosition;
-   enumCType eType = (enumCType)(u_ >> 24);
+   enumCType eType = (enumCType)(u_ >> 24);                                                        assert( ((unsigned)eType & ~eTypeNumber_MASK) == eType_ParameterName );
    pPosition += sizeof(uint32_t);
 
    return pPosition;
 }
 
+/// move past name to value data (dont use this if pointer is not on name for value)
 arguments::const_pointer arguments::move_to_value_data_s(const_pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
    uint32_t u_ = *(uint32_t*)pPosition;
-   enumCType eType = (enumCType)(u_ >> 24);
+   enumCType eType = (enumCType)(u_ >> 24);                                                        assert( ((unsigned)eType & ~eTypeNumber_MASK) == eType_ParameterName );
    pPosition += sizeof(uint32_t);
 
    return pPosition;
@@ -89,7 +103,7 @@ arguments::const_pointer arguments::move_to_value_s(const_pointer pPosition)
    if( eType == eType_ParameterName )
    {
       uint32_t uLength = u_ & 0x00FFFFFF;
-      if( (uLength % 4) != 0 ) uLength = (uLength + 3) & ~3;
+      uLength = align32_g( uLength );
 
       pPosition += sizeof( uint32_t ) + uLength;
    }
@@ -961,19 +975,6 @@ std::pair<bool, std::string> arguments::append(const std::string_view& stringVal
 
 
    return { true, "" };
-}
-
-
-inline uint32_t align32_g( uint32_t uLength ) 
-{
-   if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
-   return uLength;
-}
-
-inline uint64_t align32_g( uint64_t uLength ) 
-{
-   if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
-   return uLength;
 }
 
 
@@ -2285,6 +2286,7 @@ unsigned int arguments::get_total_param_length_s(std::string_view stringName, co
 
 /*----------------------------------------------------------------------------- next */ /**
  * Move to next element in binary stream. Make sure that next value is compatible type
+ * @see: Read `arguments` documents in header for explanation on how data is placed
  * \param riPosition current position in stream
  * \return arguments::pointer position to next value
  */
@@ -2311,6 +2313,7 @@ arguments::pointer arguments::next_s(pointer pPosition)
 
 /*----------------------------------------------------------------------------- next */ /**
  * Move to next element in binary stream. Make sure that next value is compatible type
+ * @see: Read `arguments` documents in header for explanation on how data is placed
  * \param riPosition current position in stream
  * \return arguments::const_pointer position to next value
  */
@@ -2329,31 +2332,6 @@ arguments::const_pointer arguments::next_s(const_pointer pPosition)
    uint32_t uLength = u_ & 0x00FFFFFF;                                                             assert( (uLength % 4) == 0 ); // has to be aligend 
    pPosition += sizeof( uint32_t );                                            // move past type and length information
    pPosition += uLength;                                                       // move past value length
-/*
-   if( (uType & eType_MASK) == 0 )
-   {
-      if( uType < eTypeNumberString ) 
-      { 
-         uLength = ctype_size[uType];
-      }
-      
-      if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
-      pPosition += uLength;
-   }
-   else
-   {
-      if( uType & eValueLength )
-      {
-         if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
-         pPosition += uLength;
-      }
-      else
-      {
-         // TODO: implement big length
-         assert( false );
-      }
-   }
-   */
 #ifndef NDEBUG
    uint64_t uValueSize_d = pPosition - pbegin_d;
 #endif
@@ -2370,8 +2348,8 @@ arguments::const_pointer arguments::next_s(const_pointer pPosition)
  */
 unsigned int arguments::sizeof_s(const argument& argumentValue)
 {
-   unsigned int uSize = 1;                                                       // start with size for type prefix (1 byte value in front);
-   if( argumentValue.ctype() & eValueLength )  uSize += sizeof(uint32_t);        // add size value in front of value
+   unsigned int uSize = 1;                                                     // start with size for type prefix (1 byte value in front);
+   if( argumentValue.ctype() & eValueLength )  uSize += sizeof(uint32_t);      // add size value in front of value
 
    return uSize + argumentValue.length();
 }
@@ -2385,19 +2363,22 @@ unsigned int arguments::sizeof_s(const argument& argumentValue)
 std::string arguments::print_s(const_pointer pPosition, uint32_t uPairType)
 {
    std::string stringArgument;
-   if( *pPosition == eType_ParameterName )
+   auto uType = type_s( pPosition );
+   if( uType == eType_ParameterName )
    {
       if( uPairType & ePairTypeKey )
       {
          stringArgument += "\"";
-         stringArgument.append( reinterpret_cast<const char*>( pPosition+ 2), *(pPosition + 1) );
+         stringArgument.append( get_name_s( pPosition ) );
          stringArgument += "\": ";
       }
-      pPosition += size_t(pPosition[1]) + size_t(2);                             // move to value
    }
+
+   pPosition = move_to_value_s( pPosition );                                   // move to value
 
    if( uPairType & ePairTypeValue )
    {
+      auto uType = type_s( pPosition );
       arguments::argument argumentValue( get_argument_s( pPosition ) );
       stringArgument += argumentValue.get_string();
    }

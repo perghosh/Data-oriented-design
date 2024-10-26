@@ -111,6 +111,10 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
 
       auto value_ = arguments_["2"].as_string();
 
+      std::cout << value_ << "\n";
+      value_ = arguments_.print();
+      std::cout << value_ << "\n";
+
       arguments_.set( "2", "22222" );
    }
 
