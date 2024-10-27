@@ -1358,7 +1358,7 @@ arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBu
          resize(pPosition, uOldSize, uNewSize); 
       }
 
-      m_uLength += int(uNewSize - uOldSize);
+      //m_uLength += int(uNewSize - uOldSize);
 
       pPosition += uNameLength;
       *pPosition = uType;
@@ -1793,8 +1793,11 @@ void arguments::remove(const_pointer pPosition)
    // [..........xxxxxxxxxx..........]
    // [....................] ( removed "xxxxxxxxxx" )
    memmove( (void*)pPosition, (void*)(pPosition + uSize), get_buffer_end() - (pPosition + uSize) ); // move memory
+   auto uSetSize = buffer_size();                                                                  assert( uSetSize >= uSize );
+   uSetSize -= uSize;                                                                              assert( uSetSize % 4 == 0 );
+   buffer_set_size( uSetSize );
 
-   m_uLength -= uSize;                                                           assert((int)m_uLength >= 0);
+   //m_uLength -= uSize;                                                           assert((int)m_uLength >= 0);
 }
 
 
@@ -1879,18 +1882,16 @@ std::cout << "arguments : " << s_ << "\n";
  * @endcode
 */
 void arguments::shrink_to_fit()
-{
+{                                                                                                  assert( buffer_reference_count() == 1 );
    if( capacity() > size( tag_memory{} ) )
    {
-      unsigned char* pBuffer = new unsigned char[m_uLength];                   // new buffer
-      memcpy(pBuffer, m_pBuffer, m_uLength);                                   // copy data
-
-      if( is_owner() ) delete m_pBuffer;                                       // clear old buffer
-
-      m_bOwner = true;
-      m_pBuffer = pBuffer;
-
-      m_uBufferLength = m_uLength;                                             // set buffer size
+      auto uSize = buffer_size();                                              // get current sizes
+      uSize += sizeof( buffer );                                               // add size for buffer object because all is in one memory block
+      uint8_t* pdata_ = new unsigned char[uSize];
+      memcpy(pdata_, m_pbuffer, uSize);                                        // copy data
+      delete [] m_pbuffer;
+      m_pbuffer = (buffer*)pdata_;
+      m_pbuffer->buffer_size( uSize );                                         // set max buffer size
    }
 }
 
@@ -2262,10 +2263,11 @@ arguments::argument_edit arguments::get_edit_param_s(arguments* parguments, argu
  * \param pPosition start position for param
  * \return unsigned int number of bytes param value use in buffer
  */
-unsigned int arguments::get_total_param_length_s(const_pointer pPosition)
+uint64_t arguments::get_total_param_length_s(const_pointer pPosition) noexcept
 {
    const_pointer pEnd = next_s( pPosition );
-   return static_cast<unsigned int>(pEnd - pPosition);
+   uint64_t uSize = pEnd - pPosition;
+   return uSize;
 }
 
 /// return all matching values (same name) in vector
