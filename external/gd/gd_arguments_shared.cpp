@@ -176,6 +176,28 @@ inline void _binary_to_hex(CHAR* pTPosition, const uint8_t* pBytes, unsigned uLe
    }
 }
 
+/*----------------------------------------------------------------------------- length */ /**
+ * return size buffer for argument in bytes, this do not include the space needed for type and size
+ * \return unsigned int number of bytes param occupies 
+ */
+unsigned int arguments::argument::size() const
+{
+   auto eTypeNumber = type_number();
+   if( eTypeNumber < arguments::eTypeNumberString ) { return ctype_size[(unsigned)eTypeNumber]; }
+   else
+   {
+      if( ctype() & eValueLength )
+      {
+         // ## value in bytes are stored two unsigned values before data
+         auto uSize = *(uint32_t*)(m_unionValue.puch - sizeof(uint32_t) * 2);                      
+         uSize &= 0x00FFFFFF;                                                                      assert(uSize < 0x00A00000); // realistic// clear type
+         uSize -= sizeof(uint32_t);                                            // remove size for type and size (the prefixed size value includs it)
+         return uSize;
+      }
+   }
+                                                                                                   assert( false );
+   return 0;
+}
 
 /*----------------------------------------------------------------------------- length */ /**
  * return length for argument in bytes
@@ -190,10 +212,10 @@ unsigned int arguments::argument::length() const
    {
       if( ctype() & eValueLength )
       {
-         auto uSize = *(uint32_t*)(m_unionValue.puch - 4);                                         assert(uSize < 0x00A00000); // realistic
+         // ## native value size is stored in front of value
+         auto uSize = *(uint32_t*)(m_unionValue.puch - sizeof(uint32_t));                          assert(uSize < 0x00A00000); // realistic
          return uSize;
       }
-      else if( eTypeNumber == eTypeNumberWString ) return (unsigned int)wcslen(m_unionValue.pwsz) * 2 + 2;
 
       return (unsigned int)strlen(m_unionValue.pbsz) + 1;
    }
@@ -1030,13 +1052,13 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
       {
          if(( uType & eTypeNumber_MASK ) == eTypeNumberWString)
          {                                                                                         assert( (uValueLength % 2) == 0 );
-         uValueLength = uValueLength >> 1;                                  // unicode string, length is cut in half
+            uValueLength = uValueLength >> 1;                                  // unicode string, length is cut in half
          }
          uValueLength--;                                                       // remove the zero terminator for length
       }
 
       *(uint32_t*)(pdata_ + uPosition) = uValueLength;
-      memcpy(&pdata_[uPosition + sizeof( uint32_t )], pBuffer, uTotalLength);                       // copy data
+      memcpy(&pdata_[uPosition + sizeof( uint32_t )], pBuffer, uLength);       // copy data
       uPosition += uTotalLength;                                               // move past data for value (length and data)
       buffer_set_size( uPosition );                                            assert(buffer_size() < buffer_buffer_size());
    }
@@ -1244,46 +1266,73 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
       pPosition = move_to_value_s( pPosition );
       pPosition = move_to_value_data_s( pPosition );                           assert(pPosition < get_buffer_end());
       memcpy(pPosition, pBuffer, uLength);
+      return *this;
    }
    else
    {
-      auto uOldSize = arguments::sizeof_name_s( uNameLength ) +  arguments::sizeof_s( argumentOld ); // calculate total size for old value
-      auto uNewSize = arguments::sizeof_s( uNameLength, uType, uLength );      // calculate total size for new value
+      auto uOldSize = arguments::sizeof_name_s( uNameLength );
+      uOldSize = align32_g( uOldSize );
+      uOldSize += arguments::sizeof_s( argumentOld );
+      uOldSize = align32_g( uOldSize );
 
-      
+      auto uNewSize = arguments::sizeof_s( uNameLength, uType, uLength );      // calculate total size for new value
 
       if( uOldSize != uNewSize ) 
       { 
          if( uNewSize > uOldSize ) 
          { 
-            size_t uOffset = pPosition - m_pBuffer;                            // offset value from start of buffer, needed to set new position if new block is allocated
+            size_t uOffset = pPosition - buffer_data();                        // offset value from start of buffer, needed to set new position if new block is allocated
             
             // reserv memory if needed and if memory is reserved, reset position
-            if( reserve( m_uLength + (uNewSize - uOldSize) ) == true ) { pPosition = m_pBuffer + uOffset; }
+            if( reserve( buffer_size() + uNewSize ) == true ) 
+            { 
+               pPosition = buffer_data() + uOffset;                            // reset position
+            }
          }
 
          resize(pPosition, uOldSize, uNewSize); 
       }
 
-      pPosition += arguments::sizeof_name_s(uNameLength);
-      m_uLength += int(uNewSize - uOldSize);
+      pPosition = move_to_value_s( pPosition );                                                    assert( ((intptr_t)pPosition % 4) == 0 );
 
-      *pPosition = uType;
-      pPosition++;
-
-      if( (uType & eValueLength) == 0 )                                          // if type doesn't have specified length flag then just copy data into buffer
+      if( (uType & eValueLength) == 0 )                                        // if type doesn't have specified length flag then just copy data into buffer
       {
-         memcpy(pPosition, pBuffer, uLength);
+         uint32_t uValueLength = uLength;                                      // hold value length
+         uLength = align32_g( uLength );                                       // align to 32 bit boundary
+         uint32_t uTypeAndSize = (uType << 24) | uLength;
+         *(uint32_t*)(pPosition) = uTypeAndSize;                               // set type and size
+         pPosition += sizeof( uint32_t );
+
+         memcpy(pPosition, pBuffer, uValueLength);
       }
       else
       {
-         *(uint32_t*)pPosition = (uint32_t)uLength;                              // set length for data
-         pPosition += sizeof(uint32_t);
-         memcpy(pPosition, pBuffer, uLength);                                    // copy data
+         unsigned uTotalLength = uLength;
+         uint32_t uValueLength = uLength;                                      // value length in bytes (storage needed to hold data)
+         uTotalLength += sizeof( uint32_t );                                   // add value length to total value size
+         uTotalLength = align32_g( uTotalLength );                             // align to 32 bit boundary
+         uint32_t uTypeAndSize = (uType << 24) | uTotalLength;                 // set value type and length in 32 bit value
+         *(uint32_t*)(pPosition) = uTypeAndSize;                               // set type and size
+         pPosition += sizeof( uint32_t );                                      // move past type and size
+
+         uint32_t uCompleteType = gd::types::typenumber_to_type_g( uType & ~eType_MASK );// get the full type information from gd types to investigate the object length
+
+         // ## fix size to the actual length for value, this is to improve the speed
+         //    generating value objects from data
+         if(uCompleteType & gd::types::eTypeGroupString)
+         {
+            if(( uType & eTypeNumber_MASK ) == eTypeNumberWString)
+            {                                                                                      assert( (uValueLength % 2) == 0 );// make sure unicode is correct
+               uValueLength = uValueLength >> 1;                               // unicode string, length is cut in half
+            }
+            uValueLength--;                                                    // remove the zero terminator for length
+         }
+         *(uint32_t*)(pPosition) = uValueLength;
+         pPosition += sizeof( uint32_t );
+
+         memcpy(pPosition, pBuffer, uLength);                                  // copy data
       }
    }
-
-
 
    return *this;
 }
@@ -1304,7 +1353,8 @@ arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBu
       auto uNewSize = uNameLength + uLength + sizeof_value_prefix( uType );
       if( uOldSize != uNewSize ) 
       { 
-         if( uOldSize < uNewSize ) reserve(m_uLength + (uNewSize - uOldSize));  // increase buffer if needed
+         if( uOldSize < uNewSize ) reserve( uNewSize );                        // increase buffer if needed
+
          resize(pPosition, uOldSize, uNewSize); 
       }
 
@@ -1774,7 +1824,10 @@ int arguments::resize(pointer pPosition, int iOffset, int iNewOffset)
       void* psource = pPosition + iOffset;
       size_t uCount = get_buffer_end() - (pPosition + iOffset);
       if( uCount != 0 ) { memmove( pdestination, psource, uCount ); } // move memory
-      //memmove( (void*)(pPosition + iNewOffset), (void*)(pPosition + iOffset), get_buffer_end() - (pPosition + iOffset) ); // move memory
+
+      auto uPosition = buffer_size();
+      uPosition += iSizeChange;
+      buffer_set_size( uPosition );
    }
 
    return iSizeChange;
@@ -2185,7 +2238,7 @@ arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition
 
    case arguments::eType_ParameterName:
    {
-      if( (uLength % 4) != 0 ) uLength = (uLength + 3) & ~3;
+      uLength = align32_g( uLength );
       pPosition += uLength;
       return get_argument_s(pPosition);
    }
@@ -2280,7 +2333,10 @@ std::vector<gd::variant_view> arguments::get_argument_section_s(const_pointer pB
  */
 unsigned int arguments::get_total_param_length_s(std::string_view stringName, const argument argumentValue)
 {
-   return 1 + (unsigned int)stringName.length() + sizeof_s(argumentValue);
+   unsigned uSize = sizeof_name_s( (unsigned)stringName.length(), tag_align{});
+   uSize += sizeof_s(argumentValue);
+   uSize = align32_g( uSize );
+   return uSize;
 }
 
 
@@ -2348,10 +2404,11 @@ arguments::const_pointer arguments::next_s(const_pointer pPosition)
  */
 unsigned int arguments::sizeof_s(const argument& argumentValue)
 {
-   unsigned int uSize = 1;                                                     // start with size for type prefix (1 byte value in front);
-   if( argumentValue.ctype() & eValueLength )  uSize += sizeof(uint32_t);      // add size value in front of value
+   unsigned int uSize = sizeof(uint32_t);                                      // start with 32 bit unsigned that store type and value size
+   if( argumentValue.ctype() & eValueLength )  uSize += sizeof(uint32_t);      // add size value storing native size
+   uSize += argumentValue.size();
 
-   return uSize + argumentValue.length();
+   return uSize;
 }
 
 /*----------------------------------------------------------------------------- print_s */ /**
@@ -2418,13 +2475,59 @@ void arguments::print_value_s( const_pointer pPosition, std::string& stringPrint
  */
 unsigned int arguments::sizeof_s(uint32_t uNameLength, param_type uType, unsigned int uValueLength)
 {
-   unsigned int uSize = 3;                                                       // 3 - one byte for name type, one byte for name length, and one byte for value type
-   uSize += uNameLength;                                                         // add name length
-   if( uType & eValueLength ) uSize += sizeof(uint32_t); 
-   uSize += uValueLength;
+   unsigned int uSize = 0;
+   if(uNameLength > 0)
+   {
+      uSize = sizeof( uint32_t ) + uNameLength;
+      uSize = align32_g( uSize );
+   }
+
+   uSize += sizeof( uint32_t );
+   if( uType & eValueLength ) { uSize += sizeof( uint32_t ); }
+   uSize +=  uValueLength;
+   uSize = align32_g( uSize );
 
    return uSize;
 }
+
+/// return needed aligned size to store name in arguments buffer
+unsigned int arguments::sizeof_name_s(uint32_t uNameLength, tag_align) noexcept
+{
+   unsigned uSize = 0;
+   if(uNameLength > 0)
+   {
+      uSize = sizeof( uint32_t ) + uNameLength;
+      uSize = align32_g( uSize );
+   }
+   return uSize;
+}
+
+/// return needed size for name within arguments
+unsigned int arguments::sizeof_name_s(const_pointer pPosition) noexcept
+{ 
+   unsigned uSize;
+   auto uType = type_s( pPosition, &uSize );
+   if( *pPosition == eType_ParameterName )
+   {
+      return uSize + sizeof( uint32_t );                                       // return size and unsigned prefix needed to store name information
+   }
+   return 0;
+}
+
+/// return needed size for name within arguments
+unsigned int arguments::sizeof_name_s(const_pointer pPosition, tag_align ) noexcept
+{ 
+   unsigned uSize;
+   auto uType = type_s( pPosition, &uSize );
+   if( *pPosition == eType_ParameterName )
+   {
+      uSize = align32_g( uSize );
+      return uSize + sizeof( uint32_t );                                       // return size and unsigned prefix needed to store name information
+   }
+   return 0;
+}
+
+
 
 /*----------------------------------------------------------------------------- get_variant_s */ /**
  * Return argument value as variant

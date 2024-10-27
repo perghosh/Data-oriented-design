@@ -65,6 +65,7 @@ struct tag_memory {};                                                          /
 struct tag_pair {};                                                            ///< tag dispatcher used to select working with pair items instead of vector
 struct tag_parse {};                                                           ///< methods that parse
 struct tag_parse_type{};                                                       ///< tag to try to parse type of value
+struct tag_align{};                                                            ///< align related methods
 
 
 
@@ -398,7 +399,9 @@ public:
       /// compare within group type, if integer all sizes are valid for comparison
       bool compare_group( const argument& o ) const { return compare_argument_group_s(*this, o); }
 
-      /// length in bytes for param
+      /// size in bytes for value in arguments
+      unsigned int size() const;
+      /// native length param
       unsigned int length() const;
       /// get param type
       arguments::enumType type() const { return arguments::enumType((unsigned)m_eType & ~eType_MASK); }
@@ -1102,11 +1105,10 @@ public:
    /// ## Calculate size in bytes needed for argument values stored in arguments object
    static unsigned int sizeof_s(const argument& argumentValue);
    static unsigned int sizeof_s(uint32_t uNameLength, param_type uType, unsigned int uLength);
-   static inline unsigned int sizeof_name_s(uint32_t uNameLength) { return uNameLength + 2; }
-   static inline unsigned int sizeof_name_s(const_pointer pPosition) { 
-      if( *pPosition == eType_ParameterName ) return 2 + pPosition[1];           // name marker = 1 byte, name length = 1 byte and the total name length
-      return 0;
-   }
+   static inline unsigned int sizeof_name_s(uint32_t uNameLength) noexcept { return uNameLength + sizeof(uint32_t); }
+   static inline unsigned int sizeof_name_s(uint32_t uNameLength, tag_align) noexcept;
+   static inline unsigned int sizeof_name_s(const_pointer pPosition) noexcept; 
+   static inline unsigned int sizeof_name_s(const_pointer pPosition, tag_align) noexcept; 
 
    static constexpr inline unsigned int sizeof_value_prefix(param_type uType) { return uType & eValueLength ? sizeof(uint32_t) + 1 : 1; }
 
@@ -1166,6 +1168,7 @@ public:
 
    /// ## find out type for value
    constexpr static unsigned int type_s(const_pointer pPosition) noexcept;
+   static unsigned int type_s(const_pointer pPosition, uint32_t* puSize ) noexcept;
    constexpr static unsigned int type_s(unsigned int uType) noexcept { return uType & ~eType_MASK; } // only type (no size)
    constexpr static unsigned int ctype_s(unsigned int uType) noexcept { return uType & ~eCType_MASK; } // last byte (type and size)
    constexpr static unsigned int type_number_s(unsigned int uType) noexcept { return uType & ~eTypeNumber_MASK; }
@@ -1442,8 +1445,17 @@ constexpr unsigned int arguments::type_s(const_pointer pPosition) noexcept {
    return uType;
 }
 
+/// return type and value size if pointer to unsigned is sent
+inline unsigned int arguments::type_s(const_pointer pPosition, uint32_t* puSize ) noexcept {
+   uint32_t u_ = *(uint32_t*)pPosition;
+   uint32_t uType = (u_ >> 24) & ~eType_MASK;                                  // get value type
+                                                                                                   assert( uType < CItem_MAX );
+   if( puSize != nullptr ) *puSize = u_ & 0xFFFFFF;
+   return uType;
+}
+
 /// return type as text name
-constexpr std::string_view arguments::type_name_s(uint32_t uType)
+inline constexpr std::string_view arguments::type_name_s(uint32_t uType)
 {
    const auto uNumberType = uType &  ~arguments::eTypeNumber_MASK;
    switch( uNumberType )
