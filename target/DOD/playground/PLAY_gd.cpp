@@ -116,6 +116,8 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
       std::cout << value_ << "\n";
 
       arguments_.set( "2", "222222" );
+      value_ = arguments_.print();
+      std::cout << value_ << "\n";
    }
 
 

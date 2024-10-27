@@ -870,7 +870,7 @@ public:
 /** \name COUNT
 *///@{
    bool empty() const noexcept { return m_pbuffer->size() == 0; }
-   size_t size( tag_memory ) const noexcept { return m_uLength; }
+   size_t size( tag_memory ) const noexcept { return buffer_size(); }
    unsigned int count(std::string_view stringName) const;
 //@}
 
@@ -1091,7 +1091,7 @@ public:
    /// return editable param based on position
    static argument_edit get_edit_param_s(arguments* parguments, const_pointer pPosition);
    /// count internal param length in bytes
-   static unsigned int get_total_param_length_s(const_pointer pPosition);
+   static uint64_t get_total_param_length_s(const_pointer pPosition) noexcept;
    static unsigned int get_total_param_length_s(std::string_view stringName, const argument argumentValue);
    static std::vector<argument> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName);
    static std::vector<gd::variant_view> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
@@ -1231,6 +1231,7 @@ public:
          m_pbuffer = &m_buffer_s;
       }
    }
+   unsigned buffer_reference_count() const { return m_pbuffer->m_iReferenceCount; }
 
 
 
@@ -1238,8 +1239,8 @@ public:
 public:
    bool           m_bOwner;      ///< if buffer is owned (delete in destructor)
    pointer        m_pBuffer;     ///< pointer to byte array
-   unsigned int   m_uLength;     ///< length in use
-   unsigned int   m_uBufferLength;///< length for byte array
+   //unsigned int   m_uLength;     ///< length in use
+   //unsigned int   m_uBufferLength;///< length for byte array
 
    buffer* m_pbuffer = &m_buffer_s;
 
