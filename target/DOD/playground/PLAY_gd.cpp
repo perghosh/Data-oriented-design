@@ -1,3 +1,6 @@
+#include <random>
+#include <chrono>
+
 #include "gd/gd_utf8.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_arguments.h"
@@ -108,6 +111,8 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
       arguments_.append("1", 1);
       arguments_.append("2", "2");
       arguments_.append("3", 3);
+      arguments_.append("4", 4);
+      arguments_.append("5", 5);
 
       auto value_ = arguments_["2"].as_string();
 
@@ -118,6 +123,36 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
       arguments_.set( "2", "222222" );
       value_ = arguments_.print();
       std::cout << value_ << "\n";
+      arguments_.remove( "4" );
+      value_ = arguments_.print();
+      std::cout << value_ << "\n";
+   }
+
+   {
+      using namespace gd::argument::shared;
+      std::random_device randomdevice;
+      std::mt19937 mt19937RandomNumber(randomdevice()); 
+      std::string stringSelectCharFrom = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      std::uniform_int_distribution<> pick_character_(0, stringSelectCharFrom.size() - 1);
+
+      gd::argument::shared::arguments arguments_;
+
+      for(unsigned u = 0; u < 100; u++)
+      {
+         unsigned uLength = u % 20 + 5;
+         std::string stringKey;
+         for(unsigned uNextChar = 0; uNextChar < uLength; uNextChar++)
+         {
+            auto index_ = pick_character_( mt19937RandomNumber );
+            stringKey += stringSelectCharFrom[index_];
+         }
+
+         arguments_.append( stringKey, uLength );
+      }
+
+      auto value_ = arguments_.print();
+      std::cout << value_ << "\n";
+
    }
 
 
