@@ -38,6 +38,7 @@
 #  define ASSIGN_D ((void)0)
 #endif
 
+// ## tag dispatchers
 
 struct tag_color{};      ///< logic to work with color
 
@@ -45,6 +46,34 @@ struct tag_format_cli{}; ///< format for cli
 
 struct tag_height{};    ///< height operations
 struct tag_width{};     ///< width operations
+
+// ## helper structs
+
+
+/** ---------------------------------------------------------------------------
+ * \brief manage row and column position in console
+ */
+struct rowcolumn
+{
+// ## construction -------------------------------------------------------------
+   rowcolumn(): m_uRow(0), m_uColumn(0) {}
+   rowcolumn( unsigned uRow, unsigned uColumn ): m_uRow(uRow), m_uColumn(uColumn) {}
+   ~rowcolumn() {}
+
+   operator uint64_t() const { 
+      uint64_t u_ = uint64_t(m_uRow) << 32 | m_uColumn; 
+      return u_;
+   }
+
+   unsigned row() const { return m_uRow; }
+   unsigned column() const { return m_uColumn; }
+
+// ## attributes
+   unsigned m_uRow;				///< Row index
+   unsigned m_uColumn;			///< Column index
+};
+
+
 
 // ----------------------------------------------------------------------------
 // --------------------------------------------------------------------- device
@@ -87,17 +116,19 @@ public:
 #endif
    };
 
-   /**
-    * \brief
+   /** ------------------------------------------------------------------------
+    * \brief internal helper object to simplify working with characters on device.
+    * `row` is used for, among other things seting values like this `device[1][1] = 'X';`
     */
    struct row
    {
    // ## construction -------------------------------------------------------------
-      row(): m_puRow(nullptr) {}
+      row(): m_puRow(nullptr), m_uLength(0) {}
       row( uint8_t* puRow ): m_puRow(puRow) {}
       row( uint8_t* puRow, unsigned uLength ): m_puRow(puRow), m_uLength(uLength) {}
       ~row() {}
 
+      // ## position operators for double index operator like `[][] = ?`
       position operator[]( unsigned uColumn ) {                                                    assert( uColumn < m_uLength ); assert( m_pdevice_d->validate_position_d( m_puRow + uColumn ) );
          position position_(m_puRow + uColumn);  ASSIGN_D( position_, m_pdevice_d ); return position_;
       }
@@ -121,6 +152,7 @@ public:
 public:
    device(): m_uRowCount(0), m_uColumnCount(0) {}
    device( unsigned uRowCount, unsigned uColumnCount ): m_uRowCount(uRowCount), m_uColumnCount(uColumnCount) {}
+   device( const rowcolumn& rowcolumn_ ): m_uRowCount(rowcolumn_.row()), m_uColumnCount(rowcolumn_.column()) {}
    // copy
    device(const device& o) { common_construct(o); }
    device(device&& o) noexcept { common_construct(std::move(o)); }
@@ -217,6 +249,9 @@ public:
    static uint64_t calculate_device_size_s( unsigned uRowCount, unsigned uColumnCount );
    static uint64_t calculate_device_size_s( const device& device_ );
    static uint64_t calculate_row_buffer_size_s( unsigned uColumnCount );
+
+   // ## terminal methods
+   static rowcolumn terminal_get_size_s();
 
 };
 

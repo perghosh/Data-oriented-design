@@ -19,3 +19,4 @@ set(CMAKE_CXX_STANDARD 20)
 # TODO: Add tests and install targets if needed.
 add_subdirectory( "target/DOD" )
 add_subdirectory( "target/server/socket" )
+add_subdirectory( "target/GD-samples" )

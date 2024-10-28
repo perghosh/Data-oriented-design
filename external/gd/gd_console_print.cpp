@@ -1,6 +1,16 @@
 #include "gd_debug.h"
 #include "gd_console_print.h"
 
+#ifdef _WIN32
+#  include <windows.h>
+#  undef min
+#  undef max
+#else
+#  include <sys/ioctl.h>
+#  include <unistd.h>
+#endif
+
+
 _GD_CONSOLE_BEGIN
 
 // ----------------------------------------------------------------------------
@@ -202,6 +212,32 @@ void device::scroll_y(int32_t iOffsetRow)
    move_and_clear_( m_puDrawBuffer, iOffsetRow, m_uFillCharacter );
    move_and_clear_( m_puColorBuffer, iOffsetRow, 0 );
 
+}
+
+/// Return console (terminal) size
+rowcolumn device::terminal_get_size_s()
+{
+#  ifdef _WIN32
+   CONSOLE_SCREEN_BUFFER_INFO CSBI;
+   if( ::GetConsoleScreenBufferInfo( ::GetStdHandle( STD_OUTPUT_HANDLE ), &CSBI ) == TRUE )
+   {
+      unsigned uRow = CSBI.srWindow.Bottom - CSBI.srWindow.Top + 1;
+      unsigned uColumn = CSBI.srWindow.Right - CSBI.srWindow.Left + 1;
+      rowcolumn rowcolumn_( uRow, uColumn );
+      return rowcolumn_;
+   }
+#  else
+   struct winsize winsize_;
+   if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &winsize_) == 0) 
+   {
+      unsigned uRow = winsize_.ws_row;
+      unsigned uColumn = winsize_.ws_col;
+      rowcolumn rowcolumn_( uRow, uColumn );
+      return rowcolumn_;
+   }
+#  endif
+                                                                                                   assert( false );
+   return rowcolumn();
 }
 
 device::position& device::position::operator=(const std::string_view& string_)
