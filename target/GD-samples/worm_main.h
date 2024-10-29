@@ -32,6 +32,8 @@ struct Worm
    // ## methods -----------------------------------------------------------------
    std::pair< bool, std::string > Create();
 
+   std::vector<gd::console::rowcolumn> ToList( const std::string_view& stringType ) const;
+
 
    // ## attributes --------------------------------------------------------------
    gd::argument::shared::arguments m_argumentsWorm;
@@ -74,12 +76,17 @@ struct Application : public application::basic::CApplication
 // ## methods -----------------------------------------------------------------
    std::pair<bool, std::string> Initialize() override;
 
+   /// Draw application
+   void Draw();
+
 /** \name DEBUG
 *///@{
 
 //@}
 
 // ## attributes --------------------------------------------------------------
+   Worm m_worm;
+   gd::console::caret m_caretTopLeft;
    gd::console::device m_deviceGame;
 
 // ## free functions ----------------------------------------------------------

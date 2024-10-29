@@ -27,6 +27,8 @@ int main( int iArgumentCount, char* ppbszArgument[] )
 
    papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
 
+   papplication_->Draw();
+
    return 0;
 }
 
@@ -51,6 +53,22 @@ std::pair< bool, std::string > Worm::Create()
    return { true, "" };
 }
 
+std::vector<gd::console::rowcolumn> Worm::ToList( const std::string_view& stringType ) const
+{
+   std::vector<gd::console::rowcolumn> vectorList;
+
+   if( stringType == "body" )
+   {
+      auto vector_ = m_argumentsWorm.get_argument_all("body");
+      for( auto it : vector_ )
+      {
+         vectorList.push_back( it.as_uint64() );
+      }
+   }
+
+   return vectorList;
+}
+
 
 std::pair<bool, std::string> Application::Initialize()
 {
@@ -63,4 +81,12 @@ std::pair<bool, std::string> Application::Initialize()
    m_deviceGame.create();
 
    return application::basic::CApplication::Initialize();
+}
+
+/// Draw application to terminal
+void Application::Draw()
+{
+   auto vectorWorm = m_worm.ToList( "body" );
+   std::cout << m_caretTopLeft.render( gd::console::tag_format_cli{});
+   std::cout << m_deviceGame.render( gd::console::tag_format_cli{});
 }

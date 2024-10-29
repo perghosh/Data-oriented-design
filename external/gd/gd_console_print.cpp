@@ -82,6 +82,19 @@ std::pair<bool, std::string> device::create()
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief print character at positions in vector
+ * @param vectorRC vector with positions where to print character on device
+ * @param ch_ character to print
+ */
+void device::print(const std::vector<rowcolumn>& vectorRC, char ch_)
+{
+   for(auto it : vectorRC)
+   {
+      print( it, ch_ );
+   }
+}
+
+/** ---------------------------------------------------------------------------
  * @brief clear internal resources for device
  */
 void device::clear()

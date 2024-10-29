@@ -1809,9 +1809,9 @@ void arguments::remove(const_pointer pPosition)
  * \param iNewOffset
  * \return int
  */
-int arguments::resize(pointer pPosition, int iOffset, int iNewOffset)
+int64_t arguments::resize(pointer pPosition, int64_t iOffset, int64_t iNewOffset)
 {
-   int iSizeChange = iNewOffset - iOffset;
+   int64_t iSizeChange = iNewOffset - iOffset;
 
    if( iSizeChange != 0 )                                                         // need more  space for value compared to current value
    {
