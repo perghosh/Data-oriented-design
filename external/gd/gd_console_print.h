@@ -49,15 +49,22 @@ struct tag_width{};     ///< width operations
 
 // ## helper structs
 
+// ----------------------------------------------------------------------------
+// ------------------------------------------------------------------ rowcolumn
+// ----------------------------------------------------------------------------
+
+
 
 /** ---------------------------------------------------------------------------
  * \brief manage row and column position in console
+ * This is used to simply where to place information in terminal
  */
 struct rowcolumn
 {
 // ## construction -------------------------------------------------------------
    rowcolumn(): m_uRow(0), m_uColumn(0) {}
    rowcolumn( unsigned uRow, unsigned uColumn ): m_uRow(uRow), m_uColumn(uColumn) {}
+   rowcolumn( uint64_t uRowColumn ): m_uRow(unsigned(uRowColumn >> 32)), m_uColumn(unsigned(uRowColumn)) {}
    ~rowcolumn() {}
 
    operator uint64_t() const { 
@@ -66,7 +73,9 @@ struct rowcolumn
    }
 
    unsigned row() const { return m_uRow; }
+   void row( unsigned uRow ) { m_uRow = uRow; }
    unsigned column() const { return m_uColumn; }
+   void column( unsigned uColumn ) { m_uColumn = uColumn; }
 
 // ## attributes
    unsigned m_uRow;				///< Row index
@@ -190,6 +199,14 @@ public:
 *///@{
    std::pair<bool, std::string> create();
 
+   // ## printing, place text in device area
+   void print( unsigned uRow, unsigned uColumn, char ch_ );
+   void print( const rowcolumn& RC, char ch_ ) { print( RC.row(), RC.column(), ch_ ); }
+   void print( unsigned uRow, unsigned uColumn, const std::string_view& stringText );
+   void print( const rowcolumn& rowcolumn_, const std::string_view& stringText );
+   void print( const std::vector<rowcolumn>& vectorRC, const std::string_view& stringText );
+   void print( const std::vector<rowcolumn>& vectorRC, char ch_ );
+
    void clear();
 
    std::pair<bool, std::string> render( std::string& stringPrint ) const;
@@ -217,6 +234,7 @@ public:
 protected:
 /** \name INTERNAL
 *///@{
+   uint64_t calculate_position( unsigned uRow, unsigned uColumn );
    uint8_t* offset( unsigned uRow ) const;
    uint8_t* offset( unsigned uRow, unsigned uColumn ) const;
    uint8_t* buffer_begin() const { return m_puDrawBuffer; }
@@ -284,6 +302,18 @@ inline uint8_t* device::offset(unsigned uRow, unsigned uColumn) const {         
    return m_puDrawBuffer + ( uRow * m_uColumnCount ) + uColumn; 
 }
 
+/// print character at position for row and column
+inline void device::print(unsigned uRow, unsigned uColumn, char ch_) {                             assert( m_puDrawBuffer != nullptr ); assert( uRow < m_uRowCount ); assert( uColumn < m_uColumnCount );
+   auto* pposition_ = offset( uRow, uColumn );
+   *pposition_ = ch_;
+}
+
+/// print text at position for row and column
+inline void device::print(unsigned uRow, unsigned uColumn, const std::string_view& stringText) {   assert( m_puDrawBuffer != nullptr ); assert( uRow < m_uRowCount ); assert( uColumn < m_uColumnCount );
+   auto pposition_ = offset( uRow, uColumn );                                                      assert( (pposition_ + stringText.length()) < buffer_end() );
+   memcpy( pposition_, stringText.data(), stringText.length() );
+}
+
 //
 inline uint64_t device::calculate_device_size_s( unsigned uRowCount, unsigned uColumnCount ) {
    return uRowCount * uColumnCount;
@@ -294,7 +324,12 @@ inline uint64_t device::calculate_device_size_s( const device& device_ ) {
 }
 
 inline uint64_t device::calculate_row_buffer_size_s(unsigned uColumnCount) {
-   return (uColumnCount * 12) + 1;
+   return (uColumnCount * 10) + 1;
+}
+
+inline uint64_t device::calculate_position(unsigned uRow, unsigned uColumn) {                      assert( m_puDrawBuffer != nullptr ); assert( uRow < m_uRowCount ); assert( uColumn < m_uColumnCount );
+   uint64_t uPosition = ( uRow * m_uColumnCount ) + uColumn;
+   return uPosition;
 }
 
 // ----------------------------------------------------------------------------

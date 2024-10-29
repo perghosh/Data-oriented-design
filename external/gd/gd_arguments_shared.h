@@ -1037,7 +1037,7 @@ public:
    /// make sure internal buffer can hold specified number of bytes, no copying just reserving data
 
    /// Resize one argument within arguments object, do not use this if you do not know how arguments work!!
-   int resize(pointer pPosition, int iOffset, int iNewOffset);
+   int64_t resize(pointer pPosition, int64_t iOffset, int64_t iNewOffset);
    /// remove unused memory
    void shrink_to_fit();
 //@}
