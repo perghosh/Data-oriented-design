@@ -44,6 +44,7 @@ struct Worm
 
 
    // ## attributes --------------------------------------------------------------
+   uint64_t m_uMoveCounter = 0;     ///<
    gd::argument::shared::arguments m_argumentsWorm;
 
    // ## free functions ----------------------------------------------------------

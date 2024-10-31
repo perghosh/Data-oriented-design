@@ -46,10 +46,18 @@ std::vector<gd::console::rowcolumn> Worm::ToList( const std::string_view& string
  */
 void Worm::Move()
 {
+   m_uMoveCounter++;
+
    int32_t iMoveRow = m_argumentsWorm["move_row"];
    int32_t iMoveColumn = m_argumentsWorm["move_column"];
 
    auto vectorBody = m_argumentsWorm.get_argument_section("body", gd::argument::shared::arguments::tag_view{});
+
+   if( (m_uMoveCounter % 10) == 0 ) 
+   { 
+      vectorBody.push_back( ToBodyPart_s(0,0) ); 
+   }
+
    std::rotate(vectorBody.begin(), vectorBody.begin() + 1, vectorBody.end());
 
    uint64_t uHead = m_argumentsWorm["head"];                                   // get head position
@@ -114,6 +122,8 @@ void Application::DrawFrame()
 
    for( unsigned uRow = 0; uRow < uRowCount; uRow++ ) m_deviceGame[uRow][0] = chFrame;
    for( unsigned uRow = 0; uRow < uRowCount; uRow++ ) m_deviceGame[uRow][uColumnCount - 1] = chFrame;
+
+   m_deviceGame.fill( 1,1, uRowCount - 2, uColumnCount - 2, ' ' );
 }
 
 void Application::PrepareFrame()
