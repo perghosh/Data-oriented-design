@@ -1,3 +1,7 @@
+#include <thread>
+#include <chrono>
+
+
 #include "gd/gd_arguments_shared.h"
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
@@ -5,6 +9,7 @@
 #include "gd/gd_console_print.h"
 #include "gd/gd_console_style.h"
 
+#include "worm/Application.h"
 
 #include "worm_main.h"
 
@@ -14,6 +19,9 @@ application::basic::CApplication* papplication_g = nullptr;
 std::random_device randomdevice_g;
 std::mt19937 mt19937RandomNumber_g(randomdevice_g()); 
 
+std::pair<bool, std::string> Play();
+
+// ## `main`
 
 int main( int iArgumentCount, char* ppbszArgument[] )
 {
@@ -27,66 +35,26 @@ int main( int iArgumentCount, char* ppbszArgument[] )
 
    papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
 
-   papplication_->Draw();
+   auto [bOk, stringError] = Play();
 
    return 0;
 }
 
-
-
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------- Worm
-// ----------------------------------------------------------------------------
-
-
-
-std::pair< bool, std::string > Worm::Create()
+std::pair<bool, std::string> Play()
 {
+   Application* papplication = (Application*)papplication_g;
 
-   m_argumentsWorm.clear();
+   papplication->Draw();
 
-   m_argumentsWorm.append( "head", ToBodyPart_s( 5, 10 ) );                     // head at position 5,5
+   for( auto i = 0; i < 50; i++ )
+   {
+      papplication->PrepareFrame();
+      papplication->Draw();
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+   }
 
-   m_argumentsWorm.append( "body", ToBodyPart_s( 5, 9 ) );
-   m_argumentsWorm.append_many( ToBodyPart_s( 5, 8 ), ToBodyPart_s( 5, 7 ), ToBodyPart_s( 5, 6 ), ToBodyPart_s( 5, 5 ) );
-      
    return { true, "" };
 }
 
-std::vector<gd::console::rowcolumn> Worm::ToList( const std::string_view& stringType ) const
-{
-   std::vector<gd::console::rowcolumn> vectorList;
-
-   if( stringType == "body" )
-   {
-      auto vector_ = m_argumentsWorm.get_argument_all("body");
-      for( auto it : vector_ )
-      {
-         vectorList.push_back( it.as_uint64() );
-      }
-   }
-
-   return vectorList;
-}
 
 
-std::pair<bool, std::string> Application::Initialize()
-{
-   // ## Get information about terminal size
-
-   auto rowcolumn_ = gd::console::device::terminal_get_size_s();
-
-   // ## create device
-   m_deviceGame = rowcolumn_;
-   m_deviceGame.create();
-
-   return application::basic::CApplication::Initialize();
-}
-
-/// Draw application to terminal
-void Application::Draw()
-{
-   auto vectorWorm = m_worm.ToList( "body" );
-   std::cout << m_caretTopLeft.render( gd::console::tag_format_cli{});
-   std::cout << m_deviceGame.render( gd::console::tag_format_cli{});
-}

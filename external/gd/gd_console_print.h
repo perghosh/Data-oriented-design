@@ -64,6 +64,7 @@ struct rowcolumn
 // ## construction -------------------------------------------------------------
    rowcolumn(): m_uRow(0), m_uColumn(0) {}
    rowcolumn( unsigned uRow, unsigned uColumn ): m_uRow(uRow), m_uColumn(uColumn) {}
+   rowcolumn( const std::pair< unsigned, unsigned >& pairRowColumn  ): m_uRow(pairRowColumn.first), m_uColumn(pairRowColumn.second) {}
    rowcolumn( uint64_t uRowColumn ): m_uRow(unsigned(uRowColumn >> 32)), m_uColumn(unsigned(uRowColumn)) {}
    ~rowcolumn() {}
 
@@ -197,7 +198,11 @@ public:
 
 /** \name OPERATION
 *///@{
+
    std::pair<bool, std::string> create();
+
+   std::pair< unsigned, unsigned > size() const;
+
 
    // ## printing, place text in device area
    void print( unsigned uRow, unsigned uColumn, char ch_ );
@@ -291,6 +296,13 @@ inline void device::set_color(unsigned uRow, unsigned uColumn, uint8_t uColor) {
    auto uPosition = (uRow * m_uColumnCount) + uColumn;                                             assert( uPosition < calculate_device_size_s( *this ) );
    *(m_puColorBuffer + uPosition) = uColor;
 }
+
+/// return device size in number of rows and columns as pair object
+inline std::pair< unsigned, unsigned > device::size() const {
+   std::pair< unsigned, unsigned > pairSize( m_uRowCount, m_uColumnCount );
+   return pairSize;
+}
+
 
 /// calculate position in device buffer and return pointer
 inline uint8_t* device::offset( unsigned uRow ) const {                                            assert( m_puDrawBuffer != nullptr ); assert( uRow < m_uRowCount );
