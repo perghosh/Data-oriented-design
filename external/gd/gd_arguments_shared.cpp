@@ -1627,6 +1627,8 @@ arguments::pointer arguments::set( pointer pPosition, const gd::variant_view& va
 void arguments::set_argument_section(const std::string_view& stringName, const std::vector<gd::variant_view>& vectorValue)
 {
    pointer pPosition = find( stringName );
+   pointer pEnd = get_buffer_end();
+
    if(pPosition != nullptr)
    {
       auto it = vectorValue.begin();
@@ -1635,7 +1637,7 @@ void arguments::set_argument_section(const std::string_view& stringName, const s
       for( ; it != vectorValue.end(); it++ ) 
       {
          pointer pNext = next_s( pPosition );
-         if(pNext != nullptr)
+         if(pNext < pEnd)
          {
             if(is_name_s(pNext) == false)
             {
@@ -1644,11 +1646,13 @@ void arguments::set_argument_section(const std::string_view& stringName, const s
             else
             {
                // TODO: Insert value before
+               pEnd = get_buffer_end();
             }
          }
          else
          {  // ## if here we have moved to end and need to add value
             append( *it, tag_view{} );
+            pEnd = get_buffer_end();
          }
       }
    }

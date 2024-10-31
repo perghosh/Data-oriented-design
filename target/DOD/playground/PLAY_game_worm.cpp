@@ -98,5 +98,4 @@ TEST_CASE( "[game_worm] 01", "[game_worm]" ) {
       std::cout << caretLeftTop.render( gd::console::tag_format_cli{});
       std::cout << deviceWorm.render( gd::console::tag_format_cli{});
    }
-
 }
