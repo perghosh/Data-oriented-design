@@ -910,6 +910,22 @@ arguments& arguments::operator=(std::initializer_list<std::pair<std::string_view
    return *this;
 }
 
+arguments& arguments::append(const argument& argumentValue, tag_argument)
+{
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();
+   if( uType > ARGUMENTS_NO_LENGTH ) { uType |= eValueLength; }
+
+   return append( uType, pData, argumentValue.length() );
+}
+
+arguments& arguments::append(const gd::variant_view& variantValue, tag_view)
+{
+   auto argumentValue = get_argument_s(variantValue);
+   return append( argumentValue, tag_argument{});
+}
+
+
 /*-----------------------------------------------------------------------------
  * @brief add arguments from another arguments object
  * @param argumentsFrom arguments object to add values from
@@ -1630,6 +1646,10 @@ void arguments::set_argument_section(const std::string_view& stringName, const s
                // TODO: Insert value before
             }
          }
+         else
+         {  // ## if here we have moved to end and need to add value
+            append( *it, tag_view{} );
+         }
       }
    }
 }
@@ -2197,7 +2217,7 @@ bool arguments::compare_exists_s( const arguments& argumentsSource, const argume
 {
    for( auto it = argumentsExists.begin(), itEnd = argumentsExists.end(); it != itEnd; it++ )
    {
-      auto stringExistsName = it.name( view_tag{} );
+      auto stringExistsName = it.name( tag_view{} );
       if( stringExistsName.empty() == false )
       {
          auto pposition = argumentsSource.find( stringExistsName );
@@ -3105,4 +3125,3 @@ namespace debug {
 
 }
 _GD_ARGUMENT_SHARED_END
-

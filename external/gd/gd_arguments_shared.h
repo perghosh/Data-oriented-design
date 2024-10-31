@@ -134,7 +134,8 @@ public:
    typedef uint8_t            param_type;
    typedef uint8_t            argument_type;
 
-   struct view_tag {};                                                         // tag dispatcher used when working with view objects (not owning its data)
+   //struct view_tag {};                                                         // tag dispatcher used when working with view objects (not owning its data)
+   struct tag_argument {};
    struct tag_view {};                                                         // tag dispatcher used when working with view objects (not owning its data)
    struct tag_no_initializer_list {};                                          // do not select initializer_list versions
    struct tag_name {};                                                         // tag dispatcher for name related operations
@@ -575,7 +576,7 @@ public:
          return std::string();
       }
 
-      std::string_view name(view_tag) const {                                                      assert( m_parguments->verify_d( m_pPosition ));
+      std::string_view name(tag_view) const {                                                      assert( m_parguments->verify_d( m_pPosition ));
          if( arguments::is_name_s(m_pPosition) == true )
          {
             return arguments::get_name_s(m_pPosition);
@@ -754,6 +755,8 @@ public:
       append( value_ ); 
       if constexpr (sizeof...(next_) > 0) { append_many( next_... ); }
    }
+   arguments& append( const argument& argumentValue, tag_argument );
+   arguments& append( const gd::variant_view& variantValue, tag_view );
 
 
    arguments& append(param_type uType, const_pointer pBuffer, unsigned int uLength);
