@@ -1248,6 +1248,8 @@ arguments& arguments::append_argument( const std::vector< std::pair<std::string_
    return *this;
 }
 
+// pointer arguments::set(pointer pPosition , param_type uType, const_pointer pBuffer, unsigned int uLength)
+
 arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength)
 {
    pointer pPosition = find(std::string_view(pbszName, uNameLength));
@@ -1264,7 +1266,7 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
    if( arguments::compare_type_s(argumentOld, uType) == true && (uType & (eValueLength|eValueLengthBig)) == 0 )
    {
       pPosition = move_to_value_s( pPosition );
-      pPosition = move_to_value_data_s( pPosition );                           assert(pPosition < get_buffer_end());
+      pPosition += sizeof( uint32_t );                                         assert(pPosition < get_buffer_end());
       memcpy(pPosition, pBuffer, uLength);
       return *this;
    }
@@ -1337,13 +1339,20 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
    return *this;
 }
 
+/// set value at position that pointer is at, make sure that pPosition is on a valid position
 arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength)
 {
-   // get current argument
-   argument argumentOld = arguments::get_argument_s(pPosition);
+   set( pPosition, uType, pBuffer, uLength, tag_internal{});
+   return *this;
+}
+
+arguments::pointer arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, tag_internal )
+{                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition < buffer_data_end() );
+   argument argumentOld = arguments::get_argument_s(pPosition);                // get current argument
    auto pPositionValue = move_to_value_s(pPosition);
-   if( arguments::compare_type_s(argumentOld, uType) == true && (uType & (eValueLength | eValueLengthBig)) == 0 )
+   if( arguments::compare_type_s(argumentOld, uType) == true && (uType & (eValueLength | eValueLengthBig)) == 0 ) // same value with fixed size?
    {
+      pPositionValue += sizeof( uint32_t );                                    // move to buffer where value is stored
       memcpy(pPositionValue, pBuffer, uLength);
    }
    else
@@ -1358,27 +1367,23 @@ arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBu
          resize(pPosition, uOldSize, uNewSize); 
       }
 
-      //m_uLength += int(uNewSize - uOldSize);
-
       pPosition += uNameLength;
       *pPosition = uType;
       pPosition++;
 
-      if( (uType & eValueLength) == 0 )                                          // if type doesn't have specified length flag then just copy data into buffer
+      if( (uType & eValueLength) == 0 )                                        // if type doesn't have specified length flag then just copy data into buffer
       {
          memcpy(pPosition, pBuffer, uLength);
       }
       else
       {
-         *(uint32_t*)pPosition = (uint32_t)uLength;                              // set length for data
+         *(uint32_t*)pPosition = (uint32_t)uLength;                            // set length for data
          pPosition += sizeof(uint32_t);
-         memcpy(pPosition, pBuffer, uLength);                                    // copy data
+         memcpy(pPosition, pBuffer, uLength);                                  // copy data
       }
    }
 
-
-
-   return *this;
+   return pPosition;
 }
 
 /*----------------------------------------------------------------------------- count */ /**
@@ -1580,6 +1585,55 @@ std::vector<arguments::argument> arguments::get_argument( std::vector<std::strin
    }
    return vectorValue;
 }
+
+arguments::pointer arguments::set( pointer pPosition, const gd::variant_view& variantValue, tag_view)
+{
+   auto argumentValue = get_argument_s(variantValue);
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();
+   unsigned uLength;
+   if( uType > ARGUMENTS_NO_LENGTH ) 
+   { 
+      unsigned uZeroEnd = 0;
+      if( uType == eTypeNumberWString )
+         uType |= eValueLength; 
+      uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
+   }
+   else
+   {
+      uLength = ctype_size[uType];
+   }
+
+   pPosition = set(pPosition, uType, pData, uLength, tag_internal{} );
+   return pPosition;
+}
+
+void arguments::set_argument_section(const std::string_view& stringName, const std::vector<gd::variant_view>& vectorValue)
+{
+   pointer pPosition = find( stringName );
+   if(pPosition != nullptr)
+   {
+      auto it = vectorValue.begin();
+      pPosition = set( pPosition, *it, tag_view{} );
+      it++;
+      for( ; it != vectorValue.end(); it++ ) 
+      {
+         pointer pNext = next_s( pPosition );
+         if(pNext != nullptr)
+         {
+            if(is_name_s(pNext) == false)
+            {
+               pPosition = set( pNext, *it, tag_view{} );
+            }
+            else
+            {
+               // TODO: Insert value before
+            }
+         }
+      }
+   }
+}
+
 
 
 /*----------------------------------------------------------------------------- print */ /**
@@ -1917,8 +1971,11 @@ size_t arguments::size() const
 */
 void arguments::clear()
 {
-   m_pbuffer->release();
-   m_pbuffer = &m_buffer_s;
+   if( m_pbuffer != &m_buffer_s )
+   {
+      m_pbuffer->release();
+      m_pbuffer = &m_buffer_s;
+   }
 }
 
 
@@ -3048,3 +3105,4 @@ namespace debug {
 
 }
 _GD_ARGUMENT_SHARED_END
+

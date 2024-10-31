@@ -139,6 +139,7 @@ public:
    struct tag_no_initializer_list {};                                          // do not select initializer_list versions
    struct tag_name {};                                                         // tag dispatcher for name related operations
    struct tag_description {};                                                  // tag dispatcher where description is usefull
+   struct tag_internal {};                                                     // tag dispatcher for internal use
 
 
 public:
@@ -859,6 +860,10 @@ public:
    arguments& set(std::string_view stringName, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set(stringName.data(), (uint32_t)stringName.length(), uType, pBuffer, uLength); }
    arguments& set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength);
    arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength);
+   
+   
+   pointer set(pointer pPosition, const gd::variant_view& variantValue, tag_view );
+   pointer set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, tag_internal );
 
    // TODO: Implement set methods
 
@@ -984,12 +989,14 @@ public:
       return argument();
    }
 
-   /// return all values for name
-   [[nodiscard]] std::vector<argument> get_argument_all(std::string_view stringName) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName); }
-   [[nodiscard]] std::vector<gd::variant_view> get_argument_all(std::string_view stringName, tag_view) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
-   [[nodiscard]] std::vector<gd::variant_view> get_argument_section(std::string_view stringName, tag_view) const { return get_argument_section_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
+   /// return all values for name or names
+   [[nodiscard]] std::vector<argument> get_argument( std::vector< std::string_view > vectorName ) const;
+   [[nodiscard]] std::vector<argument> get_argument_all(const std::string_view& stringName) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName); }
+   [[nodiscard]] std::vector<gd::variant_view> get_argument_all(const std::string_view& stringName, tag_view) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
+   [[nodiscard]] std::vector<gd::variant_view> get_argument_section( const std::string_view& stringName, tag_view) const { return get_argument_section_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
+   
+   void set_argument_section( const std::string_view& stringName, const std::vector<gd::variant_view>& vectorValue );
 
-   std::vector<argument> get_argument( std::vector< std::string_view > vectorName ) const;
 
    /// return first value for name 
    gd::variant_view get_variant_view( const std::string_view& stringName ) const { return get_argument( stringName ).get_variant_view(); }

@@ -30,6 +30,7 @@ if( USE_TARGET_ )
 
    add_executable(${TARGET_NAME_} ${external_gd}
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
+      "worm/Application.cpp"
       "worm_main.cpp"
    )
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
