@@ -918,6 +918,26 @@ namespace debug {
 
       return stringPrint;
    }
+
+   /** ------------------------------------------------------------------------
+    * @brief print vector values
+    * @param argumentsToPrint value to print
+    * @return string value as string
+   */
+   std::string print( const std::vector<variant_view>& v_, std::function< std::string( const variant_view& ) > callback_ )
+   {
+      std::string stringPrint; 
+      for( const auto& it : v_ )
+      {
+         if( stringPrint.empty() == false ) stringPrint.append(std::string_view{ ", " });
+         stringPrint += gd::variant::get_type_name_s( it.type() );
+         stringPrint += ": ";
+         stringPrint += callback_( it );
+      }
+
+      return stringPrint;
+   }
+
 }
 
 } /* namespace gd */
