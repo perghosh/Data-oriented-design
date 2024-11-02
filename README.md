@@ -1,6 +1,13 @@
 # Data-oriented-design
 DOD or data oriented design development, what is it and how to do it
 
+## Why DOD?
+- **Performance:** Faster execution times, Reduced memory consumption
+- **Efficiency:** Faster development, reusable code
+- **Simplicity:** Less code to manage, easier bug identification.
+- **Stability:** Fewer bugs, improved system reliability
+- **Developer:** Reduced stress, decreased cognitive load 
+
 
 ## Styleguide used in code
 
