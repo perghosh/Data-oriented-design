@@ -19,7 +19,9 @@ Data Oriented Design = build logic around patterns, patterns that works well for
 A computer's central processing unit (CPU) can only execute machine code, a binary language of 0s and 1s. Programming language like C++, C# or Java, must be converted into this machine code before the computer can understand and process it. Tools like compilers and interpreters, are used to convert programming code to machine code, the computer's native language.  
 While computers may seem limited, understanding only a few simple instructions represented by 0s and 1s, their speed and precision are extreme. This makes them usefull in a wide range of tasks.  
   
-The challenge for developers is translating human complicated information into a computer-processable format, ensuring that the computer's output is usefull, accurate and user-friendly. This is not as easy as you might think.  
+The challenge for developers is translating complicated human information into a computer-processable format, ensuring that the computer's output is usefull, accurate and user-friendly. This is not as easy as you might think.  
+  
+The amount of code needed to achieve this can vary significantly and may sometimes be massive. Beyond just being extensive, the code must also be correct, manageable, and often easy to extend or modify to accommodate new functionality. Unfortunately, the world humans live in is constantly changing, making adaptability a crucial aspect of software design.  
 
 ----
 
