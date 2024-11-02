@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -587,6 +588,7 @@ namespace debug {
    std::string print( const variant_view& v );
    std::string print_value( const variant_view& v );
    std::string print( const std::vector<variant_view>& v_ );
+   std::string print( const std::vector<variant_view>& v_, std::function< std::string( const variant_view& ) > callback_ );
 }
 
 

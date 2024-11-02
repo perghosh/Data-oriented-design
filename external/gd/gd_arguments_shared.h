@@ -870,6 +870,12 @@ public:
 
    // TODO: Implement set methods
 
+/** \name COUNT
+*///@{
+   pointer insert( pointer pPosition, const gd::variant_view& variantviewValue, tag_view );
+   pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
+//@}
+
    const_iterator begin() const { return const_iterator( this, buffer_data() ); }
    const_iterator end() const { return const_iterator( nullptr ); }
 
@@ -1102,7 +1108,8 @@ public:
    static argument_edit get_edit_param_s(arguments* parguments, const_pointer pPosition);
    /// count internal param length in bytes
    static uint64_t get_total_param_length_s(const_pointer pPosition) noexcept;
-   static unsigned int get_total_param_length_s(std::string_view stringName, const argument argumentValue);
+   static unsigned int get_total_param_length_s(const argument& argumentValue);
+   static unsigned int get_total_param_length_s(std::string_view stringName, const argument& argumentValue);
    static std::vector<argument> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName);
    static std::vector<gd::variant_view> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
    static std::vector<gd::variant_view> get_argument_section_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
@@ -1114,6 +1121,7 @@ public:
 
    /// ## Calculate size in bytes needed for argument values stored in arguments object
    static unsigned int sizeof_s(const argument& argumentValue);
+   static unsigned int sizeof_s(const gd::variant_view& VV_, tag_view);
    static unsigned int sizeof_s(uint32_t uNameLength, param_type uType, unsigned int uLength);
    static inline unsigned int sizeof_name_s(uint32_t uNameLength) noexcept { return uNameLength + sizeof(uint32_t); }
    static inline unsigned int sizeof_name_s(uint32_t uNameLength, tag_align) noexcept;
@@ -1156,18 +1164,9 @@ public:
    }
 
    /// Create arguments object from pair list
-   static arguments create_s(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair) {
-      arguments A;
-      for( auto it : listPair ) A.append_argument(it);
-      return A;
-   }
-
+   static arguments create_s(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair);
    /// Create arguments object from arguments
-   static arguments create_s(const std::string_view& stringName, const gd::variant& variantValue, tag_no_initializer_list) {
-      arguments A(stringName, variantValue, tag_no_initializer_list{});
-      return A;
-   }
-
+   static arguments create_s(const std::string_view& stringName, const gd::variant& variantValue, tag_no_initializer_list);
 
    /// ## dump information about values
    static inline std::string print_s(const_pointer pPosition) { return print_s(pPosition, ePairTypeAll); }
@@ -1220,6 +1219,10 @@ public:
    static std::pair<bool, std::string> exists_s( const arguments& argumentsValidate, const std::initializer_list<std::pair<std::string_view, std::string_view>>& listValue, tag_description );
    /// Check if any of the name values are found in arguments
    static std::pair<bool, std::string> exists_any_of_s( const arguments& argumentsValidate, const std::initializer_list<std::string_view>& listName, tag_name );
+
+   /// copy value into buffer `pCopyTo` points to
+   static uint64_t memcpy_s( pointer pCopyTo, argument_type uType, const_pointer pBuffer, unsigned int uLength );
+
 
    //static arguments read_json_s(const argument& argumentValue);
 //@}
@@ -1338,6 +1341,19 @@ inline OBJECT arguments::get_object( const std::string_view& stringPrefixFind ) 
    get_object( stringPrefixFind, object_ );
    return object_;
 }
+
+inline arguments arguments::create_s(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair) {
+   arguments A;
+   for( auto it : listPair ) A.append_argument(it);
+   return A;
+}
+
+/// Create arguments object from arguments
+inline  arguments arguments::create_s(const std::string_view& stringName, const gd::variant& variantValue, tag_no_initializer_list) {
+   arguments A(stringName, variantValue, tag_no_initializer_list{});
+   return A;
+}
+
 
 
 

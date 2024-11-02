@@ -1,6 +1,10 @@
 #include "gd/gd_console_print.h"
 #include "gd/gd_arguments_shared.h"
 
+#ifndef NDEBUG
+#include "gd/gd_debug.h"
+#endif
+
 #include "Application.h"
 
 // ----------------------------------------------------------------------------
@@ -20,6 +24,9 @@ std::pair< bool, std::string > Worm::Create()
 
    m_argumentsWorm.append( "body", ToBodyPart_s( 5, 9 ) );
    m_argumentsWorm.append_many( ToBodyPart_s( 5, 8 ), ToBodyPart_s( 5, 7 ), ToBodyPart_s( 5, 6 ), ToBodyPart_s( 5, 5 ) );
+   m_argumentsWorm.append( "dummy", false );
+
+   //uint64_t uMoveSize = (m_argumentsWorm.buffer_data() + m_argumentsWorm.buffer_size()) - m_argumentsWorm.find("dummy");
 
    return { true, "" };
 }
@@ -58,11 +65,19 @@ void Worm::Move()
       vectorBody.push_back( ToBodyPart_s(0,0) ); 
    }
 
-   std::rotate(vectorBody.begin(), vectorBody.begin() + 1, vectorBody.end());
+   std::rotate(vectorBody.rbegin(), vectorBody.rbegin() + 1, vectorBody.rend());
 
    uint64_t uHead = m_argumentsWorm["head"];                                   // get head position
    vectorBody[0] = uHead;                                                      // move head position to first body position
+
+#ifndef NDEBUG
+   std::string string_d = gd::debug::print( vectorBody, []( const auto& v_ ) -> std::string { return std::to_string( v_.as_uint64() >> 32 ) + "-" + std::to_string( v_.as_uint() ); });
+#endif
+
+
    m_argumentsWorm.set_argument_section( "body", vectorBody );
+
+   //auto size_ = m_argumentsWorm.size();
 
    // ## move head to next position and update head position
    uHead = Worm::Move_s( uHead, iMoveRow, iMoveColumn );
