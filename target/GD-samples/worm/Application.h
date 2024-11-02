@@ -38,6 +38,7 @@ struct Worm
 
    /// Create 
    std::pair< bool, std::string > Create();
+   std::pair< bool, std::string > ReadInput();
    void Move();
 
    std::vector<gd::console::rowcolumn> ToList( const std::string_view& stringType ) const;

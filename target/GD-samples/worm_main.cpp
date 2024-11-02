@@ -46,11 +46,12 @@ std::pair<bool, std::string> Play()
 
    papplication->Draw();
 
-   for( auto i = 0; i < 100; i++ )
+   for( auto i = 0; i < 200; i++ )
    {
       papplication->PrepareFrame();
+      
       papplication->Draw();
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
    }
 
    return { true, "" };
