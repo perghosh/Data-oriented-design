@@ -11,6 +11,7 @@ DOD or data oriented design development, what is it and how to do it
 **Cons**
 - Initial development time may be longer as developers adapt to a new paradigm.
 - Requires a deeper understanding of computer architecture and low-level programming concepts.
+- Very different from how humans think.
 
 # Data Oriented Design - why do it
 
