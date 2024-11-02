@@ -35,6 +35,8 @@ Before you know it, a house can become overwhelmed with possessions. Maintaining
 A home needs order and flexibility to remain pleasant and functional. Mess up the home and even the nicest house is not as pleasant any more.  
 
 Same with code. A new codebase is a dream, easy to add stuff and easy to understand. Surprisingly quickly, you may find yourself spending time in locating specific code segments or understanding their intended behavior.
+  
+### Keep the code in order and clean
 
 
 
