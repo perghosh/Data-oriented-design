@@ -1,6 +1,6 @@
 DOD or data oriented design development, what is it and how to do it
 
-## Why DOD?
+## DOD - Pros and cons
 **Pros**
 - **Performance:** Faster execution times, reduced memory consumption
 - **Efficiency:** Faster development, reusable code
@@ -12,7 +12,7 @@ DOD or data oriented design development, what is it and how to do it
 - Initial development time may be longer as developers adapt to a new paradigm.
 - Requires a deeper understanding of computer architecture and low-level programming concepts.
 
-# Data Oriented Design
+# Data Oriented Design - why do it
 
 Data Oriented Design = build logic around patterns, patterns that works well for the CPU.  
   
