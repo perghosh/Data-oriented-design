@@ -1,3 +1,5 @@
+#include "conio.h"
+
 #include "gd/gd_console_print.h"
 #include "gd/gd_arguments_shared.h"
 
@@ -27,6 +29,35 @@ std::pair< bool, std::string > Worm::Create()
    m_argumentsWorm.append( "dummy", false );
 
    //uint64_t uMoveSize = (m_argumentsWorm.buffer_data() + m_argumentsWorm.buffer_size()) - m_argumentsWorm.find("dummy");
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> Worm::ReadInput()
+{
+   if(_kbhit() != 0 ) 
+   {
+      char iKey = _getch();
+      switch(iKey)
+      {
+      case 'w':
+         m_argumentsWorm.set("move_row", -1 );
+         m_argumentsWorm.set("move_column", 0 );
+         break;
+      case 'x':
+         m_argumentsWorm.set("move_row", 1 );
+         m_argumentsWorm.set("move_column", 0 );
+         break;
+      case 'a':
+         m_argumentsWorm.set("move_row", 0 );
+         m_argumentsWorm.set("move_column", -1 );
+         break;
+      case 'd':
+         m_argumentsWorm.set("move_row", 0 );
+         m_argumentsWorm.set("move_column", 1 );
+         break;
+      }
+   }
 
    return { true, "" };
 }
@@ -143,5 +174,6 @@ void Application::DrawFrame()
 
 void Application::PrepareFrame()
 {
+   m_worm.ReadInput();
    m_worm.Move();
 }
