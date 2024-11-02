@@ -15,9 +15,11 @@ DOD or data oriented design development, what is it and how to do it
 # Data Oriented Design
 
 Data Oriented Design = build logic around patterns, patterns that works well for the CPU.  
-A computer's central processing unit (CPU) can only execute machine code, a binary language of 0s and 1s. Any programming language we use, like C++, C# or Java, must be converted into this machine code before the computer can understand and process it. This translation process, often handled by compilers or interpreters, bridges the gap between human logic and the computer's basic operations.  
-While computers may seem limited, understanding only a simple set of instructions represented by 0s and 1s, their speed and precision are extreme. This makes them usefull in a wide range of tasks.  
-The challenge for developers is translating human information into a computer-processable format, ensuring that the computer's output is usefull, accurate and user-friendly. This is not as easy as you might think.  
+  
+A computer's central processing unit (CPU) can only execute machine code, a binary language of 0s and 1s. Programming language like C++, C# or Java, must be converted into this machine code before the computer can understand and process it. Tools like compilers and interpreters, are used to convert programming code to machine code, the computer's native language.  
+While computers may seem limited, understanding only a few simple instructions represented by 0s and 1s, their speed and precision are extreme. This makes them usefull in a wide range of tasks.  
+  
+The challenge for developers is translating human complicated information into a computer-processable format, ensuring that the computer's output is usefull, accurate and user-friendly. This is not as easy as you might think.  
 
 ----
 
