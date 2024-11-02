@@ -49,8 +49,9 @@ Sample:
 ```
 
 
-**Code layers**
+**Code layers** 
 | Type | Description |
+| ------------ | ----------- |
 | `general code` | Similar to stl, general code is written in lower case leters |
 | `source code` | Source code can be used by any target. Each part in source is placed in some sort of namespace. Style is in PascalCase and each class starts with `C` |
 | `target code` | Code in each separate target are only used in that target and isn't placed in a namespace, other than that style is similar to source code |
