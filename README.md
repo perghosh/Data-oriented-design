@@ -20,7 +20,7 @@ DOD or data oriented design development, what is it and how to do it
 
 Objects get full name in lowercase (or first character for each name in uppercase if abbreviated)  
 Sample:
-```
+```cpp
 std::pair<std::string_view,std::string_view> pairSelect;
 std::vector<std::pair<std::string, gd::variant>> vectorNameValue;
 std::vector< detail::row > vectorBody;
@@ -30,3 +30,30 @@ CDocument* m_pdocument;
 CApplication* m_papplicationMain;
 CThisIsAVeryLongClassNameToShowAbbriviation TIAVLCNTSA;
 ```
+
+**Scope**
+| Prefix | Description | Sample |
+| ------------ | ----------- | ------ |
+| *`_g` | **global reach**, global methods and variables | `CApplication* papplication_g;` |
+| *`_s` | **static**, like free functions and static variables within objects and methods with file scope | `static std::string m_stringCity_s;` |
+| *`_d` | **debug names**, names that are used for debugging | `std::string stringCommand_d;` |
+
+Sample:
+```cpp
+#ifndef NDEBUG
+   std::string stringCommand_d;
+   const char* pbszCommand_d = nullptr;
+   stringCommand_d = name(); 
+   pbszCommand_d = stringCommand_d.c_str();
+#endif
+```
+
+
+**Code layers**
+| Type | Description |
+| `general code` | Similar to stl, general code is written in lower case leters |
+| `source code` | Source code can be used by any target. Each part in source is placed in some sort of namespace. Style is in PascalCase and each class starts with `C` |
+| `target code` | Code in each separate target are only used in that target and isn't placed in a namespace, other than that style is similar to source code |
+| `play code` | no rules, do as you wish |
+| `test code` | no rules, do as you wish |
+
