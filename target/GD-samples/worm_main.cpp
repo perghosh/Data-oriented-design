@@ -40,6 +40,7 @@ int main( int iArgumentCount, char* ppbszArgument[] )
    return 0;
 }
 
+/// game loop
 std::pair<bool, std::string> Play()
 {
    Application* papplication = (Application*)papplication_g;

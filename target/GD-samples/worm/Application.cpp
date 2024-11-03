@@ -59,6 +59,7 @@ void Worm::Move()
 {
    m_uMoveCounter++;
 
+   // ## update worm position
    int32_t iMoveRow = m_argumentsWorm["move_row"];
    int32_t iMoveColumn = m_argumentsWorm["move_column"];
 
@@ -69,15 +70,14 @@ void Worm::Move()
       vectorBody.push_back( ToBodyPart_s(0,0) ); 
    }
 
-   std::rotate(vectorBody.rbegin(), vectorBody.rbegin() + 1, vectorBody.rend());
+   std::rotate(vectorBody.rbegin(), vectorBody.rbegin() + 1, vectorBody.rend()); // rotate
 
    uint64_t uHead = m_argumentsWorm["head"];                                   // get head position
    vectorBody[0] = uHead;                                                      // move head position to first body position
 
 #ifndef NDEBUG
-   std::string string_d = gd::debug::print( vectorBody, []( const auto& v_ ) -> std::string { return std::to_string( v_.as_uint64() >> 32 ) + "-" + std::to_string( v_.as_uint() ); });
+   // std::string string_d = gd::debug::print( vectorBody, []( const auto& v_ ) -> std::string { return std::to_string( v_.as_uint64() >> 32 ) + "-" + std::to_string( v_.as_uint() ); });
 #endif
-
 
    m_argumentsWorm.set_argument_section( "body", vectorBody );
 
@@ -85,7 +85,7 @@ void Worm::Move()
 
    // ## move head to next position and update head position
    uHead = Worm::Move_s( uHead, iMoveRow, iMoveColumn );
-   m_argumentsWorm.set( "head", uHead );
+   m_argumentsWorm.set( "head", uHead );                                       // update head value
 }
 
 // ----------------------------------------------------------------------------
@@ -105,7 +105,8 @@ std::pair<bool, std::string> Application::Initialize()
    // ## create device
    // ### Get the terminal size and set device from that
    auto rowcolumn_ = gd::console::device::terminal_get_size_s();
-   if( rowcolumn_.row() > 25 ) rowcolumn_.row( 25 );
+   if( rowcolumn_.row() > 24 ) rowcolumn_.row( 24 );
+   rowcolumn_.column( rowcolumn_.column() - 1 );
    m_deviceGame = rowcolumn_;
    // ### create device
    m_deviceGame.create();
@@ -116,6 +117,7 @@ std::pair<bool, std::string> Application::Initialize()
    return application::basic::CApplication::Initialize();
 }
 
+/// ---------------------------------------------------------------------------
 /// read key stroke
 std::pair<bool, std::string> Application::ReadInput()
 {
@@ -152,15 +154,26 @@ std::pair<bool, std::string> Application::ReadInput()
    return { true, "" };
 }
 
+/// ---------------------------------------------------------------------------
 /// prepare frame before drawing it to terminal
 void Application::PrepareFrame()
 {
    ReadInput();
    m_worm.Move();
+
+   // ## check head position if not on space
+   auto position_ = m_worm.GetHeadPosition();
+   auto uCharacter = m_deviceGame.at( position_ );
+   if(uCharacter != ' ')
+   {
+      m_stringState = "crash";
+   }
+
 }
 
 
 
+/// ---------------------------------------------------------------------------
 /// Draw application to terminal
 void Application::Draw()
 {
@@ -168,14 +181,6 @@ void Application::Draw()
    {
       // ## draw the game plan
       DrawFrame();
-
-      auto position_ = m_worm.GetHeadPosition();
-      auto uCharacter = m_deviceGame.at( position_ );
-      if(uCharacter != ' ')
-      {
-         m_stringState = "crash";
-         return;
-      }
 
       // ## draw the game objects
       auto pairPosition = m_worm.GetHeadPosition();
@@ -199,6 +204,7 @@ void Application::Draw()
    std::cout << m_deviceGame.render( gd::console::tag_format_cli{});
 }
 
+/// ---------------------------------------------------------------------------
 /// draws start frame for game
 void Application::DrawStartUpScreen()
 {
@@ -212,6 +218,7 @@ void Application::DrawStartUpScreen()
    m_deviceGame.print(14, 70, "Q = Quit" );
 }
 
+/// ---------------------------------------------------------------------------
 /// Draw the game plan
 void Application::DrawFrame()
 {
