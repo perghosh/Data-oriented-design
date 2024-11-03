@@ -1,6 +1,6 @@
 DOD or data oriented design development, what is it and how to do it
 
-## DOD - Pros and cons
+## Data Oriented Design - Pros and cons
 **Pros**
 - **Performance:** Faster execution times, reduced memory consumption
 - **Efficiency:** Faster development, reusable code
@@ -29,7 +29,7 @@ You wouldn’t want to spend tens of thousands of hours creating computer progra
 ### Developer challenges
 The challenging part of software development isn’t learning a programming language to write code—almost anyone can do that if they’re interested. The real difficulty lies in learning how to manage code effectively: ensuring the compiled machine code is error-free, maintainable, and adaptable for future modifications.
 
-### Keep the house in order and clean
+### Keep the house in order and clean - a metaphor
 A blank slate of a home is a designer's dream. In the beginning, everything has its place, what to add and finding it is a breeze.  
 Before you know it, a house can become overwhelmed with possessions. Maintaining order is key to easily finding what you need.  
 A home needs order and flexibility to remain pleasant and functional. Mess up the home and even the nicest house is not as pleasant any more.  
@@ -40,6 +40,13 @@ Same with code. A new codebase is a dream, easy to add stuff and easy to underst
 Just as homes have designated spaces for specific functions—kitchens for cooking, bedrooms for sleeping, and bathrooms for personal hygiene—computers have core functionalities and operating systems that govern their behavior. Developers must understand these areas to maintain clean and organized code.  
 What software often do is to collect information from users, store it in internal memory, process it as needed, provide feedback to the user, and potentially save it for future use.  
 A significant portion of a developer's work involves writing code for reading and writing data to various locations, often converting it into formats that are easily understood and utilized by users.
+
+### Code explodes in size
+When data is close to users, it should also be presented in a format and structure that they can easily understand. Human-readable data formats are fundamentally different from what works well for computers to process.  
+On the positive side this code is simple to read because you can describe it in terms that is easy to understand but a lot more code is needed when data is in Human-readable data format.  
+Early transformation when data leaves user or late when it reaches user into or away from a machine-friendly format is crucial for streamlining code and improving efficiency. Keeping data in Human-readable data when it moves will make the code explode in size.
+
+If computers could understand data like humans, developers would be obsolete.
 
 
 
