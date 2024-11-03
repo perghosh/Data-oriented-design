@@ -124,7 +124,7 @@ struct Application : public application::basic::CApplication
 
    /// Draw application
    void Draw();
-   void DrawStartFrame();
+   void DrawStartUpScreen();
    void DrawFrame();
 
 
