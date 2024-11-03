@@ -189,6 +189,7 @@ public:
    unsigned get_row_count() const { return m_uRowCount; }
    unsigned get_column_count() const { return m_uColumnCount; }
    uint8_t at( unsigned uRow, unsigned uColumn ) const;
+   uint8_t at( const std::pair<unsigned,unsigned>& pairPosition ) const { return at( pairPosition.first, pairPosition.second ); }
    uint8_t at( unsigned uRow, unsigned uColumn, tag_color ) const;
    void set_color( unsigned uRow, unsigned uColumn, uint8_t uColor );
 
@@ -202,6 +203,9 @@ public:
    std::pair<bool, std::string> create();
 
    std::pair< unsigned, unsigned > size() const;
+
+   /// Select active devie color, all characters placed in device without setting color will get this color
+   void select( int iColor, tag_color );
 
 
    // ## printing, place text in device area
@@ -244,6 +248,8 @@ protected:
    uint8_t* offset( unsigned uRow, unsigned uColumn ) const;
    uint8_t* buffer_begin() const { return m_puDrawBuffer; }
    uint8_t* buffer_end() const { return (m_puDrawBuffer + (m_uRowCount * m_uColumnCount)); }
+
+   uint8_t* offset_color( unsigned uRow, unsigned uColumn ) const;
 //@}
 
 public:
@@ -263,7 +269,8 @@ public:
    uint8_t* m_puDrawBuffer = nullptr;        ///< device buffer used to store characters to draw
    uint8_t* m_puColorBuffer = nullptr;       ///< device buffer storing color
    uint8_t* m_puBackgroundBuffer = nullptr;  ///< device buffer storing background color
-   uint8_t m_uFillCharacter = m_uFillCharacter_s;
+   int16_t m_iFillCharacter = m_uFillCharacter_s;
+   int16_t m_iColor = -1;                    ///< selected color if any
 
    static uint8_t m_uFillCharacter_s;
 
@@ -303,6 +310,11 @@ inline std::pair< unsigned, unsigned > device::size() const {
    return pairSize;
 }
 
+/// Select active color, all characters placed in device gets this color if not set to -1
+inline void device::select(int iColor, tag_color) {                            assert( iColor == -1 || (iColor >= 0 && iColor <= 255) );
+   m_iColor = decltype(m_iColor)(iColor);
+}
+
 
 /// calculate position in device buffer and return pointer
 inline uint8_t* device::offset( unsigned uRow ) const {                                            assert( m_puDrawBuffer != nullptr ); assert( uRow < m_uRowCount );
@@ -314,16 +326,24 @@ inline uint8_t* device::offset(unsigned uRow, unsigned uColumn) const {         
    return m_puDrawBuffer + ( uRow * m_uColumnCount ) + uColumn; 
 }
 
+/// calculate position in color buffer and return pointer
+inline uint8_t* device::offset_color(unsigned uRow, unsigned uColumn) const {                      assert( m_puColorBuffer != nullptr ); assert( uRow < m_uRowCount ); assert( uColumn < m_uColumnCount );
+return m_puColorBuffer + ( uRow * m_uColumnCount ) + uColumn; 
+}
+
+
 /// print character at position for row and column
 inline void device::print(unsigned uRow, unsigned uColumn, char ch_) {                             assert( m_puDrawBuffer != nullptr ); assert( uRow < m_uRowCount ); assert( uColumn < m_uColumnCount );
    auto* pposition_ = offset( uRow, uColumn );
    *pposition_ = ch_;
+   if( m_iColor != -1 ) { *offset_color( uRow, uColumn ) = (uint8_t)m_iColor; }
 }
 
 /// print text at position for row and column
 inline void device::print(unsigned uRow, unsigned uColumn, const std::string_view& stringText) {   assert( m_puDrawBuffer != nullptr ); assert( uRow < m_uRowCount ); assert( uColumn < m_uColumnCount );
    auto pposition_ = offset( uRow, uColumn );                                                      assert( (pposition_ + stringText.length()) < buffer_end() );
    memcpy( pposition_, stringText.data(), stringText.length() );
+   if( m_iColor != -1 ) { memset( offset_color( uRow, uColumn ),(uint8_t)m_iColor, stringText.length() ); }
 }
 
 //

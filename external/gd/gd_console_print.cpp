@@ -26,7 +26,7 @@ void device::common_construct(const device& o)
    m_uFlags = o.m_uFlags;
    m_uColumnCount = o.m_uColumnCount;
    m_uRowCount = o.m_uRowCount;
-   m_uFillCharacter = o.m_uFillCharacter;
+   m_iFillCharacter = o.m_iFillCharacter;
 
    create_buffers( false );
 
@@ -44,7 +44,7 @@ void device::common_construct(device&& o) noexcept
    m_uFlags = o.m_uFlags; o.m_uFlags = 0;
    m_uColumnCount = o.m_uColumnCount; o.m_uColumnCount = 0;
    m_uRowCount = o.m_uRowCount; o.m_uRowCount = 0;
-   m_uFillCharacter = o.m_uFillCharacter; o.m_uFillCharacter = 0;
+   m_iFillCharacter = o.m_iFillCharacter; o.m_iFillCharacter = 0;
 
    m_puDrawBuffer = o.m_puDrawBuffer; o.m_puDrawBuffer = nullptr;
    m_puColorBuffer = o.m_puColorBuffer; o.m_puColorBuffer = nullptr;
@@ -63,7 +63,7 @@ void device::create_buffers( bool bInitialize )
 
    if( bInitialize == true )
    {
-      memset( m_puDrawBuffer, m_uFillCharacter, uDeviceSize );
+      memset( m_puDrawBuffer, m_iFillCharacter, uDeviceSize );
       memset( m_puColorBuffer, 0, uDeviceSize );
    }
 }
@@ -175,13 +175,24 @@ std::string device::render(tag_format_cli) const
 
 void device::fill( unsigned uRow, unsigned uColumn, unsigned uHeight, unsigned uWidth, uint8_t uCharacter )
 {                                                                                                  assert( (uRow + uHeight) <= m_uRowCount ); assert( (uColumn + uWidth) <= m_uColumnCount ); assert( m_puDrawBuffer != nullptr );
-   uint8_t* puBuffer = m_puDrawBuffer;
    for(unsigned uRowPosition = uRow, uRowMax = uRow + uHeight; uRowPosition < uRowMax; uRowPosition++)
    {
       for(unsigned uColumnPosition = uColumn, uColumnMax = uColumn + uWidth; uColumnPosition < uColumnMax; uColumnPosition++)
       {
-         puBuffer = offset( uRowPosition, uColumnPosition );
+         uint8_t* puBuffer = offset( uRowPosition, uColumnPosition );
          *puBuffer = uCharacter;
+      }
+   }
+
+   if(m_iColor != -1)
+   {
+      for(unsigned uRowPosition = uRow, uRowMax = uRow + uHeight; uRowPosition < uRowMax; uRowPosition++)
+      {
+         for(unsigned uColumnPosition = uColumn, uColumnMax = uColumn + uWidth; uColumnPosition < uColumnMax; uColumnPosition++)
+         {
+            uint8_t* puBuffer = offset_color( uRowPosition, uColumnPosition );
+            *puBuffer = (uint8_t)m_iColor;
+         }
       }
    }
 }
@@ -222,7 +233,7 @@ void device::scroll_y(int32_t iOffsetRow)
       memset( puClear, uClear, uRowCountToMove * m_uColumnCount );             // fill the space where data has been moved from
    };
 
-   move_and_clear_( m_puDrawBuffer, iOffsetRow, m_uFillCharacter );
+   move_and_clear_( m_puDrawBuffer, iOffsetRow, (uint8_t)m_iFillCharacter );
    move_and_clear_( m_puColorBuffer, iOffsetRow, 0 );
 
 }

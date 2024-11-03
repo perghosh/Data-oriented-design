@@ -46,9 +46,11 @@ std::pair<bool, std::string> Play()
 
    papplication->Draw();
 
-   for( auto i = 0; i < 200; i++ )
+   for( auto i = 0; i < 400; i++ )
    {
       papplication->PrepareFrame();
+
+      if( papplication->GetState() == "quit") { return { true, "quit" }; }
       
       papplication->Draw();
       std::this_thread::sleep_for(std::chrono::milliseconds(100));

@@ -1,6 +1,7 @@
 #include "conio.h"
 
 #include "gd/gd_console_print.h"
+#include "gd/gd_console_style.h"
 #include "gd/gd_arguments_shared.h"
 
 #ifndef NDEBUG
@@ -33,34 +34,6 @@ std::pair< bool, std::string > Worm::Create()
    return { true, "" };
 }
 
-std::pair<bool, std::string> Worm::ReadInput()
-{
-   if(_kbhit() != 0 ) 
-   {
-      char iKey = _getch();
-      switch(iKey)
-      {
-      case 'w':
-         m_argumentsWorm.set("move_row", -1 );
-         m_argumentsWorm.set("move_column", 0 );
-         break;
-      case 'x':
-         m_argumentsWorm.set("move_row", 1 );
-         m_argumentsWorm.set("move_column", 0 );
-         break;
-      case 'a':
-         m_argumentsWorm.set("move_row", 0 );
-         m_argumentsWorm.set("move_column", -1 );
-         break;
-      case 'd':
-         m_argumentsWorm.set("move_row", 0 );
-         m_argumentsWorm.set("move_column", 1 );
-         break;
-      }
-   }
-
-   return { true, "" };
-}
 
 /// Generate body parts to write in terminal
 std::vector<gd::console::rowcolumn> Worm::ToList( const std::string_view& stringType ) const
@@ -143,37 +116,114 @@ std::pair<bool, std::string> Application::Initialize()
    return application::basic::CApplication::Initialize();
 }
 
+/// read key stroke
+std::pair<bool, std::string> Application::ReadInput()
+{
+   if(_kbhit() != 0 ) 
+   {
+      char iKey = _getch();
+      switch(iKey)
+      {
+      case 'w':
+         m_worm.SetProperty("move_row", -1 );
+         m_worm.SetProperty("move_column", 0 );
+         break;
+      case 'x':
+         m_worm.SetProperty("move_row", 1 );
+         m_worm.SetProperty("move_column", 0 );
+         break;
+      case 'a':
+         m_worm.SetProperty("move_row", 0 );
+         m_worm.SetProperty("move_column", -1 );
+         break;
+      case 'd':
+         m_worm.SetProperty("move_row", 0 );
+         m_worm.SetProperty("move_column", 1 );
+         break;
+      case 'q':
+         m_stringState = "quit";
+         break;
+      case '\r':
+         m_stringState = "play";
+         break;
+      }
+   }
+
+   return { true, "" };
+}
+
+/// prepare frame before drawing it to terminal
+void Application::PrepareFrame()
+{
+   ReadInput();
+   m_worm.Move();
+}
+
+
+
 /// Draw application to terminal
 void Application::Draw()
 {
-   // ## draw the game plan
-   DrawFrame();
+   if( m_stringState == "play" )
+   {
+      // ## draw the game plan
+      DrawFrame();
 
-   // ## draw the game objects
-   auto vectorWorm = m_worm.ToList( "body" );
-   m_deviceGame.print( vectorWorm, '*' );
+      auto position_ = m_worm.GetHeadPosition();
+      auto uCharacter = m_deviceGame.at( position_ );
+      if(uCharacter != ' ')
+      {
+         m_stringState = "crash";
+         return;
+      }
+
+      // ## draw the game objects
+      auto vectorWorm = m_worm.ToList( "body" );
+      m_deviceGame.print( vectorWorm, '*' );
+   }
+   else if(m_stringState == "crash")
+   {
+      m_worm.Create();
+      m_stringState = "wait";
+   }
+   else
+   {
+      // ## draw the game plan
+      DrawStartFrame();
+   }
 
 
    std::cout << m_caretTopLeft.render( gd::console::tag_format_cli{});
    std::cout << m_deviceGame.render( gd::console::tag_format_cli{});
 }
 
+/// draws start frame for game
+void Application::DrawStartFrame()
+{
+   m_deviceGame.select( gd::console::enumColor::eColorSteelBlue3, gd::console::tag_color{});
+
+   m_deviceGame.print(5, 20, "W = Up" );
+   m_deviceGame.print(7, 20, "A = Left" );
+   m_deviceGame.print(9, 20, "D = Right" );
+   m_deviceGame.print(11, 20, "X = Down" );
+   m_deviceGame.print(13, 70, "Press enter to start game" );
+   m_deviceGame.print(14, 70, "Q = Quit" );
+}
+
 /// Draw the game plan
 void Application::DrawFrame()
 {
-   const char chFrame = '/';
+   const char chFrame = '#';
    auto [uRowCount, uColumnCount] = m_deviceGame.size();
-   for( unsigned uColumn = 0; uColumn < uColumnCount; uColumn++ ) m_deviceGame[0][uColumn] = chFrame;
-   for( unsigned uColumn = 0; uColumn < uColumnCount; uColumn++ ) m_deviceGame[uRowCount-1][uColumn] = chFrame;
+   // for( unsigned uColumn = 0; uColumn < uColumnCount; uColumn++ ) m_deviceGame[0][uColumn] = chFrame;
+   m_deviceGame.select( gd::console::enumColor::eColorSteelBlue3, gd::console::tag_color{});
 
-   for( unsigned uRow = 0; uRow < uRowCount; uRow++ ) m_deviceGame[uRow][0] = chFrame;
-   for( unsigned uRow = 0; uRow < uRowCount; uRow++ ) m_deviceGame[uRow][uColumnCount - 1] = chFrame;
+   for( unsigned uColumn = 0; uColumn < uColumnCount; uColumn++ ) m_deviceGame.print( 0, uColumn, chFrame );
+   for( unsigned uColumn = 0; uColumn < uColumnCount; uColumn++ ) m_deviceGame.print( uRowCount-1, uColumn, chFrame );
 
+   for( unsigned uRow = 0; uRow < uRowCount; uRow++ ) m_deviceGame.print( uRow, 0, chFrame );
+   for( unsigned uRow = 0; uRow < uRowCount; uRow++ ) m_deviceGame.print( uRow, uColumnCount - 1, chFrame ); 
+   
+   m_deviceGame.select( gd::console::enumColor::eColorNavajoWhite1, gd::console::tag_color{});
    m_deviceGame.fill( 1,1, uRowCount - 2, uColumnCount - 2, ' ' );
-}
-
-void Application::PrepareFrame()
-{
-   m_worm.ReadInput();
-   m_worm.Move();
 }
