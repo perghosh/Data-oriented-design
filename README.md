@@ -43,8 +43,8 @@ A significant portion of a developer's work involves writing code for reading an
 
 ### Code explode in size
 When data is close to users, it should also be presented in a format and structure that they can easily understand. Human-readable data formats are fundamentally different from what works well for computers to process. A lot more code to handle it.  
-On the positive side this code is simple because you can describe it in terms that is easy to understand but there will be a lot more code to administer.  
-Early or late transformation of data into a machine-friendly format is crucial for streamlining code and improving efficiency.  
+On the positive side this code is simple because you can describe it in terms that is easy to understand but there will be a lot more code will be needed to when data is in Human-readable data format.  
+Early or late transformation of data into a machine-friendly format is crucial for streamlining code and improving efficiency.  Keeping data in Human-readable data when it moves will make the code explode in size.
 
 
 
