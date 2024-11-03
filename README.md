@@ -39,7 +39,7 @@ Same with code. A new codebase is a dream, easy to add stuff and easy to underst
 ### Keep the code in order and clean
 Just as homes have designated spaces for specific functions—kitchens for cooking, bedrooms for sleeping, and bathrooms for personal hygiene—computers have core functionalities and operating systems that govern their behavior. Developers must understand these areas to maintain clean and organized code.  
 What software often do is to collect information from users, store it in internal memory, process it as needed, provide feedback to the user, and potentially save it for future use.  
-The specific tasks a software program performs depend on its intended purpose. Developers may write code to process user input, convert it into a computer-readable format, and then translate the results back into a user-friendly output. The majority of code is dedicated to reading and writing data using various computer techniques.
+A significant portion of a developer's work involves writing code for reading and writing data to various locations, often converting it into formats that are easily understood and utilized by users.
 
 
 
