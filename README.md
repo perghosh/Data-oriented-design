@@ -42,10 +42,11 @@ What software often do is to collect information from users, store it in interna
 A significant portion of a developer's work involves writing code for reading and writing data to various locations, often converting it into formats that are easily understood and utilized by users.
 
 ### Code explodes in size
-When data is close to users, it should also be presented in a format and structure that they can easily understand. Human-readable data formats are fundamentally different from what works well for computers to process. A lot more code to handle it.  
-On the positive side this code is simple because you can describe it in terms that is easy to understand but there will be a lot more code will be needed to when data is in Human-readable data format.  
+When data is close to users, it should also be presented in a format and structure that they can easily understand. Human-readable data formats are fundamentally different from what works well for computers to process.  
+On the positive side this code is simple to read because you can describe it in terms that is easy to understand but a lot more code is needed when data is in Human-readable data format.  
 Early or late transformation of data into a machine-friendly format is crucial for streamlining code and improving efficiency.  Keeping data in Human-readable data when it moves will make the code explode in size.
 
+If computers could understand data like humans, developers would be obsolete.
 
 
 
