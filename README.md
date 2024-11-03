@@ -1,6 +1,50 @@
-# Data-oriented-design
 DOD or data oriented design development, what is it and how to do it
 
+## DOD - Pros and cons
+**Pros**
+- **Performance:** Faster execution times, reduced memory consumption
+- **Efficiency:** Faster development, reusable code
+- **Simplicity:** Less code to manage, easier bug identification.
+- **Stability:** Fewer bugs, improved system reliability
+- **Developer:** Reduced stress, decreased cognitive load
+
+**Cons**
+- Initial development time may be longer as developers adapt to a new paradigm.
+- Requires a deeper understanding of computer architecture and low-level programming concepts.
+- Very different from how humans think.
+
+# Data Oriented Design - why do it
+
+Data Oriented Design = build logic around patterns, patterns that works well for the CPU.  
+  
+A computer's central processing unit (CPU) can only execute machine code, a binary language of 0s and 1s. Programming languages like C++, C# or Java, must be converted into this machine code before the computer can understand and process it. Tools like compilers and interpreters, are used to convert programming code to machine code, the computer's native language.  
+While computers may seem limited, understanding only a few simple instructions represented by 0s and 1s, their speed and precision are extreme. This makes them usefull in a wide range of tasks.  
+  
+The challenge for developers is translating complicated human information into a computer-processable format, ensuring that the computer's output is usefull, accurate and user-friendly. This is not as easy as you might think.  
+  
+The amount of code needed to achieve this can vary significantly and may sometimes be massive. Beyond just being massive, the code must also be correct, manageable, and often easy to extend or modify to accommodate new functionality. Unfortunately, the world humans live in is constantly changing, making adaptability a crucial aspect of software design.  
+You wouldn’t want to spend tens of thousands of hours creating computer programs for a specific task, only to discover later that circumstances have changed.  
+
+
+### Developer challenges
+The challenging part of software development isn’t learning a programming language to write code—almost anyone can do that if they’re interested. The real difficulty lies in learning how to manage code effectively: ensuring the compiled machine code is error-free, maintainable, and adaptable for future modifications.
+
+### Keep the house in order and clean
+A blank slate of a home is a designer's dream. In the beginning, everything has its place, what to add and finding it is a breeze.  
+Before you know it, a house can become overwhelmed with possessions. Maintaining order is key to easily finding what you need.  
+A home needs order and flexibility to remain pleasant and functional. Mess up the home and even the nicest house is not as pleasant any more.  
+
+Same with code. A new codebase is a dream, easy to add stuff and easy to understand. Surprisingly quickly, you may find yourself spending time in locating specific code segments or understanding their intended behavior.
+  
+### Keep the code in order and clean
+Just as homes have designated spaces for specific functions—kitchens for cooking, bedrooms for sleeping, and bathrooms for personal hygiene—computers have core functionalities and operating systems that govern their behavior. Developers must understand these areas to maintain clean and organized code.  
+What software often do is to collect information from users, store it in internal memory, process it as needed, provide feedback to the user, and potentially save it for future use.  
+A significant portion of a developer's work involves writing code for reading and writing data to various locations, often converting it into formats that are easily understood and utilized by users.
+
+
+
+
+----
 
 ## Styleguide used in code
 
