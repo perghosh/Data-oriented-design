@@ -37,6 +37,7 @@ A home needs order and flexibility to remain pleasant and functional. Mess up th
 Same with code. A new codebase is a dream, easy to add stuff and easy to understand. Surprisingly quickly, you may find yourself spending time in locating specific code segments or understanding their intended behavior.
   
 ### Keep the code in order and clean
+Just as homes have designated spaces for specific functions—kitchens for cooking, bedrooms for sleeping, and bathrooms for personal hygiene—computers have core functionalities and operating systems that govern their behavior. Developers must understand these areas to maintain clean and organized code.
 
 
 
