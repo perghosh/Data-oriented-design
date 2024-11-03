@@ -178,8 +178,10 @@ void Application::Draw()
       }
 
       // ## draw the game objects
+      auto pairPosition = m_worm.GetHeadPosition();
+      m_deviceGame.print( pairPosition, 'O' );
       auto vectorWorm = m_worm.ToList( "body" );
-      m_deviceGame.print( vectorWorm, '*' );
+      m_deviceGame.print( vectorWorm, 'X' );
    }
    else if(m_stringState == "crash")
    {
@@ -189,7 +191,7 @@ void Application::Draw()
    else
    {
       // ## draw the game plan
-      DrawStartFrame();
+      DrawStartUpScreen();
    }
 
 
@@ -198,7 +200,7 @@ void Application::Draw()
 }
 
 /// draws start frame for game
-void Application::DrawStartFrame()
+void Application::DrawStartUpScreen()
 {
    m_deviceGame.select( gd::console::enumColor::eColorSteelBlue3, gd::console::tag_color{});
 
