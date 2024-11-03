@@ -47,7 +47,7 @@ std::pair<bool, std::string> Play()
 
    papplication->Draw();
 
-   for( auto i = 0; i < 400; i++ )
+   for( auto i = 0; i < 4000; i++ )
    {
       papplication->PrepareFrame();
 
