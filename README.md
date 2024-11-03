@@ -23,7 +23,7 @@ While computers may seem limited, understanding only a few simple instructions r
 The challenge for developers is translating complicated human information into a computer-processable format, ensuring that the computer's output is usefull, accurate and user-friendly. This is not as easy as you might think.  
   
 The amount of code needed to achieve this can vary significantly and may sometimes be massive. Beyond just being massive, the code must also be correct, manageable, and often easy to extend or modify to accommodate new functionality. Unfortunately, the world humans live in is constantly changing, making adaptability a crucial aspect of software design.  
-You wouldn’t want to spend tens of thousands of hours creating computer programs for a specific task, only to discover later that circumstances have changed.  
+You wouldn’t want to spend thousands of hours creating computer programs for a specific task, only to discover later that circumstances have changed.  
 
 
 ### Developer challenges
