@@ -30,8 +30,7 @@ You wouldn’t want to spend thousands of hours creating computer programs for a
 The challenging part of software development isn’t learning a programming language to write code—almost anyone can do that if they’re interested. The real difficulty lies in learning how to manage code effectively: ensuring the compiled machine code is error-free, maintainable, and adaptable for future modifications.
 
 ### Keep the house in order and clean - a metaphor
-A blank slate of a home is a designer's dream. In the beginning, everything has its place, what to add and finding it is a breeze.  
-Before you know it, a house can become overwhelmed with possessions. Maintaining order is key to easily finding what you need.  
+A blank slate of a home is a designer's dream. In the beginning, everything has its place, what to add and finding it is a breeze. Before you know it, a house can become overwhelmed with possessions. Maintaining order is key to easily finding what you need.  
 A home needs order and flexibility to remain pleasant and functional. Mess up the home and even the nicest house is not as pleasant any more.  
 
 Same with code. A new codebase is a dream, easy to add stuff and easy to understand. Surprisingly quickly, you may find yourself spending time in locating specific code segments or understanding their intended behavior.
