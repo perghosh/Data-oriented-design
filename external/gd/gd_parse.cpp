@@ -1513,6 +1513,46 @@ const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, con
    return nullptr;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief find character that is used to scope text, that menas that there is start and end character to contain other text
+ * @param pbszBegin where to start searching
+ * @param pbszEnd where to end searching
+ * @param chFind character to find
+ * @param chScopeFind matching character that starts a new scope
+ * @return pointer to found character or nullptr if not found
+ */
+const char* strchr(const char* pbszBegin, const char* pbszEnd, char chFind, char chScopeFind, tag_scope)
+{
+   int iLevel = 0;
+   const char* pbszPosition = pbszBegin;
+   while( pbszPosition < pbszEnd )
+   {
+      if( *pbszPosition != chFind )
+      {
+         if(*pbszPosition != chScopeFind)
+         {
+            pbszPosition++;
+            continue;
+         }
+
+         iLevel++;
+         pbszPosition++;
+         continue;
+      }
+      else
+      {
+         if(iLevel == 0)
+         {
+            return pbszPosition;
+         }
+
+         iLevel--;
+         pbszPosition++;
+      }
+   }
+   return nullptr;
+}
+
 
 
 /** ---------------------------------------------------------------------------

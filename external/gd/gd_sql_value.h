@@ -29,6 +29,7 @@ _GD_SQL_QUERY_BEGIN
 struct tag_raw {};                                                             // tag dispatcher setting data without internal logic
 struct tag_brace {};                                                           // tag dispatcher setting data without internal logic
 struct tag_keep_not_found{};                                                   // tag for methods to keep something if not found/missing
+struct tag_preprocess{};                                                       // tag to preprocess text before inserting values, using this with replacement adds flexibility 
 
 /// Append ascii text as utf8 to string
 void append_ascii( const uint8_t* pbszAscii, std::string& stringSql );
