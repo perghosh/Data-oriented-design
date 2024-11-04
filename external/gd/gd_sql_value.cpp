@@ -765,4 +765,112 @@ std::string replace_g(const std::string_view& stringSource, const gd::argument::
 }
 
 
+/** --------------------------------------------------------------------------- format`replace_g`
+ * @brief replace value with sql formating
+ * @verbatim
+ * {?value_name,{insert this if value_name exists},{insert this if value_name is empty}}
+ * @endverbatim
+ * @param stringSource string with values to replace
+ * @param argumentsValue arguments that holds values to replace with
+ * @return  std::string string with replaced values
+ */
+std::string replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_preprocess)
+{
+   using namespace gd::types;
+
+   unsigned uArgumentIndex = 0;
+   std::string stringExpression; // current variable name that is replaced
+   std::string stringName;       // current variable name that is replaced
+   std::string stringNew;        // new created string
+
+   for(auto it = std::begin( stringSource ), itEnd = std::end( stringSource ); it != itEnd; it++ )
+   {
+      if(*it != '{' || (*it == '{' && *(it + 1) != '?') )
+      {
+         if(*it != '\'' ) stringNew += *it;                                    // no quote then copy character
+         else
+         {                                                                     // string is found, when in string we need to copy until end of string is found
+            const char* pbszFind = &(*it) + 1; 
+            pbszFind = gd::parse::strchr( pbszFind, '\'', gd::parse::sql{} );  // method used to find last quote, this method knows how to skip double quoutes
+            if(pbszFind != nullptr && pbszFind <= &(*(itEnd - 1)))
+            {
+               auto uSize = (pbszFind - &(*it));
+               stringNew.append( &(*it), uSize + 1);                           // append text including first quote (note + 1)
+               it += uSize;
+            }
+            else
+            {
+               return stringNew;                                               // end of string not found, return text
+            }
+         }
+      }
+      else
+      {
+
+         stringExpression.clear();
+         it += 2;                                                              // move past "{?"
+
+         const char* pbszEnd = gd::parse::strchr(&( *it ), stringSource.data(), '}', '{', gd::parse::tag_scope{} );
+
+         /*
+         unsigned uNested = 0;
+         while( (*it != '}' && uNested == 0) && it != itEnd)
+         {
+            stringExpression += *it;
+
+            if( *it == '{' )  { uNested++; }
+            else if( *it == '}' ) { assert( uNested > 0 ); uNested--; }
+
+            it++;
+         }
+         */
+
+         if(*it == '}')
+         {
+            bool bRaw = false;
+            gd::variant_view v_;
+
+            if(stringName.empty() == false)
+            {
+               char chFirst = stringName.at( 0 );                              // get first character
+               if(chFirst == '=')
+               {
+                  bRaw = true;
+                  stringName.erase( stringName.begin() );                      // remove equal charact
+               }
+            }
+
+            if(stringName.empty() == true)
+            {
+               v_ = argumentsValue[uArgumentIndex].as_variant_view();
+               uArgumentIndex++;
+            }
+            else
+            {
+               // ## investigate type of name
+               char chFirst = stringName.at( 0 );                              // get first character
+
+
+               if( is_ctype_g( chFirst, "digit"_ctype ) == true)               // is value a number
+               {
+                  unsigned uIndex = std::stoul( stringName );                                   assert( uIndex < 0xffff ); //realistic ??
+                  v_ = argumentsValue[uIndex].as_variant_view();
+               }
+               else
+               {
+                  v_ = argumentsValue[stringName].as_variant_view();
+               }
+            }
+
+            if( bRaw == false ) append_g( v_, stringNew );                     // add value to work in sql
+            else                append_g( v_, stringNew, gd::sql::tag_raw{});  // add value to string without fix for quotes if needed for value
+         }// if(*it == '}') {
+      }
+   }// for(auto it = std::begin( stringSource ...
+
+   return stringNew;
+}
+
+
+
 _GD_SQL_QUERY_END

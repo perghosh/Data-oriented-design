@@ -708,6 +708,8 @@ const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, con
 inline const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, const csv& csv ) { return strchr( pbszBegin, pbszEnd, chFind, csv, nullptr ); }
 inline const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, const uint8_t* puCharacterClass ) { return strchr( pbszBegin, pbszEnd, chFind, csv(), puCharacterClass ); }
 
+const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, char chScopeEnd, tag_scope );
+
 // ## SQL
 
 // ### Find character within sql formated string (without comments)
