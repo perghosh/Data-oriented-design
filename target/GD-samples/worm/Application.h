@@ -49,6 +49,9 @@ struct Worm
 
    std::vector<gd::console::rowcolumn> ToList( const std::string_view& stringType ) const;
 
+   /// Clear mask
+   void Clear();
+
 
 // ## attributes --------------------------------------------------------------
    uint64_t m_uMoveCounter = 0;     ///<
@@ -63,6 +66,12 @@ struct Worm
 inline std::pair<unsigned, unsigned> Worm::GetHeadPosition() const {
    uint64_t uHead = m_argumentsWorm["head"];
    return { unsigned(uHead >> 32), unsigned(uHead) };
+}
+
+/// Clear worm data
+inline void Worm::Clear() {
+   m_uMoveCounter = 0;
+   m_argumentsWorm.clear();
 }
 
 /// convert row and column to single 64 bit number storing position
@@ -136,8 +145,10 @@ struct Application : public application::basic::CApplication
 // ## attributes --------------------------------------------------------------
    
    Worm m_worm;
+   gd::argument::shared::arguments m_argumentsFood;
    gd::console::caret m_caretTopLeft;
    gd::console::device m_deviceGame;
+   gd::console::device m_devicePanel;
    std::string m_stringState = "wait";
 
 // ## free functions ----------------------------------------------------------
