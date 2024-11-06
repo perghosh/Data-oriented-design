@@ -1,5 +1,8 @@
 #include "conio.h"
 
+#include <random>
+
+#include "gd/gd_math.h"
 #include "gd/gd_console_print.h"
 #include "gd/gd_console_style.h"
 #include "gd/gd_arguments_shared.h"
@@ -18,8 +21,7 @@
 
 std::pair< bool, std::string > Worm::Create()
 {
-
-   m_argumentsWorm.clear();
+   Clear();
 
    m_argumentsWorm.append( "move_row", 0 );                                    // vertical movement
    m_argumentsWorm.append( "move_column", 1 );                                 // horizontal movement
@@ -99,6 +101,8 @@ void Worm::Move()
  */
 std::pair<bool, std::string> Application::Initialize()
 {
+   ::srand( ::time(NULL) );                                                    // init random numbers
+
    // ## Get information about terminal size
 
 
@@ -113,6 +117,7 @@ std::pair<bool, std::string> Application::Initialize()
 
    // ## create start worm that user moves in game
    m_worm.Create();
+   m_argumentsFood.append("meat",uint64_t(0)).append("shrink",uint64_t(0));
 
    return application::basic::CApplication::Initialize();
 }
@@ -187,11 +192,38 @@ void Application::Draw()
       m_deviceGame.print( pairPosition, 'O' );
       auto vectorWorm = m_worm.ToList( "body" );
       m_deviceGame.print( vectorWorm, 'X' );
+
+      uint64_t uMeat = m_argumentsFood["meat"];
+      auto pairMeat = gd::math::algebra::split_to_pair( uMeat );
+      m_deviceGame.print( pairMeat.first, pairMeat.second , 'F' );
    }
    else if(m_stringState == "crash")
    {
+      // ## Game crashed, update and prepare for new game
       m_worm.Create();
       m_stringState = "wait";
+
+      if( m_argumentsFood["ready"].is_true() == false)
+      {
+         auto pairSize = m_deviceGame.size();
+         uint64_t uRow = (rand() % (pairSize.first - 2)) -1;
+         uint64_t uColumn = (rand() % (pairSize.second - 2)) -1;
+         auto uMeat = gd::math::algebra::join_from_pair( std::pair<uint64_t,uint64_t>{ uRow, uColumn } );
+         m_argumentsFood.set( "meat", uMeat );
+         m_argumentsFood.set("ready", true);
+      }
+      
+      /*
+
+      uint64_t uMeat = m_argumentsFood["meat"];
+      auto [ uRow, uColumn ] = gd::math::algebra::split_to_pair( uMeat, 10 );
+      gd::math::increase( 10, uRow, uColumn );
+      gd::math::increase( -2, uRow, uColumn );
+      uMeat = gd::math::algebra::join_from_pair( std::pair<uint64_t,uint64_t>{ uRow, uColumn }, 10);
+      std::tie( uRow, uColumn ) = gd::math::algebra::split_to_pair( uMeat, 10 );
+      std::cout << "row " << uRow << " column " << uColumn << "\n";
+      */
+
    }
    else
    {
@@ -216,6 +248,9 @@ void Application::DrawStartUpScreen()
    m_deviceGame.print(11, 20, "X = Down" );
    m_deviceGame.print(13, 70, "Press enter to start game" );
    m_deviceGame.print(14, 70, "Q = Quit" );
+
+   auto _size_ = m_deviceGame.size();
+
 }
 
 /// ---------------------------------------------------------------------------
