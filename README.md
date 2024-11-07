@@ -53,6 +53,15 @@ If computers could understand data like humans, developers would be obsolete.
 ----
 
 ## Styleguide used in code
+*Why write code with this style*
+- Enables speed reading code (scan code), with some practice developers can scan huge amounts of code with this style
+- Easy to find code, using regular expressions you can find almost anything
+- Code looks the same all over
+- Easy to spot unimportant variables, fokus on whats important
+- Decrease cognitive load (no need to remember what type it is)
+- Learn while reading code
+- Easer to debug code
+
 
 **Types**
 
