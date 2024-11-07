@@ -59,7 +59,7 @@ If computers could understand data like humans, developers would be obsolete.
 - Code looks the same all over
 - Easy to spot unimportant variables, fokus on whats important
 - Decrease cognitive load (no need to remember what type it is)
-- Learn while reading code
+- Learn programming while reading code
 - Easer to debug code
 
 
