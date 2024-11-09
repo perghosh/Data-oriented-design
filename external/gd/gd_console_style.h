@@ -255,5 +255,28 @@ enum enumColor : uint8_t
    eColorYellow4Bis         = 106,
 };
 
+consteval uint8_t color_g( const std::string_view& stringColor )
+{
+   if( stringColor      == "aquamarine1")    return enumColor::eColorAquamarine1;
+   else if( stringColor == "aquamarine1Bis") return enumColor::eColorAquamarine1Bis;
+   else if( stringColor == "aquamarine1")    return enumColor::eColorAquamarine3;
+   else if( stringColor == "blue3")          return enumColor::eColorBlue1;
+   else if( stringColor == "blue3")          return enumColor::eColorBlue3;
+   else if( stringColor == "blue3bis")       return enumColor::eColorBlue3Bis;
+   else if( stringColor == "blueviolet")     return enumColor::eColorBlueViolet;
+
+   else if( stringColor == "violet")         return enumColor::eColorViolet;
+   else if( stringColor == "wheat1")         return enumColor::eColorWheat1;
+   else if( stringColor == "wheat4")         return enumColor::eColorWheat4;
+   else if( stringColor == "yellow1")        return enumColor::eColorYellow1;
+   else if( stringColor == "yellow2")        return enumColor::eColorYellow2;
+   else if( stringColor == "yellow3")        return enumColor::eColorYellow3;
+   else if( stringColor == "yellow3Bis")     return enumColor::eColorYellow3Bis;
+   else if( stringColor == "yellow4")        return enumColor::eColorYellow4;
+   else if( stringColor == "blueviolet")     return enumColor::eColorYellow4Bis;
+
+   return 0;
+}
+
 
 _GD_CONSOLE_END

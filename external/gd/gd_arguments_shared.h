@@ -66,6 +66,7 @@ struct tag_pair {};                                                            /
 struct tag_parse {};                                                           ///< methods that parse
 struct tag_parse_type{};                                                       ///< tag to try to parse type of value
 struct tag_align{};                                                            ///< align related methods
+struct tag_section{};                                                          ///< section related methods, section in arguments is a named value with multiple non named values after
 
 
 
@@ -897,6 +898,10 @@ public:
    [[nodiscard]] const_pointer find(const std::string_view& stringName) const;
    [[nodiscard]] const_pointer find(std::string_view stringName, const_pointer pPosition) const;
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch) const;
+   /// Find value within section
+   [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch, tag_section ) const;
+
+   
 
    [[nodiscard]] std::pair<argument,argument> find_pair(const std::string_view& stringName) const;
 

@@ -72,6 +72,7 @@ public:
    gd::variant_view PROPERTY_Get( size_t uIndex ) const { return gd::variant_view( m_vectorProperty.at(uIndex).second ); }
    gd::variant_view PROPERTY_Get( const std::string_view& stringName ) const;
    gd::variant_view PROPERTY_Get( const std::string_view& stringName, gd::variant_view variantviewDefault ) const;
+   const std::vector<std::pair<std::string_view, gd::variant>> PROPERTY_GetAll() const;
    std::string PROPERTY_GetName( size_t uIndex ) const { return m_vectorProperty.at(uIndex).first; }
    bool PROPERTY_Has( const std::string_view& stringName );
    size_t PROPERTY_Size() const noexcept { return m_vectorProperty.size(); }
@@ -166,6 +167,16 @@ inline gd::variant_view CApplication::PROPERTY_Get( const std::string_view& stri
    }
    return variantviewDefault;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief return all properties
+ */
+inline const std::vector<std::pair<std::string_view, gd::variant>> CApplication::PROPERTY_GetAll() const {
+   std::vector<std::pair<std::string_view, gd::variant>> vector_;
+   for( const auto& it : m_vectorProperty ) vector_.push_back( { it.first, it.second } );
+   return vector_;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Check if property exists

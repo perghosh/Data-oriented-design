@@ -52,6 +52,10 @@ std::pair<bool, std::string> Play()
       papplication->PrepareFrame();
 
       if( papplication->GetState() == "quit") { return { true, "quit" }; }
+
+      papplication->GAME_Update( tag_key{} );
+      papplication->GAME_Update( tag_loop{} );
+      papplication->GAME_Update( tag_state{} );
       
       papplication->Draw();
       std::this_thread::sleep_for(std::chrono::milliseconds(100));

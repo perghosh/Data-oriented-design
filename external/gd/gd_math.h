@@ -5,9 +5,9 @@
  * 
  */
 
-
-
 #pragma once
+
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <string>
@@ -22,6 +22,9 @@
 
    #define _GD_GROUP_ALGEBRA_BEGIN namespace algebra {
    #define _GD_GROUP_ALGEBRA_END }
+
+   #define _GD_GROUP_AREA_BEGIN namespace area {
+   #define _GD_GROUP_AREA_END }
 #endif
 
 _GD_MATH_BEGIN
@@ -31,6 +34,13 @@ void increase(TYPE increase_with_, ARGUMENTS&... values_)
 {
    ((values_ += increase_with_), ...);
 }
+
+template <typename TYPE1, typename TYPE2>
+std::pair<TYPE2, TYPE2> increase_pair(TYPE1 increase_with_, const std::pair<TYPE2, TYPE2>& pair_)
+{
+   return std::pair<TYPE2, TYPE2>( pair_.first + increase_with_, pair_.second + increase_with_ );
+}
+
 
 _GD_GROUP_ALGEBRA_BEGIN
 
@@ -91,11 +101,54 @@ TYPE join_from_pair(const std::pair<TYPE, TYPE>& pair_)
    return join_from_pair( pair_, (sizeof( TYPE ) * 8) / 2 );
 }
 
-
-
-
-
 _GD_GROUP_ALGEBRA_END
+
+_GD_GROUP_AREA_BEGIN
+
+// --------------------------------------------------------------------___ AREA
+
+
+/// ---------------------------------------------------------------------------
+/// check if point is within box
+template <typename TYPE>
+bool is_inside_box( TYPE px_, TYPE py_, TYPE x_, TYPE y_, TYPE width_, TYPE height_ )
+{
+   bool bInside = (px_ >= x_ && px_ <= (x_ + width_)) && (py_ >= y_ && py_ <= (y_ + height_) );
+   return bInside;
+}
+// overload `is_inside_box`
+template <typename TYPE>
+bool is_inside_box(const std::pair<TYPE, TYPE>& pairPoint, TYPE x_, TYPE y_, TYPE width_, TYPE height_ )
+{
+   bool bInside = is_inside_box( pairPoint.first, pairPoint.second, x_, y_, width_, height_ );
+   return bInside;
+}
+// overload `is_inside_box`
+template <typename TYPE>
+bool is_inside_box(const std::pair<TYPE, TYPE>& pairPoint, const std::array<TYPE, 4>& array_ )
+{
+   bool bInside = is_inside_box( pairPoint.first, pairPoint.second, array_[0], array_[1], array_[2], array_[3]);
+   return bInside;
+}
+// overload `is_inside_box`
+template <typename TYPE>
+bool is_inside_box(TYPE px_, TYPE py_, TYPE width_, TYPE height_ )
+{
+   bool bInside = is_inside_box( px_, py_, TYPE{}, TYPE{}, width_, height_);
+   return bInside;
+}
+
+// overload `is_inside_box`
+template <typename TYPE>
+bool is_inside_box(const std::pair<TYPE, TYPE>& pairPoint, const std::pair<TYPE, TYPE>& pairSize )
+{
+   bool bInside = is_inside_box( pairPoint.first, pairPoint.second, TYPE{}, TYPE{}, pairSize.first, pairSize.second);
+   return bInside;
+}
+
+
+
+_GD_GROUP_AREA_END
 
 
 _GD_MATH_END

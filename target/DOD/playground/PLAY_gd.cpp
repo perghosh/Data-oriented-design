@@ -5,11 +5,64 @@
 #include "gd/gd_cli_options.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
+#include "gd/gd_sql_value.h"
 
 
 #include "main.h"
 
 #include "catch2/catch_amalgamated.hpp"
+
+TEST_CASE( "[gd] replace", "[gd]" ) {
+   std::string stringSQL = "1111{?name1;{=found};not_found}2222";
+   auto stringReplace1 = gd::sql::replace_g( stringSQL, gd::argument::arguments(), gd::sql::tag_preprocess{});
+
+   std::vector< std::pair<std::string_view, gd::variant> > vectorValue;
+
+   bool bError = false;
+   auto stringReplace2 = gd::sql::replace_g(stringSQL, [&vectorValue]( const auto& name_ ) -> gd::variant_view {
+      for( auto it : vectorValue ) { if( it.first == name_ ) return gd::variant_view( it.second ); }
+      return gd::variant_view();
+   }, &bError, gd::sql::tag_preprocess{});
+
+   vectorValue.push_back( { "name1", 1 } );
+   auto stringReplace3 = gd::sql::replace_g(stringSQL, [&vectorValue]( const auto& name_ ) -> gd::variant_view {
+      for( auto it : vectorValue ) { if( it.first == name_ ) return gd::variant_view( it.second ); }
+      return gd::variant_view();
+   }, &bError, gd::sql::tag_preprocess{});
+                                                                                                   REQUIRE( stringReplace1 == stringReplace2 );
+                                                                                                   REQUIRE( stringReplace1 != stringReplace3 );
+
+
+   stringSQL = R"SQL(SELECT FHomoMean as homo_mean,
+                   FHomoMax as homo_max,
+                   FLumoMean as lumo_mean,
+                   FLumoMin as lumo_min
+            FROM TBodyTypePDOS
+            WHERE BodyTypeK = (SELECT BodyTypeK FROM TBodyType WHERE FLevel = {level} AND FId = {id})
+            {?trajectory;AND TrajectoryK = (SELECT TrajectoryK FROM TTrajectory WHERE FLevel = {level} AND FId = {id};AND TrajectoryK IS NULL} )SQL";
+   gd::argument::arguments arguments_;
+   arguments_.append( "id", 1 );
+   arguments_.append( "level", 0 );
+   stringSQL = gd::sql::replace_g( stringSQL, arguments_, gd::sql::tag_preprocess{});
+   stringSQL = gd::sql::replace_g( stringSQL, arguments_, gd::sql::tag_brace{} );
+                                                                                                   REQUIRE( stringSQL.find( '{' ) == std::string::npos );
+   /*
+
+   std::vector<gd::variant_view> vectorValue;
+
+   // Trajectory or null trajectory?
+   if (trajectory_id == s_max) {
+      sql.append(std::string("AND TrajectoryK IS NULL"));
+      vectorValue = {level, body_type_id};
+   } else {
+      sql.append(std::string("AND TrajectoryK = (SELECT TrajectoryK FROM TTrajectory WHERE FLevel = ? AND FId = ?)"));
+      vectorValue = {level, body_type_id, level, trajectory_id};
+   }
+
+   */
+
+}
+
 
 // Run logic on arguments to test new features --------------------------------
 TEST_CASE( "[gd] arguments", "[gd]" ) {
@@ -133,7 +186,7 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
       std::random_device randomdevice;
       std::mt19937 mt19937RandomNumber(randomdevice()); 
       std::string stringSelectCharFrom = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      std::uniform_int_distribution<> pick_character_(0, stringSelectCharFrom.size() - 1);
+      std::uniform_int_distribution<> pick_character_(0, (int)stringSelectCharFrom.size() - 1);
 
       gd::argument::shared::arguments arguments_;
 
