@@ -21,6 +21,11 @@
 
 _GD_SQL_QUERY_BEGIN
 
+char iBeginBrace_g   = '{';
+char iEndBrace_g     = '}';
+char iQuestion_g     = '?';
+char iSemicolon_g    = ';';
+
 const int iSprintfBufferSize_g = 32;
 
 /** ---------------------------------------------------------------------------
@@ -771,32 +776,35 @@ std::string replace_g(const std::string_view& stringSource, const gd::argument::
  * {?value_name,{insert this if value_name exists},{insert this if value_name is empty}}
  * @endverbatim
  * @param stringSource string with values to replace
- * @param argumentsValue arguments that holds values to replace with
+ * @param find_ callback to get argument
  * @return  std::string string with replaced values
  */
-std::string replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_preprocess)
+std::string replace_g(const std::string_view& stringSource, std::function<gd::variant_view (const std::string_view&)> find_, bool* pbError, tag_preprocess )
 {
    using namespace gd::types;
 
    unsigned uArgumentIndex = 0;
-   std::string stringExpression; // current variable name that is replaced
    std::string stringName;       // current variable name that is replaced
    std::string stringNew;        // new created string
+   std::string_view stringExpression; // current variable name that is replaced
 
-   for(auto it = std::begin( stringSource ), itEnd = std::end( stringSource ); it != itEnd; it++ )
+   if( pbError != nullptr ) *pbError = false;
+
+   for( const char* pit = stringSource.data(), * pitEnd = stringSource.data() + stringSource.length(); pit < pitEnd; pit++ )
+   //for(auto it = std::begin( stringSource ), itEnd = std::end( stringSource ); it != itEnd; it++ )
    {
-      if(*it != '{' || (*it == '{' && *(it + 1) != '?') )
+      if(*pit != iBeginBrace_g || (*pit == iBeginBrace_g && *(pit + 1) != iQuestion_g) )
       {
-         if(*it != '\'' ) stringNew += *it;                                    // no quote then copy character
+         if(*pit != '\'' ) stringNew += *pit;                                  // no quote then copy character
          else
          {                                                                     // string is found, when in string we need to copy until end of string is found
-            const char* pbszFind = &(*it) + 1; 
+            const char* pbszFind = pit + 1; 
             pbszFind = gd::parse::strchr( pbszFind, '\'', gd::parse::sql{} );  // method used to find last quote, this method knows how to skip double quoutes
-            if(pbszFind != nullptr && pbszFind <= &(*(itEnd - 1)))
+            if( pbszFind != nullptr && pbszFind <= pitEnd )
             {
-               auto uSize = (pbszFind - &(*it));
-               stringNew.append( &(*it), uSize + 1);                           // append text including first quote (note + 1)
-               it += uSize;
+               auto uSize = (pbszFind - pit);
+               stringNew.append( pit, uSize + 1);                              // append text including first quote (note + 1)
+               pit += uSize;
             }
             else
             {
@@ -806,65 +814,45 @@ std::string replace_g(const std::string_view& stringSource, const gd::argument::
       }
       else
       {
+         stringExpression = std::string_view();
+         pit += 2;                                                             // move past "{?"
 
-         stringExpression.clear();
-         it += 2;                                                              // move past "{?"
+         const char* pbszBegin = pit;
+         const char* pbszEnd = gd::parse::strchr( pbszBegin, stringSource.data() + stringSource.length(), '}', '{', gd::parse::tag_scope{});
 
-         const char* pbszEnd = gd::parse::strchr(&( *it ), stringSource.data(), '}', '{', gd::parse::tag_scope{} );
-
-         /*
-         unsigned uNested = 0;
-         while( (*it != '}' && uNested == 0) && it != itEnd)
+         // ## parse first part to found out what to do
+         const char* pbszSemicolon = gd::parse::strchr( pbszBegin, pbszEnd, iSemicolon_g );
+         if(*pbszSemicolon != iSemicolon_g)
          {
-            stringExpression += *it;
-
-            if( *it == '{' )  { uNested++; }
-            else if( *it == '}' ) { assert( uNested > 0 ); uNested--; }
-
-            it++;
+            if( pbError != nullptr ) *pbError = true;
+            // ERROR: TODO fix code for error
+            return std::string();
          }
-         */
 
-         if(*it == '}')
+         // ## check name
+         stringExpression = std::string_view( pbszBegin, pbszSemicolon - pbszBegin );
+         //std::string_view string_( pbszBegin, pbszSemicolon - pbszBegin );
+         bool bTrue = find_( stringExpression ).is_true();
+
+         // ### extract rest
+         pbszBegin = pbszSemicolon + 1;
+         stringExpression = std::string_view( pbszBegin, pbszEnd );
+         std::vector<std::string_view> vectorPart;
+         gd::utf8::split( stringExpression, iSemicolon_g, vectorPart );
+
+         if(vectorPart.empty() == false)
          {
-            bool bRaw = false;
-            gd::variant_view v_;
-
-            if(stringName.empty() == false)
+            if(bTrue == true)
             {
-               char chFirst = stringName.at( 0 );                              // get first character
-               if(chFirst == '=')
-               {
-                  bRaw = true;
-                  stringName.erase( stringName.begin() );                      // remove equal charact
-               }
+               stringNew.append( vectorPart[0] );
             }
-
-            if(stringName.empty() == true)
+            else if(vectorPart.size() > 1)
             {
-               v_ = argumentsValue[uArgumentIndex].as_variant_view();
-               uArgumentIndex++;
+               stringNew.append( vectorPart[1] );
             }
-            else
-            {
-               // ## investigate type of name
-               char chFirst = stringName.at( 0 );                              // get first character
+         }
 
-
-               if( is_ctype_g( chFirst, "digit"_ctype ) == true)               // is value a number
-               {
-                  unsigned uIndex = std::stoul( stringName );                                   assert( uIndex < 0xffff ); //realistic ??
-                  v_ = argumentsValue[uIndex].as_variant_view();
-               }
-               else
-               {
-                  v_ = argumentsValue[stringName].as_variant_view();
-               }
-            }
-
-            if( bRaw == false ) append_g( v_, stringNew );                     // add value to work in sql
-            else                append_g( v_, stringNew, gd::sql::tag_raw{});  // add value to string without fix for quotes if needed for value
-         }// if(*it == '}') {
+         pit = pbszEnd;
       }
    }// for(auto it = std::begin( stringSource ...
 

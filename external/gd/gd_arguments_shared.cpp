@@ -1595,6 +1595,35 @@ arguments::const_pointer arguments::find(const std::pair<std::string_view, gd::v
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief finds value within section and section is a name and the trailing values without name
+ * @param pairMatch name for section and value that is searched for
+ * @return const_pointer pointer to value if value is found or nullptr if not found
+ */
+arguments::const_pointer arguments::find(const std::pair<std::string_view, gd::variant_view>& pairMatch, tag_section ) const
+{
+   const_pointer pPosition = find(pairMatch.first);
+   if( pPosition != nullptr )
+   {
+      argument argumentFind = get_argument_s(pPosition);
+      if( argumentFind.compare( pairMatch.second ) == true ) return pPosition;
+
+      /// try to find value in among values that follow without name, stop searching when new name is found
+      while(( pPosition = next(pPosition) ) != nullptr)
+      {
+         if(arguments::is_name_s(pPosition) == false)
+         {
+            argumentFind = get_argument_s(pPosition);
+            if( argumentFind.compare( pairMatch.second ) == true ) return pPosition;
+         }
+         else { break; }
+      }
+   }
+
+   return nullptr;
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief Tries to find two values with same name and return those two in pair object
  * This is more av of conveniance method to find two related values (same name) and put them in a pair object
  * @param stringName name that two values are searced for

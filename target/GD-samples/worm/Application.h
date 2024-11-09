@@ -8,6 +8,16 @@
 
 #include "application/ApplicationBasic.h"
 
+// tag dispatcher for key (keyboard) functionality
+struct tag_key{}; 
+// tag dispatcher game loop, things that moves in time
+struct tag_loop{}; 
+// tag dispatcher used to game state logic
+struct tag_state{}; 
+
+
+
+
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------- Worm
 // ----------------------------------------------------------------------------
@@ -46,6 +56,8 @@ struct Worm
    std::pair< bool, std::string > Create();
    /// move worm to next position
    void Move();
+   /// Test if spot is on worm body or head
+   bool Exists( uint64_t uPosition ) const;
 
    std::vector<gd::console::rowcolumn> ToList( const std::string_view& stringType ) const;
 
@@ -126,15 +138,23 @@ struct Application : public application::basic::CApplication
 
    std::pair<bool, std::string> Initialize() override;
 
-   /// Read inputs to know how worm should move or setting applicatin state
-   std::pair<bool, std::string> ReadInput();
+   /// Read inputs to know how worm should move or setting application state
+   std::pair<bool, std::string> GAME_Update( tag_key );
+   /// Update game based on game loop
+   std::pair<bool, std::string> GAME_Update( tag_loop );
+   /// Update game state befor drawing
+   std::pair<bool, std::string> GAME_Update( tag_state );
 
    void PrepareFrame();
 
    /// Draw application
    void Draw();
-   void DrawStartUpScreen();
-   void DrawFrame();
+
+   /// Draws the sourounding frame for game
+   void DrawGameFrame();
+   /// Draw information on how to play the game and how to start and end it
+   void DrawGameInformation();
+
 
 
 /** \name DEBUG
@@ -145,7 +165,7 @@ struct Application : public application::basic::CApplication
 // ## attributes --------------------------------------------------------------
    
    Worm m_worm;
-   gd::argument::shared::arguments m_argumentsFood;
+   gd::argument::shared::arguments m_argumentsGame;
    gd::console::caret m_caretTopLeft;
    gd::console::device m_deviceGame;
    gd::console::device m_devicePanel;

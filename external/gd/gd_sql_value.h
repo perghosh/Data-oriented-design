@@ -9,6 +9,7 @@
 #pragma once
 
 #include <cassert>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -25,6 +26,11 @@
 #endif
 
 _GD_SQL_QUERY_BEGIN
+
+extern char iBeginBrace_g;
+extern char iEndBrace_g;
+extern char iQuestion_g;
+extern char iSemicolon_g;
 
 struct tag_raw {};                                                             // tag dispatcher setting data without internal logic
 struct tag_brace {};                                                           // tag dispatcher setting data without internal logic
@@ -49,5 +55,15 @@ std::tuple<uint64_t,std::string,std::string> make_bulk_g( const std::string_view
 
 std::string replace_g( const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_brace );
 std::string replace_g( const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_brace, tag_keep_not_found );
+
+std::string replace_g(const std::string_view& stringSource, std::function<gd::variant_view (const std::string_view&)> find_, bool* pbError, tag_preprocess);
+inline std::string replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, bool* pbError, tag_preprocess) {
+   return replace_g(stringSource, [&argumentsValue] ( const auto& name_ ) -> gd::variant_view {
+      return argumentsValue[name_].as_variant_view();
+   }, pbError, tag_preprocess{});
+}
+inline std::string replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_preprocess) {
+   return replace_g( stringSource, argumentsValue, nullptr, tag_preprocess{});
+}
 
 _GD_SQL_QUERY_END
