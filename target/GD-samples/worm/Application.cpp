@@ -98,10 +98,6 @@ bool Worm::Exists(uint64_t uPosition) const
    auto pposition_ = m_argumentsWorm.find( {"body", uPosition } , gd::argument::shared::tag_section{} );
    if( pposition_ != nullptr ) return true;
 
-   // ## check head
-   uint64_t uHead = m_argumentsWorm["head"];                                   // get head position
-   if( uPosition == uHead ) return true;
-
    return false;
 }
 
@@ -221,6 +217,16 @@ std::pair<bool, std::string> Application::GAME_Update( tag_state )
       }
    }
 
+   // ## check so that worm head is not moving ihto its own body
+   {
+      uint64_t uHead = m_worm.GetProperty("head");
+      if(m_worm.Exists(uHead) == true)
+      {
+         SetState( "crash" ); 
+         return { true, "" };
+      }
+   }
+
    // ### test if snake head has moved into food
    {
       bool bNewMeat = false;
@@ -245,12 +251,12 @@ std::pair<bool, std::string> Application::GAME_Update( tag_state )
 
          while( bFreeSpot == false )
          {
-            uint64_t uRow = (rand() % (pairSize.first - 2)) -1;
-            uint64_t uColumn = (rand() % (pairSize.second - 2)) -1;
+            uint64_t uRow = (rand() % (pairSize.first - 2)) + 1;                                   assert( uRow > 0 );
+            uint64_t uColumn = (rand() % (pairSize.second - 2)) + 1;                               assert( uColumn > 0 );
             auto uNewMeat = gd::math::algebra::join_from_pair( std::pair<uint64_t,uint64_t>{ uRow, uColumn } );
-            if( m_worm.Exists( uNewMeat ) == false )
+            if( m_worm.Exists( uNewMeat ) == false && m_worm.IsOnHead( uNewMeat ) == false )
             {
-               m_argumentsGame.set("meat",  uNewMeat);
+               m_argumentsGame.set("meat", uNewMeat);
                bFreeSpot = true;
             }
          }
@@ -295,7 +301,17 @@ void Application::Draw()
    }
    else if(GetState() == "crash")
    {
-      // ## Game crashed, update and prepare for new game
+      // ## Update hiscore if above
+      uint64_t uScore = m_argumentsGame["score"];
+      uint64_t uHiScore = m_argumentsGame["hiscore"];
+      if(uHiScore < uScore)
+      {
+         uHiScore = uScore;
+         m_argumentsGame.set( "hiscore", uHiScore );
+      }
+      m_argumentsGame.set("meat", 0ull );
+
+      // ## Worm crashed, update and prepare for new game
       m_worm.Create();
       SetState( "wait" );
 

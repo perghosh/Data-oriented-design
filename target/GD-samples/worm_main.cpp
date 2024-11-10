@@ -47,21 +47,21 @@ std::pair<bool, std::string> Play()
 
    papplication->Draw();
 
-   for( auto i = 0; i < 4000; i++ )
+   while( papplication->GetState() != "quit" )
    {
-      papplication->PrepareFrame();
+      // papplication->PrepareFrame();
 
-      if( papplication->GetState() == "quit") { return { true, "quit" }; }
+      //if( papplication->GetState() == "quit") { return { true, "quit" }; }
 
       papplication->GAME_Update( tag_key{} );
       papplication->GAME_Update( tag_loop{} );
       papplication->GAME_Update( tag_state{} );
       
       papplication->Draw();
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      std::this_thread::sleep_for(std::chrono::milliseconds(75));
    }
 
-   return { true, "" };
+   return { true, papplication->GetState() };
 }
 
 
