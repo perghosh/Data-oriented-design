@@ -1,5 +1,6 @@
 #include "conio.h"
 
+#include <format>
 #include <random>
 
 #include "gd/gd_math.h"
@@ -110,8 +111,8 @@ bool Worm::Exists(uint64_t uPosition) const
 
 
 /** ---------------------------------------------------------------------------
- * @brief 
- * @return 
+ * @brief Initialize game
+ * @return true if ok, false and error information on error
  */
 std::pair<bool, std::string> Application::Initialize()
 {
@@ -129,11 +130,15 @@ std::pair<bool, std::string> Application::Initialize()
    // ### create device
    m_deviceGame.create();
 
+   m_devicePanel = gd::console::rowcolumn( 2, rowcolumn_.column() );           // set device used to print score and game information
+   m_devicePanel.create();
+
    // ## create start worm that user moves in game
    m_worm.Create();
    m_argumentsGame.append("meat",uint64_t(0))
                   .append("shrink",uint64_t(0))
-                  .append("score",uint64_t(0));
+                  .append("score",uint64_t(0))
+                  .append("hiscore",uint64_t(0));
 
    return application::basic::CApplication::Initialize();
 }
@@ -179,8 +184,11 @@ std::pair<bool, std::string> Application::GAME_Update( tag_key )
 /// read key stroke
 std::pair<bool, std::string> Application::GAME_Update( tag_loop )
 {
-   // ## move worm to next position
-   m_worm.Move();
+   if( GetState() == "play" )
+   {
+      // ## move worm to next position
+      m_worm.Move();
+   }
 
    return { true, "" };
 }
@@ -190,7 +198,7 @@ std::pair<bool, std::string> Application::GAME_Update( tag_loop )
 /// Test positions if there is changes in game state, could be that the snake has hit something
 std::pair<bool, std::string> Application::GAME_Update( tag_state )
 {
-   if( m_stringState == "wait" ) return { true, "" };
+   if( GetState() == "wait") return {true, ""};
 
    // ## If snake head has moved into something then set the proper state for it
    auto pairHeadPosition = m_worm.GetHeadPosition();                               // get head position
@@ -198,11 +206,18 @@ std::pair<bool, std::string> Application::GAME_Update( tag_state )
    // ### Check if head is outside game plan
    {
       auto pairSize = m_deviceGame.size();
-      pairSize = gd::math::increase_pair( -1, pairSize );
-      bool bInside = gd::math::area::is_inside_box( pairHeadPosition, pairSize );
-      if(bInside == false)
+
+      if(pairHeadPosition.first < 2)
       {
-         m_stringState = "crash";
+         std::cout << pairSize.first << "\n";
+      }
+
+      pairSize = gd::math::increase_pair( -2, pairSize );                      // decrease border size
+      bool bInside = gd::math::area::is_inside_box( pairHeadPosition, {1,1}, pairSize);
+      if(bInside == false) 
+      {  // We are outside the game area and game has ended
+         SetState( "crash" ); 
+         return { true, "" };
       }
    }
 
@@ -235,7 +250,7 @@ std::pair<bool, std::string> Application::GAME_Update( tag_state )
             auto uNewMeat = gd::math::algebra::join_from_pair( std::pair<uint64_t,uint64_t>{ uRow, uColumn } );
             if( m_worm.Exists( uNewMeat ) == false )
             {
-               m_argumentsGame["meat"] = uNewMeat;
+               m_argumentsGame.set("meat",  uNewMeat);
                bFreeSpot = true;
             }
          }
@@ -252,15 +267,6 @@ void Application::PrepareFrame()
 {
    GAME_Update( tag_key{} );
    m_worm.Move();
-
-   // ## check head position if not on space
-   auto position_ = m_worm.GetHeadPosition();
-   auto uCharacter = m_deviceGame.at( position_ );
-   if(uCharacter != ' ')
-   {
-      m_stringState = "crash";
-   }
-
 }
 
 
@@ -271,8 +277,9 @@ void Application::Draw()
 {
    // ## draw game frame
    DrawGameFrame();
+   DrawGamePanel();
 
-   if( m_stringState == "play" )
+   if( GetState() == "play")
    {
       // ## draw the game objects
       // ### draw worm
@@ -283,14 +290,14 @@ void Application::Draw()
 
       // ### draw meat
       uint64_t uMeat = m_argumentsGame["meat"];
-      auto pairMeat = gd::math::algebra::split_to_pair( uMeat );
+      auto pairMeat = gd::math::algebra::split_to_pair( uMeat );                                   assert( pairMeat.first != 0 );
       m_deviceGame.print( (unsigned)pairMeat.first, (unsigned)pairMeat.second , char(254) );// print food, ascii 254
    }
-   else if(m_stringState == "crash")
+   else if(GetState() == "crash")
    {
       // ## Game crashed, update and prepare for new game
       m_worm.Create();
-      m_stringState = "wait";
+      SetState( "wait" );
 
       if( m_argumentsGame["ready"].is_true() == false)
       {
@@ -305,18 +312,6 @@ void Application::Draw()
          m_argumentsGame.set( "meat", uMeat );
          m_argumentsGame.set("ready", true);
       }
-      
-      /*
-
-      uint64_t uMeat = m_argumentsGame["meat"];
-      auto [ uRow, uColumn ] = gd::math::algebra::split_to_pair( uMeat, 10 );
-      gd::math::increase( 10, uRow, uColumn );
-      gd::math::increase( -2, uRow, uColumn );
-      uMeat = gd::math::algebra::join_from_pair( std::pair<uint64_t,uint64_t>{ uRow, uColumn }, 10);
-      std::tie( uRow, uColumn ) = gd::math::algebra::split_to_pair( uMeat, 10 );
-      std::cout << "row " << uRow << " column " << uColumn << "\n";
-      */
-
    }
    else
    {
@@ -327,6 +322,7 @@ void Application::Draw()
 
    std::cout << m_caretTopLeft.render( gd::console::tag_format_cli{});
    std::cout << m_deviceGame.render( gd::console::tag_format_cli{});
+   std::cout << m_devicePanel.render( gd::console::tag_format_cli{});
 }
 
 
@@ -347,6 +343,18 @@ void Application::DrawGameFrame()
    
    m_deviceGame.select( gd::console::enumColor::eColorNavajoWhite1, gd::console::tag_color{}); // select active color
    m_deviceGame.fill( 1,1, uRowCount - 2, uColumnCount - 2, ' ' );             // clear inner part
+}
+
+/// ---------------------------------------------------------------------------
+/// Draw the game panel information like hiscore and score
+void Application::DrawGamePanel()
+{
+   // ## Generate game information
+   m_devicePanel.fill( ' ' );
+   auto uHiScore = m_argumentsGame["hiscore"].as_uint64();
+   auto uScore = m_argumentsGame["score"].as_uint64();
+   std::string stringPanel = std::format( "HISCORE: {}         SCORE: {}", uHiScore, uScore );
+   m_devicePanel[1][10] = stringPanel;
 }
 
 /// ---------------------------------------------------------------------------
