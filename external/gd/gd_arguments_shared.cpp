@@ -1057,50 +1057,6 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
    uPosition += uCopySize;
    buffer_set_size( uPosition );                                               assert(buffer_size() < buffer_buffer_size());
 
-   /*
-   if( (uType & eValueLength) == 0 )                                           // if type doesn't have specified length flag then just copy data into buffer
-   {
-      uint32_t uValueLength = uLength;                                         // hold value lenght
-      uLength = align32_g( uLength );                                          // align to 32 bit boundary
-      uint32_t uTypeAndSize = (uType << 24) | uLength;
-      *(uint32_t*)(pdata_ + uPosition) = uTypeAndSize;                         // set type and size
-      uPosition += sizeof( uint32_t );
-
-      memcpy(&pdata_[uPosition], pBuffer, uValueLength);
-      uPosition += uLength;                                                    // add aligned length
-      buffer_set_size( uPosition );                                            assert(buffer_size() < buffer_buffer_size());
-   }
-   else
-   {
-      unsigned uTotalLength = uLength;
-      uint32_t uValueLength = uLength;                                         // value length in bytes (storage needed to hold data)
-      uTotalLength += sizeof( uint32_t );                                      // add value length to total value size
-      uTotalLength = align32_g( uTotalLength );                                // align to 32 bit boundary
-      uint32_t uTypeAndSize = (uType << 24) | uTotalLength;                    // set value type and length in 32 bit value
-      *(uint32_t*)(pdata_ + uPosition) = uTypeAndSize;                         // set type and size
-      uPosition += sizeof( uint32_t );                                         // move past type and size
-
-      uint32_t uCompleteType = gd::types::typenumber_to_type_g( uType & ~eType_MASK );
-
-      // ## fix size to the actual length for value, this is to improve the speed
-      //    generating value objects from data
-      if(uCompleteType & gd::types::eTypeGroupString)
-      {
-         if(( uType & eTypeNumber_MASK ) == eTypeNumberWString)
-         {                                                                                         assert( (uValueLength % 2) == 0 );
-            uValueLength = uValueLength >> 1;                                  // unicode string, length is cut in half
-         }
-         uValueLength--;                                                       // remove the zero terminator for length
-      }
-
-      *(uint32_t*)(pdata_ + uPosition) = uValueLength;
-      memcpy(&pdata_[uPosition + sizeof( uint32_t )], pBuffer, uLength);       // copy data
-      uPosition += uTotalLength;                                               // move past data for value (length and data)
-      buffer_set_size( uPosition );                                            assert(buffer_size() < buffer_buffer_size());
-   }
-   */
-
-
 #ifndef NDEBUG
    auto uValueSize_d = uPosition - uBegin_d;
 #endif // _DEBUG
@@ -1423,6 +1379,22 @@ arguments::pointer arguments::set(pointer pPosition, param_type uType, const_poi
    return pPosition;
 }
 
+arguments::pointer arguments::insert(size_t uIndex, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view )
+{
+   pointer pposition = find( (unsigned)uIndex );
+   if(pposition != nullptr)
+   {
+      pposition = insert( pposition, stringName, variantviewValue, tag_view{} );
+   }
+   else
+   {
+      append_argument( stringName, variantviewValue, tag_view{} );
+      pposition = get_buffer_end();
+   }
+
+   return pposition;
+}
+
 /** ---------------------------------------------------------------------------
  * @brief insert variant value at position
  * @param pPosition position where value is inserted, values after are moved one step to end
@@ -1461,6 +1433,41 @@ arguments::pointer arguments::insert(pointer pPosition, const gd::variant_view& 
 
    return pPosition;
 }
+
+arguments::pointer arguments::insert(pointer pPosition, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view)
+{                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition <= buffer_data_end() );
+#ifndef NDEBUG
+   // auto string_d = debug::print( *this );
+#endif // !NDEBUG
+
+   uint64_t uOffset = pPosition - buffer_data();                                                   assert( uOffset < buffer_size() );
+   // ## calculate expand size   
+   unsigned uSizeInsert = sizeof_s( stringName, variantviewValue, tag_view{}) ;
+   uSizeInsert = align32_g( uSizeInsert );
+
+   reserve( buffer_size() + uSizeInsert );                                     // increase size if needed
+
+   pPosition = buffer_data() + uOffset;                                        // reset pointer to buffer where to insert value
+
+   uint64_t uMoveSize = buffer_size() - uOffset;                               // calculate memory size to move
+   memmove( pPosition + uSizeInsert, pPosition, uMoveSize );                   // move memory
+
+   auto argumentValue = get_argument_s(variantviewValue);
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();
+   uint64_t uByteCount = memcpy_s( pPosition, stringName.data(), (unsigned)stringName.length() );
+   pPosition += uByteCount;
+   uByteCount += memcpy_s( pPosition, uType, pData, uSizeInsert - sizeof( uint32_t ) ); // copy data, decrease size with size needed to describe
+   pPosition += uByteCount;                                                                        assert( uSizeInsert == uByteCount );
+   buffer_set_size( buffer_size() + uByteCount );                              // increase used buffer size
+
+#ifndef NDEBUG
+   // string_d = debug::print( *this );
+#endif // !NDEBUG
+
+   return pPosition;
+}
+
 
 /*----------------------------------------------------------------------------- count */ /**
  * Count param values for name
@@ -2615,6 +2622,25 @@ unsigned int arguments::sizeof_s(const gd::variant_view& variantviewValue, tag_v
    return sizeof_s( argumentValue );
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief calculate needed size in bytes to store name and variant view value
+ * @param stringName name for value
+ * @param VV_ value to return size in bytes for
+ * @return unsigned number of bytes needed to store name and value
+ */
+unsigned int arguments::sizeof_s(const std::string_view& stringName, const gd::variant_view& VV_, tag_view)
+{
+   unsigned uSize = 0;
+   auto argumentValue = get_argument_s(VV_);
+
+   uSize += sizeof( uint32_t );
+   uSize += (unsigned)stringName.length();
+   uSize += align32_g( uSize );
+   uSize += sizeof_s( argumentValue );
+
+   return uSize;
+}
+
 /*----------------------------------------------------------------------------- print_s */ /**
  * Print values into text and return string with values
  * \param pPosition position in arguments object where value is located
@@ -3148,6 +3174,19 @@ std::pair<bool, std::string> arguments::exists_s( const arguments& argumentsVali
    return { true, "" };
 }
 
+uint64_t arguments::memcpy_s(pointer pCopyTo, const char* pbszName, unsigned uNameLength)
+{
+   auto* pdata_ = pCopyTo;
+
+   uint32_t uTypeAndSize = (eType_ParameterName << 24) | uNameLength;
+   *(uint32_t*)(pdata_) = uTypeAndSize;                                        // set name type
+   pdata_ += sizeof( uint32_t );                                               // move past prefix information for name
+   memcpy(pdata_, pbszName, uNameLength);                                      // copy name into buffer
+   uNameLength = align32_g( uNameLength );
+   pdata_ += uNameLength;                                                      // move past name content
+   uint64_t uSize = pdata_ - pCopyTo;                                                              assert( uSize % 4 == 0 );
+   return uSize;
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Copy data into buffer and return number of bytes copied
