@@ -1434,10 +1434,23 @@ arguments::pointer arguments::insert(pointer pPosition, const gd::variant_view& 
    return pPosition;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief insert value at position, position need to point to start of value
+ * @code
+ gd::argument::shared::arguments arguments_;
+ arguments_.append_many( 100, 200, 300, 400, 500 );
+ arguments_.insert( 2, "test", 250, gd::argument::shared::arguments::tag_view{});
+ std::cout << arguments_.print() << "\n";
+ * @emdcode
+ * @param pPosition position in internal buffer holding arguments value
+ * @param stringName name for value to insert
+ * @param variantviewValue value to insert
+ * @return pointer to same value that position was at from start
+ */
 arguments::pointer arguments::insert(pointer pPosition, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view)
 {                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition <= buffer_data_end() );
 #ifndef NDEBUG
-   // auto string_d = debug::print( *this );
+   auto string_d = debug::print( *this );
 #endif // !NDEBUG
 
    uint64_t uOffset = pPosition - buffer_data();                                                   assert( uOffset < buffer_size() );
@@ -1449,20 +1462,27 @@ arguments::pointer arguments::insert(pointer pPosition, const std::string_view& 
 
    pPosition = buffer_data() + uOffset;                                        // reset pointer to buffer where to insert value
 
+   // ## move memory to make space for new value
    uint64_t uMoveSize = buffer_size() - uOffset;                               // calculate memory size to move
    memmove( pPosition + uSizeInsert, pPosition, uMoveSize );                   // move memory
 
-   auto argumentValue = get_argument_s(variantviewValue);
-   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
-   unsigned uType = argumentValue.type_number();
+   // ## insert name for value
    uint64_t uByteCount = memcpy_s( pPosition, stringName.data(), (unsigned)stringName.length() );
    pPosition += uByteCount;
+
+   // ## get pointer to value in argument
+   auto argumentValue = get_argument_s(variantviewValue);                      // convert to argument
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();
+
+   // ## copy value
+   uSizeInsert = sizeof_s( variantviewValue, tag_view{} ) ;
    uByteCount += memcpy_s( pPosition, uType, pData, uSizeInsert - sizeof( uint32_t ) ); // copy data, decrease size with size needed to describe
-   pPosition += uByteCount;                                                                        assert( uSizeInsert == uByteCount );
+   pPosition += uByteCount;                                                                        
    buffer_set_size( buffer_size() + uByteCount );                              // increase used buffer size
 
 #ifndef NDEBUG
-   // string_d = debug::print( *this );
+   string_d = debug::print( *this );
 #endif // !NDEBUG
 
    return pPosition;
@@ -2635,7 +2655,7 @@ unsigned int arguments::sizeof_s(const std::string_view& stringName, const gd::v
 
    uSize += sizeof( uint32_t );
    uSize += (unsigned)stringName.length();
-   uSize += align32_g( uSize );
+   uSize = align32_g( uSize );
    uSize += sizeof_s( argumentValue );
 
    return uSize;
@@ -3277,8 +3297,11 @@ namespace debug {
       {
          if( stringPrint.empty() == false ) stringPrint += stringDivide;
 
-         arguments::print_name_s(pPosition, stringPrint);
-         stringPrint += " = ";
+         if( arguments::is_name_s( pPosition ) == true )
+         {
+            arguments::print_name_s(pPosition, stringPrint);
+            stringPrint += " = ";
+         }
          arguments::print_value_s(pPosition, stringPrint);
          stringPrint += " : ";
          arguments::print_type_s(pPosition, stringPrint);

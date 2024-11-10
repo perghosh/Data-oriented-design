@@ -211,6 +211,7 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
       gd::argument::shared::arguments arguments_;
       arguments_.append_many( 100, 200, 300, 400, 500 );
       arguments_.insert( 2, "test", 250, gd::argument::shared::arguments::tag_view{});
+      std::cout << arguments_.print() << "\n";
    }
 
 
