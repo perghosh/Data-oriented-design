@@ -136,6 +136,7 @@ struct Application : public application::basic::CApplication
    void SetState( const std::string_view& stringState ) { m_stringState = stringState; }
    const std::string& GetState() const { return m_stringState; }
 
+   // Initialize game objects
    std::pair<bool, std::string> Initialize() override;
 
    /// Read inputs to know how worm should move or setting application state
@@ -152,6 +153,8 @@ struct Application : public application::basic::CApplication
 
    /// Draws the sourounding frame for game
    void DrawGameFrame();
+   /// Draw information to game panel
+   void DrawGamePanel();
    /// Draw information on how to play the game and how to start and end it
    void DrawGameInformation();
 

@@ -140,6 +140,14 @@ bool is_inside_box(TYPE px_, TYPE py_, TYPE width_, TYPE height_ )
 
 // overload `is_inside_box`
 template <typename TYPE>
+bool is_inside_box(const std::pair<TYPE, TYPE>& pairPoint, const std::pair<TYPE, TYPE>& pairXY, const std::pair<TYPE, TYPE>& pairSize )
+{
+   bool bInside = is_inside_box( pairPoint.first, pairPoint.second, pairXY.first, pairXY.second, pairSize.first, pairSize.second);
+   return bInside;
+}
+
+// overload `is_inside_box`
+template <typename TYPE>
 bool is_inside_box(const std::pair<TYPE, TYPE>& pairPoint, const std::pair<TYPE, TYPE>& pairSize )
 {
    bool bInside = is_inside_box( pairPoint.first, pairPoint.second, TYPE{}, TYPE{}, pairSize.first, pairSize.second);
