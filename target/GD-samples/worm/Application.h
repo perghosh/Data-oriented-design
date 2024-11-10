@@ -46,8 +46,11 @@ struct Worm
 
 // ## get/set -----------------------------------------------------------------
    std::pair<unsigned,unsigned> GetHeadPosition() const;
-   template<typename VALUE>
+   gd::variant_view GetProperty( const std::string_view& stringName ) const { return m_argumentsWorm[stringName].as_variant_view(); }
+      template<typename VALUE>
    void SetProperty( const std::string_view& stringName, VALUE v_ ) { m_argumentsWorm.set(stringName, v_); }
+   /// Compare position with head
+   bool IsOnHead( uint64_t uHead ) const { return m_argumentsWorm["head"] == uHead; }
 
 
 // ## methods -----------------------------------------------------------------
