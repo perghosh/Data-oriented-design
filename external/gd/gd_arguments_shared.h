@@ -65,8 +65,8 @@ struct tag_memory {};                                                          /
 struct tag_pair {};                                                            ///< tag dispatcher used to select working with pair items instead of vector
 struct tag_parse {};                                                           ///< methods that parse
 struct tag_parse_type{};                                                       ///< tag to try to parse type of value
-struct tag_align{};                                                            ///< align related methods
-struct tag_section{};                                                          ///< section related methods, section in arguments is a named value with multiple non named values after
+struct tag_align {};                                                           ///< align related methods
+struct tag_section {};                                                         ///< section related methods, section in arguments is a named value with multiple non named values after
 
 
 
@@ -135,12 +135,11 @@ public:
    typedef uint8_t            param_type;
    typedef uint8_t            argument_type;
 
-   //struct view_tag {};                                                         // tag dispatcher used when working with view objects (not owning its data)
-   struct tag_argument {};
-   struct tag_view {};                                                         // tag dispatcher used when working with view objects (not owning its data)
+   using tag_view = gd::types::tag_view;                                       // used when working with view objects (not owning its data)
+   using tag_argument = gd::types::tag_argument;                               // argument related operatiions
+   using tag_name = gd::types::tag_name;                                       // there is some name related logic involved
+   using tag_description = gd::types::tag_description;                         // tag dispatcher where description is usefull
    struct tag_no_initializer_list {};                                          // do not select initializer_list versions
-   struct tag_name {};                                                         // tag dispatcher for name related operations
-   struct tag_description {};                                                  // tag dispatcher where description is usefull
    struct tag_internal {};                                                     // tag dispatcher for internal use
 
 

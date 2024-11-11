@@ -84,7 +84,7 @@ struct token
 
 // ## methods -----------------------------------------------------------------
    void set( const char* pbszBegin, unsigned uLength ) { m_pbszData = pbszBegin, m_uLength = uLength; }
-   void set( const char* pbszBegin, const char* pbszEnd ) { set( pbszBegin, pbszEnd - pbszBegin ); }
+   void set( const char* pbszBegin, const char* pbszEnd ) { set( pbszBegin, (unsigned)(pbszEnd - pbszBegin) ); }
 
 /** \name DEBUG
 *///@{
