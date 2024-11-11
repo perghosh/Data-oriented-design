@@ -126,7 +126,7 @@ std::pair<bool, std::string> Application::Initialize()
    // ### create device
    m_deviceGame.create();
 
-   m_devicePanel = gd::console::rowcolumn( 2, rowcolumn_.column() );           // set device used to print score and game information
+   m_devicePanel = gd::console::rowcolumn( 3, rowcolumn_.column() );           // set device used to print score and game information
    m_devicePanel.create();
 
    // ## create start worm that user moves in game
@@ -282,8 +282,8 @@ void Application::PrepareFrame()
 void Application::Draw()
 {
    // ## draw game frame
-   DrawGameFrame();
-   DrawGamePanel();
+   DrawGameFrame2();
+   DrawGamePanel2();
 
    if( GetState() == "play")
    {
@@ -362,6 +362,37 @@ void Application::DrawGameFrame()
 }
 
 /// ---------------------------------------------------------------------------
+/// Draw the game plan
+void Application::DrawGameFrame2()
+{
+   const char iFrameCornerTopLeft = 201;
+   const char iFrameCornerTopRight = 187;
+   const char iFrameCornerDownLeft = 200;
+   const char iFrameCornerDownRight = 188;
+   const char iFrameSide = 186;
+   const char iFrameRow = 205;
+   auto [uRowCount, uColumnCount] = m_deviceGame.size();
+
+   m_deviceGame.select(gd::console::enumColor::eColorSteelBlue3, gd::console::tag_color{});// select frame color
+
+   
+   for (unsigned uColumn = 0; uColumn < uColumnCount; uColumn++) m_deviceGame.print(0, uColumn, iFrameRow);
+   for (unsigned uColumn = 0; uColumn < uColumnCount; uColumn++) m_deviceGame.print(uRowCount - 1, uColumn, iFrameRow);
+   
+   m_deviceGame.print(0, 0, iFrameCornerTopLeft);
+   m_deviceGame.print(uRowCount-1, 0, iFrameCornerDownLeft);
+
+   m_deviceGame.print(0, uColumnCount-1, iFrameCornerTopRight);
+   m_deviceGame.print(uRowCount - 1, uColumnCount - 1, iFrameCornerDownRight);
+
+   for (unsigned uRow = 1; uRow < uRowCount-1; uRow++) m_deviceGame.print(uRow, 0, iFrameSide);
+   for (unsigned uRow = 1; uRow < uRowCount-1; uRow++) m_deviceGame.print(uRow, uColumnCount - 1, iFrameSide);
+
+   m_deviceGame.select(gd::console::enumColor::eColorNavajoWhite1, gd::console::tag_color{}); // select active color
+   m_deviceGame.fill(1, 1, uRowCount - 2, uColumnCount - 2, ' ');             // clear inner part
+}
+
+/// ---------------------------------------------------------------------------
 /// Draw the game panel information like hiscore and score
 void Application::DrawGamePanel()
 {
@@ -370,6 +401,43 @@ void Application::DrawGamePanel()
    auto uHiScore = m_argumentsGame["hiscore"].as_uint64();
    auto uScore = m_argumentsGame["score"].as_uint64();
    std::string stringPanel = std::format( "HISCORE: {}         SCORE: {}", uHiScore, uScore );
+   m_devicePanel[1][10] = stringPanel;
+}
+
+/// ---------------------------------------------------------------------------
+/// Draw the game panel information like hiscore and score
+void Application::DrawGamePanel2()
+{
+   const char iFrameCornerTopLeft = 201;
+   const char iFrameCornerTopRight = 187;
+   const char iFrameCornerDownLeft = 200;
+   const char iFrameCornerDownRight = 188;
+   const char iFrameSide = 186;
+   const char iFrameRow = 205;
+   auto [uRowCount, uColumnCount] = m_devicePanel.size();
+
+   m_devicePanel.select(gd::console::enumColor::eColorSteelBlue3, gd::console::tag_color{});// select frame color
+
+   for (unsigned uColumn = 0; uColumn < uColumnCount; uColumn++) m_devicePanel.print(0, uColumn, iFrameRow);
+   for (unsigned uColumn = 0; uColumn < uColumnCount; uColumn++) m_devicePanel.print(uRowCount - 1, uColumn, iFrameRow);
+
+   m_devicePanel.print(0, 0, iFrameCornerTopLeft);
+   m_devicePanel.print(uRowCount - 1, 0, iFrameCornerDownLeft);
+
+   m_devicePanel.print(0, uColumnCount - 1, iFrameCornerTopRight);
+   m_devicePanel.print(uRowCount - 1, uColumnCount - 1, iFrameCornerDownRight);
+
+   for (unsigned uRow = 1; uRow < uRowCount - 1; uRow++) m_devicePanel.print(uRow, 0, iFrameSide);
+   for (unsigned uRow = 1; uRow < uRowCount - 1; uRow++) m_devicePanel.print(uRow, uColumnCount - 1, iFrameSide);
+
+   //m_devicePanel.select(gd::console::enumColor::eColorNavajoWhite1, gd::console::tag_color{}); // select active color
+   m_devicePanel.fill(1, 1, uRowCount - 2, uColumnCount - 2, ' ');             // clear inner part
+
+   // ## Generate game information
+   //m_devicePanel.fill(' ');
+   auto uHiScore = m_argumentsGame["hiscore"].as_uint64();
+   auto uScore = m_argumentsGame["score"].as_uint64();
+   std::string stringPanel = std::format("HISCORE: {}         SCORE: {}", uHiScore, uScore);
    m_devicePanel[1][10] = stringPanel;
 }
 
