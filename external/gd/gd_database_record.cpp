@@ -294,7 +294,7 @@ std::string_view record::alias_get( unsigned uIndex ) const
 std::vector<std::string_view> record::alias_get() const
 {
    std::vector<std::string_view> vectorAlias;
-   for( unsigned u = 0, uTo = size(); u < uTo; u++ )
+   for( unsigned u = 0, uTo = (unsigned)size(); u < uTo; u++ )
    {
       vectorAlias.push_back( alias_get( u ) );
    }
@@ -311,7 +311,7 @@ unsigned record::type_get( unsigned uIndex ) const noexcept
 std::vector<unsigned> record::type_get() const
 {
    std::vector<unsigned> vectorType;
-   for( unsigned u = 0, uTo = size(); u < uTo; u++ )
+   for( unsigned u = 0, uTo = (unsigned)size(); u < uTo; u++ )
    {
       vectorType.push_back( type_get( u ) );
    }
@@ -340,7 +340,7 @@ std::string_view record::name_get( unsigned uIndex ) const noexcept
 std::vector<std::string_view> record::name_get() const
 {
    std::vector<std::string_view> vectorName;
-   for( unsigned u = 0, uTo = size(); u < uTo; u++ )
+   for( unsigned u = 0, uTo = (unsigned)size(); u < uTo; u++ )
    {
       vectorName.push_back( name_get( u ) );
    }
@@ -350,7 +350,7 @@ std::vector<std::string_view> record::name_get() const
 
 void record::get_column( std::vector<std::tuple<unsigned, unsigned, std::string_view>>& vectorColumn ) const
 {
-   for( unsigned u = 0, uTo = size(); u < uTo; u++ )
+   for( unsigned u = 0, uTo = (unsigned)size(); u < uTo; u++ )
    {
       const record::column* pcolumn = get_column( u );
       auto uType = pcolumn->type();

@@ -43,14 +43,54 @@ _GD_TYPES_BEGIN
    #pragma warning( disable : 4267 26495 26812 )
 #endif
 
-/// tag dispatcher used to avoid default implicit construction
-struct tag_construct {};
+/*
+ * tag dispatchers used in gd code
+ * tag dispatchers have zero cost and removes the need to create a lot of different names for methods
+ */
+
+// ----------------------------------------------------------------------------
+// ## value related tag dispatchers
+
+struct tag_date {};           ///< date is used in some form
+struct tag_id {};             ///< id is used in some form
+struct tag_key {};            ///< key is used in some form
+struct tag_name {};           ///< name is used in some form
+struct tag_description {};    ///< description is used in some form
+
+struct tag_main_type {};      /// main type if there are secondary types
+struct tag_secondary_type {}; /// secondary type if there are main types
+
+
+// ----------------------------------------------------------------------------
+// ## stl tag dispatchers, used to glue with stl
+
+struct tag_list {};           ///< stl std::list object is used in some form
+struct tag_pair {};           ///< stl std::pair object is used in some form
+struct tag_tuple {};          ///< stl std::tuple object is used in some form
+struct tag_vector {};         ///< stl std::vector object is used in some form
+
+
+// ----------------------------------------------------------------------------
+// ## C++ related tag dispatchers, type of c++ development logic
 
 /// methods used to ask compiler for information
 struct tag_ask_compiler {};
 
-/// main type if there are secondary types
-struct tag_main_type {};
+/// tag dispatcher used to avoid default implicit construction
+struct tag_construct {};
+
+/// methods used for some sort of debug related logic
+struct tag_debug {};
+
+/// operations using view objects, objects that do not own the data, just views data stored in other objects
+struct tag_view {};
+
+/// argument related operations, could be things like passing arguments or something else
+struct tag_argument {};
+
+
+
+
 
 /// declare pointer to character main type as global 
 extern const uint8_t puCharType_g[0x100];

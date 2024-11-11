@@ -2046,13 +2046,13 @@ void table::cell_set( const range& rangeSet, const gd::variant_view& variantview
       {
          for( auto uColumn = rangeSet.c1(); uColumn <= rangeSet.c2(); uColumn++ )
          {
-            cell_set( uRow, uColumn, variantviewValue, tag_convert{});
+            cell_set( uRow, (unsigned)uColumn, variantviewValue, tag_convert{});
          }
       }
    }
    else
    {
-      cell_set( rangeSet.r1(), rangeSet.c1(), variantviewValue, tag_convert{} );
+      cell_set( rangeSet.r1(), (unsigned)rangeSet.c1(), variantviewValue, tag_convert{} );
    }
 }
 
@@ -2069,13 +2069,13 @@ void table::cell_set( const range& rangeSet, const gd::variant_view& variantview
       {
          for( auto uColumn = rangeSet.c1(); uColumn <= rangeSet.c2(); uColumn++ )
          {
-            cell_set( uRow, uColumn, variantviewValue );
+            cell_set( uRow, (unsigned)uColumn, variantviewValue );
          }
       }
    }
    else
    {
-      cell_set( rangeSet.r1(), rangeSet.c1(), variantviewValue );
+      cell_set( rangeSet.r1(), (unsigned)rangeSet.c1(), variantviewValue );
    }
 }
 

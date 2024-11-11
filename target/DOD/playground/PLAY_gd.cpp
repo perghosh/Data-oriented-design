@@ -79,6 +79,13 @@ TEST_CASE( "[gd] arguments", "[gd]" ) {
    vectorPair = gd::utf8::split_pair( stringTemplate, '=', '&', gd::utf8::tag_string_view{});
    arguments_.append( vectorPair, gd::argument::tag_parse_type{});
    auto vectorOne = arguments_.get_argument_all("one");                                            REQUIRE( vectorOne.size() == 6 );
+
+   {
+      gd::argument::arguments arguments_;
+      arguments_.append_many( 100, 200, 300, 400, 500 );
+      //arguments_.insert( 2, "test", 250, gd::argument::shared::arguments::tag_view{});
+      std::cout << arguments_.print() << "\n";
+   }
 }
 
 
