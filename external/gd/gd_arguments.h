@@ -112,11 +112,18 @@ public:
    typedef uint8_t            param_type;
    typedef uint8_t            argument_type;
 
-   struct view_tag {};                                                         // tag dispatcher used when working with view objects (not owning its data)
-   struct tag_view {};                                                         // tag dispatcher used when working with view objects (not owning its data)
+   using tag_view          = gd::types::tag_view;                              // used when working with view objects (not owning its data)
+   using tag_argument      = gd::types::tag_argument;                          // argument related operations
+   using tag_name          = gd::types::tag_name;                              // there is some name related logic involved
+   using tag_description   = gd::types::tag_description;                       // tag dispatcher where description is useful
    struct tag_no_initializer_list {};                                          // do not select initializer_list versions
-   struct tag_name {};                                                         // tag dispatcher for name related operations
-   struct tag_description {};                                                  // tag dispatcher where description is usefull
+   struct tag_internal {};                                                     // tag dispatcher for internal use
+
+
+   //struct tag_view {};                                                         // tag dispatcher used when working with view objects (not owning its data)
+   //struct tag_no_initializer_list {};                                          // do not select initializer_list versions
+   //struct tag_name {};                                                         // tag dispatcher for name related operations
+   //struct tag_description {};                                                  // tag dispatcher where description is useful
 
 
 public:
@@ -509,7 +516,7 @@ public:
          return std::string();
       }
 
-      std::string_view name(view_tag) const {                                                      assert( m_pArguments->verify_d( m_pPosition ));
+      std::string_view name(tag_view) const {                                                      assert( m_pArguments->verify_d( m_pPosition ));
          if( arguments::is_name_s(m_pPosition) == true )
          {
             return arguments::get_name_s(m_pPosition);
@@ -630,9 +637,9 @@ public:
       return { "", gd::variant_view() };
    }
 
-   arguments& operator+=( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument( pairArgument, view_tag{} ); }
+   arguments& operator+=( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument( pairArgument, tag_view{} ); }
 
-   arguments operator<<(const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, view_tag{}); }
+   arguments operator<<(const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
 
    /// Append values from another arguments object
    arguments& operator+=( const arguments& arguments_ ) { return append( arguments_ ); }
@@ -736,9 +743,6 @@ public:
    arguments& append_argument(const std::string_view& stringName, const gd::variant_view& variantValue, tag_view) { return append_argument( stringName, variantValue ); }
 
    arguments& append_argument(const std::pair<std::string_view, gd::variant>& pairArgument) {
-      return append_argument(pairArgument.first, pairArgument.second);
-   }
-   arguments& append_argument(const std::pair<std::string_view, gd::variant_view>& pairArgument, view_tag) {
       return append_argument(pairArgument.first, pairArgument.second);
    }
    arguments& append_argument(const std::pair<std::string_view, gd::variant_view>& pairArgument, tag_view) {
