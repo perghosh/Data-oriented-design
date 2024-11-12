@@ -120,8 +120,9 @@ std::pair<bool, std::string> Application::Initialize()
    // ## create device
    // ### Get the terminal size and set device from that
    auto rowcolumn_ = gd::console::device::terminal_get_size_s();
+   rowcolumn_.row( rowcolumn_.row() - 4 );
    if( rowcolumn_.row() > 24 ) rowcolumn_.row( 24 );
-   rowcolumn_.column( rowcolumn_.column() - 1 );
+   rowcolumn_.column( rowcolumn_.column() - 2 );
    m_deviceGame = rowcolumn_;
    // ### create device
    m_deviceGame.create();
@@ -201,15 +202,10 @@ std::pair<bool, std::string> Application::GAME_Update( tag_state )
 
    // ### Check if head is outside game plan
    {
-      auto pairSize = m_deviceGame.size();
+      gd::console::rowcolumn RC = m_deviceGame.size();
 
-      if(pairHeadPosition.first < 2)
-      {
-         std::cout << pairSize.first << "\n";
-      }
-
-      pairSize = gd::math::increase_pair( -2, pairSize );                      // decrease border size
-      bool bInside = gd::math::area::is_inside_box( pairHeadPosition, {1,1}, pairSize);
+      RC = gd::math::increase_pair( -3, std::pair<unsigned,unsigned>(RC) );                                  // decrease border size
+      bool bInside = gd::math::area::is_inside_box( pairHeadPosition, {1,1}, std::pair<unsigned,unsigned>(RC) );
       if(bInside == false) 
       {  // We are outside the game area and game has ended
          SetState( "crash" ); 
@@ -365,12 +361,13 @@ void Application::DrawGameFrame()
 /// Draw the game plan
 void Application::DrawGameFrame2()
 {
-   const char iFrameCornerTopLeft = 201;
-   const char iFrameCornerTopRight = 187;
-   const char iFrameCornerDownLeft = 200;
-   const char iFrameCornerDownRight = 188;
-   const char iFrameSide = 186;
-   const char iFrameRow = 205;
+   const char iFrameCornerTopLeft = (char)201;
+   const char iFrameCornerTopRight = (char)187;
+   const char iFrameCornerDownLeft = (char)200;
+   const char iFrameCornerDownRight = (char)188;
+   const char iFrameSide = (char)186;
+   const char iFrameRow = (char)205;
+
    auto [uRowCount, uColumnCount] = m_deviceGame.size();
 
    m_deviceGame.select(gd::console::enumColor::eColorSteelBlue3, gd::console::tag_color{});// select frame color
@@ -408,12 +405,13 @@ void Application::DrawGamePanel()
 /// Draw the game panel information like hiscore and score
 void Application::DrawGamePanel2()
 {
-   const char iFrameCornerTopLeft = 201;
-   const char iFrameCornerTopRight = 187;
-   const char iFrameCornerDownLeft = 200;
-   const char iFrameCornerDownRight = 188;
-   const char iFrameSide = 186;
-   const char iFrameRow = 205;
+   const char iFrameCornerTopLeft = (char)201;
+   const char iFrameCornerTopRight = (char)187;
+   const char iFrameCornerDownLeft = (char)200;
+   const char iFrameCornerDownRight = (char)188;
+   const char iFrameSide = (char)186;
+   const char iFrameRow = (char)205;
+
    auto [uRowCount, uColumnCount] = m_devicePanel.size();
 
    m_devicePanel.select(gd::console::enumColor::eColorSteelBlue3, gd::console::tag_color{});// select frame color

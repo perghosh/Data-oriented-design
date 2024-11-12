@@ -73,6 +73,8 @@ struct rowcolumn
       return u_;
    }
 
+   operator std::pair<unsigned,unsigned>() const { return std::pair<unsigned,unsigned>( m_uRow, m_uColumn ); }
+
    unsigned row() const { return m_uRow; }
    void row( unsigned uRow ) { m_uRow = uRow; }
    unsigned column() const { return m_uColumn; }
