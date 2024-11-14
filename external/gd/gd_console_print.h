@@ -371,7 +371,7 @@ inline uint64_t device::calculate_position(unsigned uRow, unsigned uColumn) {   
 // ----------------------------------------------------------------------------
 
 /**
- * \brief
+ * \brief `view` can be used to view a smaller part of device
  *
  *
  *
@@ -475,6 +475,50 @@ struct caret
 // ## free functions ----------------------------------------------------------
 
 };
+
+namespace draw {
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------- line
+// ----------------------------------------------------------------------------
+
+/**
+ * \brief line object
+ *
+ *
+ */
+struct line
+{
+// ## construction -------------------------------------------------------------
+   line() {}
+   line( unsigned uRow1, unsigned uColumn1, unsigned uRow2, unsigned uColumn2 ): m_uRow1(uRow1), m_uColumn1(uColumn1), m_uRow2(uRow2), m_uColumn2(uColumn2) {}
+   ~line() {}
+
+   line& operator=( char iCharacter ) { m_iCharacter = iCharacter; return *this; }
+
+   void first( unsigned uRow1, unsigned uColumn1 ) { m_uRow1 = uRow1; m_uColumn1 = uColumn1; }
+   void first( const std::pair<unsigned ,unsigned >& pairFirst ) { first( pairFirst.first, pairFirst.second ); }
+   void second( unsigned uRow2, unsigned uColumn2 ) { m_uRow2 = uRow2; m_uColumn2 = uColumn2; }
+   void second( const std::pair<unsigned ,unsigned >& pairSecond ) { second( pairSecond.first, pairSecond.second ); }
+
+   line& move_up() { m_uRow1--; m_uRow2--; return *this; }
+   line& move_down() { m_uRow1++; m_uRow2++; return *this; }
+   line& move_down( unsigned uDelta ) { m_uRow1 += uDelta; m_uRow2 += uDelta; return *this; }
+   line& move_left() { m_uColumn1--; m_uColumn1--; return *this; }
+   line& move_right() { m_uColumn1++; m_uColumn1++; return *this; }
+
+   void print( device* pdevice, char iCharacter ) const;
+   void print( device* pdevice ) const { print( pdevice, m_iCharacter ); }
+
+// ## attributes
+   char m_iCharacter = 0;
+   unsigned m_uRow1;				///< start row for line
+   unsigned m_uColumn1;			///< start column for line
+   unsigned m_uRow2;				///< end row for line
+   unsigned m_uColumn2;			///< end column for line
+};
+
+}
 
 
 _GD_CONSOLE_END

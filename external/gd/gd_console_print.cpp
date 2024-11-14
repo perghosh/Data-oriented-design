@@ -13,6 +13,18 @@
 
 _GD_CONSOLE_BEGIN
 
+namespace {
+   void order(unsigned& u1, unsigned& u2 )
+   {
+      if(u1 > u2)
+      {
+         auto u_ = u1;
+         u1 = u2;
+         u2 = u_;
+      }
+   }
+}
+
 // ----------------------------------------------------------------------------
 // --------------------------------------------------------------------- device
 // ----------------------------------------------------------------------------
@@ -302,6 +314,35 @@ std::string caret::render(tag_format_cli) const
    return stringPrint;
 }
 
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------- line
+// ----------------------------------------------------------------------------
+
+namespace draw {
+
+void line::print(device* pdevice, char iCharacter) const
+{
+   unsigned uR1 = m_uRow1, uR2 = m_uRow2, uC1 = m_uColumn1, uC2 = m_uColumn2;
+
+   order(uR1, uR2);
+   order(uC1, uC2);
+
+   unsigned uDeltaRow = uR2 - uR1;
+   unsigned uDeltaColumn = uC2 - uC1;
+
+   int iNext = uDeltaColumn - uDeltaRow;
+
+   while(uR1 != uR2 || uC1 != uC2)
+   {
+      pdevice->print( uR1, uC1, iCharacter );
+
+      int iNext2 = 2 * iNext;
+      if( iNext2 > -(int)uDeltaRow ) { iNext -= uDeltaRow; uC1 += 1; }
+      if( iNext2 < (int)uDeltaColumn ) { iNext += uDeltaColumn; uR1 += 1; }
+   }
+}
+
+} // namespace draw {
 
 
 _GD_CONSOLE_END

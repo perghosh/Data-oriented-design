@@ -355,7 +355,4 @@ public:
    static void file_close_s(int iFileHandle);
 };
 
-
-
-
 _GD_LOG_LOGGER_END
