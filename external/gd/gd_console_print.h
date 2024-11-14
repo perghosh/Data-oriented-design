@@ -492,6 +492,15 @@ struct line
 // ## construction -------------------------------------------------------------
    line() {}
    line( unsigned uRow1, unsigned uColumn1, unsigned uRow2, unsigned uColumn2 ): m_uRow1(uRow1), m_uColumn1(uColumn1), m_uRow2(uRow2), m_uColumn2(uColumn2) {}
+
+   line( const line& o)
+   {
+      m_iCharacter = o.m_iCharacter;
+      m_uRow1 = o.m_uRow1;
+      m_uColumn1 = o.m_uColumn1;
+      m_uRow2 = o.m_uRow2;
+      m_uColumn2 = o.m_uColumn2;
+   }
    ~line() {}
 
    line& operator=( char iCharacter ) { m_iCharacter = iCharacter; return *this; }
@@ -502,10 +511,13 @@ struct line
    void second( const std::pair<unsigned ,unsigned >& pairSecond ) { second( pairSecond.first, pairSecond.second ); }
 
    line& move_up() { m_uRow1--; m_uRow2--; return *this; }
+   line& move_up(unsigned uDelta) { m_uRow1 -= uDelta; m_uRow2 -= uDelta; return *this; }
    line& move_down() { m_uRow1++; m_uRow2++; return *this; }
    line& move_down( unsigned uDelta ) { m_uRow1 += uDelta; m_uRow2 += uDelta; return *this; }
    line& move_left() { m_uColumn1--; m_uColumn1--; return *this; }
+   line& move_left( unsigned uDelta ) { m_uColumn1 -= uDelta; m_uColumn1 -= uDelta; return *this; }
    line& move_right() { m_uColumn1++; m_uColumn1++; return *this; }
+   line& move_right( unsigned uDelta ) { m_uColumn1 += uDelta ; m_uColumn1 += uDelta; return *this; }
 
    void print( device* pdevice, char iCharacter ) const;
    void print( device* pdevice ) const { print( pdevice, m_iCharacter ); }

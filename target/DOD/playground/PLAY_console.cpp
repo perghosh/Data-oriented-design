@@ -95,10 +95,16 @@ TEST_CASE( "[console] lines", "[console]" ) {
    //console console_( ::GetStdHandle( STD_OUTPUT_HANDLE ) );
    gd::console::device deviceTest( 15, 100 );
    deviceTest.create();
-   gd::console::draw::line line_( 0,0, 10,70 );
+   gd::console::draw::line line_( 0, 0 ,  5, 90 );
    line_.print( &deviceTest, '*' );
-   line_.move_down( 3 );
+   line_.move_down(3);
    line_.print( &deviceTest, '+' );
+
+   gd::console::draw::line lineCopy(line_);
+
+   lineCopy.move_down(3);
+   lineCopy.print(&deviceTest, 'p');
+
 
    auto stringOut = deviceTest.render( gd::console::tag_format_cli{} );
 

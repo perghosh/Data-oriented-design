@@ -58,7 +58,7 @@ std::pair<bool, std::string> Play()
       papplication->GAME_Update( tag_state{} );
       
       papplication->Draw();
-      std::this_thread::sleep_for(std::chrono::milliseconds(75));
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
    }
 
    return { true, papplication->GetState() };
