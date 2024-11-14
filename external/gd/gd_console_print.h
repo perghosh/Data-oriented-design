@@ -493,14 +493,7 @@ struct line
    line() {}
    line( unsigned uRow1, unsigned uColumn1, unsigned uRow2, unsigned uColumn2 ): m_uRow1(uRow1), m_uColumn1(uColumn1), m_uRow2(uRow2), m_uColumn2(uColumn2) {}
 
-   line( const line& o)
-   {
-      m_iCharacter = o.m_iCharacter;
-      m_uRow1 = o.m_uRow1;
-      m_uColumn1 = o.m_uColumn1;
-      m_uRow2 = o.m_uRow2;
-      m_uColumn2 = o.m_uColumn2;
-   }
+   line( const line& o) { memcpy( this, &o, sizeof(line) ); }
    ~line() {}
 
    line& operator=( char iCharacter ) { m_iCharacter = iCharacter; return *this; }
