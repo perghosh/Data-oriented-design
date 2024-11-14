@@ -2,6 +2,8 @@
 #include "gd/gd_arguments.h"
 #include "gd/gd_variant.h"
 #include "gd/gd_table_column-buffer.h"
+#include "gd/gd_console_style.h"
+#include "gd/gd_console_print.h"
 
 #include "Windows.h"
 
@@ -87,4 +89,20 @@ TEST_CASE( "[console] 01", "[console]" ) {
    console_.print( "\nReady\n" );
    console_.print_at( 1, 40, "SCORE: 100" );
    console_.print( "\n//////////////////////////////////////////////////////////" );
+}
+
+TEST_CASE( "[console] lines", "[console]" ) {
+   //console console_( ::GetStdHandle( STD_OUTPUT_HANDLE ) );
+   gd::console::device deviceTest( 15, 100 );
+   deviceTest.create();
+   gd::console::draw::line line_( 0,0, 10,70 );
+   line_.print( &deviceTest, '*' );
+   line_.move_down( 3 );
+   line_.print( &deviceTest, '+' );
+
+   auto stringOut = deviceTest.render( gd::console::tag_format_cli{} );
+
+   std::cout << stringOut;
+
+
 }
