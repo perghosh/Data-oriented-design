@@ -945,7 +945,9 @@ protected:
    ///   if param severity level is lower compared to member severity level return true (logger is above and should take action)
    ///   second test check bit, if bit is matched then take action (return true)
    bool check_severity(unsigned uSeverity) const {
-      if( (m_uSeverity & static_cast<unsigned>(enumSeverityMask::eSeverityMaskNumber)) >= (uSeverity & static_cast<unsigned>(enumSeverityMask::eSeverityMaskNumber)) ) return true;
+      unsigned uMaxSeverity = static_cast<unsigned>(enumSeverityMask::eSeverityMaskNumber) & m_uSeverity;
+      unsigned uCheckSeverity = static_cast<unsigned>(enumSeverityMask::eSeverityMaskNumber) & uSeverity;
+      if( uMaxSeverity >= uCheckSeverity )  return true;
       else if( (m_uSeverity & uSeverity & static_cast<unsigned>(enumSeverityMask::eSeverityMaskFlagAndGroup) ) != 0 ) return true;
       return false;
    }

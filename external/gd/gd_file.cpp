@@ -6,7 +6,10 @@
 #include <regex>
 #include <chrono>
 
-#include <sys/stat.h>
+//#undef stat
+
+//#include <sys/types.h>
+//#include <sys/stat.h>
 
 #include "gd_utf8.h"
 
@@ -448,13 +451,36 @@ std::vector<std::string> list_files_g(const std::string_view& stringFolder, cons
          time_t timeNow = std::chrono::system_clock::to_time_t( std::chrono::system_clock::now() );
          time_t timeDifference = static_cast<time_t>(dToDays * (60.0 * 60 * 24));
 
-         struct stat statFile;
-         ::stat(pathFile.string().c_str(), &statFile);
+         //struct stat statFile;
+         //stat(pathFile.string().c_str(), &statFile);
 
-         if( statFile.st_mtime >= (timeNow + timeDifference) ) return false;
+         //if( statFile.st_mtime >= (timeNow + timeDifference) ) return false;
       }
       return true;
    };
+
+   auto day_count2_ = [](const std::filesystem::path& pathFile, const auto& argumentToDays) -> bool {
+      if( argumentToDays.is_number() )
+      {
+         using namespace std::filesystem;
+         using namespace std::chrono;
+
+         // Get the last write time of the file
+         file_time_type file_time_ = last_write_time(pathFile.string().c_str()); // get last write time for file
+
+         // Convert file time to system time
+         auto file_system_time_ = time_point_cast<system_clock::duration>( file_time_ - file_time_type::clock::now() + system_clock::now() );
+
+         // Get current time and calculate the duration threshold
+         auto now_ = system_clock::now();
+         auto threshold_ = now_ - hours(argumentToDays.as_int() * 24);
+
+         // Check if the file time is older than the threshold, then false is returned
+         if( file_system_time_ <= threshold_ ) return false;
+      }
+      return true;
+   };
+
 
    auto extension_ = []( std::string stringFileName, const auto& argumentExtension ) -> bool {
       if( argumentExtension.is_string() )
@@ -481,7 +507,7 @@ std::vector<std::string> list_files_g(const std::string_view& stringFolder, cons
 
       if( filter_(stringFile, argumentsFilter["filter"]) == false ) continue;    // filter using regex or wildcard
 
-      if( day_count_(itFile.path(), argumentsFilter["to_days"]) == false ) continue;// filter on time (days ?)
+      if( day_count2_(itFile.path(), argumentsFilter["to_days"]) == false ) continue;// filter on time (days ?)
 
       if( extension_(stringFile, argumentsFilter["extension"]) == false ) continue;// filter on file extension
 
