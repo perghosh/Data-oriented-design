@@ -71,7 +71,9 @@ private:
    // common copy
 
    void common_construct() {
-      for( unsigned u = 0, uMax = (unsigned)m_arrayColor.size(); u < uMax; u++ ) { m_arrayColor[u] = (unsigned)m_arrayColorDefault_s[u]; }
+      for( unsigned u = 0, uMax = (unsigned)m_arrayColor.size(); u < uMax; u++ ) { 
+         m_arrayColor[u] = (unsigned)m_arrayColorDefault_s[u]; 
+      }
    }
    void common_construct( const printer_console& o ) {
       m_bConsole = o.m_bConsole;
@@ -144,9 +146,9 @@ public:
 #endif
 
    /// default colors
-   static constexpr std::array<uint8_t, 6> m_arrayColorDefault_s = {196, 202, 226, 40, 45, 252};
+   static constexpr std::array<uint8_t, 8> m_arrayColorDefault_s = {75, 196, 202, 226, 40, 45, 252, 75};
    /// grey colors
-   static constexpr std::array<uint8_t, 6> m_arrayColorDeGrey_s = {239, 241, 244, 246, 249, 252};
+   static constexpr std::array<uint8_t, 8> m_arrayColorDeGrey_s = {0, 241, 244, 246, 249, 252, 255, 239};
    
    
 // ## free functions ------------------------------------------------------------
