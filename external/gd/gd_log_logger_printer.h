@@ -71,7 +71,7 @@ private:
    // common copy
 
    void common_construct() {
-      std::fill(m_arrayColor.begin(), m_arrayColor.end(), eColorNone);
+      for( unsigned u = 0, uMax = (unsigned)m_arrayColor.size(); u < uMax; u++ ) { m_arrayColor[u] = (unsigned)m_arrayColorDefault_s[u]; }
    }
    void common_construct( const printer_console& o ) {
       m_bConsole = o.m_bConsole;
@@ -142,6 +142,11 @@ public:
 #ifdef _WIN32
    HANDLE m_hOutput;                   ///< handle to console in windows
 #endif
+
+   /// default colors
+   static constexpr std::array<uint8_t, 6> m_arrayColorDefault_s = {196, 202, 226, 40, 45, 252};
+   /// grey colors
+   static constexpr std::array<uint8_t, 6> m_arrayColorDeGrey_s = {239, 241, 244, 246, 249, 252};
    
    
 // ## free functions ------------------------------------------------------------

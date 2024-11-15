@@ -94,15 +94,52 @@ std::pair<bool, std::string> device::create()
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief create device to handle printing, buffers storing data are allocated
+ * @code
+gd::console::device deviceTest;
+deviceTest.create( 20, 100 );
+gd::console::draw::line line_( 0, 0,  5, 90 );
+line_.print( &deviceTest, '*' );
+stringOut = deviceTest.render( gd::console::tag_format_cli{} );
+std::cout << stringOut;
+ * @endcode
+ * @param uRowCount number of rows
+ * @param uColumnCount number of columns
+ * @return true if ok, false and error information if failing
+ */
+std::pair<bool, std::string> device::create(unsigned uRowCount, unsigned uColumnCount)
+{
+   m_uRowCount = uRowCount;
+   m_uColumnCount = uColumnCount;
+
+   return create();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Print text with color at position
+ * @param uRow row position
+ * @param uColumn column position
+ * @param stringText text to print
+ * @param uColor color for text
+ */
+void device::print( unsigned uRow, unsigned uColumn, const std::string_view& stringText, unsigned uColor )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( uColumn < m_uColumnCount );
+   auto pposition_ = offset( uRow, uColumn );                                                      assert( (pposition_ + stringText.length()) < buffer_end() );
+   memcpy( pposition_, stringText.data(), stringText.length() );
+   memset( offset_color( uRow, uColumn ),(uint8_t)uColor, stringText.length() );
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief print character at positions in vector
  * @param vectorRC vector with positions where to print character on device
  * @param ch_ character to print
  */
-void device::print(const std::vector<rowcolumn>& vectorRC, char ch_)
+void device::print(const std::vector<rowcolumn>& vectorRC, char iCharacter )
 {
    for(auto it : vectorRC)
    {
-      print( it, ch_ );
+      print( it, iCharacter );
    }
 }
 
