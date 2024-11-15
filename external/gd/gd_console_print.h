@@ -203,6 +203,7 @@ public:
 *///@{
 
    std::pair<bool, std::string> create();
+   std::pair<bool, std::string> create( unsigned uRowCount, unsigned uColumnCount );
 
    std::pair< unsigned, unsigned > size() const;
 
@@ -214,9 +215,11 @@ public:
    void print( unsigned uRow, unsigned uColumn, char ch_ );
    void print( const rowcolumn& RC, char ch_ ) { print( RC.row(), RC.column(), ch_ ); }
    void print( unsigned uRow, unsigned uColumn, const std::string_view& stringText );
-   void print( const rowcolumn& rowcolumn_, const std::string_view& stringText );
+   void print( const rowcolumn& rowcolumn_, const std::string_view& stringText ) { print( rowcolumn_.row(), rowcolumn_.column(), stringText ); }
+   void print( unsigned uRow, unsigned uColumn, const std::string_view& stringText, unsigned uColor );
+   void print( const rowcolumn& rowcolumn_, const std::string_view& stringText, unsigned uColor ) { print( rowcolumn_.row(), rowcolumn_.column(), stringText, uColor ); }
    void print( const std::vector<rowcolumn>& vectorRC, const std::string_view& stringText );
-   void print( const std::vector<rowcolumn>& vectorRC, char ch_ );
+   void print( const std::vector<rowcolumn>& vectorRC, char iCharacter );
 
    void clear();
 
@@ -498,8 +501,16 @@ struct line
 
    line& operator=( char iCharacter ) { m_iCharacter = iCharacter; return *this; }
 
+
+   unsigned r1() const { return m_uRow1; }
+   unsigned c1() const { return m_uColumn1; }
+   unsigned r2() const { return m_uRow2; }
+   unsigned c2() const { return m_uColumn2; }
+
+   std::pair<unsigned ,unsigned > first() const { return std::pair<unsigned ,unsigned >( m_uRow1, m_uColumn1 ); }
    void first( unsigned uRow1, unsigned uColumn1 ) { m_uRow1 = uRow1; m_uColumn1 = uColumn1; }
    void first( const std::pair<unsigned ,unsigned >& pairFirst ) { first( pairFirst.first, pairFirst.second ); }
+   std::pair<unsigned ,unsigned > second() const { return std::pair<unsigned ,unsigned >( m_uRow2, m_uColumn2 ); }
    void second( unsigned uRow2, unsigned uColumn2 ) { m_uRow2 = uRow2; m_uColumn2 = uColumn2; }
    void second( const std::pair<unsigned ,unsigned >& pairSecond ) { second( pairSecond.first, pairSecond.second ); }
 
