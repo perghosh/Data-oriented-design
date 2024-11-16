@@ -100,7 +100,8 @@ TEST_CASE( "[console] lines", "[console]" ) {
    for( uint8_t uColor = uint8_t(16); uColor < 255; uColor++ )
    {
       deviceTest.select( uColor, gd::console::tag_color{});
-      lineColorTest.print( &deviceTest, 'X' );
+      //lineColorTest.print(&deviceTest, '+', '-', '+');
+      lineColorTest.print(&deviceTest, { '+', '-', '+' }) ;
       deviceTest.print( { lineColorTest.r1(), 0 }, std::to_string(uColor), 255);
       lineColorTest.move_down();
    }

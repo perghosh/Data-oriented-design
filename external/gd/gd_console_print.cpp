@@ -357,6 +357,11 @@ std::string caret::render(tag_format_cli) const
 
 namespace draw {
 
+/** ---------------------------------------------------------------------------
+ * @brief Draw line on selected device
+ * @param pdevice pointer to device line is drawn on
+ * @param iCharacter character to draw
+ */
 void line::print(device* pdevice, char iCharacter) const
 {
    unsigned uR1 = m_uRow1, uR2 = m_uRow2, uC1 = m_uColumn1, uC2 = m_uColumn2;
@@ -377,6 +382,52 @@ void line::print(device* pdevice, char iCharacter) const
       if( iNext2 > -(int)uDeltaRow ) { iNext -= uDeltaRow; uC1 += 1; }
       if( iNext2 < (int)uDeltaColumn ) { iNext += uDeltaColumn; uR1 += 1; }
    }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Draw line on selected device
+ * @param pdevice pointer to device line is drawn on
+ * @param iBegin first character to draw in line
+ * @param iMiddle characters for middle part of line 
+ * @param iEnd last character to draw in line
+ */
+unsigned line::print(device* pdevice, char iBegin, char iMiddle, char iEnd) const
+{
+   char piBuffer[] = {iBegin, iMiddle, iEnd};
+   const char* piCharacter = piBuffer;
+   unsigned uR1 = m_uRow1, uR2 = m_uRow2, uC1 = m_uColumn1, uC2 = m_uColumn2;
+
+   order(uR1, uR2);
+   order(uC1, uC2);
+
+   unsigned uDeltaRow = uR2 - uR1;
+   unsigned uDeltaColumn = uC2 - uC1;
+
+   int iNext = uDeltaColumn - uDeltaRow;
+   unsigned uCount = 0;
+
+   unsigned uRSave;
+   unsigned uCSave;
+
+
+   while(uR1 != uR2 || uC1 != uC2)
+   {
+      pdevice->print( uR1, uC1, *piCharacter );
+      uRSave = uR1;
+      uCSave = uC1;
+
+      int iNext2 = 2 * iNext;
+      if( iNext2 > -(int)uDeltaRow ) { iNext -= uDeltaRow; uC1 += 1; }
+      if( iNext2 < (int)uDeltaColumn ) { iNext += uDeltaColumn; uR1 += 1; }
+
+      if( uCount == 0 ) piCharacter++;
+      uCount++;
+   }
+
+   // if more than two characters then place the last character in end position
+   if( uCount > 1 ) { pdevice->print( uRSave, uCSave, *(piCharacter + 1) ); }
+
+   return uCount;
 }
 
 } // namespace draw {
