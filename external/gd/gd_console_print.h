@@ -17,6 +17,7 @@
 
 
 #pragma once
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <string>
@@ -493,8 +494,10 @@ namespace draw {
 struct line
 {
 // ## construction -------------------------------------------------------------
-   line() {}
+   line() { memset( this, 0, sizeof( line ) ); }
    line( unsigned uRow1, unsigned uColumn1, unsigned uRow2, unsigned uColumn2 ): m_uRow1(uRow1), m_uColumn1(uColumn1), m_uRow2(uRow2), m_uColumn2(uColumn2) {}
+   line( const std::pair<unsigned ,unsigned >& pairFirst, const std::pair<unsigned ,unsigned >& pairSecond ): m_uRow1(pairFirst.first), m_uColumn1(pairFirst.second), m_uRow2(pairSecond.first), m_uColumn2(pairSecond.second) {}
+   line( const std::array<unsigned,4>& array_ ): m_uRow1(array_[0]), m_uColumn1(array_[1]), m_uRow2(array_[2]), m_uColumn2(array_[3]) {}
 
    line( const line& o) { memcpy( this, &o, sizeof(line) ); }
    ~line() {}
@@ -525,6 +528,8 @@ struct line
 
    void print( device* pdevice, char iCharacter ) const;
    void print( device* pdevice ) const { print( pdevice, m_iCharacter ); }
+   unsigned print( device* pdevice, char iBegin, char iMiddle, char iEnd  ) const;
+   unsigned print( device* pdevice, const std::array<char,3>& array_ ) const { return print( pdevice, array_[0], array_[1], array_[2] ); }
 
 // ## attributes
    char m_iCharacter = 0;
