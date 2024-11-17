@@ -22,7 +22,8 @@ struct box
 {
 public:
    
-   box(unsigned int uRow, unsigned int uColumn): m_uRow(uRow), m_uColumn(uColumn) {}
+   box(unsigned uHeight, unsigned uWidth): m_uRow(0), m_uColumn(0), m_uHeight(uHeight), m_uWidth(uWidth) {}
+   box(unsigned uRow, unsigned uColumn, unsigned uHeight, unsigned uWidth) : m_uRow(uRow), m_uColumn(uColumn), m_uHeight(uHeight), m_uWidth(uWidth) {}
 
    box& move_up() { m_uRow--; return *this; }
    box& move_up(unsigned uMove) { m_uRow -= uMove; return *this; }
@@ -34,13 +35,23 @@ public:
    box& move_right() { m_uColumn++; return *this; }
    box& move_right(unsigned uMove) { m_uColumn += uMove; return *this; }
 
-   void print(gd::console::device* pdevice, unsigned int uLength, unsigned int uWidth, char iCharacter)
+   box& increase_width() { m_uWidth++; return *this; }
+   box& increase_width(unsigned uChange) { m_uWidth += uChange; return *this; }
+   box& decrease_width() { m_uWidth--; return *this; }
+   box& decrease_width(unsigned uChange) { m_uWidth -= uChange; return *this; }
+
+   box& increase_height() { m_uHeight++; return *this; }
+   box& increase_height(unsigned uChange) { m_uHeight += uChange; return *this; }
+   box& decrease_height() { m_uHeight--; return *this; }
+   box& decrease_height(unsigned uChange) { m_uHeight -= uChange; return *this; }
+
+   void print(gd::console::device* pdevice, char iCharacter)
    {
       unsigned uR = m_uRow, uC = m_uColumn;
 
-      for (unsigned int ui = 0; ui < uLength; ui++)
+      for (unsigned int ui = 0; ui < m_uHeight; ui++)
       {
-         for (unsigned int uj = 0; uj < uWidth; uj++)
+         for (unsigned int uj = 0; uj < m_uWidth; uj++)
          {
             pdevice->print(ui + uR, uj + uC, iCharacter);
          }
@@ -50,6 +61,9 @@ public:
    char m_iCharacter = 0;
    unsigned int m_uRow;
    unsigned int m_uColumn;
+
+   unsigned int m_uHeight;
+   unsigned int m_uWidth;
 };
 
 struct triangle
@@ -92,7 +106,7 @@ TEST_CASE(" [kevin] 02", "[kevin] ")
    gd::console::device deviceTest(250, 100);
    deviceTest.create();
 
-   box boxTest(1, 1);
+   box boxTest(1, 1, 10, 10);
 
    triangle triangleTest(1, 1);
 
@@ -101,20 +115,16 @@ TEST_CASE(" [kevin] 02", "[kevin] ")
    auto stringOut = deviceTest.render(gd::console::tag_format_cli{});
    std::cout << stringOut;
    
-   boxTest.print(&deviceTest, 5, 10, '*');
+   boxTest.print(&deviceTest, '*');
+   boxTest.decrease_height(5);
+   boxTest.decrease_width(5);
 
-   boxTest.move_right(10);
+   boxTest.move_right(20);
 
-   boxTest.print(&deviceTest, 5, 15, '-');
+   boxTest.print(&deviceTest, '*');
 
-   boxTest.move_down(5);
-   boxTest.move_left(10);
-
-   boxTest.print(&deviceTest, 5, 25, '-');
-
-
-   triangleTest.move_right(30);
-   triangleTest.print(&deviceTest, 10, '#');
+   /*triangleTest.move_right(30);
+   triangleTest.print(&deviceTest, 10, '#');*/
 
    //std::cout << " ";
 
