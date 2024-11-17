@@ -98,7 +98,7 @@ public:
    void set_margin( unsigned uMargin ) { assert( uMargin < 100 ); m_uSeverityMargin = uMargin; }
    /// set color for severity
    void set_color( enumSeverityNumber eSeverity, enumColor eColor ) { m_arrayColor[eSeverity] = (unsigned)eColor; }
-   void set_color( const std::array<unsigned, eSeverityNumberMAX>& array_ ) { m_arrayColor = array_; }
+   void set_color( const std::array<uint8_t, eSeverity_Count>& array_ );
    /// check if severity has color
    bool is_color( enumSeverityNumber eSeverity ) const { return m_arrayColor.at( eSeverity ) != 0; }
    /// return color code for severity
@@ -139,18 +139,17 @@ public:
    unsigned m_uSeverityMargin = 0;     ///< To make formating better this may be used to have similar margin for all type of messages
    unsigned m_uMessageCounter = 0;     ///< number of messages needed to flush (when flush is called this is reset to 0)
    unsigned m_uMarginColor    = 0;     ///< color for margin text
-   std::array<unsigned, eSeverityNumberMAX> m_arrayColor;///< colors for severity types
+   std::array<unsigned, eSeverity_Count> m_arrayColor;///< colors for severity types
    std::wostream& m_wostreamOutput;
 #ifdef _WIN32
    HANDLE m_hOutput;                   ///< handle to console in windows
 #endif
 
    /// default colors
-   static constexpr std::array<uint8_t, 8> m_arrayColorDefault_s = {75, 196, 202, 226, 40, 45, 252, 75};
+   static constexpr std::array<uint8_t, eSeverity_Count> m_arrayColorDefault_s = {75, 196, 202, 226, 40, 45, 252};
    /// grey colors
-   static constexpr std::array<uint8_t, 8> m_arrayColorDeGrey_s = {0, 241, 244, 246, 249, 252, 255, 239};
-   
-   
+   static constexpr std::array<uint8_t, eSeverity_Count> m_arrayColorDeGrey_s = {255, 241, 244, 246, 249, 251, 253};
+
 // ## free functions ------------------------------------------------------------
 public:
 
@@ -201,7 +200,7 @@ public:
    void set_margin( unsigned uMargin ) { assert( uMargin < 100 ); m_uSeverityMargin = uMargin; }
    /// set color for severity
    void set_color( enumSeverityNumber eSeverity, enumColor eColor ) { m_arrayColor[eSeverity] = (unsigned)eColor; }
-   void set_color( const std::array<unsigned, eSeverityNumberMAX>& array_ ) { m_arrayColor = array_; }
+   void set_color( const std::array<uint8_t, eSeverity_Count>& array_ );
    /// check if severity has color
    bool is_color( enumSeverityNumber eSeverity ) const { return m_arrayColor.at( eSeverity ) != 0; }
    /// return color code for severity
@@ -241,15 +240,25 @@ public:
    unsigned m_uSeverityMargin = 0;     ///< To make formating better this may be used to have similar margin for all type of messages
    unsigned m_uMessageCounter = 0;     ///< number of messages needed to flush (when flush is called this is reset to 0)
    unsigned m_uMarginColor    = 0;     ///< color for margin text
-   std::array<unsigned, eSeverityNumberMAX> m_arrayColor;///< colors for severity types
+   std::array<unsigned, eSeverity_Count> m_arrayColor;///< colors for severity types
 
-   // ## free functions ------------------------------------------------------------
+   /// default colors
+   static constexpr std::array<uint8_t, eSeverity_Count> m_arrayColorDefault_s = {75, 196, 202, 226, 40, 45, 252};
+   /// grey colors
+   static constexpr std::array<uint8_t, eSeverity_Count> m_arrayColorDeGrey_s = {255, 241, 244, 246, 249, 251, 253};
+
+// ## free functions ------------------------------------------------------------
 public:
-
 
 };
 
 #endif
+
+inline void printer_console::set_color( const std::array<uint8_t, eSeverity_Count>& array_ ) { 
+   for( unsigned u = 0, uMax = (unsigned)array_.size(); u < uMax; u++ ) { 
+      m_arrayColor[u] = (unsigned)array_[u]; 
+   }
+}
 
 
 // ================================================================================================
