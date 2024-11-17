@@ -200,6 +200,7 @@ enum enumSeverityNumber
    eSeverityNumberDebug = 5,
    eSeverityNumberVerbose = 6,
    eSeverityNumberMAX = 7,
+   eSeverity_Count = 7,
 };
 
 
