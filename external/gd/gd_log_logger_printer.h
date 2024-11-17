@@ -70,11 +70,7 @@ public:
 private:
    // common copy
 
-   void common_construct() {
-      for( unsigned u = 0, uMax = (unsigned)m_arrayColor.size(); u < uMax; u++ ) { 
-         m_arrayColor[u] = (unsigned)m_arrayColorDefault_s[u]; 
-      }
-   }
+   void common_construct() { set_color( m_arrayColorDefault_s ); }
    void common_construct( const printer_console& o ) {
       m_bConsole = o.m_bConsole;
       m_hOutput = o.m_hOutput;
@@ -176,9 +172,7 @@ public:
 private:
    // common copy
 
-   void common_construct() {
-      std::fill(m_arrayColor.begin(), m_arrayColor.end(), eColorNone);
-   }
+   void common_construct() { set_color( m_arrayColorDefault_s ); }
    void common_construct( const printer_console& o ) {
       m_uMessageCounter = o.m_uMessageCounter;
       m_arrayColor = o.m_arrayColor;
