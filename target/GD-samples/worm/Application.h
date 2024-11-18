@@ -156,8 +156,12 @@ struct Application : public application::basic::CApplication
 
    /// Draws the sourounding frame for game
    void DrawGameFrame();
+
+   void DrawBorder(gd::console::device& deviceFrame);
    /// Draw information to game panel
    void DrawGamePanel();
+
+   void DrawGamePanel2();
    /// Draw information on how to play the game and how to start and end it
    void DrawGameInformation();
 

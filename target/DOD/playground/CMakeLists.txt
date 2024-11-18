@@ -60,6 +60,17 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
 endif()
 
+set( USE_TEST_ ON )
+if( USE_TEST_ )
+   set(TEST_NAME_ "PLAY_formula")
+   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+      "${TEST_NAME_}.cpp"
+   )
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS GD_LOG_SIMPLE)
+endif()
+
+
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
@@ -72,6 +83,17 @@ if( USE_TEST_ )
 endif()
 
 set( USE_TEST_ ON )
+if( USE_TEST_ )
+   set(TEST_NAME_ "PLAY_logger")
+   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+      "${TEST_NAME_}.cpp"
+   )
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS GD_LOG_SIMPLE)
+endif()
+
+
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_fake_data")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
@@ -93,7 +115,7 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
 endif()
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_Kevin")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
@@ -113,7 +135,7 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
 endif()
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_game_worm")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
@@ -123,7 +145,7 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
 endif()
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_KevinConsole2")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 

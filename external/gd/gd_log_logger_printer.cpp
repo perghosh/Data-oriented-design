@@ -91,7 +91,7 @@ bool printer_console::print(const message& message)
          else
          {
             stringMessage += L'[';
-            unsigned uMarginLength = m_uSeverityMargin + stringMessage.length();
+            unsigned uMarginLength = m_uSeverityMargin + (unsigned)stringMessage.length();
             gd::utf8::convert_utf8_to_uft16( (const uint8_t*)severity_get_short_name_g( message.get_severity_number() ), stringMessage );
             // pad string if needed
             if( stringMessage.length() < uMarginLength ) { stringMessage.insert(stringMessage.end(), uMarginLength - stringMessage.length(), L'.' );  }
@@ -107,8 +107,9 @@ bool printer_console::print(const message& message)
       // ## if severity has color then change color
       if(is_color(message.get_severity_number()) == true)
       {
-         stringMessage.append(L"\033[");
-         stringMessage.append( color_get_wcode_s( get_color( message.get_severity_number() )  ) );
+         stringMessage.append(L"\033[38;5;");
+         stringMessage.append( std::to_wstring( get_color( message.get_severity_number() ) ) );
+         //stringMessage.append( color_get_wcode_s(   ) );
          stringMessage.append(L"m");
          bChangeColor = true;
       }
@@ -335,7 +336,7 @@ void printer_console::print(const std::wstring_view& stringMessage)
 #endif
 
 // ================================================================================================
-// ================================================================================= printer_file
+// =================================================================================== printer_file
 // ================================================================================================
 
 printer_file::printer_file( const std::string_view& stringFileName ): m_stringSplit{ L"  " }, m_stringNewLine{ L"\n" } 
@@ -350,7 +351,7 @@ printer_file::printer_file( const std::string_view& stringFileName ): m_stringSp
 
 /*----------------------------------------------------------------------------- print */ /**
  * print is overridden from i_print and is called when logger prints something and sends it
- * to attached printers. Here `printer_console` converts information to text and sends it to the console.
+ * to attached printers.
  * \param message printed message
  */
 bool printer_file::print(const message& message)
@@ -559,6 +560,9 @@ void printer_file::file_close_s(int iFileHandle)
    close( iFileHandle );
 #endif   
 }
+
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief get console color code for color

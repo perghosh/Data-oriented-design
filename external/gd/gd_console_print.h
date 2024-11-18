@@ -17,6 +17,7 @@
 
 
 #pragma once
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <string>
@@ -72,6 +73,8 @@ struct rowcolumn
       uint64_t u_ = uint64_t(m_uRow) << 32 | m_uColumn; 
       return u_;
    }
+
+   operator std::pair<unsigned,unsigned>() const { return std::pair<unsigned,unsigned>( m_uRow, m_uColumn ); }
 
    unsigned row() const { return m_uRow; }
    void row( unsigned uRow ) { m_uRow = uRow; }
@@ -201,6 +204,7 @@ public:
 *///@{
 
    std::pair<bool, std::string> create();
+   std::pair<bool, std::string> create( unsigned uRowCount, unsigned uColumnCount );
 
    std::pair< unsigned, unsigned > size() const;
 
@@ -212,9 +216,11 @@ public:
    void print( unsigned uRow, unsigned uColumn, char ch_ );
    void print( const rowcolumn& RC, char ch_ ) { print( RC.row(), RC.column(), ch_ ); }
    void print( unsigned uRow, unsigned uColumn, const std::string_view& stringText );
-   void print( const rowcolumn& rowcolumn_, const std::string_view& stringText );
+   void print( const rowcolumn& rowcolumn_, const std::string_view& stringText ) { print( rowcolumn_.row(), rowcolumn_.column(), stringText ); }
+   void print( unsigned uRow, unsigned uColumn, const std::string_view& stringText, unsigned uColor );
+   void print( const rowcolumn& rowcolumn_, const std::string_view& stringText, unsigned uColor ) { print( rowcolumn_.row(), rowcolumn_.column(), stringText, uColor ); }
    void print( const std::vector<rowcolumn>& vectorRC, const std::string_view& stringText );
-   void print( const std::vector<rowcolumn>& vectorRC, char ch_ );
+   void print( const std::vector<rowcolumn>& vectorRC, char iCharacter );
 
    void clear();
 
@@ -369,7 +375,7 @@ inline uint64_t device::calculate_position(unsigned uRow, unsigned uColumn) {   
 // ----------------------------------------------------------------------------
 
 /**
- * \brief
+ * \brief `view` can be used to view a smaller part of device
  *
  *
  *
@@ -473,6 +479,67 @@ struct caret
 // ## free functions ----------------------------------------------------------
 
 };
+
+namespace draw {
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------- line
+// ----------------------------------------------------------------------------
+
+/**
+ * \brief line object
+ *
+ *
+ */
+struct line
+{
+// ## construction -------------------------------------------------------------
+   line() { memset( this, 0, sizeof( line ) ); }
+   line( unsigned uRow1, unsigned uColumn1, unsigned uRow2, unsigned uColumn2 ): m_uRow1(uRow1), m_uColumn1(uColumn1), m_uRow2(uRow2), m_uColumn2(uColumn2) {}
+   line( const std::pair<unsigned ,unsigned >& pairFirst, const std::pair<unsigned ,unsigned >& pairSecond ): m_uRow1(pairFirst.first), m_uColumn1(pairFirst.second), m_uRow2(pairSecond.first), m_uColumn2(pairSecond.second) {}
+   line( const std::array<unsigned,4>& array_ ): m_uRow1(array_[0]), m_uColumn1(array_[1]), m_uRow2(array_[2]), m_uColumn2(array_[3]) {}
+
+   line( const line& o) { memcpy( this, &o, sizeof(line) ); }
+   ~line() {}
+
+   line& operator=( char iCharacter ) { m_iCharacter = iCharacter; return *this; }
+
+
+   unsigned r1() const { return m_uRow1; }
+   unsigned c1() const { return m_uColumn1; }
+   unsigned r2() const { return m_uRow2; }
+   unsigned c2() const { return m_uColumn2; }
+
+   std::pair<unsigned ,unsigned > first() const { return std::pair<unsigned ,unsigned >( m_uRow1, m_uColumn1 ); }
+   void first( unsigned uRow1, unsigned uColumn1 ) { m_uRow1 = uRow1; m_uColumn1 = uColumn1; }
+   void first( const std::pair<unsigned ,unsigned >& pairFirst ) { first( pairFirst.first, pairFirst.second ); }
+   std::pair<unsigned ,unsigned > second() const { return std::pair<unsigned ,unsigned >( m_uRow2, m_uColumn2 ); }
+   void second( unsigned uRow2, unsigned uColumn2 ) { m_uRow2 = uRow2; m_uColumn2 = uColumn2; }
+   void second( const std::pair<unsigned ,unsigned >& pairSecond ) { second( pairSecond.first, pairSecond.second ); }
+
+   line& move_up() { m_uRow1--; m_uRow2--; return *this; }
+   line& move_up(unsigned uDelta) { m_uRow1 -= uDelta; m_uRow2 -= uDelta; return *this; }
+   line& move_down() { m_uRow1++; m_uRow2++; return *this; }
+   line& move_down( unsigned uDelta ) { m_uRow1 += uDelta; m_uRow2 += uDelta; return *this; }
+   line& move_left() { m_uColumn1--; m_uColumn1--; return *this; }
+   line& move_left( unsigned uDelta ) { m_uColumn1 -= uDelta; m_uColumn1 -= uDelta; return *this; }
+   line& move_right() { m_uColumn1++; m_uColumn1++; return *this; }
+   line& move_right( unsigned uDelta ) { m_uColumn1 += uDelta ; m_uColumn1 += uDelta; return *this; }
+
+   void print( device* pdevice, char iCharacter ) const;
+   void print( device* pdevice ) const { print( pdevice, m_iCharacter ); }
+   unsigned print( device* pdevice, char iBegin, char iMiddle, char iEnd  ) const;
+   unsigned print( device* pdevice, const std::array<char,3>& array_ ) const { return print( pdevice, array_[0], array_[1], array_[2] ); }
+
+// ## attributes
+   char m_iCharacter = 0;
+   unsigned m_uRow1;				///< start row for line
+   unsigned m_uColumn1;			///< start column for line
+   unsigned m_uRow2;				///< end row for line
+   unsigned m_uColumn2;			///< end column for line
+};
+
+}
 
 
 _GD_CONSOLE_END
