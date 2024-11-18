@@ -13,6 +13,18 @@
 
 _GD_CONSOLE_BEGIN
 
+namespace {
+   void order(unsigned& u1, unsigned& u2 )
+   {
+      if(u1 > u2)
+      {
+         auto u_ = u1;
+         u1 = u2;
+         u2 = u_;
+      }
+   }
+}
+
 // ----------------------------------------------------------------------------
 // --------------------------------------------------------------------- device
 // ----------------------------------------------------------------------------
@@ -82,15 +94,52 @@ std::pair<bool, std::string> device::create()
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief create device to handle printing, buffers storing data are allocated
+ * @code
+gd::console::device deviceTest;
+deviceTest.create( 20, 100 );
+gd::console::draw::line line_( 0, 0,  5, 90 );
+line_.print( &deviceTest, '*' );
+stringOut = deviceTest.render( gd::console::tag_format_cli{} );
+std::cout << stringOut;
+ * @endcode
+ * @param uRowCount number of rows
+ * @param uColumnCount number of columns
+ * @return true if ok, false and error information if failing
+ */
+std::pair<bool, std::string> device::create(unsigned uRowCount, unsigned uColumnCount)
+{
+   m_uRowCount = uRowCount;
+   m_uColumnCount = uColumnCount;
+
+   return create();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Print text with color at position
+ * @param uRow row position
+ * @param uColumn column position
+ * @param stringText text to print
+ * @param uColor color for text
+ */
+void device::print( unsigned uRow, unsigned uColumn, const std::string_view& stringText, unsigned uColor )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( uColumn < m_uColumnCount );
+   auto pposition_ = offset( uRow, uColumn );                                                      assert( (pposition_ + stringText.length()) < buffer_end() );
+   memcpy( pposition_, stringText.data(), stringText.length() );
+   memset( offset_color( uRow, uColumn ),(uint8_t)uColor, stringText.length() );
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief print character at positions in vector
  * @param vectorRC vector with positions where to print character on device
  * @param ch_ character to print
  */
-void device::print(const std::vector<rowcolumn>& vectorRC, char ch_)
+void device::print(const std::vector<rowcolumn>& vectorRC, char iCharacter )
 {
    for(auto it : vectorRC)
    {
-      print( it, ch_ );
+      print( it, iCharacter );
    }
 }
 
@@ -302,6 +351,86 @@ std::string caret::render(tag_format_cli) const
    return stringPrint;
 }
 
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------- line
+// ----------------------------------------------------------------------------
+
+namespace draw {
+
+/** ---------------------------------------------------------------------------
+ * @brief Draw line on selected device
+ * @param pdevice pointer to device line is drawn on
+ * @param iCharacter character to draw
+ */
+void line::print(device* pdevice, char iCharacter) const
+{
+   unsigned uR1 = m_uRow1, uR2 = m_uRow2, uC1 = m_uColumn1, uC2 = m_uColumn2;
+
+   order(uR1, uR2);
+   order(uC1, uC2);
+
+   unsigned uDeltaRow = uR2 - uR1;
+   unsigned uDeltaColumn = uC2 - uC1;
+
+   int iNext = uDeltaColumn - uDeltaRow;
+
+   while(uR1 != uR2 || uC1 != uC2)
+   {
+      pdevice->print( uR1, uC1, iCharacter );
+
+      int iNext2 = 2 * iNext;
+      if( iNext2 > -(int)uDeltaRow ) { iNext -= uDeltaRow; uC1 += 1; }
+      if( iNext2 < (int)uDeltaColumn ) { iNext += uDeltaColumn; uR1 += 1; }
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Draw line on selected device
+ * @param pdevice pointer to device line is drawn on
+ * @param iBegin first character to draw in line
+ * @param iMiddle characters for middle part of line 
+ * @param iEnd last character to draw in line
+ */
+unsigned line::print(device* pdevice, char iBegin, char iMiddle, char iEnd) const
+{
+   char piBuffer[] = {iBegin, iMiddle, iEnd};
+   const char* piCharacter = piBuffer;
+   unsigned uR1 = m_uRow1, uR2 = m_uRow2, uC1 = m_uColumn1, uC2 = m_uColumn2;
+
+   order(uR1, uR2);
+   order(uC1, uC2);
+
+   unsigned uDeltaRow = uR2 - uR1;
+   unsigned uDeltaColumn = uC2 - uC1;
+
+   int iNext = uDeltaColumn - uDeltaRow;
+   unsigned uCount = 0;
+
+   unsigned uRSave;
+   unsigned uCSave;
+
+
+   while(uR1 != uR2 || uC1 != uC2)
+   {
+      pdevice->print( uR1, uC1, *piCharacter );
+      uRSave = uR1;
+      uCSave = uC1;
+
+      int iNext2 = 2 * iNext;
+      if( iNext2 > -(int)uDeltaRow ) { iNext -= uDeltaRow; uC1 += 1; }
+      if( iNext2 < (int)uDeltaColumn ) { iNext += uDeltaColumn; uR1 += 1; }
+
+      if( uCount == 0 ) piCharacter++;
+      uCount++;
+   }
+
+   // if more than two characters then place the last character in end position
+   if( uCount > 1 ) { pdevice->print( uRSave, uCSave, *(piCharacter + 1) ); }
+
+   return uCount;
+}
+
+} // namespace draw {
 
 
 _GD_CONSOLE_END

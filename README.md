@@ -117,3 +117,11 @@ Sample:
 | `play code` | no rules, do as you wish |
 | `test code` | no rules, do as you wish |
 
+### Learn while reading code
+Developers read a lot of code. To improve their skills, they should write code that's easy to learn from. 
+
+This coding style uses abbreviations for primitive C++ types and common names for frequently used objects. Object names are prefixed with class name to make it clear what it is. Other than that, code is not abbreviated. This approach helps developers focus on domain objects and key variables, rather than getting bogged down with reading EVERYTHING.
+It reduces cognitive load, as our short-term memory can typically hold about 5-8 names for about 20 seconds and impedes the cognitive resources necessary for process what code does. 
+By minimizing cognitive overhead on temporary or irrelevant details, this coding style prioritizes skill in development and efficient comprehension.
+
+If you write 100 lines of code, maybe 10 lines are important to understand what it does. If it is easy to find the important code, the rest can be skipped. Code is easer to read.

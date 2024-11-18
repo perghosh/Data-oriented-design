@@ -116,6 +116,8 @@ public:
    using tag_argument      = gd::types::tag_argument;                          // argument related operations
    using tag_name          = gd::types::tag_name;                              // there is some name related logic involved
    using tag_description   = gd::types::tag_description;                       // tag dispatcher where description is useful
+   struct tag_no_initializer_list {};                                          // do not select initializer_list versions
+   struct tag_internal {};                                                     // tag dispatcher for internal use
 
 
    //struct tag_view {};                                                         // tag dispatcher used when working with view objects (not owning its data)
@@ -741,9 +743,6 @@ public:
    arguments& append_argument(const std::string_view& stringName, const gd::variant_view& variantValue, tag_view) { return append_argument( stringName, variantValue ); }
 
    arguments& append_argument(const std::pair<std::string_view, gd::variant>& pairArgument) {
-      return append_argument(pairArgument.first, pairArgument.second);
-   }
-   arguments& append_argument(const std::pair<std::string_view, gd::variant_view>& pairArgument, tag_view) {
       return append_argument(pairArgument.first, pairArgument.second);
    }
    arguments& append_argument(const std::pair<std::string_view, gd::variant_view>& pairArgument, tag_view) {

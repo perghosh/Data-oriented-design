@@ -835,13 +835,13 @@ arguments::arguments(std::initializer_list<std::pair<std::string_view, gd::varia
 arguments::arguments( std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view )
 {
    zero();
-   for( auto it : listPair ) append_argument( it, view_tag{} );
+   for( auto it : listPair ) append_argument( it, tag_view{} );
 }
 
 arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>> listPair, tag_view )
 {
    zero();
-   for( auto it : listPair ) append_argument( it, view_tag{} );
+   for( auto it : listPair ) append_argument( it, tag_view{} );
 }
 
 arguments::arguments(const std::string_view& stringName, const gd::variant& variantValue, arguments::tag_no_initializer_list)
@@ -2007,7 +2007,7 @@ bool arguments::compare_exists_s( const arguments& argumentsSource, const argume
 {
    for( auto it = argumentsExists.begin(), itEnd = argumentsExists.end(); it != itEnd; it++ )
    {
-      auto stringExistsName = it.name( view_tag{} );
+      auto stringExistsName = it.name( tag_view{} );
       if( stringExistsName.empty() == false )
       {
          auto pposition = argumentsSource.find( stringExistsName );

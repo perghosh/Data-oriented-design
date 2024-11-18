@@ -2,6 +2,8 @@
 #include "gd/gd_arguments.h"
 #include "gd/gd_variant.h"
 #include "gd/gd_table_column-buffer.h"
+#include "gd/gd_console_style.h"
+#include "gd/gd_console_print.h"
 
 #include "Windows.h"
 
@@ -87,4 +89,42 @@ TEST_CASE( "[console] 01", "[console]" ) {
    console_.print( "\nReady\n" );
    console_.print_at( 1, 40, "SCORE: 100" );
    console_.print( "\n//////////////////////////////////////////////////////////" );
+}
+
+TEST_CASE( "[console] lines", "[console]" ) {
+   //console console_( ::GetStdHandle( STD_OUTPUT_HANDLE ) );
+   gd::console::device deviceTest( 250, 100 );
+   deviceTest.create();
+   gd::console::draw::line lineColorTest( 0, 30 ,  0, 99 );
+
+   for( uint8_t uColor = uint8_t(16); uColor < 255; uColor++ )
+   {
+      deviceTest.select( uColor, gd::console::tag_color{});
+      //lineColorTest.print(&deviceTest, '+', '-', '+');
+      lineColorTest.print(&deviceTest, { '+', '-', '+' }) ;
+      deviceTest.print( { lineColorTest.r1(), 0 }, std::to_string(uColor), 255);
+      lineColorTest.move_down();
+   }
+
+   auto stringOut = deviceTest.render( gd::console::tag_format_cli{} );
+   std::cout << stringOut;
+
+   deviceTest.create( 20, 100 );
+
+
+   gd::console::draw::line line_( 0, 0,  5, 90 );
+   line_.print( &deviceTest, '*' );
+   line_.move_down(3);
+   line_.print( &deviceTest, '+' );
+
+   gd::console::draw::line lineCopy(line_);
+
+   lineCopy.move_down(3);
+   lineCopy.print(&deviceTest, 'p');
+
+
+   stringOut = deviceTest.render( gd::console::tag_format_cli{} );
+   std::cout << stringOut;
+
+
 }

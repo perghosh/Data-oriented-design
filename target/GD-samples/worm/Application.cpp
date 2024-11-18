@@ -120,13 +120,14 @@ std::pair<bool, std::string> Application::Initialize()
    // ## create device
    // ### Get the terminal size and set device from that
    auto rowcolumn_ = gd::console::device::terminal_get_size_s();
+   rowcolumn_.row( rowcolumn_.row() - 4 );
    if( rowcolumn_.row() > 24 ) rowcolumn_.row( 24 );
-   rowcolumn_.column( rowcolumn_.column() - 1 );
+   rowcolumn_.column( rowcolumn_.column() - 2 );
    m_deviceGame = rowcolumn_;
    // ### create device
    m_deviceGame.create();
 
-   m_devicePanel = gd::console::rowcolumn( 2, rowcolumn_.column() );           // set device used to print score and game information
+   m_devicePanel = gd::console::rowcolumn( 3, rowcolumn_.column() );           // set device used to print score and game information
    m_devicePanel.create();
 
    // ## create start worm that user moves in game
@@ -201,15 +202,10 @@ std::pair<bool, std::string> Application::GAME_Update( tag_state )
 
    // ### Check if head is outside game plan
    {
-      auto pairSize = m_deviceGame.size();
+      gd::console::rowcolumn RC = m_deviceGame.size();
 
-      if(pairHeadPosition.first < 2)
-      {
-         std::cout << pairSize.first << "\n";
-      }
-
-      pairSize = gd::math::increase_pair( -2, pairSize );                      // decrease border size
-      bool bInside = gd::math::area::is_inside_box( pairHeadPosition, {1,1}, pairSize);
+      RC = gd::math::increase_pair( -3, std::pair<unsigned,unsigned>(RC) );                                  // decrease border size
+      bool bInside = gd::math::area::is_inside_box( pairHeadPosition, {1,1}, std::pair<unsigned,unsigned>(RC) );
       if(bInside == false) 
       {  // We are outside the game area and game has ended
          SetState( "crash" ); 
@@ -282,8 +278,12 @@ void Application::PrepareFrame()
 void Application::Draw()
 {
    // ## draw game frame
-   DrawGameFrame();
-   DrawGamePanel();
+   //DrawGameFrame2();
+   //DrawGamePanel2();
+
+   DrawBorder(m_deviceGame);
+   DrawBorder(m_devicePanel);
+   DrawGamePanel2();
 
    if( GetState() == "play")
    {
@@ -361,6 +361,40 @@ void Application::DrawGameFrame()
    m_deviceGame.fill( 1,1, uRowCount - 2, uColumnCount - 2, ' ' );             // clear inner part
 }
 
+void Application::DrawBorder(gd::console::device& deviceBorder)
+{
+   const char iFrameCornerTopLeft = (char)201;
+   const char iFrameCornerTopRight = (char)187;
+   const char iFrameCornerDownLeft = (char)200;
+   const char iFrameCornerDownRight = (char)188;
+   const char iFrameSide = (char)186;
+   const char iFrameRow = (char)205;
+
+   
+
+
+   auto [uRowCount, uColumnCount] = deviceBorder.size();
+
+   deviceBorder.select(gd::console::enumColor::eColorSteelBlue3, gd::console::tag_color{});// select frame color
+
+
+   for (unsigned uColumn = 0; uColumn < uColumnCount; uColumn++) deviceBorder.print(0, uColumn, iFrameRow);
+   for (unsigned uColumn = 0; uColumn < uColumnCount; uColumn++) deviceBorder.print(uRowCount - 1, uColumn, iFrameRow);
+
+   deviceBorder.print(0, 0, iFrameCornerTopLeft);
+   deviceBorder.print(uRowCount - 1, 0, iFrameCornerDownLeft);
+
+   deviceBorder.print(0, uColumnCount - 1, iFrameCornerTopRight);
+   deviceBorder.print(uRowCount - 1, uColumnCount - 1, iFrameCornerDownRight);
+
+   for (unsigned uRow = 1; uRow < uRowCount - 1; uRow++) deviceBorder.print(uRow, 0, iFrameSide);
+   for (unsigned uRow = 1; uRow < uRowCount - 1; uRow++) deviceBorder.print(uRow, uColumnCount - 1, iFrameSide);
+
+   deviceBorder.select(gd::console::enumColor::eColorNavajoWhite1, gd::console::tag_color{}); // select active color
+   deviceBorder.fill(1, 1, uRowCount - 2, uColumnCount - 2, ' ');             // clear inner part
+   
+}
+
 /// ---------------------------------------------------------------------------
 /// Draw the game panel information like hiscore and score
 void Application::DrawGamePanel()
@@ -370,6 +404,20 @@ void Application::DrawGamePanel()
    auto uHiScore = m_argumentsGame["hiscore"].as_uint64();
    auto uScore = m_argumentsGame["score"].as_uint64();
    std::string stringPanel = std::format( "HISCORE: {}         SCORE: {}", uHiScore, uScore );
+   m_devicePanel[1][10] = stringPanel;
+}
+
+/// ---------------------------------------------------------------------------
+/// Draw the game panel information like hiscore and score
+
+
+void Application::DrawGamePanel2()
+{
+   // ## Generate game information
+   //m_devicePanel.fill(' ');
+   auto uHiScore = m_argumentsGame["hiscore"].as_uint64();
+   auto uScore = m_argumentsGame["score"].as_uint64();
+   std::string stringPanel = std::format("HISCORE: {}         SCORE: {}", uHiScore, uScore);
    m_devicePanel[1][10] = stringPanel;
 }
 
