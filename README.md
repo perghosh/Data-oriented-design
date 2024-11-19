@@ -68,7 +68,7 @@ If computers could understand data like humans, developers would be obsolete.
 | Postfix | Description | Sample |
 | ------------ | ----------- | ------ |
 | `b`* | **boolean** | `bool bOk, bIsOk, bIsEof, bResult;` |
-| `i`* | **signed integer** (all sizes) | `int iCount;` `int64_t iBigValue;` `int16_t iPosition;` |
+| `i`* | **signed integer** (all sizes) | `int iCount;` `int64_t iBigValue;` `int16_t iPosition; char iCharacter;` |
 | `u`* | **unsigned integer** (all sizes) | `unsigned uCount;` `uint64_t uBigValue;` `uint8_t uCharacter;` `size_t uLength;` |
 | `d`* | **decimal values** (double, float) | `double dSalary;` `float dXAxis;` `double dMaxValue;` |
 | `p`* | **pointer** (all, including smart pointers) | `int* piNumber;` `int piNumber[20];` `void* pUnknown;` `std::unique_ptr<std::atomic<uint64_t>[]> pThreadResult;` |

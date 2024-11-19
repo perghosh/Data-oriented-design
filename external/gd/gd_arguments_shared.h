@@ -135,10 +135,10 @@ public:
    typedef uint8_t            param_type;
    typedef uint8_t            argument_type;
 
-   using tag_view = gd::types::tag_view;                                       // used when working with view objects (not owning its data)
-   using tag_argument = gd::types::tag_argument;                               // argument related operatiions
-   using tag_name = gd::types::tag_name;                                       // there is some name related logic involved
-   using tag_description = gd::types::tag_description;                         // tag dispatcher where description is usefull
+   using tag_view          = gd::types::tag_view;                              // used when working with view objects (not owning its data)
+   using tag_argument      = gd::types::tag_argument;                          // argument related operatiions
+   using tag_name          = gd::types::tag_name;                              // there is some name related logic involved
+   using tag_description   = gd::types::tag_description;                       // tag dispatcher where description is usefull
    struct tag_no_initializer_list {};                                          // do not select initializer_list versions
    struct tag_internal {};                                                     // tag dispatcher for internal use
 
