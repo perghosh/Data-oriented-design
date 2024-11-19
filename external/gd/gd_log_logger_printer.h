@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <string_view>
 #include <mutex>
 #include <iostream>
 #ifdef _MSC_VER
@@ -49,9 +50,11 @@ public:
 // ## construction -------------------------------------------------------------
 public:
 
-   printer_console(): printer_console( enumOutput::eOutputStdOut ) { common_construct(); }
-   printer_console(enumOutput eOutput)
-      : m_bConsole(!!_isatty(_fileno(eOutput == enumOutput::eOutputStdOut ? stdout : stderr)))
+   printer_console(): printer_console( enumOutput::eOutputStdOut, "") {}
+   printer_console( const std::string_view& stringName ): printer_console( enumOutput::eOutputStdOut, stringName ) { common_construct(); }
+   printer_console(enumOutput eOutput, const std::string_view& stringName )
+      : i_printer( stringName )
+      , m_bConsole(!!_isatty(_fileno(eOutput == enumOutput::eOutputStdOut ? stdout : stderr)))
       , m_wostreamOutput(eOutput == enumOutput::eOutputStdOut ? std::wcout : std::wcerr)
       , m_hOutput()
    {
