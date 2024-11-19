@@ -823,7 +823,9 @@ class i_printer
 {
 public:
    i_printer() {}
+   i_printer( const std::string_view& stringName ): m_stringName(stringName) {}
    i_printer( unsigned uSeverity ) : m_uSeverity( uSeverity ) {}
+   i_printer( unsigned uSeverity, const std::string_view& stringName ): m_uSeverity( uSeverity ), m_stringName(stringName) {}
 
    i_printer( const i_printer& o ): m_uSeverity( o.m_uSeverity ) {}
 
@@ -832,13 +834,15 @@ public:
    virtual ~i_printer() {}
 
 protected:
-   void common_construct(const i_printer& o) { m_uSeverity = o.m_uSeverity; }
+   void common_construct(const i_printer& o) { m_uSeverity = o.m_uSeverity; m_stringName = o.m_stringName; }
 
 public:
    /** \name GET/SET
    *///@{
    unsigned get_severity() const { return m_uSeverity; }
    void set_severity(unsigned uSeverity) { m_uSeverity = uSeverity; }
+   const std::string& get_name() const { return m_stringName; }
+   void set_name( const std::string_view& stringName ) { m_stringName = stringName; }
    //@}
 
    /// This is called when logger send (prints) message to attached printers.
@@ -858,6 +862,7 @@ public:
    virtual unsigned error( message& message ) { return 0; };
 public:
    unsigned m_uSeverity = 0;     ///< setting severity filter for printer
+   std::string m_stringName;     ///< set name for printer, may be used to separate if there are multiple printers of same type
 };
 
 
@@ -911,7 +916,9 @@ public:
 *///@{
    void append(std::unique_ptr<i_printer> pprinter) { m_vectorPrinter.push_back( std::move(pprinter) ); }
    i_printer* get( size_t uIndex ) { assert( m_vectorPrinter.size() > uIndex ); return m_vectorPrinter.at( uIndex ).get(); }
+   i_printer* get( const std::string_view& stringName );
 
+   /// Send message to connected printers
    void print(const message& message);
 
    virtual void print( const message& message, bool bFlush );
@@ -981,7 +988,17 @@ public:
    static std::mutex& get_mutex_s();
 };
 
-/// generate static mutex object
+/// Return pointer to selected printer (same name), no printer returns null.
+template<int iLoggerKey, bool bThread>
+inline i_printer* logger<iLoggerKey, bThread>::get(const std::string_view& stringName) {
+   for(auto it = std::begin(m_vectorPrinter); it != std::end(m_vectorPrinter); it++) {
+      i_printer* pprinter_= (*it).get();
+      if( pprinter_->get_name() == stringName ) return pprinter_;
+   }
+   return nullptr;
+}
+
+/// generate static mutex object, for each logger there is one mutex and that is needed to make it work in threaded environments
 template<int iLoggerKey, bool bThread>
 std::mutex logger<iLoggerKey, bThread>::m_mutex_s;
 
@@ -995,7 +1012,7 @@ inline void logger<iLoggerKey,bThread>::print(const message& message) { print(me
 /// ----------------------------------------------------------------------------
 /// Sends message to all attached printers, 
 template<int iLoggerKey, bool bThread>
-void logger<iLoggerKey,bThread>::print(const message& message, bool bFlush)
+inline void logger<iLoggerKey,bThread>::print(const message& message, bool bFlush)
 {
    if( check_severity(message.get_severity()) )                                  // check if message has severity within bounds for output
    {

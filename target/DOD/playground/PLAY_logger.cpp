@@ -20,8 +20,15 @@ gd::log::logger<0>* plogger = gd::log::get_s();                                /
 
 
 TEST_CASE( "[logging] colors", "[logging]" ) {
-   plogger->append( std::make_unique<gd::log::printer_console>() );
+   plogger->append( std::make_unique<gd::log::printer_console>( std::string_view( "CONSOLE" ) ));
+   plogger->append( std::make_unique<gd::log::printer_console>( std::string_view( "CONSOLE2" ) ));
    plogger->set_severity(eSeverityNumberVerbose);
+
+   gd::log::printer_console* pprinterconsole = (printer_console*)plogger->get( "CONSOLE" );
+   pprinterconsole->set_margin( 10 );
+   pprinterconsole->set_color( gd::log::printer_console::m_arrayColorDeGrey_s );
+
+
    LOG_FATAL("LOG_FATAL");
    LOG_ERROR("LOG_ERROR");
    LOG_WARNING("LOG_WARNING");
@@ -30,8 +37,6 @@ TEST_CASE( "[logging] colors", "[logging]" ) {
    LOG_VERBOSE("LOG_VERBOSE");
    LOG_NONE("LOG_NONE");
 
-   gd::log::printer_console* pprinterconsole = (printer_console*)plogger->get(0);
-   pprinterconsole->set_color( gd::log::printer_console::m_arrayColorDeGrey_s );
    LOG_FATAL("LOG_FATAL");
    LOG_ERROR("LOG_ERROR");
    LOG_WARNING("LOG_WARNING");

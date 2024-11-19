@@ -160,6 +160,7 @@ bool printer_console::print(const message& message)
    if( m_uMessageCounter > 0 ) print(std::wstring_view{ L"  " });              // print separator if there have been more messages before flush method is called
 
    print( stringMessage );
+   print(std::wstring_view{ L"\n" });
 
    return true;
 }
@@ -168,7 +169,7 @@ bool printer_console::flush()
 {
    if( m_uMessageCounter > 0 )                                                   // one or more messages printed?
    {
-      print(std::wstring_view{ L"\n" });
+      //print(std::wstring_view{ L"\n" });
    }
 
    m_uMessageCounter = 0;
@@ -310,6 +311,7 @@ bool printer_console::print(const message& message)
    if( m_uMessageCounter > 0 ) print(std::wstring_view{ L"  " });                // print separator if there have been more messages before flush method is called
 
    print( stringMessage );
+   print(std::wstring_view{ L"\n" });
 
    return true;
 }
@@ -318,7 +320,7 @@ bool printer_console::flush()
 {
    if( m_uMessageCounter > 0 )                                                   // one or more messages printed?
    {
-      print(std::wstring_view{ L"\n" });
+      // print(std::wstring_view{ L"\n" });
    }
 
    m_uMessageCounter = 0;
