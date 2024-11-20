@@ -71,6 +71,7 @@ bool printer_console::print(const message& message)
 {
    bool bChangeColor = false;
    std::wstring stringMessage;
+   // std::wstring stringSeverityName;
 
    if( message.is_message_type_set() == true )
    {
@@ -132,8 +133,7 @@ bool printer_console::print(const message& message)
    }
    
    auto stringPrintMessage = message.to_wstring(); // added log message
-   if( m_uSeverityMargin == 0 ) { stringMessage += stringPrintMessage; }
-   else
+   if( m_uSeverityMargin != 0 )
    {
       // ## insert margin to format log output
       if( stringPrintMessage.find( '\n' ) != std::wstring::npos )
