@@ -20,8 +20,32 @@ gd::log::logger<0>* plogger = gd::log::get_s();                                /
 
 
 TEST_CASE( "[logging] colors", "[logging]" ) {
-   plogger->append( std::make_unique<gd::log::printer_console>() );
+   plogger->append( std::make_unique<gd::log::printer_console>( std::string_view( "CONSOLE" ) ));
+   plogger->append( std::make_unique<gd::log::printer_console>( std::string_view( "CONSOLE2" ) ));
    plogger->set_severity(eSeverityNumberVerbose);
+
+   gd::log::printer_console* pprinterconsole = (printer_console*)plogger->get( "CONSOLE" );
+   pprinterconsole->set_margin( 10 );
+   pprinterconsole->set_color( gd::log::printer_console::m_arrayColorDeGrey_s );
+
+   auto callback_ = [](auto& message_, auto* plogger) -> void {
+      const char* pbszMessage = message_.get_text();
+      const char* pbszCpp = std::strstr( pbszMessage, ".cpp" );
+      if( pbszCpp != nullptr )
+      {
+         while(pbszCpp > pbszMessage && *pbszCpp != '/' && *pbszCpp != '\\') { pbszCpp--; }
+         if(pbszCpp != pbszMessage)
+         {
+            pbszCpp++;
+            message_.set_text( pbszCpp );
+         }
+      }
+      auto i = 0;
+   };
+
+   plogger->callback_add( callback_ );
+
+
    LOG_FATAL("LOG_FATAL");
    LOG_ERROR("LOG_ERROR");
    LOG_WARNING("LOG_WARNING");
@@ -30,8 +54,6 @@ TEST_CASE( "[logging] colors", "[logging]" ) {
    LOG_VERBOSE("LOG_VERBOSE");
    LOG_NONE("LOG_NONE");
 
-   gd::log::printer_console* pprinterconsole = (printer_console*)plogger->get(0);
-   pprinterconsole->set_color( gd::log::printer_console::m_arrayColorDeGrey_s );
    LOG_FATAL("LOG_FATAL");
    LOG_ERROR("LOG_ERROR");
    LOG_WARNING("LOG_WARNING");
@@ -39,5 +61,23 @@ TEST_CASE( "[logging] colors", "[logging]" ) {
    LOG_DEBUG("LOG_DEBUG");
    LOG_VERBOSE("LOG_VERBOSE");
    LOG_NONE("LOG_NONE");
+
+   {
+      const char* ppbsz_[] = { "Hello", "World", "C++" };
+
+      auto pair_ = std::pair<int,const char**>( 3, ppbsz_ );
+      gd::log::ascii ascii_("1234567890");
+      ascii_ += pair_;
+      //message_.append( p_ );
+      LOG_NONE( ascii_ );
+      ascii_.clear();
+      ascii_ += std::make_tuple( 3, ppbsz_, " " );
+      LOG_NONE( ascii_ );
+      LOG_NONE( gd::log::ascii( std::make_tuple( 3, ppbsz_, " " ) ) );
+
+      LOG_ERROR( gd::log::make_ascii_g( "1", " ", "3", " ", "2", " ", true, 1, 3.5 ) );
+      LOG_FATAL( gd::log::make_ascii_g( std::make_tuple( 3, ppbsz_, " " ) ) );
+      LOG_FATAL( gd::log::make_ascii_g( "\n", std::make_pair( 100, '=' ), "\n") );
+   }
 
 }

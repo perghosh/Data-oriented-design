@@ -133,6 +133,7 @@ auto plogger = get_s();            // default logger
 
 #pragma once
 #include <cassert>
+#include <functional>
 #include <string>
 #include <string_view>
 #if defined( __cpp_lib_format )
@@ -470,6 +471,73 @@ public:
    std::unique_ptr<char> m_pbszText;
 };
 
+/** ===========================================================================
+ * \brief ascii is used to improve flexibility for `message` in logging
+ *
+ * With ascii it is possible to pack text in more ways than what's supported
+ * in message that is the core object for generate log text
+ */
+struct ascii
+{
+// ## construction ------------------------------------------------------------
+   ascii() {}
+   ascii( size_t uCount, char iCharacter ): m_stringAscii( uCount, iCharacter ) {}
+   ascii( const std::string& stringAscii ): m_stringAscii(stringAscii) {}
+   ascii( const std::pair<int, const char**>& pair_ ) { append( pair_ ); }
+   ascii( const std::tuple<int, const char**, std::string_view>& tuple_ ) { append( tuple_ ); }
+   // copy
+   ascii(const ascii& o) { common_construct(o); }
+   ascii(ascii&& o) noexcept { common_construct(std::move(o)); }
+   // assign
+   ascii& operator=(const ascii& o) { common_construct(o); return *this; }
+   ascii& operator=(ascii&& o) noexcept { common_construct(std::move(o)); return *this; }
+
+   ascii& operator+=( const std::pair< size_t, char >& pair_ ) { return append( pair_ ); }
+   ascii& operator+=( const std::pair<int, const char**>& pair_ ) { return append( pair_ ); }
+   ascii& operator+=( const std::tuple<int, const char**, std::string_view>& tuple_ ) { return append( tuple_ ); }
+
+   ~ascii() {}
+   // common copy
+   void common_construct(const ascii& o) { m_stringAscii = o.m_stringAscii; }
+   void common_construct(ascii&& o) noexcept { m_stringAscii = std::move( o.m_stringAscii ); }
+
+// ## methods -----------------------------------------------------------------
+   const std::string& get_string() const { return m_stringAscii; }
+
+   ascii& append(const std::string_view& string_ ) { m_stringAscii += string_; return *this; }
+   ascii& append(const char* pbsz_) { m_stringAscii += pbsz_; return *this; }
+   ascii& append(const std::pair< size_t, char >& pair_ ) { m_stringAscii += std::string( pair_.first, pair_.second ); return *this; }
+   ascii& append(const std::pair< int, char >& pair_ ) { m_stringAscii += std::string( (size_t)pair_.first, pair_.second ); return *this; }
+   ascii& append( const std::pair< int, const char** >& pair_ );
+   ascii& append( const std::pair< int, char** >& pair_ );
+   ascii& append(const std::pair<int, const char**>& pair_, const std::string_view& stringSeparator );
+   ascii& append(const std::pair<int, char**>& pair_, const std::string_view& stringSeparator );
+   ascii& append(const std::tuple<int, const char**, std::string_view>& tuple_) { return append( std::pair<int, const char**>( std::get<0>(tuple_), std::get<1>(tuple_) ), std::get<2>(tuple_) ); }
+   ascii& append(const std::tuple<int, const char**, const char*>& tuple_) { return append( std::pair<int, const char**>( std::get<0>(tuple_), std::get<1>(tuple_) ), std::get<2>(tuple_) ); }
+   ascii& append(const std::tuple<int, char**, std::string_view>& tuple_) { return append( std::pair<int, char**>( std::get<0>(tuple_), std::get<1>(tuple_) ), std::get<2>(tuple_) ); }   template <typename VALUE>
+   ascii& append( VALUE value_ ) { m_stringAscii += std::to_string( value_ ); return *this; }
+
+   void clear() { m_stringAscii.clear(); }
+
+/** \name DEBUG
+*///@{
+
+//@}
+
+// ## attributes --------------------------------------------------------------
+
+// ## free functions ----------------------------------------------------------
+   std::string m_stringAscii;
+};
+
+/// Generate ascii object using Variadic Template Arguments, add any number of compatible values to ascii object
+template <typename... Arguments>
+ascii make_ascii_g(Arguments&&... arguments_) {
+   ascii ascii_;
+   ((ascii_.append( arguments_ )), ...);
+   return ascii_;
+}
+
 // ================================================================================================
 // ================================================================================= message
 // ================================================================================================
@@ -517,12 +585,14 @@ public:
 private:
    // common copy
    void common_construct( const message& o ) {
+      m_uCount       = o.m_uCount;
       m_uSeverity = o.m_uSeverity;
       m_uMessageType = o.m_uMessageType;
       m_pbszTextView = o.m_pbszTextView;
       m_pbszText.reset( clone_s(o.m_pbszText.get()) );
    }
    void common_construct( message&& o ) noexcept {
+      m_uCount       = o.m_uCount;
       m_uSeverity    = o.m_uSeverity;
       o.m_uSeverity  = enumSeverity::eSeverityNone;                            // reset severity type
       m_uMessageType = o.m_uMessageType;
@@ -544,6 +614,7 @@ public:
 #  endif
    message& operator<<(const stream& streamAppend) { return append(streamAppend); }
    message& operator<<(const wstream& streamAppend) { return append(streamAppend); }
+   message& operator<<(const ascii& asciiAppend) { return append(asciiAppend.get_string()); }
 #if defined( __cpp_lib_format )
    message& operator<<(const format& formatAppend) { return append(formatAppend); }
 #endif
@@ -626,6 +697,9 @@ public:
    message& append(const message& messageAppend);
    message& append(const stream& streamAppend);
    message& append(const wstream& streamAppend);
+
+   message& append( const std::pair< int, const char** >& pair_ );
+
 #if defined( __cpp_lib_format )
    message& append(const format& formatAppend);
 #endif
@@ -658,6 +732,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   unsigned m_uCount = 0;              ///< number of messages added
    unsigned m_uSeverity;               ///< type of message severity, used to filter output
    unsigned m_uMessageType = enumMessageType::eMessageTypeText;///< Type of message, setting type affects type of information generated in printer
    //unsigned m_uTextSize = 0;
@@ -750,6 +825,7 @@ inline message& message::operator<<(const char* pbszAppend) {
 
    *this << stringUnicode;
 
+   m_uCount++;
    return *this;
 }
 
@@ -760,6 +836,7 @@ inline message& message::operator<<(std::string_view stringAppend) {
 
    *this << stringUnicode;
 
+   m_uCount++;
    return *this;
 }
 
@@ -770,6 +847,7 @@ inline message& message::operator<<(std::string stringAppend) {
 
    *this << stringUnicode;
 
+   m_uCount++;
    return *this;
 }
 
@@ -823,22 +901,28 @@ class i_printer
 {
 public:
    i_printer() {}
+   i_printer( const std::string_view& stringName ): m_stringName(stringName) {}
    i_printer( unsigned uSeverity ) : m_uSeverity( uSeverity ) {}
+   i_printer( unsigned uSeverity, const std::string_view& stringName ): m_uSeverity( uSeverity ), m_stringName(stringName) {}
 
-   i_printer( const i_printer& o ): m_uSeverity( o.m_uSeverity ) {}
+   i_printer( const i_printer& o ) { common_construct( o ); }
+   i_printer( i_printer&& o ) { common_construct( std::move( o ) ); }
 
    i_printer& operator=(const i_printer& o) { m_uSeverity = o.m_uSeverity; return *this; }
 
    virtual ~i_printer() {}
 
 protected:
-   void common_construct(const i_printer& o) { m_uSeverity = o.m_uSeverity; }
+   void common_construct(const i_printer& o) { m_uSeverity = o.m_uSeverity; m_stringName = o.m_stringName; }
+   void common_construct(i_printer&& o) noexcept { m_uSeverity = o.m_uSeverity; m_stringName = std::move( o.m_stringName ); }
 
 public:
    /** \name GET/SET
    *///@{
    unsigned get_severity() const { return m_uSeverity; }
    void set_severity(unsigned uSeverity) { m_uSeverity = uSeverity; }
+   const std::string& get_name() const { return m_stringName; }
+   void set_name( const std::string_view& stringName ) { m_stringName = stringName; }
    //@}
 
    /// This is called when logger send (prints) message to attached printers.
@@ -858,6 +942,7 @@ public:
    virtual unsigned error( message& message ) { return 0; };
 public:
    unsigned m_uSeverity = 0;     ///< setting severity filter for printer
+   std::string m_stringName;     ///< set name for printer, may be used to separate if there are multiple printers of same type
 };
 
 
@@ -876,12 +961,34 @@ public:
  * logger class. logger are singletons so this is necessary in order to have different
  * loggers.
  *
+ * *Sample code on how to add callback to modify message, here files with extension *.cpp is cleaned from path*
  \code
+// Sample code to remove path from `cpp` files
+gd::log::logger<0>* plogger = gd::log::get_s();
+auto callback_ = [](auto& message_, auto* plogger) -> void {
+   const char* pbszMessage = message_.get_text();
+   const char* pbszCpp = std::strstr( pbszMessage, ".cpp" );
+   if( pbszCpp != nullptr )
+   {
+      while(pbszCpp > pbszMessage && *pbszCpp != '/' && *pbszCpp != '\\') { pbszCpp--; }
+      if(pbszCpp != pbszMessage)
+      {
+         pbszCpp++;
+         message_.set_text( pbszCpp );
+      }
+   }
+   auto i = 0;
+};
+
+plogger->callback_add( callback_ );
  \endcode
  */
 template<int iLoggerKey, bool bThread = false>
 class logger 
 {
+   /// to not make the code to messy this long callback declaration is used
+   using message_callback = std::function< void( message&, logger* ) >;
+
 // ## construction -------------------------------------------------------------
 public:
    logger(): m_uSeverity( enumSeverity::eSeverityNone ) {}
@@ -911,10 +1018,12 @@ public:
 *///@{
    void append(std::unique_ptr<i_printer> pprinter) { m_vectorPrinter.push_back( std::move(pprinter) ); }
    i_printer* get( size_t uIndex ) { assert( m_vectorPrinter.size() > uIndex ); return m_vectorPrinter.at( uIndex ).get(); }
+   i_printer* get( const std::string_view& stringName );
 
-   void print(const message& message);
+   /// Send message to connected printers
+   void print(message& message);
 
-   virtual void print( const message& message, bool bFlush );
+   virtual void print( message& message, bool bFlush );
    virtual void print( std::initializer_list<message> listMessage );
    virtual void flush();
 
@@ -933,11 +1042,15 @@ public:
    /// count number of internal printer errors
    size_t error_size() const { return m_vectorError.size(); }
 
+   template<typename FUNCTION>
+   void callback_add( FUNCTION&& callback_ ) { m_vectorCallback.push_back( std::forward<FUNCTION>( callback_ ) ); }
+
+
 //@}
 
 protected:
    // internal printing
-   void print_(const message& message);
+   void print_(message& message);
 /** \name INTERNAL
 *///@{
    /// check severity against internal severity filter
@@ -967,6 +1080,7 @@ public:
    unsigned m_uSeverity;                     ///< severity filter, used to filter log messages
    std::vector<std::unique_ptr<i_printer>> m_vectorPrinter;///< list of connected printers
    std::vector<std::string> m_vectorError;   ///< list of internal errors stored as text
+   std::vector< message_callback > m_vectorCallback;
 
    static std::mutex m_mutex_s;              ///< mutex to enable thread safety printing messages
    
@@ -981,7 +1095,17 @@ public:
    static std::mutex& get_mutex_s();
 };
 
-/// generate static mutex object
+/// Return pointer to selected printer (same name), no printer returns null.
+template<int iLoggerKey, bool bThread>
+inline i_printer* logger<iLoggerKey, bThread>::get(const std::string_view& stringName) {
+   for(auto it = std::begin(m_vectorPrinter); it != std::end(m_vectorPrinter); it++) {
+      i_printer* pprinter_= (*it).get();
+      if( pprinter_->get_name() == stringName ) return pprinter_;
+   }
+   return nullptr;
+}
+
+/// generate static mutex object, for each logger there is one mutex and that is needed to make it work in threaded environments
 template<int iLoggerKey, bool bThread>
 std::mutex logger<iLoggerKey, bThread>::m_mutex_s;
 
@@ -990,12 +1114,12 @@ std::mutex logger<iLoggerKey, bThread>::m_mutex_s;
 /// ----------------------------------------------------------------------------
 /// call print and flush after print is done
 template<int iLoggerKey, bool bThread>
-inline void logger<iLoggerKey,bThread>::print(const message& message) { print(message, true); }
+inline void logger<iLoggerKey,bThread>::print(message& message) { print(message, true); }
 
 /// ----------------------------------------------------------------------------
 /// Sends message to all attached printers, 
 template<int iLoggerKey, bool bThread>
-void logger<iLoggerKey,bThread>::print(const message& message, bool bFlush)
+inline void logger<iLoggerKey,bThread>::print(message& message, bool bFlush)
 {
    if( check_severity(message.get_severity()) )                                  // check if message has severity within bounds for output
    {
@@ -1067,8 +1191,17 @@ void logger<iLoggerKey, bThread>::print(std::initializer_list<message> listMessa
 
 
 template<int iLoggerKey, bool bThread>
-void logger<iLoggerKey, bThread>::print_(const message& message)
+void logger<iLoggerKey, bThread>::print_(message& message)
 {
+   // ## format message
+   if(m_vectorCallback.empty() == false)
+   {
+      for(auto it : m_vectorCallback)
+      {
+         it( message, this );
+      }
+   }
+
    // ## print message to all attached printers
    for( auto it = m_vectorPrinter.begin(); it != m_vectorPrinter.end(); it++ )
    {

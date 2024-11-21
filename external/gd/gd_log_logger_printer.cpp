@@ -71,6 +71,7 @@ bool printer_console::print(const message& message)
 {
    bool bChangeColor = false;
    std::wstring stringMessage;
+   // std::wstring stringSeverityName;
 
    if( message.is_message_type_set() == true )
    {
@@ -132,8 +133,7 @@ bool printer_console::print(const message& message)
    }
    
    auto stringPrintMessage = message.to_wstring(); // added log message
-   if( m_uSeverityMargin == 0 ) { stringMessage += stringPrintMessage; }
-   else
+   if( m_uSeverityMargin != 0 )
    {
       // ## insert margin to format log output
       if( stringPrintMessage.find( '\n' ) != std::wstring::npos )
@@ -160,6 +160,7 @@ bool printer_console::print(const message& message)
    if( m_uMessageCounter > 0 ) print(std::wstring_view{ L"  " });              // print separator if there have been more messages before flush method is called
 
    print( stringMessage );
+   print(std::wstring_view{ L"\n" });
 
    return true;
 }
@@ -168,7 +169,7 @@ bool printer_console::flush()
 {
    if( m_uMessageCounter > 0 )                                                   // one or more messages printed?
    {
-      print(std::wstring_view{ L"\n" });
+      //print(std::wstring_view{ L"\n" });
    }
 
    m_uMessageCounter = 0;
@@ -257,8 +258,8 @@ bool printer_console::print(const message& message)
       // ## if severity has color then change color
       if(is_color(message.get_severity_number()) == true)
       {
-         stringMessage.append(L"\033[");
-         stringMessage.append( color_get_wcode_s( get_color( message.get_severity_number() )  ) );
+         stringMessage.append(L"\033[38;5;");
+         stringMessage.append( std::to_wstring( get_color( message.get_severity_number() ) ) );
          stringMessage.append(L"m");
          bChangeColor = true;
       }
@@ -310,6 +311,7 @@ bool printer_console::print(const message& message)
    if( m_uMessageCounter > 0 ) print(std::wstring_view{ L"  " });                // print separator if there have been more messages before flush method is called
 
    print( stringMessage );
+   print(std::wstring_view{ L"\n" });
 
    return true;
 }
@@ -318,7 +320,7 @@ bool printer_console::flush()
 {
    if( m_uMessageCounter > 0 )                                                   // one or more messages printed?
    {
-      print(std::wstring_view{ L"\n" });
+      // print(std::wstring_view{ L"\n" });
    }
 
    m_uMessageCounter = 0;

@@ -48,7 +48,7 @@ std::pair<bool, std::string> convert_to_token(const char* pbszBegin, const char*
 
 
 TEST_CASE( "[logging] colors", "[logging]" ) {
-   plogger->append( std::make_unique<gd::log::printer_console>() );
+   plogger->append( std::make_unique<gd::log::printer_console>( "console" ));
    plogger->set_severity(eSeverityNumberVerbose);
 
    LOG_INFORMATION("- Convert string into tokens");
