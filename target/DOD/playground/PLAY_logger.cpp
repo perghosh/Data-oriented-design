@@ -28,6 +28,23 @@ TEST_CASE( "[logging] colors", "[logging]" ) {
    pprinterconsole->set_margin( 10 );
    pprinterconsole->set_color( gd::log::printer_console::m_arrayColorDeGrey_s );
 
+   auto callback_ = [](auto& message_, auto* plogger) -> void {
+      const char* pbszMessage = message_.get_text();
+      const char* pbszCpp = std::strstr( pbszMessage, ".cpp" );
+      if( pbszCpp != nullptr )
+      {
+         while(pbszCpp > pbszMessage && *pbszCpp != '/' && *pbszCpp != '\\') { pbszCpp--; }
+         if(pbszCpp != pbszMessage)
+         {
+            pbszCpp++;
+            message_.set_text( pbszCpp );
+         }
+      }
+      auto i = 0;
+   };
+
+   plogger->callback_add( callback_ );
+
 
    LOG_FATAL("LOG_FATAL");
    LOG_ERROR("LOG_ERROR");

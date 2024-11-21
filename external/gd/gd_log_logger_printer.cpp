@@ -258,8 +258,8 @@ bool printer_console::print(const message& message)
       // ## if severity has color then change color
       if(is_color(message.get_severity_number()) == true)
       {
-         stringMessage.append(L"\033[");
-         stringMessage.append( color_get_wcode_s( get_color( message.get_severity_number() )  ) );
+         stringMessage.append(L"\033[38;5;");
+         stringMessage.append( std::to_wstring( get_color( message.get_severity_number() ) ) );
          stringMessage.append(L"m");
          bChangeColor = true;
       }
