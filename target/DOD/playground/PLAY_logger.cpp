@@ -45,4 +45,22 @@ TEST_CASE( "[logging] colors", "[logging]" ) {
    LOG_VERBOSE("LOG_VERBOSE");
    LOG_NONE("LOG_NONE");
 
+   {
+      const char* ppbsz_[] = { "Hello", "World", "C++" };
+
+      auto pair_ = std::pair<int,const char**>( 3, ppbsz_ );
+      gd::log::ascii ascii_("1234567890");
+      ascii_ += pair_;
+      //message_.append( p_ );
+      LOG_NONE( ascii_ );
+      ascii_.clear();
+      ascii_ += std::make_tuple( 3, ppbsz_, " " );
+      LOG_NONE( ascii_ );
+      LOG_NONE( gd::log::ascii( std::make_tuple( 3, ppbsz_, " " ) ) );
+
+      LOG_ERROR( gd::log::make_ascii_g( "1", " ", "3", " ", "2", " ", true, 1, 3.5 ) );
+      LOG_FATAL( gd::log::make_ascii_g( std::make_tuple( 3, ppbsz_, " " ) ) );
+      LOG_FATAL( gd::log::make_ascii_g( "\n", std::make_pair( 100, '=' ), "\n") );
+   }
+
 }
