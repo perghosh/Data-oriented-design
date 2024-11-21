@@ -470,6 +470,71 @@ public:
    std::unique_ptr<char> m_pbszText;
 };
 
+/** ===========================================================================
+ * \brief ascii is used to improve flexibility for `message` in logging
+ *
+ * With ascii it is possible to pack text in more ways than what's supported
+ * in message that is the core object for generate log text
+ */
+struct ascii
+{
+// ## construction ------------------------------------------------------------
+   ascii() {}
+   ascii( size_t uCount, char iCharacter ): m_stringAscii( uCount, iCharacter ) {}
+   ascii( const std::string& stringAscii ): m_stringAscii(stringAscii) {}
+   ascii( const std::pair<int, const char**>& pair_ ) { append( pair_ ); }
+   ascii( const std::tuple<int, const char**, std::string_view>& tuple_ ) { append( tuple_ ); }
+   // copy
+   ascii(const ascii& o) { common_construct(o); }
+   ascii(ascii&& o) noexcept { common_construct(std::move(o)); }
+   // assign
+   ascii& operator=(const ascii& o) { common_construct(o); return *this; }
+   ascii& operator=(ascii&& o) noexcept { common_construct(std::move(o)); return *this; }
+
+   ascii& operator+=( const std::pair< size_t, char >& pair_ ) { return append( pair_ ); }
+   ascii& operator+=( const std::pair<int, const char**>& pair_ ) { return append( pair_ ); }
+   ascii& operator+=( const std::tuple<int, const char**, std::string_view>& tuple_ ) { return append( tuple_ ); }
+
+   ~ascii() {}
+   // common copy
+   void common_construct(const ascii& o) { m_stringAscii = o.m_stringAscii; }
+   void common_construct(ascii&& o) noexcept { m_stringAscii = std::move( o.m_stringAscii ); }
+
+// ## methods -----------------------------------------------------------------
+   const std::string& get_string() const { return m_stringAscii; }
+
+   ascii& append(const std::string_view& string_ ) { m_stringAscii += string_; return *this; }
+   ascii& append(const char* pbsz_) { m_stringAscii += pbsz_; return *this; }
+   ascii& append(const std::pair< size_t, char >& pair_ ) { m_stringAscii += std::string( pair_.first, pair_.second ); return *this; }
+   ascii& append(const std::pair< int, char >& pair_ ) { m_stringAscii += std::string( (size_t)pair_.first, pair_.second ); return *this; }
+   ascii& append( const std::pair< int, const char** >& pair_ );
+   ascii& append(const std::pair<int, const char**>& pair_, const std::string_view& stringSeparator );
+   ascii& append(const std::tuple<int, const char**, std::string_view>& tuple_) { return append( std::pair<int, const char**>( std::get<0>(tuple_), std::get<1>(tuple_) ), std::get<2>(tuple_) ); }
+   ascii& append(const std::tuple<int, const char**, const char*>& tuple_) { return append( std::pair<int, const char**>( std::get<0>(tuple_), std::get<1>(tuple_) ), std::get<2>(tuple_) ); }
+   template <typename VALUE>
+   ascii& append( VALUE value_ ) { m_stringAscii += std::to_string( value_ ); return *this; }
+
+   void clear() { m_stringAscii.clear(); }
+
+/** \name DEBUG
+*///@{
+
+//@}
+
+// ## attributes --------------------------------------------------------------
+
+// ## free functions ----------------------------------------------------------
+   std::string m_stringAscii;
+};
+
+/// Generate ascii object using Variadic Template Arguments, add any number of compatible values to ascii object
+template <typename... Arguments>
+ascii make_ascii_g(Arguments&&... arguments_) {
+   ascii ascii_;
+   ((ascii_.append( arguments_ )), ...);
+   return ascii_;
+}
+
 // ================================================================================================
 // ================================================================================= message
 // ================================================================================================
@@ -544,6 +609,7 @@ public:
 #  endif
    message& operator<<(const stream& streamAppend) { return append(streamAppend); }
    message& operator<<(const wstream& streamAppend) { return append(streamAppend); }
+   message& operator<<(const ascii& asciiAppend) { return append(asciiAppend.get_string()); }
 #if defined( __cpp_lib_format )
    message& operator<<(const format& formatAppend) { return append(formatAppend); }
 #endif
@@ -626,6 +692,9 @@ public:
    message& append(const message& messageAppend);
    message& append(const stream& streamAppend);
    message& append(const wstream& streamAppend);
+
+   message& append( const std::pair< int, const char** >& pair_ );
+
 #if defined( __cpp_lib_format )
    message& append(const format& formatAppend);
 #endif

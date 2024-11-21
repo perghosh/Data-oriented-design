@@ -47,9 +47,39 @@ printf::printf(const wchar_t* pwszFormat, ...)
 }
 #endif
 
+// ================================================================================================
+// ========================================================================================== ascii
+// ================================================================================================
+
+
+ascii& ascii::append(const std::pair<int, const char**>& pair_)
+{
+   for(int i = 0, iMax = pair_.first; i < iMax; i++)
+   {
+      const char* pbsz_ = pair_.second[i];
+      m_stringAscii += pbsz_;
+   }
+
+   return *this;
+}
+
+ascii& ascii::append(const std::pair<int, const char**>& pair_, const std::string_view& stringSeparator )
+{
+   for(int i = 0, iMax = pair_.first; i < iMax; i++)
+   {
+      if( m_stringAscii.empty() == false ) m_stringAscii += stringSeparator;
+      const char* pbsz_ = pair_.second[i];
+      m_stringAscii += pbsz_;
+   }
+
+   return *this;
+}
+
+
+
 
 // ================================================================================================
-// ================================================================================= message
+// ======================================================================================== message
 // ================================================================================================
 
 void message::set_text(std::string_view stringText)
@@ -622,3 +652,4 @@ const char* severity_get_short_name_g(unsigned uSeverity)
 
 
 _GD_LOG_LOGGER_END
+
