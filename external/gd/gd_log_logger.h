@@ -133,6 +133,7 @@ auto plogger = get_s();            // default logger
 
 #pragma once
 #include <cassert>
+#include <functional>
 #include <string>
 #include <string_view>
 #if defined( __cpp_lib_format )
@@ -508,10 +509,12 @@ struct ascii
    ascii& append(const std::pair< size_t, char >& pair_ ) { m_stringAscii += std::string( pair_.first, pair_.second ); return *this; }
    ascii& append(const std::pair< int, char >& pair_ ) { m_stringAscii += std::string( (size_t)pair_.first, pair_.second ); return *this; }
    ascii& append( const std::pair< int, const char** >& pair_ );
+   ascii& append( const std::pair< int, char** >& pair_ );
    ascii& append(const std::pair<int, const char**>& pair_, const std::string_view& stringSeparator );
+   ascii& append(const std::pair<int, char**>& pair_, const std::string_view& stringSeparator );
    ascii& append(const std::tuple<int, const char**, std::string_view>& tuple_) { return append( std::pair<int, const char**>( std::get<0>(tuple_), std::get<1>(tuple_) ), std::get<2>(tuple_) ); }
    ascii& append(const std::tuple<int, const char**, const char*>& tuple_) { return append( std::pair<int, const char**>( std::get<0>(tuple_), std::get<1>(tuple_) ), std::get<2>(tuple_) ); }
-   template <typename VALUE>
+   ascii& append(const std::tuple<int, char**, std::string_view>& tuple_) { return append( std::pair<int, char**>( std::get<0>(tuple_), std::get<1>(tuple_) ), std::get<2>(tuple_) ); }   template <typename VALUE>
    ascii& append( VALUE value_ ) { m_stringAscii += std::to_string( value_ ); return *this; }
 
    void clear() { m_stringAscii.clear(); }
@@ -582,12 +585,14 @@ public:
 private:
    // common copy
    void common_construct( const message& o ) {
+      m_uCount       = o.m_uCount;
       m_uSeverity = o.m_uSeverity;
       m_uMessageType = o.m_uMessageType;
       m_pbszTextView = o.m_pbszTextView;
       m_pbszText.reset( clone_s(o.m_pbszText.get()) );
    }
    void common_construct( message&& o ) noexcept {
+      m_uCount       = o.m_uCount;
       m_uSeverity    = o.m_uSeverity;
       o.m_uSeverity  = enumSeverity::eSeverityNone;                            // reset severity type
       m_uMessageType = o.m_uMessageType;
@@ -727,6 +732,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   unsigned m_uCount = 0;              ///< number of messages added
    unsigned m_uSeverity;               ///< type of message severity, used to filter output
    unsigned m_uMessageType = enumMessageType::eMessageTypeText;///< Type of message, setting type affects type of information generated in printer
    //unsigned m_uTextSize = 0;
@@ -819,6 +825,7 @@ inline message& message::operator<<(const char* pbszAppend) {
 
    *this << stringUnicode;
 
+   m_uCount++;
    return *this;
 }
 
@@ -829,6 +836,7 @@ inline message& message::operator<<(std::string_view stringAppend) {
 
    *this << stringUnicode;
 
+   m_uCount++;
    return *this;
 }
 
@@ -839,6 +847,7 @@ inline message& message::operator<<(std::string stringAppend) {
 
    *this << stringUnicode;
 
+   m_uCount++;
    return *this;
 }
 
@@ -896,7 +905,8 @@ public:
    i_printer( unsigned uSeverity ) : m_uSeverity( uSeverity ) {}
    i_printer( unsigned uSeverity, const std::string_view& stringName ): m_uSeverity( uSeverity ), m_stringName(stringName) {}
 
-   i_printer( const i_printer& o ): m_uSeverity( o.m_uSeverity ) {}
+   i_printer( const i_printer& o ) { common_construct( o ); }
+   i_printer( i_printer&& o ) { common_construct( std::move( o ) ); }
 
    i_printer& operator=(const i_printer& o) { m_uSeverity = o.m_uSeverity; return *this; }
 
@@ -904,6 +914,7 @@ public:
 
 protected:
    void common_construct(const i_printer& o) { m_uSeverity = o.m_uSeverity; m_stringName = o.m_stringName; }
+   void common_construct(i_printer&& o) noexcept { m_uSeverity = o.m_uSeverity; m_stringName = std::move( o.m_stringName ); }
 
 public:
    /** \name GET/SET
@@ -950,12 +961,34 @@ public:
  * logger class. logger are singletons so this is necessary in order to have different
  * loggers.
  *
+ * *Sample code on how to add callback to modify message, here files with extension *.cpp is cleaned from path*
  \code
+// Sample code to remove path from `cpp` files
+gd::log::logger<0>* plogger = gd::log::get_s();
+auto callback_ = [](auto& message_, auto* plogger) -> void {
+   const char* pbszMessage = message_.get_text();
+   const char* pbszCpp = std::strstr( pbszMessage, ".cpp" );
+   if( pbszCpp != nullptr )
+   {
+      while(pbszCpp > pbszMessage && *pbszCpp != '/' && *pbszCpp != '\\') { pbszCpp--; }
+      if(pbszCpp != pbszMessage)
+      {
+         pbszCpp++;
+         message_.set_text( pbszCpp );
+      }
+   }
+   auto i = 0;
+};
+
+plogger->callback_add( callback_ );
  \endcode
  */
 template<int iLoggerKey, bool bThread = false>
 class logger 
 {
+   /// to not make the code to messy this long callback declaration is used
+   using message_callback = std::function< void( message&, logger* ) >;
+
 // ## construction -------------------------------------------------------------
 public:
    logger(): m_uSeverity( enumSeverity::eSeverityNone ) {}
@@ -988,9 +1021,9 @@ public:
    i_printer* get( const std::string_view& stringName );
 
    /// Send message to connected printers
-   void print(const message& message);
+   void print(message& message);
 
-   virtual void print( const message& message, bool bFlush );
+   virtual void print( message& message, bool bFlush );
    virtual void print( std::initializer_list<message> listMessage );
    virtual void flush();
 
@@ -1009,11 +1042,15 @@ public:
    /// count number of internal printer errors
    size_t error_size() const { return m_vectorError.size(); }
 
+   template<typename FUNCTION>
+   void callback_add( FUNCTION&& callback_ ) { m_vectorCallback.push_back( std::forward<FUNCTION>( callback_ ) ); }
+
+
 //@}
 
 protected:
    // internal printing
-   void print_(const message& message);
+   void print_(message& message);
 /** \name INTERNAL
 *///@{
    /// check severity against internal severity filter
@@ -1043,6 +1080,7 @@ public:
    unsigned m_uSeverity;                     ///< severity filter, used to filter log messages
    std::vector<std::unique_ptr<i_printer>> m_vectorPrinter;///< list of connected printers
    std::vector<std::string> m_vectorError;   ///< list of internal errors stored as text
+   std::vector< message_callback > m_vectorCallback;
 
    static std::mutex m_mutex_s;              ///< mutex to enable thread safety printing messages
    
@@ -1076,12 +1114,12 @@ std::mutex logger<iLoggerKey, bThread>::m_mutex_s;
 /// ----------------------------------------------------------------------------
 /// call print and flush after print is done
 template<int iLoggerKey, bool bThread>
-inline void logger<iLoggerKey,bThread>::print(const message& message) { print(message, true); }
+inline void logger<iLoggerKey,bThread>::print(message& message) { print(message, true); }
 
 /// ----------------------------------------------------------------------------
 /// Sends message to all attached printers, 
 template<int iLoggerKey, bool bThread>
-inline void logger<iLoggerKey,bThread>::print(const message& message, bool bFlush)
+inline void logger<iLoggerKey,bThread>::print(message& message, bool bFlush)
 {
    if( check_severity(message.get_severity()) )                                  // check if message has severity within bounds for output
    {
@@ -1153,8 +1191,17 @@ void logger<iLoggerKey, bThread>::print(std::initializer_list<message> listMessa
 
 
 template<int iLoggerKey, bool bThread>
-void logger<iLoggerKey, bThread>::print_(const message& message)
+void logger<iLoggerKey, bThread>::print_(message& message)
 {
+   // ## format message
+   if(m_vectorCallback.empty() == false)
+   {
+      for(auto it : m_vectorCallback)
+      {
+         it( message, this );
+      }
+   }
+
    // ## print message to all attached printers
    for( auto it = m_vectorPrinter.begin(); it != m_vectorPrinter.end(); it++ )
    {
