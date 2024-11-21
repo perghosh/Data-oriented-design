@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <string_view>
 #include <mutex>
 #include <iostream>
 #ifdef _MSC_VER
@@ -49,9 +50,11 @@ public:
 // ## construction -------------------------------------------------------------
 public:
 
-   printer_console(): printer_console( enumOutput::eOutputStdOut ) { common_construct(); }
-   printer_console(enumOutput eOutput)
-      : m_bConsole(!!_isatty(_fileno(eOutput == enumOutput::eOutputStdOut ? stdout : stderr)))
+   printer_console(): printer_console( enumOutput::eOutputStdOut, "") {}
+   printer_console( const std::string_view& stringName ): printer_console( enumOutput::eOutputStdOut, stringName ) { common_construct(); }
+   printer_console(enumOutput eOutput, const std::string_view& stringName )
+      : i_printer( stringName )
+      , m_bConsole(!!_isatty(_fileno(eOutput == enumOutput::eOutputStdOut ? stdout : stderr)))
       , m_wostreamOutput(eOutput == enumOutput::eOutputStdOut ? std::wcout : std::wcerr)
       , m_hOutput()
    {
@@ -70,11 +73,7 @@ public:
 private:
    // common copy
 
-   void common_construct() {
-      for( unsigned u = 0, uMax = (unsigned)m_arrayColor.size(); u < uMax; u++ ) { 
-         m_arrayColor[u] = (unsigned)m_arrayColorDefault_s[u]; 
-      }
-   }
+   void common_construct() { set_color( m_arrayColorDefault_s ); }
    void common_construct( const printer_console& o ) {
       m_bConsole = o.m_bConsole;
       m_hOutput = o.m_hOutput;
@@ -162,8 +161,10 @@ public:
    // ## construction -------------------------------------------------------------
 public:
 
-   printer_console(): printer_console( enumOutput::eOutputStdOut ) { common_construct(); }
-   printer_console(enumOutput eOutput)
+   printer_console(): printer_console( enumOutput::eOutputStdOut, "" ) { common_construct(); }
+   printer_console( const std::string_view& stringName ): printer_console( enumOutput::eOutputStdOut, stringName ) { common_construct(); }
+   printer_console(enumOutput eOutput, const std::string_view& stringName):
+      i_printer( stringName )
    {
       common_construct();
    }
@@ -176,16 +177,16 @@ public:
 private:
    // common copy
 
-   void common_construct() {
-      std::fill(m_arrayColor.begin(), m_arrayColor.end(), eColorNone);
-   }
+   void common_construct() { set_color( m_arrayColorDefault_s ); }
    void common_construct( const printer_console& o ) {
       m_uMessageCounter = o.m_uMessageCounter;
       m_arrayColor = o.m_arrayColor;
+      i_printer::common_construct( o );
    }
    void common_construct( printer_console&& o ) noexcept {
       m_uMessageCounter = o.m_uMessageCounter;
-      m_arrayColor = o.m_arrayColor;
+      m_arrayColor = std::move( o.m_arrayColor );
+      i_printer::common_construct( std::move( o ) );
    }
 
    // ## operator -----------------------------------------------------------------
@@ -204,7 +205,7 @@ public:
    /// check if severity has color
    bool is_color( enumSeverityNumber eSeverity ) const { return m_arrayColor.at( eSeverity ) != 0; }
    /// return color code for severity
-   enumColor get_color( enumSeverityNumber eSeverity ) const { return (enumColor)m_arrayColor.at( eSeverity ); }
+   enumColor get_color( enumSeverityNumber eSeverity ) const { assert( eSeverity < enumSeverityNumber::eSeverity_Count ); return (enumColor)m_arrayColor.at( eSeverity ); }
    /// return color for margin
    enumColor get_margin_color() const { return (enumColor)m_uMarginColor; }
    /// set margin color

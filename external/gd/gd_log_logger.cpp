@@ -47,9 +47,62 @@ printf::printf(const wchar_t* pwszFormat, ...)
 }
 #endif
 
+// ================================================================================================
+// ========================================================================================== ascii
+// ================================================================================================
+
+/// List of string pointers that is added to 
+ascii& ascii::append(const std::pair<int, const char**>& pair_)
+{
+   for(int i = 0, iMax = pair_.first; i < iMax; i++)
+   {
+      const char* pbsz_ = pair_.second[i];
+      m_stringAscii += pbsz_;
+   }
+
+   return *this;
+}
+
+ascii& ascii::append(const std::pair<int, char**>& pair_)
+{
+   for(int i = 0, iMax = pair_.first; i < iMax; i++)
+   {
+      const char* pbsz_ = pair_.second[i];
+      m_stringAscii += pbsz_;
+   }
+
+   return *this;
+}
+
+
+ascii& ascii::append(const std::pair<int, const char**>& pair_, const std::string_view& stringSeparator )
+{
+   for(int i = 0, iMax = pair_.first; i < iMax; i++)
+   {
+      if( m_stringAscii.empty() == false ) m_stringAscii += stringSeparator;
+      const char* pbsz_ = pair_.second[i];
+      m_stringAscii += pbsz_;
+   }
+
+   return *this;
+}
+
+ascii& ascii::append(const std::pair<int, char**>& pair_, const std::string_view& stringSeparator )
+{
+   for(int i = 0, iMax = pair_.first; i < iMax; i++)
+   {
+      if( m_stringAscii.empty() == false ) m_stringAscii += stringSeparator;
+      const char* pbsz_ = pair_.second[i];
+      m_stringAscii += pbsz_;
+   }
+
+   return *this;
+}
+
+
 
 // ================================================================================================
-// ================================================================================= message
+// ======================================================================================== message
 // ================================================================================================
 
 void message::set_text(std::string_view stringText)
@@ -67,6 +120,8 @@ void message::set_text(std::string_view stringText)
 message& message::append(const std::string_view& stringAppend)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, stringAppend.data()));
+   m_uCount++;
+
    return *this;
 }
 
@@ -78,6 +133,8 @@ message& message::append(const std::string_view& stringAppend)
 message& message::append(const std::wstring_view& stringAppend)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, stringAppend.data()));
+   m_uCount++;
+
    return *this;
 }
 
@@ -90,6 +147,8 @@ message& message::append(const std::wstring_view& stringAppend)
 message& message::append(const char8_t* pbszUtf8Append)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, pbszUtf8Append));
+   m_uCount++;
+
    return *this;
 }
 #endif
@@ -114,6 +173,8 @@ message& message::append(const message& messageAppend)
 message& message::append(const stream& streamAppend)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, streamAppend.get_string()));
+   m_uCount++;
+
    return *this;
 }
 
@@ -125,6 +186,8 @@ message& message::append(const stream& streamAppend)
 message& message::append(const wstream& streamAppend)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, streamAppend.get_string()));
+   m_uCount++;
+
    return *this;
 }
 
@@ -136,6 +199,8 @@ message& message::append(const wstream& streamAppend)
 message& message::append(const gd::log::printf& printfAppend)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, (const char*)printfAppend));
+   m_uCount++;
+
    return *this;
 }
 
@@ -166,6 +231,7 @@ message& message::printf(const char* pbszFormat, ...)
    {
       m_pbszText = std::move(pbszPrintfText);
    }
+   m_uCount++;
 
    return *this;
 }
@@ -622,3 +688,4 @@ const char* severity_get_short_name_g(unsigned uSeverity)
 
 
 _GD_LOG_LOGGER_END
+
