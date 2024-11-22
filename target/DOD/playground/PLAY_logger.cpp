@@ -78,6 +78,7 @@ TEST_CASE( "[logging] colors", "[logging]" ) {
       LOG_ERROR( gd::log::make_ascii_g( "1", " ", "3", " ", "2", " ", true, 1, 3.5 ) );
       LOG_FATAL( gd::log::make_ascii_g( std::make_tuple( 3, ppbsz_, " " ) ) );
       LOG_FATAL( gd::log::make_ascii_g( "\n", std::make_pair( 100, '=' ), "\n") );
+      LOG_FATAL( gd::log::make_ascii_g( std::string("test") ) );
    }
 
 }
