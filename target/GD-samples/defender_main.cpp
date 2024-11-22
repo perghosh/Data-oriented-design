@@ -13,19 +13,43 @@
 
 #include "defender_main.h"
 
+application::basic::CApplication* papplication_g = nullptr;
+
+std::pair<bool, std::string> Play();
+
 int main()
 {
-   std::pair<int, int> pairTest(5, 5);
+   using namespace application::basic;
+   // ## Initialize application and configure to get the server running
+   std::unique_ptr< Application > papplication_ = std::make_unique<Application>();
+   papplication_g = papplication_.get();
 
-   Application applicationTest(pairTest);
-   applicationTest.Initialize();
+   Play();
+   
+   return 0;
+}
+
+std::pair<bool, std::string> Play()
+{
+   Application* papplication = (Application*)papplication_g;
+
+   papplication->Initialize();
+
+   papplication->Draw();
 
    while (true)
    {
-      applicationTest.Draw();
+      // papplication->PrepareFrame();
 
+      //if( papplication->GetState() == "quit") { return { true, "quit" }; }
+
+      /*papplication->GAME_Update(tag_key{});
+      papplication->GAME_Update(tag_loop{});
+      papplication->GAME_Update(tag_state{});*/                 
+
+      papplication->Draw();
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
    }
-   
-   return 0;
+
+   return { true, ""};
 }
