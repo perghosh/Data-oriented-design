@@ -504,6 +504,7 @@ struct ascii
 // ## methods -----------------------------------------------------------------
    const std::string& get_string() const { return m_stringAscii; }
 
+   ascii& append(const std::string& string_ ) { m_stringAscii += string_; return *this; }
    ascii& append(const std::string_view& string_ ) { m_stringAscii += string_; return *this; }
    ascii& append(const char* pbsz_) { m_stringAscii += pbsz_; return *this; }
    ascii& append(const std::pair< size_t, char >& pair_ ) { m_stringAscii += std::string( pair_.first, pair_.second ); return *this; }
@@ -1087,6 +1088,8 @@ public:
    
 // ## free functions ------------------------------------------------------------
 public:
+   /// return severity number for severity as string
+   static constexpr unsigned get_severity_s( const std::string_view& stringSeverity );
    /// return pointer to logger with selected instance number
    static logger<iLoggerKey,bThread>* get_s();
    /// get reference to logger for selected instance number
@@ -1109,7 +1112,19 @@ inline i_printer* logger<iLoggerKey, bThread>::get(const std::string_view& strin
 template<int iLoggerKey, bool bThread>
 std::mutex logger<iLoggerKey, bThread>::m_mutex_s;
 
-#ifndef GD_LOG_DISABLE_ALL                                                       // GD_LOG_DISABLE_ALL {
+/// Return severity number for severity as string
+template<int iLoggerKey, bool bThread>
+constexpr unsigned logger<iLoggerKey, bThread>::get_severity_s(const std::string_view& stringSeverity) {
+   unsigned uSeverity = 0;
+   if( stringSeverity == "FATAL" )           uSeverity = eSeverityNumberFatal;
+   else if( stringSeverity == "ERROR" )      uSeverity = eSeverityNumberError;
+   else if( stringSeverity == "WARNING" )    uSeverity = eSeverityNumberWarning;
+   else if( stringSeverity == "INFORMATION" )uSeverity = eSeverityNumberInformation;
+   else if( stringSeverity == "DEBUG" )      uSeverity = eSeverityNumberDebug;
+   else if( stringSeverity == "VERBOSE" )    uSeverity = eSeverityNumberVerbose;
+
+   return uSeverity;
+}
 
 /// ----------------------------------------------------------------------------
 /// call print and flush after print is done
@@ -1223,34 +1238,6 @@ void logger<iLoggerKey, bThread>::print_(message& message)
       }
    }
 }
-
-
-
-
-#else
-
-template<int iLoggerKey, bool bThread>
-inline void logger<iLoggerKey, bThread>::print(const message& message) {}
-
-template<int iLoggerKey, bool bThread>
-void logger<iLoggerKey, bThread>::print(const message& message, bool bFlush)
-{
-}
-
-template<int iLoggerKey, bool bThread>
-void logger<iLoggerKey, bThread>::print(std::initializer_list<message> listMessage)
-{
-}
-
-template<int iLoggerKey, bool bThread>
-void logger<iLoggerKey, bThread>::print_(const message& message)
-{
-}
-
-
-#endif                                                                           // } GD_LOG_DISABLE_ALL 
-
-
 
 /// ----------------------------------------------------------------------------
 /// Flush all connected printers. 
