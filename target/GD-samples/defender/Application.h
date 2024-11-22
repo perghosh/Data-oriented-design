@@ -18,23 +18,49 @@
 struct Defender
 {
    Defender() {}
-
 };
 
-struct Application : public application::basic::CApplication
+/**
+ * \brief
+ *
+ *
+ */
+struct CApplication : public application::basic::CApplication
 {
-   Application() {}
-   Application(std::pair<unsigned, unsigned> pairPoint) : m_pairPoint(pairPoint) {}
+// ## construction ------------------------------------------------------------
+   CApplication() {}
+   // copy
+   CApplication(const CApplication& o) { common_construct(o); }
+   CApplication(CApplication&& o) noexcept { common_construct(std::move(o)); }
+   // assign
+   CApplication& operator=(const CApplication& o) { common_construct(o); return *this; }
+   CApplication& operator=(CApplication&& o) noexcept { common_construct(std::move(o)); return *this; }
 
-   // Initialize game objects
+   ~CApplication() {}
+   // common copy
+   void common_construct(const CApplication& o) {}
+   void common_construct(CApplication&& o) noexcept {}
+
+// ## methods -----------------------------------------------------------------
+   /// Initialize game objects
    std::pair<bool, std::string> Initialize() override;
 
+   void Move();
    void Draw();
-   
-   std::pair<unsigned, unsigned> m_pairPoint;
 
-   int m_iMove = 0;
-   bool bAllowedMove = true;
+   void BOMB_add();
 
+/** \name DEBUG
+*///@{
+
+//@}
+
+// ## attributes --------------------------------------------------------------
+   std::vector<gd::argument::arguments> m_vectorBomb;
+   gd::console::caret m_caretTopLeft;
    gd::console::device m_deviceGame;
+
+// ## free functions ----------------------------------------------------------
+
 };
+
