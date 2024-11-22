@@ -1,17 +1,19 @@
 #include "Application.h";
 
-void Application::Initialize()
+std::pair<bool, std::string> Application::Initialize()
 {
-   //auto rowcolumn = m_pairPoint;
-
-   //m_deviceGame(250, 100);
    m_deviceGame.create(20, 35);
+   return application::basic::CApplication::Initialize();
 }
 
 void Application::Draw()
 {
+   m_deviceGame.fill(' ');
+   
    auto pairSize = m_deviceGame.size();
    
+  
+
    m_deviceGame.print(m_pairPoint.first, m_pairPoint.second, '#');
 
    if (m_iMove <= 5)

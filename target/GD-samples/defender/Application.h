@@ -21,12 +21,13 @@ struct Defender
 
 };
 
-struct Application
+struct Application : public application::basic::CApplication
 {
    Application() {}
    Application(std::pair<unsigned, unsigned> pairPoint) : m_pairPoint(pairPoint) {}
 
-   void Initialize();
+   // Initialize game objects
+   std::pair<bool, std::string> Initialize() override;
 
    void Draw();
    
