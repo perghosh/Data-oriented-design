@@ -370,9 +370,6 @@ void Application::DrawBorder(gd::console::device& deviceBorder)
    const char iFrameSide = (char)186;
    const char iFrameRow = (char)205;
 
-   
-
-
    auto [uRowCount, uColumnCount] = deviceBorder.size();
 
    deviceBorder.select(gd::console::enumColor::eColorSteelBlue3, gd::console::tag_color{});// select frame color

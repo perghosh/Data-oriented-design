@@ -1,27 +1,81 @@
-#include "Application.h";
+#include "conio.h"
 
-std::pair<bool, std::string> Application::Initialize()
+
+#include <format>
+#include <random>
+
+#ifndef NDEBUG
+   #include "gd/gd_debug.h"
+#endif
+
+#include "Application.h"
+
+
+std::pair<bool, std::string> CApplication::Initialize()
 {
-   m_deviceGame.create(20, 35);
+   ::srand( (unsigned)::time(NULL));                                           // init random numbers
+
+   m_deviceGame.create(20, 80);
    return application::basic::CApplication::Initialize();
 }
 
-void Application::Draw()
+void CApplication::Move()
+{
+   auto [uDeviceHeight, uDeviceWidth] = m_deviceGame.size();
+
+   for(auto& itBomb : m_vectorBomb)
+   {
+      if( itBomb["show"] == true )
+      {
+         uint32_t uColumn = itBomb["column"];
+         int32_t iMoveX = itBomb["move-x"];
+
+         uColumn = uColumn + iMoveX;
+
+         if(uColumn == 0 || uColumn == uDeviceWidth)
+         {
+            itBomb.set( "show", false );
+         }
+         else
+         {
+            itBomb.set( "column", uColumn );
+         }
+      }
+   }
+}
+
+void CApplication::Draw()
 {
    m_deviceGame.fill(' ');
    
    auto pairSize = m_deviceGame.size();
-   
-  
 
-   m_deviceGame.print(m_pairPoint.first, m_pairPoint.second, '#');
-
-   if (m_iMove <= 5)
+   for( const auto& itBomb : m_vectorBomb)
    {
-      m_iMove++;
-      m_pairPoint.second++;
+      if( itBomb["show"] == true )
+      {
+         uint32_t uRow = itBomb["row"];
+         uint32_t uColumn = itBomb["column"];      
+         m_deviceGame.print( uRow, uColumn, '#');
+      }
    }
    
-
+   std::cout << m_caretTopLeft.render( gd::console::tag_format_cli{});  
    std::cout << m_deviceGame.render(gd::console::tag_format_cli{});
+}
+
+void CApplication::BOMB_add()
+{
+   gd::argument::arguments argumentsBomb;
+
+   auto uHeight = m_deviceGame.height();
+
+   uint32_t uRow = rand() % uHeight;
+
+   argumentsBomb.append("row", uRow );
+   argumentsBomb.append("column", uint32_t(0) );
+   argumentsBomb.append("move-x", int32_t(1) );
+   argumentsBomb.append("show", true );
+
+   m_vectorBomb.push_back( std::move( argumentsBomb ) );
 }
