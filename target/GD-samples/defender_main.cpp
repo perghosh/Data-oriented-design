@@ -39,6 +39,8 @@ std::pair<bool, std::string> Play()
 
    papplication->BOMB_add();
 
+   int iCount = 0;
+
    while (true)
    {
       // papplication->PrepareFrame();
@@ -48,7 +50,15 @@ std::pair<bool, std::string> Play()
       /*papplication->GAME_Update(tag_key{});
       papplication->GAME_Update(tag_loop{});
       papplication->GAME_Update(tag_state{});*/                 
-      papplication->Update(1);
+
+      iCount++;
+
+      if (iCount == 5)
+      {
+         papplication->Update(1);
+         iCount = 0;
+      }
+
       papplication->Move();
       papplication->Draw();
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
