@@ -48,8 +48,8 @@ struct CApplication : public application::basic::CApplication
    void Move();
    void Draw();
 
-   void BOMB_add();
-   void Update(unsigned uAmount);
+   void BOMB_Add();
+   void Update();
 
 /** \name DEBUG
 *///@{
@@ -57,6 +57,7 @@ struct CApplication : public application::basic::CApplication
 //@}
 
 // ## attributes --------------------------------------------------------------
+   int m_iCount = 0;
    std::vector<gd::argument::arguments> m_vectorBomb;
    gd::console::caret m_caretTopLeft;
    gd::console::device m_deviceGame;

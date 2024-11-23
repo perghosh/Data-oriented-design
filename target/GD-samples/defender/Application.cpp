@@ -64,7 +64,7 @@ void CApplication::Draw()
    std::cout << m_deviceGame.render(gd::console::tag_format_cli{});
 }
 
-void CApplication::BOMB_add()
+void CApplication::BOMB_Add()
 {
    gd::argument::arguments argumentsBomb;
 
@@ -80,10 +80,10 @@ void CApplication::BOMB_add()
    m_vectorBomb.push_back( std::move( argumentsBomb ) );
 }
 
-void CApplication::Update(unsigned uAmount)
+void CApplication::Update()
 {
-   for (int i = 0; i < uAmount; i++)
+   if (m_iCount % 5 == 0)
    {
-      BOMB_add();
+      BOMB_Add();
    }
 }
