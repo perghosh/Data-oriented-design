@@ -79,3 +79,11 @@ void CApplication::BOMB_add()
 
    m_vectorBomb.push_back( std::move( argumentsBomb ) );
 }
+
+void CApplication::Update(unsigned uAmount)
+{
+   for (int i = 0; i < uAmount; i++)
+   {
+      BOMB_add();
+   }
+}

@@ -49,6 +49,7 @@ struct CApplication : public application::basic::CApplication
    void Draw();
 
    void BOMB_add();
+   void Update(unsigned uAmount);
 
 /** \name DEBUG
 *///@{
@@ -64,3 +65,4 @@ struct CApplication : public application::basic::CApplication
 
 };
 
+                                                                                    
