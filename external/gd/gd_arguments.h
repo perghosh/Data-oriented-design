@@ -17,6 +17,7 @@
 
 #include "gd_variant.h"
 #include "gd_variant_view.h"
+#include "gd_arguments_helper.h"
 
 
 /*
@@ -618,6 +619,8 @@ public:
    const argument operator[](unsigned uIndex) const { return get_argument(uIndex); }
    const argument operator[](std::string_view stringName) const { return get_argument(stringName); }
    const argument operator[](arguments::const_pointer p) const { return get_argument(p); }
+
+   argument_edit operator[](const index& index_);
 
    argument_edit operator()(unsigned uIndex) {
       pointer pPosition = find(uIndex);
