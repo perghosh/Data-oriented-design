@@ -85,6 +85,7 @@ void CApplication::BOMB_Add()
          itBomb.set("row", uRow);
          itBomb.set("column", uint32_t(0));
          bBombReuse = true;
+         break;
       }
    }
 
