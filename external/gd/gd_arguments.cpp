@@ -886,6 +886,58 @@ arguments& arguments::operator=(std::initializer_list<std::pair<std::string_view
    return *this;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief index operator where editable argument is returned.
+ * @code
+TEST_CASE( "[gd] arguments using index", "[gd]" ) {
+   gd::argument::arguments arguments_;
+   arguments_.append("1", 1);
+   arguments_.append("2", "2");
+   arguments_.append("3", 3);
+   arguments_.append("4", 4);
+   arguments_.append("5", 5);
+   arguments_.append_many( 100, 200, 300, 400, 500 );
+
+   using namespace gd::argument;
+   std::string_view stringName01 = "1";
+   gd::argument::index index( stringName01 );
+   auto edit_ = arguments_[index];
+   auto edit1_ = arguments_["1"_index];
+   assert( (int)edit_ == (int)edit1_ );
+   arguments_[index] = 100;
+   int iNumber1 = arguments_["1"];
+   iNumber1 *= 2;
+   arguments_[index] = iNumber1;
+   int iNumber7a = arguments_[7];
+   int iNumber7b = arguments_[7_index];
+   assert( iNumber7a == iNumber7b );
+}
+ * @endcode
+ * @param index_ index object used to get part within arguments
+ * @return argument_edit for index value or empty argument_edit object if not found
+ */
+arguments::argument_edit arguments::operator[](const index& index_) 
+{
+   pointer pPosition = nullptr;
+
+   if( index_.is_string() == true )
+   {
+      pPosition = find( index_.get_string() );
+   }
+   else if( index_.is_index() == true )
+   {
+      pPosition = find( (unsigned)index_.get_index() );
+   }
+
+   if( pPosition != nullptr )
+   {
+      return arguments::get_edit_param_s(this, pPosition);
+   }
+
+   return argument_edit();
+}
+
+
 /*-----------------------------------------------------------------------------
  * @brief add arguments from another arguments object
  * @param argumentsFrom arguments object to add values from
@@ -2900,3 +2952,5 @@ namespace debug {
 
 }
 _GD_ARGUMENT_END
+
+

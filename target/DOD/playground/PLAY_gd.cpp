@@ -12,6 +12,30 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE( "[gd] arguments using index", "[gd]" ) {
+   gd::argument::arguments arguments_;
+   arguments_.append("1", 1);
+   arguments_.append("2", "2");
+   arguments_.append("3", 3);
+   arguments_.append("4", 4);
+   arguments_.append("5", 5);
+   arguments_.append_many( 100, 200, 300, 400, 500 );
+
+   using namespace gd::argument;
+   std::string_view stringName01 = "1";
+   gd::argument::index index( stringName01 );
+   auto edit_ = arguments_[index];
+   auto edit1_ = arguments_["1"_index];
+   assert( (int)edit_ == (int)edit1_ );
+   arguments_[index] = 100;
+   int iNumber1 = arguments_["1"];
+   iNumber1 *= 2;
+   arguments_[index] = iNumber1;
+   int iNumber7a = arguments_[7];
+   int iNumber7b = arguments_[7_index];
+   assert( iNumber7a == iNumber7b );
+}
+
 TEST_CASE( "[gd] replace", "[gd]" ) {
    std::string stringSQL = "1111{?name1;{=found};not_found}2222";
    auto stringReplace1 = gd::sql::replace_g( stringSQL, gd::argument::arguments(), gd::sql::tag_preprocess{});
