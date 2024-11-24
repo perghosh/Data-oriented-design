@@ -51,7 +51,7 @@ std::pair<bool, std::string> Play()
       papplication->GAME_Update(tag_loop{});
       papplication->GAME_Update(tag_state{});*/                 
 
-      papplication->m_iCount++;
+      papplication->Count();
 
       papplication->Input_Update();
 

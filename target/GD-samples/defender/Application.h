@@ -53,6 +53,8 @@ struct CApplication : public application::basic::CApplication
    void Move();
    void Draw();
 
+   void Count();
+
    void BOMB_Add();
    void Update();
 
