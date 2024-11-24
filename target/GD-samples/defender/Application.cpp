@@ -74,7 +74,7 @@ void CApplication::BOMB_Add()
 
    uint32_t uRow = rand() % uHeight;
 
-   uint8_t uRandomColor = rand() % (255 - 16);
+   uint8_t uRandomColor = rand() % (255 - 16) + 16;
    
    bool bBombReuse = false;
 
