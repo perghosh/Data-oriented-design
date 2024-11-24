@@ -124,7 +124,7 @@ std::pair<bool, std::string> device::create(unsigned uRowCount, unsigned uColumn
  */
 void device::print( unsigned uRow, unsigned uColumn, const std::string_view& stringText, unsigned uColor )
 {                                                                                                  assert( uRow < m_uRowCount ); assert( uColumn < m_uColumnCount );
-   auto pposition_ = offset( uRow, uColumn );                                                      assert( (pposition_ + stringText.length()) < buffer_end() );
+   auto pposition_ = offset( uRow, uColumn );                                                      assert( (pposition_+ stringText.length()) <= buffer_end() );
    memcpy( pposition_, stringText.data(), stringText.length() );
    memset( offset_color( uRow, uColumn ),(uint8_t)uColor, stringText.length() );
 }
