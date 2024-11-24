@@ -86,6 +86,11 @@ void CApplication::Draw()
    std::cout << m_deviceGame.render(gd::console::tag_format_cli{});
 }
 
+void CApplication::Count()
+{
+   m_iCount++;
+}
+
 void CApplication::BOMB_Add()
 {
    gd::argument::arguments argumentsBomb;
