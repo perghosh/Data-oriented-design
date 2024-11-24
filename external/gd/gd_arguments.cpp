@@ -51,7 +51,7 @@ arguments::pointer arguments::move_to_value_s(pointer pPosition)
 arguments::pointer arguments::move_to_value_data_s(pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
    uint8_t uType = *pPosition;                                                 // get value type
-   pPosition++;                                                                                    assert( uType == eType_ParameterName );assert( (uType & eType_MASK) < CType_MAX );// check type
+   pPosition++;                                                                                    assert( uType != eType_ParameterName );assert( (uType & eType_MASK) < CType_MAX );// check type
    if( (uType & eType_MASK) != 0 )
    {
       pPosition += sizeof(uint32_t);
