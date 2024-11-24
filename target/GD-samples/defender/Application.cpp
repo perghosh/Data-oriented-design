@@ -73,12 +73,30 @@ void CApplication::BOMB_Add()
 
    uint32_t uRow = rand() % uHeight;
 
-   argumentsBomb.append("row", uRow );
-   argumentsBomb.append("column", uint32_t(0) );
-   argumentsBomb.append("move-x", int32_t(1) );
-   argumentsBomb.append("show", true );
 
-   m_vectorBomb.push_back( std::move( argumentsBomb ) );
+   
+   bool bBombReuse = false;
+
+   for(auto& itBomb : m_vectorBomb)
+   {
+      if(itBomb["show"] == false)
+      {
+         itBomb.set("show", true);
+         itBomb.set("row", uRow);
+         itBomb.set("column", uint32_t(0));
+         bBombReuse = true;
+      }
+   }
+
+   if(bBombReuse == false)
+   {
+      argumentsBomb.append("row", uRow);
+      argumentsBomb.append("column", uint32_t(0));
+      argumentsBomb.append("move-x", int32_t(1));
+      argumentsBomb.append("show", true);
+      m_vectorBomb.push_back(std::move(argumentsBomb));
+   }
+
 }
 
 void CApplication::Update()
