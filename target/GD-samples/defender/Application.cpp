@@ -38,7 +38,8 @@ void CApplication::Move()
          }
          else
          {
-            itBomb.set( "column", uColumn );
+            itBomb("column") = uColumn;
+            //itBomb.set( "column", uColumn );
          }
       }
    }
