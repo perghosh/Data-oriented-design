@@ -56,8 +56,9 @@ void CApplication::Draw()
       if( itBomb["show"] == true )
       {
          uint32_t uRow = itBomb["row"];
-         uint32_t uColumn = itBomb["column"];      
-         m_deviceGame.print( uRow, uColumn, '#');
+         uint32_t uColumn = itBomb["column"];
+         uint8_t uColor = itBomb["color"];
+         m_deviceGame.print( uRow, uColumn, "#", uColor);
       }
    }
    
@@ -94,6 +95,8 @@ void CApplication::BOMB_Add()
       argumentsBomb.append("row", uRow);
       argumentsBomb.append("column", uint32_t(0));
       argumentsBomb.append("move-x", int32_t(1));
+      //argumentsBomb.append("color", gd::console::color_g("blue3"));
+      argumentsBomb.append("color", gd::console::enumColor::eColorBlue1);
       argumentsBomb.append("show", true);
       m_vectorBomb.push_back(std::move(argumentsBomb));
    }
