@@ -886,7 +886,7 @@ void table_column_buffer::column_get(std::size_t uIndex, argument::column& colum
 
    if( columnRead.alias() != 0 ) 
    {  
-      auto stringAlias = column_get_alias( uIndex );
+      auto stringAlias = column_get_alias( (unsigned)uIndex );
       column_.alias( stringAlias );
    }
 }
@@ -2172,13 +2172,13 @@ void table_column_buffer::cell_set( const range& rangeSet, const gd::variant_vie
       {
          for( auto uColumn = rangeSet.c1(); uColumn <= rangeSet.c2(); uColumn++ )
          {
-            cell_set( uRow, uColumn, variantviewValue, tag_convert{});
+            cell_set( uRow, (unsigned)uColumn, variantviewValue, tag_convert{});
          }
       }
    }
    else
    {
-      cell_set( rangeSet.r1(), rangeSet.c1(), variantviewValue, tag_convert{} );
+      cell_set( rangeSet.r1(), (unsigned)rangeSet.c1(), variantviewValue, tag_convert{} );
    }
 }
 
@@ -2195,13 +2195,13 @@ void table_column_buffer::cell_set( const range& rangeSet, const gd::variant_vie
       {
          for( auto uColumn = rangeSet.c1(); uColumn <= rangeSet.c2(); uColumn++ )
          {
-            cell_set( uRow, uColumn, variantviewValue );
+            cell_set( uRow, (unsigned)uColumn, variantviewValue );
          }
       }
    }
    else
    {
-      cell_set( rangeSet.r1(), rangeSet.c1(), variantviewValue );
+      cell_set( rangeSet.r1(), (unsigned)rangeSet.c1(), variantviewValue );
    }
 }
 
@@ -3004,7 +3004,7 @@ void table_column_buffer::append( const table_column_buffer& tableAppend, tag_na
    std::vector<unsigned> vectorAppend;
    column_match_s( *this, tableAppend, &vectorThis, &vectorAppend, tag_name{} );
 
-   append( tableAppend, vectorAppend.data(), vectorThis.data(), vectorThis.size() );
+   append( tableAppend, vectorAppend.data(), vectorThis.data(), (unsigned)vectorThis.size() );
 }
 
 /** ---------------------------------------------------------------------------
@@ -3017,7 +3017,7 @@ void table_column_buffer::append( const table_column_buffer& tableFrom, tag_name
    std::vector<unsigned> vectorAppend;
    column_match_s( *this, tableFrom, &vectorThis, &vectorAppend, tag_name{} );
 
-   append( tableFrom, vectorThis.data(), vectorAppend.data(), vectorThis.size(), tag_convert{});
+   append( tableFrom, vectorThis.data(), vectorAppend.data(), (unsigned)vectorThis.size(), tag_convert{});
 }
 
 /** ---------------------------------------------------------------------------

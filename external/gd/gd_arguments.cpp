@@ -51,7 +51,7 @@ arguments::pointer arguments::move_to_value_s(pointer pPosition)
 arguments::pointer arguments::move_to_value_data_s(pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
    uint8_t uType = *pPosition;                                                 // get value type
-   pPosition++;                                                                                    assert( (uType & eType_MASK) < CType_MAX );// check type
+   pPosition++;                                                                                    assert( uType == eType_ParameterName );assert( (uType & eType_MASK) < CType_MAX );// check type
    if( (uType & eType_MASK) != 0 )
    {
       pPosition += sizeof(uint32_t);
@@ -62,7 +62,7 @@ arguments::pointer arguments::move_to_value_data_s(pointer pPosition)
 arguments::const_pointer arguments::move_to_value_data_s(const_pointer pPosition)
 {                                                                                                  assert( pPosition != nullptr );
    uint8_t uType = *pPosition;                                                 // get value type
-   pPosition++;                                                                                    assert( (uType & eType_MASK) < CType_MAX );// check type
+   pPosition++;                                                                                    assert( uType == eType_ParameterName );assert( (uType & eType_MASK) < CType_MAX );// check type
    if( (uType & eType_MASK) != 0 )
    {
       pPosition += sizeof(uint32_t);
@@ -801,6 +801,28 @@ void arguments::argument_edit::set(argument argumentSet)
    else
    {
       m_pArguments->set((pointer)m_pPosition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set value at position in arguments buffer
+ * @param pposition pointer to valid position within arguments buffer 
+ * @param argumentSet value to set
+ */
+void arguments::set(pointer pposition, const argument& argumentSet, tag_argument)
+{                                                                                                  assert( pposition >= get_buffer_start() ); assert( pposition < get_buffer_end() );
+   pointer ppositionValue = move_to_value_s( pposition );
+   auto eTypeArgument = argumentSet.type_number();
+   auto uType = type_s( ppositionValue );
+   if( is_type_fixed_size_s(eTypeArgument) == true && eTypeArgument == uType )
+   {
+      auto pValueData = ppositionValue + 1;                                    // move past type to data (one byte is used to describe type)
+      unsigned uSize = ctype_size[eTypeArgument];
+      memcpy(pValueData, argumentSet.get_value_buffer(), uSize);
+   }
+   else
+   {
+      set(pposition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
    }
 }
 
@@ -1874,6 +1896,12 @@ std::pair<std::string_view, gd::variant_view> arguments::get_variant_view( unsig
    return std::pair<std::string_view, gd::variant_view>();
 }
 
+// ================================================================================================
+// ================================================================================= FREE FUNCTIONS
+// ================================================================================================
+
+
+
 /*----------------------------------------------------------------------------- compare_argument_s */ /**
  * compare to argument values if equal
  * \param v1 first argument that is compared
@@ -2114,7 +2142,7 @@ arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition
    return arguments::argument();
 }
 
-arguments::argument_edit arguments::get_edit_param_s(arguments* parguments, arguments::const_pointer pPosition)
+arguments::argument_edit arguments::get_edit_param_s(arguments* parguments, arguments::pointer pPosition)
 {
    arguments::argument argumentValue = arguments::get_argument_s( pPosition );
    return arguments::argument_edit( parguments, pPosition, argumentValue );
@@ -2352,6 +2380,14 @@ unsigned int gd::argument::arguments::sizeof_s(uint32_t uNameLength, param_type 
 
    return uSize;
 }
+
+/// ---------------------------------------------------------------------------
+/// get type number from position, make sure position points to type
+constexpr unsigned int arguments::type_s(const_pointer pposition) noexcept {                       assert( *pposition < CType_MAX );
+   uint32_t uType = *pposition;                                                // get value type
+   return uType;
+}
+
 
 /*----------------------------------------------------------------------------- get_variant_s */ /**
  * Return argument value as variant

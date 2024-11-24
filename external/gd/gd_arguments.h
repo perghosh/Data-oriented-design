@@ -461,11 +461,11 @@ public:
          memcpy(this, &o, sizeof(argument_edit));
       }
 
-      argument_edit& operator=(argument argumentSet) { set(argumentSet); return *this; }
+      argument_edit& operator=(argument argumentSet) { m_pArguments->set(m_pPosition, argumentSet); return *this; }
 
 
       template<typename ARGUMENT_TYPE>
-      argument_edit(arguments* parguments, arguments::const_pointer pPosition, ARGUMENT_TYPE AG): m_pArguments(parguments), m_pPosition(pPosition), argument( AG ) {
+      argument_edit(arguments* parguments, arguments::pointer pPosition, ARGUMENT_TYPE AG): m_pArguments(parguments), m_pPosition(pPosition), argument( AG ) {
          m_pValue = move_to_value_s( (pointer)pPosition );
       }
 
@@ -475,7 +475,7 @@ public:
       void set(argument argumentSet);
 
       arguments* m_pArguments;
-      arguments::const_pointer m_pPosition;
+      arguments::pointer m_pPosition;
       arguments::pointer m_pValue;
    };
 
@@ -620,13 +620,13 @@ public:
    const argument operator[](arguments::const_pointer p) const { return get_argument(p); }
 
    argument_edit operator()(unsigned uIndex) {
-      const_pointer pPosition = find(uIndex);
+      pointer pPosition = find(uIndex);
       if( pPosition != nullptr ) { return arguments::get_edit_param_s(this, pPosition); }
       return argument_edit();
    }
 
    argument_edit operator()(std::string_view stringName) { 
-      const_pointer pPosition = find(stringName);
+      pointer pPosition = find(stringName);
       if( pPosition != nullptr ) { return arguments::get_edit_param_s(this, pPosition); }
       return argument_edit();
    }
@@ -789,6 +789,9 @@ public:
    arguments& set(std::string_view stringName, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set(stringName.data(), (uint32_t)stringName.length(), uType, pBuffer, uLength); }
    arguments& set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength);
    arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength);
+
+   void set( pointer pposition, const argument& argumentSet, tag_argument );
+   arguments& set( pointer pposition, const argument& argumentSet ) { set( pposition, argumentSet, tag_argument{}); return *this; }
 
    // TODO: Implement set methods
 
@@ -1028,7 +1031,7 @@ public:
    /// return param the position points to
    static argument get_argument_s(const_pointer pPosition);
    /// return editable param based on position
-   static argument_edit get_edit_param_s(arguments* parguments, const_pointer pPosition);
+   static argument_edit get_edit_param_s(arguments* parguments, pointer pPosition);
    /// count internal param length in bytes
    static unsigned int get_total_param_length_s(const_pointer pPosition);
    static unsigned int get_total_param_length_s(std::string_view stringName, const argument argumentValue);
@@ -1107,6 +1110,7 @@ public:
    static void print_value_s(const_pointer pPosition, std::string& stringPrint);
 
    /// ## find out type for value
+   constexpr static unsigned int type_s(const_pointer pPosition) noexcept;
    constexpr static unsigned int type_s(unsigned int uType) { return uType & ~eType_MASK; } // only type (no size)
    constexpr static unsigned int ctype_s(unsigned int uType) { return uType & ~eCType_MASK; } // last byte (type and size)
    constexpr static unsigned int type_number_s(unsigned int uType) { return uType & ~eTypeNumber_MASK; }
@@ -1338,7 +1342,7 @@ inline arguments& arguments::set(std::string_view stringName, const gd::variant_
 
 /// return argument object that can be used to edit value
 inline arguments::argument_edit arguments::find_edit_argument(std::string_view stringName) {
-   const_pointer pPosition = find(stringName);
+   pointer pPosition = find(stringName);
    if( pPosition ) return get_edit_param_s(this, pPosition);
    return argument_edit();
 }

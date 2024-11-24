@@ -2927,7 +2927,7 @@ void table::append( const table& tableAppend, tag_name )
    std::vector<unsigned> vectorAppend;
    column_match_s( *this, tableAppend, &vectorThis, &vectorAppend, tag_name{} );
 
-   append( tableAppend, vectorThis.data(), vectorAppend.data(), vectorThis.size() );
+   append( tableAppend, vectorThis.data(), vectorAppend.data(), (unsigned)vectorThis.size() );
 }
 
 /** ---------------------------------------------------------------------------
@@ -2940,7 +2940,7 @@ void table::append( const table& tableAppend, tag_name, tag_convert )
    std::vector<unsigned> vectorAppend;
    column_match_s( *this, tableAppend, &vectorThis, &vectorAppend, tag_name{} );
 
-   append( tableAppend, vectorThis.data(), vectorAppend.data(), vectorThis.size(), tag_convert{});
+   append( tableAppend, vectorThis.data(), vectorAppend.data(), (unsigned)vectorThis.size(), tag_convert{});
 }
 
 /** ---------------------------------------------------------------------------
