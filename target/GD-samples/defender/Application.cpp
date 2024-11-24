@@ -74,7 +74,7 @@ void CApplication::BOMB_Add()
 
    uint32_t uRow = rand() % uHeight;
 
-
+   uint8_t uRandomColor = rand() % (255 - 16);
    
    bool bBombReuse = false;
 
@@ -96,7 +96,7 @@ void CApplication::BOMB_Add()
       argumentsBomb.append("column", uint32_t(0));
       argumentsBomb.append("move-x", int32_t(1));
       //argumentsBomb.append("color", gd::console::color_g("blue3"));
-      argumentsBomb.append("color", gd::console::enumColor::eColorBlue1);
+      argumentsBomb.append("color", gd::console::enumColor(uRandomColor));
       argumentsBomb.append("show", true);
       m_vectorBomb.push_back(std::move(argumentsBomb));
    }
