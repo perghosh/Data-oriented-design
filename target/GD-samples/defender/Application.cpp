@@ -45,6 +45,26 @@ void CApplication::Move()
    }
 }
 
+std::pair<bool, std::string> CApplication::Input_Update()
+{
+   if( _kbhit() != 0 )
+   {
+      char iKey = _getch();
+      switch( iKey )
+      {
+      case 'q':
+         m_stringState = "quit";
+         break;
+      default:
+         break;
+      }
+   }
+   
+
+
+   return { true, "" };
+}
+
 void CApplication::Draw()
 {
    m_deviceGame.fill(' ');
@@ -74,7 +94,7 @@ void CApplication::BOMB_Add()
 
    uint32_t uRow = rand() % uHeight;
 
-   uint8_t uRandomColor = rand() % (255 - 16) + 16;
+   uint8_t uColor = rand() % ((255 - 16) + 1 ) + 16;
    
    bool bBombReuse = false;
 
@@ -85,6 +105,7 @@ void CApplication::BOMB_Add()
          itBomb.set("show", true);
          itBomb.set("row", uRow);
          itBomb.set("column", uint32_t(0));
+         itBomb.set("color", gd::console::enumColor(uColor));
          bBombReuse = true;
          break;
       }
@@ -96,7 +117,7 @@ void CApplication::BOMB_Add()
       argumentsBomb.append("column", uint32_t(0));
       argumentsBomb.append("move-x", int32_t(1));
       //argumentsBomb.append("color", gd::console::color_g("blue3"));
-      argumentsBomb.append("color", gd::console::enumColor(uRandomColor));
+      argumentsBomb.append("color", gd::console::enumColor(uColor));
       argumentsBomb.append("show", true);
       m_vectorBomb.push_back(std::move(argumentsBomb));
    }

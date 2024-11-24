@@ -42,6 +42,11 @@ struct CApplication : public application::basic::CApplication
    void common_construct(CApplication&& o) noexcept {}
 
 // ## methods -----------------------------------------------------------------
+
+   const std::string& GetState() const { return m_stringState; }
+
+   std::pair<bool, std::string> Input_Update();
+
    /// Initialize game objects
    std::pair<bool, std::string> Initialize() override;
 
@@ -58,6 +63,7 @@ struct CApplication : public application::basic::CApplication
 
 // ## attributes --------------------------------------------------------------
    int m_iCount = 0;
+   std::string m_stringState;
    std::vector<gd::argument::arguments> m_vectorBomb;
    gd::console::caret m_caretTopLeft;
    gd::console::device m_deviceGame;
