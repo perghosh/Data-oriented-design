@@ -41,7 +41,7 @@ std::pair<bool, std::string> Play()
 
    
 
-   while (true)
+   while ( papplication->GetState() != "quit" )
    {
       // papplication->PrepareFrame();
 
@@ -53,11 +53,13 @@ std::pair<bool, std::string> Play()
 
       papplication->m_iCount++;
 
+      papplication->Input_Update();
+
       papplication->Update();
       papplication->Move();
       papplication->Draw();
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
    }
 
-   return { true, ""};
+   return { true, papplication->GetState() };
 }
