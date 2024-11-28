@@ -56,6 +56,9 @@ struct CApplication : public application::basic::CApplication
    void Count() { m_iCount++; }
 
    void BOMB_Add();
+   void SHIP_Reset();
+   void GAME_Start();
+   void GAME_End();
    void Update();
 
 /** \name DEBUG
@@ -65,8 +68,11 @@ struct CApplication : public application::basic::CApplication
 
 // ## attributes --------------------------------------------------------------
    int m_iCount = 0;
+
    std::string m_stringState;
    std::vector<gd::argument::arguments> m_vectorBomb;
+   gd::argument::arguments m_argumentsShip;
+
    gd::console::caret m_caretTopLeft;
    gd::console::device m_deviceGame;
 
