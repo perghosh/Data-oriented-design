@@ -23,16 +23,16 @@ TEST_CASE( "[gd] arguments using index", "[gd]" ) {
 
    using namespace gd::argument;
    std::string_view stringName01 = "1";
-   gd::argument::index index( stringName01 );
-   auto edit_ = arguments_[index];
-   auto edit1_ = arguments_["1"_index];
+   gd::argument::index_edit index_edit( stringName01 );
+   auto edit_ = arguments_[index_edit];
+   auto edit1_ = arguments_["1"_edit];
    assert( (int)edit_ == (int)edit1_ );
-   arguments_[index] = 100;
+   arguments_[index_edit] = 100;
    int iNumber1 = arguments_["1"];
    iNumber1 *= 2;
-   arguments_[index] = iNumber1;
+   arguments_[index_edit] = iNumber1;
    int iNumber7a = arguments_[7];
-   int iNumber7b = arguments_[7_index];
+   int iNumber7b = arguments_[7_edit];
    assert( iNumber7a == iNumber7b );
 }
 
@@ -244,6 +244,19 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
       arguments_.insert( 2, "test", 250, gd::argument::shared::arguments::tag_view{});
       std::cout << arguments_.print() << "\n";
    }
+
+   {
+      gd::argument::shared::arguments arguments_;
+      arguments_.append("000", 10);
+      arguments_.append_many( 100, 200, 300, 400, 500 );
+      arguments_.append("111", 10);
+      arguments_.append_many( 100, 200, 300, 400, 500 );
+      std::cout << arguments_.print() << "\n";
+
+      auto value_ = arguments_.get_argument( "111", 3, gd::argument::shared::tag_section{});
+      std::cout << value_.as_int64() << "\n";
+   }
+
 
 
    auto uCount = arguments_.size();

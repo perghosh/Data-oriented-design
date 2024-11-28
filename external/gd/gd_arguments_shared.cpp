@@ -89,7 +89,7 @@ arguments::const_pointer arguments::move_to_value_data_s(const_pointer pPosition
 
 
 /*----------------------------------------------------------------------------- move_to_value */ /**
- * Moves pointer to value part in argument
+ * Moves pointer to value part in argument if it is placed on name for value
  * If argument has a name and position pointer is at the name, then use this method
  * to move position to value part.
  * \note first byte for name part is number identifying parameter name, next byte is name length
@@ -1592,17 +1592,17 @@ arguments::const_pointer arguments::find(const std::string_view& stringName) con
  * Try to find parameter in params that match name, if there are more than one parameter
  * with the name the first is taken
  * \param stringName name to find
- * \param pPosition position where to start from
+ * \param pOffsetPosition position where to start from, like offset position
  * \return gd::argument::arguments::const_pointer position to name if found, otherwise null
  */
-arguments::const_pointer arguments::find(std::string_view stringName, const_pointer pPosition) const
-{
-   for( ; pPosition != nullptr; pPosition = next(pPosition) )
+arguments::const_pointer arguments::find(std::string_view stringName, const_pointer pOffsetPosition) const
+{                                                                                                  assert( pOffsetPosition >= get_buffer_start() ); assert( pOffsetPosition < get_buffer_end() );
+   for( ; pOffsetPosition != nullptr; pOffsetPosition = next(pOffsetPosition) )
    {
-      if( arguments::is_name_s(pPosition) == true )
+      if( arguments::is_name_s(pOffsetPosition) == true )
       {
-         auto key_ = arguments::get_name_s(pPosition);
-         if( key_ == stringName ) return pPosition;
+         auto key_ = arguments::get_name_s(pOffsetPosition);
+         if( key_ == stringName ) return pOffsetPosition;
       }
    }
 
@@ -2149,6 +2149,29 @@ arguments::argument arguments::get_argument(unsigned int uIndex) const
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief return value within the named value section.
+ * If `arguments` stores value without name/key then these "belongs" or can act
+ * as they belongs to the starting name value. And this make arguments a bit more
+ * flexible when to store lists of values.
+ * @param stringName section name, value with name where to start finding value
+ * @param uSecondIndex index for non named values after first value with matched name
+ * @return argument with value or argument with null
+ */
+arguments::argument arguments::get_argument(std::string_view stringName, unsigned uSecondIndex, tag_section ) const
+{
+   const auto* pPosition = find(stringName);
+   if( pPosition != nullptr )
+   {
+      if( uSecondIndex == 0 ) return get_argument_s(pPosition);
+
+      pPosition = next_s( pPosition, uSecondIndex, get_buffer_end() );
+      if( pPosition != nullptr ) return get_argument_s(pPosition);
+   }
+
+   return argument();
+}
+
+/** ---------------------------------------------------------------------------
  * @brief return first value found from list of names
  * @code
 gd::argument::arguments argumentsUser;
@@ -2613,6 +2636,42 @@ arguments::const_pointer arguments::next_s(const_pointer pPosition)
 #endif
 
    return pPosition;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief goto sub (second) value in named section
+ * name section is a value that is named and then non named values after belongs to it
+ * @param pPosition first value, could be a name
+ * @param uSecondIndex index to value that belongs to first named value
+ * @param pEnd last position to search (buffer ends)
+ * @return pointer to value if index is within the number of values after name or nullptr if no value
+ */
+arguments::const_pointer arguments::next_s( const_pointer pPosition, unsigned uSecondIndex, const_pointer pEnd )
+{
+   pPosition = arguments::move_to_value_s(pPosition);
+   uint32_t u_ = *(uint32_t*)pPosition;
+   uint32_t uType = u_ >> 24;                                                  // get value type
+#ifndef NDEBUG
+   auto typename_d = gd::types::type_name_g( uType & ~eTypeNumber_MASK );
+#endif
+   while( pPosition < pEnd && uSecondIndex > 0 && uType < arguments::CType_MAX )
+   {
+#ifndef NDEBUG
+      const_pointer pbegin_d = pPosition;
+#endif
+      uint32_t uLength = u_ & 0x00FFFFFF;                                                          assert( (uLength % 4) == 0 ); // has to be aligend 
+      uType = u_ >> 24;
+      pPosition += sizeof( uint32_t );                                         // move past type and length information
+      pPosition += uLength;                                                    // move past value length
+#ifndef NDEBUG
+      uint64_t uValueSize_d = pPosition - pbegin_d;
+#endif
+      uSecondIndex--;
+   }
+
+   if( uSecondIndex == 0 && uType < arguments::CType_MAX ) return pPosition;
+
+   return nullptr;
 }
 
 

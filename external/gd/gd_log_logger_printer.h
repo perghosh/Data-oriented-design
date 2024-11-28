@@ -286,6 +286,7 @@ private:
 public:
    printer_file() : m_stringSplit{ L"  " }, m_stringNewLine{ L"\n" } {}
    printer_file(const std::string_view& stringFileName);
+   printer_file(const std::string_view& stringName, const std::string_view& stringFileName);
    printer_file(const std::wstring_view& stringFileName) : m_stringFileName(stringFileName), m_stringSplit{ L"  " }, m_stringNewLine{ L"\n" } {}
    printer_file(unsigned uSeverity, const std::wstring_view& stringFileName) : i_printer(uSeverity), m_stringFileName(stringFileName), m_stringSplit{ L"  " }, m_stringNewLine{ L"\n" } {}
    // copy
