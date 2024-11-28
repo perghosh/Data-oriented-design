@@ -205,7 +205,7 @@ void CApplication::Update()
          uint32_t uShipColumn = m_argumentsShip("column");
          uint32_t uShipRow = m_argumentsShip("row");
 
-         if( uColumn == uShipColumn && uRow == uShipRow )
+         if( (uColumn + 1) == uShipColumn && uRow == uShipRow )
          {
             m_stringState = "quit";
          }
