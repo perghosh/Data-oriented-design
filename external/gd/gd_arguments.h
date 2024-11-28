@@ -17,7 +17,7 @@
 
 #include "gd_variant.h"
 #include "gd_variant_view.h"
-#include "gd_arguments_helper.h"
+#include "gd_arguments_common.h"
 
 
 /*
@@ -61,16 +61,8 @@ _GD_ARGUMENT_BEGIN
 _GD_ARGUMENT_BEGIN
 #endif
 
-struct tag_list {};                                                            ///< operations that use some sort of container class in stl  
-struct tag_memory {};                                                          ///< logic around memory
-struct tag_pair {};                                                            ///< tag dispatcher used to select working with pair items instead of vector
-struct tag_parse {};                                                           ///< methods that parse
-struct tag_parse_type{};                                                       ///< tag to try to parse type of value
-
-
-
 // ================================================================================================
-// ================================================================================= arguments
+// ====================================================================================== arguments
 // ================================================================================================
 
 
@@ -619,7 +611,7 @@ public:
    const argument operator[](unsigned uIndex) const { return get_argument(uIndex); }
    const argument operator[](std::string_view stringName) const { return get_argument(stringName); }
    const argument operator[](arguments::const_pointer p) const { return get_argument(p); }
-
+   /// index operator edit is needed
    argument_edit operator[](const index_edit& index_);
 
    argument_edit operator()(unsigned uIndex) {
@@ -894,6 +886,7 @@ public:
 
    [[nodiscard]] argument get_argument(unsigned int uIndex) const;
    [[nodiscard]] argument get_argument(std::string_view stringName) const { return find_argument(stringName); }
+   [[nodiscard]] argument get_argument(std::string_view stringName, unsigned uSecondIndex, tag_section ) const;
    template<class DEFAULT>
    [[nodiscard]] DEFAULT get_argument(const std::string_view& stringName, DEFAULT defaultValue) const {
       argument  v = find_argument(stringName);
@@ -1046,6 +1039,8 @@ public:
    /// move pointer to next value in buffer
    static pointer next_s(pointer pPosition);
    static const_pointer next_s(const_pointer pPosition);
+   static const_pointer next_s(const_pointer pPosition, unsigned uSecondIndex, const_pointer pEnd );
+   static pointer next_s(pointer pPosition, unsigned uSecondIndex, const_pointer pEnd );
 
    /// ## Calculate size in bytes needed for argument values stored in arguments object
    static unsigned int sizeof_s(const argument& argumentValue);

@@ -835,8 +835,11 @@ bool arguments::argument::is_true() const
    return bTrue;
 }
 
-void arguments::argument_edit::set(argument argumentSet)
+void arguments::argument_edit::set(const argument& argumentSet)
 {
+   
+   m_pArguments->set(m_pValue, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
+   /*
    auto eType = argumentSet.type_number();
    if( is_type_fixed_size_s(eType) == true && eType == type_number() )
    {
@@ -848,7 +851,42 @@ void arguments::argument_edit::set(argument argumentSet)
    {
       m_pArguments->set((pointer)m_pPosition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
    }
+
+   */
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Set value at position in arguments buffer
+ * @param pposition pointer to valid position within arguments buffer 
+ * @param argumentSet value to set
+ */
+void arguments::set(pointer pposition, const argument& argumentSet, tag_argument)
+{                                                                                                  assert( pposition >= get_buffer_start() ); assert( pposition < get_buffer_end() );
+   pointer ppositionValue = move_to_value_s( pposition );
+   set(pposition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
+   /*
+   auto eTypeArgument = argumentSet.type_number();
+   auto uType = type_s( ppositionValue );
+   if( is_type_fixed_size_s(eTypeArgument) == true && eTypeArgument == uType )
+   {
+      auto pPosition = ppositionValue;
+      pPosition += sizeof( uint32_t );                                         assert(pPosition < get_buffer_end());
+      memcpy(pPosition, pBuffer, uLength);
+
+      pPosition += sizeof( uint32_t );                                         assert(pPosition < get_buffer_end());
+      memcpy(pPosition, pBuffer, uLength);
+
+      auto pValueData = ppositionValue + 1;                                    // move past type to data (one byte is used to describe type)
+      unsigned uSize = ctype_size[eTypeArgument];
+      memcpy(pValueData, argumentSet.get_value_buffer(), uSize);
+   }
+   else
+   {
+      set(pposition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
+   }
+   */
+}
+
 
 
 /*----------------------------------------------------------------------------- arguments */ /**
@@ -896,19 +934,67 @@ arguments::arguments(const std::string_view& stringName, const gd::variant& vari
    append_argument(stringName, variantValue);
 }
 
-/*
-arguments::arguments(std::pair<std::string_view, gd::variant> pairArgument, pair_tag)
-{
-   zero();
-   append_argument(pairArgument);
-}
-*/
-
 arguments& arguments::operator=(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair)
 {
    for( auto it : listPair ) append_argument(it);
    return *this;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief index operator where editable argument is returned.
+ * @code
+TEST_CASE( "[gd] arguments using index", "[gd]" ) {
+   gd::argument::arguments arguments_;
+   arguments_.append("1", 1);
+   arguments_.append("2", "2");
+   arguments_.append("3", 3);
+   arguments_.append("4", 4);
+   arguments_.append("5", 5);
+   arguments_.append_many( 100, 200, 300, 400, 500 );
+
+   using namespace gd::argument;
+   std::string_view stringName01 = "1";
+   gd::argument::index index( stringName01 );
+   auto edit_ = arguments_[index];
+   auto edit1_ = arguments_["1"_index];
+   assert( (int)edit_ == (int)edit1_ );
+   arguments_[index] = 100;
+   int iNumber1 = arguments_["1"];
+   iNumber1 *= 2;
+   arguments_[index] = iNumber1;
+   int iNumber7a = arguments_[7];
+   int iNumber7b = arguments_[7_index];
+   assert( iNumber7a == iNumber7b );
+}
+ * @endcode
+ * @param index_edit_ `index_edit` object used to get part within arguments
+ * @return argument_edit for index value or empty argument_edit object if not found
+ */
+arguments::argument_edit arguments::operator[](const index_edit& index_edit_) 
+{
+   pointer pPosition = nullptr;
+
+   if( index_edit_.is_string() == true )
+   {
+      pPosition = find( index_edit_.get_string() );
+      if( index_edit_.is_second_index() == true )
+      {
+         pPosition = next_s( pPosition, index_edit_.get_second_index(), get_buffer_end());
+      }
+   }
+   else if( index_edit_.is_index() == true )
+   {
+      pPosition = find( (unsigned)index_edit_.get_index() );
+   }
+
+   if( pPosition != nullptr )
+   {
+      return arguments::get_edit_param_s(this, pPosition);
+   }
+
+   return argument_edit();
+}
+
 
 arguments& arguments::append(const argument& argumentValue, tag_argument)
 {
@@ -2153,6 +2239,8 @@ arguments::argument arguments::get_argument(unsigned int uIndex) const
  * If `arguments` stores value without name/key then these "belongs" or can act
  * as they belongs to the starting name value. And this make arguments a bit more
  * flexible when to store lists of values.
+ * @code
+ * @endcode
  * @param stringName section name, value with name where to start finding value
  * @param uSecondIndex index for non named values after first value with matched name
  * @return argument with value or argument with null
@@ -2673,6 +2761,36 @@ arguments::const_pointer arguments::next_s( const_pointer pPosition, unsigned uS
 
    return nullptr;
 }
+
+/// Same as `next_s` above with 
+arguments::pointer arguments::next_s( pointer pPosition, unsigned uSecondIndex, const_pointer pEnd )
+{
+   pPosition = arguments::move_to_value_s(pPosition);
+   uint32_t u_ = *(uint32_t*)pPosition;
+   uint32_t uType = u_ >> 24;                                                  // get value type
+#ifndef NDEBUG
+   auto typename_d = gd::types::type_name_g( uType & ~eTypeNumber_MASK );
+#endif
+   while( pPosition < pEnd && uSecondIndex > 0 && uType < arguments::CType_MAX )
+   {
+#ifndef NDEBUG
+      const_pointer pbegin_d = pPosition;
+#endif
+      uint32_t uLength = u_ & 0x00FFFFFF;                                                          assert( (uLength % 4) == 0 ); // has to be aligend 
+      uType = u_ >> 24;
+      pPosition += sizeof( uint32_t );                                         // move past type and length information
+      pPosition += uLength;                                                    // move past value length
+#ifndef NDEBUG
+      uint64_t uValueSize_d = pPosition - pbegin_d;
+#endif
+      uSecondIndex--;
+   }
+
+   if( uSecondIndex == 0 && uType < arguments::CType_MAX ) return pPosition;
+
+   return nullptr;
+}
+
 
 
 

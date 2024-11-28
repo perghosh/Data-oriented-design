@@ -246,15 +246,36 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
    }
 
    {
-      gd::argument::shared::arguments arguments_;
-      arguments_.append("000", 10);
-      arguments_.append_many( 100, 200, 300, 400, 500 );
-      arguments_.append("111", 10);
-      arguments_.append_many( 100, 200, 300, 400, 500 );
-      std::cout << arguments_.print() << "\n";
 
-      auto value_ = arguments_.get_argument( "111", 3, gd::argument::shared::tag_section{});
-      std::cout << value_.as_int64() << "\n";
+      {
+         gd::argument::shared::arguments arguments_;
+         arguments_.append("000", 10);
+         arguments_.append_many(100, 200, 300, 400, 500);
+         arguments_.append("111", 10);
+         arguments_.append_many(100, 200, 300, 400, 500);
+         std::cout << arguments_.print() << "\n";
+
+         auto value_ = arguments_.get_argument("111", 3, gd::argument::tag_section{});
+         std::cout << value_.as_int64() << "\n";
+         arguments_[gd::argument::index_edit{"111", 3}] = 33333;
+         value_ = arguments_.get_argument("111", 3, gd::argument::tag_section{});
+         std::cout << value_.as_int64() << "\n";
+      }
+
+      {
+         gd::argument::arguments arguments_;
+         arguments_.append("000", 10);
+         arguments_.append_many(100, 200, 300, 400, 500);
+         arguments_.append("111", 10);
+         arguments_.append_many(100, 200, 300, 400, 500);
+         std::cout << arguments_.print() << "\n";
+
+         auto value_ = arguments_.get_argument("111", 3, gd::argument::tag_section{});
+         std::cout << value_.as_int64() << "\n";
+         arguments_[gd::argument::index_edit{"111", 3}] = 33333;
+         value_ = arguments_.get_argument("111", 3, gd::argument::tag_section{});
+         std::cout << value_.as_int64() << "\n";
+      }
    }
 
 

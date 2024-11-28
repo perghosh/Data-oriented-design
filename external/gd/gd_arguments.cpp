@@ -925,7 +925,7 @@ arguments::argument_edit arguments::operator[](const index_edit& index_edit_)
       pPosition = find( index_edit_.get_string() );
       if( index_edit_.is_second_index() == true )
       {
-
+         pPosition = next_s( pPosition, index_edit_.get_second_index(), get_buffer_end());
       }
    }
    else if( index_edit_.is_index() == true )
@@ -1889,6 +1889,30 @@ arguments::argument arguments::get_argument(unsigned int uIndex) const
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief return value within the named value section.
+ * If `arguments` stores value without name/key then these "belongs" or can act
+ * as they belongs to the starting name value. And this make arguments a bit more
+ * flexible when to store lists of values.
+ * @param stringName section name, value with name where to start finding value
+ * @param uSecondIndex index for non named values after first value with matched name
+ * @return argument with value or argument with null
+ */
+arguments::argument arguments::get_argument(std::string_view stringName, unsigned uSecondIndex, tag_section ) const
+{
+   const auto* pPosition = find(stringName);
+   if( pPosition != nullptr )
+   {
+      if( uSecondIndex == 0 ) return get_argument_s(pPosition);
+
+      pPosition = next_s( pPosition, uSecondIndex, get_buffer_end() );
+      if( pPosition != nullptr ) return get_argument_s(pPosition);
+   }
+
+   return argument();
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief return first value found from list of names
  * @code
 gd::argument::arguments argumentsUser;
@@ -2321,8 +2345,8 @@ arguments::pointer arguments::next_s(pointer pPosition)
 arguments::const_pointer arguments::next_s(const_pointer pPosition) 
 {
    pPosition = arguments::move_to_value_s(pPosition);
-   uint8_t uType = *pPosition;                                                   // get value type
-   pPosition++;                                                                  // move past type
+   uint8_t uType = *pPosition;                                                 // get value type
+   pPosition++;                                                                // move past type
    if( (uType & eType_MASK) == 0 )
    {
       if( uType < eTypeNumberString ) { pPosition += ctype_size[uType]; }
@@ -2352,6 +2376,95 @@ arguments::const_pointer arguments::next_s(const_pointer pPosition)
 
    return pPosition;
 }
+
+/** ---------------------------------------------------------------------------
+* @brief goto sub (second) value in named section
+* name section is a value that is named and then non named values after belongs to it
+* @param pPosition first value, could be a name
+* @param uSecondIndex index to value that belongs to first named value
+* @param pEnd last position to search (buffer ends)
+* @return pointer to value if index is within the number of values after name or nullptr if no value
+*/
+arguments::const_pointer arguments::next_s( const_pointer pPosition, unsigned uSecondIndex, const_pointer pEnd )
+{
+   pPosition = arguments::move_to_value_s(pPosition);
+   uint8_t uType = *pPosition;                                                 // get value type
+
+#ifndef NDEBUG
+   auto typename_d = gd::types::type_name_g( uType & ~eTypeNumber_MASK );
+#endif
+   while( pPosition < pEnd && uSecondIndex > 0 && uType < arguments::CType_MAX )
+   {
+#ifndef NDEBUG
+      const_pointer pbegin_d = pPosition;
+#endif
+      pPosition++;                                                             // move past type
+      if( uType < eTypeNumberString ) { pPosition += ctype_size[uType]; }
+      else
+      {
+         if( uType == eTypeNumberString ||
+            uType == eTypeNumberUtf8String ) pPosition += strlen((const char*)pPosition) + 1;
+         else if( uType == eTypeNumberString ) pPosition += wcslen((const wchar_t*)pPosition) * 2 + 2;
+         else if( uType == eTypeNumberUtf32String )
+         {
+            unsigned uLength = 0;
+            while( *((const char32_t*)pPosition + uLength) ) uLength++;
+            pPosition += (uLength + 1) * sizeof(char32_t);
+         }
+         else assert(false);
+      }
+#ifndef NDEBUG
+      uint64_t uValueSize_d = pPosition - pbegin_d;
+#endif
+      uSecondIndex--;
+   }
+
+   if( uSecondIndex == 0 && uType < arguments::CType_MAX ) return pPosition;
+
+   return nullptr;
+}
+
+/// Same as `next_s` above with 
+arguments::pointer arguments::next_s( pointer pPosition, unsigned uSecondIndex, const_pointer pEnd )
+{
+   pPosition = arguments::move_to_value_s(pPosition);
+   uint8_t uType = *pPosition;                                                 // get value type
+
+#ifndef NDEBUG
+   auto typename_d = gd::types::type_name_g( uType & ~eTypeNumber_MASK );
+#endif
+   while( pPosition < pEnd && uSecondIndex > 0 && uType < arguments::CType_MAX )
+   {
+#ifndef NDEBUG
+      const_pointer pbegin_d = pPosition;
+#endif
+      pPosition++;                                                             // move past type
+      if( uType < eTypeNumberString ) { pPosition += ctype_size[uType]; }
+      else
+      {
+         if( uType == eTypeNumberString ||
+            uType == eTypeNumberUtf8String ) pPosition += strlen((const char*)pPosition) + 1;
+         else if( uType == eTypeNumberString ) pPosition += wcslen((const wchar_t*)pPosition) * 2 + 2;
+         else if( uType == eTypeNumberUtf32String )
+         {
+            unsigned uLength = 0;
+            while( *((const char32_t*)pPosition + uLength) ) uLength++;
+            pPosition += (uLength + 1) * sizeof(char32_t);
+         }
+         else assert(false);
+      }
+#ifndef NDEBUG
+      uint64_t uValueSize_d = pPosition - pbegin_d;
+#endif
+      uSecondIndex--;
+   }
+
+   if( uSecondIndex == 0 && uType < arguments::CType_MAX ) return pPosition;
+
+   return nullptr;
+}
+
+
 
 
 

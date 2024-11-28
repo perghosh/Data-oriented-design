@@ -25,7 +25,7 @@
 
 #include "gd_variant.h"
 #include "gd_variant_view.h"
-
+#include "gd_arguments_common.h"
 
 /*
 | class | Description |
@@ -67,15 +67,6 @@ _GD_ARGUMENT_SHARED_BEGIN
 #else
 _GD_ARGUMENT_SHARED_BEGIN
 #endif
-
-struct tag_list {};                                                            ///< operations that use some sort of container class in stl  
-struct tag_memory {};                                                          ///< logic around memory
-struct tag_pair {};                                                            ///< tag dispatcher used to select working with pair items instead of vector
-struct tag_parse {};                                                           ///< methods that parse
-struct tag_parse_type{};                                                       ///< tag to try to parse type of value
-struct tag_align {};                                                           ///< align related methods
-struct tag_section {};                                                         ///< section related methods, section in arguments is a named value with multiple non named values after
-
 
 
 // ================================================================================================
@@ -540,7 +531,7 @@ public:
       template<typename TYPE>
       bool operator==(TYPE v) const { return compare_argument_s(*this, gd::variant_view( v ) ); }
 
-      void set(argument argumentSet);
+      void set(const argument& argumentSet);
 
       arguments* m_pArguments;
       arguments::const_pointer m_pPosition;
@@ -693,6 +684,8 @@ public:
    const argument operator[](unsigned uIndex) const { return get_argument(uIndex); }
    const argument operator[](std::string_view stringName) const { return get_argument(stringName); }
    const argument operator[](arguments::const_pointer p) const { return get_argument(p); }
+   /// index operator edit is needed
+   argument_edit operator[](const index_edit& index_);
 
    argument_edit operator()(unsigned uIndex) {
       const_pointer pPosition = find(uIndex);
@@ -872,7 +865,8 @@ public:
    arguments& set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength);
    arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength);
    
-   
+   void set( pointer pposition, const argument& argumentSet, tag_argument );   
+
    pointer set(pointer pPosition, const gd::variant_view& variantValue, tag_view );
    pointer set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, tag_internal );
 
@@ -1134,6 +1128,7 @@ public:
    static pointer next_s(pointer pPosition);
    static const_pointer next_s(const_pointer pPosition);
    static const_pointer next_s(const_pointer pPosition, unsigned uSecondIndex, const_pointer pEnd );
+   static pointer next_s(pointer pPosition, unsigned uSecondIndex, const_pointer pEnd );
 
    /// ## Calculate size in bytes needed for argument values stored in arguments object
    static unsigned int sizeof_s(const argument& argumentValue);
