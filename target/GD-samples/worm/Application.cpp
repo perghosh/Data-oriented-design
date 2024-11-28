@@ -95,7 +95,7 @@ void Worm::Move()
 bool Worm::Exists(uint64_t uPosition) const
 {
    // ## check if position is on worm body
-   auto pposition_ = m_argumentsWorm.find( {"body", uPosition } , gd::argument::shared::tag_section{} );
+   auto pposition_ = m_argumentsWorm.find( {"body", uPosition } , gd::argument::tag_section{} );
    if( pposition_ != nullptr ) return true;
 
    return false;
