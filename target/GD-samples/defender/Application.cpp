@@ -16,12 +16,42 @@ std::pair<bool, std::string> CApplication::Initialize()
    ::srand( (unsigned)::time(NULL));                                           // init random numbers
 
    m_deviceGame.create(20, 80);
+
+   SHIP_Reset();
+
    return application::basic::CApplication::Initialize();
 }
 
 void CApplication::Move()
 {
    auto [uDeviceHeight, uDeviceWidth] = m_deviceGame.size();
+
+   uint32_t uShipRow = m_argumentsShip("row");
+   uint32_t uShipColumn = m_argumentsShip("column");
+
+   if( m_stringState == "up" )
+   {
+      uShipRow -= 1;
+      
+   }
+   else if( m_stringState == "down" )
+   {
+      uShipRow += 1;
+   }
+   else if( m_stringState == "left" )
+   {
+      uShipColumn -= 1;
+   }
+   else if( m_stringState == "right" )
+   {
+      uShipColumn += 1;
+   }
+   else if( m_stringState == "idle" )
+   {
+      uShipColumn += 0;
+   }
+   m_argumentsShip("row") = uShipRow;
+   m_argumentsShip("column") = uShipColumn;
 
    for(auto& itBomb : m_vectorBomb)
    {
@@ -55,13 +85,25 @@ std::pair<bool, std::string> CApplication::Input_Update()
       case 'q':
          m_stringState = "quit";
          break;
+      case 'w':
+         m_stringState = "up";
+         break;
+      case 's':
+         m_stringState = "down";
+         break;
+      case 'a':
+         m_stringState = "left";
+         break;
+      case 'd':
+         m_stringState = "right";
+         break;
+      case 'e':
+         m_stringState = "idle";
+         break;
       default:
          break;
       }
    }
-   
-
-
    return { true, "" };
 }
 
@@ -81,6 +123,11 @@ void CApplication::Draw()
          m_deviceGame.print( uRow, uColumn, "#", uColor);
       }
    }
+
+   uint32_t uShipRow = m_argumentsShip("row");
+   uint32_t uShipColumn = m_argumentsShip("column");
+
+   m_deviceGame.print(uShipRow, uShipColumn, "P", 44);
    
    std::cout << m_caretTopLeft.render( gd::console::tag_format_cli{});  
    std::cout << m_deviceGame.render(gd::console::tag_format_cli{});
@@ -124,10 +171,45 @@ void CApplication::BOMB_Add()
 
 }
 
+void CApplication::SHIP_Reset()
+{
+   m_argumentsShip.clear();
+   m_argumentsShip.append("row", uint32_t(5));
+   m_argumentsShip.append("column", uint32_t(5));
+}
+
+void CApplication::GAME_Start()
+{
+
+}
+
+void CApplication::GAME_End()
+{
+
+}
+
 void CApplication::Update()
 {
    if (m_iCount % 5 == 0)
    {
       BOMB_Add();
    }
+
+   for( auto& itBomb : m_vectorBomb )
+   {
+      if( itBomb["show"] == true )
+      {
+         uint32_t uColumn = itBomb["column"];
+         uint32_t uRow = itBomb["row"];
+
+         uint32_t uShipColumn = m_argumentsShip("column");
+         uint32_t uShipRow = m_argumentsShip("row");
+
+         if( uColumn == uShipColumn && uRow == uShipRow )
+         {
+            m_stringState = "quit";
+         }
+      }
+   }
+
 }
