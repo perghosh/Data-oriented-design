@@ -28,13 +28,14 @@ _GD_ARGUMENT_BEGIN
  *
  *
  */
-struct index
+struct index_edit
 {
    enum enumType { eTypeUnknown, eTypeString, eTypePair, eTypeIndex };
 // ## construction ------------------------------------------------------------
-   index() {}
-   index( const std::string_view& stringName ): m_stringName(stringName), m_uType(eTypeString) {  }
-   index( uint64_t uIndex ): m_uIndex(uIndex), m_uType(eTypeIndex) {  }
+   index_edit() {}
+   index_edit( const std::string_view& stringName ): m_stringName(stringName), m_uType(eTypeString) {}
+   index_edit( const std::string_view& stringName, uint32_t ): m_stringName(stringName), m_uType(eTypeString) {}
+   index_edit( uint64_t uIndex ): m_uIndex(uIndex), m_uType(eTypeIndex) {}
 
    //operator std::string_view() const { assert( m_uType == eTypeString ); return m_stringName; }
    //operator uint64_t() const { assert( m_uType == eTypeIndex ); return m_uIndex; }
@@ -43,6 +44,7 @@ struct index
    //void set( const gd::variant_view& )
    bool is_string() const noexcept { return m_uType == eTypeString; }
    bool is_index() const noexcept { return m_uType == eTypeIndex; }
+   bool is_second_index() const noexcept { return m_uSecondIndex != 0; }
    
    const std::string_view& get_string() const { assert( m_uType == eTypeString ); return m_stringName; }
    uint64_t get_index() const { assert( m_uType == eTypeIndex ); return m_uIndex; }
@@ -61,16 +63,18 @@ struct index
       const uint64_t m_uIndex;
    };
 
+   uint32_t m_uSecondIndex = 0; ///< index for sub item, used for named ranges
+
 // ## free functions ----------------------------------------------------------
 
 };
 
-inline index operator ""_index(const char* pbsz, size_t uSize) {
-   return index( std::string_view{ pbsz, uSize } );
+inline index_edit operator ""_edit(const char* pbsz, size_t uSize) {
+   return index_edit( std::string_view{ pbsz, uSize } );
 }
 
-inline index operator ""_index(uint64_t uIndex) {
-   return index( uIndex );
+inline index_edit operator ""_edit(unsigned long long int uIndex) {
+   return index_edit( uIndex );
 }
 
 

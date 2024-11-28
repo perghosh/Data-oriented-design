@@ -913,20 +913,24 @@ TEST_CASE( "[gd] arguments using index", "[gd]" ) {
    assert( iNumber7a == iNumber7b );
 }
  * @endcode
- * @param index_ index object used to get part within arguments
+ * @param index_edit_ `index_edit` object used to get part within arguments
  * @return argument_edit for index value or empty argument_edit object if not found
  */
-arguments::argument_edit arguments::operator[](const index& index_) 
+arguments::argument_edit arguments::operator[](const index_edit& index_edit_) 
 {
    pointer pPosition = nullptr;
 
-   if( index_.is_string() == true )
+   if( index_edit_.is_string() == true )
    {
-      pPosition = find( index_.get_string() );
+      pPosition = find( index_edit_.get_string() );
+      if( index_edit_.is_second_index() == true )
+      {
+
+      }
    }
-   else if( index_.is_index() == true )
+   else if( index_edit_.is_index() == true )
    {
-      pPosition = find( (unsigned)index_.get_index() );
+      pPosition = find( (unsigned)index_edit_.get_index() );
    }
 
    if( pPosition != nullptr )

@@ -2,6 +2,14 @@
  * \file gd_arguments.h
  * 
  * \brief Pack primitive value and some common derived values in byte buffer. 
+ *
+**Type of methods**
+| method  | brief  | description |
+|---|---|---| 
+| `append*` | appends value to arguments  | `append*` has variant to make it as flexible as possible.  |
+| `insert*` | inserts value before specified  | `insert` insert is used to insert value before specified |
+| `set*` | set or appends value  | `set*` sets value for existing value or if not found it appends it.  |
+
  * 
  */
 
@@ -897,7 +905,7 @@ public:
    [[nodiscard]] const_pointer find(unsigned int uIndex) const;
    [[nodiscard]] pointer find(const std::string_view& stringName);
    [[nodiscard]] const_pointer find(const std::string_view& stringName) const;
-   [[nodiscard]] const_pointer find(std::string_view stringName, const_pointer pPosition) const;
+   [[nodiscard]] const_pointer find(std::string_view stringName, const_pointer pOffsetPosition) const;
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch) const;
    /// Find value within section
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch, tag_section ) const;
@@ -972,6 +980,7 @@ public:
 
    [[nodiscard]] argument get_argument(unsigned int uIndex) const;
    [[nodiscard]] argument get_argument(std::string_view stringName) const { return find_argument(stringName); }
+   [[nodiscard]] argument get_argument(std::string_view stringName, unsigned uSecondIndex, tag_section ) const;
    template<class DEFAULT>
    [[nodiscard]] DEFAULT get_argument(const std::string_view& stringName, DEFAULT defaultValue) const {
       argument  v = find_argument(stringName);
@@ -1124,6 +1133,7 @@ public:
    /// move pointer to next value in buffer
    static pointer next_s(pointer pPosition);
    static const_pointer next_s(const_pointer pPosition);
+   static const_pointer next_s(const_pointer pPosition, unsigned uSecondIndex, const_pointer pEnd );
 
    /// ## Calculate size in bytes needed for argument values stored in arguments object
    static unsigned int sizeof_s(const argument& argumentValue);

@@ -351,6 +351,17 @@ printer_file::printer_file( const std::string_view& stringFileName ): m_stringSp
    m_stringFileName.assign( pwszBuffer, uLength );
 }
 
+printer_file::printer_file( const std::string_view& stringName, const std::string_view& stringFileName )
+   : i_printer(stringName), m_stringSplit{ L"  " }, m_stringNewLine{ L"\n" } 
+{
+   constexpr unsigned uBufferSize = 512;                                                           assert( stringFileName.length() < uBufferSize );
+   wchar_t pwszBuffer[uBufferSize];
+   size_t uLength = stringFileName.length();
+
+   std::mbstowcs(pwszBuffer, stringFileName.data(), uLength);
+   m_stringFileName.assign( pwszBuffer, uLength );
+}
+
 /*----------------------------------------------------------------------------- print */ /**
  * print is overridden from i_print and is called when logger prints something and sends it
  * to attached printers.
