@@ -87,9 +87,11 @@ std::pair<bool, std::string> CApplication::Input_Update()
          break;
       case 'w':
          m_stringState = "up";
+         m_argumentsShip.set("move_row", int32_t(-1));
          break;
       case 's':
          m_stringState = "down";
+         m_argumentsShip.set("move_row", int32_t(1));
          break;
       case 'a':
          m_stringState = "left";
