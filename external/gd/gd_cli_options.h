@@ -47,7 +47,7 @@ public:
       eFlagActive          = 0b0000'0000'0000'0001,
       eFlagParent          = 0b0000'0000'0000'0010,   ///< if options should find valid option values in parent
       eFlagUnchecked       = 0b0000'0000'0000'0100,   ///< when parsing argument values 
-      eFlagSingleDash      = 0b0000'0000'0000'0100,   ///< option value marked with single dash is allowed
+      eFlagSingleDash      = 0b0000'0000'0000'1000,   ///< option value marked with single dash is allowed
    };
 
    enum enumOptionFlag
