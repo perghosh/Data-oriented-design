@@ -161,6 +161,11 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
 
          // ## try to find option flag
          poptionActive = find( pbszArgument );
+         if( poptionActive == nullptr && poptionsRoot != nullptr && is_parent() == true )
+         {
+            poptionActive = poptionsRoot->find( pbszArgument );
+         }
+
          if( poptionActive != nullptr )
          {
             add_value( poptionActive, true );
