@@ -32,8 +32,8 @@ void CApplication::Move()
    int32_t iShipMoveY = m_argumentsShip("move_row");
    int32_t iShipMoveX = m_argumentsShip("move_column");
 
-   m_argumentsShip("row") = uShipRow += iShipMoveY;
-   m_argumentsShip("column") = uShipColumn += iShipMoveX;
+   m_argumentsShip.set("row", (uShipRow + iShipMoveY) );
+   m_argumentsShip.set("column", (uShipColumn + iShipMoveX) );
    m_argumentsShip.set("move_row", int32_t(0));
    m_argumentsShip.set("move_column", int32_t(0));
 
