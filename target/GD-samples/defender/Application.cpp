@@ -29,29 +29,13 @@ void CApplication::Move()
    uint32_t uShipRow = m_argumentsShip("row");
    uint32_t uShipColumn = m_argumentsShip("column");
 
-   if( m_stringState == "up" )
-   {
-      uShipRow -= 1;
-      
-   }
-   else if( m_stringState == "down" )
-   {
-      uShipRow += 1;
-   }
-   else if( m_stringState == "left" )
-   {
-      uShipColumn -= 1;
-   }
-   else if( m_stringState == "right" )
-   {
-      uShipColumn += 1;
-   }
-   else if( m_stringState == "idle" )
-   {
-      uShipColumn += 0;
-   }
-   m_argumentsShip("row") = uShipRow;
-   m_argumentsShip("column") = uShipColumn;
+   int32_t iShipMoveY = m_argumentsShip("move_row");
+   int32_t iShipMoveX = m_argumentsShip("move_column");
+
+   m_argumentsShip("row") = uShipRow += iShipMoveY;
+   m_argumentsShip("column") = uShipColumn += iShipMoveX;
+   m_argumentsShip.set("move_row", int32_t(0));
+   m_argumentsShip.set("move_column", int32_t(0));
 
    for(auto& itBomb : m_vectorBomb)
    {
@@ -95,12 +79,11 @@ std::pair<bool, std::string> CApplication::Input_Update()
          break;
       case 'a':
          m_stringState = "left";
+         m_argumentsShip.set("move_column", int32_t(-1));
          break;
       case 'd':
          m_stringState = "right";
-         break;
-      case 'e':
-         m_stringState = "idle";
+         m_argumentsShip.set("move_column", int32_t(1));
          break;
       default:
          break;
@@ -178,6 +161,10 @@ void CApplication::SHIP_Reset()
    m_argumentsShip.clear();
    m_argumentsShip.append("row", uint32_t(5));
    m_argumentsShip.append("column", uint32_t(5));
+
+   m_argumentsShip.append("move_row", int32_t(0));
+   m_argumentsShip.append("move_column", int32_t(0));
+   
 }
 
 void CApplication::GAME_Start()
