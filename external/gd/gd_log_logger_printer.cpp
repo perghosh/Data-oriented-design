@@ -500,7 +500,7 @@ std::pair<int, std::string> printer_file::file_open_s(const std::wstring_view& s
    if( iFileHandle >= 0 ) _lseek( iFileHandle, 0, SEEK_END );
 #  else
    std::string stringFileName_ = gd::utf8::convert_unicode_to_ascii( stringFileName );
-   iFileHandle = open(stringFileName_.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); assert( iFileHandle >= 0 );
+   iFileHandle = open(stringFileName_.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); 
    if( iFileHandle >= 0 ) lseek( iFileHandle, 0, SEEK_END );
 #  endif
 
