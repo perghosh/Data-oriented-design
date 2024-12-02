@@ -471,6 +471,11 @@ public:
    std::unique_ptr<char> m_pbszText;
 };
 
+// ================================================================================================
+// ========================================================================================== ascii
+// ================================================================================================
+
+
 /** ===========================================================================
  * \brief ascii is used to improve flexibility for `message` in logging
  *
@@ -479,6 +484,7 @@ public:
  */
 struct ascii
 {
+   enum enumGroup { eGroupLetter = 0x01, eGroupVowel = 0x02, eGroupConsonant = 0x04, eGroupSpace = 0x08 };
 // ## construction ------------------------------------------------------------
    ascii() {}
    ascii( size_t uCount, char iCharacter ): m_stringAscii( uCount, iCharacter ) {}
@@ -518,6 +524,9 @@ struct ascii
    ascii& append(const std::tuple<int, char**, std::string_view>& tuple_) { return append( std::pair<int, char**>( std::get<0>(tuple_), std::get<1>(tuple_) ), std::get<2>(tuple_) ); }   template <typename VALUE>
    ascii& append( VALUE value_ ) { m_stringAscii += std::to_string( value_ ); return *this; }
 
+   // ## keep some and remove rest
+   ascii& keep( unsigned uKeep );
+
    void clear() { m_stringAscii.clear(); }
 
 /** \name DEBUG
@@ -540,7 +549,12 @@ ascii make_ascii_g(Arguments&&... arguments_) {
 }
 
 // ================================================================================================
-// ================================================================================= message
+// ======================================================================================== message
+// ================================================================================================
+
+
+// ================================================================================================
+// ======================================================================================== message
 // ================================================================================================
 
 /**

@@ -11,7 +11,7 @@
 //#include <sys/types.h>
 //#include <sys/stat.h>
 
-#include "gd_utf8.h"
+#include "gd_utf8.hpp"
 
 #ifdef WIN32
 
@@ -167,6 +167,7 @@ std::pair<bool, std::string> get_known_folder_path_g(const std::string_view& str
          stringFolderPath = pbszHome;
       }
    }
+   break;
       
    default:                                                                      assert(false); // don't know this folder
       std::string stringError = "Unknown folder id: ";
