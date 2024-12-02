@@ -100,6 +100,47 @@ ascii& ascii::append(const std::pair<int, char**>& pair_, const std::string_view
 }
 
 
+/*
+   01 = letter
+   02 = vowel
+   04 = consonant
+   08 = space
+*/
+constexpr uint8_t puCharType_g[0x80] =
+{
+   //       0, 1, 2, 3,  4, 5, 6, 7,  8, 9, A, B,  C, D, E, F,
+   /* 0 */ 00,00,00,00, 00,00,00,00,  8, 8,00,00, 00, 8,00,00,  /* 0   - 15  */
+   /* 1 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 16  - 31  */
+   /* 2 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 32  - 47   ,!,",#,$,%,&,',(,),*,+,,,-,.,/ */
+   /* 3 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 48  - 63  0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */  
+
+   /* 4 */ 00,03,05,05, 05,03,05,05, 05,03,05,05, 05,05,05,03,  /* 64  - 79  */
+   /* 5 */ 05,05,05,05, 05,03,05,05, 05,03,05,00, 00,00,00,00,  /* 80  - 95  */
+   /* 6 */ 00,03,05,05, 05,03,05,05, 05,03,05,05, 05,05,05,03,  /* 96  - 111 */
+   /* 7 */ 05,05,05,05, 05,03,05,05, 05,03,05,00, 00,00,00,00   /* 112 - 127 */
+
+};
+
+/// filter characters
+/// \param uKeep -> eGroupLetter = 0x01, eGroupVowel = 0x02, eGroupConsonant = 0x04, eGroupSpace = 0x08
+ascii& ascii::keep(unsigned uKeep) 
+{
+   std::size_t uSet = 0;
+   for( auto it = std::begin( m_stringAscii ), itEnd = std::begin( m_stringAscii ); it != itEnd; it++ )
+   {
+      if( *it >= 0x80 ) continue;
+
+      uint8_t uCharacter = (uint8_t)*it;
+      if( (puCharType_g[uCharacter] & uKeep) == 0 ) continue;
+
+      m_stringAscii[ uSet ] = *it;
+      uSet++;
+   }
+
+   m_stringAscii.resize( uSet );
+
+   return *this;    
+}
 
 // ================================================================================================
 // ======================================================================================== message
