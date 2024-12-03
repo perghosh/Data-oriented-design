@@ -105,28 +105,35 @@ ascii& ascii::append(const std::pair<int, char**>& pair_, const std::string_view
    02 = vowel
    04 = consonant
    08 = space
+   10 = digit
 */
 constexpr uint8_t puCharType_g[0x80] =
 {
-   //       0, 1, 2, 3,  4, 5, 6, 7,  8, 9, A, B,  C, D, E, F,
-   /* 0 */ 00,00,00,00, 00,00,00,00,  8, 8,00,00, 00, 8,00,00,  /* 0   - 15  */
-   /* 1 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 16  - 31  */
-   /* 2 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 32  - 47   ,!,",#,$,%,&,',(,),*,+,,,-,.,/ */
-   /* 3 */ 00,00,00,00, 00,00,00,00, 00,00,00,00, 00,00,00,00,  /* 48  - 63  0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */  
+   //        0,   1,   2,   3,    4,   5,   6,   7,    8,   9,   A,   B,    C,   D,   E,   F,
+   /* 0 */ 0X00,0X00,0X00,0X00, 0X00,0X00,0X00,0X00, 0X08,0X08,0X00,0X00, 0X00,0X08,0X00,0X00,  /* 0   - 15  */
+   /* 1 */ 0X00,0X00,0X00,0X00, 0X00,0X00,0X00,0X00, 0X00,0X00,0X00,0X00, 0X00,0X00,0X00,0X00,  /* 16  - 31  */
+   /* 2 */ 0X00,0X00,0X00,0X00, 0X00,0X00,0X00,0X00, 0X00,0X00,0X00,0X00, 0X00,0X00,0X00,0X00,  /* 32  - 47   ,!,",#,$,%,&,',(,),*,+,,,-,.,/ */
+   /* 3 */ 0X10,0X10,0X10,0X10, 0X10,0X00,0X00,0X10, 0X10,0X10,0X00,0X00, 0X00,0X00,0X00,0X00,  /* 48  - 63  0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */  
 
-   /* 4 */ 00,03,05,05, 05,03,05,05, 05,03,05,05, 05,05,05,03,  /* 64  - 79  */
-   /* 5 */ 05,05,05,05, 05,03,05,05, 05,03,05,00, 00,00,00,00,  /* 80  - 95  */
-   /* 6 */ 00,03,05,05, 05,03,05,05, 05,03,05,05, 05,05,05,03,  /* 96  - 111 */
-   /* 7 */ 05,05,05,05, 05,03,05,05, 05,03,05,00, 00,00,00,00   /* 112 - 127 */
+   /* 4 */ 0X00,0X03,0X05,0X05, 0X05,0X03,0X05,0X05, 0X05,0X03,0X05,0X05, 0X05,0X05,0X05,0X03,  /* 64  - 79  */
+   /* 5 */ 0X05,0X05,0X05,0X05, 0X05,0X03,0X05,0X05, 0X05,0X03,0X05,0X00, 0X00,0X00,0X00,0X00,  /* 80  - 95  */
+   /* 6 */ 0X00,0X03,0X05,0X05, 0X05,0X03,0X05,0X05, 0X05,0X03,0X05,0X05, 0X05,0X05,0X05,0X03,  /* 96  - 111 */
+   /* 7 */ 0X05,0X05,0X05,0X05, 0X05,0X03,0X05,0X05, 0X05,0X03,0X05,0X00, 0X00,0X00,0X00,0X00   /* 112 - 127 */
 
 };
 
-/// filter characters
-/// \param uKeep -> eGroupLetter = 0x01, eGroupVowel = 0x02, eGroupConsonant = 0x04, eGroupSpace = 0x08
+/** ---------------------------------------------------------------------------
+ * @brief select characters to keep in ascii string
+ * @code
+ * LOG_FATAL( gd::log::ascii("1 2 3 4 5 6 7 8 9 0").keep( gd::log::ascii::eGroupDigit ) );
+ * @endcode
+ * @param uKeep - eGroupLetter = 0x01, eGroupVowel = 0x02, eGroupConsonant = 0x04, eGroupSpace = 0x08, eGroupDigit = 0x10
+ * @return ascii& reference to it self
+ */
 ascii& ascii::keep(unsigned uKeep) 
 {
    std::size_t uSet = 0;
-   for( auto it = std::begin( m_stringAscii ), itEnd = std::begin( m_stringAscii ); it != itEnd; it++ )
+   for( auto it = std::begin( m_stringAscii ), itEnd = std::end( m_stringAscii ); it != itEnd; it++ )
    {
       if( *it >= 0x80 ) continue;
 
@@ -138,6 +145,30 @@ ascii& ascii::keep(unsigned uKeep)
    }
 
    m_stringAscii.resize( uSet );
+
+   return *this;    
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Generate line for first character in stringLine or spaces if empty string
+ * @code
+ * LOG_DEBUG( gd::log::ascii().line( "=\n", 100 ) );
+ * @endcode
+ * @param stringLine character used to generate line, if more than one character rest is added in end on line
+ * @param uLength how long line is
+ * @return ascii& reference to it self
+ */
+ascii& ascii::line(const std::string_view& stringLine, unsigned uLength)
+{
+   char iLineCharacter = ' ';
+   if( stringLine.empty() == false ) iLineCharacter = stringLine[0];
+   while( uLength )
+   {
+      m_stringAscii += iLineCharacter;
+      uLength--;
+   }
+
+   if( stringLine.length() > 1 ) { m_stringAscii += stringLine.substr( 1 ); }
 
    return *this;    
 }
