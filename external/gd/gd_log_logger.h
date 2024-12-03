@@ -484,7 +484,7 @@ public:
  */
 struct ascii
 {
-   enum enumGroup { eGroupLetter = 0x01, eGroupVowel = 0x02, eGroupConsonant = 0x04, eGroupSpace = 0x08 };
+   enum enumGroup { eGroupLetter = 0x01, eGroupVowel = 0x02, eGroupConsonant = 0x04, eGroupSpace = 0x08, eGroupDigit = 0x10 };
 // ## construction ------------------------------------------------------------
    ascii() {}
    ascii( size_t uCount, char iCharacter ): m_stringAscii( uCount, iCharacter ) {}
@@ -525,7 +525,12 @@ struct ascii
    ascii& append( VALUE value_ ) { m_stringAscii += std::to_string( value_ ); return *this; }
 
    // ## keep some and remove rest
+
+   /// Keep character for selected flags. @see enumGroup
    ascii& keep( unsigned uKeep );
+
+   /// Generate line of first character in string and add rest if more than one
+   ascii& line( const std::string_view& stringLine, unsigned uLength );
 
    void clear() { m_stringAscii.clear(); }
 

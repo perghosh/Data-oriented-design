@@ -79,6 +79,8 @@ TEST_CASE( "[logging] colors", "[logging]" ) {
       LOG_FATAL( gd::log::make_ascii_g( std::make_tuple( 3, ppbsz_, " " ) ) );
       LOG_FATAL( gd::log::make_ascii_g( "\n", std::make_pair( 100, '=' ), "\n") );
       LOG_FATAL( gd::log::make_ascii_g( std::string("test") ) );
+      LOG_DEBUG( gd::log::ascii("1 2 3 4 5 6 7 8 9 0").keep( gd::log::ascii::eGroupDigit ) );
+      LOG_DEBUG( gd::log::ascii().line( "=\n", 100 ) );
    }
 
 }
