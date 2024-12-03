@@ -5,14 +5,14 @@
 #include <random>
 
 #ifndef NDEBUG
-#include "gd/gd_debug.h"
+   #include "gd/gd_debug.h"
 #endif
 
 #include "Application.h"
 
 std::pair<bool, std::string> CApplication::Initialize()
 {
-   ::srand((unsigned)::time(NULL));                                           // init random numbers
+   //::srand((unsigned)::time(NULL));                                           // init random numbers
 
    m_deviceGame.create(20, 80);
 
