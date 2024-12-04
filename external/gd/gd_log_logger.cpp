@@ -192,7 +192,6 @@ void message::set_text(std::string_view stringText)
 message& message::append(const std::string_view& stringAppend)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, stringAppend.data()));
-   m_uCount++;
 
    return *this;
 }
@@ -205,7 +204,6 @@ message& message::append(const std::string_view& stringAppend)
 message& message::append(const std::wstring_view& stringAppend)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, stringAppend.data()));
-   m_uCount++;
 
    return *this;
 }
@@ -219,7 +217,6 @@ message& message::append(const std::wstring_view& stringAppend)
 message& message::append(const char8_t* pbszUtf8Append)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, pbszUtf8Append));
-   m_uCount++;
 
    return *this;
 }
@@ -245,7 +242,6 @@ message& message::append(const message& messageAppend)
 message& message::append(const stream& streamAppend)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, streamAppend.get_string()));
-   m_uCount++;
 
    return *this;
 }
@@ -258,7 +254,6 @@ message& message::append(const stream& streamAppend)
 message& message::append(const wstream& streamAppend)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, streamAppend.get_string()));
-   m_uCount++;
 
    return *this;
 }
@@ -271,8 +266,20 @@ message& message::append(const wstream& streamAppend)
 message& message::append(const gd::log::printf& printfAppend)
 {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, (const char*)printfAppend));
-   m_uCount++;
 
+   return *this;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief add tag to message
+ * tags are added first in message
+ * @param tagAppend tag name added
+ * @return 
+ */
+message& message::append(const tag& tagAppend)
+{
+   m_uFlags |= eFlagTag;                                                       // mark message that it contains a tag
+   m_pbszText.reset( new_s( tagAppend.get_tag().data(), std::string_view{ " " }, m_pbszText.get() ) );
    return *this;
 }
 
@@ -303,7 +310,6 @@ message& message::printf(const char* pbszFormat, ...)
    {
       m_pbszText = std::move(pbszPrintfText);
    }
-   m_uCount++;
 
    return *this;
 }

@@ -52,10 +52,11 @@ _GD_TYPES_BEGIN
 // ## value related tag dispatchers
 
 struct tag_date {};           ///< date is used in some form
+struct tag_description {};    ///< description is used in some form
 struct tag_id {};             ///< id is used in some form
 struct tag_key {};            ///< key is used in some form
 struct tag_name {};           ///< name is used in some form
-struct tag_description {};    ///< description is used in some form
+struct tag_tag {};            ///< tag value
 
 struct tag_main_type {};      /// main type if there are secondary types
 struct tag_secondary_type {}; /// secondary type if there are main types
@@ -87,10 +88,6 @@ struct tag_view {};
 
 /// argument related operations, could be things like passing arguments or something else
 struct tag_argument {};
-
-
-
-
 
 /// declare pointer to character main type as global 
 extern const uint8_t puCharType_g[0x100];

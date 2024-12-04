@@ -146,7 +146,7 @@ auto plogger = get_s();            // default logger
 #include <iosfwd>
 #include <mutex>
 
-
+#include "gd_types.h"
 #include "gd_utf8.hpp"
 
 
@@ -394,7 +394,7 @@ struct wstream
 };
 
 // ================================================================================================
-// ================================================================================= format
+// ========================================================================================= format
 // ================================================================================================
 
 #if defined( __cpp_lib_format )
@@ -554,9 +554,38 @@ ascii make_ascii_g(Arguments&&... arguments_) {
 }
 
 // ================================================================================================
-// ======================================================================================== message
+// ============================================================================================ tag
 // ================================================================================================
 
+/**
+ * \brief used to hash tag messages, with hash tags it is possible to filter whats printed
+ *
+ *
+ */
+struct tag
+{
+// ## construction ------------------------------------------------------------
+   tag() {}
+   tag( const std::string_view& stringTag ): m_stringTag( stringTag ) {}
+   // copy
+   tag(const tag& o) { common_construct(o); }
+   // assign
+   tag& operator=(const tag& o) { common_construct(o); return *this; }
+
+   ~tag() {}
+   // common copy
+   void common_construct(const tag& o) { m_stringTag = o.m_stringTag; }
+
+// ## methods -----------------------------------------------------------------
+   std::string_view get_tag() const { return std::string_view( m_stringTag ); }
+   size_t length() const { return m_stringTag.length(); }
+   bool empty() const { return m_stringTag.empty(); }
+
+
+// ## attributes --------------------------------------------------------------
+   std::string m_stringTag;
+
+};
 
 // ================================================================================================
 // ======================================================================================== message
@@ -581,6 +610,8 @@ plogger->print(message().printf("%s\n", __FUNCSIG__ ));
  */
 class message 
 {
+public:
+   enum enumFlag { eFlagTag = 0x01 };   
 // ## construction -------------------------------------------------------------
 public:
    message(): m_uSeverity( enumSeverity::eSeverityNone ) {}
@@ -605,14 +636,14 @@ public:
 private:
    // common copy
    void common_construct( const message& o ) {
-      m_uCount       = o.m_uCount;
+      m_uFlags       = o.m_uFlags;
       m_uSeverity = o.m_uSeverity;
       m_uMessageType = o.m_uMessageType;
       m_pbszTextView = o.m_pbszTextView;
       m_pbszText.reset( clone_s(o.m_pbszText.get()) );
    }
    void common_construct( message&& o ) noexcept {
-      m_uCount       = o.m_uCount;
+      m_uFlags       = o.m_uFlags;
       m_uSeverity    = o.m_uSeverity;
       o.m_uSeverity  = enumSeverity::eSeverityNone;                            // reset severity type
       m_uMessageType = o.m_uMessageType;
@@ -635,6 +666,7 @@ public:
    message& operator<<(const stream& streamAppend) { return append(streamAppend); }
    message& operator<<(const wstream& streamAppend) { return append(streamAppend); }
    message& operator<<(const ascii& asciiAppend) { return append(asciiAppend.get_string()); }
+   message& operator<<(const tag& tagAppend) { return append(tagAppend); }
 #if defined( __cpp_lib_format )
    message& operator<<(const format& formatAppend) { return append(formatAppend); }
 #endif
@@ -664,6 +696,9 @@ public:
    [[nodiscard]] enumSeverityNumber get_severity_number() const { return (enumSeverityNumber)(m_uSeverity & static_cast<unsigned>(enumSeverityMask::eSeverityMaskNumber)); }
    [[nodiscard]] enumSeverityGroup get_severity_group() const { return (enumSeverityGroup)(m_uSeverity & static_cast<unsigned>(enumSeverityMask::eSeverityMaskFlagAndGroup)); }
    void set_severity(unsigned uSeverity) { m_uSeverity = uSeverity; }
+
+   // ## `is` methods
+   bool is_tag() const { return (m_uFlags & eFlagTag) == eFlagTag; }
 //@}
 
 /** \name OPERATION
@@ -724,6 +759,7 @@ public:
    message& append(const format& formatAppend);
 #endif
    message& append(const printf& printfAppend);
+   message& append(const tag& tagAppend);
 
    message& printf( const char* pbszFormat, ... );
 #ifdef _MSC_VER   
@@ -752,7 +788,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   unsigned m_uCount = 0;              ///< number of messages added
+   unsigned m_uFlags = 0;              ///< flags to specify message information 
    unsigned m_uSeverity;               ///< type of message severity, used to filter output
    unsigned m_uMessageType = enumMessageType::eMessageTypeText;///< Type of message, setting type affects type of information generated in printer
    //unsigned m_uTextSize = 0;
@@ -845,7 +881,6 @@ inline message& message::operator<<(const char* pbszAppend) {
 
    *this << stringUnicode;
 
-   m_uCount++;
    return *this;
 }
 
@@ -856,7 +891,6 @@ inline message& message::operator<<(std::string_view stringAppend) {
 
    *this << stringUnicode;
 
-   m_uCount++;
    return *this;
 }
 
@@ -867,7 +901,6 @@ inline message& message::operator<<(std::string stringAppend) {
 
    *this << stringUnicode;
 
-   m_uCount++;
    return *this;
 }
 
@@ -1007,7 +1040,7 @@ template<int iLoggerKey, bool bThread = false>
 class logger 
 {
    /// to not make the code to messy this long callback declaration is used
-   using message_callback = std::function< void( message&, logger* ) >;
+   using message_callback = std::function< void( const message&, logger* ) >;
 
 // ## construction -------------------------------------------------------------
 public:
@@ -1041,9 +1074,9 @@ public:
    i_printer* get( const std::string_view& stringName );
 
    /// Send message to connected printers
-   void print(message& message);
+   void print( const message& message );
 
-   virtual void print( message& message, bool bFlush );
+   virtual void print( const message& message, bool bFlush );
    virtual void print( std::initializer_list<message> listMessage );
    virtual void flush();
 
@@ -1062,6 +1095,11 @@ public:
    /// count number of internal printer errors
    size_t error_size() const { return m_vectorError.size(); }
 
+   // ## tag methods, used to filter what log messages are to be printed
+
+   void tag_add( const std::string_view& stringTag ) { m_vectorTag.push_back( std::string( stringTag ) ); }
+   bool tag_exists( const char* pbszTag ) const;
+
    template<typename FUNCTION>
    void callback_add( FUNCTION&& callback_ ) { m_vectorCallback.push_back( std::forward<FUNCTION>( callback_ ) ); }
 
@@ -1070,7 +1108,7 @@ public:
 
 protected:
    // internal printing
-   void print_(message& message);
+   void print_(const message& message );
 /** \name INTERNAL
 *///@{
    /// check severity against internal severity filter
@@ -1101,6 +1139,7 @@ public:
    std::vector<std::unique_ptr<i_printer>> m_vectorPrinter;///< list of connected printers
    std::vector<std::string> m_vectorError;   ///< list of internal errors stored as text
    std::vector< message_callback > m_vectorCallback;
+   std::vector< std::string > m_vectorTag;   ///< active tags if tags should be checked
 
    static std::mutex m_mutex_s;              ///< mutex to enable thread safety printing messages
    
@@ -1148,12 +1187,12 @@ constexpr unsigned logger<iLoggerKey, bThread>::get_severity_s(const std::string
 /// ----------------------------------------------------------------------------
 /// call print and flush after print is done
 template<int iLoggerKey, bool bThread>
-inline void logger<iLoggerKey,bThread>::print(message& message) { print(message, true); }
+inline void logger<iLoggerKey,bThread>::print(const message& message) { print(message, true); }
 
 /// ----------------------------------------------------------------------------
 /// Sends message to all attached printers, 
 template<int iLoggerKey, bool bThread>
-inline void logger<iLoggerKey,bThread>::print(message& message, bool bFlush)
+inline void logger<iLoggerKey,bThread>::print(const message& message, bool bFlush)
 {
    if( check_severity(message.get_severity()) )                                  // check if message has severity within bounds for output
    {
@@ -1225,8 +1264,14 @@ void logger<iLoggerKey, bThread>::print(std::initializer_list<message> listMessa
 
 
 template<int iLoggerKey, bool bThread>
-void logger<iLoggerKey, bThread>::print_(message& message)
+void logger<iLoggerKey, bThread>::print_( const message& message )
 {
+   if( message.is_tag() == true )
+   {
+      // ## check if tag is enabled
+      if( tag_exists( message.get_text() ) == false ) return;
+   }
+
    // ## format message
    if(m_vectorCallback.empty() == false)
    {
@@ -1270,6 +1315,8 @@ void logger<iLoggerKey,bThread>::flush()
    }
 }
 
+/// ----------------------------------------------------------------------------
+/// pop and return error
 template<int iLoggerKey, bool bThread>
 std::string logger<iLoggerKey,bThread>::error_pop()
 {
@@ -1281,6 +1328,27 @@ std::string logger<iLoggerKey,bThread>::error_pop()
    }
 
    return std::string();
+}
+
+/// ----------------------------------------------------------------------------
+/// Check if tag is found
+template<int iLoggerKey, bool bThread>
+bool logger<iLoggerKey,bThread>::tag_exists( const char* pbszTag ) const
+{
+   const char* pbszPosition = pbszTag;
+   while( *pbszPosition == '#' )
+   {
+      pbszPosition++;                                                          // move past # that is a tag marker
+      const char* pbszBegin = pbszPosition;                                    // first character for tag name
+      while( *pbszPosition > ' ' ) pbszPosition++;                             // tag ends when space of less is found
+      std::string_view stringTag( pbszBegin, pbszPosition - pbszBegin );
+      auto itFind = std::find(m_vectorTag.begin(), m_vectorTag.end(), stringTag);// try to find tag in valid tags
+      if( itFind != m_vectorTag.end() ) return true;                           // found tag?
+
+      pbszPosition++;
+   }
+
+   return false;
 }
 
 
@@ -1435,6 +1503,12 @@ constexpr enumSeverity severity_get_g(TYPE typeSeverity)
 }
 
 
+template<int iLoggerKey, bool bThread = false>
+inline void print_message( const message& message )
+{
+   auto plog_ = gd::log::get_g<iLoggerKey,bThread>();
+   plog_->print( message );
+}
 
 _GD_LOG_LOGGER_END
 
