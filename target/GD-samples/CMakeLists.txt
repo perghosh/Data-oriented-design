@@ -55,3 +55,19 @@ if( USE_TARGET_ )
    target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
    set_compiler_options()
 endif()
+
+set( USE_TARGET_ ON ) # ========================================================= ${main_paint}
+if( USE_TARGET_ )
+   set(TARGET_NAME_ "gd_paint")
+
+   add_executable(${TARGET_NAME_} ${external_gd}
+      ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
+
+      "paint_main.cpp"
+      "paint/Application.cpp"
+   )
+   target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
+   target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
+   set_compiler_options()
+endif()
