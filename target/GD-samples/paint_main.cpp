@@ -46,6 +46,7 @@ std::pair<bool, std::string> Play()
       papplication->Input_Update();
 
       //papplication->Update();
+      papplication->PAINT_Add();
       papplication->Move();
       papplication->Draw();
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
