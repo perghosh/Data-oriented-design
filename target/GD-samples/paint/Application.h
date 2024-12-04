@@ -54,8 +54,6 @@ struct CApplication : public application::basic::CApplication
 
    void Draw();
 
-   void Count() { m_iCount++; }
-
    void PAINT_Add();
    void BRUSH_Reset();
 
@@ -67,9 +65,12 @@ struct CApplication : public application::basic::CApplication
    //@}
 
    // ## attributes --------------------------------------------------------------
-   int m_iCount = 0;
-
    std::string m_stringState;
+
+   bool m_bPaintState = false;
+
+   uint8_t m_uInputCount = 0;
+
    std::vector<gd::argument::arguments> m_vectorPaint;
    gd::argument::arguments m_argumentsBrush;
 
