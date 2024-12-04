@@ -23,8 +23,11 @@
    // `LOG_` does it all, in the end all other log macros will call `LOG_`
    #define LOG_( uLogger, uSeverity, expression ) gd::log::get_g<uLogger,false>()->print( gd::log::message( gd::log::severity_get_g( uSeverity ), gd::log::eMessageTypeAll ) << __FILE__ << __func__ << expression )
    // `LOG_RAW_` doesn't print file and function name, it only prints what is sent. Good to have when you only want to produce information
-   #define LOG_RAW_( uLogger, uSeverity, expression ) gd::log::get_g<uLogger,false>()->print( gd::log::message( gd::log::severity_get_g( uSeverity ), gd::log::eMessageTypeAll ) << expression )
-
+   //#define LOG_RAW_( uLogger, uSeverity, expression ) gd::log::get_g<uLogger,false>()->print( gd::log::message( gd::log::severity_get_g( uSeverity ), gd::log::eMessageTypeAll ) << expression )
+   
+   #define LOG_RAW_( uLogger, uSeverity, expression ) gd::log::print_message<uLogger,false>( gd::log::message( gd::log::severity_get_g( uSeverity ), gd::log::eMessageTypeAll ) << expression )
+   
+   
    #define LOG( uSeverity, expression ) LOG_( 0, gd::log::severity_get_g( uSeverity ), expression )
    #define LOG_NR( uNumber, uSeverity, expression ) LOG_( uNumber, gd::log::severity_get_g( uSeverity ), expression )
    #define LOG_RAW( uSeverity, expression ) LOG_RAW_( 0, gd::log::severity_get_g( uSeverity ), expression )

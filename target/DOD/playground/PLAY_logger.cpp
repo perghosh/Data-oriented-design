@@ -43,7 +43,7 @@ TEST_CASE( "[logging] colors", "[logging]" ) {
       auto i = 0;
    };
 
-   plogger->callback_add( callback_ );
+   // plogger->callback_add( callback_ );
 
 
    LOG_FATAL("LOG_FATAL");
