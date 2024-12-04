@@ -71,7 +71,7 @@ struct CApplication : public application::basic::CApplication
 
    std::string m_stringState;
    std::vector<gd::argument::arguments> m_vectorPaint;
-   gd::argument::arguments m_argumentsBRUSH;
+   gd::argument::arguments m_argumentsBrush;
 
    gd::console::caret m_caretTopLeft;
    gd::console::device m_deviceGame;

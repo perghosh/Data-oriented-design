@@ -24,12 +24,12 @@ int main()
    std::unique_ptr< CApplication > papplication_ = std::make_unique<CApplication>();
    papplication_g = papplication_.get();
 
-   //Play();
+   Play();
 
    return 0;
 }
 
-/*std::pair<bool, std::string> Play()
+std::pair<bool, std::string> Play()
 {
    CApplication* papplication = (CApplication*)papplication_g;
 
@@ -37,23 +37,19 @@ int main()
 
    while( papplication->GetState() != "quit" )
    {
-      // papplication->PrepareFrame();
-
-      //if( papplication->GetState() == "quit") { return { true, "quit" }; }
-
       /*papplication->GAME_Update(tag_key{});
       papplication->GAME_Update(tag_loop{});
-      papplication->GAME_Update(tag_state{});
+      papplication->GAME_Update(tag_state{});*/
 
-      papplication->Count();
+      //papplication->Count();
 
       papplication->Input_Update();
 
-      papplication->Update();
+      //papplication->Update();
       papplication->Move();
       papplication->Draw();
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
    }
 
    return { true, papplication->GetState() };
-} */
+}
