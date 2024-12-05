@@ -83,4 +83,40 @@ TEST_CASE( "[logging] colors", "[logging]" ) {
       LOG_DEBUG( gd::log::ascii().line( "=\n", 100 ) );
    }
 
+   plogger->erase( std::string_view( "CONSOLE2" ) );
+}
+
+TEST_CASE( "[logging] hash tag", "[logging]" ) {
+   gd::log::logger<0>* plogger = gd::log::get_s();
+   plogger->tag_add("sql");
+   LOG_FATAL( gd::log::tag("sql") << "SELECT * FROM Table");
+   LOG_FATAL(gd::log::tag("xml") << "<document></document>");
+   LOG_DEBUG2(gd::log::tag("sql"), "<document></document>");
+   LOG_DEBUG_RAW2(gd::log::tag("sql"), "SELECT * FROM Table");
+
+   plogger->tag_add("json");
+   LOG_FATAL(gd::log::tag("json") << R"({
+    "name": "John Doe",
+    "age": 30,
+    "city": "New York",
+    "hobbies": ["reading", "coding", "gaming"],
+    "address": {
+        "street": "123 Main St",
+        "city": "New York",
+        "zip": "10001"
+    },
+    "isMarried": false,
+    "pets": [
+        {
+            "name": "Buddy",
+            "type": "dog",
+            "age": 5
+        },
+        {
+            "name": "Whiskers",
+            "type": "cat",
+            "age": 2
+        }
+    ]
+})");
 }

@@ -183,6 +183,24 @@ void message::set_text(std::string_view stringText)
    m_pbszText.reset( new_s( stringText.data() ));
 }
 
+/// ---------------------------------------------------------------------------
+/// Return buffer position after tags
+const char* message::get_text_all_no_tag() const
+{
+   const char* pbsz_ = m_pbszText.get();
+
+   if( *pbsz_ != '#' || is_tag() == false ) return pbsz_;
+   else
+   {
+      while( *pbsz_ == '#' )
+      {
+         while( *pbsz_ > ' ' ) pbsz_++;
+         if( *pbsz_ == ' ' && *(pbsz_ + 1) == '#' ) pbsz_++;
+      }
+   }
+
+   return pbsz_;
+}
 
 /*----------------------------------------------------------------------------- append */ /**
  * append ascii text to message, adds separator if text is already set

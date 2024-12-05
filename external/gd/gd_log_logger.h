@@ -566,7 +566,7 @@ struct tag
 {
 // ## construction ------------------------------------------------------------
    tag() {}
-   tag( const std::string_view& stringTag ): m_stringTag( stringTag ) {}
+   tag( const std::string_view& stringTag ) { set( stringTag ); }
    // copy
    tag(const tag& o) { common_construct(o); }
    // assign
@@ -581,11 +581,21 @@ struct tag
    size_t length() const { return m_stringTag.length(); }
    bool empty() const { return m_stringTag.empty(); }
 
+   const std::string_view get( gd::types::tag_view ) const { return std::string_view( m_stringTag.c_str() + 1, m_stringTag.length() - 1 ); }
+   void set( const std::string_view& stringTag );
+
 
 // ## attributes --------------------------------------------------------------
    std::string m_stringTag;
-
 };
+
+inline void tag::set(const std::string_view& stringTag) {
+   if( stringTag[0] == '#' ) m_stringTag = stringTag;
+   else {
+      m_stringTag = "#";
+      m_stringTag += stringTag;
+   }
+}
 
 // ================================================================================================
 // ======================================================================================== message
@@ -697,15 +707,16 @@ public:
    [[nodiscard]] enumSeverityGroup get_severity_group() const { return (enumSeverityGroup)(m_uSeverity & static_cast<unsigned>(enumSeverityMask::eSeverityMaskFlagAndGroup)); }
    void set_severity(unsigned uSeverity) { m_uSeverity = uSeverity; }
 
-   // ## `is` methods
-   bool is_tag() const { return (m_uFlags & eFlagTag) == eFlagTag; }
+   
+   
 //@}
 
 /** \name OPERATION
 *///@{
-   // ## check if message has any special type set, these type are used to produce 
-   //    message can be marked with different flags to produce info like time etc in log
+   // ## `is` methods
 
+   /// test if tag is enabled
+   bool is_tag() const { return (m_uFlags & eFlagTag) == eFlagTag; }
    /// check if message has any specific type set, if set then use other `is_` to test what to do
    [[nodiscard]] bool is_message_type_set() const { return m_uMessageType != 0; }
    [[nodiscard]] bool is_severity() const { return (m_uMessageType & eMessageTypeSeverity); } // print severity ?
@@ -731,6 +742,7 @@ public:
    const char* get_text() const { return m_pbszTextView != nullptr ? m_pbszTextView : m_pbszText.get(); }
    /// returns message text and the priority is 1) TextView, 2) Text, 3) severity text
    const char* get_text_all() const { return m_pbszTextView != nullptr ? m_pbszTextView : (m_pbszText != nullptr ? m_pbszText.get() : severity_get_name_g( m_uSeverity )); }
+   const char* get_text_all_no_tag() const;
    /// set ascii texts
    void set_text(std::string_view stringText);
 
@@ -1054,12 +1066,15 @@ private:
 
 // ## operator -----------------------------------------------------------------
 public:
-   
+   bool operator()( const tag& tag_ ) const { return is_tag( tag_ ); }   
 
 // ## methods ------------------------------------------------------------------
 public:
 /** \name GET/SET
 *///@{
+   /// Check if tag is set
+   bool is_tag( const tag& tag_ ) const { return std::find(m_vectorTag.begin(), m_vectorTag.end(), tag_.get( gd::types::tag_view{} )) != m_vectorTag.end(); }
+
    unsigned get_severity() const { return m_uSeverity;  }
    void set_severity( unsigned uSeverity ) { m_uSeverity = uSeverity;  }
    /// Set severity level only (not touching severity group)
@@ -1072,6 +1087,7 @@ public:
    void append(std::unique_ptr<i_printer> pprinter) { m_vectorPrinter.push_back( std::move(pprinter) ); }
    i_printer* get( size_t uIndex ) { assert( m_vectorPrinter.size() > uIndex ); return m_vectorPrinter.at( uIndex ).get(); }
    i_printer* get( const std::string_view& stringName );
+   void erase( const std::string_view& stringName );
 
    /// Send message to connected printers
    void print( const message& message );
@@ -1164,6 +1180,17 @@ inline i_printer* logger<iLoggerKey, bThread>::get(const std::string_view& strin
       if( pprinter_->get_name() == stringName ) return pprinter_;
    }
    return nullptr;
+}
+
+template<int iLoggerKey, bool bThread>
+inline void logger<iLoggerKey, bThread>::erase(const std::string_view& stringName) {
+   for(auto it = std::begin(m_vectorPrinter); it != std::end(m_vectorPrinter); it++) {
+      i_printer* pprinter_= (*it).get();
+      if( pprinter_->get_name() == stringName ) {
+         m_vectorPrinter.erase( it );
+         return;
+      }
+   }
 }
 
 /// generate static mutex object, for each logger there is one mutex and that is needed to make it work in threaded environments
