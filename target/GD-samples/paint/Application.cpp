@@ -44,7 +44,22 @@ void CApplication::Draw()
    uint32_t uBrushRow = m_argumentsBrush("row");
    uint32_t uBrushColumn = m_argumentsBrush("column");
 
-   m_deviceGame.print(uBrushRow, uBrushColumn, 177);
+
+
+   for( const auto& itPaint : m_vectorPaint )
+   {
+
+      uint32_t uRow = itPaint["row"];
+      uint32_t uColumn = itPaint["column"];
+      uint8_t uColor = itPaint["color"];
+     
+      std::string stringCharacter = itPaint["character"];
+
+      m_deviceGame.print(uRow, uColumn, stringCharacter, uColor);
+
+   }
+
+   m_deviceGame.print(uBrushRow, uBrushColumn, 176);
 
    std::cout << m_caretTopLeft.render(gd::console::tag_format_cli{});
    std::cout << m_deviceGame.render(gd::console::tag_format_cli{});
@@ -54,6 +69,7 @@ std::pair<bool, std::string> CApplication::Input_Update()
 {
    if( _kbhit() != 0 )
    {
+      
       char iKey = _getch();
       switch( iKey )
       {
@@ -79,12 +95,45 @@ std::pair<bool, std::string> CApplication::Input_Update()
       default:
          break;
       }
+
+      if( iKey == ' ' && m_uInputCount <= 1 )
+      {
+         m_bPaintState = true;
+         m_uInputCount++;
+
+         std::cout << "paint";
+      }
+      else if( m_uInputCount == 2)
+      {
+         m_bPaintState = false;
+         m_uInputCount = 0;
+         std::cout << "     ";
+      }
+
    }
    return { true, "" };
 }
 
 void CApplication::PAINT_Add()
 {
+   gd::argument::arguments argumentsPaint;
+
+   uint32_t uRow = m_argumentsBrush("row");
+   uint32_t uColumn = m_argumentsBrush("column");
+
+   uint8_t uColor = 46;
+
+   if( m_bPaintState == true )
+   {
+      argumentsPaint.append("row", uRow);
+      argumentsPaint.append("column", uColumn);
+      argumentsPaint.append("color", gd::console::enumColor(uColor));
+      argumentsPaint.append("character", "#");
+
+      m_vectorPaint.push_back(std::move(argumentsPaint));
+   }
+
+
 
 }
 
