@@ -59,7 +59,7 @@ void CApplication::Draw()
 
    }
 
-   m_deviceGame.print(uBrushRow, uBrushColumn, 176);
+   m_deviceGame.print(uBrushRow, uBrushColumn, (char)176);
 
    std::cout << m_caretTopLeft.render(gd::console::tag_format_cli{});
    std::cout << m_deviceGame.render(gd::console::tag_format_cli{});
