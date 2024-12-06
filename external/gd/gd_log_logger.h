@@ -274,6 +274,11 @@ enum class enumSeverityMask : uint32_t
    eSeverityMaskFlagAndGroup = eSeverityMaskGroup | eSeverityMaskFlag,
 };
 
+enum enumLoggerFlag : unsigned
+{
+   eLoggerFlagNoTagFilter = 0x0000'0001,     ///< Disable tag filter names in logger, all hash tagged log messages are printed
+};
+
 
 /**
  * \brief type flags to generate typed information parts
@@ -1075,6 +1080,11 @@ public:
    /// Check if tag is set
    bool is_tag( const tag& tag_ ) const { return std::find(m_vectorTag.begin(), m_vectorTag.end(), tag_.get( gd::types::tag_view{} )) != m_vectorTag.end(); }
 
+   bool is_tags() const { return (m_uFlags & eLoggerFlagNoTagFilter) != eLoggerFlagNoTagFilter; }
+   bool is_notags() const { return (m_uFlags & eLoggerFlagNoTagFilter) == eLoggerFlagNoTagFilter; }
+
+   void set_flags( unsigned uSet, unsigned uClear ) { m_uFlags |= uSet; m_uFlags &= ~uClear; }
+   unsigned get_flags() const { return m_uFlags; }
    unsigned get_severity() const { return m_uSeverity;  }
    void set_severity( unsigned uSeverity ) { m_uSeverity = uSeverity;  }
    /// Set severity level only (not touching severity group)
@@ -1151,6 +1161,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   unsigned m_uFlags = 0;
    unsigned m_uSeverity;                     ///< severity filter, used to filter log messages
    std::vector<std::unique_ptr<i_printer>> m_vectorPrinter;///< list of connected printers
    std::vector<std::string> m_vectorError;   ///< list of internal errors stored as text
@@ -1293,7 +1304,7 @@ void logger<iLoggerKey, bThread>::print(std::initializer_list<message> listMessa
 template<int iLoggerKey, bool bThread>
 void logger<iLoggerKey, bThread>::print_( const message& message )
 {
-   if( message.is_tag() == true )
+   if( message.is_tag() == true && is_tags() == true )
    {
       // ## check if tag is enabled
       if( tag_exists( message.get_text() ) == false ) return;

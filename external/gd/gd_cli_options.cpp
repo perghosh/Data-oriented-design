@@ -113,6 +113,7 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
 
          if(poptionActive == nullptr && bMayBeFlag == false )
          {
+            /// Checks if parent options state is enabled and if parent option, then try to find value in parent
             if( is_parent() == true && poptionsRoot != nullptr ) poptionActive = poptionsRoot->find( pbszFindArgument );
          }
          
