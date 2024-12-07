@@ -677,15 +677,15 @@ public:
    operator std::string() const { return empty() == false ? std::string( get_text() ) : std::string(); }
 
    message& operator<<(const std::string_view& stringAppend) { return append(stringAppend); }
-   message& operator|(const std::string_view& stringAppend) { return append(stringAppend, tag_pipe{}); }
+   message& operator&(const std::string_view& stringAppend) { return append(stringAppend, tag_pipe{}); }
    message& operator<<(const std::wstring_view& stringAppend) { return append(stringAppend); }
 #  if defined(__cpp_char8_t)
    message& operator<<(const char8_t* pbszUtf8Append) { return append(pbszUtf8Append); }
 #  endif
    message& operator<<(const stream& streamAppend) { return append(streamAppend); }
-   message& operator|(const stream& streamAppend) { return append(streamAppend, tag_pipe{}); }
+   message& operator&(const stream& streamAppend) { return append(streamAppend, tag_pipe{}); }
    message& operator<<(const wstream& streamAppend) { return append(streamAppend); }
-   message& operator|(const wstream& streamAppend) { return append(streamAppend, tag_pipe{}); }
+   message& operator&(const wstream& streamAppend) { return append(streamAppend, tag_pipe{}); }
    message& operator<<(const ascii& asciiAppend) { return append(asciiAppend.get_string()); }
    message& operator<<(const tag& tagAppend) { return append(tagAppend); }
 #if defined( __cpp_lib_format )
@@ -709,7 +709,7 @@ public:
    }
 
    template<typename APPEND>
-   message& operator|(APPEND appendValue) {
+   message& operator&(APPEND appendValue) {
       std::wstringstream wstringstreamAppend;
       wstringstreamAppend << appendValue;
       auto pbszCurrent = m_pbszText.get();
@@ -949,32 +949,32 @@ inline message& message::operator<<(std::string stringAppend) {
 }
 
 template<>
-inline message& message::operator|(const char* pbszAppend) {
+inline message& message::operator&(const char* pbszAppend) {
    auto uLength = strlen( pbszAppend );
    std::wstring stringUnicode(uLength, L' ');
    for( size_t u = 0; u < uLength; u++ ) { stringUnicode[u] = pbszAppend[u]; }
 
-   *this | stringUnicode;
+   *this & stringUnicode;
 
    return *this;
 }
 
 template<>
-inline message& message::operator|(std::string_view stringAppend) {
+inline message& message::operator&(std::string_view stringAppend) {
    std::wstring stringUnicode(stringAppend.size(), L' ');
    for( size_t u = 0; u < stringAppend.size(); u++ ) { stringUnicode[u] = stringAppend[u]; }
 
-   *this | stringUnicode;
+   *this & stringUnicode;
 
    return *this;
 }
 
 template<>
-inline message& message::operator|(std::string stringAppend) {
+inline message& message::operator&(std::string stringAppend) {
    std::wstring stringUnicode(stringAppend.size(), L' ');
    for( size_t u = 0; u < stringAppend.size(); u++ ) { stringUnicode[u] = stringAppend[u]; }
 
-   *this | stringUnicode;
+   *this & stringUnicode;
 
    return *this;
 }
