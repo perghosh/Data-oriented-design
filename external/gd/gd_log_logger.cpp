@@ -209,7 +209,24 @@ const char* message::get_text_all_no_tag() const
  */
 message& message::append(const std::string_view& stringAppend)
 {
-   m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, stringAppend.data()));
+   m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ " " }, stringAppend.data()));
+
+   return *this;
+}
+
+/*----------------------------------------------------------------------------- append */ /**
+ * append ascii text to message, adds separator if text is already set
+ * \param stringAppend text to add
+ * \return gd::log::message& reference to message for chaining
+ */
+message& message::append(const std::string_view& stringAppend, tag_pipe)
+{
+#ifndef NDEBUG
+   const char* pbsz_d = m_pbszText.get();
+#endif
+   const auto* pold_ = m_pbszText.get();
+   const auto* pnew_ = new_s(m_pbszText.get(), stringAppend, tag_pipe{});
+   if( pold_ != pnew_ ) m_pbszText.reset( (char*)pnew_ );
 
    return *this;
 }
@@ -221,7 +238,12 @@ message& message::append(const std::string_view& stringAppend)
  */
 message& message::append(const std::wstring_view& stringAppend)
 {
-   m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, stringAppend.data()));
+#ifndef NDEBUG
+   const char* pbsz_d = m_pbszText.get();
+#endif
+   const auto* pold_ = m_pbszText.get();
+   const auto* pnew_ = new_s(m_pbszText.get(), std::string_view{ " " }, stringAppend.data());
+   if( pold_ != pnew_ ) m_pbszText.reset( (char*)pnew_ );
 
    return *this;
 }
@@ -234,7 +256,12 @@ message& message::append(const std::wstring_view& stringAppend)
  */
 message& message::append(const char8_t* pbszUtf8Append)
 {
-   m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, pbszUtf8Append));
+#ifndef NDEBUG
+   const char* pbsz_d = m_pbszText.get();
+#endif
+   const auto* pold_ = m_pbszText.get();
+   const auto* pnew_ = new_s(m_pbszText.get(), std::string_view{ " " }, pbszUtf8Append);
+   if( pold_ != pnew_ ) m_pbszText.reset( (char*)pnew_ );
 
    return *this;
 }
@@ -248,7 +275,12 @@ message& message::append(const char8_t* pbszUtf8Append)
 message& message::append(const message& messageAppend)
 {
    const char* pbszMessage = messageAppend.get_text();
-   if( pbszMessage != nullptr ) m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, pbszMessage, gd::utf8::tag_utf8{}));
+   if( pbszMessage != nullptr )
+   {
+      const auto* pold_ = m_pbszText.get();
+      const auto* pnew_ = new_s(m_pbszText.get(), std::string_view{ "  " }, pbszMessage, gd::utf8::tag_utf8{});
+      if( pold_ != pnew_ ) m_pbszText.reset( (char*)pnew_ );
+   }
    return *this;
 }
 
@@ -259,7 +291,42 @@ message& message::append(const message& messageAppend)
  */
 message& message::append(const stream& streamAppend)
 {
-   m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, streamAppend.get_string()));
+#ifndef NDEBUG
+   const char* pbsz_d = m_pbszText.get();
+#endif
+   const auto* pold_ = m_pbszText.get();
+   const auto* pnew_ = new_s(m_pbszText.get(), std::string_view{ " " }, streamAppend.get_string());
+   if( pold_ != pnew_ ) m_pbszText.reset( (char*)pnew_ );
+
+   return *this;
+}
+
+/*----------------------------------------------------------------------------- append */ /**
+ * append ascii text to message, adds separator if text is already set
+ * \param streamAppend text to add
+ * \return message& reference to message for chaining
+ */
+message& message::append(const stream& streamAppend, tag_pipe )
+{
+#ifndef NDEBUG
+   const char* pbsz_d = m_pbszText.get();
+#endif
+   const auto* pold_ = m_pbszText.get();
+   const auto* pnew_ = new_s(m_pbszText.get(), streamAppend.get_string(), tag_pipe{});
+   if( pold_ != pnew_ ) m_pbszText.reset( (char*)pnew_ );
+
+   return *this;
+}
+
+
+/*----------------------------------------------------------------------------- append */ /**
+ * append unicode text to message, adds separator if text is already set
+ * \param streamAppend text to add
+ * \return message& reference to message for chaining
+ */
+message& message::append(const wstream& streamAppend)
+{
+   m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ " " }, streamAppend.get_string()));
 
    return *this;
 }
@@ -269,12 +336,18 @@ message& message::append(const stream& streamAppend)
  * \param streamAppend text to add
  * \return message& reference to message for chaining
  */
-message& message::append(const wstream& streamAppend)
+message& message::append(const wstream& streamAppend, tag_pipe)
 {
-   m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, streamAppend.get_string()));
+#ifndef NDEBUG
+   const char* pbsz_d = m_pbszText.get();
+#endif
+   const auto* pold_ = m_pbszText.get();
+   const auto* pnew_ = new_s(m_pbszText.get(), streamAppend.get_string(), tag_pipe{});
+   if( pold_ != pnew_ ) m_pbszText.reset( (char*)pnew_ );
 
    return *this;
 }
+
 
 /*----------------------------------------------------------------------------- append */ /**
  * append `printf` text to message, adds separator if text is already set
@@ -283,7 +356,7 @@ message& message::append(const wstream& streamAppend)
  */
 message& message::append(const gd::log::printf& printfAppend)
 {
-   m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, (const char*)printfAppend));
+   m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ " " }, (const char*)printfAppend));
 
    return *this;
 }
@@ -321,7 +394,7 @@ message& message::printf(const char* pbszFormat, ...)
    if( pbszOldText != nullptr )
    {
       auto pbszText = pbszPrintfText.release();
-      m_pbszText.reset( join_s(&pbszOldText, std::string_view{"  "}, &pbszText) );
+      m_pbszText.reset( join_s(&pbszOldText, std::string_view{" "}, &pbszText) );
       clear_s(&pbszOldText);
    }
    else
@@ -353,7 +426,7 @@ message& message::printf(const wchar_t* pwszFormat, ...)
    if( pbszOldText != nullptr )
    {
       auto pbszText = pbszPrintfText.release();
-      m_pbszText.reset(join_s(&pbszOldText, std::string_view{ "  " }, &pbszText));
+      m_pbszText.reset(join_s(&pbszOldText, std::string_view{ " " }, &pbszText));
       clear_s(&pbszOldText);
    }
    else
@@ -414,6 +487,36 @@ char* message::new_s(const std::string_view& stringAscii, char* pbszCurrent )
 }
 
 /*----------------------------------------------------------------------------- new_s */ /**
+ * Special method for message combining two text values into one buffer, if first text is nullptr only last Add text is inserted.
+ * This method works like adding text to existing message text if set
+ * \param pbszUtf8First first text (usually text set that will be appended with more text)
+ * \param stringAdd text that is always added
+ * \return char* pointer to new allocaded text with combined text
+ */
+char* message::new_s(char* pbszUtf8First, const std::string_view& stringAdd, tag_pipe)
+{
+   std::size_t uLength = 0;
+   if( pbszUtf8First != nullptr )
+   {
+      uLength = strlen( pbszUtf8First );
+   }
+
+   std::size_t uFirstLength = uLength;
+   uLength += gd::utf8::size( stringAdd.data() );
+
+   char* pbszNew = allocate_s(uLength, pbszUtf8First);
+   if( pbszNew != pbszUtf8First )
+   {
+      std::memcpy(pbszNew, pbszUtf8First, uFirstLength);                       // copy first string to new buffer
+   }
+
+   gd::utf8::convert_ascii(stringAdd.data(), pbszNew + uFirstLength);
+
+   return pbszNew;
+}
+
+
+/*----------------------------------------------------------------------------- new_s */ /**
  * Special method for message combining three text values into one buffer, if first text is nullptr only last Add text is inserted.
  * This method works like adding text to existing message text if set
  * \param pbszUtf8First first text (usually text set that will be appended with more text)
@@ -446,6 +549,35 @@ char* message::new_s(const char* pbszUtf8First, const std::string_view& stringIf
 
    return pbszNew;
 }
+
+/*----------------------------------------------------------------------------- new_s */ /**
+ * Special method for message combining two text values into one buffer, if first text is nullptr only last Add text is inserted.
+ * This method works like adding text to existing message text if set
+ * \param pbszUtf8First first text (usually text set that will be appended with more text)
+ * \param stringAdd text that is always added
+ */
+char* message::new_s(char* pbszUtf8First, const std::wstring_view& stringAdd, tag_pipe)
+{
+   std::size_t uLength = 0;
+   if( pbszUtf8First != nullptr )
+   {
+      uLength = strlen( pbszUtf8First );
+   }
+
+   std::size_t uFirstLength = uLength;
+   uLength += gd::utf8::size( stringAdd.data() );
+
+   char* pbszNew = allocate_s(uLength, pbszUtf8First);
+   if( pbszNew != pbszUtf8First )
+   {
+      std::memcpy(pbszNew, pbszUtf8First, uFirstLength);                       // copy first string to new buffer
+   }
+
+   gd::utf8::convert_unicode(stringAdd.data(), pbszNew + uFirstLength, pbszNew + uLength + 1 );
+
+   return pbszNew;
+}
+
 
 /*----------------------------------------------------------------------------- new_s */ /**
  * Special method for message combining three text values into one buffer, if first text is nullptr only last Add text is inserted.

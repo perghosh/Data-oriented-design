@@ -122,7 +122,7 @@
    #define LOG_RAW2_( uLogger, uSeverity, tag, expression ) ((void)0)
 
    #define LOG( uSeverity, expression ) LOG_( 0, gd::log::severity_get_g( uSeverity ), expression )
-   #define LOG2( uSeverity, expression ) LOG2_( 0, gd::log::severity_get_g( uSeverity ), expression )
+   #define LOG2( uSeverity, tag, expression ) LOG2_( 0, gd::log::severity_get_g( uSeverity ), tag, expression )
    #define LOG_NR( uNumber, uSeverity, expression ) LOG_( uNumber, gd::log::severity_get_g( uSeverity ), expression )
    #define LOG_RAW( uSeverity, expression ) LOG_RAW_( 0, gd::log::severity_get_g( uSeverity ), expression )
    #define LOG_RAW2( uSeverity, tag, expression ) LOG_RAW2_( 0, gd::log::severity_get_g( uSeverity ), tag, expression )

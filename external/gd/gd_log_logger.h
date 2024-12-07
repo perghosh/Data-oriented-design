@@ -626,6 +626,9 @@ plogger->print(message().printf("%s\n", __FUNCSIG__ ));
 class message 
 {
 public:
+   struct tag_pipe {};     ///< pipe operations
+
+public:
    enum enumFlag { eFlagTag = 0x01 };   
 // ## construction -------------------------------------------------------------
 public:
@@ -674,12 +677,15 @@ public:
    operator std::string() const { return empty() == false ? std::string( get_text() ) : std::string(); }
 
    message& operator<<(const std::string_view& stringAppend) { return append(stringAppend); }
+   message& operator|(const std::string_view& stringAppend) { return append(stringAppend, tag_pipe{}); }
    message& operator<<(const std::wstring_view& stringAppend) { return append(stringAppend); }
 #  if defined(__cpp_char8_t)
    message& operator<<(const char8_t* pbszUtf8Append) { return append(pbszUtf8Append); }
 #  endif
    message& operator<<(const stream& streamAppend) { return append(streamAppend); }
+   message& operator|(const stream& streamAppend) { return append(streamAppend, tag_pipe{}); }
    message& operator<<(const wstream& streamAppend) { return append(streamAppend); }
+   message& operator|(const wstream& streamAppend) { return append(streamAppend, tag_pipe{}); }
    message& operator<<(const ascii& asciiAppend) { return append(asciiAppend.get_string()); }
    message& operator<<(const tag& tagAppend) { return append(tagAppend); }
 #if defined( __cpp_lib_format )
@@ -701,6 +707,22 @@ public:
 
       return *this;
    }
+
+   template<typename APPEND>
+   message& operator|(APPEND appendValue) {
+      std::wstringstream wstringstreamAppend;
+      wstringstreamAppend << appendValue;
+      auto pbszCurrent = m_pbszText.get();
+      char* pbszNew;
+      pbszNew = new_s(pbszCurrent, wstringstreamAppend.str().c_str(), tag_pipe{} );
+      if( pbszNew != pbszCurrent ) 
+      { 
+         m_pbszText.reset( pbszNew ); 
+      }
+
+      return *this;
+   }
+
 
 // ## methods ------------------------------------------------------------------
 public:
@@ -762,13 +784,16 @@ public:
    //    - `format` works like std::format
 
    message& append(const std::string_view& stringAppend);
+   message& append(const std::string_view& stringAppend, tag_pipe);
    message& append(const std::wstring_view& stringAppend);
 #  if defined(__cpp_char8_t)
    message& append(const char8_t* pbszUtf8Append);                               // C++20
 #  endif
    message& append(const message& messageAppend);
    message& append(const stream& streamAppend);
+   message& append(const stream& streamAppend, tag_pipe );
    message& append(const wstream& streamAppend);
+   message& append(const wstream& streamAppend, tag_pipe);
 
    message& append( const std::pair< int, const char** >& pair_ );
 
@@ -829,10 +854,12 @@ public:
    [[nodiscard]] static char* new_s( const std::wstring_view& stringUnicode) { return new_s(stringUnicode, nullptr); }
    [[nodiscard]] static char* new_s( const std::wstring_view& stringUnicode, char* pbszCurrent );
    /// creates new string from strings sent to method, if first is null then just create new string from last `stringAdd`, ascii version
+   [[nodiscard]] char* new_s(char* pbszUtf8First, const std::string_view& stringAdd, tag_pipe);
    [[nodiscard]] static char* new_s(const char* pbszUtf8First, const std::string_view& stringIfFirst, const std::string_view& stringAdd) { return new_s( pbszUtf8First, stringIfFirst, stringAdd, nullptr ); }
    [[nodiscard]] static char* new_s(const char* pbszUtf8First, const std::string_view& stringIfFirst, const std::string_view& stringAdd, char* pbszCurrent);  // ascii
    /// creates new string from strings sent to method, if first is null then just create new string from last `stringAdd` (unicode)
    [[nodiscard]] static char* new_s( const char* pbszUtf8First, const std::string_view& stringIfFirst, const std::wstring_view& stringAdd ) { return new_s( pbszUtf8First, stringIfFirst, stringAdd, nullptr ); }
+   [[nodiscard]] static char* new_s(char* pbszUtf8First, const std::wstring_view& stringAdd, tag_pipe); // unicode
    [[nodiscard]] static char* new_s(const char* pbszUtf8First, const std::string_view& stringIfFirst, const std::wstring_view& stringAdd, char* pbszCurrent); // unicode
    /// create new text and add utf8 text sent
 #  if defined(__cpp_char8_t)
@@ -920,6 +947,38 @@ inline message& message::operator<<(std::string stringAppend) {
 
    return *this;
 }
+
+template<>
+inline message& message::operator|(const char* pbszAppend) {
+   auto uLength = strlen( pbszAppend );
+   std::wstring stringUnicode(uLength, L' ');
+   for( size_t u = 0; u < uLength; u++ ) { stringUnicode[u] = pbszAppend[u]; }
+
+   *this | stringUnicode;
+
+   return *this;
+}
+
+template<>
+inline message& message::operator|(std::string_view stringAppend) {
+   std::wstring stringUnicode(stringAppend.size(), L' ');
+   for( size_t u = 0; u < stringAppend.size(); u++ ) { stringUnicode[u] = stringAppend[u]; }
+
+   *this | stringUnicode;
+
+   return *this;
+}
+
+template<>
+inline message& message::operator|(std::string stringAppend) {
+   std::wstring stringUnicode(stringAppend.size(), L' ');
+   for( size_t u = 0; u < stringAppend.size(); u++ ) { stringUnicode[u] = stringAppend[u]; }
+
+   *this | stringUnicode;
+
+   return *this;
+}
+
 
 
 
