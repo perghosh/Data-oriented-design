@@ -120,9 +120,11 @@ TEST_CASE( "[logging] hash tag", "[logging]" ) {
     ]
 })");
 
+   plogger->set_flags( gd::log::eLoggerFlagOnlyTag, 0 );
    LOG_DEBUG("1" << "2" << "3" << "4" << "5" << "6" << "7" << "8" << "9" << "0");
    LOG_DEBUG("1" & "2" & "3" & "4" & "5" & "6" & "7" & "8" & "9" & "0");
    LOG_DEBUG("1" << "2" << "3" );
    LOG_DEBUG("1" << 100 );
    LOG_DEBUG("1" & 100 & 200 & 300 & 400 & "6" & "7" & "8" & "9" & "0");
+   LOG_DEBUG("ежд01234567890");
 }
