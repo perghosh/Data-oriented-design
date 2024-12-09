@@ -276,7 +276,9 @@ enum class enumSeverityMask : uint32_t
 
 enum enumLoggerFlag : unsigned
 {
-   eLoggerFlagNoTagFilter = 0x0000'0001,     ///< Disable tag filter names in logger, all hash tagged log messages are printed
+   eLoggerFlagOnlyTag     = 0x0000'0001,     ///< Only messages that are hash taged are show, usefull if tjere is something specific to test and disable everything else
+   eLoggerFlagNoTagFilter = 0x0000'0002,     ///< Disable tag filter names in logger, all hash tagged log messages are printed
+
 };
 
 
@@ -919,11 +921,22 @@ public:
 
 template<>
 inline message& message::operator<<(const char* pbszAppend) {
-   auto uLength = strlen( pbszAppend );
+   auto uLength = gd::utf8::strlen( pbszAppend );
    std::wstring stringUnicode(uLength, L' ');
-   for( size_t u = 0; u < uLength; u++ ) { stringUnicode[u] = pbszAppend[u]; }
-
-   *this << stringUnicode;
+   // Check for invalid ascii characters (above 128)
+   bool bToUtf8 = false;
+   for( size_t u = 0; u < uLength; u++ ) { if( (uint8_t)(pbszAppend[u] ) > 128 ) { bToUtf8 = true; break; } }
+   if( bToUtf8 == false )
+   {
+      append( std::string_view( pbszAppend, uLength ) );
+   }
+   else
+   {
+      stringUnicode.clear();
+      std::string stringUftf8;
+      gd::utf8::convert_ascii( pbszAppend, stringUftf8 );
+      append( std::string_view( stringUftf8 ) );
+   }
 
    return *this;
 }
@@ -939,7 +952,7 @@ inline message& message::operator<<(std::string_view stringAppend) {
 }
 
 template<>
-inline message& message::operator<<(std::string stringAppend) {
+inline message& message::operator<<(const std::string& stringAppend) {
    std::wstring stringUnicode(stringAppend.size(), L' ');
    for( size_t u = 0; u < stringAppend.size(); u++ ) { stringUnicode[u] = stringAppend[u]; }
 
@@ -1139,6 +1152,7 @@ public:
    /// Check if tag is set
    bool is_tag( const tag& tag_ ) const { return std::find(m_vectorTag.begin(), m_vectorTag.end(), tag_.get( gd::types::tag_view{} )) != m_vectorTag.end(); }
 
+   bool is_only_tags() const { return (m_uFlags & eLoggerFlagOnlyTag) == eLoggerFlagOnlyTag; }
    bool is_tags() const { return (m_uFlags & eLoggerFlagNoTagFilter) != eLoggerFlagNoTagFilter; }
    bool is_notags() const { return (m_uFlags & eLoggerFlagNoTagFilter) == eLoggerFlagNoTagFilter; }
 
@@ -1367,6 +1381,10 @@ void logger<iLoggerKey, bThread>::print_( const message& message )
    {
       // ## check if tag is enabled
       if( tag_exists( message.get_text() ) == false ) return;
+   }
+   else if( is_only_tags() == true )                        // if only tags is shown then skip rest
+   {
+      return;
    }
 
    // ## format message
