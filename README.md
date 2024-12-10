@@ -13,6 +13,8 @@ DOD or data oriented design development, what is it and how to do it
 - Requires a deeper understanding of computer architecture and low-level programming concepts.
 - Very different from how humans think.
 
+### Data Oriented Design in one sentence = "Format data to maximize CPU efficiency"
+
 # Data Oriented Design - why do it
 
 Data Oriented Design = build logic around patterns, patterns that works well for the CPU.  

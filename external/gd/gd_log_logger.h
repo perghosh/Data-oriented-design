@@ -952,6 +952,20 @@ inline message& message::operator<<(std::string_view stringAppend) {
 }
 
 template<>
+inline message& message::operator<<(std::string stringAppend) {
+   //std::wstring stringUnicode(stringAppend.size(), L' ');
+   //for( size_t u = 0; u < stringAppend.size(); u++ ) { stringUnicode[u] = stringAppend[u]; }
+
+   //std::wstring stringUnicode(stringAppend.size(), L' ');
+   std::wstring stringUnicode = gd::utf8::convert_ascii_to_unicode( stringAppend );
+
+
+   *this << stringUnicode;
+
+   return *this;
+}
+
+template<>
 inline message& message::operator<<(const std::string& stringAppend) {
    std::wstring stringUnicode(stringAppend.size(), L' ');
    for( size_t u = 0; u < stringAppend.size(); u++ ) { stringUnicode[u] = stringAppend[u]; }
