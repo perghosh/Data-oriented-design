@@ -169,6 +169,18 @@ namespace gd {
       inline std::pair<bool, const uint8_t*> validate_hex( const std::string_view& stringText ) { return validate_hex( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length() ); }
 
 
+      // ## `convert*` methods
+      // A lot of convert methods and what the mostly do is to convert from something
+      // to utf8. If there is only one name of a string format than that format is
+      // converted to utf8.
+      // There are also some methods that convert between two different formats
+      // that is not utf8. Then both format names are in the method name.
+      // Same when text is converted from utf8 to another format, then 
+      // both names are in method name.
+      // sample: 
+      // - `convert_ascii` converts from ascii to utf8
+      // - `convert_utf8_to_ascii` converts from utf8 to ascii
+
       ///@{
       uint32_t convert(uint8_t uCharacter, uint8_t* pbszTo); // ----------------------------------- convert
       uint32_t convert(uint16_t uCharacter, uint8_t* pbszTo); // ---------------------------------- convert

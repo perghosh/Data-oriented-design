@@ -883,8 +883,12 @@ namespace gd {
       }
 
 
-      /**
+      /** ---------------------------------------------------------------------
        * @brief convert ascii to unicode
+       * @note Before running this method the unicode buffer need to be allocated.
+       *       Do this by calculating the length needed and then allocate needed buffer
+       *       size.
+       *       This method do not use the unicode planes stuff, it only do raw copy
        * @param pszFrom pointer to ascii text that is converted to unicode
        * @param pwszTo pointer to unicode buffer getting converted ascii text
        * @param pwszEnd pointer to end of buffer 
@@ -2601,7 +2605,6 @@ namespace gd {
          }
       }
 
-
       /** ---------------------------------------------------------------------
        * @brief Split string into vector of string_view parts for each split offset positions
        * @param pbBegin start of string
@@ -2705,21 +2708,22 @@ namespace gd {
          return std::string_view( pbsz_, pbszEnd - pbsz_ );
       }
 
+
       /** ---------------------------------------------------------------------
-      * @brief Split string into pairs of strings and store these pairs in vector
-      * Two characters is needed, one to split string into parts with pair and 
-      * character that split each part into a pair of strings
-      * @code
-      std::vector< std::pair<std::string_view,std::string_view> > vectorPair;
-      std::string stringTemplate = "one=1&two=2&three=3&four=4";
-      gd::utf8::split_pair( stringTemplate.data(), stringTemplate.data() + stringTemplate.length(), '=', '&', vectorPair ); REQUIRE( vectorPair.size() == 4 );
-      * @endcode
-      * @param pbBegin start position of string
-      * @param pbEnd end position of string
-      * @param chSplit character to split parts into first and second
-      * @param chSplitPair character to split parts into pairs
-      * @param vectorPair reference to vector where pairs are placed
-      */
+       * @brief Split string into pairs of strings and store these pairs in vector
+       * Two characters is needed, one to split string into parts with pair and 
+       * character that split each part into a pair of strings
+       * @code
+         std::vector< std::pair<std::string_view,std::string_view> > vectorPair;
+         std::string stringTemplate = "one=1&two=2&three=3&four=4";
+         gd::utf8::split_pair( stringTemplate.data(), stringTemplate.data() + stringTemplate.length(), '=', '&', vectorPair ); REQUIRE( vectorPair.size() == 4 );
+       * @endcode
+       * @param pbBegin start position of string
+       * @param pbEnd end position of string
+       * @param chSplit character to split parts into first and second
+       * @param chSplitPair character to split parts into pairs
+       * @param vectorPair reference to vector where pairs are placed
+       */
       void split_pair( const char* pbBegin, const char* pbEnd, char chSplit, char chSplitPair, std::vector< std::pair<std::string_view,std::string_view> >& vectorPair )
       {
          // ## Split texts between pairs
@@ -2751,20 +2755,20 @@ namespace gd {
       }
 
       /** ---------------------------------------------------------------------
-      * @brief Split string into pairs of strings and store these pairs in vector
-      * Two characters is needed, one to split string into parts with pair and 
-      * character that split each part into a pair of strings
-      * @code
-      std::vector< std::pair<std::string,std::string> > vectorPair;
-      std::string stringTemplate = "one=1&two=2&three=3&four=4";
-      gd::utf8::split_pair( stringTemplate.data(), stringTemplate.data() + stringTemplate.length(), '=', '&', vectorPair ); REQUIRE( vectorPair.size() == 4 );
-      * @endcode
-      * @param pbBegin start position of string
-      * @param pbEnd end position of string
-      * @param chSplit character to split parts into first and second
-      * @param chSplitPair character to split parts into pairs
-      * @param vectorPair reference to vector where pairs are placed
-      */
+       * @brief Split string into pairs of strings and store these pairs in vector
+       * Two characters is needed, one to split string into parts with pair and 
+       * character that split each part into a pair of strings
+       * @code
+         std::vector< std::pair<std::string,std::string> > vectorPair;
+         std::string stringTemplate = "one=1&two=2&three=3&four=4";
+         gd::utf8::split_pair( stringTemplate.data(), stringTemplate.data() + stringTemplate.length(), '=', '&', vectorPair ); REQUIRE( vectorPair.size() == 4 );
+       * @endcode
+       * @param pbBegin start position of string
+       * @param pbEnd end position of string
+       * @param chSplit character to split parts into first and second
+       * @param chSplitPair character to split parts into pairs
+       * @param vectorPair reference to vector where pairs are placed
+       */
       void split_pair( const char* pbBegin, const char* pbEnd, char chSplit, char chSplitPair, std::vector< std::pair<std::string,std::string> >& vectorPair )
       {
          // ## Split texts between pairs
