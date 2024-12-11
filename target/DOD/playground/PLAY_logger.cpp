@@ -1,10 +1,14 @@
 #include <random>
 #include <chrono>
+#include <memory>
 
-#include "gd/gd_utf8.h"
+#include "gd/gd_cli_options.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
+#include "gd/gd_file.h"
+#include "gd/gd_file_rotate.h"
+#include "gd/gd_utf8.h"
 
 #include "main.h"
 
@@ -13,6 +17,7 @@
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_define.h"
 #include "gd/gd_log_logger_printer.h"
+#include "gd/gd_log_logger_printer2.h"
 
 
 using namespace gd::log;
@@ -127,4 +132,26 @@ TEST_CASE( "[logging] hash tag", "[logging]" ) {
    LOG_DEBUG("1" << 100 );
    LOG_DEBUG("1" & 100 & 200 & 300 & 400 & "6" & "7" & "8" & "9" & "0");
    LOG_DEBUG("ежд01234567890");
+}
+
+TEST_CASE( "[logging] cvs logger", "[logging]" ) {
+   gd::log::logger<0>* plogger = gd::log::get_s();
+   plogger->clear();
+
+   std::string stringFilePath = mainarguments_g.m_ppbszArgumentValue[0];
+   auto position_ = stringFilePath.find_last_of("\\/");
+   if( position_ != std::string::npos ) { stringFilePath = stringFilePath.substr( 0, position_ + 1 ); }
+
+   // ## add date and time
+   std::string stringDate = gd::file::rotate::backup_history::date_now_s();    // date value
+   stringFilePath += stringDate;
+   stringFilePath += "_";
+   stringDate = gd::file::rotate::backup_history::time_now_s( gd::file::rotate::tag_filename{} );// time value
+   stringFilePath += stringDate;
+   stringFilePath += ".csv";
+
+
+   plogger->append( std::make_unique<gd::log::printer_csvfile>( std::string_view( "CSV" ), stringFilePath ));
+   LOG_DEBUG("LOG_DEBUG");
+
 }

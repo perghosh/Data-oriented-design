@@ -15,6 +15,7 @@
 #endif
 
 #include "gd_log_logger.h"
+#include "gd_table_table.h"
 
 #ifndef _GD_LOG_LOGGER_BEGIN
 
@@ -50,6 +51,7 @@ private:
 public:
    printer_csvfile() {}
    printer_csvfile(const std::string_view& stringFileName);
+   printer_csvfile(const std::string_view& stringName, const std::string_view& stringFileName); 
    printer_csvfile(const std::wstring_view& stringFileName) : m_stringFileName(stringFileName) {}
    printer_csvfile(unsigned uSeverity, const std::wstring_view& stringFileName) : i_printer(uSeverity), m_stringFileName(stringFileName) {}
    // copy
@@ -105,12 +107,17 @@ protected:
 // ## attributes ----------------------------------------------------------------
 public:
    unsigned m_uInternalError = 0;   ///< internal error states
-   std::wstring m_stringFileName;   ///< file log information is written to
    int m_iFileHandle = -1;          ///< used as file handle to log file that is written to
+   uint64_t m_uCounter = 0;         ///< counter to get some sort of feeling where in the log sequence information is
+   std::wstring m_stringFileName;   ///< file log information is written to
    gd::log::message m_messageError; ///< temporary storage for internal error information
+   gd::table::table m_tableCSV;     ///< table storing log information that is written to file
    
 // ## free functions ------------------------------------------------------------
 public:
+   // ## Internal table operations
+   void create_table_s( gd::table::table& table_ );
+
    // ## File operations (open, write and close)
    static std::pair<int, std::string> file_open_s(const std::wstring_view& stringFileName);
    static std::pair<bool, std::string> file_write_s(int iFileHandle, const std::string_view& stringText);

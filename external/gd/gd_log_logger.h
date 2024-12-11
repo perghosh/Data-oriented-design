@@ -1196,8 +1196,8 @@ public:
    /// number of printers attached
    size_t printer_size() const { return m_vectorPrinter.size(); }
 
-   /// remove all printers
-   void clear() { m_vectorPrinter.clear(); }
+   /// clear logger from internal data, like a reset
+   void clear();
 
    // ## error methods used to manage printer errors
 
@@ -1442,6 +1442,18 @@ void logger<iLoggerKey,bThread>::flush()
    {
       (*it)->flush();
    }
+}
+
+/// ----------------------------------------------------------------------------
+/// Clear internal printer data, like resetting and it needs to be filled again to print
+template<int iLoggerKey, bool bThread>
+void logger<iLoggerKey,bThread>::clear() 
+{ 
+   m_uFlags = 0;
+   m_vectorPrinter.clear();
+   m_vectorError.clear();
+   m_vectorCallback.clear();
+   m_vectorTag.clear();
 }
 
 /// ----------------------------------------------------------------------------
