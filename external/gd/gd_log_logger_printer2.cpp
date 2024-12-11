@@ -39,6 +39,17 @@ printer_csvfile::printer_csvfile( const std::string_view& stringFileName )
    m_stringFileName.assign( pwszBuffer, uLength );
 }
 
+printer_csvfile::printer_csvfile(const std::string_view& stringName, const std::string_view& stringFileName):
+   i_printer( stringName )
+{
+   constexpr unsigned uBufferSize = 512;                                                           assert( stringFileName.length() < uBufferSize );
+   wchar_t pwszBuffer[uBufferSize];
+   size_t uLength = stringFileName.length();
+
+   std::mbstowcs(pwszBuffer, stringFileName.data(), uLength);
+   m_stringFileName.assign( pwszBuffer, uLength );
+}
+
 /*----------------------------------------------------------------------------- print */ /**
  * print is overridden from i_print and is called when logger prints something and sends it
  * to attached printers. 
@@ -46,13 +57,13 @@ printer_csvfile::printer_csvfile( const std::string_view& stringFileName )
  */
 bool printer_csvfile::print(const message& message)
 {
-   std::wstring stringMessage;
-
    if( is_open() == false )                                                      // check if file has been opened, if not then open file
    {
       if( is_error(eErrorOpenFile) == true ) return true;
       auto [iFileHandle, stringError] = file_open_s(m_stringFileName);
       m_iFileHandle = iFileHandle;
+
+      if( m_tableCSV.empty() == true ) { create_table_s( m_tableCSV ); }
        
       if( is_open() == false )                                                   // still not open? then internal error
       {
@@ -89,8 +100,21 @@ bool printer_csvfile::print(const message& message)
       */
    }
 
-   // ## write message text to file there is any text to write
+   // ## write message text to table
+   std::string stringMessage = message.to_string();
+   auto uRow = m_tableCSV.get_row_count();
+   m_tableCSV.row_add();
+   m_tableCSV.cell_set( uRow, 0, severity_get_name_g( message.get_severity() ) );
+   m_tableCSV.cell_set( uRow, 1, stringMessage );
+   m_tableCSV.cell_set( uRow, 2, m_uCounter );
+   m_tableCSV.cell_set( uRow, 3, 0.0 );
+   m_uCounter++;
 
+#ifndef NDEBUG
+   auto stringTabke_d = gd::table::debug::print( m_tableCSV );
+#endif
+
+   /*
    if( stringMessage.empty() == false )
    {
       auto [bOk, stringError] = file_write_s(m_iFileHandle, stringMessage, gd::utf8::tag_utf8{});
@@ -110,6 +134,7 @@ bool printer_csvfile::print(const message& message)
       // TODO: manage error, get information from string and 
       return false;
    }
+   */
 
    return true;
 }
@@ -141,6 +166,23 @@ unsigned printer_csvfile::error(message& message)
       return 1;
    }
    return 0;
+}
+
+
+/// Creates table to store log information
+void printer_csvfile::create_table_s( gd::table::table& table_ )
+{                                                                                                  assert( table_.empty() == true );
+   table_.set_flags( gd::table::table::eTableFlagNull32 );
+   //m_tableField.set_reserved_row_count( 10 );
+   table_.column_prepare();
+   table_.column_add( { 
+      {"string", 20, "severity"}, 
+      {"string", 200, "description"}, 
+      {"uint64", 0, "counter" }, 
+      {"double", 0, "time" } }, 
+      gd::table::tag_type_name{}
+   );
+   table_.prepare();
 }
 
 
