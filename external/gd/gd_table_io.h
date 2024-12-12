@@ -78,7 +78,10 @@ bool format_if( const std::string_view& stringText, std::string& stringNew, tag_
 // ## Table IO ----------------------------------------------------------------
 
 // ## CSV IO ------------------------------------------------------------------
+// Two different version have logic to produce csv output, dto::table and table, the dto::table is more sutable to use for transfer of data
+// and only table is used to store internal member information. Where the format do not need to change
 
+// ### `dto::table`
 void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool (const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_csv );
 void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool (const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_header, tag_io_csv );
 
@@ -94,6 +97,24 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
 inline void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, bool ( *pformat_text_ )( unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew ), std::string& stringOut, tag_io_csv) {
    return to_string( table, uBegin, uCount, gd::argument::arguments(), pformat_text_, stringOut, tag_io_csv{});
 }
+
+// ### `table`
+void to_string( const table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool (const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_csv );
+void to_string( const table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool (const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_header, tag_io_csv );
+
+inline void to_string(const table& table, uint64_t uBegin, uint64_t uCount, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_csv) {
+   return to_string( table, uBegin, uCount, gd::argument::arguments(), format_text_, stringOut, tag_io_csv{});
+}
+inline void to_string(const table& table, uint64_t uBegin, uint64_t uCount, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_header, tag_io_csv) {
+   return to_string( table, uBegin, uCount, gd::argument::arguments(), format_text_, stringOut, tag_io_header{}, tag_io_csv{});
+}
+
+void to_string( const table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, bool (*format_text_)(unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew), std::string& stringOut, tag_io_csv );
+
+inline void to_string(const table& table, uint64_t uBegin, uint64_t uCount, bool ( *pformat_text_ )( unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew ), std::string& stringOut, tag_io_csv) {
+   return to_string( table, uBegin, uCount, gd::argument::arguments(), pformat_text_, stringOut, tag_io_csv{});
+}
+
 
 // ### read csv information into table
 std::pair<bool, const char*> read_g( dto::table& table, const std::string_view& stringCsv, char chSeparator, char chNewLine, tag_io_csv );

@@ -17,6 +17,8 @@ DOD or data oriented design development, what is it and how to do it
 
 # Data Oriented Design - why do it
 
+**Ultimately, computers only understand machine code and binary data. This is the foundation of data-oriented design.**
+
 Data Oriented Design = build logic around patterns, patterns that works well for the CPU.  
   
 A computer's central processing unit (CPU) can only execute machine code, a binary language of 0s and 1s. Programming languages like C++, C# or Java, must be converted into this machine code before the computer can understand and process it. Tools like compilers and interpreters, are used to convert programming code to machine code, the computer's native language.  

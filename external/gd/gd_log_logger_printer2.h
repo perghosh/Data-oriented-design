@@ -61,7 +61,7 @@ public:
    printer_csvfile& operator=( const printer_csvfile& o ) { common_construct( o ); return *this; }
    printer_csvfile& operator=( printer_csvfile&& o ) noexcept { common_construct( o ); return *this; }
    
-   ~printer_csvfile() { if( m_iFileHandle >= 0 ) file_close_s(m_iFileHandle); }
+   ~printer_csvfile();
 protected:
    // common copy
    void common_construct(const printer_csvfile& o) { 
@@ -85,12 +85,17 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   const std::wstring& get_filename() const { return m_stringFileName; }
+   void set_maxrowcount( unsigned uCount ) { m_uMaxRowCount = uCount; }
 //@}
 
 /** \name OPERATION
 *///@{
    /// checks if valid file handle, if handle is valid (above 0) then the file is open
    bool is_open() const { return m_iFileHandle >= 0; }
+
+   /// dump table data to file and clear rows
+   void dump();
 
    
 //@}
@@ -109,6 +114,7 @@ public:
    unsigned m_uInternalError = 0;   ///< internal error states
    int m_iFileHandle = -1;          ///< used as file handle to log file that is written to
    uint64_t m_uCounter = 0;         ///< counter to get some sort of feeling where in the log sequence information is
+   unsigned m_uMaxRowCount = 10;    ///< number of rows before flush rows to file
    std::wstring m_stringFileName;   ///< file log information is written to
    gd::log::message m_messageError; ///< temporary storage for internal error information
    gd::table::table m_tableCSV;     ///< table storing log information that is written to file
