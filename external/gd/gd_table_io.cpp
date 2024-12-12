@@ -70,6 +70,54 @@ std::pair<bool, std::string> to_table( const std::string_view& stringTableData, 
 }
 */
 
+/// convert table (both header and body) to json array
+void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_header, tag_io_csv)
+{
+   std::string stringResult;   // result string with table data
+
+   auto it = table.column_begin(), itEnd = table.column_end();
+
+   if(it != itEnd)
+   {
+      stringResult += '\"';
+      if(it->alias() != 0) { stringResult += table.column_get_alias( *it ); }
+      else { stringResult += table.column_get_name( *it ); }
+      stringResult += '\"';
+      it++;
+   }
+
+   std::string stringName;
+   for(; it < itEnd; it++)
+   {
+      stringResult += std::string_view( ",\"" );
+      if(it->alias() != 0)
+      {
+         stringName = table.column_get_alias( *it );
+      }
+      else 
+      {
+         stringName = table.column_get_name( *it );
+      }
+
+      gd::parse::escape_g( stringName, gd::parse::tag_csv{});
+
+      stringResult += stringName;
+
+      stringResult += '\"';
+   }
+
+   // ## add body if count is set
+   if( uCount > 0 && table.get_row_count() > 0 )
+   {
+      stringResult += "\n";
+      to_string( table, uBegin, uCount, argumentsOption, format_text_, stringResult, tag_io_csv{});
+   }
+
+   if( stringOut.empty() == true ) stringOut = std::move( stringResult );
+   else stringOut += stringResult;
+}
+
+
 /// convert table to csv
 void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_csv )
 {
@@ -141,55 +189,6 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
    else stringOut += stringResult;
 }
 
-
-/// convert table (both header and body) to json array
-void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_header, tag_io_csv)
-{
-   std::string stringResult;   // result string with table data
-
-   auto it = table.column_begin(), itEnd = table.column_end();
-
-   if(it != itEnd)
-   {
-      stringResult += '\"';
-      if(it->alias() != 0) { stringResult += table.column_get_alias( *it ); }
-      else { stringResult += table.column_get_name( *it ); }
-      stringResult += '\"';
-      it++;
-   }
-
-   std::string stringName;
-   for(; it < itEnd; it++)
-   {
-      stringResult += std::string_view( ",\"" );
-      if(it->alias() != 0)
-      {
-         stringName = table.column_get_alias( *it );
-      }
-      else 
-      {
-         stringName = table.column_get_name( *it );
-      }
-
-      gd::parse::escape_g( stringName, gd::parse::tag_csv{});
-
-      stringResult += stringName;
-
-      stringResult += '\"';
-   }
-
-   // ## add body if count is set
-   if( uCount > 0 && table.get_row_count() > 0 )
-   {
-      stringResult += "\n";
-      to_string( table, uBegin, uCount, argumentsOption, format_text_, stringResult, tag_io_csv{});
-   }
-
-   if( stringOut.empty() == true ) stringOut = std::move( stringResult );
-   else stringOut += stringResult;
-}
-
-
 void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, bool (*pformat_text_)(unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew), std::string& stringOut, tag_io_csv )
 {
    unsigned uOptions = 0;
@@ -245,6 +244,177 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
    if( stringOut.empty() == true ) stringOut = std::move( stringResult );
    else stringOut += stringResult;
 }
+
+
+
+// ## convert `table` to csv
+
+
+void to_string(const table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_header, tag_io_csv)
+{
+   std::string stringResult;   // result string with table data
+
+   auto pcolumns = table.get_columns();                                                            assert( pcolumns->size() > 0 );
+
+   std::string_view stringName;
+   std::string stringEscapedName;
+   for(unsigned uColumn = 0, uMax = pcolumns->size(); uColumn < uMax; uColumn++ )
+   {
+      if( uColumn != 0 ) stringResult += std::string_view( ",\"" );
+      else               stringResult += std::string_view( "\"" );
+      stringName = pcolumns->alias( uColumn );
+      if( stringName.empty() == true )
+      {
+         stringName = pcolumns->name( uColumn );
+      }
+
+      stringEscapedName = stringName;
+      gd::parse::escape_g( stringEscapedName, gd::parse::tag_csv{});
+
+      stringResult += stringEscapedName;
+
+      stringResult += '\"';
+   }
+
+   // ## add body if count is set
+   if( uCount > 0 && table.get_row_count() > 0 )
+   {
+      stringResult += "\n";
+      to_string( table, uBegin, uCount, argumentsOption, format_text_, stringResult, tag_io_csv{});
+   }
+
+   if( stringOut.empty() == true ) stringOut = std::move( stringResult );
+   else stringOut += stringResult;
+}
+
+/// convert table to csv
+void to_string( const table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_csv )
+{
+   unsigned uOptions = 0;
+   std::function<bool(std::string_view, std::string& stringNew)> functionFormat( format_copy );
+   std::string stringResult;                    // result string with table data
+   std::vector<gd::variant_view> vectorValue;   // used to fetch values from table
+
+   if( format_text_ ) { functionFormat = format_text_; }
+
+   if( argumentsOption["scientific"].is_true() == true ) uOptions |= eOptionScientific;
+
+   auto uEnd = uBegin + uCount;
+   for( auto uRow = uBegin; uRow < uEnd; uRow++ )
+   {
+      if( uRow != uBegin ) stringResult += ",\n";                              // add comma separator between rows
+
+      vectorValue.clear();
+      table.row_get_variant_view( uRow, vectorValue );
+
+      unsigned uColumn = 0;
+      auto it = std::begin( vectorValue );
+      auto itEnd = std::end( vectorValue );
+      for( ; it < itEnd; it++ )
+      {
+         if( uColumn > 0 ) stringResult += ",";                                // add `,` to separate columns
+         auto value_ = *it;
+
+         if( value_.is_null() == true )
+         {
+            // pass, no value
+         }
+         else if( value_.is_string() == true )
+         {
+            stringResult += "\"";
+#ifdef _DEBUG
+            auto uLength_d = strlen((const char*)value_);                                          assert( uLength_d < 0x0010'0000 );
+            auto uChar_d = ((const char*)value_)[uLength_d];                                       assert( uChar_d == 0 );
+#endif // _DEBUG
+
+            std::string string_ = value_.as_string();
+            gd::parse::escape_g( string_, gd::parse::tag_csv{});
+            bool bOk = functionFormat( string_, stringResult );
+
+            //auto pbszValue = ( const char* )value_;
+            //auto [bOk, pbuszPosition] = gd::utf8::validate( pbszValue );
+            //if( bOk == true ) { gd::utf8::uri::convert_utf8_to_uri( (const uint8_t*)pbszValue, (const uint8_t*)pbszValue + value_.length(), stringResult ); }
+            //else
+            //{                                                               // Not valid utf8 text
+            //   // ## text is not valid utf8 format, convert to utf8
+            //   std::string stringUtf8;
+            //   gd::utf8::convert_ascii( pbszValue, stringUtf8 );
+            //   gd::utf8::uri::convert_utf8_to_uri( stringUtf8, stringResult );
+            //}
+            stringResult += "\"";
+         }
+         else
+         {
+            if( uOptions & eOptionScientific) stringResult += value_.as_string( gd::variant_type::tag_scientific{} );
+            else                              stringResult += value_.as_string();
+         }
+
+         uColumn++;
+      }
+   }
+   if( stringResult.empty() == false ) stringResult += "\n";                   // add new line
+
+   if( stringOut.empty() == true ) stringOut = std::move( stringResult );
+   else stringOut += stringResult;
+}
+
+void to_string( const table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, bool (*pformat_text_)(unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew), std::string& stringOut, tag_io_csv )
+{
+   unsigned uOptions = 0;
+   std::string stringResult;                    // result string with table data
+   std::vector<gd::variant_view> vectorValue;   // used to fetch values from table
+
+   if( argumentsOption["scientific"].is_true() == true ) uOptions |= eOptionScientific;
+
+   auto uEnd = uBegin + uCount;
+   for( auto uRow = uBegin; uRow < uEnd; uRow++ )
+   {
+      if( uRow != uBegin ) stringResult += ",\n";                              // add comma separator between rows
+
+      vectorValue.clear();
+      table.row_get_variant_view( uRow, vectorValue );
+
+      unsigned uColumn = 0;
+      auto it = std::begin( vectorValue );
+      auto itEnd = std::end( vectorValue );
+      for( ; it < itEnd; it++ )
+      {
+         if( uColumn > 0 ) stringResult += ",";                                // add `,` to separate columns
+         const auto& value_ = *it;
+
+         unsigned uType = table.column_get_type( uColumn );
+         bool bContinue = false;
+         if( pformat_text_ != nullptr ) { pformat_text_( uColumn, uType, value_, stringResult ); }
+         if( bContinue == true ) { uColumn++; continue; }
+
+         if( value_.is_null() == true )
+         {
+            // pass, no value
+         }
+         else if( value_.is_string() == true )
+         {
+            stringResult += "\"";
+            std::string string_ = value_.as_string();
+            gd::parse::escape_g( string_, gd::parse::tag_csv{});
+            stringResult += string_;
+            stringResult += "\"";
+         }
+         else
+         {
+            if( uOptions & eOptionScientific) stringResult += value_.as_string( gd::variant_type::tag_scientific{} );
+            else                              stringResult += value_.as_string();
+         }
+
+         uColumn++;
+      }
+   }
+   if( stringResult.empty() == false ) stringResult += "\n";                   // add new line
+
+   if( stringOut.empty() == true ) stringOut = std::move( stringResult );
+   else stringOut += stringResult;
+}
+
+
 
 
 std::pair<bool, const char*> read_g(dto::table& table, const std::string_view& stringCsv, char chSeparator, char chNewLine, tag_io_csv)

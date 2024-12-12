@@ -153,5 +153,6 @@ TEST_CASE( "[logging] cvs logger", "[logging]" ) {
 
    plogger->append( std::make_unique<gd::log::printer_csvfile>( std::string_view( "CSV" ), stringFilePath ));
    LOG_DEBUG("LOG_DEBUG");
+   LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");
 
 }

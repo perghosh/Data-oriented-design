@@ -9,8 +9,9 @@
 #include "gd_utf8.h"
 
 #include "gd_log_logger_printer.h"
-
 #include "gd_log_logger_printer2.h"
+
+#include "gd_table_io.h"
 
 #if defined( __clang__ )
    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -28,6 +29,15 @@ _GD_LOG_LOGGER_BEGIN
 // ================================================================================================
 // =================================================================================== printer_file
 // ================================================================================================
+
+printer_csvfile::~printer_csvfile() 
+{ 
+   if( m_iFileHandle >= 0 )
+   {
+      dump();
+      file_close_s(m_iFileHandle); 
+   }
+}
 
 printer_csvfile::printer_csvfile( const std::string_view& stringFileName ) 
 {
@@ -57,6 +67,8 @@ printer_csvfile::printer_csvfile(const std::string_view& stringName, const std::
  */
 bool printer_csvfile::print(const message& message)
 {
+   using namespace gd::table;
+
    if( is_open() == false )                                                      // check if file has been opened, if not then open file
    {
       if( is_error(eErrorOpenFile) == true ) return true;
@@ -73,6 +85,13 @@ bool printer_csvfile::print(const message& message)
          m_messageError << "failed to create or open log file. log file name is \"" << m_stringFileName << "\""; // error message
          return false;
       }
+
+      // ## Print column headers to csv file
+      std::string stringCsv;
+      gd::table::to_string( m_tableCSV, 0, 0, gd::argument::arguments(), nullptr, stringCsv, tag_io_header{}, tag_io_csv{});
+      stringCsv += "\n";
+
+      file_write_s( m_iFileHandle, stringCsv );                                // write text to file
    }
 
    if( message.is_message_type_set() == true )                                   // check message "if type of message" is set, then go through message settings to add fixed information
@@ -110,6 +129,11 @@ bool printer_csvfile::print(const message& message)
    m_tableCSV.cell_set( uRow, 3, 0.0 );
    m_uCounter++;
 
+   if( m_tableCSV.get_row_count() > m_uMaxRowCount )
+   {
+      dump();
+   }
+
 #ifndef NDEBUG
    auto stringTabke_d = gd::table::debug::print( m_tableCSV );
 #endif
@@ -141,18 +165,9 @@ bool printer_csvfile::print(const message& message)
 
 bool printer_csvfile::flush()
 {
-   //char pbsz[3];
    if( is_open() == true  )
    {
-      /*
-      if( m_stringNewLine.length() < 3 )
-      {
-         pbsz[0] = (char)m_stringNewLine[0];
-         pbsz[1] = (char)m_stringNewLine[1];
-         pbsz[2] = 0;
-         file_write_s(m_iFileHandle, pbsz);
-      }
-      */
+      dump();
    }
 
    return true;
@@ -166,6 +181,16 @@ unsigned printer_csvfile::error(message& message)
       return 1;
    }
    return 0;
+}
+
+void printer_csvfile::dump()
+{
+   using namespace gd::table;
+   std::string stringCsv;
+   gd::table::to_string( m_tableCSV, 0, m_tableCSV.get_row_count(), gd::argument::arguments(), nullptr, stringCsv, tag_io_csv{});
+
+   file_write_s( m_iFileHandle, stringCsv );                                // write text to file
+   m_tableCSV.row_clear();                                                  // clear rows
 }
 
 
