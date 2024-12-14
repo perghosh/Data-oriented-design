@@ -150,9 +150,15 @@ TEST_CASE( "[logging] cvs logger", "[logging]" ) {
    stringFilePath += stringDate;
    stringFilePath += ".csv";
 
-
    plogger->append( std::make_unique<gd::log::printer_csvfile>( std::string_view( "CSV" ), stringFilePath ));
+   gd::log::printer_csvfile* pprinter = (gd::log::printer_csvfile*)plogger->get( "CSV" );
+   pprinter->set_flags( printer_csvfile::flags_s("+benchmark") );
+
    LOG_DEBUG("LOG_DEBUG");
    LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");
+
+   LOG_DEBUG("LOG_DEBUG with time");
+   std::this_thread::sleep_for(std::chrono::seconds(1));
+   LOG_DEBUG("LOG_DEBUG one seconds later");
 
 }

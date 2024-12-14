@@ -43,6 +43,7 @@ class printer_csvfile : public i_printer
 {
 // ## constants ----------------------------------------------------------------
 private:
+   enum unumFlag { eFlagBenchmark = 0x0001 };
    enum enumError { 
       eErrorOpenFile = 0x0000'0001,    // internal error flag/bit if file wasn't opened
    };
@@ -85,6 +86,8 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   void set_flags( unsigned uSet, unsigned uClear ) { m_uFlags |= uSet; m_uFlags &= ~uClear;  }
+   void set_flags( const std::pair<unsigned,unsigned>& pairFlags ) { set_flags( pairFlags.first, pairFlags.second ); }
    const std::wstring& get_filename() const { return m_stringFileName; }
    void set_maxrowcount( unsigned uCount ) { m_uMaxRowCount = uCount; }
 //@}
@@ -111,6 +114,7 @@ protected:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   unsigned m_uFlags = 0;           ///< flags marking how printer should behave
    unsigned m_uInternalError = 0;   ///< internal error states
    int m_iFileHandle = -1;          ///< used as file handle to log file that is written to
    uint64_t m_uCounter = 0;         ///< counter to get some sort of feeling where in the log sequence information is
@@ -118,9 +122,17 @@ public:
    std::wstring m_stringFileName;   ///< file log information is written to
    gd::log::message m_messageError; ///< temporary storage for internal error information
    gd::table::table m_tableCSV;     ///< table storing log information that is written to file
+
+   std::chrono::steady_clock::time_point m_timepointStart;
+   std::chrono::steady_clock::time_point m_timepointCurrent;
+
+   //auto start = std::chrono::high_resolution_clock::now();
    
 // ## free functions ------------------------------------------------------------
 public:
+   // ## flags logic
+   static consteval std::pair<unsigned,unsigned> flags_s( std::string_view stringFlag );
+
    // ## Internal table operations
    void create_table_s( gd::table::table& table_ );
 
@@ -130,6 +142,17 @@ public:
    static std::pair<bool, std::string> file_write_s(int iFileHandle, const std::wstring_view& stringText, gd::utf8::tag_utf8 );
    static void file_close_s(int iFileHandle);
 };
+
+/// generate flags for set and clear interal data
+consteval std::pair<unsigned,unsigned> printer_csvfile::flags_s( std::string_view stringFlag )
+{
+   unsigned uSet = 0;
+   unsigned uClear = 0;
+   if( stringFlag.find( "+benchmark" ) != std::string_view::npos ) uSet |= eFlagBenchmark;
+   if( stringFlag.find( "-benchmark" ) != std::string_view::npos ) uClear |= eFlagBenchmark;
+
+   return std::pair<unsigned,unsigned>( uSet, uClear );
+}
 
 
 

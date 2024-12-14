@@ -1276,7 +1276,7 @@ inline i_printer* logger<iLoggerKey, bThread>::get(const std::string_view& strin
    for(auto it = std::begin(m_vectorPrinter); it != std::end(m_vectorPrinter); it++) {
       i_printer* pprinter_= (*it).get();
       if( pprinter_->get_name() == stringName ) return pprinter_;
-   }
+   }                                                                                               assert( false );
    return nullptr;
 }
 
