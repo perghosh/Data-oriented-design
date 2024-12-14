@@ -47,7 +47,7 @@ A significant portion of a developer's work involves writing code for reading an
 ### Code explodes in size
 When data is close to users, it should also be presented in a format and structure that they can easily understand. Human-readable data formats are fundamentally different from what works well for computers to process.  
 On the positive side this code is simple to read because you can describe it in terms that is easy to understand but a lot more code is needed when data is in Human-readable data format.  
-Code that directly interacts with users, often referred to as the User Interface (UI), typically consists of, or should strive for, declarative programming paradigms.  
+Code that directly interacts with users, often referred to as the User Interface (UI), typically consists of, or should strive for, declarative programming paradigms (declarative programming contrasting sharply with imperative programming).  
   
 Early transformation when data leaves user or late when it reaches user into or away from a machine-friendly format is crucial for streamlining code and improving efficiency. 
 This suggests that when a web browser acts as the user interface, the separation of concerns between domain logic and data structures optimized for computer processing can be effectively implemented within the browser environment.

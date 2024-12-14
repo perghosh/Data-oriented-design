@@ -86,6 +86,10 @@ bool printer_csvfile::print(const message& message)
          return false;
       }
 
+      // ## create time values
+      m_timepointStart = std::chrono::steady_clock::now();
+      m_timepointCurrent = m_timepointStart;
+
       // ## Print column headers to csv file
       std::string stringCsv;
       gd::table::to_string( m_tableCSV, 0, 0, gd::argument::arguments(), nullptr, stringCsv, tag_io_header{}, tag_io_csv{});
@@ -123,10 +127,25 @@ bool printer_csvfile::print(const message& message)
    std::string stringMessage = message.to_string();
    auto uRow = m_tableCSV.get_row_count();
    m_tableCSV.row_add();
+   m_tableCSV.row_set_null( uRow );
    m_tableCSV.cell_set( uRow, 0, severity_get_name_g( message.get_severity() ) );
    m_tableCSV.cell_set( uRow, 1, stringMessage );
    m_tableCSV.cell_set( uRow, 2, m_uCounter );
-   m_tableCSV.cell_set( uRow, 3, 0.0 );
+
+   if( m_uFlags & eFlagBenchmark )
+   {
+      auto timepoint_ = std::chrono::steady_clock::now();
+
+      // Calculate the duration from start
+      int64_t iDuration = std::chrono::duration_cast<std::chrono::microseconds>(timepoint_ - m_timepointStart).count();
+      m_tableCSV.cell_set( uRow, 3, iDuration );
+      // Calculate the duration from previous message
+      iDuration = std::chrono::duration_cast<std::chrono::microseconds>(timepoint_ - m_timepointCurrent).count();
+      m_tableCSV.cell_set( uRow, 4, iDuration );
+      m_timepointCurrent = timepoint_;
+
+   }
+
    m_uCounter++;
 
    if( m_tableCSV.get_row_count() > m_uMaxRowCount )
@@ -204,7 +223,9 @@ void printer_csvfile::create_table_s( gd::table::table& table_ )
       {"string", 20, "severity"}, 
       {"string", 200, "description"}, 
       {"uint64", 0, "counter" }, 
-      {"double", 0, "time" } }, 
+      {"int64", 0, "from start" }, 
+      {"int64", 0, "from previous" }, 
+      {"string", 20, "from-start" } }, 
       gd::table::tag_type_name{}
    );
    table_.prepare();
