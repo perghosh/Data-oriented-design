@@ -43,7 +43,7 @@ class printer_csvfile : public i_printer
 {
 // ## constants ----------------------------------------------------------------
 private:
-   enum unumFlag { eFlagBenchmark = 0x0001 };
+   enum unumFlag { eFlagBenchmark = 0x0001, eFlagBenchmarkText = 0x0002 };
    enum enumError { 
       eErrorOpenFile = 0x0000'0001,    // internal error flag/bit if file wasn't opened
    };
@@ -150,6 +150,9 @@ consteval std::pair<unsigned,unsigned> printer_csvfile::flags_s( std::string_vie
    unsigned uClear = 0;
    if( stringFlag.find( "+benchmark" ) != std::string_view::npos ) uSet |= eFlagBenchmark;
    if( stringFlag.find( "-benchmark" ) != std::string_view::npos ) uClear |= eFlagBenchmark;
+
+   if( stringFlag.find( "+benchmark-text" ) != std::string_view::npos ) uSet |= (eFlagBenchmark|eFlagBenchmarkText);
+   if( stringFlag.find( "-benchmark-text" ) != std::string_view::npos ) uClear |= eFlagBenchmarkText;
 
    return std::pair<unsigned,unsigned>( uSet, uClear );
 }
