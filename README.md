@@ -56,6 +56,18 @@ This suggests that when a web browser acts as the user interface, the separation
 Keeping human-readable data formats for inter-system communication will necessitate extensive conversion logic, leading to increased code size, potential performance bottlenecks and code that are difficult to adapt to changes.  
 Experienced developers can often assess the maintainability of a codebase by simply reading portions of it and evaluating how deeply the domain logic is intertwined with the underlying technology. This evaluation provides a strong indication of the challenges that may arise when working with the code.
 
+## Let's get practical. How about using "string"?
+C++ string objects, such as `std::string`, are designed to efficiently manage text within code.
+The `std::string` class exemplifies data-oriented design, offering a clear interface for string manipulation. It leverages a well-known data pattern that most C++ developers are familiar with.
+A sequence of bytes terminated by a zero byte. `std::string` and many other string implementations are based on this zero-terminated byte sequence pattern.  
+This pattern is CPU-friendly, cache-efficient, and easy to manipulate. Its extensive usage demonstrates the ease of reusing data-oriented code in various contexts. 
+And it's easy to see why separating domain logic from data pattern logic is crucial. Injecting domain logic into data-oriented code designed for specific patterns immediately destroys it.
+
+There are numerous implementations for common data patterns like JSON and XML, making it easy to find shared code solutions. Developing custom implementations for internal data patterns used within applications is often easier than one might think.
+By investing time upfront to create well-structured, reusable code, you can preserve its value even if the domain changes. While this requires more initial thought and effort, the long-term gains are significant.
+
+Programming languages like C++, JavaScript, C#, Python, HTML, CSS, SQL, and others exemplify common data patterns. Without the underlying code to handle these patterns, modern programmers would be significantly slower.
+
 
 ----
 
