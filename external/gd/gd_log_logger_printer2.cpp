@@ -3,6 +3,7 @@
 #  include "io.h"
 #endif
 #include <clocale>
+#include <format>
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -144,7 +145,24 @@ bool printer_csvfile::print(const message& message)
       m_tableCSV.cell_set( uRow, 4, iDuration );
       m_timepointCurrent = timepoint_;
 
+      if( m_uFlags & eFlagBenchmarkText )
+      {
+         auto duration_ = m_timepointCurrent - m_timepointStart;
+         auto seconds_ = std::chrono::duration_cast<std::chrono::seconds>(duration_).count();
+         auto milliseconds_ = std::chrono::duration_cast<std::chrono::milliseconds>(duration_).count();
+         auto microseconds_ = std::chrono::duration_cast<std::chrono::microseconds>(duration_).count();
+
+         std::string stringDuration = std::format("{:02d}s:{:02d}ms:{:03d}us", seconds_, milliseconds_, microseconds_);
+         m_tableCSV.cell_set( uRow, 5, stringDuration );
+
+         //std::string formatted_time = std::format("{:02d}:{:02d}:{:02d}.{:03d}{:03d}", seconds / 3600, (seconds % 3600) / 60, seconds % 60, milliseconds, microseconds);
+      }
+
+
    }
+
+
+
 
    m_uCounter++;
 
@@ -225,7 +243,7 @@ void printer_csvfile::create_table_s( gd::table::table& table_ )
       {"uint64", 0, "counter" }, 
       {"int64", 0, "from start" }, 
       {"int64", 0, "from previous" }, 
-      {"string", 20, "from-start" } }, 
+      {"string", 30, "time text" } }, 
       gd::table::tag_type_name{}
    );
    table_.prepare();

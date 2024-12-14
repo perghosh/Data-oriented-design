@@ -152,13 +152,16 @@ TEST_CASE( "[logging] cvs logger", "[logging]" ) {
 
    plogger->append( std::make_unique<gd::log::printer_csvfile>( std::string_view( "CSV" ), stringFilePath ));
    gd::log::printer_csvfile* pprinter = (gd::log::printer_csvfile*)plogger->get( "CSV" );
-   pprinter->set_flags( printer_csvfile::flags_s("+benchmark") );
+   pprinter->set_flags( printer_csvfile::flags_s("+benchmark +benchmark-text") );
 
-   LOG_DEBUG("LOG_DEBUG");
-   LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");LOG_DEBUG("LOG_DEBUG");
+   LOG_DEBUG_RAW("DEBUG");
+   LOG_INFORMATION_RAW("INFORMATION");
 
-   LOG_DEBUG("LOG_DEBUG with time");
+   std::vector<int> vectorInteger = {1000, 2000, 3000, 4000, 5000, 6000, 7000};
+   for( auto it : vectorInteger ) { LOG_NONE_RAW( "Number =" << it ); }
+
+   LOG_DEBUG_RAW("LOG_DEBUG with time");
    std::this_thread::sleep_for(std::chrono::seconds(1));
-   LOG_DEBUG("LOG_DEBUG one seconds later");
+   LOG_DEBUG_RAW("LOG_DEBUG one seconds later");
 
 }
