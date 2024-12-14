@@ -54,7 +54,8 @@ This suggests that when a web browser acts as the user interface, the separation
 
 **In scenarios where domain logic is defined within the code...**  
 Keeping human-readable data formats for inter-system communication will necessitate extensive conversion logic, leading to increased code size, potential performance bottlenecks and code that are difficult to adapt to changes.  
-Experienced developers can often assess the maintainability of a codebase by simply reading portions of it and evaluating how deeply the domain logic is intertwined with the underlying technology. This evaluation provides a strong indication of the challenges that may arise when working with the code.
+Experienced developers can often spot the maintainability of a codebase by simply reading portions of it and evaluating how deeply the domain logic is intertwined with the underlying technology. This evaluation provides a strong indication of the challenges that may arise when working with the code.
+Domain logic going deep is not good. Try to avoid it
 
 ## Let's get practical. How about using "string"?
 C++ string objects, such as `std::string`, are designed to efficiently manage text within code.
@@ -66,8 +67,8 @@ And it's easy to see why separating domain logic from data pattern logic is cruc
 There are numerous implementations for common data patterns like JSON and XML, making it easy to find shared code solutions. Developing custom implementations for internal data patterns used within applications is often easier than one might think.
 By investing time upfront to create well-structured, reusable code, you can preserve its value even if the domain changes. While this requires more initial thought and effort, the long-term gains are significant.
 
-Programming languages like C++, JavaScript, C#, Python, HTML, CSS, SQL, and others exemplify common data patterns. Without the underlying code to handle these patterns, modern programmers would be significantly slower.
-
+Programming languages like C++, JavaScript, C#, Python, HTML, CSS, SQL, and others exemplify common data patterns for developers.
+While a pattern can take many forms, its effectiveness for internal application logic hinges on how easily a computer can process it and how hard it is to implement for developers. This makes it relatively straightforward to determine whether a pattern is well-suited for a given task.
 
 ----
 
