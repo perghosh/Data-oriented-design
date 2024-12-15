@@ -1,8 +1,8 @@
 #include <random>
 #include <chrono>
 #include <memory>
+#include <ranges>
 
-#include "gd/gd_cli_options.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
@@ -163,5 +163,37 @@ TEST_CASE( "[logging] cvs logger", "[logging]" ) {
    LOG_DEBUG_RAW("LOG_DEBUG with time");
    std::this_thread::sleep_for(std::chrono::seconds(1));
    LOG_DEBUG_RAW("LOG_DEBUG one seconds later");
+}
 
+TEST_CASE( "[logging] hashtag logging", "[logging]" ) {
+   gd::log::logger<0>* plogger = gd::log::get_s();
+   plogger->clear();
+   plogger->append( std::make_unique<gd::log::printer_console>( std::string_view( "CONSOLE" ) ));
+
+   std::vector<std::string> vectorTag = { "one", "two", "three", "four", "five", "six", "seven", "eight" };
+
+   LOG_VERBOSE_RAW( gd::log::ascii().line( "=\n", 100 ) << "Print log message for added tag");
+   for( auto it : vectorTag )
+   {
+      plogger->tag_add( it );
+      LOG_DEBUG2( gd::log::tag("one"), "Print 1!");
+      LOG_DEBUG2( gd::log::tag("two"), "Print 2!");
+      LOG_DEBUG2( gd::log::tag("three"), "Print 3!");
+      LOG_DEBUG2( gd::log::tag("four"), "Print 4!");
+      LOG_DEBUG2( gd::log::tag("five"), "Print 5!");
+      LOG_DEBUG2( gd::log::tag("six"), "Print 6!");
+      LOG_DEBUG2( gd::log::tag("seven"), "Print 7!");
+      LOG_DEBUG2( gd::log::tag("eight"), "Print 8!");
+      plogger->tag_erase( it );
+   }
+   
+   auto vectorTag3 = vectorTag | std::views::take(3);
+   LOG_VERBOSE_RAW( gd::log::ascii().line( "=\n", 100 ) << "Print log messages for tags added, prints 6 message");
+   for( auto it : vectorTag3 )
+   {
+      plogger->tag_add( it );
+      LOG_DEBUG2( gd::log::tag("one"), "Print 1!");
+      LOG_DEBUG2( gd::log::tag("two"), "Print 2!");
+      LOG_DEBUG2( gd::log::tag("three"), "Print 3!");
+   }
 }

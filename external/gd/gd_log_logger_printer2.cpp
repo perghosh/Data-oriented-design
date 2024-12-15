@@ -148,9 +148,13 @@ bool printer_csvfile::print(const message& message)
       if( m_uFlags & eFlagBenchmarkText )
       {
          auto duration_ = m_timepointCurrent - m_timepointStart;
-         auto seconds_ = std::chrono::duration_cast<std::chrono::seconds>(duration_).count();
-         auto milliseconds_ = std::chrono::duration_cast<std::chrono::milliseconds>(duration_).count();
+         //auto seconds_ = std::chrono::duration_cast<std::chrono::seconds>(duration_).count();
+         //auto milliseconds_ = std::chrono::duration_cast<std::chrono::milliseconds>(duration_).count();
          auto microseconds_ = std::chrono::duration_cast<std::chrono::microseconds>(duration_).count();
+         int64_t seconds_ = microseconds_ / 1'000'000; 
+         microseconds_ %= 1'000'000;
+         int64_t milliseconds_ = microseconds_ / 1'000; 
+         microseconds_ %= 1'000;
 
          std::string stringDuration = std::format("{:02d}s:{:02d}ms:{:03d}us", seconds_, milliseconds_, microseconds_);
          m_tableCSV.cell_set( uRow, 5, stringDuration );
