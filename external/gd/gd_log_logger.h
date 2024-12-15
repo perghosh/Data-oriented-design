@@ -1212,6 +1212,8 @@ public:
 
    void tag_add( const std::string_view& stringTag ) { m_vectorTag.push_back( std::string( stringTag ) ); }
    bool tag_exists( const char* pbszTag ) const;
+   void tag_erase( const std::string_view& stringTag ) { std::erase_if( m_vectorTag, [&stringTag](auto tag_) { return tag_ == stringTag; }); }
+   void tag_clear() { m_vectorTag.clear(); }
 
    template<typename FUNCTION>
    void callback_add( FUNCTION&& callback_ ) { m_vectorCallback.push_back( std::forward<FUNCTION>( callback_ ) ); }
