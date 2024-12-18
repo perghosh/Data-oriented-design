@@ -1166,8 +1166,11 @@ public:
    /// Check if tag is set
    bool is_tag( const tag& tag_ ) const { return std::find(m_vectorTag.begin(), m_vectorTag.end(), tag_.get( gd::types::tag_view{} )) != m_vectorTag.end(); }
 
+   /// Check if _only_ print taged log messages
    bool is_only_tags() const { return (m_uFlags & eLoggerFlagOnlyTag) == eLoggerFlagOnlyTag; }
+   /// check if filter log message based on if it is taged
    bool is_tags() const { return (m_uFlags & eLoggerFlagNoTagFilter) != eLoggerFlagNoTagFilter; }
+   /// check if not filter on tags, all messages (even taged) are shown
    bool is_notags() const { return (m_uFlags & eLoggerFlagNoTagFilter) == eLoggerFlagNoTagFilter; }
 
    void set_flags( unsigned uSet, unsigned uClear ) { m_uFlags |= uSet; m_uFlags &= ~uClear; }
@@ -1188,9 +1191,10 @@ public:
 
    /// Send message to connected printers
    void print( const message& message );
-
+   void print_always( const message& message );
    virtual void print( const message& message, bool bFlush );
    virtual void print( std::initializer_list<message> listMessage );
+   virtual void print_always( const message& message, bool bFlush );
    virtual void flush();
 
    /// number of printers attached
@@ -1223,7 +1227,7 @@ public:
 
 protected:
    // internal printing
-   void print_(const message& message );
+   void print_(const message& message, bool bFilter );
 /** \name INTERNAL
 *///@{
    /// check severity against internal severity filter
@@ -1317,6 +1321,11 @@ template<int iLoggerKey, bool bThread>
 inline void logger<iLoggerKey,bThread>::print(const message& message) { print(message, true); }
 
 /// ----------------------------------------------------------------------------
+/// call print and flush after print is done
+template<int iLoggerKey, bool bThread>
+inline void logger<iLoggerKey,bThread>::print_always(const message& message) { print_always(message, false); }
+
+/// ----------------------------------------------------------------------------
 /// Sends message to all attached printers, 
 template<int iLoggerKey, bool bThread>
 inline void logger<iLoggerKey,bThread>::print(const message& message, bool bFlush)
@@ -1327,16 +1336,39 @@ inline void logger<iLoggerKey,bThread>::print(const message& message, bool bFlus
       if constexpr( bThread == true )
       {
          std::lock_guard<std::mutex> lock(get_mutex_s());
-         print_( message );
+         print_( message, true );
          if( bFlush == true ) flush();
       }
       else
       {
-         print_( message );
+         print_( message, true );
          if( bFlush == true ) flush();
       }
    }
 }
+
+/// ----------------------------------------------------------------------------
+/// Sends message to all attached printers, 
+template<int iLoggerKey, bool bThread>
+inline void logger<iLoggerKey,bThread>::print_always(const message& message, bool bFlush)
+{
+   if( check_severity(message.get_severity()) )                                  // check if message has severity within bounds for output
+   {
+      // if template argument bThread is set to true this print method will be thread safe
+      if constexpr( bThread == true )
+      {
+         std::lock_guard<std::mutex> lock(get_mutex_s());
+         print_( message, false );
+         if( bFlush == true ) flush();
+      }
+      else
+      {
+         print_( message, false );
+         if( bFlush == true ) flush();
+      }
+   }
+}
+
 
 /// ----------------------------------------------------------------------------
 /// Sends message list to all attached printers, 
@@ -1391,16 +1423,25 @@ void logger<iLoggerKey, bThread>::print(std::initializer_list<message> listMessa
 
 
 template<int iLoggerKey, bool bThread>
-void logger<iLoggerKey, bThread>::print_( const message& message )
+void logger<iLoggerKey, bThread>::print_( const message& message, bool bFilter )
 {
-   if( message.is_tag() == true && is_tags() == true )
+#ifndef NDEBUG
+   auto bIsMessageTag_d = message.is_tag();
+   auto bIsTag_d = is_tags();
+#endif   
+
+   if( bFilter == true )
    {
-      // ## check if tag is enabled
-      if( tag_exists( message.get_text() ) == false ) return;
-   }
-   else if( is_only_tags() == true )                        // if only tags is shown then skip rest
-   {
-      return;
+      // ## check if message has tag and logger should filter taged messages
+      if( message.is_tag() == true && is_tags() == true )
+      {
+         // ### check if tag is enabled
+         if( tag_exists( message.get_text() ) == false ) return;
+      }
+      else if( is_only_tags() == true )                                        // if only tags is shown then skip rest
+      {
+         return;
+      }
    }
 
    // ## format message
@@ -1652,6 +1693,14 @@ inline void print_message( const message& message )
    auto plog_ = gd::log::get_g<iLoggerKey,bThread>();
    plog_->print( message );
 }
+
+template<int iLoggerKey, bool bThread = false>
+inline void print_message_always( const message& message )
+{
+   auto plog_ = gd::log::get_g<iLoggerKey,bThread>();
+   plog_->print_always( message );
+}
+
 
 _GD_LOG_LOGGER_END
 
