@@ -70,8 +70,6 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS GD_LOG_SIMPLE)
 endif()
 
-
-
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_gd")
@@ -90,6 +88,16 @@ if( USE_TEST_ )
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS GD_LOG_SIMPLE)
+endif()
+
+set( USE_TEST_ ON )
+if( USE_TEST_ )
+   set(TEST_NAME_ "PLAY_sqlite")
+   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} ${external_sqlite}
+      "${TEST_NAME_}.cpp"
+   )
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS GD_DATABASE_SQLITE_USE GD_LOG_SIMPLE)
 endif()
 
 
