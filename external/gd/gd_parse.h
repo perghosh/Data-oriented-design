@@ -761,6 +761,10 @@ inline std::pair<bool, const char*> read_line_g( const std::string_view& stringQ
    return read_line_g( stringQueryString.data(), stringQueryString.data() + stringQueryString.length(), vectorValue, querystring, format_ ); 
 }
 
+inline std::pair<bool, const char*> read_line_g(const std::string_view& stringQueryString, std::vector<std::pair<std::string, std::string>>& vectorValue, const querystring& querystring) {
+   return read_line_g(stringQueryString.data(), stringQueryString.data() + stringQueryString.length(), vectorValue, querystring, nullptr);
+}
+
 // ## strstr methods, similar to c `strstr` but ignores string parts in text
 
 const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbszFind, unsigned uLength, const uint8_t* puCharacterClass );

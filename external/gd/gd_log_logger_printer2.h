@@ -43,7 +43,13 @@ class printer_csvfile : public i_printer
 {
 // ## constants ----------------------------------------------------------------
 private:
-   enum unumFlag { eFlagBenchmark = 0x0001, eFlagBenchmarkText = 0x0002 };
+   enum unumFlag 
+   { 
+      eFlagBenchmark = 0x0001,      ///< flag to benchmark how long time it takes to write to file
+      eFlagBenchmarkText = 0x0002,  ///< flag to convert benchmark values into text
+      eFlagExtraColumns = 0x0004    ///< flag to parse message and insert marked text into extra columns
+   };
+
    enum enumError { 
       eErrorOpenFile = 0x0000'0001,    // internal error flag/bit if file wasn't opened
    };
@@ -96,6 +102,12 @@ public:
 *///@{
    /// checks if valid file handle, if handle is valid (above 0) then the file is open
    bool is_open() const { return m_iFileHandle >= 0; }
+   bool is_extra_columns() const { return ( m_uFlags & eFlagExtraColumns ) == eFlagExtraColumns; }
+
+   void create( std::function< void( gd::table::table& table )> callback_ );
+
+   /// Parse message and set extra columns from text and return rest of message string.
+   std::string set_extra_columns( uint64_t uRow, const std::string_view& stringMessage );
 
    /// dump table data to file and clear rows
    void dump();
@@ -134,7 +146,8 @@ public:
    static consteval std::pair<unsigned,unsigned> flags_s( std::string_view stringFlag );
 
    // ## Internal table operations
-   void create_table_s( gd::table::table& table_ );
+   static unsigned create_table_s( gd::table::table& table_,std::function< void( gd::table::table& table )> callback_ );
+   static unsigned create_table_s(gd::table::table& table_) { return create_table_s(table_, nullptr); }
 
    // ## File operations (open, write and close)
    static std::pair<int, std::string> file_open_s(const std::wstring_view& stringFileName);

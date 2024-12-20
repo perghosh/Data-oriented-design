@@ -258,7 +258,7 @@ void to_string(const table& table, uint64_t uBegin, uint64_t uCount, const gd::a
 
    std::string_view stringName;
    std::string stringEscapedName;
-   for(unsigned uColumn = 0, uMax = pcolumns->size(); uColumn < uMax; uColumn++ )
+   for(unsigned uColumn = 0, uMax = (unsigned)pcolumns->size(); uColumn < uMax; uColumn++ )
    {
       if( uColumn != 0 ) stringResult += std::string_view( ",\"" );
       else               stringResult += std::string_view( "\"" );
