@@ -197,3 +197,28 @@ TEST_CASE( "[logging] hashtag logging", "[logging]" ) {
       LOG_DEBUG2( gd::log::tag("three"), "Print 3!");
    }
 }
+
+TEST_CASE( "[logging] extra columns", "[logging]" ) {
+   gd::log::logger<0>* plogger = gd::log::get_s();
+   plogger->clear();
+
+   std::string stringFilePath = mainarguments_g.m_ppbszArgumentValue[0];
+   auto position_ = stringFilePath.find_last_of("\\/");
+   if( position_ != std::string::npos ) { stringFilePath = stringFilePath.substr( 0, position_ + 1 ); }
+
+   // ## add date and time
+   std::string stringDate = gd::file::rotate::backup_history::date_now_s();    // date value
+   stringFilePath += stringDate;
+   stringFilePath += "_2";
+   stringDate = gd::file::rotate::backup_history::time_now_s( gd::file::rotate::tag_filename{} );// time value
+   stringFilePath += stringDate;
+   stringFilePath += ".csv";
+
+   plogger->append( std::make_unique<gd::log::printer_csvfile>( std::string_view( "CSV" ), stringFilePath ));
+   gd::log::printer_csvfile* pprinter = (gd::log::printer_csvfile*)plogger->get( "CSV" );
+   pprinter->create([](auto& table_) {
+      table_.column_add("uint64", 0, "rows" );
+   });
+
+   LOG_DEBUG_RAW("DEBUG, testing writing number to column?rows=1");
+}
