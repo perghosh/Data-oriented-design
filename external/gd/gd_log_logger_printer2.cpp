@@ -3,7 +3,7 @@
 #  include "io.h"
 #endif
 #include <clocale>
-#include <format>
+//#include <format>
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -162,7 +162,10 @@ bool printer_csvfile::print(const message& message)
          int64_t milliseconds_ = microseconds_ / 1'000; 
          microseconds_ %= 1'000;
 
-         std::string stringDuration = std::format("{:02d}s:{:02d}ms:{:03d}us", seconds_, milliseconds_, microseconds_);
+         //std::string stringDuration = std::format("{:02d}s:{:02d}ms:{:03d}us", seconds_, milliseconds_, microseconds_);
+         char piBuffer[30];
+         sprintf( piBuffer, "%02ld:%02ld:%03ld", seconds_, milliseconds_, microseconds_ );
+         std::string stringDuration = piBuffer;
          m_tableCSV.cell_set( uRow, 5, stringDuration );
 
          //std::string formatted_time = std::format("{:02d}:{:02d}:{:02d}.{:03d}{:03d}", seconds / 3600, (seconds % 3600) / 60, seconds % 60, milliseconds, microseconds);
