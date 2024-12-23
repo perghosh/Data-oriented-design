@@ -21,6 +21,9 @@ Almost all other code in the gd folder is based on the type system found in `gd_
 | `gd_database_odbc` | Connect and work with databases using odbc, most RDMS have odbc drivers |
 | `gd_database_sqlite` | Connect and work with sqlite |
 | `gd_log_logger` | Flexible logger to generate information in code |
+| `gd_log_logger_define` | Macros to compile internal logger functionality or remove it from binary |
+| `gd_log_logger_printer` | Default printers used in logger, easy to write your own and by looking at the default printers you can see how it is done |
+| `gd_log_logger_printer2` | Specialized printers with some sort of functionality to log information |
 | `gd_parse` | Parse logic, for use to read csv, uri, json, sql etc   |
 | `gd_sql_query` | Build sql queries |
 | `gd_sql_value` | Format C++ string for use in SQL statements, methods like append, replace and more to manipulate strings |

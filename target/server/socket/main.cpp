@@ -1,6 +1,10 @@
 #include <iostream>
 
-#include "Application.h"
+#ifdef TARGET_HTTP_FILES
+   #include "http_file/Application.h"
+#else
+   #include "Application.h"
+#endif
 
 /// Global pointer to application object
 CApplication* papplication_g = nullptr;

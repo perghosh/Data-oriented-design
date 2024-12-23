@@ -47,3 +47,23 @@ if( USE_TARGET_ )
    target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE _CRT_SECURE_NO_WARNINGS)
    set_compiler_options()
 endif()
+
+set( USE_TARGET_ ON ) # ========================================================= ${http_file}
+if( USE_TARGET_ )
+   file(GLOB HTTPF_FILES_ http_file/*.cpp http_file/*.h )                      # all cpp files in http file directory
+   set(TARGET_NAME_ "httpfile")
+
+   add_executable(${TARGET_NAME_}
+      ${external_gd}
+      ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
+
+      ${HTTPF_FILES_}                                                          # target files
+      
+      main.cpp                                                                 # main file where method main is located
+   )
+   target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
+   target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
+   target_compile_definitions(${TARGET_NAME_} PRIVATE TARGET_HTTP_FILES)
+   set_compiler_options()
+endif()

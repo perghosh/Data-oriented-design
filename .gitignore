@@ -2,6 +2,7 @@
 ignore*
 out/
 build/
+temp__*
 
 # Prerequisites
 *.d
