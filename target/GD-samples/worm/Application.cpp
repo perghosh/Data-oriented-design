@@ -84,8 +84,6 @@ void Worm::Move()
 
    m_argumentsWorm.set_argument_section( "body", vectorBody );
 
-   //auto size_ = m_argumentsWorm.size();
-
    // ## move head to next position and update head position
    uHead = Worm::Move_s( uHead, iMoveRow, iMoveColumn );
    m_argumentsWorm.set( "head", uHead );                                       // update head value
@@ -178,7 +176,7 @@ std::pair<bool, std::string> Application::GAME_Update( tag_key )
 }
 
 /// ---------------------------------------------------------------------------
-/// read key stroke
+/// Update game data
 std::pair<bool, std::string> Application::GAME_Update( tag_loop )
 {
    if( GetState() == "play" )
@@ -198,13 +196,13 @@ std::pair<bool, std::string> Application::GAME_Update( tag_state )
    if( GetState() == "wait") return {true, ""};
 
    // ## If snake head has moved into something then set the proper state for it
-   auto pairHeadPosition = m_worm.GetHeadPosition();                               // get head position
+   auto pairHeadPosition = m_worm.GetHeadPosition();                           // get head position
 
    // ### Check if head is outside game plan
    {
       gd::console::rowcolumn RC = m_deviceGame.size();
 
-      RC = gd::math::increase_pair( -3, std::pair<unsigned,unsigned>(RC) );                                  // decrease border size
+      RC = gd::math::increase_pair( -3, std::pair<unsigned,unsigned>(RC) );    // decrease border size
       bool bInside = gd::math::area::is_inside_box( pairHeadPosition, {1,1}, std::pair<unsigned,unsigned>(RC) );
       if(bInside == false) 
       {  // We are outside the game area and game has ended
@@ -278,8 +276,6 @@ void Application::PrepareFrame()
 void Application::Draw()
 {
    // ## draw game frame
-   //DrawGameFrame2();
-   //DrawGamePanel2();
 
    DrawBorder(m_deviceGame);
    DrawBorder(m_devicePanel);
