@@ -9,6 +9,7 @@
 
 #include "gd/gd_uuid.h"
 #include "gd/gd_arguments.h"
+#include "gd/gd_variant_view.h"
 
 #ifndef APPLICATION_APPLICATION_BASIC_BEGIN
 #  define APPLICATION_APPLICATION_BASIC_BEGIN namespace application { namespace basic {
