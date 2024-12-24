@@ -134,10 +134,10 @@ public:
 
    void do_close();
 
-   boost::beast::tcp_stream m_tcpstream;
-   boost::beast::flat_buffer m_flatbuffer;
-   std::shared_ptr<std::string const> m_pstringFolderRoot;
-   boost::beast::http::request<boost::beast::http::string_body> m_request;
+   boost::beast::tcp_stream m_tcpstream;        ///< Stream data using socket
+   boost::beast::flat_buffer m_flatbuffer;      ///< Buffer to store data used in request
+   std::shared_ptr<std::string const> m_pstringFolderRoot;///< root folder on disk where to find files
+   boost::beast::http::request<boost::beast::http::string_body> m_request;///< Handle parts in http message
 };
 
 //------------------------------------------------------------------------------
