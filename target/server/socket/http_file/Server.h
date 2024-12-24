@@ -1,17 +1,5 @@
 #pragma once
 
-/*
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/ssl.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/asio/dispatch.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/config.hpp>
-
-https://www.boost.io/doc/libs/1_68_0/libs/beast/example/http/client/async/http_client_async.cpp
-*/
-
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
@@ -29,10 +17,6 @@ https://www.boost.io/doc/libs/1_68_0/libs/beast/example/http/client/async/http_c
 #include <vector>
 
 // https://www.boost.org/doc/libs/1_87_0/libs/beast/example/http/server/async/http_server_async.cpp
-//namespace beast = boost::beast;         // from <boost/beast.hpp>
-//namespace http = boost::beast::http;           // from <boost/beast/http.hpp>
-//namespace net = boost::asio;            // from <boost/asio.hpp>
-//using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 // Return a reasonable mime type based on the extension of a file.
 boost::beast::string_view mime_type(boost::beast::string_view path);
