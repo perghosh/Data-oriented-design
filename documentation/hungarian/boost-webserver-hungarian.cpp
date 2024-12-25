@@ -143,8 +143,7 @@ void listener::on_accept(boost::beast::error_code errorcode, boost::asio::ip::tc
 // ----------------------------------------------------------------------------
 
 session::session( boost::asio::ip::tcp::socket&& socket, std::shared_ptr<std::string const> const& pstringFolderRoot)
-   : m_tcpstream(std::move(socket))
-   , m_pstringFolderRoot(pstringFolderRoot)
+   : m_tcpstream(std::move(socket)), m_pstringFolderRoot(pstringFolderRoot)
 {
 }
 
