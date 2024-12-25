@@ -7,13 +7,13 @@
 
 
  // Report a failure
-void fail(boost::beast::error_code errorcode, char const* piWhat)
+void fail_g(boost::beast::error_code errorcode, char const* piWhat)
 {
    std::cerr << piWhat << ": " << errorcode.message() << "\n";
 }
 
 /// Return a reasonable mime type based on the extension of a file.
-boost::beast::string_view mime_type(boost::beast::string_view stringPath)
+boost::beast::string_view mime_type_g(boost::beast::string_view stringPath)
 {
    using boost::beast::iequals;
    auto const stringExtension = [&stringPath] {
@@ -49,7 +49,7 @@ boost::beast::string_view mime_type(boost::beast::string_view stringPath)
 
 /// Append an HTTP relative-path to a local filesystem path.
 /// The returned path is normalized for the platform.
-std::string path_cat( boost::beast::string_view stringBase,  boost::beast::string_view stringPath)
+std::string path_cat_g( boost::beast::string_view stringBase,  boost::beast::string_view stringPath)
 {
    if( stringBase.empty() == true ) return std::string(stringPath);
 
@@ -88,28 +88,28 @@ listener::listener( boost::asio::io_context& iocontext_, boost::asio::ip::tcp::e
    m_acceptor.open(endpoint_.protocol(), errorcode);                           // Open the acceptor
    if(errorcode)
    {
-      fail(errorcode, "open");
+      fail_g(errorcode, "open");
       return;
    }
 
    m_acceptor.set_option(boost::asio::socket_base::reuse_address(true), errorcode);// Allow address reuse
    if(errorcode)
    {
-      fail(errorcode, "set_option");
+      fail_g(errorcode, "set_option");
       return;
    }
 
    m_acceptor.bind(endpoint_, errorcode);                                      // Bind to the server address
    if(errorcode)
    {
-      fail(errorcode, "bind");
+      fail_g(errorcode, "bind");
       return;
    }
 
    m_acceptor.listen(boost::asio::socket_base::max_listen_connections, errorcode);// Start listening for connections
    if(errorcode)
    {
-      fail(errorcode, "listen");
+      fail_g(errorcode, "listen");
       return;
    }
 }
@@ -125,7 +125,7 @@ void listener::on_accept(boost::beast::error_code errorcode, boost::asio::ip::tc
 {
    if(errorcode)
    {
-      fail(errorcode, "accept");
+      fail_g(errorcode, "accept");
       return;                                                                  // To avoid infinite loop
    }
    else
@@ -158,6 +158,7 @@ void session::run()
    boost::asio::dispatch(m_tcpstream.get_executor(), boost::beast::bind_front_handler( &session::do_read, shared_from_this()));
 }
 
+/// Read data into 
 void session::do_read()
 {
    // Make the request empty before reading,
@@ -175,7 +176,7 @@ void session::on_read( boost::beast::error_code errorcode, std::size_t uBytesTra
    // This means they closed the connection
    if(errorcode == boost::beast::http::error::end_of_stream) { return do_close(); }
 
-   if(errorcode) { return fail(errorcode, "read"); }
+   if(errorcode) { return fail_g(errorcode, "read"); }
 
    // Send the response
    send_response( handle_request(*m_pstringFolderRoot, std::move(m_request)));
@@ -183,7 +184,7 @@ void session::on_read( boost::beast::error_code errorcode, std::size_t uBytesTra
 
 void session::send_response(boost::beast::http::message_generator&& messagegenerator)
 {
-   bool bKeepAlive = messagegenerator.keep_alive();
+   bool bKeepAlive = messagegenerator.keep_alive();                            // get current keep alive status
 
    // Write the response
    boost::beast::async_write( m_tcpstream,std::move(messagegenerator), boost::beast::bind_front_handler( &session::on_write, shared_from_this(), bKeepAlive));
@@ -191,7 +192,7 @@ void session::send_response(boost::beast::http::message_generator&& messagegener
 
 void session::on_write( bool bKeepAlive, boost::beast::error_code errorcode, std::size_t uBytesTransferred)
 {                                                                                                  boost::ignore_unused(uBytesTransferred);
-   if(errorcode) { return fail(errorcode, "write"); }
+   if(errorcode) { return fail_g(errorcode, "write"); }
 
    if(bKeepAlive == false)
    {

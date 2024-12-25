@@ -96,6 +96,7 @@ While a pattern can take many forms, its effectiveness for internal application 
 | `it`* | **iterator** | `for( auto it : vectorValue ) {...}` `for( auto it = std::begin( m_vectorOption ), itEnd = std::end( m_vectorOption ); it != itEnd; it++ ) {...}` |
 | `m_`* | **member variables** | `uint64_t m_uRowCount;`  `std::vector<column> m_vectorColumn;` `uint8_t* m_puTableData = nullptr;` |
 | `string`* | **all string objects** | `std::string_view stringName;`  `std::string stringName;` `std::wstring stringName;` |
+| *`_` | **view declaration** | `boost::beast::http::file_body::value_type body_;` |
 
 Objects get full name in lowercase (or first character for each name in uppercase if abbreviated)  
 Sample:
@@ -109,6 +110,7 @@ CDocument* m_pdocument;
 CApplication* m_papplicationMain;
 CThisIsAVeryLongClassNameToShowAbbriviation TIAVLCNTSA;
 ```
+Note that in situations where type is so "strange" that is difficult to select proper name then end name with `_`. Ending with _ (underscore) means that you can name it to whatever you want.
 
 **Scope**
 | Prefix | Description | Sample |
