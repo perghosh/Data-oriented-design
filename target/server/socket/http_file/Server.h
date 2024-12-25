@@ -19,11 +19,11 @@
 // https://www.boost.org/doc/libs/1_87_0/libs/beast/example/http/server/async/http_server_async.cpp
 
 // Return a reasonable mime type based on the extension of a file.
-boost::beast::string_view mime_type(boost::beast::string_view path);
+boost::beast::string_view mime_type_g(boost::beast::string_view path);
 
 // Append an HTTP rel-path to a local filesystem path.
 // The returned path is normalized for the platform.
-std::string path_cat( boost::beast::string_view base,  boost::beast::string_view path);
+std::string path_cat_g( boost::beast::string_view base,  boost::beast::string_view path);
 
 // Return a response for the given request.
 //
@@ -78,35 +78,35 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
        request_.target().find("..") != boost::beast::string_view::npos) { return bad_request_("Illegal request-target"); }
 
    // ## Build the path to the requested file
-   std::string path = path_cat(doc_root, request_.target());
-   if(request_.target().back() == '/') { path.append("index.html"); }
+   std::string stringPath = path_cat_g(doc_root, request_.target());
+   if(request_.target().back() == '/') { stringPath.append("index.html"); }
 
    // ## Attempt to open the file
    boost::beast::error_code errorcode;
-   boost::beast::http::file_body::value_type body;
-   body.open(path.c_str(), boost::beast::file_mode::scan, errorcode);
+   boost::beast::http::file_body::value_type body_;
+   body_.open(stringPath.c_str(), boost::beast::file_mode::scan, errorcode);
    if(errorcode == boost::beast::errc::no_such_file_or_directory) { return not_found_(request_.target()); } // Handle the case where the file doesn't exist
   
    if(errorcode) { return server_error_(errorcode.message()); }                // Handle an unknown error
 
    
-   auto const uSize = body.size();                                             // Cache the size since we need it after the move
+   auto const uSize = body_.size();                                            // Cache the size since we need it after the move
 
    // ## Respond to HEAD request
    if(request_.method() == boost::beast::http::verb::head)
    {
       boost::beast::http::response<boost::beast::http::empty_body> res{boost::beast::http::status::ok, request_.version()};
       res.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
-      res.set(boost::beast::http::field::content_type, mime_type(path));
+      res.set(boost::beast::http::field::content_type, mime_type_g(stringPath));
       res.content_length(uSize);
       res.keep_alive(request_.keep_alive());
       return res;
    }
 
    // ## Respond to GET request
-   boost::beast::http::response<boost::beast::http::file_body> response{ std::piecewise_construct, std::make_tuple(std::move(body)), std::make_tuple(boost::beast::http::status::ok, request_.version())};
+   boost::beast::http::response<boost::beast::http::file_body> response{ std::piecewise_construct, std::make_tuple(std::move(body_)), std::make_tuple(boost::beast::http::status::ok, request_.version())};
    response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
-   response.set(boost::beast::http::field::content_type, mime_type(path));
+   response.set(boost::beast::http::field::content_type, mime_type_g(stringPath));
    response.content_length(uSize);
    response.keep_alive(request_.keep_alive());
    return response;
@@ -121,19 +121,18 @@ public:
    // Transfer ownership of the stream
    session( boost::asio::ip::tcp::socket&& socket, std::shared_ptr<std::string const> const& pstringFolderRoot);
 
+// ## methods -----------------------------------------------------------------
    // Start the asynchronous request
    void run();
 
    void do_read();
-
    void on_read( boost::beast::error_code errorcode, std::size_t uBytesTransferred);
-
    void send_response(boost::beast::http::message_generator&& messagegenerator);
-
    void on_write( bool bKeepAlive, boost::beast::error_code errorcode, std::size_t uBytesTransferred);
-
    void do_close();
 
+// ## attributes --------------------------------------------------------------
+public:
    boost::beast::tcp_stream m_tcpstream;        ///< Stream data using socket
    boost::beast::flat_buffer m_flatbuffer;      ///< Buffer to store data used in request
    std::shared_ptr<std::string const> m_pstringFolderRoot;///< root folder on disk where to find files
@@ -148,18 +147,17 @@ class listener : public std::enable_shared_from_this<listener>
 public:
    listener( boost::asio::io_context& iocontext_, boost::asio::ip::tcp::endpoint endpoint_, std::shared_ptr<std::string const> const& pstringFolderRoot );
 
+// ## methods -----------------------------------------------------------------
    // Start accepting incoming connections
-   void run()
-   {
-      do_accept();
-   }
+   void run() { do_accept(); }
 
 private:
    void do_accept();
    void on_accept(boost::beast::error_code errorcode, boost::asio::ip::tcp::socket socket);
 
+// ## attributes --------------------------------------------------------------
 public:
    boost::asio::io_context& m_iocontext; ///< composite class for boost I/O network classes 
-   boost::asio::ip::tcp::acceptor m_acceptor;
-   std::shared_ptr<std::string const> m_pstringFolderRoot;
+   boost::asio::ip::tcp::acceptor m_acceptor; ///< Handle new socket connections
+   std::shared_ptr<std::string const> m_pstringFolderRoot;///< root folder on disk where to find files
 };
