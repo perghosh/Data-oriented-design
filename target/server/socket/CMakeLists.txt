@@ -48,10 +48,10 @@ if( USE_TARGET_ )
    set_compiler_options()
 endif()
 
-set( USE_TARGET_ ON ) # ========================================================= ${http_file}
+set( USE_TARGET_ ON ) # ========================================================= ${http}
 if( USE_TARGET_ )
-   file(GLOB HTTPF_FILES_ http_file/*.cpp http_file/*.h )                      # all cpp files in http file directory
-   set(TARGET_NAME_ "httpfile")
+   file(GLOB HTTPF_FILES_ http/*.cpp http/*.h )                                # all cpp files in http file directory
+   set(TARGET_NAME_ "http")
 
    add_executable(${TARGET_NAME_}
       ${external_gd}
