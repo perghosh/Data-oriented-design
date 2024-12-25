@@ -72,7 +72,7 @@ While a pattern can take many forms, its effectiveness for internal application 
 
 ----
 
-## Styleguide used in code
+## Styleguide used in code is based on Hungarian Notation
 *Why write code with this style*
 
 - Improved Code Search and Navigation:
