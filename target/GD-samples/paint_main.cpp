@@ -6,8 +6,8 @@
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_variant.h"
-#include "gd/gd_console_print.h"
-#include "gd/gd_console_style.h"
+#include "gd/console/gd_console_print.h"
+#include "gd/console/gd_console_style.h"
 
 #include "paint/Application.h"
 
