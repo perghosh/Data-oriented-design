@@ -16,8 +16,6 @@
 #include <thread>
 #include <vector>
 
-// https://www.boost.org/doc/libs/1_87_0/libs/beast/example/http/server/async/http_server_async.cpp
-
 // Return a reasonable mime type based on the extension of a file.
 boost::beast::string_view mime_type_g(boost::beast::string_view path);
 
