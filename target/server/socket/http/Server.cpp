@@ -6,7 +6,7 @@
 #include "Server.h"
 
 
- // Report a failure
+// Report a failure
 void fail_g(boost::beast::error_code errorcode, char const* piWhat)
 {
    std::cerr << piWhat << ": " << errorcode.message() << "\n";
@@ -17,10 +17,9 @@ boost::beast::string_view mime_type_g(boost::beast::string_view stringPath)
 {
    using boost::beast::iequals;
    auto const stringExtension = [&stringPath] {
-         auto const pos = stringPath.rfind(".");
-         if(pos == boost::beast::string_view::npos)
-            return boost::beast::string_view{};
-         return stringPath.substr(pos);
+      auto const uPosition = stringPath.rfind(".");
+      if(uPosition == boost::beast::string_view::npos) { return boost::beast::string_view{}; }
+      return stringPath.substr(uPosition);
    }();
 
    if(iequals(stringExtension, ".htm"))  return "text/html";
