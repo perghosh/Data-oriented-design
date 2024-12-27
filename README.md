@@ -72,24 +72,7 @@ While a pattern can take many forms, its effectiveness for internal application 
 
 ----
 
-## Styleguide used in code is based on Hungarian Notation
-*Why write code with this style*
-
-- Improved Code Search and Navigation:
-  -  Consistent naming conventions make it incredibly easy to search for specific variables across the entire codebase. This significantly speeds up debugging, refactoring, and understanding existing code.
-
-- Enhanced Code Readability and Collaboration:
-  -  When all developers adhere to the same naming conventions, the code becomes much easier to read and understand, even for developers who are unfamiliar with specific parts of the project. This fosters better collaboration and knowledge sharing within the team.
-
-- Reduced Cognitive Load and Improved Flow:
-  - When developers can quickly grasp what variables are.  it significantly reduces the mental effort required to understand code to work with it. Not needing to remember variables frees up cognitive resources. When variable names clearly indicate their type or purpose, developers can more easily identify the relevant parts of the code that require their attention, without being distracted by irrelevant details.
-  
-- Increased Development Speed:
-  - With a well-defined set of naming conventions, developers can quickly select appropriate names for variables, reducing the time spent on trivial decisions. This can lead to a noticeable increase in development speed and overall productivity.
-
-- Forced Reflection on Object Purpose:
-  - If a variable containing the object name is difficult to understand, it often signals an issue with the object's name itself. Developers are forced to critically evaluate the object's purpose and consider if a more suitable name exists.
-
+## Styleguide
 
 **Types**
 
@@ -146,6 +129,25 @@ Sample:
 | `target code` | Code in each separate target are only used in that target and isn't placed in a namespace, other than that style is similar to source code |
 | `play code` | no rules, do as you wish |
 | `test code` | no rules, do as you wish |
+
+## About Hungarian Notation or evolution of it
+*Why write code with this style*
+
+- Improved Code Search and Navigation:
+  -  Consistent naming conventions make it incredibly easy to search for specific variables across the entire codebase. This significantly speeds up debugging, refactoring, and understanding existing code.
+
+- Enhanced Code Readability and Collaboration:
+  -  When all developers adhere to the same naming conventions, the code becomes much easier to read and understand, even for developers who are unfamiliar with specific parts of the project. This fosters better collaboration and knowledge sharing within the team.
+
+- Reduced Cognitive Load and Improved Flow:
+  - When developers can quickly grasp what variables are.  it significantly reduces the mental effort required to understand code to work with it. Not needing to remember variables frees up cognitive resources. When variable names clearly indicate their type or purpose, developers can more easily identify the relevant parts of the code that require their attention, without being distracted by irrelevant details.
+  
+- Increased Development Speed:
+  - With a well-defined set of naming conventions, developers can quickly select appropriate names for variables, reducing the time spent on trivial decisions. This can lead to a noticeable increase in development speed and overall productivity.
+
+- Forced Reflection on Object Purpose:
+  - If a variable containing the object name is difficult to understand, it often signals an issue with the object's name itself. Developers are forced to critically evaluate the object's purpose and consider if a more suitable name exists.
+
 
 ### Learn while reading code
 Developers read a lot of code. To improve their skills, they should write code that's easy to learn from. 
