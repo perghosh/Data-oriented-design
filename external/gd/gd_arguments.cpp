@@ -1288,10 +1288,134 @@ arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBu
       }
    }
 
-
-
    return *this;
 }
+
+/** ---------------------------------------------------------------------------
+* @brief Insert named value at position in arguments buffer
+* @code
+* gd::argument::shared::arguments arguments_;
+* arguments_.append_many( 100, 200, 300, 400, 500 );
+* // insert named value at position 2, value name is "value-name" and value is 250
+* arguments_.insert( 2, "value-name", 250, gd::argument::shared::arguments::tag_view{});
+* std::cout << arguments_.print() << "\n";
+* @endcode
+* @param uIndex index where value is inserted
+* @param stringName name for value that is inserted
+* @param variantviewValue value to be inserted
+* @return position where the original value was
+*/
+arguments::pointer arguments::insert(size_t uIndex, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view )
+{
+   pointer pposition = find( (unsigned)uIndex );
+   if(pposition != nullptr)
+   {
+      pposition = insert( pposition, stringName, variantviewValue, tag_view{} );
+   }
+   else
+   {
+      append_argument( stringName, variantviewValue, tag_view{} );
+      pposition = get_buffer_end();
+   }
+
+   return pposition;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief insert variant value at position
+ * @param pPosition position where value is inserted, values after are moved one step to end
+ * @param variantviewValue value to insert
+ * @return pointer new position where the value that `pPosition` pointed to
+ */
+arguments::pointer arguments::insert(pointer pPosition, const gd::variant_view& variantviewValue, tag_view)
+{                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition <= buffer_data_end() );
+#ifndef NDEBUG
+   // auto string_d = debug::print( *this );
+#endif // !NDEBUG
+
+   uint64_t uOffset = pPosition - buffer_data();                                                   assert( uOffset < buffer_size() );
+   // ## calculate expand size   
+   unsigned uSizeInsert = sizeof_s( variantviewValue, tag_view{}) ;
+
+   reserve( buffer_size() + uSizeInsert );                                     // increase size if needed
+
+   pPosition = buffer_data() + uOffset;                                        // reset pointer to buffer where to insert value
+
+   uint64_t uMoveSize = buffer_size() - uOffset;                               // calculate memory size to move
+   memmove( pPosition + uSizeInsert, pPosition, uMoveSize );                   // move memory
+
+   auto argumentValue = get_argument_s(variantviewValue);
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();
+
+   uint64_t uByteCount = memcpy_s( pPosition, uType, pData, uSizeInsert ); // copy value data
+   pPosition += uByteCount;                                                                        assert( uSizeInsert == uByteCount );
+   buffer_set_size( buffer_size() + uByteCount );                              // increase used buffer size
+
+#ifndef NDEBUG
+   // string_d = debug::print( *this );
+#endif // !NDEBUG
+
+   return pPosition;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief insert value at position, position need to point to start of value
+ * @code
+ gd::argument::arguments arguments_;
+ arguments_.append_many( 100, 200, 300, 400, 500 );
+ arguments_.insert( 2, "test", 250, gd::argument::shared::arguments::tag_view{});
+ std::cout << arguments_.print() << "\n";
+ * @emdcode
+ * @param pPosition position in internal buffer holding arguments value
+ * @param stringName name for value to insert
+ * @param variantviewValue value to insert
+ * @return pointer to same value that position was at from start
+ */
+arguments::pointer arguments::insert(pointer pPosition, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view)
+{                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition <= buffer_data_end() );
+#ifndef NDEBUG
+   auto string_d = debug::print( *this );
+#endif // !NDEBUG
+
+   // calculate offset from start of buffer whre value is to be inserted
+   uint64_t uOffset = pPosition - buffer_data();                                                   assert( uOffset < buffer_size() );
+   // ## calculate expand size   
+   unsigned uSizeInsert = sizeof_s( stringName, variantviewValue, tag_view{}) ;
+
+   reserve( buffer_size() + uSizeInsert );                                     // increase size if needed
+
+   pPosition = buffer_data() + uOffset;                                        // reset pointer to buffer where to insert value
+
+   // ## move memory to make space for new value
+   uint64_t uMoveSize = buffer_size() - uOffset;                               // calculate memory size to move
+   memmove( pPosition + uSizeInsert, pPosition, uMoveSize );                   // move memory
+
+   // ## insert name for value
+   unsigned uByteCount = memcpy_s( pPosition, stringName.data(), (unsigned)stringName.length() );
+   pPosition += uByteCount;                                                                        //assert(*( pPosition - 1 ) == '\0'); // check that name is zero terminated
+
+   // ## get pointer to value in argument
+   auto argumentValue = get_argument_s(variantviewValue);                      // convert to argument
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();
+
+   // ## copy value
+   uSizeInsert = sizeof_s( variantviewValue, tag_view{} ) ;
+   uByteCount += memcpy_s( pPosition, uType, pData, uSizeInsert );             // copy data, decrease size with size needed to describe
+                                                                                                   assert( *pPosition == (uint8_t)(uType & ~eTypeNumber_MASK) );
+   pPosition += uByteCount;                                                                        
+   buffer_set_size( buffer_size() + uByteCount );                              // increase used buffer size
+
+#ifndef NDEBUG
+   string_d = debug::print( *this );
+#endif // !NDEBUG
+
+   return pPosition;
+}
+
+
+
 
 /*----------------------------------------------------------------------------- count */ /**
  * Count param values for name
@@ -2318,8 +2442,8 @@ unsigned int gd::argument::arguments::get_total_param_length_s(std::string_view 
 arguments::pointer arguments::next_s(pointer pPosition) 
 {
    pPosition = arguments::move_to_value_s(pPosition);
-   uint8_t uType = *pPosition;                                                   // get value type
-   pPosition++;                                                                  // move past type
+   uint8_t uType = *pPosition;                                                 // get value type
+   pPosition++;                                                                // move past type
    if( (uType & eType_MASK) == 0 )
    {
       pPosition += ctype_size[uType];
@@ -2465,9 +2589,6 @@ arguments::pointer arguments::next_s( pointer pPosition, unsigned uSecondIndex, 
 }
 
 
-
-
-
 /*----------------------------------------------------------------------------- sizeof_s */ /**
  * Return size for argument in bytes
  * \param argumentValue argument value size is returned for
@@ -2475,11 +2596,41 @@ arguments::pointer arguments::next_s( pointer pPosition, unsigned uSecondIndex, 
  */
 unsigned int arguments::sizeof_s(const argument& argumentValue)
 {
-   unsigned int uSize = 1;                                                       // start with size for type prefix (1 byte value in front);
-   if( argumentValue.ctype() & eValueLength )  uSize += sizeof(uint32_t);        // add size value in front of value
+   unsigned int uSize = 0;                                                     // start with size for type prefix (1 byte value in front);
+   if( argumentValue.ctype() & eValueLength )  uSize += sizeof(uint32_t);      // add size value in front of value
 
    return uSize + argumentValue.length();
 }
+
+/*----------------------------------------------------------------------------- sizeof_s */ /**
+ * @brief calculate needed size in bytes to store variant view value
+ * @param variantviewValue value to return size in bytes for
+ * @return unsigned number of bytes needed to store value
+ */
+unsigned int arguments::sizeof_s(const gd::variant_view& variantviewValue, tag_view)
+{
+   auto argumentValue = get_argument_s(variantviewValue);
+   return sizeof_s( argumentValue );
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief calculate needed size in bytes to store name and variant view value
+ * @param stringName name for value
+ * @param VV_ value to return size in bytes for
+ * @return unsigned number of bytes needed to store name and value
+ */
+unsigned int arguments::sizeof_s(const std::string_view& stringName, const gd::variant_view& VV_, tag_view)
+{
+   unsigned int uSize = 2;                                                     // 2 - one byte for name type and one byte for name length
+   uSize += stringName.length() + 1;                                           // name length + 1 for zero terminator
+   
+   auto argumentValue = get_argument_s(VV_);
+   uSize += sizeof_s( argumentValue );
+
+   return uSize;
+}
+
 
 /*----------------------------------------------------------------------------- print_s */ /**
  * Print values into text and return string with values
@@ -2498,7 +2649,7 @@ std::string arguments::print_s(const_pointer pPosition, uint32_t uPairType)
          stringArgument.append( reinterpret_cast<const char*>( pPosition+ 2), *(pPosition + 1) );
          stringArgument += "\": ";
       }
-      pPosition += size_t(pPosition[1]) + size_t(2);                             // move to value
+      pPosition += size_t(pPosition[1]) + size_t(2);                           // move to value
    }
 
    if( uPairType & ePairTypeValue )
@@ -2514,12 +2665,14 @@ void arguments::print_name_s( const_pointer pPosition, std::string& stringPrint 
 {
    if( *pPosition == eType_ParameterName )
    {
+      // append name, name starts two bytes after position and size of name is in byte before name
       stringPrint.append( reinterpret_cast<const char*>( pPosition+ 2), *(pPosition + 1) );
    }
 }
 
 void arguments::print_type_s( const_pointer pPosition, std::string& stringPrint )
 {
+   pPosition = move_to_value_s( pPosition );
    arguments::argument argumentValue( get_argument_s( pPosition ) );
 
    auto stringType = type_name_s( argumentValue.type() );
@@ -2528,6 +2681,10 @@ void arguments::print_type_s( const_pointer pPosition, std::string& stringPrint 
 
 void arguments::print_value_s( const_pointer pPosition, std::string& stringPrint )
 {
+   pPosition = move_to_value_s( pPosition );
+#ifndef NDEBUG
+   auto typename_d = gd::types::type_name_g(*pPosition & ~eTypeNumber_MASK);
+#endif
    arguments::argument argumentValue( get_argument_s( pPosition ) );
    stringPrint += argumentValue.as_string();
 }
@@ -2932,6 +3089,83 @@ std::pair<bool, std::string> arguments::exists_s( const arguments& argumentsVali
 
    return { true, "" };
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief copy value name into buffer
+ * @param pCopyTo buffer value name is copied to
+ * @param pbszName pointer to name data that is copied
+ * @param uNameLength length of name in bytes to copy
+ * @return unber of bytes copied into buffer
+ */
+unsigned arguments::memcpy_s(pointer pCopyTo, const char* pbszName, unsigned uNameLength)
+{                                                                                                  assert(uNameLength < 256);                                        
+   auto* pdata_ = pCopyTo;
+   *(uint8_t*)(pdata_) = eType_ParameterName;
+   pdata_++;
+   *(uint8_t*)( pdata_ ) = (uint8_t)uNameLength;                               // set name length, max 255
+   pdata_++;
+   memcpy(pdata_, pbszName, uNameLength);                                      // copy name                             
+#ifndef NDEBUG
+   uint8_t uType_d = pCopyTo[0];
+   uint8_t uLength_d = pCopyTo[1];
+   std::string_view stringName_d( (const char*)( pCopyTo + 2 ), uNameLength );
+#endif
+
+   pdata_ += uNameLength;                                                      // move past name content
+   uint64_t uSize = pdata_ - pCopyTo;
+   return uSize;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Copy data into buffer and return number of bytes copied
+ * @param pCopyTo pointer to position in buffer where data is copied to
+ * @param uType type of value, this is set in the prefix to value
+ * @param pBuffer points to buffer holding value that is copied into arguments buffer
+ * @param uLength number of bytes to copy
+ * @return total number of bytes that was copied into arguments buffer
+ */
+uint64_t arguments::memcpy_s( pointer pCopyTo,  argument_type uType, const_pointer pBuffer, unsigned int uLength )
+{
+   uint64_t uPosition = 0;
+
+   if( (uType & eValueLength) == 0 )                                           // if type doesn't have specified length flag then just copy data into buffer
+   {
+      uint32_t uValueLength = uLength;                                         // hold value lenght
+      *(uint8_t*)(pCopyTo) = uType;                                            // set type
+      uPosition++;
+
+      memcpy(&pCopyTo[uPosition], pBuffer, uValueLength);                                          assert( uLength >= uValueLength );
+      uPosition += uLength;                                                    // add aligned length
+   }
+   else
+   {
+      unsigned uTotalLength = uLength;
+      uint32_t uValueLength = uLength;                                         // value length in bytes (storage needed to hold data)
+      uTotalLength += sizeof( uint32_t );                                      // add value length to total value size
+      *(uint8_t*)(pCopyTo) = uType;                                            // set type
+      uPosition++;
+
+      uint32_t uCompleteType = gd::types::typenumber_to_type_g( uType & ~eType_MASK );
+
+      // ## fix size to the actual length for value, this is to improve the speed
+      //    generating value objects from data
+      if(uCompleteType & gd::types::eTypeGroupString)
+      {
+         if(( uType & eTypeNumber_MASK ) == eTypeNumberWString)
+         {                                                                                         assert( (uValueLength % 2) == 0 );
+            uValueLength = uValueLength >> 1;                                  // unicode string, length is cut in half
+         }
+         uValueLength--;                                                       // remove the zero terminator for length
+      }
+
+      *(uint32_t*)(pCopyTo + uPosition) = uValueLength;
+      memcpy(&pCopyTo[uPosition + sizeof( uint32_t )], pBuffer, uLength);      // copy data
+      uPosition += uTotalLength;                                               // move past data for value (length and data)
+   }
+   return uPosition;
+}
+
+
 
 /** ---------------------------------------------------------------------------
 * @brief check if any of named values exist in arguments object

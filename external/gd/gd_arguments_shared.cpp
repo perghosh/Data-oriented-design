@@ -1425,6 +1425,14 @@ arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBu
    return *this;
 }
 
+/** ---------------------------------------------------------------------------
+* @brief set value at position that pointer is at, make sure that pPosition is on a valid position
+ * @param pPosition pointer to position where value is set
+ * @param uType type of value, its a byte value (uint8_t)
+ * @param pBuffer pointer to buffer with data that is copied into arguments buffer
+ * @param uLength size in bytes for data to copy
+ * @return position where the value was copied to
+ */
 arguments::pointer arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, tag_internal )
 {                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition < buffer_data_end() );
    argument argumentOld = arguments::get_argument_s(pPosition);                // get current argument
@@ -1435,7 +1443,7 @@ arguments::pointer arguments::set(pointer pPosition, param_type uType, const_poi
       memcpy(pPositionValue, pBuffer, uLength);
    }
    else
-   {                                                                                               assert( pPositionValue - pPosition < 255 ); // realistic
+   {                                                                                               assert( (pPositionValue - pPosition) < 255 ); // realistic
       auto uOldSize = get_total_param_length_s(pPosition);
       unsigned uNameLength = arguments::sizeof_name_s( pPosition );
       auto uNewSize = uNameLength + uLength + sizeof_value_prefix( uType );
@@ -1465,6 +1473,20 @@ arguments::pointer arguments::set(pointer pPosition, param_type uType, const_poi
    return pPosition;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Insert named value at position in arguments buffer
+ * @code
+ * gd::argument::shared::arguments arguments_;
+ * arguments_.append_many( 100, 200, 300, 400, 500 );
+ * // insert named value at position 2, value name is "value-name" and value is 250
+ * arguments_.insert( 2, "value-name", 250, gd::argument::shared::arguments::tag_view{});
+ * std::cout << arguments_.print() << "\n";
+ * @endcode
+ * @param uIndex index where value is inserted
+ * @param stringName name for value that is inserted
+ * @param variantviewValue value to be inserted
+ * @return position where the original value was
+ */
 arguments::pointer arguments::insert(size_t uIndex, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view )
 {
    pointer pposition = find( (unsigned)uIndex );
@@ -1539,6 +1561,7 @@ arguments::pointer arguments::insert(pointer pPosition, const std::string_view& 
    auto string_d = debug::print( *this );
 #endif // !NDEBUG
 
+   // calculate offset from start of buffer whre value is to be inserted
    uint64_t uOffset = pPosition - buffer_data();                                                   assert( uOffset < buffer_size() );
    // ## calculate expand size   
    unsigned uSizeInsert = sizeof_s( stringName, variantviewValue, tag_view{}) ;
@@ -3371,6 +3394,13 @@ std::pair<bool, std::string> arguments::exists_s( const arguments& argumentsVali
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief copy value name into buffer
+ * @param pCopyTo buffer value name is copied to
+ * @param pbszName pointer to name data that is copied
+ * @param uNameLength length of name in bytes to copy
+ * @return unber of bytes copied into buffer
+ */
 uint64_t arguments::memcpy_s(pointer pCopyTo, const char* pbszName, unsigned uNameLength)
 {
    auto* pdata_ = pCopyTo;
