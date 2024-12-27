@@ -1242,7 +1242,7 @@ public:
 //@}
 
 
-// ## 
+// ## Buffer methods
 public:
    void buffer_delete() { if( m_pbuffer != &m_buffer_s ) { m_pbuffer->release(); m_pbuffer = &m_buffer_s; }  }
    pointer buffer_data() { return m_pbuffer->data(); }

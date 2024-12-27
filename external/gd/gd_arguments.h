@@ -67,9 +67,12 @@ _GD_ARGUMENT_BEGIN
 
 
 /**
- * \brief
+ * \brief  arguments focus on memory size, to tricks to align and speed up memory access
  *
- *
+ * ## memory layout
+ * [type and length for name][name in chars][type]{[length for non primitive types]}[value data]
+ * shorter version
+ * [uint16][name][uint8]{[uint32]}[data]
  *
  \code
  \endcode
@@ -790,6 +793,15 @@ public:
 
    // TODO: Implement set methods
 
+/** \name INSERT
+*///@{
+   pointer insert( size_t uIndex, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
+   pointer insert( pointer pPosition, const gd::variant_view& variantviewValue, tag_view );
+   pointer insert( pointer pPosition, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
+   // pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
+//@}
+
+
    const_iterator begin() const { return const_iterator( this, m_pBuffer ); }
    const_iterator end() const { return const_iterator( nullptr ); }
 
@@ -1044,6 +1056,8 @@ public:
 
    /// ## Calculate size in bytes needed for argument values stored in arguments object
    static unsigned int sizeof_s(const argument& argumentValue);
+   static unsigned int sizeof_s(const gd::variant_view& VV_, tag_view);
+   static unsigned int sizeof_s( const std::string_view& stringName, const gd::variant_view& VV_, tag_view );
    static unsigned int sizeof_s(uint32_t uNameLength, param_type uType, unsigned int uLength);
    static inline unsigned int sizeof_name_s(uint32_t uNameLength) { return uNameLength + 2; }
    static inline unsigned int sizeof_name_s(const_pointer pPosition) { 
@@ -1151,12 +1165,16 @@ public:
    /// Check if any of the name values are found in arguments
    static std::pair<bool, std::string> exists_any_of_s( const arguments& argumentsValidate, const std::initializer_list<std::string_view>& listName, tag_name );
 
-   //static arguments read_json_s(const argument& argumentValue);
-//@}
+   /// copy name into buffer `pCopyTo` points to
+   static unsigned memcpy_s( pointer pCopyTo, const char* pbszName, unsigned uLength );
+   /// copy value into buffer `pCopyTo` points to
+   static uint64_t memcpy_s( pointer pCopyTo, argument_type uType, const_pointer pBuffer, unsigned int uLength );
+   //@}
 
 
 // ## 
 public:
+   /*
    struct buffer
    {
       unsigned int   m_uFlags;         ///< flags for arguments states (eg "owner" of memory etc.)
@@ -1165,12 +1183,17 @@ public:
       int            m_iReferenceCount;///< used for reference counting
       pointer        m_pBuffer;        ///< pointer to byte array
    };
+   */
 
    void buffer_set() { memset( this, 0, sizeof( arguments ) ); }
    void buffer_set( pointer p_ ) { m_pBuffer = p_; }
    void buffer_delete() { if( is_owner() ) delete [] m_pBuffer; }
    pointer buffer_data() { return m_pBuffer; }
    const_pointer buffer_data() const { return m_pBuffer; }
+   const_pointer buffer_data_end() const { return m_pBuffer + m_uLength; }
+   unsigned int buffer_size() const { return m_uLength; }
+   void buffer_set_size(unsigned uSize) { m_uLength = uSize; }
+   unsigned int buffer_buffer_size() const { m_uBufferLength; }
 
 
 
