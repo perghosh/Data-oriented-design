@@ -8,6 +8,7 @@
 #include "gd/gd_cli_options.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
+#include "gd/gd_table_arguments.h"
 #include "gd/gd_file.h"
 #include "gd/gd_file_rotate.h"
 #include "gd/gd_utf8.h"
@@ -53,7 +54,21 @@ TEST_CASE( "[sqlite] create", "[sqlite]" ) {
    auto result_ = pdatabase->open( { {"file", stringDbName }, {"create", true } } );               REQUIRE( result_.first == true );
    pdatabase->execute( stringSql );
 
+   pdatabase->close();
+   pdatabase->release();
+
+   if( std::filesystem::exists(stringDbName) == true ) { std::filesystem::remove(stringDbName); }
 
    std::cout << GetApplicationFolder() << "\n";
 
+}
+
+TEST_CASE( "[sqlite] arguments table", "[sqlite]" ) {
+   //gd::table::arguments::table table(10);
+   gd::table::arguments::table table_(  (unsigned)gd::table::arguments::table::eTableFlagAll,{ { "int64", 0, "FInteger"} }, gd::table::tag_prepare{} );
+
+   auto uRow = table_.get_row_count();
+   table_.row_add();
+   table_.cell_set( uRow, "FInteger", uint64_t(10) );
+   table_.cell_set( uRow, "new", uint32_t(10) );
 }

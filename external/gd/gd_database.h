@@ -65,9 +65,9 @@ constexpr COMPONENT_GUID COMPONENT_CURSOR = { 0x98e01e5f, 0x8e7, 0x47d3, { 0xb0,
 
 
 /**
- * \brief
+ * \brief Interface for database connection
  *
- *
+ * Methods used to connect, execute and sql queries to connected database
  *
  \code
  \endcode
@@ -81,15 +81,22 @@ struct database_i : public unknown_i
    virtual std::string_view dialect() const = 0;
    virtual void set( const std::string_view& stringName, const gd::variant_view& value_ ) = 0;
 
+   /// open connection to database, the format for connect database is different depending on what database or technology that is used
    virtual std::pair<bool, std::string> open( const std::string_view& stringDriverConnect ) = 0;
+   /// open connection to database, arguments to connect database is different depending on what database or technology that is used
    virtual std::pair<bool, std::string> open( const gd::argument::arguments& argumentsConnect ) = 0;
+   /// execute sql statement
    virtual std::pair<bool, std::string> execute( const std::string_view& stringStatement ) = 0;
    virtual std::pair<bool, std::string> ask( const std::string_view& stringStatement, gd::variant* pvariantValue ) = 0;
    virtual std::pair<bool, std::string> get_cursor( cursor_i** ppCursor ) = 0;
+   /// close connection to database
    virtual void close() = 0;
    virtual void erase() = 0;
+   /// return raw pointer to database connection (this depends on what database or technology that is used)
    virtual void* get_pointer() = 0;
+   /// return last change count
    virtual gd::variant get_change_count() = 0;
+   /// return last insert key
    virtual gd::variant get_insert_key() = 0;
    
 //@}
