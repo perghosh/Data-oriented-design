@@ -1156,8 +1156,8 @@ TYPE table::cell_get( uint64_t uRow, unsigned uColumn ) const noexcept {
  * @return true if null, false if not null
 */
 inline bool table::cell_is_null( uint64_t uRow, unsigned uColumn ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( m_uFlags & (eTableFlagNull32|eTableFlagNull64) );
-   uint64_t uNullRow = 0;
-   auto puRow = row_get_null( uRow );
+   uint64_t uNullRow = 0; // flags for null values in row
+   const auto* puRow = row_get_null( uRow );
    if( is_null32() ) uNullRow = (uint64_t)*(uint32_t*)puRow;
    else              uNullRow = *(uint64_t*)puRow;
    

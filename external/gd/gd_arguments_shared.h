@@ -728,9 +728,6 @@ public:
 /** \name OPERATION
 *///@{
 
-   // return if object owns memory, if it does it should be deleted when arguments goes out of scope
-   bool is_owner() const noexcept { return m_bOwner; }
-
    // ## append adds values to stream
    //    note: remember that each value has its type and type in stream is just
    //    one byte. That means that the amount of information about the type is
@@ -1264,8 +1261,8 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   bool           m_bOwner;      ///< if buffer is owned (delete in destructor)
-   pointer        m_pBuffer;     ///< pointer to byte array
+   //bool           m_bOwner;      ///< if buffer is owned (delete in destructor)
+   //pointer        m_pBuffer;     ///< pointer to byte array
    //unsigned int   m_uLength;     ///< length in use
    //unsigned int   m_uBufferLength;///< length for byte array
 

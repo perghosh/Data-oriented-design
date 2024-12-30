@@ -67,8 +67,87 @@ TEST_CASE( "[sqlite] arguments table", "[sqlite]" ) {
    //gd::table::arguments::table table(10);
    gd::table::arguments::table table_(  (unsigned)gd::table::arguments::table::eTableFlagAll,{ { "int64", 0, "FInteger"} }, gd::table::tag_prepare{} );
 
+   auto uArgumentsSize = sizeof( gd::argument::shared::arguments );
+
    auto uRow = table_.get_row_count();
    table_.row_add();
-   table_.cell_set( uRow, "FInteger", uint64_t(10) );
+   table_.cell_set( uRow, "FInteger", int64_t(10) );
    table_.cell_set( uRow, "new", uint32_t(10) );
 }
+
+/*
+
+#include "malloc.h"
+
+extern "C"
+{
+   #define SUCCESS  1
+   #define FAILURE  0
+
+   typedef struct MarkovNode {
+      char* data; 
+      int list_length; 
+      struct MarkovNodeFrequency *frequency_list; 
+   } MarkovNode;
+
+   typedef struct MarkovNodeFrequency {
+      struct MarkovNode* markov_node; 
+      int frequency; 
+   } MarkovNodeFrequency;
+
+   int add_node_to_frequency_list(MarkovNode* pmarkovnodeFirst, MarkovNode* pmarkovnodeSocond)
+   {
+      // ## compare if the same pointer, if it is increase frequency
+      for( int i = 0; i < pmarkovnodeFirst->list_length; ++i )
+      {
+         MarkovNodeFrequency* pmarkovnodefrequency = &pmarkovnodeFirst->frequency_list[i];
+         if( pmarkovnodefrequency->markov_node == pmarkovnodeSocond )
+         {
+            pmarkovnodefrequency->frequency++;
+            return SUCCESS;
+         }
+      }
+
+      // ## increase frequency list size by 1 and add the new MarkovNode
+
+      pmarkovnodeFirst->list_length++; // increase list length by 1 to store the new MarkovNode
+      size_t uReallocSize = pmarkovnodeFirst->list_length * sizeof(MarkovNodeFrequency);// calculate the new size
+      MarkovNodeFrequency* pmarkovnodefrequency = (MarkovNodeFrequency*)realloc( pmarkovnodeFirst->frequency_list, uReallocSize );
+      if(pmarkovnodefrequency == NULL) { return FAILURE; }
+
+      // ### Add new node to frequency list
+      pmarkovnodefrequency[pmarkovnodeFirst->list_length - 1].markov_node = pmarkovnodeSocond;
+      pmarkovnodefrequency[pmarkovnodeFirst->list_length - 1].frequency = 1;
+      pmarkovnodeFirst->frequency_list = pmarkovnodefrequency;
+      return SUCCESS;
+   }
+
+   /// ------------------------------------------------------------------------
+   /// Original code
+   int add_node_to_frequency_list(MarkovNode *first_node, MarkovNode *second_node)
+   {
+      // compare if the same pointer, if it is increase frequency
+      for (int i = 0; i < first_node->list_length; ++i)
+      {
+         if (first_node->frequency_list[i].markov_node == second_node)
+         {
+            first_node->frequency_list[i].frequency++;
+            return SUCCESS;
+         }
+      }
+      // increase frequency list size by 1 and add the new MarkovNode
+      // HERE!!
+      MarkovNodeFrequency *fl = realloc(first_node->frequency_list,
+         (++first_node->list_length)*sizeof(*fl));
+      if (fl == NULL)
+      {
+         return FAILURE;
+      }
+      first_node->frequency_list = fl;
+      first_node->frequency_list[first_node->list_length - 1].markov_node =
+         second_node;
+      first_node->frequency_list[first_node->list_length - 1].frequency = 1;
+      return SUCCESS;
+   }
+}
+*/
