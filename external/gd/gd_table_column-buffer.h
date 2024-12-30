@@ -1191,7 +1191,8 @@ void table_column_buffer::column_fill( const std::string_view& stringName, const
 
 
 /** ---------------------------------------------------------------------------
- * @brief Return pointer to row null value section (flags in metadata marking null values)
+ * @brief Return pointer to row null value section (flags in metadata marking cell null values)
+ * This is the first part of meta data for each row, if table is created to store null values for each column
  * @param uRow index for row null value is returned for
  * @return uint8_t* pointer to row null value section
 */
@@ -1207,7 +1208,9 @@ inline uint8_t* table_column_buffer::row_get_null( uint64_t uRow ) const noexcep
 inline uint32_t* table_column_buffer::row_get_state( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( is_rowstatus() == true ); 
    // calculate number of bytes used to store flags for culumns marked as null (cant be over sizeof(uint32_t) * 2 or 8 bytes)
    // note that state cant be set to both 32 and 64 columns
-   unsigned uNullSize = (m_uFlags & (eTableFlagNull32|eTableFlagNull64)) * sizeof(uint32_t);     assert( uNullSize <= (sizeof(uint32_t) * 2) );
+   // calculate size for null values to know offset for state value
+   unsigned uNullSize = (m_uFlags & (eTableFlagNull32|eTableFlagNull64));                          assert(( m_uFlags & ( eTableFlagNull32 | eTableFlagNull64 ) ) != 3); // cant be both 32 and 64
+   uNullSize = uNullSize * sizeof(uint32_t);                                                       assert( uNullSize <= (sizeof(uint32_t) * 2) );
    return reinterpret_cast<uint32_t*>( m_puMetaData + (uRow * m_uRowMetaSize) + uNullSize ); // return pointer to state value
 }
 

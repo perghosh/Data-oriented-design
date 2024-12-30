@@ -45,7 +45,7 @@ namespace dto {
 
 
 /**
- * \brief  Manage table data store as a big block
+ * \brief Manages table data store as a big block, to understand how table works it's vital to understand how table is storing data.
  * 
  * 
 
@@ -77,15 +77,15 @@ is copied to that block, old block is deleted.
     ║       ║            ║            ║    ║
     ║       ║            ║            ║    ║
     ║       ║            ║            ║    ║
-    ╠═══════╩════════════╬════════════╬════╝
-    ║ meta data for each ║            ║
-    ║ row                ║ arguments  ║
-    ║                    ║            ║
-    ║                    ║            ║
-    ║                    ║            ║
-    ║                    ║            ║
-    ║                    ║            ║
-    ╚════════════════════╩════════════╝
+    ╠═══════╩═════════════════════════╬════╝
+    ║ meta data for each              ║
+    ║ row, like columns that are null ║
+    ║ or if arguments is used in row. ║
+    ║                                 ║
+    ║                                 ║
+    ║                                 ║
+    ║                                 ║
+    ╚═════════════════════════════════╝
                                       
 
  *
@@ -452,8 +452,12 @@ public:
    uint8_t* row_get_null( uint64_t uRow ) const noexcept;
    /// Get pointer to row state part
    uint32_t* row_get_state( uint64_t uRow ) const noexcept;
+   /// Get pointer to row arguments part
+   uint8_t* row_get_arguments_meta( uint64_t uRow ) const noexcept;
    /// if row is in used (when state information is used for row)
    bool row_is_use( uint64_t uRow ) const noexcept;
+   /// if row holds arguments object
+   bool row_is_arguments(uint64_t uRow) const noexcept;
    /// Get pointer to row part used to mark null columns
    uint64_t* row_get_null_columns( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); return reinterpret_cast<uint64_t*>(m_puData + uRow * m_uRowSize); }
 
@@ -635,6 +639,8 @@ public:
 
    void cell_set( const range& rangeSet, const gd::variant_view& variantviewValue );
    void cell_set( const range& rangeSet, const gd::variant_view& variantviewValue, tag_convert );
+
+   void cell_set_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue );
 
    // ## find methods
 
@@ -1071,7 +1077,8 @@ void table::column_fill( const std::string_view& stringName, const std::vector< 
 }
 
 /** ---------------------------------------------------------------------------
- * @brief Return pointer to row null value section (flags in metadata marking null values)
+ * @brief Return pointer to row null value section (flags in metadata marking cell null values)
+ * This is the first part of meta data for each row, if table is created to store null values for each column
  * @param uRow index for row null value is returned for
  * @return uint8_t* pointer to row null value section
 */
@@ -1087,9 +1094,27 @@ inline uint8_t* table::row_get_null( uint64_t uRow ) const noexcept { assert( uR
 inline uint32_t* table::row_get_state( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( is_rowstatus() == true ); 
    // calculate number of bytes used to store flags for culumns marked as null (cant be over sizeof(uint32_t) * 2 or 8 bytes)
    // note that state cant be set to both 32 and 64 columns
-   unsigned uNullSize = (m_uFlags & (eTableFlagNull32|eTableFlagNull64)) * sizeof(uint32_t);     assert( uNullSize <= (sizeof(uint32_t) * 2) );
+   // calculate size for null values to know offset for state value
+   unsigned uNullSize = (m_uFlags & (eTableFlagNull32|eTableFlagNull64));                          assert(( m_uFlags & ( eTableFlagNull32 | eTableFlagNull64 ) ) != 3); // cant be both 32 and 64
+   uNullSize = uNullSize * sizeof(uint32_t);                                                       assert( uNullSize <= (sizeof(uint32_t) * 2) );
    return reinterpret_cast<uint32_t*>( m_puMetaData + (uRow * m_uRowMetaSize) + uNullSize ); // return pointer to state value
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief get position in buffer to row state information for row at index
+ * @param uRow index to row where state is located
+ * @return uint32_t* pointer to position in internal buffer for row state
+*/
+inline uint8_t* table::row_get_arguments_meta( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( is_rowarguments() == true ); 
+   // calculate number of bytes used to store flags for culumns marked as null (cant be over sizeof(uint32_t) * 2 or 8 bytes)
+   // note that state cant be set to both 32 and 64 columns
+   // calculate size for null values to know offset for state value
+   unsigned uArgumentsOffset = (m_uFlags & (eTableFlagNull32|eTableFlagNull64));                   assert(( m_uFlags & ( eTableFlagNull32 | eTableFlagNull64 ) ) != 3); // cant be both 32 and 64
+   uArgumentsOffset = uArgumentsOffset * sizeof(uint32_t);                                         assert( uArgumentsOffset <= (sizeof(uint32_t) * 2) );
+   uArgumentsOffset += ( m_uFlags & eTableStateRowStatus ) ? eSpaceRowState : 0;// add row state size if used
+   return reinterpret_cast<uint8_t*>( m_puMetaData + (uRow * m_uRowMetaSize) + uArgumentsOffset ); // return pointer to arguments value
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief set and clear row state flags
@@ -1113,6 +1138,12 @@ inline bool table::row_is_use( uint64_t uRow ) const noexcept { assert( uRow < m
    // note that state cant be set to both 32 and 64 columns
    unsigned uNullSize = (m_uFlags & (eTableFlagNull32|eTableFlagNull64)) * sizeof(uint32_t);     assert( uNullSize <= (sizeof(uint32_t) * 2) );
    return (*reinterpret_cast<uint32_t*>( m_puMetaData + (uRow * m_uRowMetaSize) + uNullSize ) & (uint32_t)eRowStateUse) == (uint32_t)eRowStateUse; // return if row is used
+}
+
+inline bool table::row_is_arguments(uint64_t uRow) const noexcept { assert(uRow < m_uReservedRowCount); assert(is_rowarguments() == true);
+   // Get offset position to where arguments are stored
+   const auto* puRow = row_get_arguments_meta( uRow );
+   return false;
 }
 
 
@@ -1164,8 +1195,8 @@ TYPE table::cell_get( uint64_t uRow, unsigned uColumn ) const noexcept {
  * @return true if null, false if not null
 */
 inline bool table::cell_is_null( uint64_t uRow, unsigned uColumn ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( m_uFlags & (eTableFlagNull32|eTableFlagNull64) );
-   uint64_t uNullRow = 0;
-   auto puRow = row_get_null( uRow );
+   uint64_t uNullRow = 0; // flags for null values in row
+   const auto* puRow = row_get_null( uRow );
    if( is_null32() ) uNullRow = (uint64_t)*(uint32_t*)puRow;
    else              uNullRow = *(uint64_t*)puRow;
    

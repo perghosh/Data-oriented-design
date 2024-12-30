@@ -2084,6 +2084,18 @@ void table::cell_set( const range& rangeSet, const gd::variant_view& variantview
    }
 }
 
+void table::cell_set_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue ) 
+{                                                                                                  assert(uRow < m_uReservedRowCount);  assert( is_rowarguments() == true );
+   unsigned uColumnIndex = column_get_index(stringName);
+   cell_set(uRow, uColumnIndex, variantviewValue);
+
+   // ## Check if row hold any arguments object, if not then create one
+   if( row_is_arguments(uRow) == false )
+   {
+
+   }
+}
+
 
 
 table::row_value_type table::row_get( uint64_t uRow, tag_cell )
