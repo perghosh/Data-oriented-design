@@ -65,14 +65,24 @@ TEST_CASE( "[sqlite] create", "[sqlite]" ) {
 
 TEST_CASE( "[sqlite] arguments table", "[sqlite]" ) {
    //gd::table::arguments::table table(10);
-   gd::table::arguments::table table_(  (unsigned)gd::table::arguments::table::eTableFlagAll,{ { "int64", 0, "FInteger"} }, gd::table::tag_prepare{} );
+   {
+      gd::table::arguments::table table_(  (unsigned)gd::table::arguments::table::eTableFlagAll,{ { "int64", 0, "FInteger"} }, gd::table::tag_prepare{} );
 
-   auto uArgumentsSize = sizeof( gd::argument::shared::arguments );
+      auto uArgumentsSize = sizeof( gd::argument::shared::arguments );
 
-   auto uRow = table_.get_row_count();
-   table_.row_add();
-   table_.cell_set( uRow, "FInteger", int64_t(10) );
-   table_.cell_set( uRow, "new", uint32_t(10) );
+      auto uRow = table_.get_row_count();
+      table_.row_add();
+      table_.cell_set( uRow, "FInteger", int64_t(10) );
+      auto* parguments_ = table_.row_create_arguments(uRow);
+      parguments_->set("ten", uint32_t(10));
+
+      parguments_ = table_.row_get_arguments_pointer(uRow);
+      parguments_->set("eleven", uint32_t(11));
+
+      char* pbszData = new char[100];
+
+      table_.cell_set( uRow, "new", uint32_t(10) );
+   }
 }
 
 /*

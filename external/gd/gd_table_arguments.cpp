@@ -216,6 +216,35 @@ table::table( gd::table::detail::columns* pcolumns, const table* ptable, uint64_
 }
 
 /** ---------------------------------------------------------------------------
+* @brief destruct table
+* Column information is stored in shared object, reference counter is decreased 
+*/
+inline table::~table() 
+{
+   // ## release arguments if set
+   if( is_rowarguments() == true )
+   {
+      auto* puPosition = m_puMetaData; 
+      // Calculate offset to arguments object in metadata for each row
+      auto* puArguments = row_get_arguments_meta( 0 );
+      size_t uOffset = puArguments - puPosition;                                                   assert( uOffset <= (m_uRowMetaSize - sizeof(gd::argument::shared::arguments)) );
+      for ( uint64_t uRow = 0; uRow < get_row_count(); uRow++ )
+      {
+         auto* puRow = row_get_arguments_meta(uRow);
+         if ( *(intptr_t*)puRow != 0 )
+         {
+            auto* pArguments = reinterpret_cast<gd::argument::shared::arguments*>( puRow );
+            pArguments->release();
+         }
+      }
+   }
+
+   if( m_pcolumns != nullptr ) m_pcolumns->release();                          // release columns information
+   delete[] m_puData;
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief construct table from another table (creates a copy)
  * @note Do not call this method externally, only for internal use
  * @param o reference to table to construct from
@@ -2084,16 +2113,22 @@ void table::cell_set( const range& rangeSet, const gd::variant_view& variantview
    }
 }
 
+/** --------------------------------------------------------------------------
+ * @brief set cell value in table
+ * @param uRow index to row where cell value is set
+ * @param stringName column name for cell value
+ * @param variantviewValue value set to cell
+ */
 void table::cell_set_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue ) 
 {                                                                                                  assert(uRow < m_uReservedRowCount);  assert( is_rowarguments() == true );
-   unsigned uColumnIndex = column_get_index(stringName);
-   cell_set(uRow, uColumnIndex, variantviewValue);
-
+   gd::argument::shared::arguments* parguments = row_get_arguments_pointer(uRow);
    // ## Check if row hold any arguments object, if not then create one
-   if( row_is_arguments(uRow) == false )
+   if( parguments == nullptr )
    {
-
+      parguments = row_create_arguments( uRow );
    }
+
+   parguments->set(stringName, variantviewValue);
 }
 
 
@@ -2224,6 +2259,19 @@ gd::argument::arguments table::row_get_arguments( uint64_t uRow, const unsigned*
    }
 
    return argumentsValue;
+}
+
+gd::argument::shared::arguments* table::row_create_arguments(uint64_t uRow)
+{                                                                                                  assert(row_is_arguments(uRow) == false);
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   new ( pargumentsRow ) gd::argument::shared::arguments();
+   return pargumentsRow;
+}
+
+gd::argument::shared::arguments* table::row_get_arguments_pointer(uint64_t uRow) const noexcept
+{                                                                                                  assert(row_is_arguments(uRow) == true);
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   return pargumentsRow;
 }
 
 
@@ -3870,3 +3918,4 @@ std::string debug::print_row( const table& table, uint64_t uRow )
 
 
 _GD_TABLE_ARGUMENTS_END
+

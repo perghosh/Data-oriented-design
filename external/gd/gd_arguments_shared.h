@@ -672,11 +672,13 @@ protected:
       o.m_pbuffer = &m_buffer_s;
    }
 
+// ## buffer -----------------------------------------------------------------
+public:
    void zero() { release(); };
    void release() { if( is_null() == false ) { m_pbuffer->release(); m_pbuffer = &m_buffer_s; } }
    bool is_null() const { return m_pbuffer == &m_buffer_s; }
 
-   // ## operator -----------------------------------------------------------------
+// ## operator -----------------------------------------------------------------
 public:
    argument operator[](unsigned uIndex) { return get_argument(uIndex); }
    argument operator[](std::string_view stringName) { return get_argument(stringName); }

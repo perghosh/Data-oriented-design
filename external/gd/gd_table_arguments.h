@@ -77,7 +77,7 @@ is copied to that block, old block is deleted.
     ║       ║            ║            ║    ║
     ║       ║            ║            ║    ║
     ║       ║            ║            ║    ║
-    ╠═══════╩═════════════════════════╬════╝
+    ╠═══════╩════════════╩════════════╬════╝
     ║ meta data for each              ║
     ║ row, like columns that are null ║
     ║ or if arguments is used in row. ║
@@ -562,6 +562,11 @@ public:
    gd::argument::arguments row_get_arguments( uint64_t uRow, const std::vector<unsigned>& vectorIndex ) const { return row_get_arguments( uRow, vectorIndex.data(), (unsigned)vectorIndex.size() ); }   
    ///@}
 
+   /// create arguments object for row where extra values are stored
+   gd::argument::shared::arguments* row_create_arguments( uint64_t uRow );
+   /// get row arguments object for selected row, make sure that row has arguments object before calling this
+   gd::argument::shared::arguments* row_get_arguments_pointer( uint64_t uRow ) const noexcept;
+
    bool row_for_each( std::function<bool( std::vector<gd::variant_view>&, uint64_t )> callback_ );
    bool row_for_each( std::function<bool( const std::vector<gd::variant_view>&, uint64_t )> callback_ ) const;
    bool row_for_each( uint64_t uFrom, uint64_t uCount, std::function<bool( std::vector<gd::variant_view>&, uint64_t )> callback_ );
@@ -949,6 +954,10 @@ inline std::vector<unsigned> table::column_get_ctype() const {
 
 /** ---------------------------------------------------------------------------
  * @brief Get number of bytes used to store meta information for each row
+ * *Calculation steps to find out meta size needed for each row*
+ * - null flags for each columnd, 32 or 64 bits (4 or 8 bytes)
+ * - row state, 4 bytes
+ * - arguments object size
  * @return unsigned bytes needed to store meta information for row
 */
 inline unsigned table::size_row_meta() const noexcept {
@@ -958,7 +967,7 @@ inline unsigned table::size_row_meta() const noexcept {
 
    if( is_rowstatus() == true )   uMetaDataSize += eSpaceRowState;
 
-   if( is_rowarguments() == true )uMetaDataSize += eSpaceRowState;
+   if( is_rowarguments() == true )uMetaDataSize += eSpaceArguments;
 
    return uMetaDataSize;
 }
@@ -1143,7 +1152,8 @@ inline bool table::row_is_use( uint64_t uRow ) const noexcept { assert( uRow < m
 inline bool table::row_is_arguments(uint64_t uRow) const noexcept { assert(uRow < m_uReservedRowCount); assert(is_rowarguments() == true);
    // Get offset position to where arguments are stored
    const auto* puRow = row_get_arguments_meta( uRow );
-   return false;
+   if( *( intptr_t* )puRow == 0 ) return false;
+   return true;
 }
 
 
@@ -1257,15 +1267,6 @@ inline void table::cell_set_not_null( uint64_t uRow, unsigned uColumn ) {
    else              uNull_d = *(uint64_t*)puRow;
 #endif // _DEBUG
 
-}
-
-/** ---------------------------------------------------------------------------
- * @brief destruct table
- * Column information is stored in shared object, reference counter is decreased 
-*/
-inline table::~table() {
-   if( m_pcolumns != nullptr ) m_pcolumns->release();                          // release columns information
-   delete[] m_puData;
 }
 
 /** ---------------------------------------------------------------------------
