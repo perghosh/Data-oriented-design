@@ -2054,7 +2054,12 @@ std::string arguments::print( const_iterator itBegin, const_iterator itEnd, std:
 
 /*----------------------------------------------------------------------------- reserve */ /**
  * Make sure internal buffer can hold number of bytes requested
+ * arguments object has data and member in one single memory block. First in buffer
+ * is members and then data.
  \note if buffer is increased it is increased with 1.5 * count
+ \note if buffer is realocated to increase buffer size and there is multiple owners, 
+       these other owners will not be updated.
+       You need to make sure that you have the only owner of the buffer before calling this function but it does allow it.
  * \param uCount number of bytes to reserve
  * \return bool true if new buffer is allocated, false if not
  */
@@ -2063,14 +2068,14 @@ bool arguments::reserve(uint64_t uCount)
    if( uCount > buffer_buffer_size() )
    {
       uint64_t uBufferSize = (sizeof( buffer ) + uCount + ( uCount >> 1 ) + 63) & ~63;             // calculate new size and align to 64 byte
-      uint8_t* pdata_ = new unsigned char[uBufferSize];
+      uint8_t* pdata_ = new uint8_t[uBufferSize];
 
+      // ## copy old buffer to new buffer
       uint64_t uOldSize = sizeof( buffer );
       uOldSize += buffer_size();
-
       memcpy(pdata_, m_pbuffer, uOldSize);
 
-      buffer_release();
+      buffer_release();                                                        // release old buffer
       m_pbuffer = (buffer*)pdata_;
 
       uBufferSize -= sizeof( buffer );                                         // decrease actual buffer data size with buffer, first in buffer is tha class buffer

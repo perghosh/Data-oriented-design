@@ -728,6 +728,7 @@ public:
    arguments& append_argument(const std::string_view& stringName, argument argumentValue);
 
    arguments& append_argument(const variant& variantValue);
+   arguments& append_argument(const variant_view& variantviewValue, tag_view);
 
    arguments& append_argument(std::string_view stringName, const gd::variant& variantValue) {
       auto argumentValue = get_argument_s(variantValue);

@@ -76,12 +76,18 @@ TEST_CASE( "[sqlite] arguments table", "[sqlite]" ) {
       auto* parguments_ = table_.row_create_arguments(uRow);
       parguments_->set("ten", uint32_t(10));
 
-      parguments_ = table_.row_get_arguments_pointer(uRow);
-      parguments_->set("eleven", uint32_t(11));
+      parguments_ = table_.row_get_arguments_pointer(uRow);                                        REQUIRE(parguments_->size() == 1);
+      parguments_->set("eleven", uint32_t(11));                                                    REQUIRE(parguments_->size() == 2);
 
-      char* pbszData = new char[100];
+      //char* pbszData = new char[100];
 
       table_.cell_set( uRow, "new", uint32_t(10) );
+      auto arguments_ = table_.row_get_arguments( 0 );
+
+      auto string_d = gd::argument::debug::print(arguments_);
+      std::cout << string_d << "\n";
+
+      // int i = table_.cell_get_variant_view(0, "FInteger").get<int>();
    }
 }
 
