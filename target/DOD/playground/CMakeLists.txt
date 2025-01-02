@@ -9,6 +9,11 @@ message( STATUS "# ----- ------------------------------------------------------"
 message( STATUS "# ----- DOD PLAYGROUND" )
 message( STATUS )
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+endif()
+
 
 #[[
 ======================== PLAY Code executables ================================

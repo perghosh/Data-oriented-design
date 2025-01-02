@@ -1124,6 +1124,23 @@ arguments& arguments::append_argument(const variant& variantValue)
    return append(uType, pData, argumentValue.length());
 }
 
+
+/*----------------------------------------------------------------------------- append_argument */ /**
+ * Add argument from variant_view, this value isn't named
+ * \param variantviewValue argument value added
+ * \return arguments::arguments& reference to this if nested operations is wanted
+ */
+arguments& arguments::append_argument(const variant_view& variantviewValue, tag_view)
+{
+   auto argumentValue = get_argument_s(variantviewValue);
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();
+   if( uType > ARGUMENTS_NO_LENGTH ) { uType |= eValueLength; }
+
+   return append(uType, pData, argumentValue.length());
+}
+
+
 /*----------------------------------------------------------------------------- append_argument */ /**
  * Add argument from variant_view
  * \param stringName argument name

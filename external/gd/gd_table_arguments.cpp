@@ -2239,6 +2239,33 @@ void table::row_get_arguments( uint64_t uRow, gd::argument::arguments& arguments
       // check if the cell value isn't empty, and if not then add to arguments
       if(variantValue.is_null() == false ) { argumentsValue.append_argument(stringColumnName, variantValue);  }
    }
+
+   // ## if row arguments object for row then get those values
+   if( is_rowarguments() == true )
+   {
+      using namespace gd::argument::shared;
+      gd::argument::shared::arguments* parguments_ = row_get_arguments_pointer(uRow);
+      if( parguments_!= nullptr )
+      {
+         // ## append arguments from row arguments object
+         auto& arguments_ = *parguments_;
+         for( auto* pPosition = arguments_.next(); pPosition != nullptr; pPosition = arguments_.next(pPosition) )
+         {
+            if( gd::argument::shared::arguments::is_name_s( pPosition ) == true )
+            {
+               auto stringName = gd::argument::shared::arguments::get_name_s(pPosition);           assert( stringName.length() < 256 );
+               auto argument_ = gd::argument::shared::arguments::get_argument_s(pPosition);        // convert to internal argument
+               auto variantviewValue = gd::argument::shared::arguments::get_variant_view_s(argument_); // get variant_view that is compatible with returned arguments object
+               argumentsValue.append_argument(stringName, variantviewValue);
+            }
+            else
+            {
+               auto variantValue = gd::argument::shared::arguments::get_variant_view_s(pPosition); 
+               argumentsValue.append_argument( variantValue, gd::types::tag_view{});
+            }
+         }
+      }// if( parguments_!= nullptr )
+   }// if( is_rowarguments() == true )
 }
 
 /** ---------------------------------------------------------------------------
@@ -2261,9 +2288,16 @@ gd::argument::arguments table::row_get_arguments( uint64_t uRow, const unsigned*
    return argumentsValue;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief creates arguments object and place this in slot for arguments in meta data for row
+ * @param uRow index to row arguments object is created for
+ * @return pointer to row metadata created
+ */
 gd::argument::shared::arguments* table::row_create_arguments(uint64_t uRow)
 {                                                                                                  assert(row_is_arguments(uRow) == false);
-   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   // ## get row meta data for arguments slot and make sure this is zeroed out
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow); assert( *(intptr_t*)pargumentsRow == 0 );
+   // ### create arguments object and place it in row meta data
    new ( pargumentsRow ) gd::argument::shared::arguments();
    return pargumentsRow;
 }

@@ -264,17 +264,19 @@ public:
 public:
 
    /**
-    * \brief
+    * \brief store data for arguments, all data is stored in one single block of memory
     *
     *
     */
    struct buffer
    {
-      // ## construction -------------------------------------------------------------
+   // ## construction
 
       buffer(): m_uSize( 0 ), m_uBufferSize( 0 ), m_iReferenceCount( 1 ) {}
       buffer( uint64_t uSize, uint64_t uBufferSize ): m_uSize( uSize ), m_uBufferSize( uBufferSize ), m_iReferenceCount( 1 ) {}
       ~buffer() {}
+
+   // ## methods
 
       uint64_t size() const { return m_uSize; }
       void size( uint64_t uSize ) { assert( uSize <= m_uBufferSize ); m_uSize = uSize; }
@@ -284,6 +286,8 @@ public:
 
       int get_reference_count() const { return m_iReferenceCount; }
       int add_reference() { m_iReferenceCount++; return m_iReferenceCount; }
+      /// release buffer, if reference count is zero then delete buffer. 
+      ///    Never call this on the empty m_buffer_s and arguments will avoid this when you work with member methods.
       void release() {                                                                             assert( m_iReferenceCount > 0 ); assert( this != &m_buffer_s );
          m_iReferenceCount--;
          if(m_iReferenceCount == 0)
@@ -292,10 +296,10 @@ public:
          }
       }
 
-      // ## attributes
+   // ## attributes
       uint64_t m_uSize;             ///< used size in buffer
       uint64_t m_uBufferSize;       ///< total buffer size
-      int      m_iReferenceCount;
+      int      m_iReferenceCount;   ///< reference count (number of "users")
    };
 
 
