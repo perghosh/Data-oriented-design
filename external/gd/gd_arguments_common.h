@@ -1,5 +1,5 @@
 /**
- * \file gd_arguments_helper.h
+ * \file gd_arguments_common.h
  * 
  * \brief general code used for arguments objects
  * 

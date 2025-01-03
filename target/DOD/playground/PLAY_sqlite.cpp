@@ -5,6 +5,7 @@
 #include <filesystem>
 
 
+#include "gd/gd_variant_common.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
