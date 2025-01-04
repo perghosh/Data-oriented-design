@@ -53,7 +53,11 @@ public:
    std::pair<bool, std::string> Initialize();
    /// Use this for clean up
    std::pair<bool, std::string> Exit();
+   //@}
 
+   /** \name SERVER
+   *///@{
+   std::pair<bool, std::string> SERVER_Start();
    //@}
 
 protected:
