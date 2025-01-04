@@ -33,22 +33,20 @@ template <typename RETURN_TYPE, typename VARIANT>
 requires IsVariant<VARIANT>
 RETURN_TYPE get(const VARIANT& v_)
 {
-   if constexpr ( std::is_same_v<RETURN_TYPE, bool> )
+   if constexpr( std::is_same_v<RETURN_TYPE, bool> )
       return v_.as_bool();
-   else if constexpr ( std::is_same_v<RETURN_TYPE, uint32_t> )
+   else if constexpr( std::is_same_v<RETURN_TYPE, uint32_t> )
       return v_.as_uint();
-   else if constexpr ( std::is_same_v<RETURN_TYPE, uint64_t> )
+   else if constexpr( std::is_same_v<RETURN_TYPE, uint64_t> )
       return v_.as_uint64();
-   else if constexpr ( std::is_same_v<RETURN_TYPE, int32_t> )
+   else if constexpr( std::is_same_v<RETURN_TYPE, int32_t> )
       return v_.as_int();
-   else if constexpr ( std::is_same_v<RETURN_TYPE, int64_t> )
+   else if constexpr( std::is_same_v<RETURN_TYPE, int64_t> )
       return v_.as_int64();
-   else if constexpr ( std::is_same_v<RETURN_TYPE, double> )
+   else if constexpr( std::is_same_v<RETURN_TYPE, double> )
       return v_.as_double();
-   else if constexpr ( std::is_same_v<RETURN_TYPE, std::string> )
+   else if constexpr( std::is_same_v<RETURN_TYPE, std::string> )
       return v_.as_string();
-   else if constexpr ( std::is_same_v<RETURN_TYPE, std::string_view> )
-      return v_.as_string_view();
    else
       return (RETURN_TYPE)v_;
 }

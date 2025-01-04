@@ -1,5 +1,5 @@
 # gd code, general code to manage data
-file(GLOB external_gd ${CMAKE_SOURCE_DIR}/external/gd/*.cpp)
+file(GLOB_RECURSE external_gd ${CMAKE_SOURCE_DIR}/external/gd/*.cpp)
 file(GLOB external_gd_core 
    ${CMAKE_SOURCE_DIR}/external/gd/gd_arguments.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_arguments_shared.cpp
