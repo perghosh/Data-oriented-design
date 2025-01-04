@@ -92,6 +92,19 @@ TEST_CASE( "[sqlite] arguments table", "[sqlite]" ) {
    }
 }
 
+// Struct with copy and assignment operator
+struct test_struct
+{
+   test_struct() = default;
+   test_struct(const test_struct&) = default;
+   test_struct& operator=(const test_struct&) = default;
+   test_struct(test_struct&&) = default;
+   test_struct& operator=(test_struct&&) = default;
+   ~test_struct() = default;
+   int m_iValue = 0;
+};
+
+
 /*
 
 #include "malloc.h"

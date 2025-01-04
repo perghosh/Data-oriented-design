@@ -481,7 +481,8 @@ public:
    */
    struct const_iterator
    {
-      typedef const_iterator     self;
+      using iterator_category = std::forward_iterator_tag;
+      using self = const_iterator;
 
       const_iterator() : m_pArguments(nullptr), m_pPosition(nullptr) {}
       const_iterator(arguments::const_pointer pPosition ): m_pPosition(pPosition) {}
