@@ -6,11 +6,25 @@
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
 #include "gd/gd_sql_value.h"
+#include "gd/gd_variant_common.h"
+
 
 
 #include "main.h"
 
 #include "catch2/catch_amalgamated.hpp"
+
+TEST_CASE( "[gd] using get on variant and variant_view", "[gd]" ) {
+   gd::variant v_ = 1.01;
+   gd::variant_view vv_ = 10.01;
+
+   { auto x = gd::get<double>(v_); }
+   { auto x = gd::get<int>(v_); }
+
+   { auto x = gd::get<int32_t>(v_); }
+   { auto x = gd::get<int32_t>(vv_); }
+}
+
 
 TEST_CASE( "[gd] arguments using index", "[gd]" ) {
    gd::argument::arguments arguments_;
