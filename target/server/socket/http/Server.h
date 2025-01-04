@@ -16,6 +16,9 @@
 #include <thread>
 #include <vector>
 
+#include "gd/gd_log_logger.h"
+#include "gd/gd_log_logger_define.h"
+
 // Return a reasonable mime type based on the extension of a file.
 boost::beast::string_view mime_type_g(boost::beast::string_view path);
 
@@ -28,7 +31,7 @@ std::string path_cat_g( boost::beast::string_view base,  boost::beast::string_vi
 // The concrete type of the response message (which depends on the
 // request), is type-erased in message_generator.
 template <class Body, class Allocator>
-boost::beast::http::message_generator handle_request( boost::beast::string_view doc_root, boost::beast::http::request<Body, boost::beast::http::basic_fields<Allocator>>&& request_)
+boost::beast::http::message_generator handle_request( boost::beast::string_view stringRoot, boost::beast::http::request<Body, boost::beast::http::basic_fields<Allocator>>&& request_)
 {
    // Returns a bad request response
    auto const bad_request_ = [&request_](boost::beast::string_view stringWhy)
@@ -76,8 +79,12 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
        request_.target().find("..") != boost::beast::string_view::npos) { return bad_request_("Illegal request-target"); }
 
    // ## Build the path to the requested file
-   std::string stringPath = path_cat_g(doc_root, request_.target());
+   std::string stringPath = path_cat_g(stringRoot, request_.target());                               
    if(request_.target().back() == '/') { stringPath.append("index.html"); }
+   else
+   {                                                                                               LOG_DEBUG_RAW( stringPath );
+      
+   }
 
    // ## Attempt to open the file
    boost::beast::error_code errorcode;

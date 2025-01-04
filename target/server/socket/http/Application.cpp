@@ -12,6 +12,12 @@
 #include <boost/asio.hpp>
 
 #include "gd/gd_file.h"
+#include "gd/gd_file_rotate.h"
+
+#include "gd/gd_log_logger.h"
+#include "gd/gd_log_logger_printer.h"
+#include "gd/gd_log_logger_define.h"
+
 
 #include "Server.h"
 
@@ -45,11 +51,78 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 {
    int iResult = Main_s( iArgumentCount, ppbszArgument );
 
+
    return application::basic::CApplication::Main( iArgumentCount, ppbszArgument, nullptr );
 }
 
 std::pair<bool, std::string> CApplication::Initialize()
 {
+   // ## Configure log settings
+   {
+      using namespace gd::log;
+      gd::log::logger<0>* plogger = gd::log::get_s();                          // get pointer to logger 0
+      std::string stringLogFile = papplication_g->PROPERTY_Get("folder-log").as_string();
+      std::string stringDate = gd::file::rotate::backup_history::date_now_s();
+      // replace dashes in string
+      std::replace( stringDate.begin(), stringDate.end(), '-', '_');
+      stringLogFile += stringDate;
+      stringLogFile += ".log";
+      papplication_g->PROPERTY_Set("file-log", stringLogFile);
+#ifndef NDEBUG
+#     ifdef _WIN32
+      //plogger->append( std::make_unique<gd::log::printer_console>() );         // append printer to logger, this prints to console
+#     endif
+      plogger->append( std::make_unique<gd::log::printer_console>() );         // append printer to logger, this prints to console
+      // ## set margin for log messages, this to make it easier to read. a bit hacky 
+      auto* pprinter_console = (gd::log::printer_console*)plogger->get( 0 );
+      // ## color console messages in debug mode
+      pprinter_console->set_margin( 8 );                                       // set log margin
+      pprinter_console->set_margin_color( eColorBrightBlack );
+
+      plogger->append( std::make_unique<gd::log::printer_file>(stringLogFile) );// append printer to logger, prints to file
+#else
+      plogger->set_severity( unsigned(eSeverityNumberVerbose) | unsigned(eSeverityGroupDebug) );   // set severity filter, messages within this filter is printed
+
+      // ## if logging or ignore-error option is set then turn on console logging
+      //if( papplication_g->PROPERTY_Get( "log-console" ).is_null() == false || papplication_g->PROPERTY_Get( "ignore-error" ).is_true() )
+      if( papplication_g->PROPERTY_Get( { "log-console", "ignore-error" } ).is_null() == false  )
+      {
+         plogger->append( std::make_unique<gd::log::printer_console>() );      // append printer to logger, this prints to console
+         // ## set margin for log messages, this to make it easier to read. a bit hacky 
+         auto* pprinter_console = (gd::log::printer_console*)plogger->get( 0 );
+         // ## color console messages in debug mode
+         pprinter_console->set_margin( 8 );                                    // set margin for 
+         pprinter_console->set_margin_color( eColorBrightBlack );
+
+         unsigned uSeverity = unsigned(eSeverityNumberVerbose) | unsigned(eSeverityGroupDebug);
+         if( papplication_g->PROPERTY_Get( "log-console" ).is_null() == false )
+         {
+            uSeverity = papplication_g->PROPERTY_Get( "log-console" ).as_uint();
+            if((uSeverity & 0xff) >= eSeverityNumberMAX)
+            {
+               std::cout << "ERROR: `log-console` Sverity value 0-6 is allowed, Not " << int(uSeverity & 0xff) << "\n";
+               return 1;
+            }
+         }
+      }
+
+      plogger->append( std::make_unique<gd::log::printer_file>(stringLogFile) );// append printer to logger, prints to file
+#endif
+
+#ifndef NDEBUG
+      unsigned uSeverity = unsigned(eSeverityNumberVerbose) | unsigned(eSeverityGroupDebug);
+#else
+      unsigned uSeverity = unsigned(eSeverityNumberVerbose) | unsigned(eSeverityGroupDebug);
+#endif
+      plogger->set_severity( uSeverity );                                      // set severity filter, messages within this filter is printed
+
+      if( papplication_g->PROPERTY_Get( "log-level" ).is_null() == false )
+      {
+         unsigned uSeverityLevel = papplication_g->PROPERTY_Get( "log-level" ).as_uint();
+         plogger->set_severity_Level( uSeverityLevel );                        // set severity filter level
+      }
+   }
+
 
    return application::basic::CApplication::Initialize();
 }
@@ -63,28 +136,25 @@ std::pair<bool, std::string> CApplication::Exit()
    return application::basic::CApplication::Exit();
 }
 
-/** ------------------------------------------------------------------------
-* @brief 
-* @param iArgumentCount 
-* @param ppbszArgument 
-* @return 
-* https://www.boost.org/doc/libs/1_87_0/libs/beast/example/advanced/server/advanced_server.cpp
-*/
-int CApplication::Main_s(int iArgumentCount, char* ppbszArgument[])
+/** ---------------------------------------------------------------------------
+ * @brief Start the web server
+ * @return true if ok, false and error information on error
+ */
+std::pair<bool, std::string> CApplication::SERVER_Start()
 {
    unsigned short uPort = 8080;
    std::string stringPort("8080");
 
    // ## Prepare ip address
    std::string stringIp("127.0.0.1");
-   if( papplication_g->PROPERTY_Get("ip").empty() == false ) stringIp = papplication_g->PROPERTY_Get("ip").as_string();
+   if( PROPERTY_Get("ip").empty() == false ) stringIp = papplication_g->PROPERTY_Get("ip").as_string();
 
    // ## Prepare root folder for site on local disk
    std::string stringRootFolder = FOLDER_GetRoot_g( "temp__/" );
-   if( papplication_g->PROPERTY_Get("folder-root").empty() == false ) stringRootFolder = papplication_g->PROPERTY_Get("folder-root").as_string();
+   if( PROPERTY_Get("folder-root").empty() == false ) stringRootFolder = papplication_g->PROPERTY_Get("folder-root").as_string();
 
    unsigned uThreadCount = 4;
-   if( papplication_g->PROPERTY_Get("system-treadcount").empty() == false ) uThreadCount = papplication_g->PROPERTY_Get("system-treadcount").as_uint();
+   if( PROPERTY_Get("system-treadcount").empty() == false ) uThreadCount = papplication_g->PROPERTY_Get("system-treadcount").as_uint();
 
    int iVersion = 11;
    boost::asio::io_context iocontext_( uThreadCount );
@@ -105,6 +175,19 @@ int CApplication::Main_s(int iArgumentCount, char* ppbszArgument[])
          });
    iocontext_.run();
 
+   return { true, "" };
+}
+
+
+/** ------------------------------------------------------------------------
+* @brief 
+* @param iArgumentCount 
+* @param ppbszArgument 
+* @return 
+* https://www.boost.org/doc/libs/1_87_0/libs/beast/example/advanced/server/advanced_server.cpp
+*/
+int CApplication::Main_s(int iArgumentCount, char* ppbszArgument[])
+{
 
    /*
    // Launch the client

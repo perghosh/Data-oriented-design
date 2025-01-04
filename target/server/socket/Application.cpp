@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "Application.h"
 
 
 CApplication::~CApplication() 
@@ -42,3 +43,4 @@ gd::database::database_i* CApplication::DATABASE_Get(const std::string_view& str
    }
    return nullptr;
 }
+

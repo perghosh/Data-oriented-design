@@ -5,11 +5,11 @@
 #include <string>
 #include <string_view>
 
-#include "gd_types.h"
-#include "gd_arguments.h"
-#include "gd_variant_view.h"
+#include "../gd_types.h"
+#include "../gd_arguments.h"
+#include "../gd_variant_view.h"
 
-#include "gd_com.h"
+#include "../gd_com.h"
 
 #if defined( __clang__ )
    #pragma clang diagnostic push
