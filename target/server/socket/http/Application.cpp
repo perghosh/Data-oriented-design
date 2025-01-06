@@ -20,6 +20,7 @@
 
 
 #include "Server.h"
+#include "HttpServer.h"
 
 #include "Application.h"
 
@@ -122,6 +123,11 @@ std::pair<bool, std::string> CApplication::Initialize()
          plogger->set_severity_Level( uSeverityLevel );                        // set severity filter level
       }
    }
+
+   // ## Add default servers to router
+   auto* phttpserver = new CHttpServer;
+   m_router.Connect( phttpserver );
+   phttpserver->release();
 
 
    return application::basic::CApplication::Initialize();
@@ -238,6 +244,37 @@ int CApplication::Main_s(int iArgumentCount, char* ppbszArgument[])
    return 0;
 }
 
+/// ---------------------------------------------------------------------------
+/// Set active database based on name or index
+void CApplication::DATABASE_SetActive(const std::variant<std::size_t, std::string_view>& index_) 
+{
+   std::lock_guard<std::mutex> lock(m_mutexDatabase);                          // thread safety
+   DATABASE_SetNull();
+
+   if (std::holds_alternative<std::size_t>(index_)) 
+   {  
+      std::size_t uIndex = std::get<std::size_t>(index_);                                          assert(uIndex < m_vectorDatabase.size());
+      // Set the active database by index (e.g., store the index)
+      m_pdatabase = m_vectorDatabase[uIndex];
+      m_pdatabase->add_reference();
+   } 
+   else if( std::holds_alternative<std::string_view>(index_) ) 
+   {
+      std::string_view stringName = std::get<std::string_view>(index_);
+      for (std::size_t u = 0; u < m_vectorDatabase.size(); u++ ) 
+      {
+         if(  m_vectorDatabase[u]->name() == stringName)
+         { 
+            m_pdatabase = m_vectorDatabase[u];                                 // Set the active database by name
+            m_pdatabase->add_reference();
+            break; 
+         }
+      }
+      // Handle the case where no database with the given name is found
+   }
+}
+
+
 
 /** ---------------------------------------------------------------------------
 * @brief Walk upp the folder tree and try to find folder containing file
@@ -255,6 +292,5 @@ std::string FOLDER_GetRoot_g( const std::string_view& stringSubfolder )
    stringRootFolder = path_.make_preferred().string();
    return stringRootFolder;
 }
-
 
 
