@@ -29,6 +29,7 @@ message( STATUS HTTP01_FILES_= ${HTTP01_FILES_} )
 function( set_compiler_options )
    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
       target_compile_options(${TARGET_NAME_} PRIVATE "/bigobj")
+      target_compile_definitions(${TARGET_NAME_} PRIVATE _WIN32_WINNT=0x0601)
    endif()
 endfunction()
 
@@ -60,6 +61,7 @@ if( USE_TARGET_ )
       ${HTTPF_FILES_}                                                          # target files
       
       main.cpp                                                                 # main file where method main is located
+      "command/Router.h" "command/Router.cpp"
    )
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)

@@ -18,6 +18,7 @@
 #pragma once
 #include <cassert>
 #include <cstring>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -68,9 +69,30 @@ _GD_ARGUMENT_SHARED_BEGIN
 _GD_ARGUMENT_SHARED_BEGIN
 #endif
 
+/// Define a concept that check if type is range
+template <typename T>
+concept concept_arguments_shared_range_type = requires( T& t ) { std::ranges::begin(t); std::ranges::end(t); };
+
+/*
+/// Define concept that check if pair type
+template <typename T>
+concept concept_arguments_shared_is_pair = requires {
+   typename T::first_type;  // std::pair defines first_type
+   typename T::second_type; // std::pair defines second_type
+} && std::is_same_v<T, std::pair<std::string_view, typename T::second_type>> && !std::is_same_v<T, std::pair<std::string_view, gd::variant_view>>;
+
+/// Define concept that check if pair type and where second value is variant_view value
+template <typename T>
+concept concept_arguments_shared_is_pair_view = requires {
+   typename T::first_type;  // std::pair defines first_type
+   typename T::second_type; // std::pair defines second_type
+} && std::is_same_v<T, std::pair<std::string_view, gd::variant_view>>;
+*/
+
+//concept concept_arguments_shared_is_pair_view = concept_arguments_shared_is_pair<T> && std::is_class_v<T::second_type,gd::variant_view>;
 
 // ================================================================================================
-// ================================================================================= arguments
+// ====================================================================================== arguments
 // ================================================================================================
 
 
@@ -140,7 +162,6 @@ public:
    using tag_description   = gd::types::tag_description;                       // tag dispatcher where description is usefull
    struct tag_no_initializer_list {};                                          // do not select initializer_list versions
    struct tag_internal {};                                                     // tag dispatcher for internal use
-
 
 public:
 
@@ -713,6 +734,32 @@ public:
    }
 
    arguments& operator+=( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument( pairArgument, tag_view{} ); }
+
+   /// Append items from view
+   template <typename VIEW> requires concept_arguments_shared_range_type<VIEW>
+   arguments& operator+=( const VIEW& view_ ) { for( auto it : view_ ) { append( it ); } return *this; }
+
+   arguments& operator+=( const std::string_view& v_ ) { append( v_ ); return *this; }
+   arguments& operator+=( const std::string& v_ ) { append( v_ ); return *this; }
+   arguments& operator+=( const char* v_ ) { append( v_ ); return *this; }
+
+
+   /*
+   /// Append pair object (name and value)
+   template <typename PAIR> requires concept_arguments_shared_is_pair<PAIR>
+   arguments& operator+=( const PAIR& pair_ ) { 
+      append_argument( pair_ ); return *this; }
+
+   /// Append pair object (name and variant_view)
+   template <typename PAIR> requires concept_arguments_shared_is_pair_view<PAIR>
+   arguments& operator+=( const PAIR& pair_ ) { 
+      append_argument( pair_, tag_view{}); return *this; }
+      */
+
+
+   
+
+
 
    arguments operator<<(const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
 

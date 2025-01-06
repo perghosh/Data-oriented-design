@@ -19,6 +19,8 @@
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_define.h"
 
+#include "Application.h"
+
 // Return a reasonable mime type based on the extension of a file.
 boost::beast::string_view mime_type_g(boost::beast::string_view path);
 
@@ -79,12 +81,15 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
        request_.target().find("..") != boost::beast::string_view::npos) { return bad_request_("Illegal request-target"); }
 
    // ## Build the path to the requested file
-   std::string stringPath = path_cat_g(stringRoot, request_.target());                               
+   std::string stringPath = path_cat_g(stringRoot, request_.target());
    if(request_.target().back() == '/') { stringPath.append("index.html"); }
    else
    {                                                                                               LOG_DEBUG_RAW( stringPath );
       
    }
+
+   // TODO: rewrite request logic
+   papplication_g->GetRouter()->Get( stringPath );
 
    // ## Attempt to open the file
    boost::beast::error_code errorcode;
