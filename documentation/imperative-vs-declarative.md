@@ -38,7 +38,7 @@ General-purpose imperative code can easily be destroyed with domain-specific log
 
 The primary challenge with mixing code types (mix imperative and declarative) is that without understanding the importance of separation, the problem often goes unnoticed. Even when the issue becomes apparent, identifying the root cause can be difficult, leading to a series of smaller problems without a clear solution.
 
-#### It's not rocket science, you know...
+#### It's not rocket science
 It shouldn’t be that difficult to understand though, some domains have incredibly steep learning curves. It takes years of focused study just to gain a basic understanding. How feasible is it for a developer to acquire the necessary knowledge to create practical software solutions in such complex areas? Other domains, while perhaps less complex, may necessitate separation due to factors like frequent changes, evolving regulations, or intricate dependencies. For instance, the sheer volume of interconnected threads in certain systems can make it nearly impossible for developers to fully grasp their relationships.  
 Or building applications for a wide audience demands a flexible approach. You must anticipate a variety of user needs and design the software to accommodate them. A one-size-fits-all solution is often not feasible, but maintaining multiple codebases for each customer is unsustainable.  
 
@@ -56,3 +56,19 @@ Programming is not so much about writing code, it's much more about prioritizing
 
 Think of it like building a house. Writing code is like laying bricks, but the real work lies in designing the blueprints, ensuring the foundation is strong, and making sure the house is safe and functional. Similarly, programming is more about the overall management and maintenance of the codebase than simply writing lines of code in some language.  
 **And the buyer is responsible for furnishing the house.** It would be absurd if the builders were also responsible for furnishing the house. How do you think the house value would have been affected if the builders had built the furniture into the walls?
+
+### Hot to spot problems in code
+- Är det möjligt att följa hur data flödet ser ut i koden. Hur enkelt det är att nå olika ställen i koden.
+- Hur djupt ner i tech stacken domänen går.
+- Hur väl olika logiker är separerade.
+You are in trouble if
+- Domain specific DTO objects contains some sort of lists and is mixed with general-purpose operations like working with files, database, etc.
+- You have a advanced domain with undocumented code.
+- Methods that do more than one thing and where they are mixed with domain-specific logic.
+- Domain-specific logic is mixed with general-purpose operations like working with files, database
+
+### Why is this so diffuclt to manage?
+- De flesta utvecklare behöver skriva något lite större och trassla till det innan de förstår konsekvenserna av att blanda imperativt och deklarativt. Det tar tid att lära sig och det tar tid att förstå vilken typ av kunskap som behövs.
+- 
+
+https://iso25000.com/index.php/en/iso-25000-standards/iso-25010
