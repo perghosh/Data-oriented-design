@@ -1,0 +1,26 @@
+#include "gd/gd_utf8.h"
+#include "gd/gd_arguments.h"
+
+#include "gd/gd_arguments_common.h"
+
+#include "main.h"
+
+#include "catch2/catch_amalgamated.hpp"
+
+
+// Run logic on arguments to test new features --------------------------------
+TEST_CASE( "[arguments] add variables", "[arguments]" ) {
+   gd::argument::arguments arguments_;
+
+   arguments_.append_many(100, 200, 300, 400, 500);
+
+   arguments_.append( "1000", 1000 );
+
+   gd::argument::arguments_value AV_( &arguments_ );
+   AV_["test"] = "test";
+
+   //gd::variant_view v_ = AV_;
+   //std::string stringValue = v_.as_string();
+
+   //gd::com::pointer
+}

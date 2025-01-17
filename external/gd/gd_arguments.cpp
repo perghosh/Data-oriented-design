@@ -1267,8 +1267,16 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
    return *this;
 }
 
-arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength)
-{
+/** ---------------------------------------------------------------------------
+ * @brief Set value at position in internal buffer for arguments
+ * @param pPosition 
+ * @param uType 
+ * @param pBuffer 
+ * @param uLength 
+ * @return 
+ */
+arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition )
+{                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition < buffer_data_end() );
    // get current argument
    argument argumentOld = arguments::get_argument_s(pPosition);
    auto pPositionValue = move_to_value_s(pPosition);
@@ -1304,6 +1312,8 @@ arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBu
          memcpy(pPosition, pBuffer, uLength);                                    // copy data
       }
    }
+
+   if( ppPosition != nullptr ) *ppPosition = pPosition;
 
    return *this;
 }

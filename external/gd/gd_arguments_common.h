@@ -17,8 +17,8 @@
 #include "gd_variant_view.h"
 
 #ifndef _GD_ARGUMENT_BEGIN
-#define _GD_ARGUMENT_BEGIN namespace gd::argument {
-#define _GD_ARGUMENT_END }
+#define _GD_ARGUMENT_BEGIN namespace gd { namespace argument {
+#define _GD_ARGUMENT_END } }
 #endif
 
 _GD_ARGUMENT_BEGIN
@@ -86,6 +86,68 @@ inline index_edit operator ""_edit(const char* pbsz, size_t uSize) {
 
 inline index_edit operator ""_edit(unsigned long long int uIndex) {
    return index_edit( uIndex );
+}
+
+/**
+* \brief simplify to work with values arguments
+*
+* `arguments_value` is a helper object to simplify work with values in command object. It is used 
+* to set and get values and enables easier access to values using some compiler featuers. 
+* Never use `arguments_value` directly, use `command` object instead.
+*/
+template< typename ARGUMENTS >
+struct arguments_value
+{
+   arguments_value() : m_parguments{ nullptr }, m_pPosition( nullptr ) {};
+   arguments_value(const std::string_view& stringName) : m_stringName{ stringName }, m_parguments{ nullptr }, m_pPosition( nullptr ) {}
+   arguments_value(ARGUMENTS* parguments) : m_parguments{ parguments }, m_pPosition( parguments->buffer_data() ) {}
+   arguments_value(ARGUMENTS* parguments, ARGUMENTS::pointer pPosition) : m_parguments{ parguments }, m_pPosition( pPosition ) {}
+   arguments_value(ARGUMENTS* parguments, const std::string_view& stringName) : m_parguments{ parguments }, m_stringName{ stringName } {}
+
+   arguments_value(const arguments_value& o) : m_stringName{ o.m_stringName }, m_pPosition( o.m_pPosition ), m_parguments{ o.m_parguments } {}
+
+   operator ARGUMENTS&() { return *m_parguments; }
+   operator const ARGUMENTS&() const { return *m_parguments; }
+   operator gd::variant_view() const;
+
+   arguments_value operator[](const std::string_view& stringName) { return arguments_value(m_parguments, stringName); }
+
+   arguments_value& operator=(const arguments_value& o) { m_stringName = o.m_stringName; m_parguments = o.m_parguments; return *this; }
+   arguments_value& operator=(const gd::variant_view& variantviewValue);
+   arguments_value& operator+=(const gd::variant_view& variantviewValue) { m_parguments->append_argument(m_stringName, variantviewValue, gd::types::tag_view{}); return *this; }
+   arguments_value& operator<<(const gd::variant_view& variantviewValue) { m_parguments->append_argument(m_stringName, variantviewValue, gd::types::tag_view{}); return *this; }
+   arguments_value& operator=(std::pair<std::string_view, gd::variant_view> pair_) { m_parguments->set(pair_.first, pair_.second); return *this; }  
+   arguments_value& operator+=(std::pair<std::string_view, gd::variant_view> pair_) { m_parguments->append_argument(pair_.first, pair_.second); return *this; }  
+   arguments_value& operator<<(std::pair<std::string_view, gd::variant_view> pair_) { m_parguments->append_argument(pair_.first, pair_.second); return *this; }  
+
+   std::string_view m_stringName; ///< name of value that value represents
+   ARGUMENTS::pointer m_pPosition;
+   ARGUMENTS* m_parguments;       ///< pointer to internal arguments object found in command
+};
+
+/// return variant value value
+template<typename ARGUMENTS>
+arguments_value<ARGUMENTS>::operator gd::variant_view() const 
+{
+   if(m_pPosition != nullptr) {
+      return m_parguments->get_argument( m_pPosition ).as_variant_view();
+   } 
+   else {
+      m_pPosition = m_parguments->find(m_stringName);
+      if( m_pPosition != nullptr ) return m_parguments->get_argument( m_pPosition ).as_variant_view();
+   }
+   return gd::variant_view();
+}
+
+/// set value in arguments object
+template< typename ARGUMENTS >
+arguments_value<ARGUMENTS>& arguments_value<ARGUMENTS>::operator=(const gd::variant_view& variantviewValue) {
+   if( m_pPosition != nullptr ) { m_parguments->set(m_stringName, variantviewValue); }
+   else {
+      m_parguments->set(m_stringName, variantviewValue); 
+      m_pPosition = m_parguments->find(m_stringName);
+   }
+   return *this; 
 }
 
 

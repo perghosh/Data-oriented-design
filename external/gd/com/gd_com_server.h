@@ -421,6 +421,7 @@ struct server : public gd::com::server::server_i
 // ## attributes ----------------------------------------------------------------
    int m_iReference = 1; ///< "user" count
    uint8_t m_uSplitChar = ';'; ///< character used to split commands
+   std::vector< type_callback > m_vectorCallback; ///< list of callbacks to call when command is executed
    std::vector<std::string> m_vectorError;   ///< list of errors if something went wrong
 };
 
