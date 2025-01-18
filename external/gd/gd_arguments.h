@@ -973,8 +973,8 @@ public:
    
 
 
-#if defined(_DEBUG) || defined(DEBUG) || !defined(NODEBUG)
-   bool verify_d(const_pointer pPosition) const { return pPosition >= m_pBuffer && pPosition < (m_pBuffer + m_uLength) ? true : false; }
+#ifndef NDEBUG
+   bool verify_d(const_pointer pPosition) const;
 #endif
 //@}
 
@@ -1292,8 +1292,15 @@ inline OBJECT arguments::get_object( const std::string_view& stringPrefixFind ) 
    return object_;
 }
 
-
-
+#ifndef NDEBUG
+inline bool arguments::verify_d(const_pointer pPosition) const { 
+   bool bOk = ( pPosition >= buffer_data() );
+   if( bOk == true ){
+      bOk = ( pPosition < buffer_data_end() );  
+   }
+   return bOk; 
+}
+#endif
 
 // ================================================================================================
 // ================================================================================= arguments_return
@@ -1353,9 +1360,6 @@ inline arguments& arguments::set(pointer pPosition, const gd::variant_view& vari
    unsigned uLength;
    if( uType > ARGUMENTS_NO_LENGTH ) 
    { 
-      unsigned uZeroEnd = 0;
-      if( uType == eTypeNumberWString )
-         uType |= eValueLength; 
       uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
    }
    else
@@ -1369,12 +1373,10 @@ inline arguments& arguments::set(pointer pPosition, const gd::variant_view& vari
 inline arguments& arguments::set(std::string_view stringName, const gd::variant_view& variantValue) {
    auto argumentValue = get_argument_s(variantValue);
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
-   unsigned uType = argumentValue.type_number();
+   unsigned uType = argumentValue.type_number();                               // get full type, including length
    unsigned uLength;
    if( uType > ARGUMENTS_NO_LENGTH ) 
    { 
-      unsigned uZeroEnd = 0;
-      if( uType == eTypeNumberWString )
       uType |= eValueLength; 
       uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
    }

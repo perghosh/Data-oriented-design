@@ -18,9 +18,35 @@ TEST_CASE( "[arguments] add variables", "[arguments]" ) {
 
    gd::argument::arguments_value AV_( &arguments_ );
    AV_["test"] = "test";
+   AV_["test1"] = "test1";
+   AV_["test2"] = "test2";
+   arguments_.append("test", "test");
+   auto s_ = arguments_.get_variant_view("test").as_string();
+   arguments_.append("test1", "test1");
+   arguments_.append("test2", "test2");
 
-   //gd::variant_view v_ = AV_;
-   //std::string stringValue = v_.as_string();
+   auto pfind_ = arguments_.find( "test2" );
+
+   auto stringDump = arguments_.print();
+
+   AV_["test1"] = "xxxxx";
+
+   stringDump = arguments_.print();
+
+   {
+      auto pa_ = AV_.get_arguments();
+      auto pp_ = AV_.get_position();
+      assert( arguments_.buffer_data() == pa_->buffer_data() );
+      uint64_t u = pp_ - pa_->buffer_data();
+      std::cout << "Position: " << u << std::endl;
+   }
+
+   gd::variant_view v_ = AV_;
+   std::string stringValue = v_.as_string();
+
+   stringDump = arguments_.print();
+
+   AV_["dump"] = stringDump;
 
    //gd::com::pointer
 }

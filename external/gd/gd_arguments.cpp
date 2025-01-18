@@ -1077,6 +1077,7 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
 {                                                                                                  assert(strlen(pbszName) < 255); assert(m_uLength < 0xffffff); assert(uLength < 0xffffff);
 #ifdef _DEBUG
    enumCType debug_eCType = (enumCType)(uType & ~eTypeNumber_MASK);            // get absolute variable type
+   auto uLength_d = m_uLength;
 #endif // _DEBUG
 
    // reserve data for name, length for name, name type and data type
@@ -1105,6 +1106,10 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
    m_uLength += sizeof(uint32_t);
    memcpy(&m_pBuffer[m_uLength], pBuffer, uLength);                              // copy data
    m_uLength += uLength;                                                                           assert(m_uLength <= m_uBufferLength);
+
+#ifdef _DEBUG
+   uLength_d = m_uLength - uLength_d;
+#endif // _DEBUG
 
    return *this;
 }
@@ -1226,7 +1231,7 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
    }
    else
    {
-      auto uOldSize = arguments::sizeof_name_s( uNameLength ) +  arguments::sizeof_s( argumentOld ); // calculate total size for old value
+      auto uOldSize = arguments::sizeof_name_s( uNameLength ) + arguments::sizeof_s( argumentOld ); // calculate total size for old value
       auto uNewSize = arguments::sizeof_s( uNameLength, uType, uLength );      // calculate total size for new value
 
       
@@ -2623,10 +2628,12 @@ arguments::pointer arguments::next_s( pointer pPosition, unsigned uSecondIndex, 
  */
 unsigned int arguments::sizeof_s(const argument& argumentValue)
 {
-   unsigned int uSize = 0;                                                     // start with size for type prefix (1 byte value in front);
+   unsigned int uSize = 1;                                                     // start with size for type prefix (1 byte value in front);
    if( argumentValue.ctype() & eValueLength )  uSize += sizeof(uint32_t);      // add size value in front of value
 
-   return uSize + argumentValue.length();
+   // add size for value and zero terminator if some type of string
+   uSize += argumentValue.length();
+   return uSize;
 }
 
 /*----------------------------------------------------------------------------- sizeof_s */ /**
