@@ -102,15 +102,18 @@ struct arguments_value
    arguments_value(const std::string_view& stringName) : m_stringName{ stringName }, m_parguments{ nullptr }, m_pPosition( nullptr ) {}
    arguments_value(ARGUMENTS* parguments) : m_parguments{ parguments }, m_pPosition( parguments->buffer_data() ) {}
    arguments_value(ARGUMENTS* parguments, ARGUMENTS::pointer pPosition) : m_parguments{ parguments }, m_pPosition( pPosition ) {}
-   arguments_value(ARGUMENTS* parguments, const std::string_view& stringName) : m_parguments{ parguments }, m_stringName{ stringName } {}
+   arguments_value(ARGUMENTS* parguments, const std::string_view& stringName) : m_parguments{ parguments }, m_stringName{ stringName }, m_pPosition( nullptr ) {}
 
-   arguments_value(const arguments_value& o) : m_stringName{ o.m_stringName }, m_pPosition( o.m_pPosition ), m_parguments{ o.m_parguments } {}
+   arguments_value(const arguments_value& o) : m_stringName{ o.m_stringName },  m_parguments{ o.m_parguments }, m_pPosition( o.m_pPosition ) {}
 
    operator ARGUMENTS&() { return *m_parguments; }
    operator const ARGUMENTS&() const { return *m_parguments; }
-   operator gd::variant_view() const;
+   operator gd::variant_view();
 
-   arguments_value operator[](const std::string_view& stringName) { return arguments_value(m_parguments, stringName); }
+   const ARGUMENTS* get_arguments() const { return m_parguments; }
+   const ARGUMENTS::pointer get_position() const { return m_pPosition; }
+
+   arguments_value& operator[](const std::string_view& stringName) { m_stringName = stringName; m_pPosition = nullptr; return *this; }
 
    arguments_value& operator=(const arguments_value& o) { m_stringName = o.m_stringName; m_parguments = o.m_parguments; return *this; }
    arguments_value& operator=(const gd::variant_view& variantviewValue);
@@ -125,9 +128,9 @@ struct arguments_value
    ARGUMENTS* m_parguments;       ///< pointer to internal arguments object found in command
 };
 
-/// return variant value value
+/// return variant value 
 template<typename ARGUMENTS>
-arguments_value<ARGUMENTS>::operator gd::variant_view() const 
+arguments_value<ARGUMENTS>::operator gd::variant_view() 
 {
    if(m_pPosition != nullptr) {
       return m_parguments->get_argument( m_pPosition ).as_variant_view();
@@ -140,13 +143,14 @@ arguments_value<ARGUMENTS>::operator gd::variant_view() const
 }
 
 /// set value in arguments object
+/// updates position when after value is set
 template< typename ARGUMENTS >
 arguments_value<ARGUMENTS>& arguments_value<ARGUMENTS>::operator=(const gd::variant_view& variantviewValue) {
-   if( m_pPosition != nullptr ) { m_parguments->set(m_stringName, variantviewValue); }
+   if( m_pPosition != nullptr ) { assert( m_parguments->verify_d( m_pPosition ) ); m_parguments->set(m_pPosition, variantviewValue, &m_pPosition); }
    else {
       m_parguments->set(m_stringName, variantviewValue); 
-      m_pPosition = m_parguments->find(m_stringName);
-   }
+      m_pPosition = m_parguments->find(m_stringName);                                              assert(m_pPosition != nullptr);
+   }                                                                                               assert( m_parguments->verify_d( m_pPosition ) );
    return *this; 
 }
 
