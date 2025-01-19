@@ -77,6 +77,11 @@ TEST_CASE( "[arguments] add shared variables", "[arguments]" ) {
    stringDump = arguments_.print();
 
    AV_["test1"] = "xxxxx";
+   gd::variant_view variantviewOut;
+   AV_ >> variantviewOut;
+   auto ss_ = variantviewOut.as_string();
+   AV_ >> variantviewOut;
+   ss_ = variantviewOut.as_string();
 
    stringDump = arguments_.print();
 

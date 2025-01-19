@@ -1380,9 +1380,9 @@ arguments::pointer arguments::insert(pointer pPosition, const gd::variant_view& 
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
    unsigned uType = argumentValue.type_number();
 
-   uint64_t uByteCount = memcpy_s( pPosition, uType, pData, uSizeInsert ); // copy value data
+   uint64_t uByteCount = memcpy_s( pPosition, uType, pData, uSizeInsert );     // copy value data
    pPosition += uByteCount;                                                                        assert( uSizeInsert == uByteCount );
-   buffer_set_size( buffer_size() + uByteCount );                              // increase used buffer size
+   buffer_set_size( buffer_size() + (unsigned)uByteCount );                    // increase used buffer size
 
 #ifndef NDEBUG
    // string_d = debug::print( *this );
@@ -1434,7 +1434,7 @@ arguments::pointer arguments::insert(pointer pPosition, const std::string_view& 
 
    // ## copy value
    uSizeInsert = sizeof_s( variantviewValue, tag_view{} ) ;
-   uByteCount += memcpy_s( pPosition, uType, pData, uSizeInsert );             // copy data, decrease size with size needed to describe
+   uByteCount += (unsigned)memcpy_s( pPosition, uType, pData, uSizeInsert );   // copy data, decrease size with size needed to describe
                                                                                                    assert( *pPosition == (uint8_t)(uType & ~eTypeNumber_MASK) );
    pPosition += uByteCount;                                                                        
    buffer_set_size( buffer_size() + uByteCount );                              // increase used buffer size
@@ -2657,7 +2657,7 @@ unsigned int arguments::sizeof_s(const gd::variant_view& variantviewValue, tag_v
 unsigned int arguments::sizeof_s(const std::string_view& stringName, const gd::variant_view& VV_, tag_view)
 {
    unsigned int uSize = 2;                                                     // 2 - one byte for name type and one byte for name length
-   uSize += stringName.length() + 1;                                           // name length + 1 for zero terminator
+   uSize += (unsigned)stringName.length() + 1;                                 // name length + 1 for zero terminator
    
    auto argumentValue = get_argument_s(VV_);
    uSize += sizeof_s( argumentValue );
@@ -3147,7 +3147,7 @@ unsigned arguments::memcpy_s(pointer pCopyTo, const char* pbszName, unsigned uNa
 
    pdata_ += uNameLength;                                                      // move past name content
    uint64_t uSize = pdata_ - pCopyTo;
-   return uSize;
+   return (unsigned)uSize;
 }
 
 /** ---------------------------------------------------------------------------

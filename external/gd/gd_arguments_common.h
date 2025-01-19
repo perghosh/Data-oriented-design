@@ -122,6 +122,7 @@ struct arguments_value
    arguments_value& operator=(std::pair<std::string_view, gd::variant_view> pair_) { m_parguments->set(pair_.first, pair_.second); return *this; }  
    arguments_value& operator+=(std::pair<std::string_view, gd::variant_view> pair_) { m_parguments->append_argument(pair_.first, pair_.second); return *this; }  
    arguments_value& operator<<(std::pair<std::string_view, gd::variant_view> pair_) { m_parguments->append_argument(pair_.first, pair_.second); return *this; }  
+   arguments_value& operator>>(gd::variant_view& v__);
 
    std::string_view m_stringName; ///< name of value that value represents
    ARGUMENTS::pointer m_pPosition;
@@ -151,6 +152,18 @@ arguments_value<ARGUMENTS>& arguments_value<ARGUMENTS>::operator=(const gd::vari
       m_parguments->set(m_stringName, variantviewValue); 
       m_pPosition = m_parguments->find(m_stringName);                                              assert(m_pPosition != nullptr);
    }                                                                                               assert( m_parguments->verify_d( m_pPosition ) );
+   return *this; 
+}
+
+/// get value from arguments object at current position and move to next position
+template< typename ARGUMENTS >
+arguments_value<ARGUMENTS>& arguments_value<ARGUMENTS>::operator>>(gd::variant_view& vv_ ){ 
+   if( m_pPosition != nullptr ) {
+      vv_ = m_parguments->get_argument(m_pPosition).as_variant_view();
+      m_pPosition = m_parguments->next(m_pPosition);
+   }
+   else if( m_stringName.empty() == false ) { vv_ = m_parguments->get_argument(m_stringName).as_variant_view(); }
+   else vv_ = gd::variant_view();
    return *this; 
 }
 
