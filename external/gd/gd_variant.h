@@ -494,6 +494,10 @@ public:
    std::string_view as_string_view() const { return get_string_view(); };
    std::wstring as_wstring() const { return get_wstring(); }
    variant_view as_variant_view() const;
+   void* as_void() const { return get_void(); }
+   /// get value as template type
+   template <typename TYPE> TYPE as() const;
+
 
    void set_void( void* p ) { clear(); m_uType = variant_type::eTypeVoid; m_uSize = 0; m_V.p = p; }
    void* get_void() const { return m_V.p; }
@@ -709,6 +713,58 @@ public:
       return format_s( list_ );
    }
 };
+
+/**
+ * @brief method to simplify code writing, using similar style as `std::get`
+ * *sample code*
+ * @code
+gd::variant_view variant_( "Hello World!" );
+std::string stringText = variant_.as<std::string>();
+std::cout << stringText << std::endl;
+auto stringAlsoText = variant_.as<decltype(stringText)>();
+std::cout << stringText << std::endl;
+assert( stringText == stringAlsoText );
+ * @endcode
+ * @tparam TYPE value type to convert/return 
+ * @return return the value as specified type
+ */
+template<typename TYPE>
+inline TYPE variant::as() const {
+   if constexpr ( std::is_same_v<TYPE, std::string> ) {
+      return as_string();
+   }
+   else if constexpr ( std::is_same_v<TYPE, std::string_view> ) {
+      return as_string_view();
+   }
+   else if constexpr ( std::is_same_v<TYPE, std::wstring> ) {
+      return as_wstring();
+   }
+   else if constexpr ( std::is_same_v<TYPE, bool> ) {
+      return as_bool();
+   }
+   else if constexpr ( std::is_same_v<TYPE, int> ) {
+      return as_int();
+   }
+   else if constexpr ( std::is_same_v<TYPE, unsigned> ) {
+      return as_uint();
+   }
+   else if constexpr ( std::is_same_v<TYPE, int64_t> ) {
+      return as_int64();
+   }
+   else if constexpr ( std::is_same_v<TYPE, uint64_t> ) {
+      return as_uint64();
+   }
+   else if constexpr ( std::is_same_v<TYPE, double> ) {
+      return as_double();
+   }
+   else if constexpr ( std::is_same_v<TYPE, void*> ) {
+      return as_void();
+   }
+   else {
+      static_assert( false, "unsupported type" );
+   }
+}
+
 
 /// Return pointer to internal data regardless if it is a primitive type or extended type
 inline const uint8_t* variant::get_value_buffer() const noexcept { 
