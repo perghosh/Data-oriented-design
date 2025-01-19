@@ -63,7 +63,7 @@ TEST_CASE( "[arguments] add shared variables", "[arguments]" ) {
 
    gd::argument::arguments_value AV_( &arguments_ );
    AV_["test"] = "test";
-   AV_["test1"] = "test1";
+   AV_["test1"] << "test1";
    AV_["test2"] = "test2";
    auto stringDump = arguments_.print();
    std::cout << stringDump << std::endl;
@@ -80,8 +80,15 @@ TEST_CASE( "[arguments] add shared variables", "[arguments]" ) {
    gd::variant_view variantviewOut;
    AV_ >> variantviewOut;
    auto ss_ = variantviewOut.as_string();
-   AV_ >> variantviewOut;
-   ss_ = variantviewOut.as_string();
+   AV_ >> ss_;
+
+   gd::variant_view variantview_( "Hello World!" );
+   std::string stringText = variantview_.as<std::string>();
+   std::cout << stringText << std::endl;
+   auto stringAlsoText = variantview_.as<decltype(stringText)>();
+   std::cout << stringText << std::endl;
+   assert( stringText == stringAlsoText );
+
 
    stringDump = arguments_.print();
 
@@ -91,6 +98,15 @@ TEST_CASE( "[arguments] add shared variables", "[arguments]" ) {
       assert( arguments_.buffer_data() == pa_->buffer_data() );
       uint64_t u = pp_ - pa_->buffer_data();
       std::cout << "Position: " << u << std::endl;
+   }
+
+   {
+      gd::argument::shared::arguments arguments_;
+      gd::argument::arguments_value AV_( &arguments_ );
+      AV_ << 1 << 2 << 3 << 4 << 5;
+      int i1, i2, i3, i4, i5;
+      gd::argument::arguments_value AVRead( &arguments_ );
+      AVRead >> i1 >> i2 >> i3 >> i4 >> i5;
    }
 
    gd::variant_view v_ = AV_;

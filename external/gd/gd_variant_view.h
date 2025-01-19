@@ -289,6 +289,8 @@ public:
    std::string_view as_string_view() const { return get_string_view(); }
    gd::variant as_variant() const;
    void* as_void() const { return get_void(); }
+   /// get value as template type
+   template <typename TYPE> TYPE as() const;
 
    /// @name cast_as_* convert fast to another type
    /// cast_as_* is used for type casting in a safe way, faster compared to as_* and not as strict is operator casts
@@ -486,6 +488,58 @@ public:
    static variant_view parse_to_primitive_s( const std::string_view& stringValue );
 };
 
+/**
+ * @brief method to simplify code writing, using similar style as `std::get`
+ * *sample code*
+ * @code
+gd::variant_view variantview_( "Hello World!" );
+std::string stringText = variantview_.as<std::string>();
+std::cout << stringText << std::endl;
+auto stringAlsoText = variantview_.as<decltype(stringText)>();
+std::cout << stringText << std::endl;
+assert( stringText == stringAlsoText );
+ * @endcode
+ * @tparam TYPE value type to convert/return 
+ * @return return the value as specified type
+ */
+template<typename TYPE>
+inline TYPE variant_view::as() const {
+   if constexpr ( std::is_same_v<TYPE, std::string> ) {
+      return as_string();
+   }
+   else if constexpr ( std::is_same_v<TYPE, std::string_view> ) {
+      return as_string_view();
+   }
+   else if constexpr ( std::is_same_v<TYPE, std::wstring> ) {
+      return as_wstring();
+   }
+   else if constexpr ( std::is_same_v<TYPE, bool> ) {
+      return as_bool();
+   }
+   else if constexpr ( std::is_same_v<TYPE, int> ) {
+      return as_int();
+   }
+   else if constexpr ( std::is_same_v<TYPE, unsigned> ) {
+      return as_uint();
+   }
+   else if constexpr ( std::is_same_v<TYPE, int64_t> ) {
+      return as_int64();
+   }
+   else if constexpr ( std::is_same_v<TYPE, uint64_t> ) {
+      return as_uint64();
+   }
+   else if constexpr ( std::is_same_v<TYPE, double> ) {
+      return as_double();
+   }
+   else if constexpr ( std::is_same_v<TYPE, void*> ) {
+      return as_void();
+   }
+   else {
+      static_assert( false, "unsupported type" );
+   }
+}
+
+
 /// Return variant_view as variant object 
 /// Converts variant_view object to variant
 inline gd::variant variant_view::as_variant() const {
@@ -590,7 +644,6 @@ namespace debug {
    std::string print( const std::vector<variant_view>& v_ );
    std::string print( const std::vector<variant_view>& v_, std::function< std::string( const variant_view& ) > callback_ );
 }
-
 
 } // namespace gd
 
