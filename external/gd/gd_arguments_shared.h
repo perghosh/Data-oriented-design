@@ -910,18 +910,27 @@ public:
    // uuid
    arguments& set(std::string_view stringName, std::string_view v) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length() + 1); }
 
+   /*
+   arguments& set(std::string_view stringName, const gd::variant_view& variantValue );
+   arguments& set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition);
    arguments& set(std::string_view stringName, const gd::variant_view& variantValue);
+   */
+
+   arguments& set(pointer pPosition, const gd::variant_view& variantValue) { return set(pPosition, variantValue, nullptr); }
+   arguments& set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition);
+   arguments& set(std::string_view stringName, const gd::variant_view& variantValue);
+
 
    arguments& set(std::string_view stringName, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set(stringName.data(), (uint32_t)stringName.length(), uType, pBuffer, uLength); }
    arguments& set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength);
-   arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength);
-   
-   void set( pointer pposition, const argument& argumentSet, tag_argument );   
+   arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set( pPosition, uType, pBuffer, uLength, nullptr ); }
+   arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition);
+
+   void set( pointer pposition, const argument& argumentSet, tag_argument );
+   arguments& set( pointer pposition, const argument& argumentSet ) { set( pposition, argumentSet, tag_argument{}); return *this; }
 
    pointer set(pointer pPosition, const gd::variant_view& variantValue, tag_view );
    pointer set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, tag_internal );
-
-   // TODO: Implement set methods
 
 /** \name INSERT
 *///@{
@@ -1473,7 +1482,24 @@ inline arguments& arguments::append_argument(const std::string_view& stringName,
    return append(stringName, argumentValue.ctype(), pData, argumentValue.length());
 }
 
+/// set value from variant_view at position
+inline arguments& arguments::set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition) {
+   auto argumentValue = get_argument_s(variantValue);
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();
+   unsigned uLength;
+   if( uType > ARGUMENTS_NO_LENGTH ) 
+   { 
+      uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
+   }
+   else
+   {
+      uLength = ctype_size[uType];
+   }
+   return set(pPosition, uType, pData, uLength, ppPosition);
+}
 
+/// set value from variant_view for named argument
 inline arguments& arguments::set(std::string_view stringName, const gd::variant_view& variantValue) {
    auto argumentValue = get_argument_s(variantValue);
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
@@ -1481,8 +1507,6 @@ inline arguments& arguments::set(std::string_view stringName, const gd::variant_
    unsigned uLength;
    if( uType > ARGUMENTS_NO_LENGTH ) 
    { 
-      unsigned uZeroEnd = 0;
-      if( uType == eTypeNumberWString )
       uType |= eValueLength; 
       uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
    }
