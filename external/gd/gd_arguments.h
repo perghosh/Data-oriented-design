@@ -781,7 +781,6 @@ public:
    arguments& set_uuid(const std::string_view& stringName, const uint8_t* puData) { return set(stringName, eTypeNumberGuid, (const_pointer)puData, 16); }
 
 
-   // uuid
    arguments& set(std::string_view stringName, std::string_view v) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length() + 1); }
 
    arguments& set(pointer pPosition, const gd::variant_view& variantValue) { return set(pPosition, variantValue, nullptr); }
@@ -795,8 +794,6 @@ public:
 
    void set( pointer pposition, const argument& argumentSet, tag_argument );
    arguments& set( pointer pposition, const argument& argumentSet ) { set( pposition, argumentSet, tag_argument{}); return *this; }
-
-   // TODO: Implement set methods
 
 /** \name INSERT
 *///@{

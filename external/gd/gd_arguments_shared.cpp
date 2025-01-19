@@ -1233,7 +1233,6 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
          {                                                                                         assert( (uValueLength % 2) == 0 );// make sure unicode is correct
             uValueLength = uValueLength >> 1;                                  // unicode string, length is cut in half
          }
-         uValueLength--;                                                       // remove the zero terminator for length
       }
 
       *(uint32_t*)(pdata_ + uPosition) = uValueLength;
@@ -1327,7 +1326,7 @@ arguments& arguments::append_argument( const std::vector< std::pair<std::string_
    return *this;
 }
 
-// pointer arguments::set(pointer pPosition , param_type uType, const_pointer pBuffer, unsigned int uLength)
+
 
 arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength)
 {
@@ -1406,7 +1405,6 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
             {                                                                                      assert( (uValueLength % 2) == 0 );// make sure unicode is correct
                uValueLength = uValueLength >> 1;                               // unicode string, length is cut in half
             }
-            uValueLength--;                                                    // remove the zero terminator for length
          }
          *(uint32_t*)(pPosition) = uValueLength;
          pPosition += sizeof( uint32_t );
@@ -1418,12 +1416,105 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
    return *this;
 }
 
+arguments& arguments::set(pointer pPosition , param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition)
+{
+   // get current argument
+   argument argumentOld = arguments::get_argument_s(pPosition);
+
+   // check if type is equal and fixed length, then just copy new value over the old one.
+   if( arguments::compare_type_s(argumentOld, uType) == true && (uType & (eValueLength|eValueLengthBig)) == 0 )
+   {
+      pPosition = move_to_value_s( pPosition );
+      pPosition += sizeof( uint32_t );                                         assert(pPosition < get_buffer_end());
+      memcpy(pPosition, pBuffer, uLength);
+      return *this;
+   }
+   else
+   {
+      unsigned uOldSize = 0;
+      unsigned uNewSize = 0;
+      if( is_name_s(pPosition) == true ) 
+      {
+         uOldSize = arguments::sizeof_name_s( pPosition );
+         uOldSize = align32_g( uOldSize );
+         uNewSize = uOldSize;
+      }
+      
+      uOldSize += arguments::sizeof_s( argumentOld );
+      uOldSize = align32_g( uOldSize );
+
+      uNewSize += arguments::sizeof_s( 0, uType, uLength );                    // calculate total size for new value
+
+      if( uOldSize != uNewSize ) 
+      { 
+         if( uNewSize > uOldSize ) 
+         { 
+            size_t uOffset = pPosition - buffer_data();                        // offset value from start of buffer, needed to set new position if new block is allocated
+            
+            // reserv memory if needed and if memory is reserved, reset position
+            if( reserve( buffer_size() + uNewSize ) == true ) 
+            { 
+               pPosition = buffer_data() + uOffset;                            // reset position
+            }
+         }
+
+         resize(pPosition, uOldSize, uNewSize); 
+      }
+
+      pPosition = move_to_value_s( pPosition );                                                    assert( ((intptr_t)pPosition % 4) == 0 );
+
+      if( (uType & eValueLength) == 0 )                                        // if type doesn't have specified length flag then just copy data into buffer
+      {
+         uint32_t uValueLength = uLength;                                      // hold value length
+         uLength = align32_g( uLength );                                       // align to 32 bit boundary
+         uint32_t uTypeAndSize = (uType << 24) | uLength;
+         *(uint32_t*)(pPosition) = uTypeAndSize;                               // set type and size
+         pPosition += sizeof( uint32_t );
+
+         memcpy(pPosition, pBuffer, uValueLength);
+      }
+      else
+      {
+         unsigned uTotalLength = uLength;
+         uint32_t uValueLength = uLength;                                      // value length in bytes (storage needed to hold data)
+         uTotalLength += sizeof( uint32_t );                                   // add value length to total value size
+         uTotalLength = align32_g( uTotalLength );                             // align to 32 bit boundary
+         uint32_t uTypeAndSize = (uType << 24) | uTotalLength;                 // set value type and length in 32 bit value
+         *(uint32_t*)(pPosition) = uTypeAndSize;                               // set type and size
+         pPosition += sizeof( uint32_t );                                      // move past type and size
+
+         uint32_t uCompleteType = gd::types::typenumber_to_type_g( uType & ~eType_MASK );// get the full type information from gd types to investigate the object length
+
+         // ## fix size to the actual length for value, this is to improve the speed
+         //    generating value objects from data
+         if(uCompleteType & gd::types::eTypeGroupString)
+         {
+            if(( uType & eTypeNumber_MASK ) == eTypeNumberWString)
+            {                                                                                      assert( (uValueLength % 2) == 0 );// make sure unicode is correct
+               uValueLength = uValueLength >> 1;                               // unicode string, length is cut in half
+            }
+         }
+         *(uint32_t*)(pPosition) = uValueLength;
+         pPosition += sizeof( uint32_t );
+
+         memcpy(pPosition, pBuffer, uLength);                                  // copy data
+      }
+   }
+
+   if( ppPosition != nullptr ) *ppPosition = pPosition;
+
+   return *this;
+}
+
+
 /// set value at position that pointer is at, make sure that pPosition is on a valid position
+/*
 arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength)
 {
    set( pPosition, uType, pBuffer, uLength, tag_internal{});
    return *this;
 }
+*/
 
 /** ---------------------------------------------------------------------------
 * @brief set value at position that pointer is at, make sure that pPosition is on a valid position
