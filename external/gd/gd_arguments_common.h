@@ -123,13 +123,8 @@ struct arguments_value
    arguments_value& operator+=(std::pair<std::string_view, gd::variant_view> pair_) { m_parguments->append_argument(pair_.first, pair_.second); return *this; }  
    arguments_value& operator<<(std::pair<std::string_view, gd::variant_view> pair_) { m_parguments->append_argument(pair_.first, pair_.second); return *this; }  
    arguments_value& operator>>(gd::variant_view& v__);
-   template< typename VARIABLE > 
-   arguments_value& operator>>(VARIABLE& v__) { 
-      auto argument_ = m_parguments->get_argument(m_pPosition);
-      v__ = argument_.as_variant_view().as<VARIABLE>(); 
-      m_pPosition = m_parguments->next(m_pPosition); 
-      return *this; 
-   }
+   /// stream value into variable
+   template< typename VARIABLE > arguments_value& operator>>(VARIABLE& v_);
 
    std::string_view m_stringName; ///< name of value that value represents
    ARGUMENTS::pointer m_pPosition;
@@ -164,12 +159,6 @@ arguments_value<ARGUMENTS>& arguments_value<ARGUMENTS>::operator=(const gd::vari
 
 /// get value from arguments object at current position and move to next position
 /// @code
-/// gd::argument::shared::arguments arguments_;
-/// gd::argument::arguments_value AV_( &arguments_ );
-/// AV_ << 1 << 2 << 3 << 4 << 5;
-/// int i1, i2, i3, i4, i5;
-/// gd::argument::arguments_value AVRead( &arguments_ );
-/// AVRead >> i1 >> i2 >> i3 >> i4 >> i5;
 /// @endcode
 template< typename ARGUMENTS >
 arguments_value<ARGUMENTS>& arguments_value<ARGUMENTS>::operator>>(gd::variant_view& vv_ ){ 
@@ -181,6 +170,25 @@ arguments_value<ARGUMENTS>& arguments_value<ARGUMENTS>::operator>>(gd::variant_v
    else vv_ = gd::variant_view();
    return *this; 
 }
+
+/// get value from arguments object at current position and move to next position
+/// @code
+/// gd::argument::shared::arguments arguments_;
+/// gd::argument::arguments_value AV_( &arguments_ );
+/// AV_ << 1 << 2 << 3 << 4 << 5;
+/// int i1, i2, i3, i4, i5;
+/// gd::argument::arguments_value AVRead( &arguments_ );
+/// AVRead >> i1 >> i2 >> i3 >> i4 >> i5;
+/// @endcode
+template< typename ARGUMENTS > 
+   template< typename VARIABLE > 
+arguments_value<ARGUMENTS>& arguments_value<ARGUMENTS>::operator>>(VARIABLE& v_) { 
+   auto argument_ = m_parguments->get_argument(m_pPosition);
+   v_ = argument_.as_variant_view().as<VARIABLE>();                            // convert to value 
+   m_pPosition = m_parguments->next(m_pPosition); 
+   return *this; 
+}
+
 
 
 
