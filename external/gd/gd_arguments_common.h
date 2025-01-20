@@ -98,6 +98,7 @@ inline index_edit operator ""_edit(unsigned long long int uIndex) {
 template< typename ARGUMENTS >
 struct arguments_value
 {
+   using pointer = typename ARGUMENTS::pointer;
    arguments_value() : m_parguments{ nullptr }, m_pPosition( nullptr ) {};
    arguments_value(const std::string_view& stringName) : m_stringName{ stringName }, m_parguments{ nullptr }, m_pPosition( nullptr ) {}
    arguments_value(ARGUMENTS* parguments) : m_parguments{ parguments }, m_pPosition( parguments->buffer_data() ) {}
