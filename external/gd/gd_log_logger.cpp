@@ -134,7 +134,7 @@ ascii& ascii::keep(unsigned uKeep)
    std::size_t uSet = 0;
    for( auto it = std::begin( m_stringAscii ), itEnd = std::end( m_stringAscii ); it != itEnd; it++ )
    {
-      if( *it >= 0x80 ) continue;
+      if( uint8_t(*it) >= 0x80 ) continue;
 
       uint8_t uCharacter = (uint8_t)*it;
       if( (puCharType_g[uCharacter] & uKeep) == 0 ) continue;
