@@ -1195,7 +1195,7 @@ public:
    const_pointer buffer_data_end() const { return m_pBuffer + m_uLength; }
    unsigned int buffer_size() const { return m_uLength; }
    void buffer_set_size(unsigned uSize) { m_uLength = uSize; }
-   unsigned int buffer_buffer_size() const { m_uBufferLength; }
+   unsigned int buffer_buffer_size() const { return m_uBufferLength; }
 
 
 

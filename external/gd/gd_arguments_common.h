@@ -184,12 +184,9 @@ template< typename ARGUMENTS >
    template< typename VARIABLE > 
 arguments_value<ARGUMENTS>& arguments_value<ARGUMENTS>::operator>>(VARIABLE& v_) { 
    auto argument_ = m_parguments->get_argument(m_pPosition);
-   v_ = argument_.as_variant_view().as<VARIABLE>();                            // convert to value 
+   v_ = argument_.as_variant_view().template as<VARIABLE>();                   // convert to value 
    m_pPosition = m_parguments->next(m_pPosition); 
    return *this; 
 }
-
-
-
 
 _GD_ARGUMENT_END
