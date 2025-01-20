@@ -21,13 +21,6 @@
 #endif
 
 #if defined(_MSC_VER)
-#include "gd_file.h"
-#include <filesystem>
-
-_GD_FILE_BEGIN
-
-
-_GD_FILE_END
 #include <io.h>
 #else
 #include <unistd.h>
