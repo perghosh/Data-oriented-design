@@ -5,15 +5,14 @@
 #include <filesystem>
 
 
-#include "gd/gd_variant_common.h"
-#include "gd/gd_cli_options.h"
+#include "gd/gd_com.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
 #include "gd/gd_table_arguments.h"
-#include "gd/gd_file.h"
-#include "gd/gd_file_rotate.h"
-#include "gd/gd_utf8.h"
+#include "gd/gd_table_io.h"
+
 #include "gd/gd_database_sqlite.h"
+#include "gd/database/gd_database_io.h"
 
 #include "main.h"
 
@@ -58,10 +57,71 @@ TEST_CASE( "[sqlite] create", "[sqlite]" ) {
    pdatabase->close();
    pdatabase->release();
 
-   if( std::filesystem::exists(stringDbName) == true ) { std::filesystem::remove(stringDbName); }
+   // ## add record to TUser
+   pdatabase = new gd::database::sqlite::database_i("db01");
+   result_ = pdatabase->open({ {"file", stringDbName } });                                         REQUIRE(result_.first == true);
+   std::string stringSqlInsert = R"SQL(INSERT INTO TUser(FName, FSurname, FAge, FGender) VALUES('John', 'Doe', 25, 1);)SQL";
+   result_ = pdatabase->execute(stringSqlInsert);                                                  REQUIRE(result_.first == true);
 
-   std::cout << GetApplicationFolder() << "\n";
+   gd::database::cursor_i* pcursor = nullptr;
+   pdatabase->get_cursor( &pcursor );
 
+   result_ = pcursor->open("SELECT * FROM TUser;");                                                REQUIRE(result_.first == true);
+   gd::table::dto::table tableUser;
+   gd::database::to_table( pcursor, &tableUser );
+   std::string stringResult;
+   gd::table::to_string(tableUser, stringResult, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
+   std::cout << stringResult << "\n";
+   stringResult = gd::table::to_string(tableUser, gd::table::tag_io_cli{});
+   std::cout << stringResult << "\n";
+   pcursor->close();
+   pcursor->release();
+
+   pdatabase->close();
+   pdatabase->release();
+}
+
+TEST_CASE( "[sqlite] create with smart pointer", "[sqlite]" ) {
+   std::string stringSql = R"SQL(CREATE TABLE TUser (
+      UserK INTEGER PRIMARY KEY AUTOINCREMENT,
+      CreateD TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FName VARCHAR(50),
+      FSurname VARCHAR(50),
+      FAge INTEGER,
+      FGender INTEGER
+   );)SQL";
+
+   std::string stringDbName = GetApplicationFolder();
+   stringDbName += "db01.sqlite";
+   if( std::filesystem::exists( stringDbName ) == true ) { std::filesystem::remove( stringDbName ); }
+
+   {
+      gd::com::pointer<gd::database::sqlite::database_i> pdatabase = new gd::database::sqlite::database_i("db01");
+      auto result_ = pdatabase->open( { {"file", stringDbName }, {"create", true } } );               REQUIRE( result_.first == true );
+      pdatabase->execute( stringSql );
+   }
+
+   {
+      // ## add record to TUser
+      gd::com::pointer<gd::database::sqlite::database_i> pdatabase = new gd::database::sqlite::database_i("db01");
+      auto result_ = pdatabase->open({ {"file", stringDbName } });                                         REQUIRE(result_.first == true);
+      std::string stringSqlInsert = R"SQL(INSERT INTO TUser(FName, FSurname, FAge, FGender) VALUES('John', 'Doe', 25, 1);)SQL";
+      result_ = pdatabase->execute(stringSqlInsert);                                                  REQUIRE(result_.first == true);
+
+      {
+         gd::com::pointer<gd::database::cursor_i> pcursor;
+         pdatabase->get_cursor( &pcursor );
+
+         result_ = pcursor->open("SELECT * FROM TUser;");                                                REQUIRE(result_.first == true);
+         gd::table::dto::table tableUser;
+         gd::database::to_table( pcursor, &tableUser );
+         std::string stringResult;
+         gd::table::to_string(tableUser, stringResult, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
+         std::cout << stringResult << "\n";
+         stringResult = gd::table::to_string(tableUser, gd::table::tag_io_cli{});
+         std::cout << stringResult << "\n";
+      }
+   }
 }
 
 TEST_CASE( "[sqlite] arguments table", "[sqlite]" ) {
