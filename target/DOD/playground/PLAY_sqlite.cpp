@@ -33,6 +33,44 @@ std::string GetApplicationFolder()
    return stringFilePath;
 }
 
+
+TEST_CASE(" [sqlite] create2", "[sqlite]")
+{
+   std::string stringSql2 = R"SQL(CREATE TABLE TCustomer (
+      CustomerK INTEGER PRIMARY KEY AUTOINCREMENT,
+      CreateD TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FCustomerType VARCHAR(20),
+      FName VARCHAR(50),
+      FAddress VARCHAR(50),
+      FEmail VARCHAR(100)
+   );)SQL";
+
+   std::string stringDbName = GetApplicationFolder();
+   stringDbName += "db02.sqlite";
+   if( std::filesystem::exists(stringDbName) == true) {std::filesystem::remove(stringDbName);}
+
+   gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i("db02");
+   auto result_ = pdatabase->open({ {"file", stringDbName}, {"create", true} });                   REQUIRE(result_.first == true);
+   result_ = pdatabase->execute(stringSql2);
+   
+
+   pdatabase = new gd::database::sqlite::database_i("db02");
+   result_ = pdatabase->open({ {"file", stringDbName} });                                          REQUIRE(result_.first == true);
+   std::string stringSqlInsert = R"SQL(INSERT INTO TCustomer(FCustomerType, FName, FAddress, FEmail) VALUES('Business', 'Visual', 'Street 4', 'visual@gmail.com');)SQL";
+   result_ = pdatabase->execute(stringSqlInsert);                                                  REQUIRE(result_.first == true);
+
+   gd::database::cursor_i* pcursor = nullptr;
+   pdatabase->get_cursor(&pcursor);
+
+   result_ = pcursor->open("SELECT * FROM TCustomer;");                                             REQUIRE(result_.first == true);
+   gd::table::dto::table tableCustomer;
+   gd::database::to_table(pcursor, &tableCustomer);
+   std::string stringResult;
+   gd::table::to_string(tableCustomer, stringResult, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
+   std::cout << stringResult << "\n";
+   pdatabase->release();
+}
+
 TEST_CASE( "[sqlite] create", "[sqlite]" ) {
    gd::log::logger<0>* plogger = gd::log::get_s();
    plogger->clear();
@@ -163,81 +201,3 @@ struct test_struct
    ~test_struct() = default;
    int m_iValue = 0;
 };
-
-
-/*
-
-#include "malloc.h"
-
-extern "C"
-{
-   #define SUCCESS  1
-   #define FAILURE  0
-
-   typedef struct MarkovNode {
-      char* data; 
-      int list_length; 
-      struct MarkovNodeFrequency *frequency_list; 
-   } MarkovNode;
-
-   typedef struct MarkovNodeFrequency {
-      struct MarkovNode* markov_node; 
-      int frequency; 
-   } MarkovNodeFrequency;
-
-   int add_node_to_frequency_list(MarkovNode* pmarkovnodeFirst, MarkovNode* pmarkovnodeSocond)
-   {
-      // ## compare if the same pointer, if it is increase frequency
-      for( int i = 0; i < pmarkovnodeFirst->list_length; ++i )
-      {
-         MarkovNodeFrequency* pmarkovnodefrequency = &pmarkovnodeFirst->frequency_list[i];
-         if( pmarkovnodefrequency->markov_node == pmarkovnodeSocond )
-         {
-            pmarkovnodefrequency->frequency++;
-            return SUCCESS;
-         }
-      }
-
-      // ## increase frequency list size by 1 and add the new MarkovNode
-
-      pmarkovnodeFirst->list_length++; // increase list length by 1 to store the new MarkovNode
-      size_t uReallocSize = pmarkovnodeFirst->list_length * sizeof(MarkovNodeFrequency);// calculate the new size
-      MarkovNodeFrequency* pmarkovnodefrequency = (MarkovNodeFrequency*)realloc( pmarkovnodeFirst->frequency_list, uReallocSize );
-      if(pmarkovnodefrequency == NULL) { return FAILURE; }
-
-      // ### Add new node to frequency list
-      pmarkovnodefrequency[pmarkovnodeFirst->list_length - 1].markov_node = pmarkovnodeSocond;
-      pmarkovnodefrequency[pmarkovnodeFirst->list_length - 1].frequency = 1;
-      pmarkovnodeFirst->frequency_list = pmarkovnodefrequency;
-      return SUCCESS;
-   }
-
-   /// ------------------------------------------------------------------------
-   /// Original code
-   int add_node_to_frequency_list(MarkovNode *first_node, MarkovNode *second_node)
-   {
-      // compare if the same pointer, if it is increase frequency
-      for (int i = 0; i < first_node->list_length; ++i)
-      {
-         if (first_node->frequency_list[i].markov_node == second_node)
-         {
-            first_node->frequency_list[i].frequency++;
-            return SUCCESS;
-         }
-      }
-      // increase frequency list size by 1 and add the new MarkovNode
-      // HERE!!
-      MarkovNodeFrequency *fl = realloc(first_node->frequency_list,
-         (++first_node->list_length)*sizeof(*fl));
-      if (fl == NULL)
-      {
-         return FAILURE;
-      }
-      first_node->frequency_list = fl;
-      first_node->frequency_list[first_node->list_length - 1].markov_node =
-         second_node;
-      first_node->frequency_list[first_node->list_length - 1].frequency = 1;
-      return SUCCESS;
-   }
-}
-*/
