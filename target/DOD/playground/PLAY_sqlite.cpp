@@ -45,6 +45,14 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
       FEmail VARCHAR(100)
    );)SQL";
 
+   std::string stringSql3 = R"SQL(CREATE TABLE TAddress (
+      AddressK INTEGER PRIMARY KEY AUTOINCREMENT,
+      CreateD TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FCity VARCHAR(50),
+      FAddress VARCHAR(50),
+      FRegion VARCHAR(100)
+   );)SQL";
+
    std::string stringDbName = GetApplicationFolder();
    stringDbName += "db02.sqlite";
    if( std::filesystem::exists(stringDbName) == true) {std::filesystem::remove(stringDbName);}
@@ -57,6 +65,7 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    pdatabase = new gd::database::sqlite::database_i("db02");
    result_ = pdatabase->open({ {"file", stringDbName} });                                          REQUIRE(result_.first == true);
    std::string stringSqlInsert = R"SQL(INSERT INTO TCustomer(FCustomerType, FName, FAddress, FEmail) VALUES('Business', 'Visual', 'Street 4', 'visual@gmail.com');)SQL";
+   std::string stringSqlInsert2 = R"SQL(INSERT INTO TAddress(FCity, FAddress, FRegion) VALUES('kungälv', 'gata 2', 'västragötaland');)SQL";
    result_ = pdatabase->execute(stringSqlInsert);                                                  REQUIRE(result_.first == true);
 
    gd::database::cursor_i* pcursor = nullptr;
@@ -68,6 +77,21 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    std::string stringResult;
    gd::table::to_string(tableCustomer, stringResult, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
    std::cout << stringResult << "\n";
+
+
+
+   pdatabase = new gd::database::sqlite::database_i("db02");
+   result_ = pdatabase->open({ {"file", stringDbName} });
+
+   result_ = pdatabase->execute(stringSql3);
+   result_ = pdatabase->execute(stringSqlInsert2);                                                  REQUIRE(result_.first == true);
+
+   result_ = pcursor->open("SELECT * FROM TAddress;");                                             REQUIRE(result_.first == true);
+   gd::table::dto::table tableAddress;
+   gd::database::to_table(pcursor, &tableAddress);
+   std::string stringResult2;
+   gd::table::to_string(tableAddress, stringResult2, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
+   std::cout << stringResult2 << "\n";
    pdatabase->release();
 }
 

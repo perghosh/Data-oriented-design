@@ -6,35 +6,6 @@
    <title>sample</title>
 </head>
 <body>
-   
    <div>Testar för att se om det här fungerar</div>
-   <!-- Button to test command on server -->
-   <button onclick="Send('help', 'name=command')">Click me!</button>
-   
-   <script>
-/// Method taking string to send to server
-function Send(sCommand, sArgument) 
-{
-   /// Create a string to send to server
-   let sUrl = "http://localhost:8080/" + sCommand + "?" + sArgument;
-   // Create a new XMLHttpRequest object
-   var xmlhttprequest = new XMLHttpRequest();
-   // Configure it: GET-request for the URL /article/.../load
-   xmlhttprequest.open('GET', sUrl, true);
-   // Send the request over the network
-   xmlhttprequest.send(sUrl);
-   // This will be called after the response is received
-   xmlhttprequest.onload = function() {
-      if (xhr.status != 200) 
-      { // analyze HTTP response status
-         alert(`Error ${xhr.status}: ${xmlhttprequest.statusText}`); // e.g. 404: Not Found
-      } 
-      else 
-      { // show the result
-         alert(`Done, got ${xmlhttprequest.response.length} bytes`); // response is the server
-      }
-   };
-}
-   </script>
 </body>
 </html>
