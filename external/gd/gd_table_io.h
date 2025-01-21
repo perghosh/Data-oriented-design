@@ -88,9 +88,21 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
 inline void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_csv) {
    return to_string( table, uBegin, uCount, gd::argument::arguments(), format_text_, stringOut, tag_io_csv{});
 }
+
+/// write table to string with header and body in csv format and use custom formating with setting what row section to write
 inline void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_header, tag_io_csv) {
    return to_string( table, uBegin, uCount, gd::argument::arguments(), format_text_, stringOut, tag_io_header{}, tag_io_csv{});
 }
+
+/// write table to string with header and body in csv format and setting what row section to write
+inline void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, std::string& stringOut, tag_io_header, tag_io_csv) {
+   return to_string( table, uBegin, uCount, gd::argument::arguments(), nullptr, stringOut, tag_io_header{}, tag_io_csv{});
+}
+/// Write complete table to string with header and body in csv format
+inline void to_string(const dto::table& table, std::string& stringOut, tag_io_header, tag_io_csv) {
+   return to_string( table, 0ull, table.get_row_count(), gd::argument::arguments(), nullptr, stringOut, tag_io_header{}, tag_io_csv{});
+}
+
 
 void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, bool (*format_text_)(unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew), std::string& stringOut, tag_io_csv );
 

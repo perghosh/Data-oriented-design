@@ -1233,22 +1233,23 @@ namespace gd {
 
       /**
        * @brief calculate distance in utf8 characters between two positions in a stream of utf8 characters
-       * @param p1 first position in utf8 stream
-       * @param p2 second position in utf8 stream
+       * @param p1_ first position in utf8 stream
+       * @param p2_ second position in utf8 stream
        * @return distance in number of utf8 characters
        */
-      std::intptr_t distance(const uint8_t* p1, const uint8_t* p2)
+      std::ptrdiff_t distance(const uint8_t* p1_, const uint8_t* p2_)
       {
-         std::intptr_t iCount = 0;
-         auto pFrom = p1 < p2 ? p1 : p2;
-         auto pTo = p1 >= p2 ? p1 : p2;
-
-         while(pFrom != pTo) {
+         std::ptrdiff_t iCount = 0;                                            // count of characters  
+         auto pFrom = p1_ < p2_ ? p1_ : p2_;                                   // start position
+         auto pTo = p1_ >= p2_ ? p1_ : p2_;                                    // end position
+                                                                               assert(pFrom <= pTo);
+         while(pFrom != pTo) 
+         {
             pFrom = move::next(pFrom);
             iCount++;
          }
 
-         return p1 < p2 ? iCount : -iCount;
+         return iCount;                                                        // return count of UTF8 characters
       }
    } // utf8 
 } // gd

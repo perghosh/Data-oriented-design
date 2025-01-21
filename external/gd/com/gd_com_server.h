@@ -5,11 +5,11 @@
 #include <string>
 #include <string_view>
 
-#include "gd_types.h"
-#include "gd_arguments.h"
-#include "gd_variant_view.h"
+#include "../gd_types.h"
+#include "../gd_arguments.h"
+#include "../gd_variant_view.h"
 
-#include "gd_com.h"
+#include "../gd_com.h"
 
 #if defined( __clang__ )
    #pragma clang diagnostic push
@@ -419,9 +419,9 @@ struct server : public gd::com::server::server_i
    void callback_clear() { return m_vectorCallback.clear(); }
 
 // ## attributes ----------------------------------------------------------------
-   int m_iReference = 1;
-   uint8_t m_uSplitChar = ';';
-   std::vector< type_callback > m_vectorCallback;
+   int m_iReference = 1; ///< "user" count
+   uint8_t m_uSplitChar = ';'; ///< character used to split commands
+   std::vector< type_callback > m_vectorCallback; ///< list of callbacks to call when command is executed
    std::vector<std::string> m_vectorError;   ///< list of errors if something went wrong
 };
 

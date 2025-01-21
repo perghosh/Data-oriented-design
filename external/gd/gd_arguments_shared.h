@@ -18,6 +18,7 @@
 #pragma once
 #include <cassert>
 #include <cstring>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -68,9 +69,30 @@ _GD_ARGUMENT_SHARED_BEGIN
 _GD_ARGUMENT_SHARED_BEGIN
 #endif
 
+/// Define a concept that check if type is range
+template <typename T>
+concept concept_arguments_shared_range_type = requires( T& t ) { std::ranges::begin(t); std::ranges::end(t); };
+
+/*
+/// Define concept that check if pair type
+template <typename T>
+concept concept_arguments_shared_is_pair = requires {
+   typename T::first_type;  // std::pair defines first_type
+   typename T::second_type; // std::pair defines second_type
+} && std::is_same_v<T, std::pair<std::string_view, typename T::second_type>> && !std::is_same_v<T, std::pair<std::string_view, gd::variant_view>>;
+
+/// Define concept that check if pair type and where second value is variant_view value
+template <typename T>
+concept concept_arguments_shared_is_pair_view = requires {
+   typename T::first_type;  // std::pair defines first_type
+   typename T::second_type; // std::pair defines second_type
+} && std::is_same_v<T, std::pair<std::string_view, gd::variant_view>>;
+*/
+
+//concept concept_arguments_shared_is_pair_view = concept_arguments_shared_is_pair<T> && std::is_class_v<T::second_type,gd::variant_view>;
 
 // ================================================================================================
-// ================================================================================= arguments
+// ====================================================================================== arguments
 // ================================================================================================
 
 
@@ -140,7 +162,6 @@ public:
    using tag_description   = gd::types::tag_description;                       // tag dispatcher where description is usefull
    struct tag_no_initializer_list {};                                          // do not select initializer_list versions
    struct tag_internal {};                                                     // tag dispatcher for internal use
-
 
 public:
 
@@ -264,17 +285,19 @@ public:
 public:
 
    /**
-    * \brief
+    * \brief store data for arguments, all data is stored in one single block of memory
     *
     *
     */
    struct buffer
    {
-      // ## construction -------------------------------------------------------------
+   // ## construction
 
       buffer(): m_uSize( 0 ), m_uBufferSize( 0 ), m_iReferenceCount( 1 ) {}
       buffer( uint64_t uSize, uint64_t uBufferSize ): m_uSize( uSize ), m_uBufferSize( uBufferSize ), m_iReferenceCount( 1 ) {}
       ~buffer() {}
+
+   // ## methods
 
       uint64_t size() const { return m_uSize; }
       void size( uint64_t uSize ) { assert( uSize <= m_uBufferSize ); m_uSize = uSize; }
@@ -284,6 +307,8 @@ public:
 
       int get_reference_count() const { return m_iReferenceCount; }
       int add_reference() { m_iReferenceCount++; return m_iReferenceCount; }
+      /// release buffer, if reference count is zero then delete buffer. 
+      ///    Never call this on the empty m_buffer_s and arguments will avoid this when you work with member methods.
       void release() {                                                                             assert( m_iReferenceCount > 0 ); assert( this != &m_buffer_s );
          m_iReferenceCount--;
          if(m_iReferenceCount == 0)
@@ -292,10 +317,10 @@ public:
          }
       }
 
-      // ## attributes
+   // ## attributes
       uint64_t m_uSize;             ///< used size in buffer
       uint64_t m_uBufferSize;       ///< total buffer size
-      int      m_iReferenceCount;
+      int      m_iReferenceCount;   ///< reference count (number of "users")
    };
 
 
@@ -544,7 +569,8 @@ public:
    */
    struct const_iterator
    {
-      typedef const_iterator     self;
+      using iterator_category = std::forward_iterator_tag;
+      using self = const_iterator;
 
       const_iterator() : m_parguments(nullptr), m_pPosition(nullptr) {}
       const_iterator(arguments::const_pointer pPosition ): m_pPosition(pPosition) {}
@@ -672,11 +698,13 @@ protected:
       o.m_pbuffer = &m_buffer_s;
    }
 
+// ## buffer -----------------------------------------------------------------
+public:
    void zero() { release(); };
    void release() { if( is_null() == false ) { m_pbuffer->release(); m_pbuffer = &m_buffer_s; } }
    bool is_null() const { return m_pbuffer == &m_buffer_s; }
 
-   // ## operator -----------------------------------------------------------------
+// ## operator -----------------------------------------------------------------
 public:
    argument operator[](unsigned uIndex) { return get_argument(uIndex); }
    argument operator[](std::string_view stringName) { return get_argument(stringName); }
@@ -707,6 +735,32 @@ public:
 
    arguments& operator+=( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument( pairArgument, tag_view{} ); }
 
+   /// Append items from view
+   template <typename VIEW> requires concept_arguments_shared_range_type<VIEW>
+   arguments& operator+=( const VIEW& view_ ) { for( auto it : view_ ) { append( it ); } return *this; }
+
+   arguments& operator+=( const std::string_view& v_ ) { append( v_ ); return *this; }
+   arguments& operator+=( const std::string& v_ ) { append( v_ ); return *this; }
+   arguments& operator+=( const char* v_ ) { append( v_ ); return *this; }
+
+
+   /*
+   /// Append pair object (name and value)
+   template <typename PAIR> requires concept_arguments_shared_is_pair<PAIR>
+   arguments& operator+=( const PAIR& pair_ ) { 
+      append_argument( pair_ ); return *this; }
+
+   /// Append pair object (name and variant_view)
+   template <typename PAIR> requires concept_arguments_shared_is_pair_view<PAIR>
+   arguments& operator+=( const PAIR& pair_ ) { 
+      append_argument( pair_, tag_view{}); return *this; }
+      */
+
+
+   
+
+
+
    arguments operator<<(const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
 
    /// Append values from another arguments object
@@ -727,9 +781,6 @@ public:
 
 /** \name OPERATION
 *///@{
-
-   // return if object owns memory, if it does it should be deleted when arguments goes out of scope
-   bool is_owner() const noexcept { return m_bOwner; }
 
    // ## append adds values to stream
    //    note: remember that each value has its type and type in stream is just
@@ -859,18 +910,27 @@ public:
    // uuid
    arguments& set(std::string_view stringName, std::string_view v) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length() + 1); }
 
+   /*
+   arguments& set(std::string_view stringName, const gd::variant_view& variantValue );
+   arguments& set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition);
    arguments& set(std::string_view stringName, const gd::variant_view& variantValue);
+   */
+
+   arguments& set(pointer pPosition, const gd::variant_view& variantValue) { return set(pPosition, variantValue, nullptr); }
+   arguments& set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition);
+   arguments& set(std::string_view stringName, const gd::variant_view& variantValue);
+
 
    arguments& set(std::string_view stringName, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set(stringName.data(), (uint32_t)stringName.length(), uType, pBuffer, uLength); }
    arguments& set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength);
-   arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength);
-   
-   void set( pointer pposition, const argument& argumentSet, tag_argument );   
+   arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set( pPosition, uType, pBuffer, uLength, nullptr ); }
+   arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition);
+
+   void set( pointer pposition, const argument& argumentSet, tag_argument );
+   arguments& set( pointer pposition, const argument& argumentSet ) { set( pposition, argumentSet, tag_argument{}); return *this; }
 
    pointer set(pointer pPosition, const gd::variant_view& variantValue, tag_view );
    pointer set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, tag_internal );
-
-   // TODO: Implement set methods
 
 /** \name INSERT
 *///@{
@@ -1242,7 +1302,7 @@ public:
 //@}
 
 
-// ## 
+// ## Buffer methods
 public:
    void buffer_delete() { if( m_pbuffer != &m_buffer_s ) { m_pbuffer->release(); m_pbuffer = &m_buffer_s; }  }
    pointer buffer_data() { return m_pbuffer->data(); }
@@ -1264,8 +1324,8 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   bool           m_bOwner;      ///< if buffer is owned (delete in destructor)
-   pointer        m_pBuffer;     ///< pointer to byte array
+   //bool           m_bOwner;      ///< if buffer is owned (delete in destructor)
+   //pointer        m_pBuffer;     ///< pointer to byte array
    //unsigned int   m_uLength;     ///< length in use
    //unsigned int   m_uBufferLength;///< length for byte array
 
@@ -1422,7 +1482,24 @@ inline arguments& arguments::append_argument(const std::string_view& stringName,
    return append(stringName, argumentValue.ctype(), pData, argumentValue.length());
 }
 
+/// set value from variant_view at position
+inline arguments& arguments::set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition) {
+   auto argumentValue = get_argument_s(variantValue);
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();
+   unsigned uLength;
+   if( uType > ARGUMENTS_NO_LENGTH ) 
+   { 
+      uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
+   }
+   else
+   {
+      uLength = ctype_size[uType];
+   }
+   return set(pPosition, uType, pData, uLength, ppPosition);
+}
 
+/// set value from variant_view for named argument
 inline arguments& arguments::set(std::string_view stringName, const gd::variant_view& variantValue) {
    auto argumentValue = get_argument_s(variantValue);
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
@@ -1430,8 +1507,6 @@ inline arguments& arguments::set(std::string_view stringName, const gd::variant_
    unsigned uLength;
    if( uType > ARGUMENTS_NO_LENGTH ) 
    { 
-      unsigned uZeroEnd = 0;
-      if( uType == eTypeNumberWString )
       uType |= eValueLength; 
       uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
    }
