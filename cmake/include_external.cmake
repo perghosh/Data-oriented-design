@@ -1,5 +1,5 @@
 # gd code, general code to manage data
-file(GLOB external_gd ${CMAKE_SOURCE_DIR}/external/gd/*.cpp)
+file(GLOB_RECURSE external_gd ${CMAKE_SOURCE_DIR}/external/gd/*.cpp)
 file(GLOB external_gd_core 
    ${CMAKE_SOURCE_DIR}/external/gd/gd_arguments.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_arguments_shared.cpp
@@ -36,5 +36,6 @@ file(GLOB source_application_root ${CMAKE_SOURCE_DIR}/source/application/root/*.
 # file(GLOB external_lua ${CMAKE_SOURCE_DIR}/external/lua/*.c)
 file(GLOB external_sqlite ${CMAKE_SOURCE_DIR}/external/sqlite/*.c)
 file(GLOB external_pugixml ${CMAKE_SOURCE_DIR}/external/pugixml/*.cpp)
+
 # file(GLOB external_miniz ${CMAKE_SOURCE_DIR}/external/miniz/*.c)
 

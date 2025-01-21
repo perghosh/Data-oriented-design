@@ -39,7 +39,9 @@ _GD_FILE_BEGIN
 std::pair<bool, std::string> read_file_g( const std::string_view& stringFileName, std::string& stringFile )
 {
    std::filesystem::path pathFile( stringFileName );
-   auto uFileSize = std::filesystem::file_size( pathFile );
+   std::error_code errorcode_;
+   auto uFileSize = std::filesystem::file_size( pathFile, errorcode_ );
+   if( errorcode_  ) return { false, std::string( errorcode_.message() ) + " " + stringFileName.data() }; // return error if file doesn't exist
    auto uCurrentSize = stringFile.length();
    auto uTotalSize = uFileSize + uCurrentSize;
 
@@ -301,6 +303,17 @@ std::string fix_path_g( const std::string_view& stringPath, unsigned uOffset )
 
    return stringFixedPath;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Extract file name from path
+ * @param stringPath path from where to extract file name
+ * @return std::string file name
+ */
+std::string extract_file_name_g(const std::string_view& stringPath) 
+{
+   return std::filesystem::path(stringPath).filename().string();
+}
+
 
 
 /*----------------------------------------------------------------------------- closest_having_file_g */ /**

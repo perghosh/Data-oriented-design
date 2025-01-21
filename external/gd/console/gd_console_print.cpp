@@ -1,4 +1,4 @@
-#include "gd_debug.h"
+#include "../gd_debug.h"
 #include "gd_console_print.h"
 
 #ifdef _WIN32

@@ -45,24 +45,23 @@ What software often do is to collect information from users, store it in interna
 A significant portion of a developer's work involves writing code for reading and writing data to various locations, often converting it into formats that are easily understood and utilized by users.
 
 ### Code explodes in size
-When data is close to users, it should also be presented in a format and structure that they can easily understand. Human-readable data formats are fundamentally different from what works well for computers to process.  
-On the positive side this code is simple to read because you can describe it in terms that is easy to understand but a lot more code is needed when data is in Human-readable data format.  
-Code that directly interacts with users, often referred to as the User Interface (UI), typically consists of, or should strive for, declarative programming paradigms (declarative programming contrasting sharply with imperative programming).  
+When data is close to users, it should also be presented in a format and structure that they can easily understand. Human-readable data formats are very different from what works well for computers to process.  
+On the positive side this code is simple to read because you can describe it in terms that is easy to understand but a lot more code is needed when data is in Human-friendly format.  
+Code that directly interacts with users, often referred to as the User Interface (UI), typically consists of, or should strive for, declarative programming paradigms.  
   
-Early transformation when data leaves user or late when it reaches user into or away from a machine-friendly format is crucial for streamlining code and improving efficiency. 
+Early transformation to machine friendly format when data leaves user or late when it reaches user into or away from a machine-friendly format is important for streamlining code and improving efficiency. 
 This suggests that when a web browser acts as the user interface, the separation of concerns between domain logic and data structures optimized for computer processing can be effectively implemented within the browser environment.
 
 **In scenarios where domain logic is defined within the code...**  
 Keeping human-readable data formats for inter-system communication will necessitate extensive conversion logic, leading to increased code size, potential performance bottlenecks and code that are difficult to adapt to changes.  
-Experienced developers can often spot the maintainability of a codebase by simply reading portions of it and evaluating how deeply the domain logic is intertwined with the underlying technology. This evaluation provides a strong indication of the challenges that may arise when working with the code.
-Domain logic going deep is not good. Try to avoid it
+Developers can often spot the maintainability of a codebase by simply reading portions of it and evaluating how deeply the domain logic is intertwined with the underlying technology. This evaluation provides a strong indication of the challenges that may arise when working with the code.
 
 ## Let's get practical. How about using "string"?
 C++ string objects, such as `std::string`, are designed to efficiently manage text within code.
 The `std::string` class exemplifies data-oriented design, offering a clear interface for string manipulation. It leverages a well-known data pattern that most C++ developers are familiar with.
 A sequence of bytes terminated by a zero byte. `std::string` and many other string implementations are based on this zero-terminated byte sequence pattern.  
 This pattern is CPU-friendly, cache-efficient, and easy to manipulate. Its extensive usage demonstrates the ease of reusing data-oriented code in various contexts. 
-And it's easy to see why separating domain logic from data pattern logic is crucial. Injecting domain logic into data-oriented code designed for specific patterns immediately destroys it.
+And it's easy to see why separating domain logic from data pattern logic. Injecting domain logic into data-oriented code designed for specific patterns immediately destroys it.
 
 There are numerous implementations for common data patterns like JSON and XML, making it easy to find shared code solutions. Developing custom implementations for internal data patterns used within applications is often easier than one might think.
 By investing time upfront to create well-structured, reusable code, you can preserve its value even if the domain changes. While this requires more initial thought and effort, the long-term gains are significant.
@@ -72,24 +71,7 @@ While a pattern can take many forms, its effectiveness for internal application 
 
 ----
 
-## Styleguide used in code is based on Hungarian Notation
-*Why write code with this style*
-
-- Improved Code Search and Navigation:
-  -  Consistent naming conventions make it incredibly easy to search for specific variables across the entire codebase. This significantly speeds up debugging, refactoring, and understanding existing code.
-
-- Enhanced Code Readability and Collaboration:
-  -  When all developers adhere to the same naming conventions, the code becomes much easier to read and understand, even for developers who are unfamiliar with specific parts of the project. This fosters better collaboration and knowledge sharing within the team.
-
-- Reduced Cognitive Load and Improved Flow:
-  - When developers can quickly grasp what variables are.  it significantly reduces the mental effort required to understand code to work with it. Not needing to remember variables frees up cognitive resources. When variable names clearly indicate their type or purpose, developers can more easily identify the relevant parts of the code that require their attention, without being distracted by irrelevant details.
-  
-- Increased Development Speed:
-  - With a well-defined set of naming conventions, developers can quickly select appropriate names for variables, reducing the time spent on trivial decisions. This can lead to a noticeable increase in development speed and overall productivity.
-
-- Forced Reflection on Object Purpose:
-  - If a variable containing the object name is difficult to understand, it often signals an issue with the object's name itself. Developers are forced to critically evaluate the object's purpose and consider if a more suitable name exists.
-
+## Styleguide
 
 **Types**
 
@@ -146,6 +128,25 @@ Sample:
 | `target code` | Code in each separate target are only used in that target and isn't placed in a namespace, other than that style is similar to source code |
 | `play code` | no rules, do as you wish |
 | `test code` | no rules, do as you wish |
+
+## About Hungarian Notation or evolution of it
+*Why write code with this style*
+
+- Improved Code Search and Navigation:
+  -  Consistent naming conventions make it incredibly easy to search for specific variables across the entire codebase. This significantly speeds up debugging, refactoring, and understanding existing code.
+
+- Enhanced Code Readability and Collaboration:
+  -  When all developers adhere to the same naming conventions, the code becomes much easier to read and understand, even for developers who are unfamiliar with specific parts of the project. This fosters better collaboration and knowledge sharing within the team.
+
+- Reduced Cognitive Load and Improved Flow:
+  - When developers can quickly grasp what variables are.  it significantly reduces the mental effort required to understand code to work with it. Not needing to remember variables frees up cognitive resources. When variable names clearly indicate their type or purpose, developers can more easily identify the relevant parts of the code that require their attention, without being distracted by irrelevant details.
+  
+- Increased Development Speed:
+  - With a well-defined set of naming conventions, developers can quickly select appropriate names for variables, reducing the time spent on trivial decisions. This can lead to a noticeable increase in development speed and overall productivity.
+
+- Forced Reflection on Object Purpose:
+  - If a variable containing the object name is difficult to understand, it often signals an issue with the object's name itself. Developers are forced to critically evaluate the object's purpose and consider if a more suitable name exists.
+
 
 ### Learn while reading code
 Developers read a lot of code. To improve their skills, they should write code that's easy to learn from. 

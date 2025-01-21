@@ -143,7 +143,7 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
    // ## flags logic
-   static consteval std::pair<unsigned,unsigned> flags_s( std::string_view stringFlag );
+   static constexpr std::pair<unsigned,unsigned> flags_s( std::string_view stringFlag );
 
    // ## Internal table operations
    static unsigned create_table_s( gd::table::table& table_,std::function< void( gd::table::table& table )> callback_ );
@@ -156,8 +156,9 @@ public:
    static void file_close_s(int iFileHandle);
 };
 
+
 /// generate flags for set and clear interal data
-consteval std::pair<unsigned,unsigned> printer_csvfile::flags_s( std::string_view stringFlag )
+constexpr std::pair<unsigned,unsigned> printer_csvfile::flags_s( std::string_view stringFlag )
 {
    unsigned uSet = 0;
    unsigned uClear = 0;
@@ -169,6 +170,7 @@ consteval std::pair<unsigned,unsigned> printer_csvfile::flags_s( std::string_vie
 
    return std::pair<unsigned,unsigned>( uSet, uClear );
 }
+
 
 
 

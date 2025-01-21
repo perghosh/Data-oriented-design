@@ -6,11 +6,25 @@
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
 #include "gd/gd_sql_value.h"
+#include "gd/gd_variant_common.h"
+
 
 
 #include "main.h"
 
 #include "catch2/catch_amalgamated.hpp"
+
+TEST_CASE( "[gd] using get on variant and variant_view", "[gd]" ) {
+   gd::variant v_ = 1.01;
+   gd::variant_view vv_ = 10.01;
+
+   { auto x = gd::get<double>(v_); }
+   { auto x = gd::get<int>(v_); }
+
+   { auto x = gd::get<int32_t>(v_); }
+   { auto x = gd::get<int32_t>(vv_); }
+}
+
 
 TEST_CASE( "[gd] arguments using index", "[gd]" ) {
    gd::argument::arguments arguments_;
@@ -240,10 +254,22 @@ TEST_CASE( "[gd] arguments shared", "[gd]" ) {
 
    {
       gd::argument::shared::arguments arguments_;
-      arguments_.append_many( 100, 200, 300, 400, 500 );
-      arguments_.insert( 2, "test", 250, gd::argument::shared::arguments::tag_view{});
+      arguments_.append_many( 100, 200, 300, 400, 500 );                       // append 5 values
+      arguments_.insert( 2, "test", 250, gd::argument::shared::arguments::tag_view{});// insert named value before value with index 2
       std::cout << arguments_.print() << "\n";
    }
+
+   {
+      gd::argument::arguments arguments_;
+      arguments_.append_many( 100, 200, 300, 400, 500 );
+      arguments_.insert( 2, "test1", 250, gd::argument::shared::arguments::tag_view{});
+      arguments_.insert( 2, "test2", "1234567890", gd::argument::shared::arguments::tag_view{});
+      arguments_.insert( 2, "test3", 250, gd::argument::shared::arguments::tag_view{});
+      arguments_.insert( 2, "test4", 250, gd::argument::shared::arguments::tag_view{});
+      arguments_.insert( 2, "test5", 250, gd::argument::shared::arguments::tag_view{});
+      std::cout << arguments_.print() << "\n";
+   }
+
 
    {
 

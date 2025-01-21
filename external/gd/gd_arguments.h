@@ -67,9 +67,12 @@ _GD_ARGUMENT_BEGIN
 
 
 /**
- * \brief
+ * \brief  arguments focus on memory size, to tricks to align and speed up memory access
  *
- *
+ * ## memory layout
+ * [type and length for name][name in chars][type]{[length for non primitive types]}[value data]
+ * shorter version
+ * [uint16][name][uint8]{[uint32]}[data]
  *
  \code
  \endcode
@@ -478,7 +481,8 @@ public:
    */
    struct const_iterator
    {
-      typedef const_iterator     self;
+      using iterator_category = std::forward_iterator_tag;
+      using self = const_iterator;
 
       const_iterator() : m_pArguments(nullptr), m_pPosition(nullptr) {}
       const_iterator(arguments::const_pointer pPosition ): m_pPosition(pPosition) {}
@@ -725,6 +729,7 @@ public:
    arguments& append_argument(const std::string_view& stringName, argument argumentValue);
 
    arguments& append_argument(const variant& variantValue);
+   arguments& append_argument(const variant_view& variantviewValue, tag_view);
 
    arguments& append_argument(std::string_view stringName, const gd::variant& variantValue) {
       auto argumentValue = get_argument_s(variantValue);
@@ -776,19 +781,28 @@ public:
    arguments& set_uuid(const std::string_view& stringName, const uint8_t* puData) { return set(stringName, eTypeNumberGuid, (const_pointer)puData, 16); }
 
 
-   // uuid
    arguments& set(std::string_view stringName, std::string_view v) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length() + 1); }
 
+   arguments& set(pointer pPosition, const gd::variant_view& variantValue) { return set(pPosition, variantValue, nullptr); }
+   arguments& set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition);
    arguments& set(std::string_view stringName, const gd::variant_view& variantValue);
 
    arguments& set(std::string_view stringName, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set(stringName.data(), (uint32_t)stringName.length(), uType, pBuffer, uLength); }
    arguments& set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength);
-   arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength);
+   arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set( pPosition, uType, pBuffer, uLength, nullptr ); }
+   arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition);
 
    void set( pointer pposition, const argument& argumentSet, tag_argument );
    arguments& set( pointer pposition, const argument& argumentSet ) { set( pposition, argumentSet, tag_argument{}); return *this; }
 
-   // TODO: Implement set methods
+/** \name INSERT
+*///@{
+   pointer insert( size_t uIndex, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
+   pointer insert( pointer pPosition, const gd::variant_view& variantviewValue, tag_view );
+   pointer insert( pointer pPosition, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
+   // pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
+//@}
+
 
    const_iterator begin() const { return const_iterator( this, m_pBuffer ); }
    const_iterator end() const { return const_iterator( nullptr ); }
@@ -956,8 +970,8 @@ public:
    
 
 
-#if defined(_DEBUG) || defined(DEBUG) || !defined(NODEBUG)
-   bool verify_d(const_pointer pPosition) const { return pPosition >= m_pBuffer && pPosition < (m_pBuffer + m_uLength) ? true : false; }
+#ifndef NDEBUG
+   bool verify_d(const_pointer pPosition) const;
 #endif
 //@}
 
@@ -1044,6 +1058,8 @@ public:
 
    /// ## Calculate size in bytes needed for argument values stored in arguments object
    static unsigned int sizeof_s(const argument& argumentValue);
+   static unsigned int sizeof_s(const gd::variant_view& VV_, tag_view);
+   static unsigned int sizeof_s( const std::string_view& stringName, const gd::variant_view& VV_, tag_view );
    static unsigned int sizeof_s(uint32_t uNameLength, param_type uType, unsigned int uLength);
    static inline unsigned int sizeof_name_s(uint32_t uNameLength) { return uNameLength + 2; }
    static inline unsigned int sizeof_name_s(const_pointer pPosition) { 
@@ -1151,12 +1167,16 @@ public:
    /// Check if any of the name values are found in arguments
    static std::pair<bool, std::string> exists_any_of_s( const arguments& argumentsValidate, const std::initializer_list<std::string_view>& listName, tag_name );
 
-   //static arguments read_json_s(const argument& argumentValue);
-//@}
+   /// copy name into buffer `pCopyTo` points to
+   static unsigned memcpy_s( pointer pCopyTo, const char* pbszName, unsigned uLength );
+   /// copy value into buffer `pCopyTo` points to
+   static uint64_t memcpy_s( pointer pCopyTo, argument_type uType, const_pointer pBuffer, unsigned int uLength );
+   //@}
 
 
 // ## 
 public:
+   /*
    struct buffer
    {
       unsigned int   m_uFlags;         ///< flags for arguments states (eg "owner" of memory etc.)
@@ -1165,12 +1185,17 @@ public:
       int            m_iReferenceCount;///< used for reference counting
       pointer        m_pBuffer;        ///< pointer to byte array
    };
+   */
 
    void buffer_set() { memset( this, 0, sizeof( arguments ) ); }
    void buffer_set( pointer p_ ) { m_pBuffer = p_; }
    void buffer_delete() { if( is_owner() ) delete [] m_pBuffer; }
    pointer buffer_data() { return m_pBuffer; }
    const_pointer buffer_data() const { return m_pBuffer; }
+   const_pointer buffer_data_end() const { return m_pBuffer + m_uLength; }
+   unsigned int buffer_size() const { return m_uLength; }
+   void buffer_set_size(unsigned uSize) { m_uLength = uSize; }
+   unsigned int buffer_buffer_size() const { return m_uBufferLength; }
 
 
 
@@ -1264,8 +1289,15 @@ inline OBJECT arguments::get_object( const std::string_view& stringPrefixFind ) 
    return object_;
 }
 
-
-
+#ifndef NDEBUG
+inline bool arguments::verify_d(const_pointer pPosition) const { 
+   bool bOk = ( pPosition >= buffer_data() );
+   if( bOk == true ){
+      bOk = ( pPosition < buffer_data_end() );  
+   }
+   return bOk; 
+}
+#endif
 
 // ================================================================================================
 // ================================================================================= arguments_return
@@ -1317,16 +1349,31 @@ inline arguments& arguments::append_argument(const std::string_view& stringName,
    return append(stringName, argumentValue.ctype(), pData, argumentValue.length());
 }
 
-
-inline arguments& arguments::set(std::string_view stringName, const gd::variant_view& variantValue) {
+/// set value from variant_view at position
+inline arguments& arguments::set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition) {
    auto argumentValue = get_argument_s(variantValue);
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
    unsigned uType = argumentValue.type_number();
    unsigned uLength;
    if( uType > ARGUMENTS_NO_LENGTH ) 
    { 
-      unsigned uZeroEnd = 0;
-      if( uType == eTypeNumberWString )
+      uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
+   }
+   else
+   {
+      uLength = ctype_size[uType];
+   }
+   return set(pPosition, uType, pData, uLength, ppPosition);
+}
+
+/// set value from variant_view for named argument
+inline arguments& arguments::set(std::string_view stringName, const gd::variant_view& variantValue) {
+   auto argumentValue = get_argument_s(variantValue);
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();                               // get full type, including length
+   unsigned uLength;
+   if( uType > ARGUMENTS_NO_LENGTH ) 
+   { 
       uType |= eValueLength; 
       uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
    }

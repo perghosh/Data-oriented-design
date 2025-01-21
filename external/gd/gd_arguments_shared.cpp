@@ -1233,7 +1233,6 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
          {                                                                                         assert( (uValueLength % 2) == 0 );// make sure unicode is correct
             uValueLength = uValueLength >> 1;                                  // unicode string, length is cut in half
          }
-         uValueLength--;                                                       // remove the zero terminator for length
       }
 
       *(uint32_t*)(pdata_ + uPosition) = uValueLength;
@@ -1327,7 +1326,7 @@ arguments& arguments::append_argument( const std::vector< std::pair<std::string_
    return *this;
 }
 
-// pointer arguments::set(pointer pPosition , param_type uType, const_pointer pBuffer, unsigned int uLength)
+
 
 arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength)
 {
@@ -1406,7 +1405,6 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
             {                                                                                      assert( (uValueLength % 2) == 0 );// make sure unicode is correct
                uValueLength = uValueLength >> 1;                               // unicode string, length is cut in half
             }
-            uValueLength--;                                                    // remove the zero terminator for length
          }
          *(uint32_t*)(pPosition) = uValueLength;
          pPosition += sizeof( uint32_t );
@@ -1418,13 +1416,114 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
    return *this;
 }
 
+arguments& arguments::set(pointer pPosition , param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition)
+{
+   // get current argument
+   argument argumentOld = arguments::get_argument_s(pPosition);
+
+   // check if type is equal and fixed length, then just copy new value over the old one.
+   if( arguments::compare_type_s(argumentOld, uType) == true && (uType & (eValueLength|eValueLengthBig)) == 0 )
+   {
+      pPosition = move_to_value_s( pPosition );
+      pPosition += sizeof( uint32_t );                                         assert(pPosition < get_buffer_end());
+      memcpy(pPosition, pBuffer, uLength);
+      return *this;
+   }
+   else
+   {
+      unsigned uOldSize = 0;
+      unsigned uNewSize = 0;
+      if( is_name_s(pPosition) == true ) 
+      {
+         uOldSize = arguments::sizeof_name_s( pPosition );
+         uOldSize = align32_g( uOldSize );
+         uNewSize = uOldSize;
+      }
+      
+      uOldSize += arguments::sizeof_s( argumentOld );
+      uOldSize = align32_g( uOldSize );
+
+      uNewSize += arguments::sizeof_s( 0, uType, uLength );                    // calculate total size for new value
+
+      if( uOldSize != uNewSize ) 
+      { 
+         if( uNewSize > uOldSize ) 
+         { 
+            size_t uOffset = pPosition - buffer_data();                        // offset value from start of buffer, needed to set new position if new block is allocated
+            
+            // reserv memory if needed and if memory is reserved, reset position
+            if( reserve( buffer_size() + uNewSize ) == true ) 
+            { 
+               pPosition = buffer_data() + uOffset;                            // reset position
+            }
+         }
+
+         resize(pPosition, uOldSize, uNewSize); 
+      }
+
+      pPosition = move_to_value_s( pPosition );                                                    assert( ((intptr_t)pPosition % 4) == 0 );
+
+      if( (uType & eValueLength) == 0 )                                        // if type doesn't have specified length flag then just copy data into buffer
+      {
+         uint32_t uValueLength = uLength;                                      // hold value length
+         uLength = align32_g( uLength );                                       // align to 32 bit boundary
+         uint32_t uTypeAndSize = (uType << 24) | uLength;
+         *(uint32_t*)(pPosition) = uTypeAndSize;                               // set type and size
+         pPosition += sizeof( uint32_t );
+
+         memcpy(pPosition, pBuffer, uValueLength);
+      }
+      else
+      {
+         unsigned uTotalLength = uLength;
+         uint32_t uValueLength = uLength;                                      // value length in bytes (storage needed to hold data)
+         uTotalLength += sizeof( uint32_t );                                   // add value length to total value size
+         uTotalLength = align32_g( uTotalLength );                             // align to 32 bit boundary
+         uint32_t uTypeAndSize = (uType << 24) | uTotalLength;                 // set value type and length in 32 bit value
+         *(uint32_t*)(pPosition) = uTypeAndSize;                               // set type and size
+         pPosition += sizeof( uint32_t );                                      // move past type and size
+
+         uint32_t uCompleteType = gd::types::typenumber_to_type_g( uType & ~eType_MASK );// get the full type information from gd types to investigate the object length
+
+         // ## fix size to the actual length for value, this is to improve the speed
+         //    generating value objects from data
+         if(uCompleteType & gd::types::eTypeGroupString)
+         {
+            if(( uType & eTypeNumber_MASK ) == eTypeNumberWString)
+            {                                                                                      assert( (uValueLength % 2) == 0 );// make sure unicode is correct
+               uValueLength = uValueLength >> 1;                               // unicode string, length is cut in half
+            }
+         }
+         *(uint32_t*)(pPosition) = uValueLength;
+         pPosition += sizeof( uint32_t );
+
+         memcpy(pPosition, pBuffer, uLength);                                  // copy data
+      }
+   }
+
+   if( ppPosition != nullptr ) *ppPosition = pPosition;
+
+   return *this;
+}
+
+
 /// set value at position that pointer is at, make sure that pPosition is on a valid position
+/*
 arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength)
 {
    set( pPosition, uType, pBuffer, uLength, tag_internal{});
    return *this;
 }
+*/
 
+/** ---------------------------------------------------------------------------
+* @brief set value at position that pointer is at, make sure that pPosition is on a valid position
+ * @param pPosition pointer to position where value is set
+ * @param uType type of value, its a byte value (uint8_t)
+ * @param pBuffer pointer to buffer with data that is copied into arguments buffer
+ * @param uLength size in bytes for data to copy
+ * @return position where the value was copied to
+ */
 arguments::pointer arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, tag_internal )
 {                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition < buffer_data_end() );
    argument argumentOld = arguments::get_argument_s(pPosition);                // get current argument
@@ -1435,7 +1534,7 @@ arguments::pointer arguments::set(pointer pPosition, param_type uType, const_poi
       memcpy(pPositionValue, pBuffer, uLength);
    }
    else
-   {                                                                                               assert( pPositionValue - pPosition < 255 ); // realistic
+   {                                                                                               assert( (pPositionValue - pPosition) < 255 ); // realistic
       auto uOldSize = get_total_param_length_s(pPosition);
       unsigned uNameLength = arguments::sizeof_name_s( pPosition );
       auto uNewSize = uNameLength + uLength + sizeof_value_prefix( uType );
@@ -1465,6 +1564,20 @@ arguments::pointer arguments::set(pointer pPosition, param_type uType, const_poi
    return pPosition;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Insert named value at position in arguments buffer
+ * @code
+ * gd::argument::shared::arguments arguments_;
+ * arguments_.append_many( 100, 200, 300, 400, 500 );
+ * // insert named value at position 2, value name is "value-name" and value is 250
+ * arguments_.insert( 2, "value-name", 250, gd::argument::shared::arguments::tag_view{});
+ * std::cout << arguments_.print() << "\n";
+ * @endcode
+ * @param uIndex index where value is inserted
+ * @param stringName name for value that is inserted
+ * @param variantviewValue value to be inserted
+ * @return position where the original value was
+ */
 arguments::pointer arguments::insert(size_t uIndex, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view )
 {
    pointer pposition = find( (unsigned)uIndex );
@@ -1539,6 +1652,7 @@ arguments::pointer arguments::insert(pointer pPosition, const std::string_view& 
    auto string_d = debug::print( *this );
 #endif // !NDEBUG
 
+   // calculate offset from start of buffer whre value is to be inserted
    uint64_t uOffset = pPosition - buffer_data();                                                   assert( uOffset < buffer_size() );
    // ## calculate expand size   
    unsigned uSizeInsert = sizeof_s( stringName, variantviewValue, tag_view{}) ;
@@ -2031,7 +2145,12 @@ std::string arguments::print( const_iterator itBegin, const_iterator itEnd, std:
 
 /*----------------------------------------------------------------------------- reserve */ /**
  * Make sure internal buffer can hold number of bytes requested
+ * arguments object has data and member in one single memory block. First in buffer
+ * is members and then data.
  \note if buffer is increased it is increased with 1.5 * count
+ \note if buffer is realocated to increase buffer size and there is multiple owners, 
+       these other owners will not be updated.
+       You need to make sure that you have the only owner of the buffer before calling this function but it does allow it.
  * \param uCount number of bytes to reserve
  * \return bool true if new buffer is allocated, false if not
  */
@@ -2040,14 +2159,14 @@ bool arguments::reserve(uint64_t uCount)
    if( uCount > buffer_buffer_size() )
    {
       uint64_t uBufferSize = (sizeof( buffer ) + uCount + ( uCount >> 1 ) + 63) & ~63;             // calculate new size and align to 64 byte
-      uint8_t* pdata_ = new unsigned char[uBufferSize];
+      uint8_t* pdata_ = new uint8_t[uBufferSize];
 
+      // ## copy old buffer to new buffer
       uint64_t uOldSize = sizeof( buffer );
       uOldSize += buffer_size();
-
       memcpy(pdata_, m_pbuffer, uOldSize);
 
-      buffer_release();
+      buffer_release();                                                        // release old buffer
       m_pbuffer = (buffer*)pdata_;
 
       uBufferSize -= sizeof( buffer );                                         // decrease actual buffer data size with buffer, first in buffer is tha class buffer
@@ -3371,6 +3490,13 @@ std::pair<bool, std::string> arguments::exists_s( const arguments& argumentsVali
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief copy value name into buffer
+ * @param pCopyTo buffer value name is copied to
+ * @param pbszName pointer to name data that is copied
+ * @param uNameLength length of name in bytes to copy
+ * @return unber of bytes copied into buffer
+ */
 uint64_t arguments::memcpy_s(pointer pCopyTo, const char* pbszName, unsigned uNameLength)
 {
    auto* pdata_ = pCopyTo;

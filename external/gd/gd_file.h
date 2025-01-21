@@ -55,6 +55,10 @@ std::pair<bool, std::wstring> get_known_folder_wpath_g(const std::string_view& s
 std::string fix_path_g( const std::string_view& stringPath, unsigned uOffset );
 inline std::string fix_path_g( const std::string_view& stringPath ) { return fix_path_g( stringPath, 0 ); }
 
+
+std::string extract_file_name_g( const std::string_view& stringPath );
+
+
 // ## `closest` are used to find nearest folder in the parent hierarchy
 
 std::pair<bool, std::string> closest_having_file_g(const std::string_view& stringPath, const std::string_view& stringFindFile);
