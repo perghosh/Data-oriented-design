@@ -23,7 +23,7 @@ TEST_CASE("[Logging] Log", "[Logging]")
    plogger->set_severity(eSeverityNumberVerbose);
 
    gd::log::printer_console* pprinterconsole = (printer_console*)plogger->get("CONSOLE");
-   pprinterconsole->set_margin(5);
+   pprinterconsole->set_margin(8);
    pprinterconsole->set_color(gd::log::printer_console::m_arrayColorDeGrey_s);
 
    //REQUIRE(false);
