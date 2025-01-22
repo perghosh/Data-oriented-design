@@ -47,6 +47,7 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
 
    std::string stringSql3 = R"SQL(CREATE TABLE TAddress (
       AddressK INTEGER PRIMARY KEY AUTOINCREMENT,
+      CustomerK INTEGER,
       CreateD TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FCity VARCHAR(50),
       FAddress VARCHAR(50),
@@ -85,10 +86,21 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
 
    result_ = pdatabase->execute(stringSql3);
    result_ = pdatabase->execute(stringSqlInsert2);                                                  REQUIRE(result_.first == true);
+   result_ = pdatabase->execute(stringSqlInsert2);                                                  REQUIRE(result_.first == true);
+   stringSqlInsert2 = R"SQL(INSERT INTO TAddress(FCity, FAddress, FRegion) VALUES('stenungsund', 'gata 5', 'västragötaland');)SQL";
+   result_ = pdatabase->execute(stringSqlInsert2);                                                  REQUIRE(result_.first == true);
 
    gd::variant variantKey;
    result_ = pdatabase->ask("SELECT CustomerK FROM TCustomer WHERE FName = 'Visual';", &variantKey);REQUIRE(result_.first == true);
    std::cout << "Customer key: " << variantKey.as<int64_t>() << "\n";
+
+   std::string stringUpdate = "UPDATE TAddress SET CustomerK = ";  
+   stringUpdate += variantKey.as<std::string>();
+   stringUpdate += " WHERE FCity = 'kungälv' ";
+
+   result_ = pdatabase->execute(stringUpdate);                                         REQUIRE(result_.first == true);
+
+   result_ = pdatabase->execute("UPDATE TAddress SET CustomerK =" + stringUpdate);
 
    result_ = pcursor->open("SELECT * FROM TAddress;");                                             REQUIRE(result_.first == true);
    gd::table::dto::table tableAddress;
@@ -96,6 +108,17 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    std::string stringResult2;
    gd::table::to_string(tableAddress, stringResult2, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
    std::cout << stringResult2 << "\n";
+
+   pcursor->close();
+   result_ = pcursor->open(R"SQL(
+SELECT Customer.CustomerK, Customer.FName AS CustomerName, Address.FCity AS City, Address.FRegion AS Region 
+FROM TCustomer AS Customer JOIN TAddress AS Address ON Customer.CustomerK=Address.CustomerK)SQL"); REQUIRE(result_.first == true);
+   gd::table::dto::table tableJoin;
+   gd::database::to_table( pcursor, &tableJoin );
+   stringResult = gd::table::to_string(tableJoin, gd::table::tag_io_cli{});
+   std::cout << stringResult << "\n";
+
+   pcursor->release();
    pdatabase->release();
 }
 
