@@ -86,6 +86,10 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    result_ = pdatabase->execute(stringSql3);
    result_ = pdatabase->execute(stringSqlInsert2);                                                  REQUIRE(result_.first == true);
 
+   gd::variant variantKey;
+   result_ = pdatabase->ask("SELECT CustomerK FROM TCustomer WHERE FName = 'Visual';", &variantKey);REQUIRE(result_.first == true);
+   std::cout << "Customer key: " << variantKey.as<int64_t>() << "\n";
+
    result_ = pcursor->open("SELECT * FROM TAddress;");                                             REQUIRE(result_.first == true);
    gd::table::dto::table tableAddress;
    gd::database::to_table(pcursor, &tableAddress);
