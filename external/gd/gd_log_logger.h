@@ -136,9 +136,6 @@ auto plogger = get_s();            // default logger
 #include <functional>
 #include <string>
 #include <string_view>
-#if defined( __cpp_lib_format )
-#include <format>
-#endif
 #include <vector>
 #include <type_traits>
 #include <memory>
@@ -400,57 +397,6 @@ struct wstream
       std::wstringstream m_stringstream;
 };
 
-// ================================================================================================
-// ========================================================================================= format
-// ================================================================================================
-
-#if defined( __cpp_lib_format )
-/*-----------------------------------------*/ /**
- * \brief implements std::format functionality to generate log text
- *
- *
- */
-struct format 
-{
-   format() {}
-
-   /*----------------------------------------------------------------------------- format */ /**
-    * See std::format on how to generate text, this member method forwards logic to format
-    * \param stringFormat format string 
-    * \param arguments arguments forwarded to vformat (vformat is used by std::format)
-    * \return gd::log::message& return reference for chaining
-    */
-   template <typename... ARGUMENTS>
-   format(std::string_view stringFormat, ARGUMENTS&&... arguments) {
-      // same logic as std::format
-      // takes a number of arguments and wraps them into std::format_args that has logic to convert arguments into formated text
-      std::string stringResult = std::vformat(stringFormat, std::make_format_args(std::forward<ARGUMENTS>(arguments)...));
-      m_pbszText.reset(message::new_s(stringResult, m_pbszText.release()));
-   }
-
-   /*----------------------------------------------------------------------------- format */ /**
-    * See std::format on how to generate text, this member method forwards logic to format
-    * \param stringFormat format string 
-    * \param arguments arguments forwarded to vformat (vformat is used by std::format)
-    * \return gd::log::message& return reference for chaining
-    */
-   template <typename... ARGUMENTS>
-   format(std::wstring_view stringFormat, ARGUMENTS&&... arguments) {
-      // same logic as std::format
-      // takes a number of arguments and wraps them into std::format_args that has logic to convert arguments into formated text
-      std::wstring stringResult = std::vformat(stringFormat, std::make_wformat_args(std::forward<ARGUMENTS>(arguments)...));
-      m_pbszText.reset(message::new_s(stringResult, m_pbszText.release()));
-   }
-
-#  if defined(__cpp_char8_t)
-   operator const char8_t*() const { return (const char8_t*)m_pbszText.get();  }
-#  endif
-   operator const char*() const { return (const char*)m_pbszText.get();  }
-   // attributes
-   public:
-      std::unique_ptr<char> m_pbszText;
-};
-#endif
 
 /*-----------------------------------------*/ /**
  * \brief 
@@ -690,9 +636,6 @@ public:
    message& operator&(const wstream& streamAppend) { return append(streamAppend, tag_pipe{}); }
    message& operator<<(const ascii& asciiAppend) { return append(asciiAppend.get_string()); }
    message& operator<<(const tag& tagAppend) { return append(tagAppend); }
-#if defined( __cpp_lib_format )
-   message& operator<<(const format& formatAppend) { return append(formatAppend); }
-#endif
    message& operator<<(const printf& printfAppend) { return append(printfAppend); }
    //message& operator<<(std::wostream& ) { return append(formatAppend); }
    template<typename APPEND>
@@ -799,9 +742,6 @@ public:
 
    message& append( const std::pair< int, const char** >& pair_ );
 
-#if defined( __cpp_lib_format )
-   message& append(const format& formatAppend);
-#endif
    message& append(const printf& printfAppend);
    message& append(const tag& tagAppend);
 
@@ -1015,7 +955,7 @@ inline bool message::empty() const {
    return false;
 }
 
-#if defined( __cpp_lib_format )
+#if defined( __cpp_lib_format__todo )
 /// append text from format object (format has logic for same as C++20 format in standard template library)
 inline message& message::append(const format& formatAppend) {
    m_pbszText.reset(new_s(m_pbszText.get(), std::string_view{ "  " }, (const char*)formatAppend, m_pbszText.release(), gd::utf8::tag_utf8{}));
