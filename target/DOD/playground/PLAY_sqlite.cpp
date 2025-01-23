@@ -10,6 +10,7 @@
 #include "gd/gd_arguments_shared.h"
 #include "gd/gd_table_arguments.h"
 #include "gd/gd_table_io.h"
+#include "gd/gd_sql_query.h"
 
 #include "gd/gd_database_sqlite.h"
 #include "gd/database/gd_database_io.h"
@@ -33,6 +34,12 @@ std::string GetApplicationFolder()
    return stringFilePath;
 }
 
+
+TEST_CASE(" [sqlite] generate sql 01", "[sqlite]") {
+   {
+      gd::sql::query query;
+   }
+}
 
 TEST_CASE(" [sqlite] create2", "[sqlite]")
 {
