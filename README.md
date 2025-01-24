@@ -155,4 +155,4 @@ This coding style uses abbreviations for primitive C++ types and common names fo
 It reduces cognitive load, as our short-term memory can typically hold about 5-8 names for about 20 seconds and impedes the cognitive resources necessary for process what code does. 
 By minimizing cognitive overhead on temporary or irrelevant details, this coding style prioritizes skill in development and efficient comprehension.
 
-If you write 100 lines of code, maybe 10 lines are important to understand what it does. If it is easy to find the important code, the rest can be skipped. Code is easer to read.
+If you write 100 lines of code, maybe 10 lines are important to understand what it does. If it is easy to find the important code, the rest can be skipped. Code is easier to read.
