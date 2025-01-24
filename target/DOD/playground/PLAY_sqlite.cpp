@@ -53,6 +53,13 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
       FRegion VARCHAR(100)
    );)SQL";
 
+   std::string stringSql4 = R"SQL(CREATE TABLE TPopulation (
+      PopulationK INTEGER PRIMARY KEY AUTOINCREMENT,
+      CreateD TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FCity VARCHAR(50),
+      FPopulation INTEGER
+   );)SQL";
+
    std::string stringDbName = GetApplicationFolder();
    stringDbName += "db02.sqlite";
    if( std::filesystem::exists(stringDbName) == true) {std::filesystem::remove(stringDbName);}
@@ -66,6 +73,7 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    result_ = pdatabase->open({ {"file", stringDbName} });                                          REQUIRE(result_.first == true);
    std::string stringSqlInsert = R"SQL(INSERT INTO TCustomer(FCustomerType, FName, FAddress, FEmail) VALUES('Business', 'Visual', 'Street 4', 'visual@gmail.com');)SQL";
    std::string stringSqlInsert2 = R"SQL(INSERT INTO TAddress(FCity, FAddress, FRegion) VALUES('kungälv', 'gata 2', 'västragötaland');)SQL";
+   std::string stringSqlInsert3 = R"SQL(INSERT INTO TPopulation(FCity, FPopulation) VALUES('göteborg', 350000);)SQL";
    result_ = pdatabase->execute(stringSqlInsert);                                                  REQUIRE(result_.first == true);
 
    gd::database::cursor_i* pcursor = nullptr;
@@ -80,8 +88,7 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
 
 
 
-   pdatabase = new gd::database::sqlite::database_i("db02");
-   result_ = pdatabase->open({ {"file", stringDbName} });
+  // result_ = pdatabase->open({ {"file", stringDbName} });
 
    result_ = pdatabase->execute(stringSql3);
    result_ = pdatabase->execute(stringSqlInsert2);                                                  REQUIRE(result_.first == true);
@@ -92,6 +99,17 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    std::string stringResult2;
    gd::table::to_string(tableAddress, stringResult2, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
    std::cout << stringResult2 << "\n";
+
+   result_ = pdatabase->execute(stringSql4);
+   result_ = pdatabase->execute(stringSqlInsert3);                                                  REQUIRE(result_.first == true);
+
+   result_ = pcursor->open("SELECT FPopulation FROM TPopulation;");                                          REQUIRE(result_.first == true);
+   gd::table::dto::table tablePopulation;
+   gd::database::to_table(pcursor, &tablePopulation);
+   std::string stringResult3;
+   gd::table::to_string(tablePopulation, stringResult3, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
+   std::cout << stringResult3 << "\n";
+
    pdatabase->release();
 }
 
