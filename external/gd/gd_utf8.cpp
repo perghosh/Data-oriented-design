@@ -359,7 +359,9 @@ namespace gd {
       {                                                                                            assert( pubBegin <= pubEnd );
 #ifdef _DEBUG
          const char* pbsz_d = (const char*)pubBegin;                           // simplify debugging
+#  if defined(__cpp_char8_t)
          const char8_t* putf8_d = (const char8_t*)pubBegin;                    // simplify debugging
+#  endif
 #endif // DEBUG
 
          auto pubPosition = pubBegin;

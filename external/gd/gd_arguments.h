@@ -637,6 +637,8 @@ public:
    }
 
    arguments& operator+=( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument( pairArgument, tag_view{} ); }
+   arguments& operator+=( const std::initializer_list< std::pair<std::string_view, gd::variant_view> >& listArgument) { return append_argument(listArgument, tag_view{}); }
+
 
    arguments operator<<(const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
 

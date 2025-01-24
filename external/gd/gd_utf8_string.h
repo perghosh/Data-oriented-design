@@ -46,9 +46,11 @@ namespace gd::utf8 {
       explicit value32(const char* pbszValue) {
          m_uValue = character(reinterpret_cast<const uint8_t*>(pbszValue));
       }
+#if defined(__cpp_char8_t)
       explicit value32(const char8_t* pbszValue) {
          m_uValue = character(reinterpret_cast<const uint8_t*>(pbszValue));
       }
+#endif
       value32( const uint8_t* pubszValue ) {
          m_uValue = character( pubszValue );
       }
@@ -367,7 +369,9 @@ public:
    void push_back( uint32_t ch );
 
    string& append( uint8_t ch ) { push_back( static_cast<value_type>( ch ) ); return *this; };
+#if defined(__cpp_char8_t)
    string& append( char8_t ch ) { push_back( static_cast<value_type>( ch ) ); return *this; };
+#endif
    string& append( uint16_t ch ) { push_back( ch ); return *this; };
    string& append( char16_t ch ) { push_back( static_cast<uint16_t>( ch ) ); return *this; };
    string& append( uint32_t ch ) { push_back( ch ); return *this; };
