@@ -123,7 +123,6 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    gd::table::to_string(tableAddress, stringResult2, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
    std::cout << stringResult2 << "\n";
 
-<<<<<<< HEAD
    result_ = pdatabase->execute(stringSql4);
    result_ = pdatabase->execute(stringSqlInsert3);                                                  REQUIRE(result_.first == true);
 
@@ -134,7 +133,6 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    gd::table::to_string(tablePopulation, stringResult3, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
    std::cout << stringResult3 << "\n";
 
-=======
    pcursor->close();
    result_ = pcursor->open(R"SQL(
 SELECT Customer.CustomerK, Customer.FName AS CustomerName, Address.FCity AS City, Address.FRegion AS Region 
@@ -145,7 +143,6 @@ FROM TCustomer AS Customer JOIN TAddress AS Address ON Customer.CustomerK=Addres
    std::cout << stringResult << "\n";
 
    pcursor->release();
->>>>>>> cc59d55cdf0e84b57e6fc38042107e0717826427
    pdatabase->release();
 }
 
