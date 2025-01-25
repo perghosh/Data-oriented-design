@@ -95,9 +95,6 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    std::cout << stringResult << "\n";
 
 
-
-  // result_ = pdatabase->open({ {"file", stringDbName} });
-
    result_ = pdatabase->execute(stringSql3);
    result_ = pdatabase->execute(stringSqlInsert2);                                                  REQUIRE(result_.first == true);
    result_ = pdatabase->execute(stringSqlInsert2);                                                  REQUIRE(result_.first == true);
@@ -112,9 +109,9 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    stringUpdate += variantKey.as<std::string>();
    stringUpdate += " WHERE FCity = 'kungälv' ";
 
-   result_ = pdatabase->execute(stringUpdate);                                         REQUIRE(result_.first == true);
+   result_ = pdatabase->execute(stringUpdate);                                                     REQUIRE(result_.first == true);
 
-   result_ = pdatabase->execute("UPDATE TAddress SET CustomerK =" + stringUpdate);
+   result_ = pdatabase->execute("UPDATE TAddress SET CustomerK = " + stringUpdate);
 
    result_ = pcursor->open("SELECT * FROM TAddress;");                                             REQUIRE(result_.first == true);
    gd::table::dto::table tableAddress;
@@ -123,18 +120,16 @@ TEST_CASE(" [sqlite] create2", "[sqlite]")
    gd::table::to_string(tableAddress, stringResult2, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
    std::cout << stringResult2 << "\n";
 
-<<<<<<< HEAD
    result_ = pdatabase->execute(stringSql4);
-   result_ = pdatabase->execute(stringSqlInsert3);                                                  REQUIRE(result_.first == true);
+   result_ = pdatabase->execute(stringSqlInsert3);                                                 REQUIRE(result_.first == true);
 
-   result_ = pcursor->open("SELECT FPopulation FROM TPopulation;");                                          REQUIRE(result_.first == true);
+   result_ = pcursor->open("SELECT FPopulation FROM TPopulation;");                                REQUIRE(result_.first == true);
    gd::table::dto::table tablePopulation;
    gd::database::to_table(pcursor, &tablePopulation);
    std::string stringResult3;
    gd::table::to_string(tablePopulation, stringResult3, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
    std::cout << stringResult3 << "\n";
 
-=======
    pcursor->close();
    result_ = pcursor->open(R"SQL(
 SELECT Customer.CustomerK, Customer.FName AS CustomerName, Address.FCity AS City, Address.FRegion AS Region 
@@ -145,7 +140,6 @@ FROM TCustomer AS Customer JOIN TAddress AS Address ON Customer.CustomerK=Addres
    std::cout << stringResult << "\n";
 
    pcursor->release();
->>>>>>> cc59d55cdf0e84b57e6fc38042107e0717826427
    pdatabase->release();
 }
 
