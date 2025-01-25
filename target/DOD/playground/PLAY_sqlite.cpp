@@ -34,6 +34,23 @@ std::string GetApplicationFolder()
    return stringFilePath;
 }
 
+gd::table::dto::table CreateTable(gd::database::sqlite::database_i* pdatabase, std::string stringSql)
+{
+   gd::table::dto::table tableReturn;
+   gd::database::cursor_i* pcursor = nullptr;
+   pdatabase->get_cursor(&pcursor);
+   auto result_ = pcursor->open(stringSql);  
+   if( result_.first == false )
+   {
+      std::cout << result_.second << std::endl;
+   }
+
+   gd::database::to_table(pcursor, &tableReturn);
+
+   pcursor->release();
+
+   return tableReturn;
+}
 
 TEST_CASE(" [sqlite] generate sql 01", "[sqlite]") {
    {
@@ -79,6 +96,14 @@ TEST_CASE(" [sqlite] create3", "[sqlite]")
 
    gd::database::cursor_i* pcursor = nullptr;
    pdatabase->get_cursor(&pcursor);
+
+   std::string stringSelect = "SELECT * FROM TProduct;";
+
+   gd::table::dto::table tableProduct1 = CreateTable(pdatabase, stringSelect);
+
+   std::string stringResult1;
+   gd::table::to_string(tableProduct1, stringResult1, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
+   std::cout << stringResult1 << "\n";
 
    result_ = pcursor->open("SELECT * FROM TProduct;");                                             REQUIRE(result_.first == true);
    gd::table::dto::table tableProduct;
