@@ -41,6 +41,72 @@ TEST_CASE(" [sqlite] generate sql 01", "[sqlite]") {
    }
 }
 
+TEST_CASE(" [sqlite] create3", "[sqlite]")
+{
+   std::string stringSql = R"SQL(CREATE TABLE TProduct (
+      ProductK INTEGER PRIMARY KEY AUTOINCREMENT,
+      CreateD TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FProductType VARCHAR(20),
+      FName VARCHAR(50)
+   );)SQL";
+
+   std::string stringSql2 = R"SQL(CREATE TABLE TProduct_Sales (
+      Product_SalesK INTEGER PRIMARY KEY AUTOINCREMENT,
+      CreateD TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      ProductK INTEGER,
+      FSales INTEGER
+   );)SQL";
+
+   std::string stringDbName = GetApplicationFolder();
+   stringDbName += "db03.sqlite";
+   if( std::filesystem::exists(stringDbName) == true ) { std::filesystem::remove(stringDbName); }
+
+   gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i("db03");
+   auto result_ = pdatabase->open({ {"file", stringDbName}, {"create", true} });                   REQUIRE(result_.first == true);
+   result_ = pdatabase->execute(stringSql);                                                        REQUIRE(result_.first == true);
+   result_ = pdatabase->execute(stringSql2);                                                        REQUIRE(result_.first == true);
+
+
+   pdatabase = new gd::database::sqlite::database_i("db03");
+   result_ = pdatabase->open({ {"file", stringDbName} });                                          REQUIRE(result_.first == true);
+   std::string stringSqlInsert = R"SQL(INSERT INTO TProduct(FProductType, FName) VALUES('Business', 'Visual');)SQL";
+
+   std::string stringSqlInsert2 = R"SQL(INSERT INTO TProduct_Sales(ProductK, FSales) VALUES(1, 100);)SQL";
+
+   result_ = pdatabase->execute(stringSqlInsert);                                                  REQUIRE(result_.first == true);
+
+   result_ = pdatabase->execute(stringSqlInsert2);                                                  REQUIRE(result_.first == true);
+
+   gd::database::cursor_i* pcursor = nullptr;
+   pdatabase->get_cursor(&pcursor);
+
+   result_ = pcursor->open("SELECT * FROM TProduct;");                                             REQUIRE(result_.first == true);
+   gd::table::dto::table tableProduct;
+   gd::database::to_table(pcursor, &tableProduct);
+   std::string stringResult;
+   gd::table::to_string(tableProduct, stringResult, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
+   std::cout << stringResult << "\n";
+
+   std::string stringSqlJoin = R"SQL(
+   SELECT TProduct.ProductK, TProduct.FProductType, TProduct.FName, TProduct_Sales.Product_SalesK, TProduct_Sales.FSales
+   FROM TProduct
+   INNER JOIN TProduct_Sales ON TProduct.ProductK = TProduct_Sales.ProductK)SQL";
+
+   result_ = pdatabase->execute(stringSqlJoin);                                                 REQUIRE(result_.first == true);
+
+   result_ = pcursor->open(stringSqlJoin);                                                        REQUIRE(result_.first == true);
+   gd::table::dto::table tableJoin;
+   gd::database::to_table(pcursor, &tableJoin);
+   std::string stringResult2;
+   gd::table::to_string(tableJoin, stringResult2, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
+   std::cout << stringResult2 << "\n";
+
+   pcursor->close();
+
+
+
+}
+
 TEST_CASE(" [sqlite] create2", "[sqlite]")
 {
    std::string stringSql2 = R"SQL(CREATE TABLE TCustomer (
