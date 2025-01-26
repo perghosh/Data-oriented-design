@@ -71,9 +71,16 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
          return response;
       };
 
+
+   auto const http_verb_ = request_.method();
+
    // ## Make sure we can handle the method
-   if( request_.method() != boost::beast::http::verb::get &&
-       request_.method() != boost::beast::http::verb::head) { return bad_request_("Unknown HTTP-method"); }
+   if( http_verb_ != boost::beast::http::verb::get && http_verb_ != boost::beast::http::verb::head) 
+   { 
+      return bad_request_("Unknown HTTP-method"); 
+   }
+
+   std::string_view stringTarget = request_.target();
 
    // ## Request path must be absolute and not contain "..".
    if( request_.target().empty() ||
