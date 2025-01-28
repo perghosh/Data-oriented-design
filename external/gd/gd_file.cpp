@@ -709,4 +709,37 @@ std::pair<int, std::string> file_add_reference_g(const std::string_view& stringF
 
 
 
+path& path::add(const std::string_view& stringName)
+{
+   std::string stringPath( stringName );
+   normalize_path_s(stringPath);
+   if ( has_separator() == false || stringPath[0] != m_iPathDivider_s ) m_stringPath += m_iPathDivider_s;
+   m_stringPath += stringPath;
+   return *this;
+}
+
+path path::concatenate(const path& path_)
+{
+   if ( has_separator() == false && path_.has_begin_separator() == false )
+   {
+      m_stringPath += m_iPathDivider_s;
+   }
+
+   m_stringPath += path_.m_stringPath;
+   return path( std::move( m_stringPath ), gd::types::tag_raw{} );
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief normalize path
+ * @param stringPath path to normalize
+ */
+void path::normalize_path_s(std::string& stringPath)
+{
+   char iReplace = m_iPathDivider_s == '/' ? '\\' : '/';
+   std::replace(stringPath.begin(), stringPath.end(), iReplace, m_iPathDivider_s );
+}
+
+
 _GD_FILE_END
+

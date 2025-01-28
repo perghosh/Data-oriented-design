@@ -359,6 +359,14 @@ namespace draw {
 
 /** ---------------------------------------------------------------------------
  * @brief Draw line on selected device
+ * @code
+ gd::console::device deviceTest( 5, 100 );      // 5 lines and 100 columns
+ deviceTest.create();                           // create device (allocates internal memory)
+ gd::console::draw::line line_( 0, 5,  0, 95 ); // generate line object
+ line_.print( &deviceTest, '*' );               // print line on device
+ auto stringOut = deviceTest.render( gd::console::tag_format_cli{} );  // render device to string
+ std::cout << stringOut;                        // print string to console
+ * @endcode
  * @param pdevice pointer to device line is drawn on
  * @param iCharacter character to draw
  */
@@ -383,6 +391,48 @@ void line::print(device* pdevice, char iCharacter) const
       if( iNext2 < (int)uDeltaColumn ) { iNext += uDeltaColumn; uR1 += 1; }
    }
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Draw line on selected device with specified color
+ * @code
+ gd::console::device deviceTest( 5, 100 );      // 5 lines and 100 columns 
+ deviceTest.create();                           // create device (allocates internal memory)
+ gd::console::draw::line line_( 0, 5,  0, 95 ); // generate line object
+ // ## print three lines with different colors
+ line_.print( &deviceTest, '*', gd::console::color_g("cyan1") );
+ line_.move_down();
+ line_.print( &deviceTest, '*', gd::console::color_g("gold1") );
+ line_.move_down();
+ line_.print( &deviceTest, '*', gd::console::color_g("grey35") );
+ auto stringOut = deviceTest.render( gd::console::tag_format_cli{} ); // render device to string
+ std::cout << stringOut;                        // print string to console
+ * @endcode
+ * @param pdevice pointer to device line is drawn on
+ * @param iCharacter character to draw
+ * @param uColor color for line
+ */
+void line::print(device* pdevice, char iCharacter, uint8_t uColor) const
+{
+   unsigned uR1 = m_uRow1, uR2 = m_uRow2, uC1 = m_uColumn1, uC2 = m_uColumn2;
+
+   order(uR1, uR2);
+   order(uC1, uC2);
+
+   unsigned uDeltaRow = uR2 - uR1;
+   unsigned uDeltaColumn = uC2 - uC1;
+
+   int iNext = uDeltaColumn - uDeltaRow;
+
+   while(uR1 != uR2 || uC1 != uC2)
+   {
+      pdevice->print( uR1, uC1, iCharacter, uColor );
+
+      int iNext2 = 2 * iNext;
+      if( iNext2 > -(int)uDeltaRow ) { iNext -= uDeltaRow; uC1 += 1; }
+      if( iNext2 < (int)uDeltaColumn ) { iNext += uDeltaColumn; uR1 += 1; }
+   }
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Draw line on selected device
