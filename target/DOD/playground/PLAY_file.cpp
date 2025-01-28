@@ -33,13 +33,21 @@ TEST_CASE( "[console] lines", "[console]" ) {
 
    using namespace gd::file;
 
-   path pathTest("C:\\Users\\Public\\Documents");
+   path pathTest("C:\\Users\\Public\\Documents");                                                  REQUIRE(pathTest.count() == 4);
+   pathTest += "my_text.txt";                                                                      REQUIRE(pathTest.count() == 5);
 
    auto pathTest2 = pathTest / ".." / "test2.txt";
 
    std::cout << pathTest2 << "\n";
    std::cout << pathTest2.filename() << "\n";
    std::cout << pathTest2.extension() << "\n";
+
+   pathTest2.erase( 1 );
+   std::cout << pathTest2 << "\n";
+
+   std::filesystem::path pathTest3("/1/2/3");
+   pathTest3 = std::filesystem::path("test") / "/gggg";
+   std::cout << pathTest3 << "\n";
 
 
    /*
