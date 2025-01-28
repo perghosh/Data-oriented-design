@@ -107,9 +107,10 @@ std::pair<int, std::string> file_add_reference_g(const std::string_view& stringF
 
 
 /**
- * \brief simplified path logic
+ * \brief simplified path logic, similar to std::filesystem::path object with some minor differenses
  *
  * Handle path values and make sure they are correctly formatted based on operating system.
+ * `path` tries to help with adding folder separators and removing double separators when building the path.
  */
 struct path
 {
@@ -117,7 +118,9 @@ struct path
    path() {}
    path( const char* pbszPath ): m_stringPath( pbszPath ) { normalize_path_s( m_stringPath ); }
    path( const std::string_view& stringPath ): m_stringPath( stringPath ) { normalize_path_s( m_stringPath ); }
-   path( std::string&& stringPath ): m_stringPath( std::move(stringPath) ) { normalize_path_s( m_stringPath ); }
+   explicit path( const std::string& stringPath ): m_stringPath( stringPath ) { normalize_path_s( m_stringPath ); }
+   explicit path( std::string&& stringPath ): m_stringPath( std::move(stringPath) ) { normalize_path_s( m_stringPath ); }
+   path( const std::string& stringPath, gd::types::tag_raw ): m_stringPath( stringPath ) {}
    path( std::string&& stringPath, gd::types::tag_raw ): m_stringPath( std::move(stringPath) ) {}
    // copy
    path(const path& o) { common_construct(o); }
@@ -125,17 +128,25 @@ struct path
    // assign
    path& operator=(const path& o) { common_construct(o); return *this; }
    path& operator=(path&& o) noexcept { common_construct(std::move(o)); return *this; }
-   operator std::string() const { return m_stringPath; }
-   operator const char* ( ) const { return m_stringPath.c_str(); }
-   operator bool() const { return m_stringPath.empty() == false; }
 
    ~path() {}
+
+   // ## operators to return path in different formats
+
+   operator std::string_view() const { return std::string_view( m_stringPath ); }
+   operator std::filesystem::path() const { return std::filesystem::path( m_stringPath ); }
+   operator const char*( ) const { return m_stringPath.c_str(); }
+
    // common copy
    void common_construct(const path& o) { m_stringPath = o.m_stringPath; }
    void common_construct(path&& o) noexcept { m_stringPath = std::move( o.m_stringPath ); }
 
    path& operator+=(const std::string_view& stringName) { return add(stringName); }
-   path operator/(const path& path_) { return concatenate(path_); }
+   path& operator+=(const std::initializer_list<std::string_view>& listName) { return add(listName); }
+   path& operator--( int ) { return erase_end(); }
+   path operator/(const path& path_) const { return concatenate(path_); }
+   path operator/(const std::string& v_) const { return concatenate(path(v_)); }
+   path operator/(const char* v_) const { return concatenate(path(v_)); }
 
    // ## methods -----------------------------------------------------------------
    /// Checks if path has filename
@@ -154,13 +165,30 @@ struct path
 
    /// Add folder or filename to path
    path& add(const std::string_view& stringName);
+   /// Add folders from list with folder names and maybe filename to path
+   path& add(const std::initializer_list<std::string_view>& listName);
+   /// Add folders from lest with folder names and maybe filename to path and for each folder call callback
+   std::pair<bool, std::string> add(const std::initializer_list<std::string_view>& listName, std::function< bool( const std::string& stringName )> callback_ );
+   /// Add folders from vector with folder names and maybe filename to path
+   path& add(const std::vector<std::string_view>& vectorName);
+   /// Add folders from vector with folder names and maybe filename to path and for each folder call callback
+   std::pair<bool, std::string> add(const std::vector<std::string_view>& vectorName, std::function< bool( const std::string& stringName )> callback_ );
    /// Concatenate two paths
-   path concatenate(const path& path_);
+   path concatenate(const path& path_) const;
 
    /// Return if path is empty
    bool empty() const { return m_stringPath.empty(); }
    /// Return path length
    std::size_t length() const { return m_stringPath.length(); }
+   /// return number of folders and file if found in path
+   std::size_t count() const;
+
+
+   /// Erase count number of folder/filename from end of path
+   path& erase( std::size_t uCount );
+   /// Erase folder or filename at end from path
+   path& erase_end();
+
 
    /// Remove filename from path
    path& remove_filename() { m_stringPath = std::filesystem::path(m_stringPath).remove_filename().string(); return *this; }

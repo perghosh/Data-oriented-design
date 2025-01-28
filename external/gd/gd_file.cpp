@@ -718,15 +718,146 @@ path& path::add(const std::string_view& stringName)
    return *this;
 }
 
-path path::concatenate(const path& path_)
+/** ---------------------------------------------------------------------------
+ * @brief Add names from list to path
+ * @param listName list of names to add to path
+ * @return reference to path
+ */
+path& path::add(const std::initializer_list<std::string_view>& listName)
 {
+   for ( auto it : listName )
+   {
+      add(it);
+   }
+   return *this;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Add names from list to path  
+ * @param listName list of names to add 
+ * @param callback_ for each added name, callback is called with current path, if callback returns false then adding is stopped
+ * @return true if all names were added, false and path if callback returned false
+ */
+std::pair<bool, std::string> path::add(const std::initializer_list<std::string_view>& listName, std::function<bool(const std::string& stringName)> callback_)
+{
+   for ( auto it : listName )
+   {
+      add(it);
+      if ( callback_(m_stringPath) == false ) return { false, m_stringPath };
+   }
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Add names from vector to path
+ * @param vectorName vector of names to add to path
+ * @return reference to path
+ */
+path& path::add(const std::vector<std::string_view>& vectorName)
+{
+   for ( auto it : vectorName )
+   {
+      add(it);
+   }
+   return *this;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Add names from list to path  
+ * @param vectorName vector of names to add to path
+ * @param callback_ for each added name, callback is called with current path, if callback returns false then adding is stopped
+ * @return true if all names were added, false and path if callback returned false
+ */
+std::pair<bool, std::string> path::add(const std::vector<std::string_view>& vectorName, std::function<bool(const std::string& stringName)> callback_)
+{
+   for ( auto it : vectorName )
+   {
+      add(it);
+      if ( callback_(m_stringPath) == false ) return { false, m_stringPath };
+   }
+   return { true, "" };
+}
+
+
+
+/** ---------------------------------------------------------------------------
+ * @brief  Concatenate two paths and return new path
+ * @param path_ path to concatenate with current path
+ * @return path new path with concatenated paths
+ */
+path path::concatenate(const path& path_) const
+{
+   std::string stringNewPath = m_stringPath;
    if ( has_separator() == false && path_.has_begin_separator() == false )
    {
-      m_stringPath += m_iPathDivider_s;
+      stringNewPath += m_iPathDivider_s;
    }
 
-   m_stringPath += path_.m_stringPath;
-   return path( std::move( m_stringPath ), gd::types::tag_raw{} );
+   stringNewPath += path_.m_stringPath;
+   return path( std::move( stringNewPath ), gd::types::tag_raw{} );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief count number of folder and file in path
+ * @code 
+ * path pathTest("C:\\Users\\Public\\Documents");
+ * assert( pathTest.count() == 4 );
+ * pathTest += "my_text.txt";
+ * assert( pathTest.count() == 5 );
+ * @endcode
+ * @return size_t number of folders and files in path
+ */
+std::size_t path::count() const
+{
+   if( empty() == true ) return 0;
+   std::size_t uCount = 1;
+   for( auto it = m_stringPath.begin(), itEnd = m_stringPath.end(); it != itEnd; it++ )
+   {
+      if ( *it == m_iPathDivider_s ) uCount++;
+   }
+   return uCount;
+}
+
+/** ---------------------------------------------------------------------------
+* @brief Remove count number of file/folders from end
+* @return reference to path
+*/
+path& path::erase( std::size_t uCount )
+{
+   auto position_ = m_stringPath.rfind( m_iPathDivider_s );
+
+   const char* pbsz_ = m_stringPath.c_str();
+   const char* pbszPosition = pbsz_ + m_stringPath.length();
+
+   while( pbszPosition > pbsz_ && uCount > 0 )
+   {
+      pbszPosition--;
+      if( *pbszPosition == m_iPathDivider_s ) uCount--;
+   }
+
+   std::size_t uLength = pbszPosition - pbsz_;                                                     assert( uLength < 0x1000 ); // realistic
+
+   m_stringPath = m_stringPath.substr( 0, uLength );
+
+   return *this;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Erace last part of path
+ * @return reference to path
+ */
+path& path::erase_end()
+{
+   auto position_ = m_stringPath.rfind( m_iPathDivider_s );
+   if( position_ != std::string::npos )
+   {
+      m_stringPath = m_stringPath.substr( 0, position_ );
+      return *this;
+   }
+
+   clear();
+   return *this;
 }
 
 
