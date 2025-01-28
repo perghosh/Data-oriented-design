@@ -70,6 +70,10 @@ struct tag_pair {};           ///< stl std::pair object is used in some form
 struct tag_tuple {};          ///< stl std::tuple object is used in some form
 struct tag_vector {};         ///< stl std::vector object is used in some form
 
+// ----------------------------------------------------------------------------
+// ## operation related tag dispatchers
+struct tag_raw {};            ///< do not perform any smart operations, just raw data
+
 
 // ----------------------------------------------------------------------------
 // ## C++ related tag dispatchers, type of c++ development logic

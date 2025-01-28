@@ -382,7 +382,8 @@ consteval uint8_t color_g( const std::string_view& stringColor )
    else if( stringColor == "khaki3" )              return enumColor::eColorKhaki3;
    else if( stringColor == "lightcoral" )          return enumColor::eColorLightCoral;
    else if( stringColor == "lightcyan1bis" )       return enumColor::eColorLightCyan1Bis;
-   else if( stringColor == "lightcyan3" )          return enumColor::eColorLightCyan3;
+   
+   if( stringColor == "lightcyan3" )          return enumColor::eColorLightCyan3;
    else if( stringColor == "lightgoldenrod1" )     return enumColor::eColorLightGoldenrod1;
    else if( stringColor == "lightgoldenrod2" )     return enumColor::eColorLightGoldenrod2;
    else if( stringColor == "lightgoldenrod2bis" )  return enumColor::eColorLightGoldenrod2Bis;
