@@ -1,0 +1,36 @@
+
+/*
+
+## base classes
+
+1. **primary**
+2. **secondary**
+3. **success**
+4. **danger**
+5. **warning**
+6. **info**
+7. **light**
+8. **dark**
+*/
+
+
+:root {
+   /* Background and Text Colors */
+   --color-primary: #ffffff; /* White text for primary background */
+   --color-secondary: #ffffff; /* White text for secondary background */
+   --color-success: #ffffff; /* White text for success background */
+   --color-danger: #ffffff; /* White text for danger background */
+   --color-warning: #000000; /* Black text for warning background */
+   --color-info: #000000; /* Black text for info background */
+   --color-light: #ffffff; /* Black text for light background */
+   --color-dark: #000000; /* White text for dark background */
+   /* Background Colors (Green Variants) */
+   --background-primary: #28a745; /* Primary (Green) */
+   --background-secondary: #155724; /* Secondary (Dark Green) */
+   --background-success: #32CD32; /* Success (Lime Green) */
+   --background-danger: #dc3545; /* Danger (Red) */
+   --background-warning: #ffc107; /* Warning (Yellow) */
+   --background-info: #90EE90; /* Info (Light Green) */
+   --background-light: #98FB98; /* Light (Pale Green) */
+   --background-dark: #228B22; /* Dark (Forest Green) */
+}

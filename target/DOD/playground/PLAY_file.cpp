@@ -86,3 +86,35 @@ TEST_CASE( "[console] lines", "[console]" ) {
    */
 
 }
+
+using namespace gd::file;
+TEST_CASE("Path Constructors and Assignment", "[path]") {
+   { path p; REQUIRE(p.empty()); }
+   { path p("test/path"); REQUIRE(p == "test/path"); }
+   { std::string_view sv = "test/path"; path p(sv); REQUIRE(p == "test/path"); }
+   { std::string s = "test/path"; path p(s); REQUIRE(p == "test/path"); }
+   { std::string s = "test/path"; path p(std::move(s)); REQUIRE(p == "test/path"); }
+   { path p1("test/path"); path p2(p1); REQUIRE(p2 == "test/path"); }
+   { path p1("test/path"); path p2(std::move(p1)); REQUIRE(p2 == "test/path"); }
+   { path p1("test/path"); path p2; p2 = p1; REQUIRE(p2 == "test/path"); }
+   { path p1("test/path"); path p2; p2 = std::move(p1); REQUIRE(p2 == "test/path"); }
+}
+
+TEST_CASE("Path Methods", "[path]") {
+   { path p("test/path/file.txt"); REQUIRE(p.has_filename()); }
+   { path p("test/path/"); REQUIRE(p.has_separator()); }
+   { path p("/test/path"); REQUIRE(p.has_begin_separator()); }
+   { path p("test/path/file.txt"); REQUIRE(p.filename().string() == "file.txt"); }
+   { path p("test/path/file.txt"); REQUIRE(p.extension().string() == ".txt"); }
+   { path p("test"); p.add("path"); REQUIRE(p == "test/path"); }
+   { path p("test"); p.add({"path", "to", "file"}); REQUIRE(p == "test/path/to/file"); }
+   { path p("test"); std::vector<std::string_view> vec = {"path", "to", "file"}; p.add(vec); REQUIRE(p == "test/path/to/file"); }
+   { path p1("test"); path p2("path"); path p3 = p1 / p2; REQUIRE(p3 == "test/path"); }
+   { path p1("test"); path p2 = p1 / "path"; REQUIRE(p2 == "test/path"); }
+   { path p("test/path"); p.erase_end(); REQUIRE(p == "test"); }
+   { path p("test/path/file.txt"); p.remove_filename(); REQUIRE(p == "test/path/"); }
+   { path p("test/path/file.txt"); p.replace_filename("newfile.txt"); REQUIRE(p == "test/path/newfile.txt"); }
+   { path p("test/path/file.txt"); p.replace_extension(".md"); REQUIRE(p == "test/path/file.md"); }
+   { path p("test/path"); p.clear(); REQUIRE(p.empty()); }
+   { path p("test/path"); std::string result; for (auto it = p.begin(); it != p.end(); ++it) { result += *it; } REQUIRE(path(result) == "test/path"); }
+}
