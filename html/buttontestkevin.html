@@ -3,6 +3,7 @@
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link href="variables-soft-candy.css" rel="stylesheet" />
    <title>Button Test</title>
 
    <style>
@@ -13,55 +14,57 @@
          --secondary-color: #2ecc71;
          --font-size: 16px;
          --padding: 10px;
-         /* Background and Text Colors */
-         --color-primary: #0d6efd; /* Bootstrap's primary color (blue) */
-         --color-secondary: #6c757d; /* Bootstrap's secondary color (gray) */
-         --color-success: #198754; /* Bootstrap's success color (green) */
-         --color-danger: #dc3545; /* Bootstrap's danger color (red) */
-         --color-warning: #ffc107; /* Bootstrap's warning color (yellow) */
-         --color-info: #0dcaf0; /* Bootstrap's info color (light blue) */
-         --color-light: #f8f9fa; /* Bootstrap's light color (light gray) */
-         --color-dark: #212529; /* Bootstrap's dark color (dark gray) */
-         /* Background Colors (Bootstrap's Default Colors) */
-         --background-primary: #0d6efd; /* Primary (Blue) */
-         --background-secondary: #6c757d; /* Secondary (Gray) */
-         --background-success: #198754; /* Success (Green) */
-         --background-danger: #dc3545; /* Danger (Red) */
-         --background-warning: #ffc107; /* Warning (Yellow) */
-         --background-info: #0dcaf0; /* Info (Light Blue) */
-         --background-light: #f8f9fa; /* Light (Light Gray) */
-         --background-dark: #212529; /* Dark (Dark Gray) */
+
       }   
-       .panel { background-color: burlywood; padding: 5px; }
+      .body { font-family: Arial;}
 
-       .panel h1 { font-family: Arial; margin-left: 25px; }
-
+       .panel { background-color: var(--background-primary); padding: 5px; }
+       .panel h1 { margin-left: 25px; }
        .button { margin: 10px 10px; padding: var(--padding); }
       /*.button.active { background-color: var(--background-disabled); } */
 
    </style>
 
 </head>
-<body>
+<body class="body">
    <div class="panel"> <h1>hej</h1> </div>
-   <div> <button type="button" class="button" id="idButton">Klicka</button> </div>
+   <div>
+      <nav id="idButtons">
+         <button type="button" class="button" id="idButton1">Klicka</button>
+         <button type="button" class="button" id="idButton2">Klicka2</button>
+      
+      </nav>
+   
+   </div>
 
     
 
    <script>
-      function Button( button ) 
+      function Button( container ) 
       {
-         const eButton = button;
+         const eContainer = container;
 
-         eButton.addEventListener("click", function() {
-            alert("Hej");
+         eContainer.addEventListener("click", function(oEvent) {
+            const eTarget = oEvent.target;
+            const eTextContent = eTarget.textContent;
+ 
+            const eButton1 = document.getElementById("idButton1");
+            const eButton2 = document.getElementById("idButton2");
+            if(eTarget.classList.contains('button') && eTarget.id === eButton2.id) 
+            {
+               eButton1.textContent = "hej";
+            }
+            else if(eTarget.classList.contains('button') && eTarget.id === eButton1.id) 
+            {
+               alert("Hej");
+            }     
          });
       }
 
       function Initialize() 
       {
-         const eButton = document.getElementById("idButton");
-         Button(eButton);
+         const eContainer = document.getElementById("idButtons");
+         Button(eContainer);
       }
 
       document.addEventListener("DOMContentLoaded", function() {
