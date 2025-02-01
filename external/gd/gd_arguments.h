@@ -751,6 +751,7 @@ public:
       return append_argument(pairArgument.first, pairArgument.second);
    }
    arguments& append_argument(const std::string_view stringName, const std::string_view& stringValue, tag_parse_type );
+   arguments& append_argument(const std::string_view& stringName, const std::string& stringValue);
 
    arguments& append_argument( const std::initializer_list< std::pair<std::string_view, gd::variant_view> >& vectorArgument, tag_view );
    arguments& append_argument( const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorArgument, tag_view );

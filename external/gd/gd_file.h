@@ -112,6 +112,14 @@ std::pair<int, std::string> file_add_reference_g(const std::string_view& stringF
  *
  * Handle path values and make sure they are correctly formatted based on operating system.
  * `path` tries to help with adding folder separators and removing double separators when building the path.
+ * It will automatically normalize the path to work for the active operating system.
+ * 
+ * *Create path object count number of folders*
+ * @code
+ * gd::file::path pathTest("C:\\Users\\Public\\Documents"); REQUIRE(pathTest.count() == 4);
+ * pathTest += "my_text.txt"; REQUIRE(pathTest.count() == 5);
+ * @endcode
+ * 
  */
 struct path
 {
@@ -121,6 +129,7 @@ struct path
    path( const std::string_view& stringPath ): m_stringPath( stringPath ) { normalize_path_s( m_stringPath ); }
    explicit path( const std::string& stringPath ): m_stringPath( stringPath ) { normalize_path_s( m_stringPath ); }
    explicit path( std::string&& stringPath ): m_stringPath( std::move(stringPath) ) { normalize_path_s( m_stringPath ); }
+   explicit path( const std::filesystem::path& path_ ): m_stringPath( path_.string() ) { normalize_path_s( m_stringPath ); }
    path( const std::string& stringPath, gd::types::tag_raw ): m_stringPath( stringPath ) {}
    path( std::string&& stringPath, gd::types::tag_raw ): m_stringPath( std::move(stringPath) ) {}
    // copy
@@ -142,6 +151,8 @@ struct path
    void common_construct(const path& o) { m_stringPath = o.m_stringPath; }
    void common_construct(path&& o) noexcept { m_stringPath = std::move( o.m_stringPath ); }
 
+   bool operator==(const path& o) const { return m_stringPath == o.m_stringPath; }
+
    path& operator+=(const std::string_view& stringName) { return add(stringName); }
    path& operator+=(const std::initializer_list<std::string_view>& listName) { return add(listName); }
    path& operator--( int ) { return erase_end(); }
@@ -159,6 +170,8 @@ struct path
 
    /// Get path as string
    std::string string() const { return m_stringPath; }
+   /// Get path as string_view
+   std::string_view string_view() const { return std::string_view( m_stringPath ); }
    /// Get filename from path
    path filename() const { return path(std::filesystem::path(m_stringPath).filename().string()); }
    /// Get file extension from path if any
@@ -219,8 +232,29 @@ struct path
 
    // ## free functions ----------------------------------------------------------
    static void normalize_path_s( std::string& stringPath);
-
 };
+
+// ## global operators to compare path with string, string_view and char*
+
+inline bool operator==(const path& p, const std::string& s) { return p == path(s); }
+inline bool operator==(const std::string& s, const path& p) { return path(s) == p; }
+inline bool operator!=(const path& p, const std::string& s) { return !(p == s); }
+inline bool operator!=(const std::string& s, const path& p) { return !(s == p); }
+inline bool operator==(const path& p, std::string_view s) { return p == path(s); }
+inline bool operator==(std::string_view s, const path& p) { return path(s) == p; }
+inline bool operator!=(const path& p, std::string_view s) { return !(p == s); }
+inline bool operator!=(std::string_view s, const path& p) { return !(s == p); }
+inline bool operator==(const path& p, const char* s) { return p == path(s); }
+inline bool operator==(const char* s, const path& p) { return path(s) == p; }
+inline bool operator!=(const path& p, const char* s) { return !(p == s); }
+inline bool operator!=(const char* s, const path& p) { return !(s == p); }
+
+// ## global operators to compare path with std::filesystem::path
+
+inline bool operator==(const path& p, const std::filesystem::path& p_) { return p == path(p_); }
+inline bool operator==(const std::filesystem::path& p_, const path& p) { return path(p_) == p; }
+inline bool operator!=(const path& p, const std::filesystem::path& p_) { return !(p == p_); }
+inline bool operator!=(const std::filesystem::path& p_, const path& p) { return !(p_ == p); }
 
 
 _GD_FILE_END

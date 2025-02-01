@@ -1170,6 +1170,7 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
    return append(stringName, uType, pData, argumentValue.length());
 }
 
+/// Add argument named value and try to convert string to proper type
 arguments& arguments::append_argument(const std::string_view stringName, const std::string_view& stringValue, tag_parse_type )
 {
    gd::variant_view v_ = stringValue;
@@ -1187,6 +1188,12 @@ arguments& arguments::append_argument(const std::string_view stringName, const s
    else { append_argument( stringName, v_ ); }
 
    return *this;
+}
+
+/// Add argument named value from string
+arguments& arguments::append_argument(const std::string_view& stringName, const std::string& stringValue)
+{
+   return append_argument(stringName, std::string_view(stringValue));
 }
 
 arguments& arguments::append_argument( const std::initializer_list< std::pair<std::string_view, gd::variant_view> >& vectorArgument, tag_view )

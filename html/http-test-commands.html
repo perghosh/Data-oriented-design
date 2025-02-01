@@ -4,46 +4,45 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>sample</title>
+   <link rel="stylesheet" href="variables-blue-fog.css">
    <style>
       :root {
-         --background-active: #ccc;
-         --background-disabled: #f1f1f1;
-         --primary-color: #3498db;
-         --secondary-color: #2ecc71;
-         --font-size: 16px;
          --padding: 10px;
-         /* Background and Text Colors */
-         --color-primary: #0d6efd; /* Bootstrap's primary color (blue) */
-         --color-secondary: #6c757d; /* Bootstrap's secondary color (gray) */
-         --color-success: #198754; /* Bootstrap's success color (green) */
-         --color-danger: #dc3545; /* Bootstrap's danger color (red) */
-         --color-warning: #ffc107; /* Bootstrap's warning color (yellow) */
-         --color-info: #0dcaf0; /* Bootstrap's info color (light blue) */
-         --color-light: #f8f9fa; /* Bootstrap's light color (light gray) */
-         --color-dark: #212529; /* Bootstrap's dark color (dark gray) */
-         /* Background Colors (Bootstrap's Default Colors) */
-         --background-primary: #0d6efd; /* Primary (Blue) */
-         --background-secondary: #6c757d; /* Secondary (Gray) */
-         --background-success: #198754; /* Success (Green) */
-         --background-danger: #dc3545; /* Danger (Red) */
-         --background-warning: #ffc107; /* Warning (Yellow) */
-         --background-info: #0dcaf0; /* Info (Light Blue) */
-         --background-light: #f8f9fa; /* Light (Light Gray) */
-         --background-dark: #212529; /* Dark (Dark Gray) */
       }      
       .view-tabs {  display: flex; flex-direction: column; }
-      .view-tabs .navigation {  display: flex; border-bottom: 1px solid #ccc; }
-      .view-tabs .navigation .button { background-color: var(--background-disabled); border: none; cursor: pointer; outline: none; padding: 10px 20px; }
-      .view-tabs .navigation .button.active { background-color: var(--background-active); }
-      .view-tabs .content { border-top: none; display: none; padding: 20px; border: 1px solid var(--background-active); }
+      .view-tabs .navigation {  display: flex; }
+      .view-tabs .navigation .button { background-color: var(--background-disabled); color: var(--color-disabled); border: none; cursor: pointer; outline: none; padding: 10px 20px; }
+      .view-tabs .navigation .button.active { background-color: var(--background-active); color: var(--color-active); }
+      .view-tabs .content { background-color: var(--background-active); color: var( --color-active ); display: none; padding: 20px; margin: 0px; border: 1px solid var(--background-active); }
       .view-tabs .content.active { display: block; }
 
 
-      .body { background-color: white; font-family: Verdana, Geneva, Tahoma, sans-serif; padding: 1em; }
+      .body { background-color: white; font-family: Verdana, Geneva, Tahoma, sans-serif; padding: 1em; font-size: 13pt; }
       .panel-primary { background-color: white; border: 1px solid darkgrey; margin: 2px; padding: 5px;  }
       .panel-secondary { background-color: lightgrey; border: 1px solid darkgrey; margin: 2px; padding: 5px;  }
       .text-primary { color: #1a1a1a; }
       .text-secondary { color: #333333; }
+
+      .text-primary { color: var(--color-primary); }
+      .text-secondary { color: var(--color-secondary); }
+      .text-success { color: var(--color-success); }
+      .text-danger { color: var(--color-danger); }
+      .text-warning { color: var(--color-warning); }
+      .text-info { color: var(--color-info); }
+      .text-light { color: var(--color-light); }
+      .text-dark { color: var(--color-dark); }
+      .background-primary { background-color: var(--background-primary); }
+      .background-secondary { background-color: var(--background-secondary); }
+      .background-success { background-color: var(--background-success); }
+      .background-danger { background-color: var(--background-danger); }
+      .background-warning { background-color: var(--background-warning); }
+      .background-info { background-color: var(--background-info); }
+      .background-light { background-color: var(--background-light); }
+      .background-dark { background-color: var(--background-dark); }
+      .sample-div {
+         padding: 20px;
+         margin: 10px 0;
+      }
   </style>
 </head>
 <body class="body">
@@ -68,9 +67,9 @@
 
    <div id="idTestCommand" class="view-tabs">
       <nav class="navigation">
-          <button class="button active" title="Different user operations">User</button>
-          <button class="button" title="Commands related to database operations">Database</button>
-          <button class="button" title="Manage queries commands">Query</button>
+          <span class="button active" title="Different user operations">User</span>
+          <span class="button" title="Commands related to database operations">Database</span>
+          <span class="button" title="Manage queries commands">Query</span>
       </nav>
       <section class="content active">
           <h2>Different user operations</h2>
@@ -85,6 +84,27 @@
           <p>This is the content of Tab 3.</p>
       </section>
    </div>
+
+   <hr />
+
+   <div class="sample-div background-primary text-primary">Primary Background with Primary Text</div>
+   <div class="sample-div background-secondary text-secondary">Secondary Background with Secondary Text</div>
+   <div class="sample-div background-success text-success">Success Background with Success Text</div>
+   <div class="sample-div background-danger text-danger">Danger Background with Danger Text</div>
+   <div class="sample-div background-warning text-warning">Warning Background with Warning Text</div>
+   <div class="sample-div background-info text-info">Info Background with Info Text</div>
+   <div class="sample-div background-light text-light">Light Background with Light Text</div>
+   <div class="sample-div background-dark text-dark">Dark Background with Dark Text</div>
+
+   <div class="sample-div background-primary text-light">Primary Background with Light Text</div>
+   <div class="sample-div background-secondary text-light">Secondary Background with Light Text</div>
+   <div class="sample-div background-success text-light">Success Background with Light Text</div>
+   <div class="sample-div background-danger text-light">Danger Background with Light Text</div>
+   <div class="sample-div background-warning text-dark">Warning Background with Dark Text</div>
+   <div class="sample-div background-info text-dark">Info Background with Dark Text</div>
+   <div class="sample-div background-light text-dark">Light Background with Dark Text</div>
+   <div class="sample-div background-dark text-light">Dark Background with Light Text</div>
+
 
 
   <script>
@@ -146,7 +166,7 @@ function VIEW_CreateTabs( container_ )
       const sElement = eTarget.tagName; // The tag name of the clicked element
 
       // ## if clicked on tab button then remove all active classes and set active to clicked button
-      if( sElement === "BUTTON" && eTarget.classList.contains('button') )
+      if( eTarget.classList.contains('button') )
       {
          const eNav = eTarget.parentElement; 
          Array.from(eNav.children).forEach( function(eChild) {
