@@ -109,7 +109,7 @@ std::pair<bool, std::string> command::add_querystring( const gd::variant_view& v
 /** ---------------------------------------------------------------------------
  * @brief Wrapper to extract command and arguments from url
  * @param stringQueryString url formated string used to extract command and arguments from
- * @return 
+ * @return std::vector<std::string_view> returns vector with command parts
  */
 std::vector<std::string_view> command::add_querystring(const std::string_view& stringQueryString) 
 {
@@ -531,25 +531,15 @@ std::pair<bool, std::string> server::get( const std::string_view* pstringCommand
 {
    if( pargumentsParameter != nullptr && pargumentsParameter->empty() == false )
    {
-      {
-         auto s0 = (*pargumentsParameter)["query"];
-         auto s = s0.as_string();
-         std::string stringtest( s );
-      }
       pcommand->add_arguments(  ePriorityStack, pargumentsParameter );
-      {
-         auto s0 = pcommand->get_argument( "query" );
-         auto s = s0.as_string();
-         std::string stringtest( s );
-      }
    }
 
-   auto vectorCommands = gd::utf8::split( *pstringCommandList, m_uSplitChar );
-   for( auto itCommand : vectorCommands )
+   auto vectorCommands = gd::utf8::split(*pstringCommandList, m_uSplitChar);   // extract commands from string that are separated by `m_uSplitChar`. Each command is then formated similar to url query string
+   for( auto stringCommand : vectorCommands )
    {
       for( auto itCallback : m_vectorCallback )
       {
-         auto result_ = itCallback( itCommand, pcommand, presponse );
+         auto result_ = itCallback(stringCommand, pcommand, presponse);        // call callback with command and response object
          if( result_.first == false ) 
          {
             add_error( result_.second );

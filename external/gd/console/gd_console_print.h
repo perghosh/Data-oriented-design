@@ -214,6 +214,7 @@ public:
 
    // ## printing, place text in device area
    void print( unsigned uRow, unsigned uColumn, char ch_ );
+   void print( unsigned uRow, unsigned uColumn, char icharacter, uint8_t uColor );
    void print( const rowcolumn& RC, char ch_ ) { print( RC.row(), RC.column(), ch_ ); }
    void print( unsigned uRow, unsigned uColumn, const std::string_view& stringText );
    void print( const rowcolumn& rowcolumn_, const std::string_view& stringText ) { print( rowcolumn_.row(), rowcolumn_.column(), stringText ); }
@@ -343,6 +344,13 @@ inline void device::print(unsigned uRow, unsigned uColumn, char ch_) {          
    auto* pposition_ = offset( uRow, uColumn );
    *pposition_ = ch_;
    if( m_iColor != -1 ) { *offset_color( uRow, uColumn ) = (uint8_t)m_iColor; }
+}
+
+/// print character at position for row and column and set color
+inline void device::print(unsigned uRow, unsigned uColumn, char icharacter, uint8_t uColor) {      assert(m_puDrawBuffer != nullptr); assert(uRow < m_uRowCount); assert(uColumn < m_uColumnCount);
+   auto* pposition_ = offset(uRow, uColumn);
+   *pposition_ = icharacter;
+   *offset_color(uRow, uColumn) = uColor;
 }
 
 /// print text at position for row and column
@@ -527,6 +535,7 @@ struct line
    line& move_right( unsigned uDelta ) { m_uColumn1 += uDelta ; m_uColumn1 += uDelta; return *this; }
 
    void print( device* pdevice, char iCharacter ) const;
+   void print( device* pdevice, char iCharacter, uint8_t uColor) const;
    void print( device* pdevice ) const { print( pdevice, m_iCharacter ); }
    unsigned print( device* pdevice, char iBegin, char iMiddle, char iEnd  ) const;
    unsigned print( device* pdevice, const std::array<char,3>& array_ ) const { return print( pdevice, array_[0], array_[1], array_[2] ); }
