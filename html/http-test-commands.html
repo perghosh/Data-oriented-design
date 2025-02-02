@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>sample</title>
+   <link id="idCssVariable" rel="stylesheet" href="variables-blue-fog.css">
+   <style>
+      :root {
+         --padding: 10px;
+      }      
+      .view-tabs {  display: flex; flex-direction: column; }
+      .view-tabs .navigation {  display: flex; }
+      .view-tabs .navigation .button { background-color: var(--background-disabled); color: var(--color-disabled); border: none; cursor: pointer; outline: none; padding: 10px 20px; }
+      .view-tabs .navigation .button.active { background-color: var(--background-active); color: var(--color-active); }
+      .view-tabs .content { background-color: var(--background-active); color: var( --color-active ); display: none; padding: 20px; margin: 0px; border: 1px solid var(--background-active); }
+      .view-tabs .content.active { display: block; }
+
+
+      .body { background-color: white; font-family: Verdana, Geneva, Tahoma, sans-serif; padding: 1em; font-size: 13pt; }
+      .panel-primary { background-color: white; border: 1px solid darkgrey; margin: 2px; padding: 5px;  }
+      .panel-secondary { background-color: lightgrey; border: 1px solid darkgrey; margin: 2px; padding: 5px;  }
+      .text-primary { color: #1a1a1a; }
+      .text-secondary { color: #333333; }
+
+      .text-primary { color: var(--color-primary); }
+      .text-secondary { color: var(--color-secondary); }
+      .text-success { color: var(--color-success); }
+      .text-danger { color: var(--color-danger); }
+      .text-warning { color: var(--color-warning); }
+      .text-info { color: var(--color-info); }
+      .text-light { color: var(--color-light); }
+      .text-dark { color: var(--color-dark); }
+      .background-primary { background-color: var(--background-primary); }
+      .background-secondary { background-color: var(--background-secondary); }
+      .background-success { background-color: var(--background-success); }
+      .background-danger { background-color: var(--background-danger); }
+      .background-warning { background-color: var(--background-warning); }
+      .background-info { background-color: var(--background-info); }
+      .background-light { background-color: var(--background-light); }
+      .background-dark { background-color: var(--background-dark); }
+      .sample-div {
+         padding: 20px;
+         margin: 10px 0;
+      }
+  </style>
+</head>
+
+<body class="body">
+
+   <div id="idToaster" class="toaster"></div>
+   <div class="">
+      <div class="panel-secondary text-secondary">
+         <h1>Select theme</h1>
+            <p>
+               <select id="idSelectTheme" onchange="ChangeTheme()">
+                  <option value="variables-blue-fog.css">Blue Fog</option>
+                  <option value="variables-candy-light.css">Candy light</option>
+                  <option value="variables-clay-sea.css">Clay sea</option>
+                  <option value="variables-green.css">Green</option>
+                  <option value="variables-grey.css">Grey</option>
+                  <option value="variables-red-black.css">Red black</option>
+                  <option value="variables-soft-candy.css">Soft candy</option>
+                  <option value="variables-green-food.css">Green food</option>
+               </select>
+            </p>
+         <p>
+            Test commands:
+            <button onclick="Clear()">Clear output</button>
+            <button onclick="Print(CreateUUID())">Test to generate UUID value</button>
+            <button onclick="TEST_Toaster()">Test toaster</button>
+         </p>
+      </div>
+   </div>
+
+   <div class="panel-secondary text-secondary">
+      <h1>Output panel</h1>
+      <p id="idOutput">
+      </p>
+   </div>
+
+   <hr>
+
+   <div id="idTestCommand" class="view-tabs">
+      <nav class="navigation">
+         <span class="button active" title="Different user operations">User</span>
+         <span class="button" title="Commands related to database operations">Database</span>
+         <span class="button" title="Manage queries commands">Query</span>
+      </nav>
+      <section class="content active">
+         <h2>Different user operations</h2>
+         <p>This is the content of Tab 1.</p>
+      </section>
+      <section class="content">
+         <h2>Commands related to database operations</h2>
+         <p>This is the content of Tab 2.</p>
+      </section>
+      <section class="content">
+         <h2>Manage queries commands</h2>
+         <p>This is the content of Tab 3.</p>
+      </section>
+   </div>
+
+   <hr />
+
+   <div class="sample-div background-primary text-primary">Primary Background with Primary Text</div>
+   <div class="sample-div background-secondary text-secondary">Secondary Background with Secondary Text</div>
+   <div class="sample-div background-success text-success">Success Background with Success Text</div>
+   <div class="sample-div background-danger text-danger">Danger Background with Danger Text</div>
+   <div class="sample-div background-warning text-warning">Warning Background with Warning Text</div>
+   <div class="sample-div background-info text-info">Info Background with Info Text</div>
+   <div class="sample-div background-light text-light">Light Background with Light Text</div>
+   <div class="sample-div background-dark text-dark">Dark Background with Dark Text</div>
+
+   <div class="sample-div background-primary text-light">Primary Background with Light Text</div>
+   <div class="sample-div background-secondary text-light">Secondary Background with Light Text</div>
+   <div class="sample-div background-success text-light">Success Background with Light Text</div>
+   <div class="sample-div background-danger text-light">Danger Background with Light Text</div>
+   <div class="sample-div background-warning text-dark">Warning Background with Dark Text</div>
+   <div class="sample-div background-info text-dark">Info Background with Dark Text</div>
+   <div class="sample-div background-light text-dark">Light Background with Dark Text</div>
+   <div class="sample-div background-dark text-light">Dark Background with Light Text</div>
+
+
+
+   <script>
+
+      /// change theme based on selected value in drowdown with themes
+      function ChangeTheme() 
+      {
+         const sTheme = document.getElementById('idSelectTheme').value;
+         if(sTheme) { document.getElementById('idCssVariable').href = sTheme; }
+      }
+
+      // ----------------------------------------------------------------------------
+      // Create a UUID and return it as a string
+      function CreateUUID() {
+         let sUuid = '';
+         const sTemplate = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+
+         sUuid = sTemplate.replace(/[xy]/g, function(sCharacter) {
+            const iRandom = Math.random() * 16 | 0;
+            const iValue = sCharacter === 'x' ? iRandom : (iRandom & 0x3 | 0x8);
+            return iValue.toString(16);
+         });
+
+         return sUuid;
+      }
+
+      // ----------------------------------------------------------------------------
+      // Print a text to the output panel
+      function Print(sText) {
+         document.getElementById('idOutput').innerHTML += sText + '<br /><hr />';
+      }
+
+      // ----------------------------------------------------------------------------
+      // Clear the output panel
+      function Clear() {
+         document.getElementById('idOutput').innerHTML = "";
+      }
+
+      function TEST_ToasterCallback( sType, data_ ) 
+      {
+         let sMessage = sType + " - " + data_.message;
+         Print(sMessage);
+      }
+
+      function TEST_Toaster()
+      {
+         // ## only one toaster is created and attached to function object to be kept in memory
+         if( !TEST_Toaster.toaster_s ) {
+            const toaster = new CToaster({ duration: 5000, callback: TEST_ToasterCallback });
+            toaster.Create(".toaster", "width: 500px;");
+            TEST_Toaster.toaster_s = toaster;
+         }
+
+         let toaster = TEST_Toaster.toaster_s; // get the toaster from the function object
+
+         setTimeout(() => { toaster.Show('This is an info message!', "info", 100); }, 0);
+         setTimeout(() => { toaster.Show('Success! Operation completed.', 'success'); }, 2000);
+         setTimeout(() => { toaster.Show('Warning: Something might be wrong.', 'warning'); }, 3000);
+         setTimeout(() => { toaster.Show('Error: Something went wrong!', 'danger', 1000); }, 4000);
+         setTimeout(() => { toaster.Show('Success! Operation completed.', 'success'); }, 5000);
+
+      }
+
+      // ----------------------------------------------------------------------------
+      // Create tabs for a container
+      // **Important element data used to create tabs container**
+      // .view-tabs - the tabs container
+      //    .navigation - contains all buttons
+      //       .button - each button
+      //    .content - contains all content pages
+      function VIEW_CreateTabs(container_) {
+         if(typeof container_ === "string") {
+            container_ = document.getElementById(container_);
+         }
+
+         // Check if the container is valid
+         if(!(container_ instanceof HTMLElement)) { console.assert(false, "Invalid container"); return; }
+
+         const eContainer = container_;
+
+         // ## Manage all tabs commands in tabs container
+         eContainer.addEventListener('click', function(oEvent) {
+            let eControl = null;              // The clicked control
+            let iSelectedIndex = -1;          // Index of the selected tab
+            const eTarget = oEvent.target;    // The clicked element
+            const sElement = eTarget.tagName; // The tag name of the clicked element
+
+            // ## if clicked on tab button then remove all active classes and set active to clicked button
+            if(eTarget.classList.contains('button')) {
+               const eNav = eTarget.parentElement;
+               Array.from(eNav.children).forEach(function(eChild) {
+                  eChild.classList.remove('active');
+               });
+               eTarget.classList.add('active');
+               iSelectedIndex = Array.from(eNav.children).indexOf(eTarget);
+            }
+
+            if(iSelectedIndex >= 0) {
+               eControl = eTarget.closest(".view-tabs");
+               let aContent = eControl.querySelectorAll('.content');
+               aContent.forEach(function(eContent, iIndex) {
+                  if(iIndex === iSelectedIndex) {
+                     eContent.classList.add('active');
+                  }
+                  else {
+                     eContent.classList.remove('active');
+                  }
+               });
+            }
+         });
+      }
+
+      function Initialize() {
+         VIEW_CreateTabs("idTestCommand");                                         // Create the tabs to test commands
+
+         //new Toaster().show("This is a test message", "info", 5000);                 // Show a toaster message
+
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+         Initialize();
+      });
+
+
+   </script>
+   <script type="module">
+      import CToaster from './component/UIToaster.js';
+      window.CToaster = CToaster;
+   </script>
+</body>
+</html>

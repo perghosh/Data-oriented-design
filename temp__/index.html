@@ -4,8 +4,188 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>sample</title>
+   <style>
+      :root {
+         --color-primary: #0056b3;
+         --color-secondary: #343a40;
+         --color-success: #1e7e34;
+         --color-danger: #bd2130;
+         --color-warning: #d39e00;
+         --color-info: #117a8b;
+         --color-error: #b02a37;
+
+         --background-primary: #cce5ff;
+         --background-secondary: #e2e3e5;
+         --background-success: #d4edda;
+         --background-danger: #f8d7da;
+         --background-warning: #fff3cd;
+         --background-info: #d1ecf1;
+         --background-error: #f8d7da;
+
+
+         --background-active: #ccc;
+         --background-disabled: #f1f1f1;
+         --background-primary: #3498db;
+         --primary-color: #3498db;
+         --secondary-color: #2ecc71;
+         --font-size: 16px;
+         --padding: 10px;
+
+      }      
+      .view-tabs {  display: flex; flex-direction: column; }
+      .view-tabs .navigation {  display: flex; border-bottom: 1px solid #ccc; }
+      .view-tabs .navigation .button { background-color: var(--background-disabled); border: none; cursor: pointer; outline: none; padding: 10px 20px; }
+      .view-tabs .navigation .button.active { background-color: var(--background-active); }
+      .view-tabs .content { border-top: none; display: none; padding: 20px; border: 1px solid var(--background-active); }
+      .view-tabs .content.active { display: block; }
+
+
+      .body { background-color: white; font-family: Verdana, Geneva, Tahoma, sans-serif; padding: 1em; }
+      .panel-primary { background-color: white; border: 1px solid darkgrey; margin: 2px; padding: 5px;  }
+      .panel-secondary { background-color: lightgrey; border: 1px solid darkgrey; margin: 2px; padding: 5px;  }
+      .text-primary { color: #1a1a1a; }
+      .text-secondary { color: #333333; }
+  </style>
 </head>
-<body>
+<body class="body">
    <div>Testar för att se om det här fungerar</div>
+   <div class="">
+      <div class="panel-secondary text-secondary">
+         <h1>Command panel</h1>
+         <p>Test commands: 
+            <button onclick="Clear()">Clear output</button>
+            <button onclick="Print(CreateUUID())">Test to generate UUID value</button>
+         </p>
+      </div>
+   </div>
+
+   <div class="panel-secondary text-secondary">
+      <h1>Output panel</h1>
+      <p id="idOutput">
+      </p>
+   </div>
+
+   <hr>
+
+   <div id="idTestCommand" class="view-tabs">
+      <nav class="navigation">
+          <button class="button active" title="Different user operations">User</button>
+          <button class="button" title="Commands related to database operations">Database</button>
+          <button class="button" title="Manage queries commands">Query</button>
+      </nav>
+      <section class="content active">
+          <h2>Different user operations</h2>
+          <p>This is the content of Tab 1.</p>
+      </section>
+      <section class="content">
+          <h2>Commands related to database operations</h2>
+          <p>This is the content of Tab 2.</p>
+      </section>
+      <section class="content">
+          <h2>Manage queries commands</h2>
+          <p>This is the content of Tab 3.</p>
+      </section>
+   </div>
+
+
+  <script>
+
+// ----------------------------------------------------------------------------
+// Create a UUID and return it as a string
+function CreateUUID() 
+{
+   let sUuid = '';
+   const sTemplate = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+
+   sUuid = sTemplate.replace(/[xy]/g, function(sCharacter) {
+        const iRandom = Math.random() * 16 | 0;
+        const iValue = sCharacter === 'x' ? iRandom : (iRandom & 0x3 | 0x8);
+        return iValue.toString(16);
+   });   
+
+   return sUuid;
+}   
+
+// ----------------------------------------------------------------------------
+// Print a text to the output panel
+function Print(sText) 
+{
+   document.getElementById('idOutput').innerHTML += sText + '<br /><hr />';
+}
+
+// ----------------------------------------------------------------------------
+// Clear the output panel
+function Clear() 
+{
+   document.getElementById('idOutput').innerHTML = "";
+}
+
+// ----------------------------------------------------------------------------
+// Create tabs for a container
+// **Important element data used to create tabs container**
+// .view-tabs - the tabs container
+//    .navigation - contains all buttons
+//       .button - each button
+//    .content - contains all content pages
+function VIEW_CreateTabs( container_ )
+{
+   if( typeof container_ === "string" )
+   {
+      container_ = document.getElementById( container_ );
+   }
+
+   // Check if the container is valid
+   if( !(container_ instanceof HTMLElement) ) { console.assert( false, "Invalid container" ); return; }
+
+   const eContainer = container_;
+
+   // ## Manage all tabs commands in tabs container
+   eContainer.addEventListener('click', function(oEvent) {
+      let eControl = null;              // The clicked control
+      let iSelectedIndex = -1;          // Index of the selected tab
+      const eTarget = oEvent.target;    // The clicked element
+      const sElement = eTarget.tagName; // The tag name of the clicked element
+
+      // ## if clicked on tab button then remove all active classes and set active to clicked button
+      if( sElement === "BUTTON" && eTarget.classList.contains('button') )
+      {
+         const eNav = eTarget.parentElement; 
+         Array.from(eNav.children).forEach( function(eChild) {
+            eChild.classList.remove('active');
+         });
+         eTarget.classList.add('active');
+         iSelectedIndex = Array.from( eNav.children ).indexOf( eTarget );
+      }
+
+      if( iSelectedIndex >= 0 )
+      {
+         eControl = eTarget.closest(".view-tabs");
+         let aContent = eControl.querySelectorAll('.content');
+         aContent.forEach( function(eContent, iIndex) {
+            if( iIndex === iSelectedIndex )
+            {
+               eContent.classList.add('active');
+            }
+            else
+            {
+               eContent.classList.remove('active');
+            }
+         });
+      }
+   });
+}
+
+function Initialize()
+{
+   VIEW_CreateTabs( "idTestCommand" );                                         // Create the tabs to test commands
+}
+
+document.addEventListener('DOMContentLoaded', function() 
+{
+   Initialize();
+});
+
+
+   </script>
 </body>
 </html>

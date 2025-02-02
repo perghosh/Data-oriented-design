@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link href="variables-soft-candy.css" rel="stylesheet" />
+   <title>Button Test</title>
+
+   <style>
+      :root {
+         --background-active: #ccc;
+         --background-disabled: #f1f1f1;
+         --primary-color: #3498db;
+         --secondary-color: #2ecc71;
+         --font-size: 16px;
+         --padding: 10px;
+
+      }   
+      .body { font-family: Arial;}
+
+       .panel { background-color: var(--background-primary); padding: 5px; }
+       .panel h1 { margin-left: 25px; }
+       .button { margin: 10px 10px; padding: var(--padding); }
+      /*.button.active { background-color: var(--background-disabled); } */
+
+   </style>
+
+</head>
+<body class="body">
+   <div class="panel"> <h1>hej</h1> </div>
+   <div>
+      <nav id="idButtons">
+         <button type="button" class="button" id="idButton1">Klicka</button>
+         <button type="button" class="button" id="idButton2">Klicka2</button>
+      
+      </nav>
+   
+   </div>
+
+    
+
+   <script>
+      function Button( container ) 
+      {
+         const eContainer = container;
+
+         eContainer.addEventListener("click", function(oEvent) {
+            const eTarget = oEvent.target;
+            const eTextContent = eTarget.textContent;
+ 
+            const eButton1 = document.getElementById("idButton1");
+            const eButton2 = document.getElementById("idButton2");
+            if(eTarget.classList.contains('button') && eTarget.id === eButton2.id) 
+            {
+               eButton1.textContent = "hej";
+            }
+            else if(eTarget.classList.contains('button') && eTarget.id === eButton1.id) 
+            {
+               alert("Hej");
+            }     
+         });
+      }
+
+      function Initialize() 
+      {
+         const eContainer = document.getElementById("idButtons");
+         Button(eContainer);
+      }
+
+      document.addEventListener("DOMContentLoaded", function() {
+         Initialize();
+      });
+   </script>
+</body>
+</html>

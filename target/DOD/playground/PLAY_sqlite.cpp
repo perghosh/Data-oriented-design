@@ -3,6 +3,7 @@
 #include <memory>
 #include <ranges>
 #include <filesystem>
+#include <format>
 
 
 #include "gd/gd_com.h"
@@ -34,11 +35,141 @@ std::string GetApplicationFolder()
    return stringFilePath;
 }
 
+gd::table::dto::table CreateTable(gd::database::sqlite::database_i* pdatabase, std::string stringSql)
+{
+   gd::table::dto::table tableReturn;
+   gd::database::cursor_i* pcursor = nullptr;
+   pdatabase->get_cursor(&pcursor);
+   auto result_ = pcursor->open(stringSql);  
+   if( result_.first == false )
+   {
+      std::cout << result_.second << std::endl;
+   }
+
+   gd::database::to_table(pcursor, &tableReturn);
+
+   pcursor->release();
+
+   return tableReturn;
+}
+
+
 
 TEST_CASE(" [sqlite] generate sql 01", "[sqlite]") {
    {
       gd::sql::query query;
    }
+}
+
+TEST_CASE("[sqlite] create4", "[sqlite]")
+{
+   std::string stringSql = R"SQL(CREATE TABLE TVote (
+      VoteK INTEGER PRIMARY KEY AUTOINCREMENT,
+      CreateD TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FDescription VARCHAR(250),
+      FVoteNumber INTEGER
+   );)SQL";
+
+   std::string stringSql2 = R"SQL(CREATE TABLE TVoteComment (
+      VoteCommentK INTEGER PRIMARY KEY AUTOINCREMENT,
+      CreateD TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      VoteK INTEGER,
+      FText VARCHAR(1000)
+   );)SQL";
+
+   std::string stringSql3 = R"SQL(CREATE TABLE TVoteSuggestion (
+      VoteSuggestionK INTEGER PRIMARY KEY AUTOINCREMENT,
+      CreateD TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      VoteK INTEGER,
+      FText VARCHAR(500)
+   );)SQL";
+
+   std::string stringDbName = GetApplicationFolder();
+   stringDbName += "db04.sqlite";
+
+   if( std::filesystem::exists(stringDbName) == true ) { std::filesystem::remove(stringDbName); }    
+
+   gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i("db04");
+   auto result_ = pdatabase->open({ {"file", stringDbName}, {"create", true} });                   REQUIRE(result_.first == true);
+   result_ = pdatabase->execute(stringSql);                                                        REQUIRE(result_.first == true);
+   result_ = pdatabase->execute(stringSql2);                                                       REQUIRE(result_.first == true);
+   result_ = pdatabase->execute(stringSql3);                                                       REQUIRE(result_.first == true);
+
+   pdatabase = new gd::database::sqlite::database_i("db04");
+   result_ = pdatabase->open({ {"file", stringDbName} });  
+
+
+
+
+   // insert
+
+   // ## Add records to table `TVote`
+   
+   // add vote number 1
+   std::string stringSqlInsert1 = R"SQL(INSERT INTO TVote(FDescription, FVoteNumber) VALUES('First vote', 1);)SQL";
+   result_ = pdatabase->execute(stringSqlInsert1);                                                 REQUIRE(result_.first == true);
+   // add vote number 2
+   stringSqlInsert1 = R"SQL(INSERT INTO TVote(FDescription, FVoteNumber) VALUES('Second vote', 2);)SQL";
+   result_ = pdatabase->execute(stringSqlInsert1);                                                 REQUIRE(result_.first == true);
+
+
+   // ## Add records to table `TVoteComment`
+
+   // ### Get VoteK for vote number 1
+   gd::variant variantKey;
+   result_ = pdatabase->ask("SELECT VoteK FROM TVote WHERE FVoteNumber = 1;", &variantKey);        REQUIRE(variantKey.is_null() == false);
+
+   stringSqlInsert1 = "INSERT INTO TVoteComment(VoteK, FText) VALUES(";
+   stringSqlInsert1 += variantKey.as_string();
+   stringSqlInsert1 += ",'Dolor Sit Amet')";
+
+   result_ = pdatabase->execute(stringSqlInsert1);  
+
+   stringSqlInsert1 = std::format("INSERT INTO TVoteComment(VoteK, FText) VALUES({},'consectetur adipiscing elit');", variantKey.as_int() );
+   result_ = pdatabase->execute(stringSqlInsert1);  
+
+   stringSqlInsert1 = std::format("INSERT INTO TVoteComment(VoteK, FText) VALUES({},'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua');", variantKey.as_int() );
+   result_ = pdatabase->execute(stringSqlInsert1);  
+
+   stringSqlInsert1 = R"SQL(INSERT INTO TVoteSuggestion(FText, FVoteNumber) VALUES('Ut enim ad minim veniam', 1);)SQL";
+   result_ = pdatabase->execute(stringSqlInsert1); 
+   stringSqlInsert1 = R"SQL(INSERT INTO TVoteSuggestion(FText) VALUES('quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat');)SQL";
+   result_ = pdatabase->execute(stringSqlInsert1); 
+
+
+   //gd::database::cursor_i* pcursor = nullptr;
+  //pdatabase->get_cursor(&pcursor);
+
+   //gd::variant variantKey;
+   result_ = pdatabase->ask("SELECT VoteK FROM TVote WHERE FVoteNumber = 1;", &variantKey);        REQUIRE(result_.first == true);
+   int64_t iVoteK = variantKey.as<int64_t>();
+
+   std::string stringUpdate = "UPDATE TVoteComment SET FVoteNumber = 1 WHERE VoteK = " + std::to_string(iVoteK) + ";";
+   result_ = pdatabase->execute(stringUpdate);                                                     REQUIRE(result_.first == true);
+
+   stringUpdate = "UPDATE TVoteSuggestion SET FVoteNumber = 1 WHERE VoteK = " + std::to_string(iVoteK) + ";";
+   result_ = pdatabase->execute(stringUpdate);                                                     REQUIRE(result_.first == true);
+
+
+
+
+  // create table
+
+   std::string stringSelect = R"SQL(
+   SELECT TVote.VoteK, TVote.FDescription, TVoteComment.FText AS CommentText, TVoteSuggestion.FText AS SuggestionText FROM TVote
+   INNER JOIN TVoteComment ON TVote.VoteK = TVoteComment.VoteK
+   INNER JOIN TVoteSuggestion ON TVote.VoteK = TVoteSuggestion.VoteK
+   
+   )SQL";
+
+   gd::table::dto::table tableVote = CreateTable(pdatabase, stringSelect);
+
+   std::string stringResult;
+   gd::table::to_string(tableVote, stringResult, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
+
+   std::cout << stringResult << "\n";
+
+   pdatabase->release();
 }
 
 TEST_CASE(" [sqlite] create3", "[sqlite]")
@@ -79,6 +210,14 @@ TEST_CASE(" [sqlite] create3", "[sqlite]")
 
    gd::database::cursor_i* pcursor = nullptr;
    pdatabase->get_cursor(&pcursor);
+
+   std::string stringSelect = "SELECT * FROM TProduct;";
+
+   gd::table::dto::table tableProduct1 = CreateTable(pdatabase, stringSelect);
+
+   std::string stringResult1;
+   gd::table::to_string(tableProduct1, stringResult1, gd::table::tag_io_header{}, gd::table::tag_io_csv{});
+   std::cout << stringResult1 << "\n";
 
    result_ = pcursor->open("SELECT * FROM TProduct;");                                             REQUIRE(result_.first == true);
    gd::table::dto::table tableProduct;

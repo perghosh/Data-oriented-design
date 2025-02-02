@@ -214,7 +214,7 @@ inline std::string to_hex_g( uuid const& uuid )
 */
 inline uuid::uuid() {
 #ifdef _DEBUG
-        clear();
+   clear();
 #endif // _DEBUG
 }
 
