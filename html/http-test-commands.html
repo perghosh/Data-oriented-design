@@ -4,7 +4,7 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>sample</title>
-   <link rel="stylesheet" href="variables-blue-fog.css">
+   <link id="idCssVariable" rel="stylesheet" href="variables-blue-fog.css">
    <style>
       :root {
          --padding: 10px;
@@ -45,14 +45,30 @@
       }
   </style>
 </head>
+
 <body class="body">
-   <div>Testar för att se om det här fungerar</div>
+
+   <div id="idToaster" class="toaster"></div>
    <div class="">
       <div class="panel-secondary text-secondary">
-         <h1>Command panel</h1>
-         <p>Test commands: 
+         <h1>Select theme</h1>
+            <p>
+               <select id="idSelectTheme" onchange="ChangeTheme()">
+                  <option value="variables-blue-fog.css">Blue Fog</option>
+                  <option value="variables-candy-light.css">Candy light</option>
+                  <option value="variables-clay-sea.css">Clay sea</option>
+                  <option value="variables-green.css">Green</option>
+                  <option value="variables-grey.css">Grey</option>
+                  <option value="variables-red-black.css">Red black</option>
+                  <option value="variables-soft-candy.css">Soft candy</option>
+                  <option value="variables-green-food.css">Green food</option>
+               </select>
+            </p>
+         <p>
+            Test commands:
             <button onclick="Clear()">Clear output</button>
             <button onclick="Print(CreateUUID())">Test to generate UUID value</button>
+            <button onclick="TEST_Toaster()">Test toaster</button>
          </p>
       </div>
    </div>
@@ -67,21 +83,21 @@
 
    <div id="idTestCommand" class="view-tabs">
       <nav class="navigation">
-          <span class="button active" title="Different user operations">User</span>
-          <span class="button" title="Commands related to database operations">Database</span>
-          <span class="button" title="Manage queries commands">Query</span>
+         <span class="button active" title="Different user operations">User</span>
+         <span class="button" title="Commands related to database operations">Database</span>
+         <span class="button" title="Manage queries commands">Query</span>
       </nav>
       <section class="content active">
-          <h2>Different user operations</h2>
-          <p>This is the content of Tab 1.</p>
+         <h2>Different user operations</h2>
+         <p>This is the content of Tab 1.</p>
       </section>
       <section class="content">
-          <h2>Commands related to database operations</h2>
-          <p>This is the content of Tab 2.</p>
+         <h2>Commands related to database operations</h2>
+         <p>This is the content of Tab 2.</p>
       </section>
       <section class="content">
-          <h2>Manage queries commands</h2>
-          <p>This is the content of Tab 3.</p>
+         <h2>Manage queries commands</h2>
+         <p>This is the content of Tab 3.</p>
       </section>
    </div>
 
@@ -107,104 +123,129 @@
 
 
 
-  <script>
+   <script>
 
-// ----------------------------------------------------------------------------
-// Create a UUID and return it as a string
-function CreateUUID() 
-{
-   let sUuid = '';
-   const sTemplate = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
-
-   sUuid = sTemplate.replace(/[xy]/g, function(sCharacter) {
-        const iRandom = Math.random() * 16 | 0;
-        const iValue = sCharacter === 'x' ? iRandom : (iRandom & 0x3 | 0x8);
-        return iValue.toString(16);
-   });   
-
-   return sUuid;
-}   
-
-// ----------------------------------------------------------------------------
-// Print a text to the output panel
-function Print(sText) 
-{
-   document.getElementById('idOutput').innerHTML += sText + '<br /><hr />';
-}
-
-// ----------------------------------------------------------------------------
-// Clear the output panel
-function Clear() 
-{
-   document.getElementById('idOutput').innerHTML = "";
-}
-
-// ----------------------------------------------------------------------------
-// Create tabs for a container
-// **Important element data used to create tabs container**
-// .view-tabs - the tabs container
-//    .navigation - contains all buttons
-//       .button - each button
-//    .content - contains all content pages
-function VIEW_CreateTabs( container_ )
-{
-   if( typeof container_ === "string" )
-   {
-      container_ = document.getElementById( container_ );
-   }
-
-   // Check if the container is valid
-   if( !(container_ instanceof HTMLElement) ) { console.assert( false, "Invalid container" ); return; }
-
-   const eContainer = container_;
-
-   // ## Manage all tabs commands in tabs container
-   eContainer.addEventListener('click', function(oEvent) {
-      let eControl = null;              // The clicked control
-      let iSelectedIndex = -1;          // Index of the selected tab
-      const eTarget = oEvent.target;    // The clicked element
-      const sElement = eTarget.tagName; // The tag name of the clicked element
-
-      // ## if clicked on tab button then remove all active classes and set active to clicked button
-      if( eTarget.classList.contains('button') )
+      /// change theme based on selected value in drowdown with themes
+      function ChangeTheme() 
       {
-         const eNav = eTarget.parentElement; 
-         Array.from(eNav.children).forEach( function(eChild) {
-            eChild.classList.remove('active');
-         });
-         eTarget.classList.add('active');
-         iSelectedIndex = Array.from( eNav.children ).indexOf( eTarget );
+         const sTheme = document.getElementById('idSelectTheme').value;
+         if(sTheme) { document.getElementById('idCssVariable').href = sTheme; }
       }
 
-      if( iSelectedIndex >= 0 )
+      // ----------------------------------------------------------------------------
+      // Create a UUID and return it as a string
+      function CreateUUID() {
+         let sUuid = '';
+         const sTemplate = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+
+         sUuid = sTemplate.replace(/[xy]/g, function(sCharacter) {
+            const iRandom = Math.random() * 16 | 0;
+            const iValue = sCharacter === 'x' ? iRandom : (iRandom & 0x3 | 0x8);
+            return iValue.toString(16);
+         });
+
+         return sUuid;
+      }
+
+      // ----------------------------------------------------------------------------
+      // Print a text to the output panel
+      function Print(sText) {
+         document.getElementById('idOutput').innerHTML += sText + '<br /><hr />';
+      }
+
+      // ----------------------------------------------------------------------------
+      // Clear the output panel
+      function Clear() {
+         document.getElementById('idOutput').innerHTML = "";
+      }
+
+      function TEST_ToasterCallback( sType, data_ ) 
       {
-         eControl = eTarget.closest(".view-tabs");
-         let aContent = eControl.querySelectorAll('.content');
-         aContent.forEach( function(eContent, iIndex) {
-            if( iIndex === iSelectedIndex )
-            {
-               eContent.classList.add('active');
+         let sMessage = sType + " - " + data_.message;
+         Print(sMessage);
+      }
+
+      function TEST_Toaster()
+      {
+         // ## only one toaster is created and attached to function object to be kept in memory
+         if( !TEST_Toaster.toaster_s ) {
+            const toaster = new CToaster({ duration: 5000, callback: TEST_ToasterCallback });
+            toaster.Create(".toaster", "width: 500px;");
+            TEST_Toaster.toaster_s = toaster;
+         }
+
+         let toaster = TEST_Toaster.toaster_s; // get the toaster from the function object
+
+         setTimeout(() => { toaster.Show('This is an info message!', "info", 100); }, 0);
+         setTimeout(() => { toaster.Show('Success! Operation completed.', 'success'); }, 2000);
+         setTimeout(() => { toaster.Show('Warning: Something might be wrong.', 'warning'); }, 3000);
+         setTimeout(() => { toaster.Show('Error: Something went wrong!', 'danger', 1000); }, 4000);
+         setTimeout(() => { toaster.Show('Success! Operation completed.', 'success'); }, 5000);
+
+      }
+
+      // ----------------------------------------------------------------------------
+      // Create tabs for a container
+      // **Important element data used to create tabs container**
+      // .view-tabs - the tabs container
+      //    .navigation - contains all buttons
+      //       .button - each button
+      //    .content - contains all content pages
+      function VIEW_CreateTabs(container_) {
+         if(typeof container_ === "string") {
+            container_ = document.getElementById(container_);
+         }
+
+         // Check if the container is valid
+         if(!(container_ instanceof HTMLElement)) { console.assert(false, "Invalid container"); return; }
+
+         const eContainer = container_;
+
+         // ## Manage all tabs commands in tabs container
+         eContainer.addEventListener('click', function(oEvent) {
+            let eControl = null;              // The clicked control
+            let iSelectedIndex = -1;          // Index of the selected tab
+            const eTarget = oEvent.target;    // The clicked element
+            const sElement = eTarget.tagName; // The tag name of the clicked element
+
+            // ## if clicked on tab button then remove all active classes and set active to clicked button
+            if(eTarget.classList.contains('button')) {
+               const eNav = eTarget.parentElement;
+               Array.from(eNav.children).forEach(function(eChild) {
+                  eChild.classList.remove('active');
+               });
+               eTarget.classList.add('active');
+               iSelectedIndex = Array.from(eNav.children).indexOf(eTarget);
             }
-            else
-            {
-               eContent.classList.remove('active');
+
+            if(iSelectedIndex >= 0) {
+               eControl = eTarget.closest(".view-tabs");
+               let aContent = eControl.querySelectorAll('.content');
+               aContent.forEach(function(eContent, iIndex) {
+                  if(iIndex === iSelectedIndex) {
+                     eContent.classList.add('active');
+                  }
+                  else {
+                     eContent.classList.remove('active');
+                  }
+               });
             }
          });
       }
-   });
-}
 
-function Initialize()
-{
-   VIEW_CreateTabs( "idTestCommand" );                                         // Create the tabs to test commands
-}
+      function Initialize() {
+         VIEW_CreateTabs("idTestCommand");                                         // Create the tabs to test commands
 
-document.addEventListener('DOMContentLoaded', function() 
-{
-   Initialize();
-});
+         //new Toaster().show("This is a test message", "info", 5000);                 // Show a toaster message
+
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+         Initialize();
+      });
 
 
    </script>
+   <script src="component/UIToaster.js"></script>
 </body>
 </html>
