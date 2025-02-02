@@ -4,7 +4,7 @@
  * messages to the user. it has functionality to style it and also to show different types of messages.
  * You can add a callback to pickup the message and do something with it.
  */
-class CToaster {
+export default class CToaster {
    static m_sWidgetName_s = 'uitoaster';
    constructor(options) {
       const o = options || {};
