@@ -231,8 +231,6 @@ TEST_CASE(" [sqlite] create3", "[sqlite]")
    FROM TProduct
    INNER JOIN TProduct_Sales ON TProduct.ProductK = TProduct_Sales.ProductK)SQL";
 
-   result_ = pdatabase->execute(stringSqlJoin);                                                 REQUIRE(result_.first == true);
-
    result_ = pcursor->open(stringSqlJoin);                                                        REQUIRE(result_.first == true);
    gd::table::dto::table tableJoin;
    gd::database::to_table(pcursor, &tableJoin);
