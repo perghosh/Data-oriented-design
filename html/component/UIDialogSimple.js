@@ -156,19 +156,15 @@ export default class CModalSimple {
    }
 
    /**
-    * Hide the modal dialog. The modal is removed after the fade-out transition.
+    * Hide the modal dialog. 
     */
    Hide() 
    {
       if(!this.m_eComponent) return;
       this.m_eComponent.style.opacity = "0";
-      setTimeout(() => {
-         if(this.m_eComponent && this.m_eComponent.parentNode) {
-            this.m_eComponent.parentNode.removeChild(this.m_eComponent);
-         }
-         this.#call("hide");
-         this.m_eComponent = null;
-      }, 300); // Transition duration should match the CSS transition duration
+      // set style to none
+      this.m_eComponent.style.display = "none;
+      this.#call("hide");
    }
 
    /**
