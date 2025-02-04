@@ -69,6 +69,7 @@
             <button onclick="Clear()">Clear output</button>
             <button onclick="Print(CreateUUID())">Test to generate UUID value</button>
             <button onclick="TEST_Toaster()">Test toaster</button>
+            <button onclick="TEST_DialogModal()">Test dialog</button>
          </p>
       </div>
    </div>
@@ -165,6 +166,7 @@
          Print(sMessage);
       }
 
+      /// Test the toaster
       function TEST_Toaster()
       {
          // ## only one toaster is created and attached to function object to be kept in memory
@@ -182,6 +184,19 @@
          setTimeout(() => { toaster.Show('Error: Something went wrong!', 'danger', 1000); }, 4000);
          setTimeout(() => { toaster.Show('Success! Operation completed.', 'success'); }, 5000);
 
+      }
+
+      /// Test the dialog
+      function TEST_DialogModal() {
+         // ## only one dialog is created and attached to function object to be kept in memory
+         if( !TEST_Toaster.dialogsimple_s ) {
+            const dialog = new CDialogSimple({content: "This is the dialog content", type: "primary"});
+            dialog.Create();
+            TEST_Toaster.dialogsimple_s = dialog;
+         }
+
+         let dialog_ = TEST_Toaster.dialogsimple_s; // get the toaster from the function object
+         dialog_.Show();
       }
 
       // ----------------------------------------------------------------------------
@@ -211,9 +226,8 @@
             // ## if clicked on tab button then remove all active classes and set active to clicked button
             if(eTarget.classList.contains('button')) {
                const eNav = eTarget.parentElement;
-               Array.from(eNav.children).forEach(function(eChild) {
-                  eChild.classList.remove('active');
-               });
+               Array.from(eNav.children).forEach(function(eChild) { eChild.classList.remove('active'); });
+               // Array.from(eNav.children).forEach(eChild => eChild.classList.remove('active')); // alternative
                eTarget.classList.add('active');
                iSelectedIndex = Array.from(eNav.children).indexOf(eTarget);
             }
@@ -249,6 +263,8 @@
    <script type="module">
       import CToaster from './component/UIToaster.js';
       window.CToaster = CToaster;
+      import CDialogSimple from './component/UIDialogSimple.js';
+      window.CDialogSimple = CDialogSimple;
    </script>
 </body>
 </html>

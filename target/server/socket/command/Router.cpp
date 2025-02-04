@@ -17,6 +17,8 @@ CRouter::~CRouter()
 
 /** ---------------------------------------------------------------------------
  * @brief Connect server to internal server list
+ * You can connect multiple servers to router and they may be called something with server or router
+ * and they need to implement server_i interface.
  * @param pserver pointer to server that is connected
  * @return true if ok, false and error information on error
  */
@@ -31,6 +33,7 @@ std::pair<bool, std::string> CRouter::Connect(gd::com::server::server_i* pserver
 
 std::pair<bool, std::string> CRouter::Get(const std::string_view& stringArgument)
 {
+   /*
    gd::argument::shared::arguments arguments_;
    std::vector<int> vector_ = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
@@ -52,7 +55,7 @@ std::pair<bool, std::string> CRouter::Get(const std::string_view& stringArgument
       std::cout << n << " ";
    }
    std::cout << std::endl;
-
+   */
 
    return { true, "" };
 }
