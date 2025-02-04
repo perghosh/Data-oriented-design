@@ -109,22 +109,20 @@ struct command_i : public unknown_i
 
 struct response_i : public unknown_i
 {
-   //virtual std::pair<bool, std::string> read( const gd::argument::arguments& argumentsRecepie ) = 0; 
-   //virtual std::pair<bool, std::string> write( const gd::argument::arguments& argumentsRecepie ) = 0;
-
    /// add load to response from string, format descrbe what type of format it is
    virtual uint64_t size() = 0;
    virtual std::pair<bool, std::string> add( const gd::variant_view& key_, const gd::argument::arguments& argumentsValue ) = 0;
    virtual std::pair<bool, std::string> add( const gd::variant_view& key_, const gd::argument::arguments&& argumentsValue ) = 0;
-   virtual std::pair<bool, std::string> add( const std::string_view& stringName, const std::string_view& stringLoad, unsigned uFormat ) = 0;
-   virtual std::pair<bool, std::string> add_return( gd::variant&& variantValue ) = 0;
+
+   virtual std::pair<bool, std::string> return_add( gd::variant* pvariantKey, gd::variant* pvariantValue ) = 0;
+   virtual gd::variant_view return_at( uint32_t uIndex ) = 0;
+   virtual uint32_t return_size() = 0;
+
    virtual std::pair<bool, std::string> get( const gd::variant_view& index_, gd::argument::arguments** ppArguments ) = 0;
-   virtual std::pair<bool, std::string> get_body( const std::variant<uint64_t, std::string_view>& index_, body_i** ppload_ ) = 0;
-   virtual std::pair<bool, std::string> add_body( body_i* pload_ ) = 0;
-   virtual uint64_t get_body_count() = 0;
+   virtual std::pair<bool, std::string> body_get( const std::variant<uint64_t, std::string_view>& index_, body_i** ppload_ ) = 0;
+   virtual std::pair<bool, std::string> body_add( body_i* pload_ ) = 0;
+   virtual uint32_t body_size() = 0;
    virtual void clear_all() = 0;
-   // virtual size_t load_size() = 0;
-   // virtual load_i* load_get( size_t uIndex ) = 0;
 };    
 
 struct request_i : public unknown_i
@@ -192,12 +190,15 @@ struct response : public response_i
    uint64_t size() override { return 0; }
    std::pair<bool, std::string> add( const gd::variant_view& key_, const gd::argument::arguments& argumentsValue ) override { return { false, "" }; }
    std::pair<bool, std::string> add( const gd::variant_view& key_, const gd::argument::arguments&& argumentsValue ) override { return { false, "" }; }
-   std::pair<bool, std::string> add( const std::string_view& stringName, const std::string_view& stringLoad, unsigned uFormat ) override { return { false, "" }; }
-   std::pair<bool, std::string> add_return( gd::variant&& variantValue ) override { return { false, "" }; }
+   //std::pair<bool, std::string> add( const std::string_view& stringName, const std::string_view& stringLoad, unsigned uFormat ) override { return { false, "" }; }
+   //std::pair<bool, std::string> add_return( gd::variant&& variantValue ) override { return { false, "" }; }
+   std::pair<bool, std::string> return_add( gd::variant* pvariantKey, gd::variant* pvariantValue ) override { return { false, "" }; }
+   gd::variant_view return_at( uint32_t uIndex ) override { return gd::variant_view(); };
+   uint32_t return_size() override { return 0; };
    std::pair<bool, std::string> get( const gd::variant_view& index_, gd::argument::arguments** ppArguments ) override { return { false, "" }; }
-   std::pair<bool, std::string> get_body( const std::variant<uint64_t, std::string_view>& index_, body_i** ppload_ ) override { return { false, "" }; }
-   std::pair<bool, std::string> add_body( body_i* pload_ ) override { return { false, "" }; }
-   uint64_t get_body_count() override { return 0; }
+   std::pair<bool, std::string> body_get( const std::variant<uint64_t, std::string_view>& index_, body_i** ppload_ ) override { return { false, "" }; }
+   std::pair<bool, std::string> body_add( body_i* pload_ ) override { return { false, "" }; }
+   uint32_t body_size() override { return 0; }
    void clear_all() override {};
 };
 
@@ -314,7 +315,7 @@ struct command : public gd::com::server::command_i
    std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override;
 
    /// Clear internal data in command, based on whats passed different type of data can be cleared
-   void clear( const gd::variant_view& variantviewToClear );
+   void clear( const gd::variant_view& variantviewToClear ) override;
 
 
    /// find pointer to arguments for name (should match any of command name found in command object)
@@ -350,6 +351,10 @@ inline gd::argument::arguments* command::find( const std::string_view& stringKey
 // ======================================================================================= response
 // ================================================================================================
 
+/** ---------------------------------------------------------------------------
+ * @brief `response` object is used to store responses from executed commands passed
+ * to server. 
+ */
 struct response : public gd::com::server::response
 {
    int32_t query_interface(const gd::com::guid& guidId, void** ppObject) override;
@@ -362,17 +367,21 @@ struct response : public gd::com::server::response
    /// add response data to internal list of respons information
    std::pair<bool, std::string> add( const gd::variant_view& key_, const gd::argument::arguments& argumentsValue ) override;
    std::pair<bool, std::string> add( const gd::variant_view& key_, const gd::argument::arguments&& argumentsValue ) override;
-   std::pair<bool, std::string> add_return( gd::variant&& variantValue ) override;
+   //std::pair<bool, std::string> add_return( gd::variant&& variantValue ) override;
+   //std::pair<bool, std::string> return_add( gd::variant&& variantValue ) override;
+   std::pair<bool, std::string> return_add( gd::variant* pvariantKey, gd::variant* pvariantValue ) override;
+   gd::variant_view return_at( uint32_t uIndex ) override { assert( uIndex < m_vectorReturn.size() ); return m_vectorReturn.at( uIndex ).second.as_variant_view(); }
+   uint32_t return_size() override { return (uint32_t)m_vectorReturn.size(); }
    /// Get response data for index (named index that should match id in arguments or index)
    std::pair<bool, std::string> get( const gd::variant_view& index_, gd::argument::arguments** ppArguments ) override;
-   std::pair<bool, std::string> get_body( const std::variant<size_t, std::string_view>& index_, gd::com::server::body_i** ppload_ ) override;
-   std::pair<bool, std::string> add_body( gd::com::server::body_i* pload_ ) override;
-   uint64_t get_body_count() override;
+   std::pair<bool, std::string> body_get( const std::variant<uint64_t, std::string_view>& index_, gd::com::server::body_i** ppbody_ ) override;
+   std::pair<bool, std::string> body_add( gd::com::server::body_i* pload_ ) override;
+   uint32_t body_size() override;
    void clear_all() override;
 
    
    int m_iReference = 1;
-   std::vector<gd::variant> m_vectorReturn;
+   std::vector< std::pair<gd::variant, gd::variant> > m_vectorReturn; ///< store primitive return values from executed operations, each return can have some sort of key (reason for pair)
    std::vector< gd::com::server::body_i* > m_vectorBody;
 };
 
@@ -421,7 +430,7 @@ struct server : public gd::com::server::server_i
 // ## attributes ----------------------------------------------------------------
    int m_iReference = 1; ///< "user" count
    uint8_t m_uSplitChar = ';'; ///< character used to split commands
-   std::vector< type_callback > m_vectorCallback; ///< list of callbacks to call when command is executed
+   std::vector< type_callback > m_vectorCallback;
    std::vector<std::string> m_vectorError;   ///< list of errors if something went wrong
 };
 

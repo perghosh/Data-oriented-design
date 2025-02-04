@@ -57,13 +57,23 @@ std::pair<bool, std::string> command::add_arguments( const gd::variant_view& var
    }
    else
    {
+      // ## loop backwards to speed (stack variables are most frequent to change here)
+      //    Iterate from high (high priority has low number) to low
+      bool bAdded = false;
       for(auto it = m_vectorArgument.rbegin(); it != m_vectorArgument.rend(); it++)
       {
-         if(it->get_priority() & uPriority)
+         if(it->get_priority() >= uPriority)                                   // found priority value with higer number means that added should be inserted after
          {                                                                                         assert( !(uPriority & ePriorityRegister) ); // never register here, should be handled before
             m_vectorArgument.insert( it.base() + 1, arguments(uPriority, *pargumentsVariable));
+            bAdded = true;
             break;
          }
+      }
+
+      // ## argumnets wasnt added so we need to add it
+      if( bAdded == false )
+      {
+         m_vectorArgument.insert( m_vectorArgument.begin(), arguments(uPriority, *pargumentsVariable) );
       }
    }
 
@@ -198,7 +208,7 @@ gd::argument::arguments command::get_all_arguments( const gd::variant_view& inde
  * @param parguments_ arguments item where values are placed
  * @return true if ok, false and error information on error
  */
-std::pair<bool, std::string> command::get_arguments( const std::variant<size_t, std::string_view> index_, gd::argument::arguments* parguments_ )
+std::pair<bool, std::string> command::get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ )
 {                                                                                                  assert( parguments_ != nullptr );
    if( index_.index() == 1 )
    {
@@ -397,9 +407,15 @@ std::pair<bool, std::string> response::add( const gd::variant_view& key_, const 
 * @param variantValue value added as return value
 * @return true if ok, false and error information on error
 */
-std::pair<bool, std::string> response::add_return( gd::variant&& variantValue ) 
+std::pair<bool, std::string> response::return_add( gd::variant* pvariantKey, gd::variant* pvariantValue ) 
 {
-   m_vectorReturn.push_back( std::move( variantValue ) );
+   gd::variant variantKey;
+   gd::variant variantValue;
+
+   if( pvariantKey != nullptr ) { variantKey = *pvariantKey; }
+   if( pvariantValue != nullptr ) { variantValue = *pvariantValue; }
+
+   m_vectorReturn.push_back( std::pair<gd::variant, gd::variant>( std::move( variantKey ), std::move( variantValue ) ) );
    return { true, "" };
 }
 
@@ -444,11 +460,11 @@ std::pair<bool, std::string> response::get(const gd::variant_view& index_, gd::a
 
 /// ---------------------------------------------------------------------------
 /// get pointer to load for index or name
-std::pair<bool, std::string> response::get_body( const std::variant<uint64_t, std::string_view>& index_, gd::com::server::body_i** ppload_ )
+std::pair<bool, std::string> response::body_get( const std::variant<uint64_t, std::string_view>& index_, gd::com::server::body_i** ppload_ )
 {
    if( index_.index() == 0 )
    {                                                                                               
-      uint64_t uIndex = std::get<0>( index_ );                                                     assert( uIndex < get_body_count() );
+      uint64_t uIndex = std::get<0>( index_ );                                                     assert( uIndex < body_size() );
       body_i* pload = m_vectorBody.at( uIndex );
       pload->add_reference();
       *ppload_ = pload;
@@ -472,7 +488,7 @@ std::pair<bool, std::string> response::get_body( const std::variant<uint64_t, st
 
 /// ---------------------------------------------------------------------------
 /// add load to response object
-std::pair<bool,std::string> response::add_body( gd::com::server::body_i* pload_)
+std::pair<bool,std::string> response::body_add( gd::com::server::body_i* pload_)
 {  
    pload_->add_reference();
    m_vectorBody.push_back( pload_ );
@@ -481,9 +497,9 @@ std::pair<bool,std::string> response::add_body( gd::com::server::body_i* pload_)
 
 /// ---------------------------------------------------------------------------
 /// Get number of loads in response
-uint64_t response::get_body_count()
+uint32_t response::body_size()
 {
-   return (uint64_t)m_vectorBody.size();
+   return (uint32_t)m_vectorBody.size();
 }
 
 /// Clear all internal data
@@ -527,19 +543,61 @@ unsigned server::release()
    return (unsigned)m_iReference; 
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief `get` is to mimic get requets from browser requests, like when you call "get" or "post"
+ * `get` takes arguments in one single string, they are split based on the `m_uSplitChar`
+ * *sample*
+ * @code
+std::pair<bool, std::string> Sum(const std::string_view& stringCommand, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse )
+{
+   gd::com::server::router::command* pcommand_ = (gd::com::server::router::command*)pcommand;
+   std::vector< std::string_view > vectorCommand = pcommand_->add_querystring( stringCommand );
+
+   std::string_view stringCommandName = vectorCommand.back();
+   if( stringCommandName == "sum" )
+   {
+      std::vector< gd::variant_view > vectorValue;
+      pcommand->query_select_all( "value", &vectorValue );
+      uint64_t uSum = 0;
+      for( auto it : vectorValue ) { uSum += it.as_uint64(); }
+      gd::variant variantSum( uSum );
+      presponse->return_add( nullptr, &variantSum );
+   }
+
+   return { true, "" };
+}
+ 
+auto pserver = gd::com::pointer< gd::com::server::router::server >( new gd::com::server::router::server );
+pserver->callback_add( Sum );
+auto pcommand = gd::com::pointer< gd::com::server::router::command >( new gd::com::server::router::command( pserver ) );
+std::string stringCommand = "sum?value=1&value=10&value=100&value=1000&value=10000;sum?value=2&value=20";
+
+ * @endcode
+ * @param pstringCommandList 
+ * @param pargumentsParameter 
+ * @param pcommand 
+ * @param presponse 
+ * @return 
+ */
 std::pair<bool, std::string> server::get( const std::string_view* pstringCommandList, const gd::argument::arguments* pargumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse )
 {
    if( pargumentsParameter != nullptr && pargumentsParameter->empty() == false )
    {
       pcommand->add_arguments(  ePriorityStack, pargumentsParameter );
    }
+   /*
+   else
+   {
+      ((gd::com::server::router::command*)(pcommand))->add_querystring( *pstringCommandList );
+   }
+   */
 
    auto vectorCommands = gd::utf8::split(*pstringCommandList, m_uSplitChar);   // extract commands from string that are separated by `m_uSplitChar`. Each command is then formated similar to url query string
    for( auto stringCommand : vectorCommands )
    {
       for( auto itCallback : m_vectorCallback )
       {
-         auto result_ = itCallback(stringCommand, pcommand, presponse);        // call callback with command and response object
+         auto result_ = itCallback( stringCommand, pcommand, presponse );      // call callback with command and response object
          if( result_.first == false ) 
          {
             add_error( result_.second );
