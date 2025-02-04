@@ -80,6 +80,16 @@
             eDiv.appendChild(eH1.cloneNode(true));
             eContainer.appendChild(eDiv);
          }
+
+         const eParent = document.createElement("div");
+         
+         for(let i = 0; i < 5; i++) {
+            const div = new CDiv({ "parent": eParent });
+            div.Create();
+         }
+
+         eContainer.appendChild(eParent);
+         
       }
 
       function Initialize() {
@@ -93,5 +103,6 @@
          Initialize();
       });
    </script>
+   <script src="component/UIKevinDiv.js"></script>
 </body>
 </html>
