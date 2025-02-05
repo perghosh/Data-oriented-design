@@ -6,17 +6,41 @@
  */
 export default class CToaster {
    static m_sWidgetName_s = 'uitoaster';
+   /**
+    * Creates an instance of the CToaster.
+    *
+    * @constructor
+    * @param {Object} [options={}] - The configuration options for the toaster.
+    * @param {number} [options.duration=3000] - The duration (in milliseconds) for which the toaster message is displayed.
+    * @param {string} [options.type='info'] - The type of the toaster message (e.g., 'primary', 'secondary', 'success', 'danger', 'warning', 'info').
+    * @param {Function|Function[]} [options.callback] - A callback function or an array of callback functions for toaster operations.
+    * @param {HTMLElement} [options.parent=document.body] - The parent DOM element to which the toaster component is appended.
+    * @param {Object} [options.style] - CSS styles for the toaster's container element.
+    * @param {Object} [options.toaster_style] - CSS styles for the individual toaster message element.
+    *
+    * @example
+    * const toaster = new CToaster({
+    *    duration: 5000,
+    *    type: 'success',
+    *    callback: () => console.log('Toaster action executed!'),
+    *    parent: document.getElementById('toaster-container'),
+    *    style: { "margin-bottom": "20px", "padding": "10px" },
+    *    toaster_style: { "border-radius": "5px", "color": "#fff" }
+    * });
+    */
    constructor(options) {
+      // callback function to call for operations in toaster
+      this.m_acallback = [];
+      if (options.callback) this.m_acallback = Array.isArray(options.callback) ? options.callback : [options.callback];
+
+      this.#call("before-construct", options );
+
       const o = options || {};
 
       // ## data memebers
       this.m_iDuration = o.duration || 3000; // duration of the toaster message
       this.m_sType = o.type || 'info'; // type of the toaster message
 
-      // callback function to call for operations in toaster
-      this.m_acallback = [];
-      if (o.callback) this.m_acallback = Array.isArray(o.callback) ? o.callback : [o.callback];
-      
       // unique id for the component
       this.m_sId = CToaster.m_sWidgetName_s + `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
@@ -25,7 +49,7 @@ export default class CToaster {
       this.m_eParent = o.parent || document.body; // owner of the component
 
       this.m_oStyle = o.style || { "margin-bottom": "20px", "padding": "10px 20px", "position": "fixed", "right": "20px", "z-index": 1000 };
-      this.m_oToasterStyle = o.toaster_style || { "border-radius": '5px', "color": '#fff', "margin-bottom": '10px', "opacity": '0', "padding": '10px 20px', "transition": 'opacity 0.5s ease-in-out' };
+      this.m_oToasterStyle = o.toaster_style || { "border-radius": '5px', "margin-bottom": '10px', "opacity": '0', "padding": '10px 20px', "transition": 'opacity 0.5s ease-in-out' };
    }
 
    get id() { return this.m_sId; }
@@ -77,11 +101,20 @@ export default class CToaster {
       console.log(eComponent.cssText);
    }
 
+   /**
+    * Destroys the toaster component by removing it from the DOM.
+    *
+    * If the component element exists, this method removes it from the DOM and then nullifies
+    * the reference to ensure proper cleanup.
+    *
+    * @returns {void}
+    */
    Destroy() {
       if(this.m_eComponent === null) return;
+      this.#call("destroy");
       this.m_eComponent.remove();
       this.m_eComponent = null;
-    }
+   }
 
 
    /**
@@ -130,6 +163,23 @@ export default class CToaster {
       setTimeout( () => { eToaster.style.opacity = '0'; 
          setTimeout(() => { remove_element_(); }, 500);
       }, iDuration);
+   }
+
+   /**
+    * Hides the toaster component.
+    *
+    * This method retrieves the component element by calling {@link CToaster#GetComponent}.
+    * If the component exists, its display style is set to "none", effectively hiding it.
+    * Afterwards, it triggers any registered "hide" callbacks via a private method.
+    *
+    * @returns {void}
+    */
+   Hide() {
+      let eComponent = this.GetComponent();
+      if(eComponent === null) return;
+
+      eComponent.style.display = "none";
+      this.#call("hide");
    }
 
    /**
