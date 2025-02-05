@@ -122,7 +122,7 @@ export default class CModalSimple {
 
       // ## Create and append the close button
       const eClose = document.createElement('span');
-      eClose.textContent = '×';
+      eClose.textContent = 'x';
       Object.assign(eClose.style, this.m_oStyleClose);
       // ### Bind the close action on click
       eClose.addEventListener("click", () => this.Hide());
@@ -155,17 +155,22 @@ export default class CModalSimple {
       }, 10);
    }
 
+
    /**
-    * Hide the modal dialog. 
+    * Hide the modal dialog. The modal is removed after the fade-out transition.
     */
    Hide() 
    {
       if(!this.m_eComponent) return;
       this.m_eComponent.style.opacity = "0";
-      // set style to none
-      this.m_eComponent.style.display = "none;
-      this.#call("hide");
-   }
+      setTimeout(() => {
+         if(this.m_eComponent && this.m_eComponent.parentNode) {
+            this.m_eComponent.parentNode.removeChild(this.m_eComponent);
+         }
+         this.#call("hide");
+         this.m_eComponent = null;
+      }, 300); // Transition duration should match the CSS transition duration
+   }   
 
    /**
     * Destroy the modal dialog immediately.
