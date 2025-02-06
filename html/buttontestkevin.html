@@ -18,7 +18,7 @@
       }   
       .body { font-family: Arial;}
 
-       .panel { background-color: var(--background-primary); padding: 5px; }
+       .panel { background-color: var(--background-primary); padding: 50px; }
        .panel h1 { margin-left: 25px; }
        .button { margin: 10px 10px; padding: var(--padding); }
 
@@ -43,7 +43,9 @@
       </nav>
    </div>
 
+   <div class="panel" id="idPanel">
 
+   </div>
 
    <script>
       function Button(container)
@@ -63,6 +65,32 @@
                alert("Hej");
             }
          });
+      }
+
+      function MoveElement(panel) 
+      {
+         const ePanel = panel;
+
+         const eDivContainer = document.getElementById("idContainer");
+
+         eDivContainer.appendChild(ePanel.cloneNode(true));
+
+      }
+
+      function OrderedList(container) 
+      {
+         const eContainer = container;
+         const eOrderedList = document.createElement("ol");
+         let eList = document.createElement("li");
+
+         eList.textContent = "Dethär är en lista";
+
+         for(let i = 0; i < 5; i++) 
+         {
+            eOrderedList.appendChild(eList.cloneNode(true));
+         }
+
+         eContainer.appendChild(eOrderedList);
       }
 
       function CreateDiv(container)
@@ -95,8 +123,12 @@
       function Initialize() {
          const eContainer = document.getElementById("idButtons");
          const eDivContainer = document.getElementById("idContainer");
+         const ePanel = document.getElementById("idPanel");
+         
          Button(eContainer);
          CreateDiv(eDivContainer);
+         MoveElement(ePanel);
+         OrderedList(eContainer);
       }
 
       document.addEventListener("DOMContentLoaded", function () {
