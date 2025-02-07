@@ -24,6 +24,8 @@
 
        .div-background { background-color: var(--background-secondary); padding: 5px; margin: 10px 0px;}
 
+       table, td {border: 1px solid black;}
+
       /*.button.active { background-color: var(--background-disabled); } */
 
    </style>
@@ -67,6 +69,7 @@
          });
       }
 
+
       function MoveElement(panel) 
       {
          const ePanel = panel;
@@ -76,6 +79,32 @@
          eDivContainer.appendChild(ePanel.cloneNode(true));
 
       }
+
+      function Table(container, columns, rows) {
+         const eContainer = container;
+         const iColumns = columns;
+         const iRows = rows;
+
+         const eTable = document.createElement("table");
+
+
+
+
+         for (let i = 0; i <= iRows; i++)
+         {
+            const eRow = document.createElement("tr");
+            for (let j = 0; j <= iColumns; j++)
+            {
+               const eColumn = document.createElement("td");
+               eColumn.textContent = "Dethär är en column";
+
+               eRow.appendChild(eColumn.cloneNode(true));
+            }
+            eTable.appendChild(eRow.cloneNode(true));
+         }
+         eContainer.appendChild(eTable.cloneNode(true));
+      }
+
 
       function OrderedList(container) 
       {
@@ -129,6 +158,7 @@
          CreateDiv(eDivContainer);
          MoveElement(ePanel);
          OrderedList(eContainer);
+         Table(eContainer, 5, 5)
       }
 
       document.addEventListener("DOMContentLoaded", function () {
