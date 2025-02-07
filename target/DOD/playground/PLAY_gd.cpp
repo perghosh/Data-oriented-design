@@ -8,11 +8,28 @@
 #include "gd/gd_sql_value.h"
 #include "gd/gd_variant_common.h"
 
+#include "gd/gd_strings.h"
+
 
 
 #include "main.h"
 
 #include "catch2/catch_amalgamated.hpp"
+
+TEST_CASE( "[gd] strings", "[gd]" ) {
+   gd::strings32 strings_;
+
+   strings_.append("one");
+   strings_ << 1 << 2 << 33;
+   strings_.add("two", "ten", "six", "five");
+
+   for ( auto it : strings_ ) {
+      std::cout << it << std::endl;
+   }
+
+
+
+}
 
 TEST_CASE( "[gd] using get on variant and variant_view", "[gd]" ) {
    gd::variant v_ = 1.01;
