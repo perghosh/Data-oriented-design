@@ -19,14 +19,16 @@ export default class CModalSimple {
     *   @property {function|function[]} [callback] - Callback function(s) to invoke on modal events.
     */
    constructor(options) {
+      // callback function to call for operations in toaster
+      this.m_acallback = [];
+      if (options.callback) this.m_acallback = Array.isArray(options.callback) ? options.callback : [options.callback];
+
       const o = options || {};
       
       // Data members
       this.m_sType = o.type || 'secondary';
       this.m_sTitle = o.title || 'Modal Title';
       this.m_content_ = o.content || 'This is a modal dialog.';
-      this.m_acallback = [];
-      if(o.callback) this.m_acallback = Array.isArray(o.callback) ? o.callback : [o.callback];
 
       // Unique id for the component
       this.m_sId = CModalSimple.m_sWidgetName_s + `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;

@@ -323,3 +323,49 @@ inline std::string_view strings32::to_string_view_s(const uint8_t* puBuffer, uin
 }
 
 _GD_END
+
+
+/*
+
+class StringFormatter {
+public:
+    static std::string format(const char* str, const std::function<const char*(size_t)>& cb) {
+        const size_t str_len = std::strlen(str);
+        char* result = new char[str_len * 2 + 1]; // worst-case scenario: each char is doubled
+        char* write = result;
+        const char* read = str;
+        
+        while (*read) {
+            if (*read == '{') {
+                const char* start = ++read;
+                while (*read && *read != '}') ++read; // find closing brace
+                
+                if (*read == '}') {
+                    size_t index = 0;
+                    for (const char* p = start; p != read; ++p) {
+                        index = index * 10 + (*p - '0');
+                    }
+                    
+                    const char* replacement = cb(index);
+                    size_t repl_len = std::strlen(replacement);
+                    std::memcpy(write, replacement, repl_len);
+                    write += repl_len;
+                    ++read; // Move past the closing brace
+                } else {
+                    // No closing brace found, copy '{'
+                    *write++ = '{';
+                    read = start; // Reset read to start of the supposed index
+                }
+            } else {
+                *write++ = *read++;
+            }
+        }
+        *write = '\0'; // Null-terminate the result string
+
+        std::string formatted(result);
+        delete[] result;
+        return formatted;
+    }
+};
+
+*/

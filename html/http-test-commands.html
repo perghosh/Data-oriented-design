@@ -162,7 +162,8 @@
 
       function TEST_ToasterCallback( sType, data_ ) 
       {
-         let sMessage = sType + " - " + data_.message;
+         let sText = data_?.message ? data_.message : "";
+         let sMessage = sType + " - " + sText;
          Print(sMessage);
       }
 
@@ -190,7 +191,7 @@
       function TEST_DialogModal() {
          // ## only one dialog is created and attached to function object to be kept in memory
          if( !TEST_Toaster.dialogsimple_s ) {
-            const dialog = new CDialogSimple({content: "This is the dialog content", type: "primary"});
+            const dialog = new CDialogSimple({content: "This is the dialog content", type: "primary", callback: TEST_ToasterCallback});
             dialog.Create();
             TEST_Toaster.dialogsimple_s = dialog;
          }
