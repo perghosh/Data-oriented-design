@@ -36,27 +36,36 @@ namespace strings {
    class iterator
    {  
    public:
-      using value_type = std::string_view;  // Non-const for value_type
+      using value_type = std::string_view;  
       using iterator_category = std::forward_iterator_tag;
+      using difference_type = std::ptrdiff_t;
+      using pointer = const std::string_view*;
+      using reference = const std::string_view&;
+
+      iterator() : m_pstrings(nullptr), m_uOffset(0) {}
 
       /// Initializes the iterator with a current pointer and an end pointer for the buffer.  
       iterator( STRINGS* pstrings, uint64_t uOffset ) : m_pstrings(pstrings), m_uOffset(uOffset) {}  
 
       /// Copies the iterator from another iterator instance.  
       iterator(const iterator& o) : m_pstrings(o.m_pstrings), m_uOffset(o.m_uOffset) {}  
+      iterator(iterator&& o) noexcept : m_pstrings(o.m_pstrings), m_uOffset(o.m_uOffset) { o.m_pstrings = nullptr; o.m_uOffset = 0; }  
 
       /// Assigns the iterator state from another iterator instance.  
       iterator& operator=(const iterator& o) {  
-         m_uOffset = o.m_uOffset; m_pstrings = o.m_pstrings; return *this;  
+         m_pstrings = o.m_pstrings; m_uOffset = o.m_uOffset; return *this;  
       }  
 
-      bool operator==(const iterator& o) const { return m_uOffset == o.m_uOffset; }  
+      bool operator==(const iterator& o) const { assert( m_pstrings == o.m_pstrings ); return m_uOffset == o.m_uOffset; }  
       bool operator!=(const iterator& o) const { return !(o == *this); }
 
       uint64_t offset() const { return m_uOffset; }
 
       /// get std::string_view from active position for iterator
-      std::string_view operator*() const { return STRINGS::to_string_view_s(m_pstrings->buffer(), m_uOffset); }  
+      std::string_view operator*() const { return as_string_view(); }  
+
+      std::string_view as_string_view() const { return STRINGS::to_string_view_s(m_pstrings->buffer(), m_uOffset); }
+      std::string as_string() const { return STRINGS::to_string_s(m_pstrings->buffer(), m_uOffset); }
 
       /// Advances the iterator to the next string block.  
       iterator& operator++()  
@@ -156,7 +165,7 @@ public:
    strings32& operator+=(const std::string_view& stringAppend) { append(stringAppend); return *this; }
    /// appends different types that is convertible to string to the buffer.
    template<typename VALUE>
-   strings32& operator<<(const VALUE& value_) { add_one(value_); return *this; }
+   strings32& operator<<(const VALUE& value_) { append_any(value_); return *this; }
 
 // ## iterator -----------------------------------------------------------------
 public:
@@ -187,6 +196,8 @@ public:
    strings32& append(const std::initializer_list<std::string_view>& listString);
    strings32& append(const std::vector<std::string>& vectorString);
    strings32& append(const std::vector<std::string_view>& vectorString);
+   strings32& append_any(const std::initializer_list<gd::variant_view>& listValue);
+   strings32& append_any(const std::vector<gd::variant_view>& vectorValue);
 
    /// Appends types that is convertible to string to the buffer.
    strings32& append(const gd::variant_view& variant_view, gd::types::tag_view ) { append(variant_view.as_string()); return *this; }
@@ -195,7 +206,7 @@ public:
    template<typename... ARGUMENTS>
    strings32& add(ARGUMENTS&&... args);
    template<typename VALUE>
-   strings32& add_one(const VALUE& value);
+   strings32& append_any(const VALUE& value);
 
 
    /// Erases the string at the specified iterator position from the buffer.
@@ -209,6 +220,8 @@ public:
 
    /// Returns the number of strings stored in the buffer.  
    size_t count() const;
+   /// Returns the number of strings stored in the buffer.  
+   size_t size() const { return count(); }
 
    /// Removes all strings from the buffer by resetting the used size to zero.  
    void clear() { m_uSize = 0; }
@@ -219,6 +232,11 @@ public:
 
    /// Advance offset in buffer and return offset to next string
    uint64_t advance(uint64_t uOffset) const;
+
+   // ## join internal string values to one string
+   // 
+   std::string join() const { return join_s(begin(), end(), ""); }
+   std::string join( const std::string_view& stringSeparator ) const { return join_s(begin(), end(), stringSeparator); }
 //@}
 
 /** \name BUFFER
@@ -240,9 +258,18 @@ public:
 public:
    /// get const char* pointer from buffer at offset position
    static const char* c_str_s(const uint8_t* puBuffer, uint64_t uPosition) { return reinterpret_cast<const char*>( puBuffer + sizeof(uint32_t) ); }
+   /// return const char*, note that string values within buffer are NOT null terminated
+   static const char* c_str_s(const uint8_t* puPosition) { return reinterpret_cast<const char*>( puPosition + sizeof(uint32_t) ); }
+   /// get length of string from buffer at offset position
+   static uint32_t length_s(const uint8_t* puPosition)  { return *reinterpret_cast<const uint32_t*>( puPosition ); }
    /// get std::string_view from buffer at offset position
    static std::string_view to_string_view_s(const uint8_t* puBuffer, uint64_t uPosition);
+   /// get std::string from buffer at offset position
+   static std::string to_string_s(const uint8_t* puBuffer, uint64_t uPosition);
 
+   /// join strings with a separator using iterator range
+   template<typename ITERATOR>
+   static std::string join_s(ITERATOR itBegin, ITERATOR itEnd, const std::string_view& stringSeparator);
 };  
 
 /// copy string32
@@ -264,7 +291,7 @@ inline std::string_view strings32::operator[](size_t uIndex) const
 {  
    auto it = begin();
    for ( size_t i = 0; i < uIndex; ++i ) ++it;
-   return *it;
+   return it.as_string_view();
 }  
 
 /// Appends strings to internal buffer.
@@ -288,17 +315,32 @@ inline strings32& strings32::append(const std::vector<std::string_view>& vectorS
    return *this;
 }
 
-template<typename... ARGUMENTS>
-strings32& strings32::add(ARGUMENTS&&... arguments_) {
-   (add_one(std::forward<ARGUMENTS>(arguments_)), ...);
+/// Appends values from initializer list to internal buffer.
+inline strings32& strings32::append_any(const std::initializer_list<gd::variant_view>& listValue)
+{
+   for ( const auto& v_ : listValue ) { append(v_, gd::types::tag_view{}); }
    return *this;
 }
 
+/// Appends values from vector to internal buffer.
+inline strings32& strings32::append_any(const std::vector<gd::variant_view>& vectorValue)
+{
+   for ( const auto& v_ : vectorValue ) { append(v_, gd::types::tag_view{}); }
+   return *this;
+}
+
+template<typename... ARGUMENTS>
+strings32& strings32::add(ARGUMENTS&&... arguments_) {
+   (append_any(std::forward<ARGUMENTS>(arguments_)), ...);
+   return *this;
+}
+
+/// Append and convert any type that is convertible to some of the supported types
 template<typename VALUE>
-strings32& strings32::add_one(const VALUE& value) {
-   if constexpr ( std::is_convertible<VALUE, std::string_view>::value ) append(value);
-   else if constexpr ( std::is_convertible<VALUE, std::string>::value ) append(value);
-   else if constexpr ( std::is_convertible<VALUE, const char*>::value ) append(value);
+strings32& strings32::append_any(const VALUE& value) {
+   if constexpr ( std::is_same<VALUE, std::string_view>::value ) append(value);
+   else if constexpr ( std::is_same<VALUE, std::string>::value ) append(value);
+   else if constexpr ( std::is_same<VALUE, const char*>::value ) append(value);
    else if constexpr ( std::is_convertible<VALUE, gd::variant_view>::value ) append(value, gd::types::tag_view{});
    else static_assert( false, "Invalid type" );
    return *this;
@@ -316,14 +358,45 @@ inline const uint8_t* strings32::get_position(uint64_t uOffset) const {         
 }
 
 /// get std::string_view from buffer at offset position
-inline std::string_view strings32::to_string_view_s(const uint8_t* puBuffer, uint64_t uPosition) {
+inline std::string_view strings32::to_string_view_s(const uint8_t* puBuffer, uint64_t uPosition) 
+{
    uint32_t uLength = *reinterpret_cast<const uint32_t*>( puBuffer + uPosition );
    const char* pi_ = reinterpret_cast<const char*>( puBuffer + uPosition + sizeof(uint32_t) );
    return std::string_view( pi_, uLength );
 }
 
-_GD_END
+/// get std::string from buffer at offset position
+inline std::string strings32::to_string_s(const uint8_t* puBuffer, uint64_t uPosition) 
+{
+   uint32_t uLength = *reinterpret_cast<const uint32_t*>( puBuffer + uPosition );
+   const char* pi_ = reinterpret_cast<const char*>( puBuffer + uPosition + sizeof(uint32_t) );
+   return std::string( pi_, uLength );
+}
 
+
+/// join strings with a separator using iterator range
+template<typename ITERATOR>
+std::string strings32::join_s(ITERATOR itBegin, ITERATOR itEnd, const std::string_view& stringSeparator)
+{
+   std::string stringResult;
+   stringResult.reserve(64);                                                   // Reserve space (cache line) for the result string
+
+   // ## Append the first string, this to avoid if statement in loop
+   ITERATOR it = itBegin;
+   if( it != itEnd ) stringResult.append( it.as_string_view() );
+   it++;
+
+   for( ; it != itEnd; ++it ) 
+   {
+      stringResult.append(stringSeparator.data(), stringSeparator.size());
+      auto string_ = it.as_string_view();                                      // Get the string at the current iterator position (compiler will optimize this, easier for debug)
+      stringResult.append(string_.data(), string_.size());
+   }
+   return stringResult;
+}
+
+
+_GD_END
 
 /*
 

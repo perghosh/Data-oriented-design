@@ -18,7 +18,7 @@
    /* Background and Text Colors */
    --color-primary: #000000; /* Black text for primary background */
    --color-secondary: #000000; /* Black text for secondary background */
-   --color-success: #000000; /* Black text for success background */
+   --color-success: #ffffff; /* Black text for success background */
    --color-danger: #ffffff; /* White text for danger background */
    --color-warning: #ffffff; /* Black text for warning background */
    --color-info: #ffffff; /* White text for info background */
