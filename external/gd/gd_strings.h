@@ -270,6 +270,10 @@ public:
    /// join strings with a separator using iterator range
    template<typename ITERATOR>
    static std::string join_s(ITERATOR itBegin, ITERATOR itEnd, const std::string_view& stringSeparator);
+
+   template<typename ITERATOR>
+   static std::string join_s(ITERATOR itBegin, ITERATOR itEnd, const std::string_view& stringSeparator, std::function< bool(std::string&, const std::string_view&, unsigned)> callback_ );
+
 };  
 
 /// copy string32
@@ -395,6 +399,45 @@ std::string strings32::join_s(ITERATOR itBegin, ITERATOR itEnd, const std::strin
    return stringResult;
 }
 
+/**
+ * Joins a range of strings using a specified separator, with an optional callback function.
+ * 
+ * @tparam ITERATOR The iterator type for the range of strings to join
+ * @param itBegin Iterator pointing to the start of the range
+ * @param itEnd Iterator pointing to the end of the range
+ * @param stringSeparator The separator to insert between strings
+ * @param callback_ Optional callback function that can modify the result.
+ *        Takes the current result string and next string value as parameters.
+ *        Returns false to append the string normally, true to skip appending.
+ *        Default is an empty function that always returns false.
+ * @return The joined string containing all strings from the range,
+ *         separated by the specified separator
+ */
+template<typename ITERATOR>
+std::string strings32::join_s(ITERATOR itBegin, ITERATOR itEnd, const std::string_view& stringSeparator, std::function< bool(std::string& stringResult, const std::string_view& stringValue, unsigned uIndex)> callback_ )
+{
+   unsigned uIndex = 0;      // Index of the current string in the range
+   std::string stringResult; // Result string to store the joined strings
+   stringResult.reserve(64);                                                   // Reserve space (cache line) for the result string
+
+   // ## Append the first string, this to avoid if statement in loop
+   ITERATOR it = itBegin;
+   if( it != itEnd )
+   {
+      auto s_ = it.as_string_view();
+      if( callback_(stringResult, s_, uIndex) == false ) stringResult.append( s_ );
+   }
+   it++;
+   uIndex++;
+
+   for( ; it != itEnd; ++it, ++uIndex ) 
+   {
+      stringResult.append(stringSeparator.data(), stringSeparator.size());
+      auto string_ = it.as_string_view();                                      // Get the string at the current iterator position (compiler will optimize this, easier for debug)
+      if( callback_(stringResult, string_, uIndex) == false ) stringResult.append( string_ );
+   }
+   return stringResult;
+}
 
 _GD_END
 
