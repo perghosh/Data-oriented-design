@@ -122,13 +122,13 @@ void strings32::erase( iterator it )
 
 
 /** ---------------------------------------------------------------------------
- * @brief Replaces the string at the given iterator position with a new string.
+ * @brief Replaces the string at the given puPosition with a new string.
  *
  * This method manages the replacement of a string within a custom string buffer
  * where each string is prefixed with its length in 32-bit unsigned integer format,
  * and the data is stored in 32-byte aligned blocks.
  *
- * @param itPosition An iterator pointing to the position where the string should be replaced.
+ * @param puPosition Pointer to the position where the string should be replaced. The position must be at the 32-bit length before string.
  * @param stringReplace The new string to replace the existing one.
  *
  * @details
@@ -142,18 +142,18 @@ void strings32::erase( iterator it )
  *   - Ensures the position for replacement is within the buffer's bounds.
  *
  * @pre 
- * - `itPosition` must be a valid iterator pointing to a position within the string buffer.
+ * - `puPosition` must be a valid pointing to a position within the string buffer.
  * - `stringReplace` should not exceed the maximum size that can be represented by `uint32_t`.
  *
  * @post 
- * - The content at `itPosition` is replaced with `stringReplace`.
+ * - The content at `puPosition` is replaced with `stringReplace`.
  * - If necessary, the subsequent data in the buffer is shifted, and `m_uSize` is updated accordingly.
  */
 void strings32::replace( uint8_t* puPosition, const std::string_view& stringReplace)  
 {                                                                                                  assert( puPosition >= buffer() ); assert( puPosition < buffer_end() ); assert( (puPosition - buffer()) % 4 == 0 );
 #ifndef NDEBUG
-   std::string_view string_begin_d = to_string_view_s( buffer(), puPosition - buffer() );
-   auto uLength_d = string_begin_d.size();
+   std::string_view string_begin_d( c_str_s( puPosition ), length_s( puPosition ) );
+   auto uLength_d = length_s( puPosition );
 #endif
 
    // ## Get the position of the string to replace and calculate the block sizes
@@ -188,7 +188,7 @@ void strings32::replace( uint8_t* puPosition, const std::string_view& stringRepl
    memcpy(puReplacePosition, stringReplace.data(), uNewLength);               // Copy the new string data into the block  
 #ifndef NDEBUG
    std::string_view string_d( (const char*)puReplacePosition, uNewLength );
-   uLength_d = string_d.size();
+   uLength_d = (uint32_t)string_d.size();
 #endif
 }  
 

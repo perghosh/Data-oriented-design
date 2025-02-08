@@ -1,5 +1,8 @@
-#include <random>
 #include <chrono>
+#include <span>
+#include <random>
+#include <ranges>
+#include <list>
 
 #include "gd/gd_utf8.h"
 #include "gd/gd_cli_options.h"
@@ -16,7 +19,16 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+template<typename Container>
+auto as_range(Container& c) {
+   return std::ranges::subrange(c.begin(), c.end());
+}
+
 TEST_CASE( "[gd] strings", "[gd]" ) {
+   static_assert(std::ranges::forward_range<gd::strings32>);
+
+   static_assert(std::ranges::forward_range<std::list<double>>);
+
    gd::strings32 strings_;
 
    strings_.append("one");
@@ -24,11 +36,45 @@ TEST_CASE( "[gd] strings", "[gd]" ) {
    strings_.add("two", "ten", "six", "five");
 
    for ( auto it : strings_ ) {
-      std::cout << it << std::endl;
+      std::cout << it << " - ";
    }
+   std::cout << std::endl;
 
 
+   std::vector<gd::variant_view> vectorValue = { {10}, {20}, {30}, {40}, {50} };
+   gd::strings32 strings2_;
+   strings2_.append_any(1);
+   strings2_.append_any(gd::variant_view(1));
+   strings2_.append_any(true);
+   strings2_.append_any(1.1);
+   strings2_.append_any(vectorValue);
+   strings2_.append_any({ {10}, {20}, {30}, {40}, {50} });
 
+   std::string stringResult = strings2_.join();
+   std::cout << stringResult << std::endl;
+   stringResult = strings2_.join(", ");
+   std::cout << stringResult << std::endl;
+
+   auto it = strings2_.begin();
+   std::advance(it, 2);
+
+   auto range_ = std::ranges::subrange(strings2_);
+
+   auto x = range_.front();
+
+   std::cout << "Five first: ";
+   for ( auto it : range_ | std::views::take(5) ) {
+      std::cout << it << " ";
+   }
+   std::cout << std::endl;
+
+
+   auto above1_ = std::views::all(strings2_) | std::views::filter([](const auto& s_) { return s_[0] > '1'; });
+   std::cout << "Range over 1: ";
+   for ( auto it : above1_ ) {
+      std::cout << it << " ";
+   }
+   std::cout << std::endl;
 }
 
 TEST_CASE( "[gd] using get on variant and variant_view", "[gd]" ) {
