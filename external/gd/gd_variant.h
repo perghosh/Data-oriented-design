@@ -20,6 +20,7 @@
 #include <type_traits>
 
 #include "gd_types.h"
+#include "gd_debug.h"
 
 #ifndef _GD_BEGIN_VARIANT
 #  define GD_BEGIN_VARIANT
@@ -761,7 +762,8 @@ inline TYPE variant::as() const {
       return as_void();
    }
    else {
-      static_assert( false, "unsupported type" );
+      // static_assert( false, "unsupported type" );
+      static_assert(gdd::always_false<TYPE>::value, "unsupported type");
    }
 }
 

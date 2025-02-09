@@ -16,6 +16,7 @@
 
 #include "gd_types.h"
 #include "gd_variant.h"
+#include "gd_debug.h"
 
 #ifndef _GD_BEGIN_VARIANT_VIEW
 #  define _GD_BEGIN_VARIANT_VIEW
@@ -535,7 +536,7 @@ inline TYPE variant_view::as() const {
       return as_void();
    }
    else {
-      static_assert( false, "unsupported type" );
+      static_assert(gdd::always_false<TYPE>::value, "unsupported type");
    }
 }
 

@@ -38,4 +38,7 @@
 bool buffer_find( const uint8_t* pubuffer, const std::vector<uint8_t>& vectorFind, size_t uEnd );
 bool buffer_find( const uint8_t* pubuffer, uint32_t uFind, size_t uEnd );
 
+template<typename T> struct always_false : std::false_type {};
+
+
 _GDD_END
