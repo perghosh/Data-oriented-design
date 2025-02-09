@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "gd_variant_view.h"
+#include "gd_debug.h"
 
 
 #ifndef _GD_BEGIN
@@ -346,7 +347,7 @@ strings32& strings32::append_any(const VALUE& value) {
    else if constexpr ( std::is_same<VALUE, std::string>::value ) append(value);
    else if constexpr ( std::is_same<VALUE, const char*>::value ) append(value);
    else if constexpr ( std::is_convertible<VALUE, gd::variant_view>::value ) append(value, gd::types::tag_view{});
-   else static_assert( false, "Invalid type" );
+   else static_assert(gdd::always_false<VALUE>::value, "unsupported type");
    return *this;
 }
 

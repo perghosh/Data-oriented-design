@@ -20,13 +20,6 @@
 
 // ## Tests for gd::strings32
 
-void leak() {
-   char* pbuffer = new char[1000];
-   pbuffer[0] = 'a';
-   pbuffer[1] = '\0';
-   std::cout << pbuffer << std::endl;
-}
-
 TEST_CASE("strings32 Constructors and Assignment", "[GD]") {
    std::cout << "check `gd::strings32` constructors and assignment" << std::endl;
 
@@ -56,13 +49,6 @@ TEST_CASE("strings32 Methods", "[GD]") {
    { gd::strings32 strings; strings.append("one"); strings.replace(strings.begin(), "two"); REQUIRE(strings[0] == "two"); }
    { gd::strings32 strings; strings.append({"one", "two"}); std::string result = strings.join(", "); REQUIRE(result == "one, two"); }
    { gd::strings32 strings; strings.append({"one", "two"}); auto it = strings.begin(); REQUIRE(*it == "one"); ++it; REQUIRE(*it == "two"); }
-
-   leak();
-
-   char* pbuffer = new char[1000];
-   pbuffer[0] = 'a';
-   pbuffer[1] = '\0';
-   std::cout << pbuffer << std::endl;
 }
 
 

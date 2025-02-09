@@ -39,18 +39,11 @@ if( USE_TEST_ )
    # target_compile_options(${TEST_NAME_} PRIVATE $<$<CONFIG:Debug>:/MTd> $<$<CONFIG:Release>:/MT>)
    # target_link_options(${TEST_NAME_} PRIVATE $<$<CONFIG:Debug>:/MTd> $<$<CONFIG:Release>:/MT>)
 
-if (MSVC)
-    target_compile_options(${TEST_NAME_} PRIVATE /RTC1 /Od /fsanitize=address )
-
-    #    $<$<CONFIG:Debug>:/RTC1>   # Enable runtime checks
-    #    $<$<CONFIG:Debug>:/Od>      # Disable optimizations (if not already set)
-        # Optionally, add /Zi for complete debug info if not already set:
-        # $<$<CONFIG:Debug>:/Zi>
-    #)
-endif()   
-
    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
       # target_compile_options(${TEST_NAME_} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/MD>)
+      target_compile_options(${TEST_NAME_} PRIVATE -fsanitize=address -g -fno-omit-frame-pointer)
+      target_link_options(${TEST_NAME_} PRIVATE -fsanitize=address)
+   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
       target_compile_options(${TEST_NAME_} PRIVATE -fsanitize=address -g -fno-omit-frame-pointer)
       target_link_options(${TEST_NAME_} PRIVATE -fsanitize=address)
    else()
@@ -59,3 +52,6 @@ endif()
    endif()
 endif()
 
+LeakSanitizer has encountered a fatal error.
+For debugging, try setting environment variable LSAN_OPTIONS=verbosity=1:log_threads=1
+LeakSanitizer does not work under ptrace (strace, gdb, etc)
