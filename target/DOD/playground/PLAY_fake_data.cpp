@@ -21,7 +21,7 @@ TEST_CASE( "[fake_data] 01", "[fake_data]" ) {
    std::uniform_int_distribution<> UIDAlphabet(0, (unsigned)stringAlphabet.size() - 1);
    std::uniform_int_distribution<> UIDCount(5, 40);
 
-   dto::table tableText( "int64,key;double,currency;string,50,namey;string,20,city", tag_parse{}, tag_prepare{});
+   dto::table tableText( "int64,key;double,currency;string,50,name;string,20,city", tag_parse{}, tag_prepare{});
    for(auto it = 0; it < 1000; it++)
    {
       std::string stringRandom;

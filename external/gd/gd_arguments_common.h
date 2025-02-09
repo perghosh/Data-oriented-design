@@ -42,9 +42,9 @@ struct index_edit
    enum enumType { eTypeUnknown, eTypeString, eTypePair, eTypeIndex };
 // ## construction ------------------------------------------------------------
    index_edit() {}
-   index_edit( const std::string_view& stringName ): m_stringName(stringName), m_uType(eTypeString) {}
-   index_edit( const std::string_view& stringName, uint32_t uSecondIndex ): m_stringName(stringName), m_uType(eTypeString), m_uSecondIndex(uSecondIndex) {}
-   index_edit( uint64_t uIndex ): m_uIndex(uIndex), m_uType(eTypeIndex) {}
+   index_edit( const std::string_view& stringName ): m_uType(eTypeString), m_stringName(stringName) {}
+   index_edit( const std::string_view& stringName, uint32_t uSecondIndex ): m_uType(eTypeString), m_stringName(stringName), m_uSecondIndex(uSecondIndex) {}
+   index_edit( uint64_t uIndex ): m_uType(eTypeIndex), m_uIndex(uIndex) {}
 
    //operator std::string_view() const { assert( m_uType == eTypeString ); return m_stringName; }
    //operator uint64_t() const { assert( m_uType == eTypeIndex ); return m_uIndex; }

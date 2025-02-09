@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>sample</title>
+   <link id="idCssVariable" rel="stylesheet" href="variables-blue-fog.css">
+   <style>
+      .body { background-color: var(--background-body); color: var(--color-body); }
+
+      table { border-collapse: collapse; border: 1px solid var(--color-body); width: 100%; }
+   </style>
+</head>
+<body class="body">
+   <h2>Test commands in webserver</h2>
+
+   <!-- Table with two collumns, first has button and second have description-->
+   <table>
+      <tr>
+         <td><button onclick="http('database/create?name=test&filename=test%2Esqlite')">Create database named to test</button></td>
+         <td>Send url to server with information about create sqlite database</td>
+      </tr>
+      <tr>
+         <td><button onclick="changeColor('red')">Set application property</button></td>
+         <td>Change color to red</td>
+      </tr>
+      <tr>
+         <td><button onclick="changeColor('green')">Green</button></td>
+         <td>Change color to green</td>
+      </tr>
+      <tr>
+         <td><button onclick="changeColor('yellow')">Yellow</button></td>
+         <td>Change color to yellow</td>
+      </tr>
+   </table>
+
+   <script>
+      /// Send http request to server
+      function http(sCommand) {
+         let sSend = "http://localhost:8080/";
+         sSend += sCommand;
+         fetch(sSend)
+            .then(response => response.text())
+            .then((sResponse) => 
+            {
+               console.log(sResponse)
+            })
+            .catch(error => console.error(error));
+      }
+   </script>
+</body >
+</html >
+

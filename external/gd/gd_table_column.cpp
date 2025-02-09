@@ -45,7 +45,6 @@ columns& columns::add( unsigned uColumnType, unsigned uSize )
 columns& columns::add( unsigned uColumnType, unsigned uSize, const std::string_view& stringName, const std::string_view& stringAlias )
 {                                                                                                  assert( gd::types::validate_number_type_g( uColumnType ) ); assert( uSize < 0x1000'0000 );
    column columnAdd;
-   unsigned uValueOffset{0};
 
    columnAdd.type( uColumnType );
    columnAdd.ctype( uColumnType );

@@ -160,7 +160,7 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
 
             std::string string_ = value_.as_string();
             gd::parse::escape_g( string_, gd::parse::tag_csv{});
-            bool bOk = functionFormat( string_, stringResult );
+            bool bOk = functionFormat(string_, stringResult);                                     assert( bOk == true );
 
             //auto pbszValue = ( const char* )value_;
             //auto [bOk, pbuszPosition] = gd::utf8::validate( pbszValue );
@@ -532,7 +532,7 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
 #endif // _DEBUG
 
             const std::string_view text_ = value_.as_string_view();
-            bool bOk = functionFormat( text_, stringResult );
+            bool bOk = functionFormat(text_, stringResult);                                        assert(bOk == true);
             stringResult += "\"";
          }
          else
@@ -739,7 +739,7 @@ void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const 
 #endif // _DEBUG
 
             const std::string_view text_ = value_.as_string_view();
-            bool bOk = functionFormat( text_, stringResult );
+            bool bOk = functionFormat(text_, stringResult);                                        assert(bOk == true);
             stringResult += "\"";
          }
          else

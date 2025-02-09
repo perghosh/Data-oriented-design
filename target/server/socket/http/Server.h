@@ -1,12 +1,5 @@
 #pragma once
 
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/asio/dispatch.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/config.hpp>
-
 #include <algorithm>
 #include <cstdlib>
 #include <functional>
@@ -16,10 +9,23 @@
 #include <thread>
 #include <vector>
 
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
+#include <boost/asio/dispatch.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/config.hpp>
+
+#include "gd/gd_com.h"
+#include "gd/com/gd_com_server.h"
+
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_define.h"
 
+#include "../command/Router.h"
+
 #include "Application.h"
+
 
 // Return a reasonable mime type based on the extension of a file.
 boost::beast::string_view mime_type_g(boost::beast::string_view path);
@@ -27,6 +33,73 @@ boost::beast::string_view mime_type_g(boost::beast::string_view path);
 // Append an HTTP rel-path to a local filesystem path.
 // The returned path is normalized for the platform.
 std::string path_cat_g( boost::beast::string_view base,  boost::beast::string_view path);
+
+/**
+ * \brief
+ *
+ *
+ *
+ \code
+ \endcode
+ */
+class CServer
+{
+// ## construction -------------------------------------------------------------
+public:
+   CServer() {}
+   // copy
+   CServer(const CServer& o) { common_construct(o); }
+   CServer(CServer&& o) noexcept { common_construct(std::move(o)); }
+   // assign
+   CServer& operator=(const CServer& o) { common_construct(o); return *this; }
+   CServer& operator=(CServer&& o) noexcept { common_construct(std::move(o)); return *this; }
+
+   ~CServer() {}
+private:
+   // common copy
+   void common_construct(const CServer& o) {}
+   void common_construct(CServer&& o) noexcept {}
+
+// ## operator -----------------------------------------------------------------
+public:
+
+
+// ## methods ------------------------------------------------------------------
+public:
+/** \name GET/SET
+*///@{
+
+//@}
+
+/** \name OPERATION
+*///@{
+   std::pair<bool, std::string> Initialize();
+//@}
+
+protected:
+/** \name INTERNAL
+*///@{
+
+//@}
+
+public:
+/** \name DEBUG
+*///@{
+
+//@}
+
+
+// ## attributes ----------------------------------------------------------------
+public:
+   CRouter m_router;             ///< command router
+
+
+// ## free functions ------------------------------------------------------------
+public:
+
+
+
+};
 
 // Return a response for the given request.
 //
@@ -82,10 +155,13 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
 
    std::string_view stringTarget = request_.target();
 
+   // ## Resolve target
+
    // ## Request path must be absolute and not contain "..".
-   if( request_.target().empty() ||
-       request_.target()[0] != '/' ||
-       request_.target().find("..") != boost::beast::string_view::npos) { return bad_request_("Illegal request-target"); }
+   if( request_.target().empty() || request_.target()[0] != '/' || request_.target().find("..") != boost::beast::string_view::npos) 
+   { 
+      return bad_request_("Illegal request-target"); 
+   }
 
    // ## Build the path to the requested file
    std::string stringPath = path_cat_g(stringRoot, request_.target());
@@ -178,3 +254,4 @@ public:
    boost::asio::ip::tcp::acceptor m_acceptor; ///< Handle new socket connections
    std::shared_ptr<std::string const> m_pstringFolderRoot;///< root folder on disk where to find files
 };
+
