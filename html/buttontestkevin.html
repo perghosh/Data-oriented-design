@@ -80,6 +80,14 @@
 
       }
 
+      function RandomRGBColor()
+      {
+         const r = Math.floor(Math.random() * 256);
+         const g = Math.floor(Math.random() * 256);
+         const b = Math.floor(Math.random() * 256);
+         return `rgb(${r}, ${g}, ${b})`;
+      }
+
       function Table(container, columns, rows) {
          const eContainer = container;
          const iColumns = columns;
@@ -87,12 +95,13 @@
 
          const eTable = document.createElement("table");
 
-
-
-
          for (let i = 0; i <= iRows; i++)
          {
             const eRow = document.createElement("tr");
+            if (i % 2) {
+               eRow.bgColor = RandomRGBColor();
+            }
+
             for (let j = 0; j <= iColumns; j++)
             {
                const eColumn = document.createElement("td");
