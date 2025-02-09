@@ -52,6 +52,3 @@ if( USE_TEST_ )
    endif()
 endif()
 
-LeakSanitizer has encountered a fatal error.
-For debugging, try setting environment variable LSAN_OPTIONS=verbosity=1:log_threads=1
-LeakSanitizer does not work under ptrace (strace, gdb, etc)
