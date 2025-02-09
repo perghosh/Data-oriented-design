@@ -920,7 +920,7 @@ inline void table::operator=( detail::columns* pcolumns ) {
  */
 inline std::vector<unsigned> table::column_get_type() const {
    std::vector<unsigned> vectorType;
-   for(const auto it : *m_pcolumns) { vectorType.push_back( it.type() ); }
+   for(const auto& it : *m_pcolumns) { vectorType.push_back( it.type() ); }
    return vectorType;
 }
 
@@ -930,7 +930,7 @@ inline std::vector<unsigned> table::column_get_type() const {
  */
 inline std::vector<unsigned> table::column_get_ctype() const {
    std::vector<unsigned> vectorCType;
-   for(const auto it : *m_pcolumns) { vectorCType.push_back( it.ctype() ); }
+   for(const auto& it : *m_pcolumns) { vectorCType.push_back( it.ctype() ); }
    return vectorCType;
 }
 

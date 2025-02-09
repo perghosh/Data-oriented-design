@@ -49,7 +49,7 @@ assert( t2.cell_get_variant_view( 0, 0 ) == gd::variant_view( ( int64_t )1234567
  * @param variantviewValue variant view value to generate table from
 */
 table_column_buffer::table_column_buffer( const gd::variant_view& variantviewValue, tag_prepare ) :
-   m_uReservedRowCount( 1 ), m_uFlags(0), m_uRowSize(0), m_uRowCount(0),  m_uRowGrowBy(0)
+   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0),  m_uReservedRowCount( 1 )
 {
    auto type_ = variantviewValue.type();
    auto size_ = variantviewValue.is_primitive() ? 0 : variantviewValue.length();
@@ -68,7 +68,7 @@ table_column_buffer::table_column_buffer( const gd::variant_view& variantviewVal
  * @param vectorColumn vector with typle that has column type as string and column name
 */
 table_column_buffer::table_column_buffer( const std::vector< std::string_view >& vectorColumn, tag_prepare ) :
-   m_uReservedRowCount( eSpaceFirstAllocate ), m_uFlags( 0 ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uRowGrowBy( 0 )
+   m_uFlags( 0 ), m_uRowSize( 0 ), m_uRowGrowBy( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( eSpaceFirstAllocate )
 {
    for( const auto& it : vectorColumn )
    {
@@ -101,7 +101,7 @@ table_column_buffer::table_column_buffer( unsigned uFlags, const std::vector< st
  * @param vectorColumn vector with typle that has column type as string, value size for types that need it and column name
 */
 table_column_buffer::table_column_buffer( unsigned uFlags, const std::vector<std::tuple<std::string_view, unsigned, std::string_view>>& vectorColumn, tag_prepare ) :
-   m_uReservedRowCount( eSpaceFirstAllocate ), m_uFlags( uFlags ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uRowGrowBy( 0 )
+   m_uFlags( uFlags ), m_uRowSize( 0 ), m_uRowGrowBy( 0 ), m_uRowCount( 0 ),  m_uReservedRowCount( eSpaceFirstAllocate )
 {
    for( const auto& it : vectorColumn )
    {
@@ -113,7 +113,7 @@ table_column_buffer::table_column_buffer( unsigned uFlags, const std::vector<std
 
 /// parse string to generate columns, note that this has to be checked in debug, constructor do not handle error
 table_column_buffer::table_column_buffer(const std::string_view& stringColumns, tag_parse, tag_prepare) :
-   m_uReservedRowCount(eSpaceFirstAllocate), m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uRowGrowBy(0)
+   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0), m_uReservedRowCount(eSpaceFirstAllocate)
 {
 #ifndef NDEBUG
    auto result_ = column_add( stringColumns, tag_parse{});                                         assert( result_.first == true );
@@ -126,7 +126,7 @@ table_column_buffer::table_column_buffer(const std::string_view& stringColumns, 
 
 /// parse string to generate columns, note that this has to be checked in debug, constructor do not handle error
 table_column_buffer::table_column_buffer(unsigned uFlags, const std::string_view& stringColumns, tag_parse, tag_prepare) :
-   m_uReservedRowCount(eSpaceFirstAllocate), m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uRowGrowBy(0)
+   m_uFlags(uFlags), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0), m_uReservedRowCount(eSpaceFirstAllocate)
 {
 #ifndef NDEBUG
    auto result_ = column_add( stringColumns, tag_parse{});                                         assert( result_.first == true );
@@ -159,7 +159,7 @@ assert( t2.cell_get_variant_view( 2, "FInteger" ) == gd::variant_view((int64_t)2
  * @param vectorValue.[3] value inserted to table at first row
 */
 table_column_buffer::table_column_buffer( const std::vector<std::tuple<std::string_view, unsigned, std::string_view, gd::variant_view>>& vectorValue, tag_prepare ) :
-   m_uReservedRowCount( 1 ), m_uFlags(0), m_uRowSize(0), m_uRowCount(0),  m_uRowGrowBy(0)
+   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0),  m_uReservedRowCount( 1 )
 {
    for( const auto& it : vectorValue )
    {
@@ -355,7 +355,6 @@ table_column_buffer& table_column_buffer::column_add( unsigned uColumnType, unsi
 table_column_buffer& table_column_buffer::column_add( unsigned uColumnType, unsigned uSize, const std::string_view& stringName, const std::string_view& stringAlias )
 {                                                                                                  assert( uColumnType != 0 ); assert( gd::types::validate_number_type_g( uColumnType ) ); assert( uSize < 0x1000'0000 );
    column columnAdd;
-   unsigned uValueOffset{0};
 
    columnAdd.type( uColumnType );
    columnAdd.ctype( uColumnType );
@@ -1972,8 +1971,8 @@ void table_column_buffer::cell_set( uint64_t uRow, unsigned uColumn, const gd::v
       auto uValueType_d = variantviewValue.type_number();
       auto uColumnType_d = columnSet.ctype_number();
       if( uValueType_d != uColumnType_d ) {                                    // check type, this has to match. You can't set value from type that differ from type in column
-         auto stringValueType_d = gd::types::type_name_g( uValueType_d );
-         auto stringColumnType_d = gd::types::type_name_g( uColumnType_d );
+         [[maybe_unused]] auto stringValueType_d = gd::types::type_name_g( uValueType_d );
+         [[maybe_unused]] auto stringColumnType_d = gd::types::type_name_g( uColumnType_d );
                                                                                                    assert( uValueType_d == uColumnType_d || (variantviewValue.is_char_string() && variant::is_char_string_s( uColumnType_d ) == true) );
       }
 #endif // !NDEBUG
@@ -2781,7 +2780,7 @@ int64_t table_column_buffer::find_first_free_row( uint64_t uStartRow ) const
    for( auto itRow = uStartRow; itRow < m_uReservedRowCount; itRow++ )
    {
 #ifdef _DEBUG
-      auto uState_d = *reinterpret_cast<uint32_t*>( puPosition );
+      [[maybe_unused]] auto uState_d = *reinterpret_cast<uint32_t*>( puPosition );
 #endif // _DEBUG
       // if the use flag not set then row is free
       if( (*reinterpret_cast<uint32_t*>( puPosition ) & eRowStateUse) == 0 ) return itRow;
@@ -2806,7 +2805,7 @@ uint64_t table_column_buffer::count_used_rows() const
    for( uint64_t uRow = 0; uRow < m_uReservedRowCount; uRow++ )
    {
 #ifdef _DEBUG
-      auto uState_d = *reinterpret_cast<const uint32_t*>( puPosition );
+      [[maybe_unused]] auto uState_d = *reinterpret_cast<const uint32_t*>( puPosition );
 #endif // _DEBUG
       // if the use flag not set then row is free
       if( (*reinterpret_cast<const uint32_t*>( puPosition ) & eRowStateUse) != 0 ) { uRowCount++; }
@@ -2867,7 +2866,7 @@ void table_column_buffer::column_fill( unsigned uColumn, const gd::variant_view&
    const auto& columnSet = m_vectorColumn[uColumn];                                                assert( columnSet.position() < m_uRowSize );
    auto uColumnType = columnSet.ctype_number();
    gd::variant variantConvertTo;
-   bool bOk = variantviewValue.convert_to( uColumnType,  variantConvertTo );
+   bool bOk = variantviewValue.convert_to(uColumnType, variantConvertTo);                          assert( bOk == true );
 
    for( auto uRow = uFromRow; uRow < uToRow; uRow++ )
    {

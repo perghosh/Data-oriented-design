@@ -20,6 +20,7 @@
    #pragma clang diagnostic ignored "-Wreorder-ctor"
    #pragma clang diagnostic ignored "-Wunused-variable"
    #pragma clang diagnostic ignored "-Wunused-but-set-variable"
+   #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #elif defined( __GNUC__ )
    #pragma GCC diagnostic push
 #elif defined( _MSC_VER )

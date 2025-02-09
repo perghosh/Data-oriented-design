@@ -824,8 +824,6 @@ std::size_t path::count() const
 */
 path& path::erase( std::size_t uCount )
 {
-   auto position_ = m_stringPath.rfind( m_iPathDivider_s );
-
    const char* pbsz_ = m_stringPath.c_str();
    const char* pbszPosition = pbsz_ + m_stringPath.length();
 

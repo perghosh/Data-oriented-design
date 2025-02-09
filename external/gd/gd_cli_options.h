@@ -127,7 +127,7 @@ public:
    options( const std::string_view& stringName ): m_stringName{ stringName } {}
    options( const std::string_view& stringName, const std::string_view& stringDescription ): m_stringName{ stringName }, m_stringDescription{ stringDescription } {}
    options( unsigned uFlags ) : m_uFlags{uFlags} {}
-   options( unsigned uFlags, unsigned uFirstToken ) : m_uFlags{uFlags}, m_uFirstToken{uFirstToken} {}
+   options( unsigned uFlags, unsigned uFirstToken ) : m_uFirstToken{uFirstToken}, m_uFlags{uFlags} {}
    options( unsigned uFlags, const std::string_view& stringName ) : m_uFlags{uFlags}, m_stringName{ stringName } {}
    options( unsigned uFlags, const std::string_view& stringName, const std::string_view& stringDescription ) : m_uFlags{uFlags}, m_stringName{ stringName }, m_stringDescription{ stringDescription } {}
    options( const std::initializer_list<option>& listOption ) { add( listOption ); }

@@ -3,7 +3,7 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
-project("DOD" LANGUAGES CXX C)
+project("target-dod" LANGUAGES CXX C)
 
 include(include_external)
 

@@ -3,7 +3,17 @@
  */
 
 
+#include "../command/RouterDatabase.h"
+#include "../command/RouterApplication.h"
+
 #include "Server.h"
+
+
+std::pair<bool, std::string> CServer::Initialize() 
+{
+
+}
+
 
 
 // Report a failure

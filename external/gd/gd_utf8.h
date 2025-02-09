@@ -244,7 +244,7 @@ namespace gd {
 #endif         
          static_assert(sizeof(UTF8_TYPE) == 1, "Value isn't compatible with uint8_t");
 #ifndef NDEBUG
-         const wchar_t* pwszFrom_d = (const wchar_t*)reinterpret_cast<const uint16_t*>(pwszFrom);
+         [[maybe_unused]] const wchar_t* pwszFrom_d = (const wchar_t*)reinterpret_cast<const uint16_t*>(pwszFrom);
 #endif // !NDEBUG        
          return convert_unicode(reinterpret_cast<const uint16_t*>(pwszFrom), reinterpret_cast<uint8_t*>(pbszTo), reinterpret_cast<const uint8_t*>(pbszEnd));
       }

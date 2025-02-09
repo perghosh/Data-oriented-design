@@ -985,7 +985,7 @@ public:
    /// Remove param starting at position, remember that if you are string positions in buffer they are invalidated with this method
    void remove( const std::string_view& stringName );
    void remove(const_pointer pPosition);
-   void remove(const_iterator it) { remove(it); }
+   void remove(const_iterator it) { remove( static_cast<const_pointer>(it) ); }
    /// make sure internal buffer can hold specified number of bytes, no copying just reserving data
    pointer reserve_no_copy(unsigned int uCount) {
       if( is_owner() == false || m_pBuffer == nullptr || uCount > m_uBufferLength ) { return _reserve_no_copy(uCount + (uCount >> 1)); }

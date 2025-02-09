@@ -19,10 +19,6 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-template<typename Container>
-auto as_range(Container& c) {
-   return std::ranges::subrange(c.begin(), c.end());
-}
 
 TEST_CASE( "[gd] strings", "[gd]" ) {
    static_assert(std::ranges::forward_range<gd::strings32>);

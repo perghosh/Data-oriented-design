@@ -45,11 +45,11 @@ namespace strings {
       iterator() : m_pstrings(nullptr), m_uOffset(0) {}
 
       /// Initializes the iterator with a current pointer and an end pointer for the buffer.  
-      iterator( STRINGS* pstrings, uint64_t uOffset ) : m_pstrings(pstrings), m_uOffset(uOffset) {}  
+      iterator( STRINGS* pstrings, uint64_t uOffset ) : m_uOffset(uOffset), m_pstrings(pstrings) {}  
 
       /// Copies the iterator from another iterator instance.  
-      iterator(const iterator& o) : m_pstrings(o.m_pstrings), m_uOffset(o.m_uOffset) {}  
-      iterator(iterator&& o) noexcept : m_pstrings(o.m_pstrings), m_uOffset(o.m_uOffset) { o.m_pstrings = nullptr; o.m_uOffset = 0; }  
+      iterator(const iterator& o) : m_uOffset(o.m_uOffset), m_pstrings(o.m_pstrings) {}  
+      iterator(iterator&& o) noexcept : m_uOffset(o.m_uOffset), m_pstrings(o.m_pstrings) { o.m_pstrings = nullptr; o.m_uOffset = 0; }  
 
       /// Assigns the iterator state from another iterator instance.  
       iterator& operator=(const iterator& o) {  
