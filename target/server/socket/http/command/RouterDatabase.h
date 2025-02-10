@@ -13,6 +13,7 @@
 #include <string>
 #include <string_view>
 
+#include "gd/gd_strings.h"
 #include "gd/com/gd_com_server.h"
 
 #include "Router.h"
@@ -58,7 +59,9 @@ public:
 
 /** \name OPERATION
 *///@{
+   /// Execute resolvs the command and executes it
    std::pair<bool, std::string> Execute(const std::string_view& stringCommand, gd::com::server::command_i* pCommand, gd::com::server::response_i* presponse );
+   //std::pair<bool, std::string> Execute( const gd::strings32& strings32Command, gd::com::server::command_i* pCommand, gd::com::server::response_i* presponse );
 //@}
 
 protected:
