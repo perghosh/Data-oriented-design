@@ -22,7 +22,7 @@ public:
    CHttpServer& operator=(const CHttpServer& o) { common_construct(o); return *this; }
    CHttpServer& operator=(CHttpServer&& o) noexcept { common_construct(std::move(o)); return *this; }
 
-   ~CHttpServer() {}
+   ~CHttpServer();
 private:
    // common copy
    void common_construct(const CHttpServer& o) {}
@@ -41,6 +41,9 @@ public:
 
 /** \name OPERATION
 *///@{
+   std::pair<bool, std::string> Initialize();
+
+   bool is_endpoint(const std::string_view& stringCommand) override;
    std::pair<bool, std::string> get( const std::string_view* stringCommandList, const gd::argument::arguments* pargumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse ) override ;
 //@}
 
@@ -59,7 +62,8 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-
+   CRouter m_router;             ///< command router
+   std::vector<gd::com::server::server_i*> m_vectorServer; ///< connected servers
 
 // ## free functions ------------------------------------------------------------
 public:

@@ -97,7 +97,7 @@ public:
 
    // ## attributes ----------------------------------------------------------------
 public:
-   CRouter m_router;             ///< command router
+   CRouter m_router;             ///< command router, used to route commands to correct command object
 
    std::mutex m_mutexDatabase;   ///< Handle database locking
    gd::database::database_i* m_pdatabase; ///< active database
