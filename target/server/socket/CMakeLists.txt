@@ -19,11 +19,6 @@ message( STATUS )
 set( SOURCE_DIRECTORY_ ${CMAKE_SOURCE_DIR}/source )
 set( APPLICATION_DIRECTORY_ ${SOURCE_DIRECTORY_}/application )
 
-file(GLOB HTTP01_FILES_ *.cpp *.h ) # all cpp files in current directory
-
-
-message( STATUS HTTP01_FILES_= ${HTTP01_FILES_} )
-
 # ============================================================================= set_compiler_options
 # Set global compiler options
 function( set_compiler_options )
@@ -33,6 +28,7 @@ function( set_compiler_options )
    endif()
 endfunction()
 
+#[[
 set( USE_TARGET_ ON ) # ========================================================= ${http01}
 if( USE_TARGET_ )
    set(TARGET_NAME_ "http01")
@@ -45,27 +41,40 @@ if( USE_TARGET_ )
    )
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
-   target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE _CRT_SECURE_NO_WARNINGS)
+   target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE GD_DATABASE_ODBC_USE _CRT_SECURE_NO_WARNINGS)
    set_compiler_options()
 endif()
+]]
 
 set( USE_TARGET_ ON ) # ========================================================= ${http}
 if( USE_TARGET_ )
-   file(GLOB HTTPF_FILES_ http/*.cpp http/*.h )                                # all cpp files in http file directory
+   file(GLOB HTTP_FILES_ http/*.cpp http/*.h )                                 # all cpp files in http file directory
+   file(GLOB HTTP_COMMAND_FILES_ http/command/*.cpp http/command/*.h )         # all cpp in command directory
    set(TARGET_NAME_ "http")
 
    add_executable(${TARGET_NAME_}
+      ${external_sqlite}
       ${external_gd}
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
 
-      ${HTTPF_FILES_}                                                          # target files
+      ${HTTP_FILES_}                                                         # current directory files
+      ${HTTP_COMMAND_FILES_}                                                # command directory files
       
-      main.cpp                                                                 # main file where method main is located
-      "command/Router.h" "command/Router.cpp"
+      http/main.cpp                                                           # main file where method main is located
+      "http/command/Router.h" "http/command/Router.cpp"
    )
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
    target_compile_definitions(${TARGET_NAME_} PRIVATE TARGET_HTTP_FILES GD_LOG_SIMPLE)
+   target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE GD_DATABASE_ODBC_USE)
    set_compiler_options()
+   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      target_link_libraries(${TARGET_NAME_} ${CMAKE_DL_LIBS})
+      target_link_libraries(${TARGET_NAME_} ${CMAKE_SOURCE_DIR}/external/mariadb/libmaodbc.so)
+   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+   else()
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_WIN32_WINNT=0x0601 ") # GCC needs this to compile boost
+      target_link_libraries(${TARGET_NAME_} PRIVATE odbc32.lib)
+   endif()
 endif()

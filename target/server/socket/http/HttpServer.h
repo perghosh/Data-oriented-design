@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../command/Router.h"
+#include "command/Router.h"
 
 /**
  * \brief
@@ -42,6 +42,7 @@ public:
 /** \name OPERATION
 *///@{
    std::pair<bool, std::string> Initialize();
+   std::pair<bool, std::string> Execute(const std::string_view& stringCommand );
 
    bool is_endpoint(const std::string_view& stringCommand) override;
    std::pair<bool, std::string> get( const std::string_view* stringCommandList, const gd::argument::arguments* pargumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse ) override ;

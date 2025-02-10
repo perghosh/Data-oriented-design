@@ -9,7 +9,7 @@
 
 #include "gd/gd_database.h"
 
-#include "../command/Router.h"
+#include "command/Router.h"
 
 #include "application/ApplicationBasic.h"
 

@@ -93,7 +93,7 @@ std::pair<bool, std::string> database::open( const std::string_view& stringDrive
    }
    else
    {
-      iReturn = ::SQLDriverConnect( m_hDatabase, nullptr, (SQLCHAR*)stringDriverConnect.data(), stringDriverConnect.length(), nullptr, 0, nullptr, 0 );
+      iReturn = ::SQLDriverConnect( m_hDatabase, nullptr, (SQLCHAR*)stringDriverConnect.data(), (unsigned)stringDriverConnect.length(), nullptr, 0, nullptr, 0 );
       if( iReturn < 0 )
       {
          auto stringError = error();
@@ -466,8 +466,6 @@ std::pair<bool, std::string> cursor::bind_parameter( int iIndex, const gd::varia
 std::pair<bool, std::string> cursor::add_columns( SQLHANDLE hStatement, record& recordAddTo, unsigned uCount )
 {
    SQLSMALLINT iFieldNameLength;       // Gets field name length 
-   SQLSMALLINT iSqlType;               // ODBC field type
-   SQLSMALLINT iDecimalDigits;         // if decimal count is specified
    SQLSMALLINT iNullable;              // if field is nullable
    SQLULEN     uFieldSize;             // Length of field if value is stored in array like text or binary
    SQLCHAR     pszFieldName[256];      // name of field
@@ -518,7 +516,7 @@ std::pair<bool, std::string> cursor::add_columns( SQLHANDLE hStatement, record& 
 
          recordAddTo.add( uType, uCType, uSize, uStartBufferSize, (const char*)pszFieldName, "", uState );// binds column buffer in result
 #ifndef NDEBUG
-         const auto* pcolumn_d = recordAddTo.get_column( recordAddTo.size() - 1 );
+         const auto* pcolumn_d = recordAddTo.get_column( (unsigned)recordAddTo.size() - 1 );
          std::string stringColumn = gd::database::debug::print( *pcolumn_d );
 #endif // !NDEBUG
 

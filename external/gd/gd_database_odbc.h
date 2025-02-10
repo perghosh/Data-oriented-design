@@ -218,7 +218,7 @@ public:
 *///@{
    const record* get_record() const { return &m_recordRow; }
    record* get_record() { return &m_recordRow; }
-   unsigned get_column_count() const { return m_recordRow.size(); }
+   unsigned get_column_count() const { return (unsigned)m_recordRow.size(); }
    unsigned get_parameter_count();
    std::string_view get_parameter_name( unsigned uIndex );
 //@}
@@ -260,7 +260,7 @@ public:
    std::pair<bool, std::string> next( bool* pbIsOnRow, int iCount );
    bool next() { bool bRow; next( &bRow, get_column_count() ); return bRow; }
 
-   void update() { update(0, m_recordRow.size()); }
+   void update() { update(0, (unsigned)m_recordRow.size()); }
    void update( unsigned uFrom, unsigned uTo );
    std::pair<bool, std::string> update_blob();
 

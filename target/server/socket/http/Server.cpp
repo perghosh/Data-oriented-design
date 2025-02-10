@@ -3,9 +3,6 @@
  */
 
 
-#include "../command/RouterDatabase.h"
-#include "../command/RouterApplication.h"
-
 #include "Server.h"
 
 

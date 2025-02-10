@@ -176,6 +176,8 @@ struct path
    path filename() const { return path(std::filesystem::path(m_stringPath).filename().string()); }
    /// Get file extension from path if any
    path extension() const { return path(std::filesystem::path(m_stringPath).extension().string()); }
+   /// With stem get filename without extension
+   path stem() const { return path(std::filesystem::path(m_stringPath).stem().string()); }
 
    /// Add folder or filename to path
    path& add(const std::string_view& stringName);

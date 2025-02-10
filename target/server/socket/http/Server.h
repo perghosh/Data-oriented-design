@@ -22,7 +22,7 @@
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_define.h"
 
-#include "../command/Router.h"
+#include "command/Router.h"
 
 #include "Application.h"
 

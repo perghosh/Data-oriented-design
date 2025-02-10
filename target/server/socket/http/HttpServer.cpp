@@ -1,6 +1,6 @@
 #include "HttpServer.h"
 
-#include "../command/RouterDatabase.h"
+#include "command/RouterDatabase.h"
 
 CHttpServer::~CHttpServer()
 {
@@ -15,12 +15,21 @@ CHttpServer::~CHttpServer()
 std::pair<bool, std::string> CHttpServer::Initialize()
 {
    // ## Add default routers
+   // Routers are like sub servers, they handle a set of commands
 
-   CRouterDatabase* prouterdatabase = new CRouterDatabase("database");
-   prouterdatabase->add_reference();
-   m_vectorServer.push_back(prouterdatabase);
+   CRouterDatabase* prouterdatabase = new CRouterDatabase("database");         // Create a new router for database
+   prouterdatabase->add_reference();                                           // Add reference to router
+   // Bind the callback method to this router server (each server can have any number of callbacks)
+   prouterdatabase->callback_add( std::bind( &CRouterDatabase::Execute, prouterdatabase, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3 ) );
+
+   m_vectorServer.push_back(prouterdatabase);                                  // Keep server router for database
 
 
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CHttpServer::Execute(const std::string_view& stringCommand)
+{
    return { true, "" };
 }
 

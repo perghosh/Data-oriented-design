@@ -293,7 +293,7 @@ public:
 
    std::pair<bool, std::string> execute();
 
-   void update() { update(0, m_recordRow.size()); }
+   void update() { update(0, (unsigned)m_recordRow.size()); }
    void update( unsigned uFrom, unsigned uTo );
 
    /// go to next row

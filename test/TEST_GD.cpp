@@ -22,6 +22,42 @@
 // ----------------------------------------------------------------------------
 // // ## Tests for gd::strings32
 
+/// Test the `strings32` class with random strings of varying lengths and operations on them.
+void strings32_test(size_t uStringCount, size_t uMaxStringLength)
+{
+   std::random_device rd;
+   std::mt19937 mt19937Generate(rd());
+   std::uniform_int_distribution<> UIDPrintChar(32, 126); // Printable ASCII characters
+   std::uniform_int_distribution<> UIDStringLength(1, int(uMaxStringLength));
+   std::uniform_int_distribution<> UIDIndex(0, int(uStringCount) - 1);
+
+   gd::strings32 strings32Container;
+
+   // Generate and append random strings
+   for (size_t i = 0; i < uStringCount; ++i)
+   {
+      size_t uLength = UIDStringLength(mt19937Generate);
+      std::string stringRandom;
+      stringRandom.reserve(uLength);
+
+      for (size_t j = 0; j < uLength; ++j) { stringRandom += static_cast<char>(UIDPrintChar(mt19937Generate)); }
+      strings32Container.append(stringRandom);
+   }
+   REQUIRE(strings32Container.size() == uStringCount);
+
+   // Replace a random string
+   size_t uReplaceIndex = UIDIndex(mt19937Generate);
+   std::string stringReplacement = "REPLACED_STRING";
+   auto itReplace = strings32Container.begin() + uReplaceIndex;
+   strings32Container.replace(itReplace, stringReplacement);                                       REQUIRE(strings32Container.size() == uStringCount);
+   REQUIRE(itReplace.as_string_view() == stringReplacement);
+   // Remove a random string
+   size_t uRemoveIndex = UIDIndex(mt19937Generate);
+   auto itRemove = strings32Container.begin() + uRemoveIndex;
+   strings32Container.erase(itRemove);                                                             REQUIRE(strings32Container.size() == uStringCount - 1);
+}
+
+
 TEST_CASE("strings32 Constructors and Assignment", "[GD]") {
    std::cout << "check `gd::strings32` constructors and assignment" << std::endl;
 
@@ -51,41 +87,8 @@ TEST_CASE("strings32 Methods", "[GD]") {
    { gd::strings32 strings; strings.append("one"); strings.replace(strings.begin(), "two"); REQUIRE(strings[0] == "two"); }
    { gd::strings32 strings; strings.append({"one", "two"}); std::string result = strings.join(", "); REQUIRE(result == "one, two"); }
    { gd::strings32 strings; strings.append({"one", "two"}); auto it = strings.begin(); REQUIRE(*it == "one"); ++it; REQUIRE(*it == "two"); }
-}
 
-/// Test the `strings32` class with random strings of varying lengths and operations on them.
-void strings32_test(size_t uStringCount, size_t uMaxStringLength)
-{
-   std::random_device rd;
-   std::mt19937 mt19937Generate(rd());
-   std::uniform_int_distribution<> UIDPrintChar(32, 126); // Printable ASCII characters
-   std::uniform_int_distribution<> UIDStringLength(1, int(uMaxStringLength));
-   std::uniform_int_distribution<> UIDIndex(0, int(uStringCount) - 1);
-
-   gd::strings32 strings32Container;
-
-   // Generate and append random strings
-   for (size_t i = 0; i < uStringCount; ++i)
-   {
-      size_t uLength = UIDStringLength(mt19937Generate);
-      std::string stringRandom;
-      stringRandom.reserve(uLength);
-
-      for (size_t j = 0; j < uLength; ++j) { stringRandom += static_cast<char>(UIDPrintChar(mt19937Generate)); }
-      strings32Container.append(stringRandom);
-   }
-                                                                                                   REQUIRE(strings32Container.size() == uStringCount);
-
-   // Replace a random string
-   size_t uReplaceIndex = UIDIndex(mt19937Generate);
-   std::string stringReplacement = "REPLACED_STRING";
-   auto itReplace = strings32Container.begin() + uReplaceIndex;
-   strings32Container.replace(itReplace, stringReplacement);                                       REQUIRE(strings32Container.size() == uStringCount);
-                                                                                                   REQUIRE(itReplace.as_string_view() == stringReplacement);
-   // Remove a random string
-   size_t uRemoveIndex = UIDIndex(mt19937Generate);
-   auto itRemove = strings32Container.begin() + uRemoveIndex;
-   strings32Container.erase(itRemove);                                                             REQUIRE(strings32Container.size() == uStringCount - 1);
+   for ( unsigned u = 10; u < 20; u++ ) { strings32_test(u, 10); }
 }
 
 // ----------------------------------------------------------------------------
@@ -109,6 +112,7 @@ TEST_CASE("Path Methods", "[path]") {
    { gd::file::path p("/test/path"); REQUIRE(p.has_begin_separator()); }
    { gd::file::path p("test/path/file.txt"); REQUIRE(p.filename().string() == "file.txt"); }
    { gd::file::path p("test/path/file.txt"); REQUIRE(p.extension().string() == ".txt"); }
+   { gd::file::path p("test/path/file.txt"); REQUIRE(p.stem().string() == "file"); }
    { gd::file::path p("test"); p.add("path"); REQUIRE(p == "test/path"); }
    { gd::file::path p("test"); p.add({"path", "to", "file"}); REQUIRE(p == "test/path/to/file"); }
    { gd::file::path p("test"); std::vector<std::string_view> vec = {"path", "to", "file"}; p.add(vec); REQUIRE(p == "test/path/to/file"); }
@@ -120,6 +124,4 @@ TEST_CASE("Path Methods", "[path]") {
    { gd::file::path p("test/path/file.txt"); p.replace_extension(".md"); REQUIRE(p == "test/path/file.md"); }
    { gd::file::path p("test/path"); p.clear(); REQUIRE(p.empty()); }
    { gd::file::path p("test/path"); std::string result; for (auto it = p.begin(); it != p.end(); ++it) { result += *it; } REQUIRE(gd::file::path(result) == "test/path"); }
-
-   for ( unsigned u = 10; u < 20; u++ ) { strings32_test(u, 10); }
 }
