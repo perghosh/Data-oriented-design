@@ -126,6 +126,9 @@ std::pair<bool, std::string> CApplication::Initialize()
 
    // ## Add default servers to router
    auto* phttpserver = new CHttpServer;
+   auto result_ = phttpserver->Initialize();                                   // initialize http server, connect all routes
+   if ( result_.first == false ) return result_;
+
    m_router.Connect( phttpserver );
    phttpserver->release();
 

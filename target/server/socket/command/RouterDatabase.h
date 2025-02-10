@@ -25,11 +25,13 @@
  \code
  \endcode
  */
-class CRouterDatabase
+class CRouterDatabase : public gd::com::server::router::server
 {
 // ## construction -------------------------------------------------------------
 public:
    CRouterDatabase() {}
+   /// create database with name
+   CRouterDatabase(const std::string_view& stringName) : m_stringName(stringName) {}
    // copy
    CRouterDatabase(const CRouterDatabase& o) { common_construct(o); }
    CRouterDatabase(CRouterDatabase&& o) noexcept { common_construct(std::move(o)); }
@@ -62,7 +64,7 @@ public:
 protected:
 /** \name INTERNAL
 *///@{
-
+   std::pair<bool, std::string> CreateDatabase(const gd::argument::arguments& arguments_ );
 //@}
 
 public:
@@ -74,6 +76,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   std::string m_stringName; ///< Name of the database
 
 
 // ## free functions ------------------------------------------------------------

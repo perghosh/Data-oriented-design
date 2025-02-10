@@ -11,7 +11,9 @@
 
 std::pair<bool, std::string> CServer::Initialize() 
 {
-
+   // Implementation of the Initialize method
+   // For now, just return a dummy response
+   return { true, "" };
 }
 
 

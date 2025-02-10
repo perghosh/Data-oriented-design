@@ -135,9 +135,9 @@ struct server_i : public unknown_i
 {
    virtual std::pair<bool, std::string> get( command_i* pcommand_, response_i* presponse ) = 0; 
    virtual std::pair<bool, std::string> get( const char* pbszCommand, response_i* presponse ) = 0; 
+   virtual bool is_endpoint( const std::string_view& stringCommand ) = 0;
    virtual void add_error( const std::variant<std::string_view, const gd::argument::arguments*>& error_ ) = 0;
    virtual unsigned get_error( std::vector< std::string >* pvectorError, bool bRemove ) = 0;
-   virtual bool is_endpoint( const std::string_view& stringCommand ) = 0;
    //virtual std::pair<bool, std::string> get( command_i* pcommand_, const gd::argument::arguments& argumentsRecepie, const request_i* prequest, const response_i* pesponse ) = 0; 
    //virtual std::pair<bool, std::string> post( command_i* pcommand_, const gd::argument::arguments& argumentsRecepie, const request_i* prequest, const response_i* pesponse ) = 0; 
 };
@@ -212,9 +212,9 @@ struct server : public server_i
    int32_t query_interface(const com::guid& guidId, void** ppObject) override { return 0; }
    unsigned add_reference() override { return 0; }
    unsigned release() override { return 0; }
-   bool is_endpoint(const std::string_view& stringCommand) override { return false; }
    std::pair<bool, std::string> get( command_i* pcommand_, response_i* presponse ) override { return { false, "" }; }
    std::pair<bool, std::string> get( const char* pbszCommand, response_i* presponse ) override { return { false, "" }; }
+   bool is_endpoint(const std::string_view& stringCommand) override { return false; }
    void add_error( const std::variant<std::string_view, const gd::argument::arguments*>& perror_ ) override {}
    unsigned get_error( std::vector< std::string >* pvectorError, bool bRemove ) override { return 0; }
 };
@@ -417,6 +417,7 @@ struct server : public gd::com::server::server_i
    virtual std::pair<bool, std::string> get( const std::string_view* stringCommandList, const gd::argument::arguments* pargumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse );
    std::pair<bool, std::string> get( const std::string_view& stringCommandList, const gd::argument::arguments& argumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse ); 
    std::pair<bool, std::string> get( const std::string_view& stringCommandList, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse ); 
+   bool is_endpoint(const std::string_view& stringCommand) override { return false; }
    void add_error( const std::variant<std::string_view, const gd::argument::arguments*>& error_ ) override;
    unsigned get_error( std::vector< std::string >* pvectorError, bool bRemove ) override;
 
