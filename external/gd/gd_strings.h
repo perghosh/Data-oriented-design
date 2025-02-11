@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "gd_variant.h"
 #include "gd_variant_view.h"
 #include "gd_debug.h"
 
@@ -439,6 +440,102 @@ std::string strings32::join_s(ITERATOR itBegin, ITERATOR itEnd, const std::strin
    }
    return stringResult;
 }
+
+_GD_END
+
+_GD_BEGIN
+
+namespace pointer {
+
+   class strings
+   {
+   public:
+      // Constructor from std::vector
+      strings() {}
+      strings(const std::vector<const char*>& vectorName) : m_bOwner(false), m_vectorText(vectorName) {}
+      strings(const std::vector<const char*>& vectorName, gd::types::tag_owner) :m_bOwner{true} { clone_s(vectorName, m_vectorText); }
+
+      strings(const char** ppiList, size_t uCount) : m_bOwner(false) {
+         for( size_t u = 0; u < uCount; u++ ) { m_vectorText[u] = ppiList[u]; }
+      }
+      strings(const char** ppiList, size_t uCount, gd::types::tag_owner) : m_bOwner(true) { clone_s(ppiList, uCount, m_vectorText); }
+
+      /// Copy constructor
+      strings(const strings& o) { assert(this != &o); common_construct(o);  }
+      /// Copy assignment operator
+      strings& operator=(const strings& o) { assert(this != &o); common_construct(o); return *this; }
+      /// Move constructor
+      strings(strings&& o) noexcept { common_construct( std::move(o) ); }
+      /// Move assignment operator
+      strings& operator=(strings&& o) noexcept { assert(this != &o); common_construct( std::move(o) ); return *this; }
+
+
+      ~strings()
+      {
+         if( m_bOwner ) { for( auto& p_ : m_vectorText) { delete[] p_; } }
+      }
+
+   private:
+      // common copy
+      void common_construct(const strings& o);
+      void common_construct(strings&& o) noexcept;
+
+   public:  
+      /// returns if strings object is owner of strings
+      bool is_owner() const { return m_bOwner; }
+
+      /// Get the number of names
+      size_t size() const { return m_vectorText.size(); }
+
+      /// ## get methods, access to strings in list based on index
+
+      const char* get_text(size_t uIndex) const { assert(uIndex < m_vectorText.size()); return m_vectorText[uIndex]; }
+      std::string_view get_string_view(size_t uIndex) const { assert(uIndex < m_vectorText.size()); return std::string_view(m_vectorText[uIndex]); }
+      std::string get_string(size_t uIndex) const { assert(uIndex < m_vectorText.size()); return std::string(m_vectorText[uIndex]); }
+      gd::variant_view get_variant_view(size_t uIndex) const { assert(uIndex < m_vectorText.size()); return gd::variant_view(m_vectorText[uIndex]); }
+      gd::variant get_variant(size_t uIndex) const { assert(uIndex < m_vectorText.size()); return gd::variant(m_vectorText[uIndex]); }
+
+      /// Check if there is no texts in strings
+      bool empty() const { return m_vectorText.empty(); }
+
+      /// Check if name exists in list
+      bool exists(const char* piname) const;
+
+      // ## iterator methods
+
+      std::vector<const char*>::iterator begin() { return m_vectorText.begin(); }
+      std::vector<const char*>::iterator end() { return m_vectorText.end(); }
+      std::vector<const char*>::const_iterator begin() const { return m_vectorText.begin(); }
+      std::vector<const char*>::const_iterator end() const { return m_vectorText.end(); }
+      std::vector<const char*>::const_iterator cbegin() const { return m_vectorText.cbegin(); }
+      std::vector<const char*>::const_iterator cend() const { return m_vectorText.cend(); }
+
+      /// Clone the string list, copying strings into new memory and store then in a new list
+      static void clone_s( const std::vector<const char*>& vectorFrom, std::vector<const char*>& vectorTo );
+      static void clone_s( const char** ppiList, size_t uCount, std::vector<const char*>& vectorTo );
+
+      std::vector<const char*> m_vectorText;
+      bool m_bOwner = false;
+
+   };
+
+   /// common copy
+   inline void strings::common_construct(const strings& o) 
+   {
+      if( is_owner() == true ) { m_vectorText = o.m_vectorText; }
+      else
+      {
+         clone_s( o.m_vectorText, m_vectorText );
+      }
+   }
+
+   /// common move
+   inline void strings::common_construct(strings&& o) noexcept 
+   { 
+      m_vectorText = std::move(o.m_vectorText); m_bOwner = o.m_bOwner; o.m_bOwner = false; 
+   }
+
+} // end namespace pointer
 
 _GD_END
 

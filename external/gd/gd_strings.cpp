@@ -255,3 +255,56 @@ uint64_t strings32::advance(uint64_t uOffset) const
 
 
 _GD_END
+
+_GD_BEGIN
+
+namespace pointer {
+
+   /**
+    * @brief Check if name exists in strings vector with strings.
+    * @param pitext check if text is found in strings vector
+    * @return true if name exists in strings vector
+    */
+   bool strings::exists(const char* pitext) const
+   {
+      for( const char* pitext_ : m_vectorText )
+      {
+         if (std::strcmp(pitext_, pitext) == 0) { return true; }
+      }
+      return false;
+   }
+
+
+   /**
+    * @brief Clone each string in vectorFrom to vectorTo.
+    * @param vectorFrom 
+    * @param vectorTo 
+    */
+   void strings::clone_s(const std::vector<const char*>& vectorFrom, std::vector<const char*>& vectorTo)
+   {
+      for ( auto& piFrom : vectorFrom ) 
+      {
+         auto uLength = std::strlen(piFrom);
+         char* pi_ = new char[uLength + 1];
+         vectorTo.push_back( pi_ );
+      }
+   }
+
+   /**
+    * @brief Clone each string in ppiList to vectorTo.
+    * @param ppiList pointer to list of strings
+    * @param uCount number of strings in list
+    * @param vectorTo vector to store cloned strings
+    */
+   void strings::clone_s( const char** ppiList, size_t uCount, std::vector<const char*>& vectorTo )
+   {
+      for( size_t u = 0; u < uCount; u++ )
+      {
+         auto uLength = std::strlen(ppiList[u]);
+         char* pi_ = new char[uLength + 1];
+         vectorTo.push_back(pi_);
+      }
+   }
+}
+
+_GD_END

@@ -87,6 +87,9 @@ struct tag_construct {};
 /// methods used for some sort of debug related logic
 struct tag_debug {};
 
+/// operations using owner objects, objects that own the data
+struct tag_owner {};
+
 /// operations using view objects, objects that do not own the data, just views data stored in other objects
 struct tag_view {};
 

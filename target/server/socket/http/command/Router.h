@@ -45,6 +45,8 @@ public:
 
    std::pair< bool, std::string > Get( const std::string_view& stringArgument );
 
+   std::pair< bool, std::string > Get( std::vector<std::string_view>& vectorCommand );
+
 //@}
 
 protected:
@@ -69,3 +71,5 @@ public:
 public:
 
 };
+
+

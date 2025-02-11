@@ -45,6 +45,14 @@ std::string FOLDER_GetRoot_g( const std::string_view& stringSubfolder );
 
 CApplication::~CApplication() 
 {
+   // ## release server if it is set
+   if( m_pserver )
+   {
+      m_pserver->release();
+      m_pserver = nullptr;
+   }
+
+   if( m_pserverBoost ) delete m_pserverBoost;
 }
 
 
@@ -124,12 +132,22 @@ std::pair<bool, std::string> CApplication::Initialize()
       }
    }
 
+   m_pserverBoost = new CServer(this);                                        // create server object, used to handle and isolate http requests
+
    // ## Add default servers to router
-   auto* phttpserver = new CHttpServer;
+   CHttpServer* phttpserver = new CHttpServer;
+   
    auto result_ = phttpserver->Initialize();                                   // initialize http server, connect all routes
-   if ( result_.first == false ) return result_;
+   if ( result_.first == false )
+   {
+      phttpserver->release();   
+      return result_;
+   }
 
    m_router.Connect( phttpserver );
+
+   ROUTER_Set(phttpserver);                                                    // set active server
+
    phttpserver->release();
 
 
@@ -247,6 +265,7 @@ int CApplication::Main_s(int iArgumentCount, char* ppbszArgument[])
    return 0;
 }
 
+
 /// ---------------------------------------------------------------------------
 /// Set active database based on name or index
 void CApplication::DATABASE_SetActive(const std::variant<std::size_t, std::string_view>& index_) 
@@ -276,6 +295,13 @@ void CApplication::DATABASE_SetActive(const std::variant<std::size_t, std::strin
       // Handle the case where no database with the given name is found
    }
 }
+
+std::vector<std::string_view> CApplication::ROUTER_Resolv_s(const std::string_view& stringCommand, size_t* puOffset) 
+{
+
+   return { true, "" };
+}
+
 
 
 

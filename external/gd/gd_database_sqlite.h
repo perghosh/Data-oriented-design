@@ -263,7 +263,7 @@ public:
 *///@{
    const record* get_record() const { return &m_recordRow; }
    record* get_record() { return &m_recordRow; }
-   unsigned get_column_count() const { return m_recordRow.size(); }
+   unsigned get_column_count() const { return (unsigned)m_recordRow.size(); }
    unsigned get_parameter_count();
    std::string_view get_parameter_name( unsigned uIndex );
 //@}

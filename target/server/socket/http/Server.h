@@ -1,3 +1,14 @@
+/** 
+ * @file Server.h
+ * 
+ * @brief Logic to handle ip trafic to and from http server
+ *
+ *
+ *
+ \code
+ \endcode
+ */
+
 #pragma once
 
 #include <algorithm>
@@ -47,6 +58,8 @@ class CServer
 // ## construction -------------------------------------------------------------
 public:
    CServer() {}
+   /// Constructor that sets application pointer
+   CServer(CApplication* ppapplication) : m_ppapplication(ppapplication) {}
    // copy
    CServer(const CServer& o) { common_construct(o); }
    CServer(CServer&& o) noexcept { common_construct(std::move(o)); }
@@ -74,6 +87,8 @@ public:
 /** \name OPERATION
 *///@{
    std::pair<bool, std::string> Initialize();
+   std::pair<bool, std::string> ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringTarget, std::vector<std::pair<std::string, std::string>>& vectorResponse);
+   std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand );
 //@}
 
 protected:
@@ -91,7 +106,8 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   CRouter m_router;             ///< command router
+   CApplication* m_ppapplication{}; ///< application pointer, access application that is used as object root for server
+   CRouter m_router;                ///< command router
 
 
 // ## free functions ------------------------------------------------------------
@@ -145,10 +161,10 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
       };
 
 
-   auto const http_verb_ = request_.method();
+   boost::beast::http::verb const eVerb = request_.method();
 
    // ## Make sure we can handle the method
-   if( http_verb_ != boost::beast::http::verb::get && http_verb_ != boost::beast::http::verb::head) 
+   if( eVerb != boost::beast::http::verb::get && eVerb != boost::beast::http::verb::head) 
    { 
       return bad_request_("Unknown HTTP-method"); 
    }
@@ -163,6 +179,15 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
       return bad_request_("Illegal request-target"); 
    }
 
+   {
+      // ## Process request by calling core method in application
+      std::vector<std::pair<std::string, std::string>> vectorResponse;
+      auto resulut_ = papplication_g->GetServer()->ProcessRequest( eVerb, stringTarget, vectorResponse );
+      if ( resulut_.first == false ) { return server_error_(resulut_.second); }
+      // copilot: implement ProcessRequest method in CApplication
+
+   }
+
    // ## Build the path to the requested file
    std::string stringPath = path_cat_g(stringRoot, request_.target());
    if(request_.target().back() == '/') { stringPath.append("index.html"); }
@@ -172,7 +197,7 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    }
 
    // TODO: rewrite request logic
-   papplication_g->GetRouter()->Get( stringPath );
+   // papplication_g->GetRouter()->Get( stringPath );
 
    // ## Attempt to open the file
    boost::beast::error_code errorcode;
@@ -188,12 +213,12 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    // ## Respond to HEAD request
    if(request_.method() == boost::beast::http::verb::head)
    {
-      boost::beast::http::response<boost::beast::http::empty_body> res{boost::beast::http::status::ok, request_.version()};
-      res.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
-      res.set(boost::beast::http::field::content_type, mime_type_g(stringPath));
-      res.content_length(uSize);
-      res.keep_alive(request_.keep_alive());
-      return res;
+      boost::beast::http::response<boost::beast::http::empty_body> response_{boost::beast::http::status::ok, request_.version()};
+      response_.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+      response_.set(boost::beast::http::field::content_type, mime_type_g(stringPath));
+      response_.content_length(uSize);
+      response_.keep_alive(request_.keep_alive());
+      return response_;
    }
 
    // ## Respond to GET request
