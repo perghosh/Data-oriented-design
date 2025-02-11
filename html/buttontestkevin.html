@@ -3,7 +3,7 @@
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <link href="variables-soft-candy.css" rel="stylesheet" />
+   <link id="idCssVariable" href="variables-soft-candy.css" rel="stylesheet" />
    <title>Button Test</title>
 
    <style>
@@ -32,7 +32,17 @@
 
 </head>
 <body class="body">
-   <div class="panel"> <h1>hej</h1> </div>
+   <div class="panel"> 
+      <h1>hej</h1>
+      <select id="idSelectTheme" onchange="ChangeTheme()">
+         <option value="variables-soft-candy.css">Soft candy</option>
+         <option value="variables-blue-fog.css">Blue fog</option>
+         <option value="variables-purple-soft.css">Purple soft</option>
+      </select>
+
+      <button id="idButtonReset">Reset</button>
+   
+   </div>
 
    <div id="idContainer">
 
@@ -50,6 +60,23 @@
    </div>
 
    <script>
+
+      function ChangeTheme()
+      {
+         const sTheme = document.getElementById("idSelectTheme").value;
+         const sDefaultTheme = "variables-soft-candy.css";
+
+         const eButton = document.getElementById("idButtonReset");
+         eButton.addEventListener("click", function () {
+            document.getElementById("idCssVariable").href = sDefaultTheme;
+         });
+
+         if (sTheme)
+         {
+            document.getElementById("idCssVariable").href = sTheme;
+         }
+      }
+
       function Button(container)
       {
          const eContainer = container;
@@ -68,7 +95,6 @@
             }
          });
       }
-
 
       function MoveElement(panel) 
       {
@@ -187,7 +213,10 @@
          MoveElement(ePanel);
          OrderedList(eContainer);
          Table(eContainer, 5, 5)
+
       }
+
+
 
       document.addEventListener("DOMContentLoaded", function () {
          Initialize();
