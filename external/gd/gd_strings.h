@@ -456,10 +456,15 @@ namespace pointer {
    class strings
    {
    public:
+      using iterator               = std::vector<const char*>::iterator;
+      using const_iterator         = std::vector<const char*>::const_iterator;
+
+   public:
       // Constructor from std::vector
       strings() {}
-      strings(const std::vector<const char*>& vectorName) : m_bOwner(false), m_vectorText(vectorName) {}
-      strings(const std::vector<const char*>& vectorName, gd::types::tag_owner) :m_bOwner{true} { clone_s(vectorName, m_vectorText); }
+      strings( gd::types::tag_owner ): m_bOwner(true) {}
+      strings(const std::vector<const char*>& vectorText) : m_bOwner(false), m_vectorText(vectorText) {}
+      strings(const std::vector<const char*>& vectorText, gd::types::tag_owner) :m_bOwner{true} { clone_s(vectorText, m_vectorText); }
 
       strings(const char** ppiList, size_t uCount) : m_bOwner(false) {
          for( size_t u = 0; u < uCount; u++ ) { m_vectorText[u] = ppiList[u]; }
@@ -467,7 +472,7 @@ namespace pointer {
       strings(const char** ppiList, size_t uCount, gd::types::tag_owner) : m_bOwner(true) { clone_s(ppiList, uCount, m_vectorText); }
 
       /// Copy constructor
-      strings(const strings& o) { assert(this != &o); common_construct(o);  }
+      strings(const strings& o) { assert(this != &o); m_bOwner = o.m_bOwner; common_construct(o);  }
       /// Copy assignment operator
       strings& operator=(const strings& o) { assert(this != &o); common_construct(o); return *this; }
       /// Move constructor
@@ -478,7 +483,7 @@ namespace pointer {
 
       ~strings()
       {
-         if( m_bOwner ) { for( auto& p_ : m_vectorText) { delete[] p_; } }
+         if( m_bOwner == true ) { for( const auto& p_ : m_vectorText) { delete[] p_; } }
       }
 
    private:
@@ -494,12 +499,21 @@ namespace pointer {
       std::string_view operator[](size_t uIndex) const { return get_string_view(uIndex); }
       /// Appends a new string to the buffer.
       strings& operator+=( const char* pitext ) { append(pitext); return *this; }
+      strings& operator+=( const strings& strings_ ) { append(strings_); return *this; }
+      strings& operator+=( const std::vector<const char*>& vectorText ) { append(vectorText); return *this; }
+      strings& operator+=( const std::vector<gd::variant_view>& vectorText ) { append(vectorText); return *this; }
    
       /// returns if strings object is owner of strings
       bool is_owner() const { return m_bOwner; }
 
       // ## operation ---------------------------------------------------------------
+      
+      // ## append methods
+
       void append(const char* pitext);
+      void append( const strings& strings_ );
+      void append( const std::vector<const char*>& vectorText ) { append(strings(vectorText)); }
+      void append( const std::vector<gd::variant_view>& vectorText ) { assert(is_owner() == true); for ( auto& v_ : vectorText ) { append(v_.as_string().c_str()); } }
 
       /// Get the number of names
       size_t size() const { return m_vectorText.size(); }
@@ -539,7 +553,7 @@ namespace pointer {
    /// common copy
    inline void strings::common_construct(const strings& o) 
    {
-      if( is_owner() == true ) { m_vectorText = o.m_vectorText; }
+      if( is_owner() == false ) { m_vectorText = o.m_vectorText; }
       else
       {
          clone_s( o.m_vectorText, m_vectorText );
@@ -568,8 +582,8 @@ namespace view {
    public:
       // Constructor from std::vector
       strings() = default;
-      strings(const std::vector<std::string_view>& vectorName) : m_vectorText(vectorName) {}
-      strings(std::vector<std::string_view>&& vectorName) : m_vectorText( std::move(vectorName) ) {}
+      strings(const std::vector<std::string_view>& vectorText) : m_vectorText(vectorText) {}
+      strings(std::vector<std::string_view>&& vectorText) : m_vectorText( std::move(vectorText) ) {}
 
       strings(const char** ppiList, size_t uCount)
       {
@@ -595,9 +609,18 @@ namespace view {
 
       /// Appends a new string to the buffer.
       strings& operator+=(const std::string_view& stringText) { append(stringText); return *this; }
+      strings& operator+=(const strings& strings_) { append(strings_); return *this; }
+      strings& operator+=(const std::vector<std::string_view>& vectorText) { append(vectorText); return *this; }
+      strings& operator+=(const std::vector<std::string>& vectorText) { append(vectorText); return *this; }
 
       // ## operation ---------------------------------------------------------------
+
+      // ## append methods
+
       void append(const std::string_view& stringText) { m_vectorText.push_back(std::string_view(stringText)); }
+      void append(const strings& strings_) { for ( const auto& s_ : strings_ ) { append(s_); } }
+      void append(const std::vector<std::string_view>& vectorText) { for ( const auto& s_ : vectorText ) { append(s_); } }
+      void append(const std::vector<std::string>& vectorText) { for ( const auto& s_ : vectorText ) { append(s_); } }
 
       /// Get the number of texts
       size_t size() const { return m_vectorText.size(); }
