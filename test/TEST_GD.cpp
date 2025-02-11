@@ -91,6 +91,45 @@ TEST_CASE("strings32 Methods", "[GD]") {
    for ( unsigned u = 10; u < 20; u++ ) { strings32_test(u, 10); }
 }
 
+TEST_CASE("Strings Constructors and Assignment", "[strings]") {
+   using namespace gd::pointer;
+   { strings str; REQUIRE(str.m_vectorText.empty()); }
+   { strings str(gd::types::tag_owner{}); str.append("test"); REQUIRE(str.m_vectorText.size() == 1); REQUIRE(std::strcmp(str.m_vectorText[0], "test") == 0); }
+   { strings str; const char* p = "test"; str.append(p); REQUIRE(str.m_vectorText.size() == 1); REQUIRE(std::strcmp(str.m_vectorText[0], "test") == 0); }
+   { strings str1(gd::types::tag_owner{}); str1.append("test"); strings str2(str1); REQUIRE(str2.m_vectorText.size() == 1); REQUIRE(std::strcmp(str2.m_vectorText[0], "test") == 0); }
+   { strings str1(gd::types::tag_owner{}); str1.append("test"); strings str2(std::move(str1)); REQUIRE(str2.m_vectorText.size() == 1); REQUIRE(std::strcmp(str2.m_vectorText[0], "test") == 0); }
+   { strings str1(gd::types::tag_owner{}); str1.append("test"); strings str2; str2 = str1; REQUIRE(str2.m_vectorText.size() == 1); REQUIRE(std::strcmp(str2.m_vectorText[0], "test") == 0); }
+   { strings str1(gd::types::tag_owner{}); str1.append("test"); strings str2; str2 = std::move(str1); REQUIRE(str2.m_vectorText.size() == 1); REQUIRE(std::strcmp(str2.m_vectorText[0], "test") == 0); }
+}
+
+TEST_CASE("Strings Methods", "[strings]") {
+   using namespace gd::pointer;
+   { strings str; const char* p = "one"; str.append(p); REQUIRE(str.m_vectorText.size() == 1); REQUIRE(std::strcmp(str.m_vectorText[0], "one") == 0); }
+   { strings str(gd::types::tag_owner{}); str.append("one"); str.append("two"); REQUIRE(str.m_vectorText.size() == 2); REQUIRE(std::strcmp(str.m_vectorText[0], "one") == 0); REQUIRE(std::strcmp(str.m_vectorText[1], "two") == 0); }
+   { strings str; str.append("one"); REQUIRE(str.exists("one")); REQUIRE_FALSE(str.exists("two")); }
+   { strings str(gd::types::tag_owner{}); str.append("one"); str.append("two"); std::vector<const char*> vec; str.clone_s(str.m_vectorText, vec); REQUIRE(vec.size() == 2); REQUIRE(std::strcmp(vec[0], "one") == 0); REQUIRE(std::strcmp(vec[1], "two") == 0); }
+   { strings str; const char* list[] = { "one", "two" }; std::vector<const char*> vec; str.clone_s(list, 2, vec); REQUIRE(vec.size() == 2); REQUIRE(std::strcmp(vec[0], "one") == 0); REQUIRE(std::strcmp(vec[1], "two") == 0); }
+}
+
+TEST_CASE("ViewStrings Tests", "[view::strings]") {
+   using namespace gd::view;
+   { strings s; REQUIRE(s.empty()); REQUIRE(s.size() == 0); }
+   { std::vector<std::string_view> vec = {"one", "two", "three"}; strings s(vec); REQUIRE_FALSE(s.empty()); REQUIRE(s.size() == 3); REQUIRE(s[0] == "one"); REQUIRE(s[1] == "two"); REQUIRE(s[2] == "three"); }
+   { std::vector<std::string_view> vec = {"one", "two", "three"}; strings s(std::move(vec)); REQUIRE_FALSE(s.empty()); REQUIRE(s.size() == 3); REQUIRE(s[0] == "one"); REQUIRE(s[1] == "two"); REQUIRE(s[2] == "three"); }
+   { const char* arr[] = {"one", "two", "three"}; strings s(arr, 3); REQUIRE_FALSE(s.empty()); REQUIRE(s.size() == 3); REQUIRE(s[0] == "one"); REQUIRE(s[1] == "two"); REQUIRE(s[2] == "three"); }
+   { std::vector<std::string_view> vec = {"one", "two", "three"}; strings s1(vec); strings s2(s1); REQUIRE(s1.size() == s2.size()); for (size_t i = 0; i < s1.size(); ++i) { REQUIRE(s1[i] == s2[i]); } }
+   { std::vector<std::string_view> vec = {"one", "two", "three"}; strings s1(vec); strings s2 = std::move(s1); REQUIRE_FALSE(s2.empty()); REQUIRE(s2.size() == 3); REQUIRE(s2[0] == "one"); REQUIRE(s2[1] == "two"); REQUIRE(s2[2] == "three"); }
+   { strings s; s.append("one"); REQUIRE(s.size() == 1); REQUIRE(s[0] == "one"); }
+   { strings s1; s1.append("one"); strings s2; s2.append("two"); s2.append(s1); REQUIRE(s2.size() == 2); REQUIRE(s2[0] == "two"); REQUIRE(s2[1] == "one"); }
+   { std::vector<std::string_view> vec = {"one", "two"}; strings s; s.append(vec); REQUIRE(s.size() == 2); REQUIRE(s[0] == "one"); REQUIRE(s[1] == "two"); }
+   { std::vector<std::string> vec = {"one", "two"}; strings s; s.append(vec); REQUIRE(s.size() == 2); REQUIRE(s[0] == "one"); REQUIRE(s[1] == "two"); }
+   { std::vector<std::string_view> vec = {"one", "two", "three"}; strings s(vec); REQUIRE(s.exists("one")); REQUIRE_FALSE(s.exists("four")); }
+   { strings s; s += "one"; REQUIRE(s.size() == 1); REQUIRE(s[0] == "one"); }
+   { strings s1; s1 += "one"; strings s2; s2 += "two"; s2 += s1; REQUIRE(s2.size() == 2); REQUIRE(s2[0] == "two"); REQUIRE(s2[1] == "one"); }
+   { std::vector<std::string_view> vec = {"one", "two", "three"}; strings s(vec); REQUIRE(s.get_string_view(0) == "one"); REQUIRE(s.get_string_view(1) == "two"); REQUIRE(s.get_string_view(2) == "three"); }
+   { std::vector<std::string_view> vec = {"one", "two", "three"}; strings s(vec); REQUIRE(s.get_string(0) == "one"); REQUIRE(s.get_string(1) == "two"); REQUIRE(s.get_string(2) == "three"); }
+}
+
 // ----------------------------------------------------------------------------
 // ## Tests for gd::file::path
 
@@ -125,3 +164,6 @@ TEST_CASE("Path Methods", "[path]") {
    { gd::file::path p("test/path"); p.clear(); REQUIRE(p.empty()); }
    { gd::file::path p("test/path"); std::string result; for (auto it = p.begin(); it != p.end(); ++it) { result += *it; } REQUIRE(gd::file::path(result) == "test/path"); }
 }
+
+
+

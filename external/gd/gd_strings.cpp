@@ -277,6 +277,18 @@ namespace pointer {
    }
 
    /**
+    * @brief Append strings from strings object.
+    * @param strings_ strings to append
+    */
+   void strings::append(const strings& strings_)
+   {
+      for ( const char* pitext : strings_ )
+      {
+         append(pitext);
+      }
+   }
+
+   /**
     * @brief Check if name exists in strings vector with strings.
     * @param pitext check if text is found in strings vector
     * @return true if name exists in strings vector
@@ -298,11 +310,12 @@ namespace pointer {
     */
    void strings::clone_s(const std::vector<const char*>& vectorFrom, std::vector<const char*>& vectorTo)
    {
-      for ( auto& piFrom : vectorFrom ) 
+      for( const auto& pitext : vectorFrom ) 
       {
-         auto uLength = std::strlen(piFrom);
+         auto uLength = std::strlen(pitext);
          char* pi_ = new char[uLength + 1];
-         vectorTo.push_back( pi_ );
+         std::strcpy(pi_, pitext);
+         vectorTo.push_back(pi_);
       }
    }
 
@@ -316,8 +329,10 @@ namespace pointer {
    {
       for( size_t u = 0; u < uCount; u++ )
       {
-         auto uLength = std::strlen(ppiList[u]);
+         const auto* pitext = ppiList[u];
+         auto uLength = std::strlen(pitext);
          char* pi_ = new char[uLength + 1];
+         std::strcpy(pi_, pitext);
          vectorTo.push_back(pi_);
       }
    }
