@@ -261,6 +261,22 @@ _GD_BEGIN
 namespace pointer {
 
    /**
+    * @brief Append a string to strings vector.
+    * @param pitext string to append
+    */
+   void strings::append(const char* pitext)
+   {
+      if ( is_owner() == false ) m_vectorText.push_back(pitext);
+      else
+      {
+         auto uLength = std::strlen(pitext);
+         char* pi_ = new char[uLength + 1];
+         std::strcpy(pi_, pitext);
+         m_vectorText.push_back(pi_);
+      }
+   }
+
+   /**
     * @brief Check if name exists in strings vector with strings.
     * @param pitext check if text is found in strings vector
     * @return true if name exists in strings vector
