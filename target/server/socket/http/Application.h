@@ -13,6 +13,8 @@
 
 #include "application/ApplicationBasic.h"
 
+class CServer;
+
 /**
 * \brief
 *
@@ -47,6 +49,7 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   CServer* GetServer() const { return m_pserverBoost; }
    CRouter* GetRouter() { return &m_router; }
    const CRouter* GetRouter() const { return &m_router; }
 //@}
@@ -59,12 +62,24 @@ public:
    std::pair<bool, std::string> Initialize();
    /// Use this for clean up
    std::pair<bool, std::string> Exit();
+
 //@}
 
 /** \name SERVER
 *///@{
    std::pair<bool, std::string> SERVER_Start();
 //@}
+
+/** \name ROUTER
+* Router methods to handle commands, routing to correct command object
+*///@{
+   /// Get active server, this is the defualt server that is used to route commands
+   gd::com::server::server_i* ROUTER_GetActiveServer() { return m_pserver; }
+   /// Set active server, this is the defualt server that is used to route commands
+   void ROUTER_Set(gd::com::server::server_i* pserver);
+//@}
+
+
 
 /** \name DATABASE
  * Manage database connections stored in application
@@ -97,10 +112,12 @@ public:
 
    // ## attributes ----------------------------------------------------------------
 public:
-   CRouter m_router;             ///< command router, used to route commands to correct command object
+   CServer* m_pserverBoost{};     ///< server object , used to handle incoming data and send response, holds boost objects
+   CRouter m_router;              ///< command router, used to route commands to correct command object
+   gd::com::server::server_i* m_pserver{}; ///< active server
 
    std::mutex m_mutexDatabase;   ///< Handle database locking
-   gd::database::database_i* m_pdatabase; ///< active database
+   gd::database::database_i* m_pdatabase{}; ///< active database
    std::vector<gd::database::database_i*> m_vectorDatabase; ///< list of databases (for most situations only one database is used)
 
 
@@ -109,8 +126,18 @@ public:
    //static std::pair<bool, std::string> Start( CApplication* papplication );
    static int Main_s( int iArgumentCount, char* ppbszArgument[] );
 
+   /// Resolve command string into commands and set position to commands
+   static std::vector<std::string_view> ROUTER_Resolv_s(const std::string_view& stringCommand, size_t* puOffset );
+
 
 };
+
+/// Set active server, this is the defualt server that is used to route commands
+inline void CApplication::ROUTER_Set(gd::com::server::server_i* pserver) {
+   if ( m_pserver != nullptr ) m_pserver->release();
+   m_pserver = pserver;
+   if ( m_pserver != nullptr ) m_pserver->add_reference();
+}
 
 /// ---------------------------------------------------------------------------
 /// Clear database active connection and set pointer to null

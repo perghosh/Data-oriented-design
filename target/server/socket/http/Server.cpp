@@ -13,6 +13,48 @@ std::pair<bool, std::string> CServer::Initialize()
    return { true, "" };
 }
 
+std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringCommand, std::vector<std::pair<std::string, std::string>>& vectorResponse) 
+{
+   // ## Create command object from request
+   gd::com::server::server_i* pserver = m_ppapplication->ROUTER_GetActiveServer();
+   gd::com::pointer< gd::com::server::router::command > pcommand = gd::com::pointer< gd::com::server::router::command >( new gd::com::server::router::command( pserver ) );   
+   std::vector< std::string_view > vectorCommand = static_cast<gd::com::server::router::command*>( pcommand )->add_querystring( stringCommand );
+   
+   vectorCommand.erase(std::remove_if(vectorCommand.begin(), vectorCommand.end(), [](const auto& string_) {
+      return string_.empty();
+   }), vectorCommand.end());
+
+   //pserver->get( pcommand, nullptr );
+   // pserver->get( vectorCommand, nullptr, pcommand, nullptr);
+
+   if(eVerb == boost::beast::http::verb::get) 
+   {
+      auto result_ = Execute( vectorCommand, pcommand );
+      // Handle GET request
+      vectorResponse.push_back({"Content-Type", "text/plain"});
+      return {true, "GET request processed for target: " + std::string(stringCommand)};
+   } 
+   else if(eVerb == boost::beast::http::verb::head) 
+   {
+      // Handle HEAD request
+      vectorResponse.push_back({"Content-Type", "text/plain"});
+      return {true, "HEAD request processed for target: " + std::string(stringCommand)};
+   } 
+   else 
+   {
+      return {false, "Unsupported HTTP verb"};
+   }
+}
+
+std::pair<bool, std::string> CServer::Execute(const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand)
+{
+   // auto* pserver = m_ppapplication->ROUTER_GetActiveServer();
+   // pserver->get( vectorCommand, pcommand, nullptr );
+
+   return { true, "" };
+}
+
+
 
 
 // Report a failure
