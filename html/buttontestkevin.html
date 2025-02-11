@@ -24,7 +24,7 @@
 
        .div-background { background-color: var(--background-secondary); padding: 5px; margin: 10px 0px;}
 
-       table, td {border: 1px solid black;}
+      table, th, td {border-collapse: collapse; padding: var(--padding);}
 
       /*.button.active { background-color: var(--background-disabled); } */
 
@@ -98,16 +98,35 @@
          for (let i = 0; i <= iRows; i++)
          {
             const eRow = document.createElement("tr");
+            eRow.bgColor = "#FF0000"
+
+            if (i == 0)
+            {
+               eRow.bgColor = "#333333"
+            }
+
             if (i % 2) {
-               eRow.bgColor = RandomRGBColor();
+               //eRow.bgColor = RandomRGBColor();
+               eRow.bgColor = "#FF6666"
             }
 
             for (let j = 0; j <= iColumns; j++)
             {
-               const eColumn = document.createElement("td");
-               eColumn.textContent = "Dethär är en column";
+               if (i == 0)
+               {
+                  const eTableHeader = document.createElement("th");
+                  eTableHeader.textContent = "Dethär är en tableheader"
+                  eTableHeader.style.color = "gray"
 
-               eRow.appendChild(eColumn.cloneNode(true));
+                  eRow.appendChild(eTableHeader.cloneNode(true));
+               }
+               else
+               {
+                  const eColumn = document.createElement("td");
+                  eColumn.textContent = "Dethär är en column";
+
+                  eRow.appendChild(eColumn.cloneNode(true));
+               }
             }
             eTable.appendChild(eRow.cloneNode(true));
          }
