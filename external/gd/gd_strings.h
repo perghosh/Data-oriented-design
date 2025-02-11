@@ -453,6 +453,33 @@ _GD_BEGIN
 
 namespace pointer {
 
+   /**
+    * @class strings
+    * @brief Manages a list of C-style strings with ownership awareness.
+    *
+    * This class encapsulates a collection of C-style string pointers (`const char*`) 
+    * with functionality to manage ownership and perform operations on these strings.
+    *
+    * Key features:
+    * - Support for different constructors to initialize from various sources:
+    *   - Default and tagged constructors to control ownership.
+    *   - From `std::vector` with or without taking ownership.
+    *   - From C-style arrays of strings.
+    * - Custom copy and move semantics that respect ownership.
+    * - Methods to append strings from different formats.
+    * - Accessor methods for different views and conversions of strings.
+    * - Ownership control: Strings can be owned by this class or referenced.
+    * - Memory management: If this class owns the strings, it will free them in the destructor.
+    *
+    * @note 
+    * - When the `m_bOwner` flag is true, the class is responsible for managing the 
+    *   memory of the strings, hence they are deleted in the destructor.
+    * - `gd::types::tag_owner` is presumably a tag type for ownership semantics.
+    *
+    * @warning 
+    * - Ensure that when strings are not owned, their lifetime exceeds the lifetime of this object.
+    * - Copying or moving the object might involve deep copying if the source owns the strings.
+    */
    class strings
    {
    public:
@@ -545,8 +572,8 @@ namespace pointer {
       static void clone_s( const std::vector<const char*>& vectorFrom, std::vector<const char*>& vectorTo );
       static void clone_s( const char** ppiList, size_t uCount, std::vector<const char*>& vectorTo );
 
-      std::vector<const char*> m_vectorText;
-      bool m_bOwner = false;
+      std::vector<const char*> m_vectorText; ///< List of const char pointers
+      bool m_bOwner = false;                 ///< If string pointer is owned or not, when owned they need to be deleted in dextructor
 
    };
 
@@ -577,6 +604,42 @@ _GD_END
 _GD_BEGIN
 
 namespace view {
+
+   /**
+    * @class strings
+    * @brief A class to manage a collection of string views for efficient string handling.
+    *
+    * This class wraps around a std::vector<std::string_view> to provide:
+    * - Efficient string storage by using string views.
+    * - Various methods for appending, accessing, and manipulating strings.
+    * - Support for copy and move semantics for performance.
+    * - Iterators for range-based for loops or explicit iteration.
+    *
+    * Note:
+    * - Using string_view means that strings should outlive this object unless 
+    *   you manually manage the lifetime or convert to std::string.
+    * - No automatic memory management for the strings themselves; they are 
+    *   expected to be managed by the caller or be literals.
+    *
+    * @constructor
+    * - Default constructor initializes an empty collection.
+    * - Construct from std::vector<std::string_view> (by value or by move).
+    * - Construct from a C-style array of char pointers with a count.
+    *
+    * @method
+    * - append: Adds new strings from various sources.
+    * - operator[]: Access strings by index.
+    * - operator+=: Appends new strings to the existing collection.
+    * - size: Returns the number of strings.
+    * - get_string_view, get_string: Retrieve strings or their views.
+    * - empty: Check if there are no strings in the collection.
+    * - exists: Check for the existence of a string in the collection.
+    * - begin, end, cbegin, cend: Iterator methods for traversal.
+    *
+    * @note This class does not manage the lifecycle of the strings referenced 
+    *       by string_view objects; ensure the strings remain valid for the 
+    *       lifetime of this object or use get_string for ownership.
+    */
    class strings
    {
    public:
