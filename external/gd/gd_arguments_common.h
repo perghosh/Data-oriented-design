@@ -102,7 +102,7 @@ struct arguments_value
    arguments_value() : m_parguments{ nullptr }, m_pPosition( nullptr ) {};
    arguments_value(const std::string_view& stringName) : m_stringName{ stringName }, m_parguments{ nullptr }, m_pPosition( nullptr ) {}
    arguments_value(ARGUMENTS* parguments) : m_parguments{ parguments }, m_pPosition( parguments->buffer_data() ) {}
-   arguments_value(ARGUMENTS* parguments, ARGUMENTS::pointer pPosition) : m_parguments{ parguments }, m_pPosition( pPosition ) {}
+   arguments_value(ARGUMENTS* parguments, typename ARGUMENTS::pointer pPosition) : m_parguments{ parguments }, m_pPosition( pPosition ) {}
    arguments_value(ARGUMENTS* parguments, const std::string_view& stringName) : m_parguments{ parguments }, m_stringName{ stringName }, m_pPosition( nullptr ) {}
 
    arguments_value(const arguments_value& o) : m_stringName{ o.m_stringName },  m_parguments{ o.m_parguments }, m_pPosition( o.m_pPosition ) {}
@@ -112,7 +112,7 @@ struct arguments_value
    operator gd::variant_view();
 
    const ARGUMENTS* get_arguments() const { return m_parguments; }
-   const ARGUMENTS::pointer get_position() const { return m_pPosition; }
+   const typename ARGUMENTS::pointer get_position() const { return m_pPosition; }
 
    arguments_value& operator[](const std::string_view& stringName) { m_stringName = stringName; m_pPosition = nullptr; return *this; }
 
@@ -128,7 +128,7 @@ struct arguments_value
    template< typename VARIABLE > arguments_value& operator>>(VARIABLE& v_);
 
    std::string_view m_stringName; ///< name of value that value represents
-   ARGUMENTS::pointer m_pPosition;
+   typename ARGUMENTS::pointer m_pPosition;
    ARGUMENTS* m_parguments;       ///< pointer to internal arguments object found in command
 };
 
