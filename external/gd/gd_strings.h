@@ -443,6 +443,12 @@ std::string strings32::join_s(ITERATOR itBegin, ITERATOR itEnd, const std::strin
 
 _GD_END
 
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------- pointer::strings
+// ----------------------------------------------------------------------------
+
+
 _GD_BEGIN
 
 namespace pointer {
@@ -481,8 +487,19 @@ namespace pointer {
       void common_construct(strings&& o) noexcept;
 
    public:  
+
+   // ## operator -----------------------------------------------------------------
+   public:
+      /// Provides indexed access to the stored strings.  
+      std::string_view operator[](size_t uIndex) const { return get_string_view(uIndex); }
+      /// Appends a new string to the buffer.
+      strings& operator+=( const char* pitext ) { append(pitext); return *this; }
+   
       /// returns if strings object is owner of strings
       bool is_owner() const { return m_bOwner; }
+
+      // ## operation ---------------------------------------------------------------
+      void append(const char* pitext);
 
       /// Get the number of names
       size_t size() const { return m_vectorText.size(); }
