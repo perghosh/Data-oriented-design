@@ -556,6 +556,80 @@ namespace pointer {
 
 _GD_END
 
+// ----------------------------------------------------------------------------
+// -------------------------------------------------------------- pointer::view
+// ----------------------------------------------------------------------------
+
+_GD_BEGIN
+
+namespace view {
+   class strings
+   {
+   public:
+      // Constructor from std::vector
+      strings() = default;
+      strings(const std::vector<std::string_view>& vectorName) : m_vectorText(vectorName) {}
+      strings(std::vector<std::string_view>&& vectorName) : m_vectorText( std::move(vectorName) ) {}
+
+      strings(const char** ppiList, size_t uCount)
+      {
+         for (size_t u = 0; u < uCount; u++) { m_vectorText.push_back(std::string_view(ppiList[u])); }
+      }
+
+      /// Copy constructor
+      strings(const strings& o) = default;
+      /// Copy assignment operator
+      strings& operator=(const strings& o) = default;
+      /// Move constructor
+      strings(strings&& o) noexcept = default;
+      /// Move assignment operator
+      strings& operator=(strings&& o) noexcept = default;
+
+      ~strings() = default;
+
+   public:
+
+      // ## operator -----------------------------------------------------------------
+      /// Provides indexed access to the stored strings.
+      std::string_view operator[](size_t uIndex) const { assert(uIndex < m_vectorText.size()); return m_vectorText[uIndex]; }
+
+      /// Appends a new string to the buffer.
+      strings& operator+=(const std::string_view& stringText) { append(stringText); return *this; }
+
+      // ## operation ---------------------------------------------------------------
+      void append(const std::string_view& stringText) { m_vectorText.push_back(std::string_view(stringText)); }
+
+      /// Get the number of texts
+      size_t size() const { return m_vectorText.size(); }
+
+      /// Get methods, access to strings in list based on index
+      std::string_view get_string_view(size_t uIndex) const { assert(uIndex < m_vectorText.size()); return m_vectorText[uIndex];  }
+      std::string get_string(size_t uIndex) const  { assert(uIndex < m_vectorText.size());   return std::string(m_vectorText[uIndex]); }
+
+      /// Check if there is no texts in strings
+      bool empty() const { return m_vectorText.empty(); }
+
+      /// Check if name exists in list
+      bool exists(const std::string_view& stringText) const
+      {
+         for (const auto& s_ : m_vectorText) { if (s_ == stringText) return true; }
+         return false;
+      }
+
+      // ## iterator methods
+      std::vector<std::string_view>::iterator begin() { return m_vectorText.begin(); }
+      std::vector<std::string_view>::iterator end() { return m_vectorText.end(); }
+      std::vector<std::string_view>::const_iterator begin() const { return m_vectorText.begin(); }
+      std::vector<std::string_view>::const_iterator end() const { return m_vectorText.end(); }
+      std::vector<std::string_view>::const_iterator cbegin() const { return m_vectorText.cbegin(); }
+      std::vector<std::string_view>::const_iterator cend() const { return m_vectorText.cend(); }
+
+      std::vector<std::string_view> m_vectorText;
+   };
+}
+
+_GD_END
+
 /*
 
 class StringFormatter {
