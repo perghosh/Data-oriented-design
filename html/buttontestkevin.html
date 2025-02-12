@@ -41,6 +41,11 @@
       </select>
 
       <button id="idButtonReset">Reset</button>
+      
+      <div id="idDiv">
+         <br>
+         <button id="idButtonCreate">Create Table</button>
+      </div>
    
    </div>
 
@@ -74,7 +79,35 @@
          if (sTheme)
          {
             document.getElementById("idCssVariable").href = sTheme;
+
          }
+      }
+
+      function CreateTable(container)
+      {
+         const eContainer = container;
+         const eButton = document.getElementById("idButtonCreate");
+         let bCheck = false
+
+         eButton.addEventListener("click", function () {
+
+            if (bCheck == false) {
+               Table(eContainer, 3, 3);       // how do i remove the table if bCheck == true?
+               bCheck = true
+               eButton.textContent = "Remove Table"
+            }
+            else
+            {
+               const eTable = eContainer.querySelector("table");
+               if (eTable)
+               {
+                  eTable.remove();
+               }
+               bCheck = false;
+               eButton.textContent = "Create Table"
+            }
+
+         });
       }
 
       function Button(container)
@@ -206,6 +239,7 @@
       function Initialize() {
          const eContainer = document.getElementById("idButtons");
          const eDivContainer = document.getElementById("idContainer");
+         const eDivContainer2 = document.getElementById("idDiv");
          const ePanel = document.getElementById("idPanel");
          
          Button(eContainer);
@@ -213,6 +247,7 @@
          MoveElement(ePanel);
          OrderedList(eContainer);
          Table(eContainer, 5, 5)
+         CreateTable(eDivContainer2);
 
       }
 
