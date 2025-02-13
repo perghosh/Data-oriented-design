@@ -163,10 +163,10 @@ std::pair<bool, std::string> command::add_command( const std::string_view& strin
  * @param uPriority Specifies the priority filter for searching arguments. If set to 
  *        non-zero, it overrides the default behavior where all priorities except 
  *        'ePriorityCommand' are considered. The priority can be a combination of:
- *        - ePriorityRegister
- *        - ePriorityStack
- *        - ePriorityCommand
- *        - ePriorityGlobal
+ *        - ePriorityRegister - think of a processor register
+ *        - ePriorityStack - think of a processor method local stack, variables within a method
+ *        - ePriorityCommand - like parameters to a command
+ *        - ePriorityGlobal - global values
  *
  * @return gd::variant_view A variant view of the found argument. If no argument 
  *         matches the given criteria, it returns an empty or default-initialized 
@@ -184,7 +184,7 @@ std::pair<bool, std::string> command::add_command( const std::string_view& strin
 gd::variant_view command::get_argument( const gd::variant_view& index_, uint32_t uPriority )
 {
    gd::variant_view value_;
-   uint32_t uPriorityFilter = (ePriorityRegister | ePriorityStack | ePriorityGlobal);
+   uint32_t uPriorityFilter = (ePriorityRegister | ePriorityStack | ePriorityCommand | ePriorityGlobal);
    
    if( uPriority != 0 ) uPriorityFilter = uPriority;                           // if priority is set use that
 
@@ -212,9 +212,10 @@ gd::variant_view command::get_argument( const gd::variant_view& index_, uint32_t
          // ## Extract each byte from uPriority and place in array
          for( unsigned uByte = 0; uByte < sizeof(uint32_t); uByte++ )
          {
-            arrayPriority[uByte] = ( uPriority >> ( uByte * 8 ) ) & 0xFF;
+            arrayPriority[uByte] = ( uPriority >> ( uByte * 8 ) ) & 0xFF;      // extract byte and put in array
          }
 
+         // ## loop through all priority values and try to find value, first value found is returned
          for( auto it : arrayPriority )
          {
             uPriorityFilter = it;
@@ -231,6 +232,15 @@ gd::variant_view command::get_argument( const gd::variant_view& index_, uint32_t
                }
             }
          }
+      }
+   }
+   else if( index_.is_integer() == true )
+   {
+      // TODO: implement integer index logic
+      unsigned uIndex = index_.as_uint();
+      if( uIndex < m_vectorArgument.size() )
+      {
+         // value_ = m_vectorArgument.at(uIndex).get_arguments();
       }
    }
 
