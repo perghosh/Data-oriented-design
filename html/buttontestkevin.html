@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -91,17 +91,30 @@
 
          eButton.addEventListener("click", function () {
 
-            if (bCheck == false) {
-               Table(eContainer, 3, 3);       // how do i remove the table if bCheck == true?
+            if (!bCheck) {
+               //Table(eContainer, 3, 3);       // how do i remove the table if bCheck == true?
+               
+               tableSimple = new CTableSimple({
+                  parent: eContainer,
+                  row: 5,
+                  column: 3
+               });
+
+               tableSimple.Create();
+               tableSimple.Hide();
+               
+
                bCheck = true
                eButton.textContent = "Remove Table"
             }
             else
             {
+               
                const eTable = eContainer.querySelector("table");
                if (eTable)
                {
                   eTable.remove();
+                  
                }
                bCheck = false;
                eButton.textContent = "Create Table"
@@ -161,12 +174,12 @@
 
             if (i == 0)
             {
-               eRow.bgColor = "#333333"
+               eRow.bgColor = "#333333";
             }
 
             if (i % 2) {
                //eRow.bgColor = RandomRGBColor();
-               eRow.bgColor = "#FF6666"
+               eRow.bgColor = "#FF6666";
             }
 
             for (let j = 0; j <= iColumns; j++)
@@ -174,15 +187,15 @@
                if (i == 0)
                {
                   const eTableHeader = document.createElement("th");
-                  eTableHeader.textContent = "Dethär är en tableheader"
-                  eTableHeader.style.color = "gray"
+                  eTableHeader.textContent = encodeURIComponent( "Det här är en tableheader" );
+                  eTableHeader.style.color = "gray";
 
                   eRow.appendChild(eTableHeader.cloneNode(true));
                }
                else
                {
                   const eColumn = document.createElement("td");
-                  eColumn.textContent = "Dethär är en column";
+                  eColumn.textContent = "Det här är en column";
 
                   eRow.appendChild(eColumn.cloneNode(true));
                }
@@ -199,7 +212,7 @@
          const eOrderedList = document.createElement("ol");
          let eList = document.createElement("li");
 
-         eList.textContent = "Dethär är en lista";
+         eList.textContent = "Det här är en lista  ooo";
 
          for(let i = 0; i < 5; i++) 
          {
@@ -215,7 +228,7 @@
 
          let eDiv;
          const eH1 = document.createElement("h1");
-         eH1.textContent = "dethär är en div";
+         eH1.textContent = "det här är en divvvv";
 
          for (let i = 0; i < 5; i++)
          {
@@ -258,5 +271,6 @@
       });
    </script>
    <script src="component/UIKevinDiv.js"></script>
+   <script src="component/TableSimple.js"></script>
 </body>
 </html>
