@@ -1,4 +1,4 @@
-class CDiv {
+Ôªøclass CDiv {
    constructor(options) 
    {
       const o = options;
@@ -9,7 +9,7 @@ class CDiv {
    Create() {
       let eDiv;
       const eH1 = document.createElement("h1");
-      eH1.textContent = "deth‰r ‰r en div";
+      eH1.textContent = "det  h√§r √§r en div 000";
 
       eDiv = document.createElement("div");
       eDiv.classList.add("div-background");
