@@ -94,12 +94,73 @@ struct body_i : public unknown_i
  * command is used command sequance to execute, this can be from one to any number of commands and these
  * commands are passed to server. server is trversing commans sent and executes them in order
  */
+
+/**
+ * @brief Defines the interface for command management operations.
+ *
+ * This interface provides methods for managing commands and their associated arguments
+ * within a server environment. It inherits from `unknown_i`, suggesting it can be used
+ * with dynamic casting or interface querying mechanisms.
+ *
+ * @note All methods in this interface are pure virtual, requiring implementation by derived classes.
+ *
+ * @method get_server
+ *   - Retrieves the server instance associated with this command interface.
+ *   - @return Pointer to a server_i object, or nullptr if not available.
+ *
+ * @method add_arguments
+ *   - Adds arguments to the command based on the provided locality and argument set.
+ *   - @param variantviewLocality The locality context for the arguments.
+ *   - @param pargumentsValue Pointer to the arguments to be added.
+ *   - @return std::pair<bool, std::string> where bool indicates success, and string provides any error message.
+ *
+ * @method add_command
+ *   - Adds a new command with its key, command string, and local arguments.
+ *   - @param stringKey The unique identifier for the command.
+ *   - @param stringCommand The command string to execute.
+ *   - @param pargumentsLocal Pointer to local arguments for this command. Arguments contains values for the command. These gets the priority `ePriorityCommand`.
+ *   - @return std::pair<bool, std::string> where bool indicates if the command was added successfully.
+ *
+ * @method get_argument
+ *   - Retrieves a specific argument based on an index and priority.
+ *   - @param index_ The index or identifier for the argument.
+ *   - @param uPriority The priority level for argument selection. How this priority is used is up to the implementation.
+ *   - @return gd::variant_view representing the argument value.
+ *
+ * @method get_all_arguments
+ *   - Retrieves all arguments associated with a given index.
+ *   - @param index_ The index or identifier for the arguments.
+ *   - @return gd::argument::arguments object containing all related arguments.
+ *
+ * @method get_arguments
+ *   - Fetches arguments for a given index, which can be either numeric or string-based.
+ *   - @param index_ A variant that could be either uint64_t or std::string_view to specify the argument set.
+ *   - @param parguments_ Pointer to where the arguments should be stored.
+ *   - @return std::pair<bool, std::string> indicating success and any error message.
+ *
+ * @method query_select
+ *   - Executes a query with specific priority and selector to return a single result.
+ *   - @param uPriority The priority level for the query.
+ *   - @param selector_ The selector used for the query.
+ *   - @param pvariantview_ Pointer to store the result of the query.
+ *   - @return std::pair<bool, std::string> indicating if the query was successful.
+ *
+ * @method query_select_all
+ *   - Executes a query to retrieve all matching results based on the given selector.
+ *   - @param selector_ The selector for the query.
+ *   - @param pvectorValue Pointer to a vector where results will be stored.
+ *   - @return std::pair<bool, std::string> indicating if the query operation was successful.
+ *
+ * @method clear
+ *   - Clears all commands or arguments of a specific type.
+ *   - @param variantviewType The type of commands or arguments to clear.
+ */
 struct command_i : public unknown_i
 {
    virtual server_i* get_server() = 0;
    virtual std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsValue ) = 0;
    virtual std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) = 0;
-   virtual gd::variant_view get_argument( const gd::variant_view& index_ ) = 0;
+   virtual gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) = 0;
    virtual gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) = 0;
    virtual std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) = 0;
    virtual std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) = 0;
@@ -153,7 +214,7 @@ struct command : public command_i
    unsigned release() override { return 0; }
    std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsGlobal ) override { return { true, "" }; }
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsGlobal ) override { return { true, "" }; }
-   gd::variant_view get_argument( const gd::variant_view& index_ ) override { return gd::variant_view(); }
+   gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) override { return gd::variant_view(); }
    gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override { return gd::argument::arguments(); }
    std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override { return { true, "" }; }
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override { return { true, "" }; }
@@ -307,8 +368,8 @@ struct command : public gd::com::server::command_i
    /// add command and arguments for that command
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) override;
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );
-   //void get_arguments( gd::argument::arguments** ppargumentsGlobal ) override;
-   gd::variant_view get_argument( const gd::variant_view& index_ ) override;
+   gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) override;
+   gd::variant_view get_argument( const gd::variant_view& index_ ) { return get_argument( index_, 0 ); }
    gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override;
    std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override;
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override;
