@@ -1,3 +1,4 @@
+#include <array>
 #include <variant>
 
 #include "gd/gd_utf8.h"
@@ -151,26 +152,83 @@ std::pair<bool, std::string> command::add_command( const std::string_view& strin
 }
 
 /** ---------------------------------------------------------------------------
- * @brief get global argument from command object
- * @param index_ {string|integer} index to argument to return
- * @return gd::variant_view value for requested argument
+ * @brief Retrieves an argument value based on the index and priority.
+ *
+ * This function searches for an argument within the command's argument collection
+ * based on either a string name or an index.
+ * The search can be filtered by priority levels, which determine the
+ * scope or context of the argument (e.g., register, stack, command, global).
+ *
+ * @param index_ The identifier of the argument, expected to be a string.
+ * @param uPriority Specifies the priority filter for searching arguments. If set to 
+ *        non-zero, it overrides the default behavior where all priorities except 
+ *        'ePriorityCommand' are considered. The priority can be a combination of:
+ *        - ePriorityRegister
+ *        - ePriorityStack
+ *        - ePriorityCommand
+ *        - ePriorityGlobal
+ *
+ * @return gd::variant_view A variant view of the found argument. If no argument 
+ *         matches the given criteria, it returns an empty or default-initialized 
+ *         variant_view.
+ *
+ * @note 
+ * - If `uPriority` is 0, the function uses a default priority filter excluding 
+ *   'ePriorityCommand'. The reason for this it to handle command settings separately.
+ * - The method first checks if `index_` is a string before proceeding with the search.
+ * - For low priority filters (< 0x0100), it searches through all arguments with 
+ *   matching priorities.
+ * - For higher priority filters, it processes each byte of `uPriority` to determine 
+ *   the priority for searching, ensuring each priority is checked in sequence.
  */
-gd::variant_view command::get_argument( const gd::variant_view& index_ )
+gd::variant_view command::get_argument( const gd::variant_view& index_, uint32_t uPriority )
 {
    gd::variant_view value_;
+   uint32_t uPriorityFilter = (ePriorityRegister | ePriorityStack | ePriorityGlobal);
+   
+   if( uPriority != 0 ) uPriorityFilter = uPriority;                           // if priority is set use that
 
    if( index_.is_string() )
    {
       std::string_view stringName = index_.as_string_view();
-      for( auto it = std::begin( m_vectorArgument ), itEnd = std::end( m_vectorArgument ); it != itEnd; it++ )
+      if( uPriorityFilter < 0x0100 ) 
       {
-         if( it->get_priority() != ePriorityCommand )                          // not for command values, only stack and global
+         for( auto it = std::begin( m_vectorArgument ), itEnd = std::end( m_vectorArgument ); it != itEnd; it++ )
          {
-            const gd::argument::arguments& arguments_ = it->get_arguments();
-            if( arguments_.exists( stringName ) == true )
+            if( (it->get_priority() & uPriorityFilter) != 0 )                  // not for command values, only stack and global
             {
-               value_ = arguments_[stringName].as_variant_view();
-               break;
+               const gd::argument::arguments& arguments_ = it->get_arguments();
+               if( arguments_.exists( stringName ) == true )
+               {
+                  value_ = arguments_[stringName].as_variant_view();
+                  break;
+               }
+            }
+         }
+      }
+      else
+      {
+         std::array<unsigned, 4> arrayPriority = { ePriorityRegister, ePriorityStack, ePriorityCommand, ePriorityGlobal };
+         // ## Extract each byte from uPriority and place in array
+         for( unsigned uByte = 0; uByte < sizeof(uint32_t); uByte++ )
+         {
+            arrayPriority[uByte] = ( uPriority >> ( uByte * 8 ) ) & 0xFF;
+         }
+
+         for( auto it : arrayPriority )
+         {
+            uPriorityFilter = it;
+            for( auto it = std::begin(m_vectorArgument), itEnd = std::end(m_vectorArgument); it != itEnd; it++ )
+            {
+               if( it->get_priority() == uPriorityFilter )                     // not for command values, only stack and global
+               {
+                  const gd::argument::arguments& arguments_ = it->get_arguments();
+                  if( arguments_.exists(stringName) == true )
+                  {
+                     value_ = arguments_[stringName].as_variant_view();
+                     return value_;
+                  }
+               }
             }
          }
       }
