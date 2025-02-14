@@ -107,4 +107,17 @@
          this.m_eTable.style.display = "none";
       }
    }
+
+   SetCellValue(iRow, iColumn, sValue) 
+   {
+      const eRow = this.m_eTable.rows[iRow];
+      if(eRow) 
+      {
+         const eCell = eRow.cells[iColumn];
+         if(eCell) 
+         {
+            eCell.textContent = sValue;
+         }
+      }
+   }
 }

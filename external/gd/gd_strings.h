@@ -235,6 +235,10 @@ public:
    /// Advance offset in buffer and return offset to next string
    uint64_t advance(uint64_t uOffset) const;
 
+   interator find( const std::string_view& stringFind );
+
+   const uint8_t* find( const std::string_view& stringFind, uint64_t uOffset, uint64_t uSize );
+
    // ## join internal string values to one string
    // 
    std::string join() const { return join_s(begin(), end(), ""); }
@@ -264,10 +268,14 @@ public:
    static const char* c_str_s(const uint8_t* puPosition) { return reinterpret_cast<const char*>( puPosition + sizeof(uint32_t) ); }
    /// get length of string from buffer at offset position
    static uint32_t length_s(const uint8_t* puPosition)  { return *reinterpret_cast<const uint32_t*>( puPosition ); }
+   /// move to next string
+   static const uint8_t* next_s( const uint8_t* puPosition );
    /// get std::string_view from buffer at offset position
    static std::string_view to_string_view_s(const uint8_t* puBuffer, uint64_t uPosition);
    /// get std::string from buffer at offset position
    static std::string to_string_s(const uint8_t* puBuffer, uint64_t uPosition);
+
+   const uint8_t* find_s( const uint8_t* puBuffer, const std::string_view& stringFind, uint64_t uOffset, uint64_t uSize );
 
    /// join strings with a separator using iterator range
    template<typename ITERATOR>
@@ -353,7 +361,6 @@ strings32& strings32::append_any(const VALUE& value) {
 }
 
 
-
 /// Return position in internal buffer for offset
 inline uint8_t* strings32::get_position(uint64_t uOffset) {                                        assert( uOffset < m_uSize ); assert( (uOffset % sizeof( uint32_t )) == 0 );
    return m_puBuffer + uOffset;
@@ -361,6 +368,15 @@ inline uint8_t* strings32::get_position(uint64_t uOffset) {                     
 /// Return position in internal buffer for offset
 inline const uint8_t* strings32::get_position(uint64_t uOffset) const {                            assert( uOffset < m_uSize ); assert( (uOffset % sizeof( uint32_t )) == 0 );
    return m_puBuffer + uOffset;
+}
+
+/// Move to next string in buffer
+/// Gets the lentgh of the string at the current position and advances the offset to the next string.
+/// Remember that each string is aligned to 4 byte boundary.
+inline const uint8_t* strings32::next_s(const uint8_t* puPosition) {                               assert( (intptr_t)puPosition % sizeof(uint32_t) == 0 );
+   uint32_t uLength = *reinterpret_cast<const uint32_t*>(puPosition);
+   uint32_t uBlockSize = align32_g(uLength + sizeof(uint32_t));
+   return puPosition + uBlockSize;
 }
 
 /// get std::string_view from buffer at offset position
@@ -378,6 +394,7 @@ inline std::string strings32::to_string_s(const uint8_t* puBuffer, uint64_t uPos
    const char* pi_ = reinterpret_cast<const char*>( puBuffer + uPosition + sizeof(uint32_t) );
    return std::string( pi_, uLength );
 }
+
 
 
 /// join strings with a separator using iterator range

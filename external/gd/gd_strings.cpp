@@ -253,6 +253,43 @@ uint64_t strings32::advance(uint64_t uOffset) const
    return uOffset + uBlockSize;
 }
 
+/** ---------------------------------------------------------------------------
+ * Searches for a specific string within a buffer.
+ * 
+ * @param puBuffer Pointer to the start of the buffer to search in.
+ * @param stringFind The string to search for, provided as a std::string_view.
+ * @param uOffset The starting offset within the buffer to begin searching from.
+ * @param uSize The total size of the buffer to consider for searching.
+ * @return Pointer to the start of the matching string within the buffer, or nullptr if not found.
+ * 
+ * @note 
+ * - Alignment of puPosition to uint32_t is enforced for performance reasons.
+ * - The function checks if the string length fits within uint32_t and if the offset is 
+ *   valid within the buffer size.
+ * - Uses custom functions 'length_s', 'next_s', and 'c_str_s' to get string information and move to the next string.
+ */
+const uint8_t* strings32::find_s(const uint8_t* puBuffer, const std::string_view& stringFind, uint64_t uOffset, uint64_t uSize)
+{                                                                                                  assert( stringFind.length() < 0xffff'ffff ); assert( uOffset < uSize );
+   const uint8_t* puPosition = puBuffer + uOffset;                                                 assert( (intptr_t)puPosition % sizeof(uint32_t) == 0 );
+   const uint8_t* puEnd = puBuffer + uSize; // puEnd: Pointer to the end of the buffer to search in.
+   uint32_t uLength = (uint32_t)stringFind.length(); // uLength: Length of the string to find
+   
+   // ## Search for the string within the buffer marked by the offset and size
+   while( puPosition < puEnd )
+   {                                                                                               assert( length_s( puPosition ) < uSize ); // cant be larger than total size
+      if( uLength == length_s(puPosition) )                                   // same length ?
+      {
+         auto iMatch = memcmp( c_str_s( puPosition ), stringFind.data(), uLength );
+         if( iMatch == 0 ) return puPosition;
+      }
+
+      puPosition = next_s(puPosition);                                        // Move to the next string block                                  
+   }
+
+   return nullptr;
+}
+
+
 
 _GD_END
 
