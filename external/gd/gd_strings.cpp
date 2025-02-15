@@ -253,6 +253,73 @@ uint64_t strings32::advance(uint64_t uOffset) const
    return uOffset + uBlockSize;
 }
 
+bool strings32::exists(const std::string_view& stringFind) const 
+{
+   const uint8_t* puPosition = find_s( buffer(), stringFind, uint64_t(0), m_uSize );
+   if( puPosition != nullptr ) return true;
+   return false;
+}
+
+/// Move to next string in buffer
+/// Gets the lentgh of the string at the current position and advances the offset to the next string.
+/// Remember that each string is aligned to 4 byte boundary.
+const uint8_t* strings32::next_s(const uint8_t* puPosition) 
+{                                                                                                  assert( (intptr_t)puPosition % sizeof(uint32_t) == 0 );
+   uint32_t uLength = *reinterpret_cast<const uint32_t*>(puPosition);
+   uint32_t uBlockSize = align32_g( uLength + (uint32_t)sizeof(uint32_t));
+   return puPosition + uBlockSize;
+}
+
+/// Searches for the first occurrence of stringFind in the entire buffer, returning an iterator to the match or end() if not found.
+strings32::iterator strings32::find( const std::string_view& stringFind )
+{
+   const uint8_t* puPosition = find_s(buffer(), stringFind, uint64_t(0), m_uSize);
+   if( puPosition != nullptr ) return iterator(this, puPosition - buffer());
+   return end();
+}
+
+/// Searches for stringFind starting from itOffset, returning an iterator to the match or end() if not found within the buffer 
+strings32::iterator strings32::find( const std::string_view& stringFind, const strings32::iterator& itOffset )
+{                                                                                                  assert( itOffset.offset() < m_uSize ); assert( itOffset.get() == this );
+   const uint8_t* puPosition = find_s(buffer(), stringFind, itOffset.offset(), m_uSize);
+   if( puPosition != nullptr ) return iterator(this, puPosition - buffer());
+   return end();
+}
+
+/// Searches for stringFind within a specified range from itBegin to itEnd, returning an iterator to the match or end() if not found.
+strings32::iterator strings32::find( const std::string_view& stringFind, const strings32::iterator& itBegin, const strings32::iterator& itEnd )
+{                                                                                                  assert( itBegin.offset() < m_uSize ); assert( itEnd.offset() < m_uSize ); assert( itBegin.get() == this ); assert( itEnd.get() == this );
+   const uint8_t* puPosition = find_s(buffer(), stringFind, itBegin.offset(), itEnd.offset());
+   if( puPosition != nullptr ) return iterator(this, puPosition - buffer());
+   return end();
+}
+
+/// Const version of the search function that looks for stringFind in the entire buffer, returning a const_iterator.
+strings32::const_iterator strings32::find( const std::string_view& stringFind ) const
+{
+   const uint8_t* puPosition = find_s(buffer(), stringFind, uint64_t(0), m_uSize);
+   if( puPosition != nullptr ) return const_iterator(this, puPosition - buffer());
+   return end();
+}
+
+/// Const version that searches for stringFind from itOffset, returning a const_iterator to the match or end().
+strings32::const_iterator strings32::find( const std::string_view& stringFind, const strings32::const_iterator& itOffset ) const
+{                                                                                                  assert( itOffset.offset() < m_uSize ); assert( itOffset.get() == this );
+   const uint8_t* puPosition = find_s(buffer(), stringFind, itOffset.offset(), m_uSize);
+   if( puPosition != nullptr ) return const_iterator(this, puPosition - buffer());
+   return end();
+}
+
+/// Const version that searches for stringFind within the range defined by itBegin and itEnd, returning a const_iterator or end().
+strings32::const_iterator strings32::find( const std::string_view& stringFind, const strings32::const_iterator& itBegin, const strings32::const_iterator& itEnd ) const
+{                                                                                                  assert( itBegin.offset() < m_uSize ); assert( itEnd.offset() < m_uSize ); assert( itBegin.get() == this ); assert( itEnd.get() == this );
+   const uint8_t* puPosition = find_s(buffer(), stringFind, itBegin.offset(), itEnd.offset());
+   if( puPosition != nullptr ) return const_iterator(this, puPosition - buffer());
+   return end();
+}
+
+
+
 /** ---------------------------------------------------------------------------
  * Searches for a specific string within a buffer.
  * 

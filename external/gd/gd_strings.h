@@ -62,6 +62,8 @@ namespace strings {
       bool operator!=(const iterator& o) const { return !(o == *this); }
 
       uint64_t offset() const { return m_uOffset; }
+      STRINGS* get() { return m_pstrings; }
+      const STRINGS* get() const { return m_pstrings; }
 
       /// get std::string_view from active position for iterator
       std::string_view operator*() const { return as_string_view(); }  
@@ -235,9 +237,19 @@ public:
    /// Advance offset in buffer and return offset to next string
    uint64_t advance(uint64_t uOffset) const;
 
-   interator find( const std::string_view& stringFind );
+   /// Searches for a specific string within a buffer. Returnes true if string exists.
+   bool exists(const std::string_view& stringFind) const;
 
-   const uint8_t* find( const std::string_view& stringFind, uint64_t uOffset, uint64_t uSize );
+   /// ## find string in buffer
+
+   iterator find( const std::string_view& stringFind );
+   iterator find( const std::string_view& stringFind, const iterator& itOffset );
+   iterator find( const std::string_view& stringFind, const iterator& itBegin, const iterator& itEnd );
+   const_iterator find( const std::string_view& stringFind ) const;
+   const_iterator find( const std::string_view& stringFind, const const_iterator& itOffset ) const;
+   const_iterator find( const std::string_view& stringFind, const const_iterator& itBegin, const const_iterator& itEnd ) const;
+
+   // const uint8_t* find( const std::string_view& stringFind, uint64_t uOffset, uint64_t uSize );
 
    // ## join internal string values to one string
    // 
@@ -275,7 +287,7 @@ public:
    /// get std::string from buffer at offset position
    static std::string to_string_s(const uint8_t* puBuffer, uint64_t uPosition);
 
-   const uint8_t* find_s( const uint8_t* puBuffer, const std::string_view& stringFind, uint64_t uOffset, uint64_t uSize );
+   static const uint8_t* find_s( const uint8_t* puBuffer, const std::string_view& stringFind, uint64_t uOffset, uint64_t uSize );
 
    /// join strings with a separator using iterator range
    template<typename ITERATOR>
@@ -368,15 +380,6 @@ inline uint8_t* strings32::get_position(uint64_t uOffset) {                     
 /// Return position in internal buffer for offset
 inline const uint8_t* strings32::get_position(uint64_t uOffset) const {                            assert( uOffset < m_uSize ); assert( (uOffset % sizeof( uint32_t )) == 0 );
    return m_puBuffer + uOffset;
-}
-
-/// Move to next string in buffer
-/// Gets the lentgh of the string at the current position and advances the offset to the next string.
-/// Remember that each string is aligned to 4 byte boundary.
-inline const uint8_t* strings32::next_s(const uint8_t* puPosition) {                               assert( (intptr_t)puPosition % sizeof(uint32_t) == 0 );
-   uint32_t uLength = *reinterpret_cast<const uint32_t*>(puPosition);
-   uint32_t uBlockSize = align32_g(uLength + sizeof(uint32_t));
-   return puPosition + uBlockSize;
 }
 
 /// get std::string_view from buffer at offset position

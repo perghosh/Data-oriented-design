@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <span>
 #include <random>
@@ -44,7 +45,19 @@ TEST_CASE( "[gd] strings", "[gd]" ) {
    strings2_.append_any(true);
    strings2_.append_any(1.1);
    strings2_.append_any(vectorValue);
-   strings2_.append_any({ {10}, {20}, {30}, {40}, {50} });
+   strings2_.append_any({ {10}, {20}, {30}, {35}, {40}, {50}, {60}, {70} });
+
+   // strings2_.find("10");
+   auto bFound = strings2_.exists("10");                                                          REQUIRE(bFound == true);
+   bFound = strings2_.exists("101");                                                              REQUIRE(bFound == false);
+
+   auto itFound = strings2_.find("10");                                                           REQUIRE(itFound != strings2_.end());
+   auto itMissing = strings2_.find("101");                                                        REQUIRE(itMissing == strings2_.end());
+   auto itEnd = strings2_.find("60", itFound);                                                    REQUIRE(itEnd != strings2_.end());
+   auto it35 = strings2_.find("35", itFound, itEnd);                                              REQUIRE(it35 != strings2_.end());
+
+   { auto find_ = std::ranges::find( strings2_, "35" );                                           REQUIRE(find_ != strings2_.end()); }
+   { auto find_ = std::find( strings2_.begin(), strings2_.end(), "35");                           REQUIRE(find_ != strings2_.end()); }
 
    std::string stringResult = strings2_.join();
    std::cout << stringResult << std::endl;
