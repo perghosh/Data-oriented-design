@@ -7,6 +7,7 @@
 
 #include "../gd_types.h"
 #include "../gd_arguments.h"
+#include "../gd_strings.h"
 #include "../gd_variant_view.h"
 
 #include "../gd_com.h"
@@ -160,6 +161,7 @@ struct command_i : public unknown_i
    virtual server_i* get_server() = 0;
    virtual std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsValue ) = 0;
    virtual std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) = 0;
+   //virtual uint64_t get_command_count() = 0;
    virtual gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) = 0;
    virtual gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) = 0;
    virtual std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) = 0;
@@ -304,9 +306,12 @@ struct command : public gd::com::server::command_i
    struct arguments
    {
       arguments( unsigned uPriority, const std::string_view& stringKey, const gd::argument::arguments& arguments_ ): m_uPriority(uPriority), m_stringKey( stringKey ), m_arguments( arguments_ ) {}
+      arguments( unsigned uPriority, const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& arguments_ ): m_uPriority(uPriority), m_stringKey( stringKey ), m_arguments( arguments_ ) { m_strings32Command.append( stringCommand ); }
+      arguments( unsigned uPriority, const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& arguments_ ): m_uPriority(uPriority), m_stringKey( stringKey ), m_strings32Command(vectorCommand), m_arguments( arguments_ ) {}
       arguments( unsigned uPriority, const gd::argument::arguments& arguments_ ): arguments( uPriority, std::string_view(), arguments_ ) {}
       arguments( const std::string_view& stringKey, const gd::argument::arguments& arguments_ ): arguments( ePriorityCommand, stringKey, arguments_ ) {}
-      arguments( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& arguments_ ): arguments( ePriorityCommand, stringKey, arguments_ ) {}
+      arguments( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& arguments_ ): arguments( ePriorityCommand, stringKey, stringCommand, arguments_ ) {}
+      arguments( const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& arguments_ ): arguments( ePriorityCommand, stringKey, vectorCommand, arguments_ ) {}
 
       arguments( const std::pair< std::string, gd::argument::arguments >& pair_ ): m_stringKey(pair_.first), m_arguments( pair_.second ) {}
 
@@ -317,10 +322,10 @@ struct command : public gd::com::server::command_i
       arguments& operator=( arguments&& o ) noexcept { common_construct( std::move( o ) ); return *this; }
 
       void common_construct( const arguments& o ) {
-         m_uPriority = o.m_uPriority; m_iCommandIndex = o.m_iCommandIndex; m_stringKey = o.m_stringKey; m_stringCommand = o.m_stringCommand; m_arguments = o.m_arguments;
+         m_uPriority = o.m_uPriority; m_iCommandIndex = o.m_iCommandIndex; m_stringKey = o.m_stringKey; m_strings32Command = o.m_strings32Command; m_arguments = o.m_arguments;
       }
       void common_construct( arguments&& o ) noexcept {
-         m_uPriority = o.m_uPriority; m_iCommandIndex = o.m_iCommandIndex; m_stringKey = std::move( o.m_stringKey ); m_stringCommand = std::move( o.m_stringCommand ); m_arguments = std::move( o.m_arguments );
+         m_uPriority = o.m_uPriority; m_iCommandIndex = o.m_iCommandIndex; m_stringKey = std::move( o.m_stringKey ); m_strings32Command = std::move( o.m_strings32Command ); m_arguments = std::move( o.m_arguments );
       }
 
       // ## operator
@@ -339,8 +344,8 @@ struct command : public gd::com::server::command_i
       unsigned m_uPriority = ePriorityGlobal; ///< priority, this is used to order values and in what order values are looked for
       int m_iCommandIndex = -1;     ///<
       std::string m_stringKey;      ///< command key to access command, this is also used to connect return values
-      std::string m_stringCommand;  ///< command namen if command is specified here and not in uri
-      gd::argument::arguments m_arguments; // parameters for command
+      gd::strings32 m_strings32Command; ///< command name sequence, like command/sub-command/sub-sub-command
+      gd::argument::arguments m_arguments; ///< parameters for command
    };
 
    command() {}
@@ -355,8 +360,8 @@ struct command : public gd::com::server::command_i
 
    // ## get/set
 
+   /// get server object for command (each command object is connected to one server object)
    server_i* get_server() override { return m_pserver; }
-   void set_command( const std::string_view& stringCommand ) { m_stringCommand = stringCommand; }
    /// add global arguments, all commands in command object are able to use global arguments
    std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewPriority, const gd::argument::arguments* pargumentsGlobal ) override;
    void arguments_remove( unsigned uPriority );
@@ -368,6 +373,8 @@ struct command : public gd::com::server::command_i
    /// add command and arguments for that command
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) override;
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );
+   void add_command( const std::vector<std::string_view>& vectorCommand );
+   void add_command( const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal );
    gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) override;
    gd::variant_view get_argument( const gd::variant_view& index_ ) { return get_argument( index_, 0 ); }
    gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override;
@@ -377,8 +384,12 @@ struct command : public gd::com::server::command_i
    gd::variant_view query_select( const std::string_view& stringSelector );
    std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override;
 
+   /// Get number of commands in command object (note that one command object could hold more than one command)
+   size_t size() const { return m_vectorArgument.size(); }
    /// Clear internal data in command, based on whats passed different type of data can be cleared
    void clear( const gd::variant_view& variantviewToClear ) override;
+   /// Check if command object is empty
+   bool empty() const { return m_vectorArgument.empty(); }
 
 
    /// find pointer to arguments for name (should match any of command name found in command object)
@@ -389,13 +400,21 @@ struct command : public gd::com::server::command_i
 
    int m_iReference = 1;
    gd::com::server::server_i* m_pserver = nullptr;
-   std::string m_stringCommand;
    std::vector< arguments > m_vectorArgument;// variables in command, priority decides how to search for value
 };
 
 /// adds command information to command object, command are able to hold more than one command
 inline std::pair<bool, std::string> command::add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal ) {
    return add_command( stringKey, stringCommand, &argumentsLocal );
+}
+
+/// adds command information to command object, command are able to hold a sequence of command names
+inline void command::add_command(const std::vector<std::string_view>& vectorCommand) {
+   m_vectorArgument.push_back( arguments( std::string(), vectorCommand, gd::argument::arguments()));
+}
+/// adds command information to command object, command are able to hold a sequence of command names
+inline void command::add_command(const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal) {
+   m_vectorArgument.push_back( arguments( stringKey, vectorCommand, argumentsLocal ) );
 }
 
 /// return pointer to arguments for selected name

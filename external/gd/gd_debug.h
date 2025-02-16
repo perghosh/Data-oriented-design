@@ -38,6 +38,9 @@
 bool buffer_find( const uint8_t* pubuffer, const std::vector<uint8_t>& vectorFind, size_t uEnd );
 bool buffer_find( const uint8_t* pubuffer, uint32_t uFind, size_t uEnd );
 
+/// This struct template always evaluates to false for any type T. 
+/// It's useful in SFINAE (Substitution Failure Is Not An Error) contexts to 
+/// disable overloads or specializations when they should not be considered.
 template<typename T> struct always_false : std::false_type {};
 
 

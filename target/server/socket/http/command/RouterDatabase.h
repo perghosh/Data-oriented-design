@@ -57,6 +57,13 @@ public:
 
 //@}
 
+/** \name INTERFACE
+*///@{
+   /// Check if command is endpoint
+   bool is_endpoint(const std::string_view& stringCommand) override { return m_stringName == stringCommand; }
+   std::pair<bool, std::string> get( gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse) override;
+//@}
+
 /** \name OPERATION
 *///@{
    /// Execute resolvs the command and executes it
@@ -79,7 +86,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   std::string m_stringName; ///< Name of the database
+   std::string m_stringName; ///< Name of the database server
 
 
 // ## free functions ------------------------------------------------------------

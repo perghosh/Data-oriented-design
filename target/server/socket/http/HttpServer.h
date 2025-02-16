@@ -41,8 +41,12 @@ public:
 
 /** \name OPERATION
 *///@{
+   /// Get server that can handle command
+   gd::com::server::server_i* GetServer(const std::string_view& stringServerName);
+   /// Initialize main server
    std::pair<bool, std::string> Initialize();
-   std::pair<bool, std::string> Execute(const std::string_view& stringCommand );
+   std::pair<bool, std::string> Execute( const std::string_view& stringCommand, gd::com::server::response_i** ppresponse );
+   std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand,  gd::com::server::response_i** ppresponse );
 
    bool is_endpoint(const std::string_view& stringCommand) override;
    std::pair<bool, std::string> get( const std::string_view* stringCommandList, const gd::argument::arguments* pargumentsParameter, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse ) override ;

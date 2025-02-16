@@ -5,7 +5,16 @@
 #include "RouterDatabase.h"
 
 
-std::pair<bool, std::string> CRouterDatabase::Execute(const std::string_view& stringCommand, gd::com::server::command_i* pCommand, gd::com::server::response_i* presponse) 
+
+std::pair<bool, std::string> CRouterDatabase::get(gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse)
+{
+   gd::com::server::router::command* pcommand_ = (gd::com::server::router::command*)pcommand;
+
+   return {true, ""};
+}
+
+
+std::pair<bool, std::string> CRouterDatabase::Execute(const std::string_view& stringCommand, gd::com::server::command_i* pCommand, gd::com::server::response_i* presponse)
 {
 
 
