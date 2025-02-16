@@ -12,6 +12,7 @@
 #include "gd_variant.h"
 #include "gd_variant_view.h"
 #include "gd_debug.h"
+#include "gd_types.h"
 
 
 #ifndef _GD_BEGIN
@@ -147,6 +148,8 @@ public:
    strings32() : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) {}
    strings32( const std::string_view& string_ ) : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) { append( string_ ); }
    strings32( const std::initializer_list<std::string_view>& listString ) : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) { append( listString ); }
+   template<typename CONTAINER>
+   strings32(const CONTAINER& container) : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) { append(container); }
    // copy
    strings32(const strings32& o) { common_construct(o); }
    strings32(strings32&& o) noexcept { common_construct(std::move(o)); }
@@ -202,6 +205,12 @@ public:
    strings32& append(const std::vector<std::string_view>& vectorString);
    strings32& append_any(const std::initializer_list<gd::variant_view>& listValue);
    strings32& append_any(const std::vector<gd::variant_view>& vectorValue);
+
+   template<typename TYPE, typename ALLOC, typename = std::enable_if_t<gd::types::is_vector<std::vector<TYPE, ALLOC>>::value>>
+   strings32& append(const std::vector<TYPE, ALLOC>& vector_) { for( const auto& it : vector_ ) { append( it ); } }
+
+   template<typename TYPE, typename ALLOC, typename = std::enable_if_t<gd::types::is_list<std::list<TYPE, ALLOC>>::value>>
+   strings32& append(const std::list<TYPE, ALLOC>& list_) { for( const auto& it : list_ ) { append( it ); } }
 
    /// Appends types that is convertible to string to the buffer.
    strings32& append(const gd::variant_view& variant_view, gd::types::tag_view ) { append(variant_view.as_string()); return *this; }
@@ -319,6 +328,49 @@ inline std::string_view strings32::operator[](size_t uIndex) const
    for ( size_t i = 0; i < uIndex; ++i ) ++it;
    return it.as_string_view();
 }  
+
+
+template<typename TYPE> 
+TYPE get( const strings32& strings_  ) {
+   if constexpr ( std::is_same<TYPE, std::string>::value ) 
+   { 
+      return strings_.join(); 
+   }
+   else if constexpr ( std::is_same<TYPE, std::vector<std::string_view>>::value ) 
+   {
+      std::vector<std::string_view> vector_;
+      for( const auto& it : strings_ ) { vector_.push_back(it); }
+      return vector_;
+   }
+   else if constexpr ( std::is_same<TYPE, std::vector<std::string>>::value ) 
+   {
+      std::vector<std::string> vector_;
+      for( const auto& it : strings_ ) { vector_.push_back(it); }
+      return vector_;
+   }
+   else static_assert( gdd::always_false<TYPE>::value, "unsupported type" );
+}
+
+/*
+template<>
+std::string get<std::string>( const strings32& strings_ ) {
+   std::string s_;
+   for( const auto& it : strings_ ) { s_ += it; }
+   return s_;
+}
+
+
+
+/*
+/// return all internal strings as vector of string_view
+template<>
+std::vector<std::string_view> get<std::vector<std::string_view>>( const strings32& strings_ ) {
+   std::vector<std::string_view> vector_;
+   for( const auto& it : strings_ ) { vector_.push_back(it); }
+   return vector_;
+}
+*/
+
 
 /// Appends strings to internal buffer.
 inline strings32& strings32::append(const std::initializer_list<std::string_view>& listString)

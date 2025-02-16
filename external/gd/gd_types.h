@@ -14,9 +14,11 @@
 #pragma once
 
 #include <cassert>
+#include <type_traits>
 #include <stdint.h>
 #include <string>
 #include <string_view>
+#include <list>
 #include <vector>
 
 #ifndef _GD_TYPES
@@ -858,6 +860,27 @@ constexpr unsigned align_g(enumTypeNumber eTypeNumber)
 
 /// How to align type when printed as text
 inline unsigned align_g( unsigned uType ) { return align_g( enumTypeNumber(uType & 0xFF) ); }
+
+
+// ## helpers for templates
+
+// Default case: any type T is not considered a list, hence false
+template <typename T>
+struct is_list : std::false_type {};
+
+// Specialization for std::list: this type is indeed a list, so true
+template <typename T, typename Alloc>
+struct is_list<std::list<T, Alloc>> : std::true_type {};
+
+// Default case: any type T is not considered a vector, hence false
+template <typename T>
+struct is_vector : std::false_type {};
+
+// Specialization for std::vector: this type is indeed a vector, so true
+template <typename T, typename Alloc>
+struct is_vector<std::vector<T, Alloc>> : std::true_type {};
+
+
 
 
 

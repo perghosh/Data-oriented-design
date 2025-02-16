@@ -91,6 +91,12 @@ public:
    std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand );
 //@}
 
+/** \name ROUTER
+*///@{
+   gd::com::server::server_i* ROUTER_GetServer( const std::string_view& stringServer ) { return m_router.GetServer( stringServer ); }
+//@}
+
+
 protected:
 /** \name INTERNAL
 *///@{
@@ -170,6 +176,7 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    }
 
    std::string_view stringTarget = request_.target();
+   if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
 
    // ## Resolve target
 

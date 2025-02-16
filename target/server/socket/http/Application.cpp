@@ -52,6 +52,12 @@ CApplication::~CApplication()
       m_pserver = nullptr;
    }
 
+   if( m_phttpserver != nullptr )
+   {
+      m_phttpserver->release();
+      m_phttpserver = nullptr;
+   }
+
    if( m_pserverBoost ) delete m_pserverBoost;
 }
 
@@ -144,11 +150,13 @@ std::pair<bool, std::string> CApplication::Initialize()
       return result_;
    }
 
-   m_router.Connect( phttpserver );
+   m_phttpserver = phttpserver;                                               // set http server
 
-   ROUTER_Set(phttpserver);                                                    // set active server
+   // m_router.Connect( phttpserver );
 
-   phttpserver->release();
+   // ROUTER_Set(phttpserver);                                                    // set active server
+
+   //phttpserver->release();
 
 
    return application::basic::CApplication::Initialize();

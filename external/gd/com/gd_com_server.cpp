@@ -55,6 +55,9 @@ std::pair<bool, std::string> command::add_arguments( const gd::variant_view& var
    {
       arguments_remove( ePriorityRegister );                                   // only one register item, remove rest
       m_vectorArgument.push_back( arguments( uPriority, *pargumentsVariable ) );
+#ifndef NDEBUG
+      [[maybe_unused]] std::string stringArguments_d = pargumentsVariable->print();
+#endif
    }
    else
    {

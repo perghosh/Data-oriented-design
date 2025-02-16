@@ -55,4 +55,17 @@ std::pair<bool, std::string> CRouter::Get(std::vector<std::string_view>& vectorC
    return { true, "" };
 }
 
+gd::com::server::server_i* CRouter::GetServer(const std::string_view& stringServer)
+{
+   for( auto it : m_vectorServer )
+   {
+      if( it->is_endpoint(stringServer) == true )
+      {
+         return it;
+      }
+   }
+
+   return nullptr;
+}
+
 

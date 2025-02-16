@@ -47,6 +47,8 @@ public:
 
    std::pair< bool, std::string > Get( std::vector<std::string_view>& vectorCommand );
 
+   gd::com::server::server_i* GetServer(const std::string_view& stringServer);
+
 //@}
 
 protected:

@@ -9,7 +9,8 @@
 
 #include "gd/gd_database.h"
 
-#include "command/Router.h"
+//#include "command/Router.h"
+#include "HttpServer.h"
 
 #include "application/ApplicationBasic.h"
 
@@ -50,8 +51,8 @@ public:
 /** \name GET/SET
 *///@{
    CServer* GetServer() const { return m_pserverBoost; }
-   CRouter* GetRouter() { return &m_router; }
-   const CRouter* GetRouter() const { return &m_router; }
+   CHttpServer* GetHttpServer() { return m_phttpserver; }
+   const CHttpServer* GetHttpServer() const { return m_phttpserver; }
 //@}
 
 /** \name OPERATION
@@ -113,7 +114,8 @@ public:
    // ## attributes ----------------------------------------------------------------
 public:
    CServer* m_pserverBoost{};     ///< server object , used to handle incoming data and send response, holds boost objects
-   CRouter m_router;              ///< command router, used to route commands to correct command object
+   //CRouter m_router;              ///< command router, used to route commands to correct command object
+   CHttpServer* m_phttpserver{};  ///< http server object, used to handle http requests
    gd::com::server::server_i* m_pserver{}; ///< active server
 
    std::mutex m_mutexDatabase;   ///< Handle database locking

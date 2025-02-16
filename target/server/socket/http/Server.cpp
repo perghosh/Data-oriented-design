@@ -19,10 +19,12 @@ std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eV
    gd::com::server::server_i* pserver = m_ppapplication->ROUTER_GetActiveServer();
    gd::com::pointer< gd::com::server::router::command > pcommand = gd::com::pointer< gd::com::server::router::command >( new gd::com::server::router::command( pserver ) );   
    std::vector< std::string_view > vectorCommand = static_cast<gd::com::server::router::command*>( pcommand )->add_querystring( stringCommand );
-   
+
+   /*
    vectorCommand.erase(std::remove_if(vectorCommand.begin(), vectorCommand.end(), [](const auto& string_) {
       return string_.empty();
    }), vectorCommand.end());
+   */
 
    //pserver->get( pcommand, nullptr );
    // pserver->get( vectorCommand, nullptr, pcommand, nullptr);
@@ -47,9 +49,26 @@ std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eV
 }
 
 std::pair<bool, std::string> CServer::Execute(const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand)
-{
-   // auto* pserver = m_ppapplication->ROUTER_GetActiveServer();
-   // pserver->get( vectorCommand, pcommand, nullptr );
+{                                                                                                  assert( vectorCommand.empty() == false );
+   CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
+
+   gd::com::server::response_i* presponse = nullptr;
+
+   auto result_ = phttpserver->Execute( vectorCommand, pcommand, &presponse );
+
+
+   //std::string_view stringCommand = vectorCommand[0];
+
+   //gd::com::server::server_i* pserver = m_router.GetServer( stringCommand );
+   // CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
+
+   // auto result_ = phttpserver->Get( vectorCommand, pcommand );
+
+   // if( pserver == nullptr ) { return { false, "No server found for command: " + std::string(stringCommand) }; }
+
+   // pserver->get( vectorCommand, nullptr, pcommand, nullptr);
+
+
 
    return { true, "" };
 }
