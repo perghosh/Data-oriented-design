@@ -308,7 +308,8 @@ std::pair<bool, std::string> command::query_select( unsigned uPriority, const gd
       std::string_view stringName = selector_.as_string_view();
       for( auto it : m_vectorArgument )
       {
-         if( (it.get_priority() & uPriority) == 0 ) continue;
+         auto uPriorityArgument = it.get_priority();
+         if( (uPriorityArgument & uPriority) == 0 ) continue;
 
          if( it.get_priority() != ePriorityCommand )                           // not for command values, only stack and global
          {
@@ -340,13 +341,24 @@ gd::variant_view command::query_select( const std::string_view& stringSelector )
 {
    gd::variant_view variantviewValue;
    // try to find in stack
-   auto result_ = query_select( ePriorityStack, stringSelector, &variantviewValue );
+   auto result_ = query_select( (ePriorityRegister|ePriorityStack), stringSelector, &variantviewValue );
    if( result_.first == false )
    {
       query_select( ePriorityGlobal, stringSelector, &variantviewValue );   
    }
 
    return variantviewValue;
+}
+
+gd::argument::arguments command::query_select( const std::initializer_list<std::string_view>& listSelector )
+{
+   gd::argument::arguments argumentsReturn;
+   for( auto itName : listSelector )
+   {
+      auto value_ = query_select( itName );
+      if( value_.empty() == false ) argumentsReturn.append_argument(itName, value_);
+   }
+   return argumentsReturn;
 }
 
 std::pair<bool, std::string> command::query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue )

@@ -329,6 +329,8 @@ struct command : public gd::com::server::command_i
       }
 
       // ## operator
+      std::string_view operator[](size_t uIndex) const { return m_strings32Command[uIndex]; }
+
       operator int() const { return m_iCommandIndex; }
       // operator const gd::argument::arguments&() const { return m_arguments; }
       operator gd::argument::arguments*() { return &m_arguments; }
@@ -359,6 +361,8 @@ struct command : public gd::com::server::command_i
    unsigned release() override;
 
    // ## get/set
+   arguments& operator[](size_t uIndex) { return m_vectorArgument[uIndex]; }
+   arguments& at(size_t uIndex) { return m_vectorArgument[uIndex]; }
 
    /// get server object for command (each command object is connected to one server object)
    server_i* get_server() override { return m_pserver; }
@@ -375,6 +379,9 @@ struct command : public gd::com::server::command_i
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );
    void add_command( const std::vector<std::string_view>& vectorCommand );
    void add_command( const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal );
+
+   arguments* get_command(size_t uIndex) const;
+
    gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) override;
    gd::variant_view get_argument( const gd::variant_view& index_ ) { return get_argument( index_, 0 ); }
    gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override;
@@ -382,6 +389,7 @@ struct command : public gd::com::server::command_i
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override;
    /// wrapper to select first value for name
    gd::variant_view query_select( const std::string_view& stringSelector );
+   gd::argument::arguments query_select( const std::initializer_list<std::string_view>& listSelector );
    std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override;
 
    /// Get number of commands in command object (note that one command object could hold more than one command)
@@ -410,11 +418,21 @@ inline std::pair<bool, std::string> command::add_command( const std::string_view
 
 /// adds command information to command object, command are able to hold a sequence of command names
 inline void command::add_command(const std::vector<std::string_view>& vectorCommand) {
-   m_vectorArgument.push_back( arguments( std::string(), vectorCommand, gd::argument::arguments()));
+   m_vectorArgument.push_back( arguments( std::string(), vectorCommand, gd::argument::arguments()) );
 }
 /// adds command information to command object, command are able to hold a sequence of command names
 inline void command::add_command(const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal) {
    m_vectorArgument.push_back( arguments( stringKey, vectorCommand, argumentsLocal ) );
+}
+/// get pointer to command for index if found
+inline command::arguments* command::get_command(size_t uIndex) const {
+   for( auto& it : m_vectorArgument ) { 
+      if( it.get_priority() & ePriorityCommand) {
+         if( uIndex == 0 ) return (arguments*)&it; 
+         uIndex--;
+      }
+   }
+   return nullptr;
 }
 
 /// return pointer to arguments for selected name
