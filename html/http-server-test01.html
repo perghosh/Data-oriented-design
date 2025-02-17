@@ -6,9 +6,12 @@
    <title>sample</title>
    <link id="idCssVariable" rel="stylesheet" href="variables-blue-fog.css">
    <style>
-      .body { background-color: var(--background-body); color: var(--color-body); }
+      .body { background-color: var(--background-body); color: var(--color-body); font-family: Verdana, Geneva, Tahoma, sans-serif; font-size: 20px; }
 
       table { border-collapse: collapse; border: 1px solid var(--color-body); width: 100%; }
+
+      .panel-info { background-color: var(--background-info); color: var(--color-info); margin: 2px; padding: 5px;  }
+      .panel-warning { background-color: var(--background-warning); color: var(--color-warning); margin: 2px; padding: 5px;  }
    </style>
 </head>
 <body class="body">
@@ -34,18 +37,28 @@
       </tr>
    </table>
 
+   <div id="idLastUrl" class="panel-info">Here you will se the latest url passed to server</div>
+   <div id="idError" class="panel-warning">If error, information is placed here</div>
+
    <script>
       /// Send http request to server
       function http(sCommand) {
          let sSend = "http://localhost:8080/";
          sSend += sCommand;
+
+         document.getElementById("idLastUrl").innerHTML = sSend;
+
          fetch(sSend)
             .then(response => response.text())
             .then((sResponse) => 
             {
                console.log(sResponse)
             })
-            .catch(error => console.error(error));
+            .catch(error => 
+            {
+               document.getElementById("idError").innerHTML = error;
+               console.error(error)
+            });
       }
    </script>
 </body >

@@ -309,9 +309,12 @@ public:
 
       operator variant_view() const { return get_variant_view(); }
 
-
-      const argument& operator>>(int& v) const { v = get_int(); return *this; }
-      const argument& operator>>(unsigned int& v) const { v = get_uint(); return *this; }
+      // ## stream operator to set variables of different common types
+      const argument& operator>>(bool& v) const { v = get_bool(); return *this; }
+      const argument& operator>>(int32_t& v) const { v = get_int(); return *this; }
+      const argument& operator>>(int64_t& v) const { v = get_int64(); return *this; }
+      const argument& operator>>(uint32_t& v) const { v = get_uint(); return *this; }
+      const argument& operator>>(uint64_t& v) const { v = get_uint64(); return *this; }
       const argument& operator>>(std::string& v) const { v = get_string(); return *this; }
 
 

@@ -84,6 +84,17 @@ TEST_CASE( "[gd] strings", "[gd]" ) {
       std::cout << it << " ";
    }
    std::cout << std::endl;
+
+   { auto vector_ = gd::get<std::vector<std::string_view>>( strings2_ ); }
+   { auto list_ = gd::get<std::list<std::string_view>>( strings2_ ); }
+
+   {
+      gd::strings32 strings3_;
+      auto list_ = gd::get<std::list<std::string_view>>( strings2_ );
+      strings3_.append(list_);
+      auto string_ = strings3_.join( " * " );
+      std::cout << string_ << std::endl;
+   }
 }
 
 TEST_CASE( "[gd] using get on variant and variant_view", "[gd]" ) {

@@ -207,10 +207,10 @@ public:
    strings32& append_any(const std::vector<gd::variant_view>& vectorValue);
 
    template<typename TYPE, typename ALLOC, typename = std::enable_if_t<gd::types::is_vector<std::vector<TYPE, ALLOC>>::value>>
-   strings32& append(const std::vector<TYPE, ALLOC>& vector_) { for( const auto& it : vector_ ) { append( it ); } }
+   strings32& append(const std::vector<TYPE, ALLOC>& vector_) { for( const auto& it : vector_ ) { append( it ); } return *this; }
 
    template<typename TYPE, typename ALLOC, typename = std::enable_if_t<gd::types::is_list<std::list<TYPE, ALLOC>>::value>>
-   strings32& append(const std::list<TYPE, ALLOC>& list_) { for( const auto& it : list_ ) { append( it ); } }
+   strings32& append(const std::list<TYPE, ALLOC>& list_) { for( const auto& it : list_ ) { append( it ); } return *this; }
 
    /// Appends types that is convertible to string to the buffer.
    strings32& append(const gd::variant_view& variant_view, gd::types::tag_view ) { append(variant_view.as_string()); return *this; }
@@ -328,48 +328,6 @@ inline std::string_view strings32::operator[](size_t uIndex) const
    for ( size_t i = 0; i < uIndex; ++i ) ++it;
    return it.as_string_view();
 }  
-
-
-template<typename TYPE> 
-TYPE get( const strings32& strings_  ) {
-   if constexpr ( std::is_same<TYPE, std::string>::value ) 
-   { 
-      return strings_.join(); 
-   }
-   else if constexpr ( std::is_same<TYPE, std::vector<std::string_view>>::value ) 
-   {
-      std::vector<std::string_view> vector_;
-      for( const auto& it : strings_ ) { vector_.push_back(it); }
-      return vector_;
-   }
-   else if constexpr ( std::is_same<TYPE, std::vector<std::string>>::value ) 
-   {
-      std::vector<std::string> vector_;
-      for( const auto& it : strings_ ) { vector_.push_back(it); }
-      return vector_;
-   }
-   else static_assert( gdd::always_false<TYPE>::value, "unsupported type" );
-}
-
-/*
-template<>
-std::string get<std::string>( const strings32& strings_ ) {
-   std::string s_;
-   for( const auto& it : strings_ ) { s_ += it; }
-   return s_;
-}
-
-
-
-/*
-/// return all internal strings as vector of string_view
-template<>
-std::vector<std::string_view> get<std::vector<std::string_view>>( const strings32& strings_ ) {
-   std::vector<std::string_view> vector_;
-   for( const auto& it : strings_ ) { vector_.push_back(it); }
-   return vector_;
-}
-*/
 
 
 /// Appends strings to internal buffer.
@@ -512,6 +470,60 @@ std::string strings32::join_s(ITERATOR itBegin, ITERATOR itEnd, const std::strin
    }
    return stringResult;
 }
+
+/**
+ * @brief Converts a custom string container to different types at compile time.
+ * @tparam TYPE The type to convert to; supported types include std::string, std::vector<std::string_view>, 
+ *              std::vector<std::string>, std::list<std::string_view>, and std::list<std::string>.
+ * @param strings_ The input container of type strings32 to be converted.
+ * @return TYPE An instance of TYPE filled with elements from strings_.
+ * ```cpp
+ * strings32 strings32Test; // Assume this is initialized with some string data
+ * 
+ * // Convert to std::string
+ * std::string result1 = get<std::string>(strings32Test);
+ * 
+ * // Convert to std::vector<std::string_view>
+ * std::vector<std::string_view> result2 = get<std::vector<std::string_view>>(strings32Test);
+ * 
+ * // Convert to std::list<std::string>
+ * std::list<std::string> result3 = get<std::list<std::string>>(strings32Test);
+ * ``` 
+ */
+template<typename TYPE> 
+TYPE get( const strings32& strings_  ) 
+{
+   if constexpr ( std::is_same<TYPE, std::string>::value ) 
+   { 
+      return strings_.join(); 
+   }
+   else if constexpr ( std::is_same<TYPE, std::vector<std::string_view>>::value ) 
+   {
+      std::vector<std::string_view> vector_;
+      for( const auto& it : strings_ ) { vector_.push_back(it); }
+      return vector_;
+   }
+   else if constexpr ( std::is_same<TYPE, std::vector<std::string>>::value ) 
+   {
+      std::vector<std::string> vector_;
+      for( const auto& it : strings_ ) { vector_.push_back(it); }
+      return vector_;
+   }
+   else if constexpr ( std::is_same<TYPE, std::list<std::string_view>>::value ) 
+   {
+      std::list<std::string_view> list_;
+      for( const auto& it : strings_ ) { list_.push_back(it); }
+      return list_;
+   }
+   else if constexpr ( std::is_same<TYPE, std::list<std::string>>::value ) 
+   {
+      std::list<std::string> list_;
+      for( const auto& it : strings_ ) { list_.push_back(it); }
+      return list_;
+   }
+   else static_assert( gdd::always_false<TYPE>::value, "unsupported type" );
+}
+
 
 _GD_END
 
