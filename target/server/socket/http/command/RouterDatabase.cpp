@@ -10,12 +10,26 @@ std::pair<bool, std::string> CRouterDatabase::get(gd::com::server::command_i* pc
 {
    gd::com::server::router::command* pcommand_ = (gd::com::server::router::command*)pcommand;
 
+   if( pcommand_->empty() == false )
+   {
+      auto* parguments = pcommand_->get_command(0);
+      auto stringCommand = (*parguments)[0];
+      auto result_ = Execute( stringCommand, pcommand_, presponse );
+   }
+
    return {true, ""};
 }
 
 
-std::pair<bool, std::string> CRouterDatabase::Execute(const std::string_view& stringCommand, gd::com::server::command_i* pCommand, gd::com::server::response_i* presponse)
+std::pair<bool, std::string> CRouterDatabase::Execute(const std::string_view& stringCommand, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse)
 {
+   gd::com::server::router::command* pcommand_ = (gd::com::server::router::command*)pcommand;
+
+   if( stringCommand == "create" )
+   {
+      auto arguments_ = pcommand_->query_select( { "filename", "dsn" } );
+      return CreateDatabase(arguments_);
+   }
 
 
    return {true, ""};
@@ -25,9 +39,9 @@ std::pair<bool, std::string> CRouterDatabase::CreateDatabase(const gd::argument:
 {
    // ## Test if database is a sqlite database
    
-   if( arguments_.exists("file") == true )
+   if( arguments_.exists("filename") == true )
    {
-      auto stringFile = arguments_["file"].as_string();
+      auto stringFile = arguments_["filename"].as_string();
 
       gd::file::path pathDatabaseFile(stringFile);
       std::string stringName = pathDatabaseFile.stem().string();               // get filename without extension
