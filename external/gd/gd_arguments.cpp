@@ -1867,12 +1867,35 @@ bool arguments::reserve(unsigned int uCount)
    return false;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Removes an argument from the collection by its name.
+ *
+ * This method searches for an argument with the specified name and removes it
+ * if found. If no argument with the given name exists, no action is taken.
+ * @param stringName The name of the argument to remove.
+ */
 void arguments::remove(const std::string_view& stringName)
 {
    auto pposition = find( stringName );
    if(pposition != nullptr)
    {
       remove( pposition );
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Removes an argument from the collection by its index.
+ *
+ * This method searches for an argument at the specified index and removes it
+ * if found. If no argument exists at the given index, no action is taken.
+ * @param uIndex The index of the argument to remove.
+ */
+void arguments::remove( size_t uIndex )
+{
+   const_pointer pposition = find((unsigned)uIndex);
+   if( pposition != nullptr )
+   {
+      remove(pposition);
    }
 }
 
