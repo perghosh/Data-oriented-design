@@ -73,6 +73,20 @@ struct tag_tuple {};          ///< stl std::tuple object is used in some form
 struct tag_vector {};         ///< stl std::vector object is used in some form
 
 // ----------------------------------------------------------------------------
+// ## format related tag dispatchers
+struct tag_json {};           ///< data is in json format
+struct tag_xml {};            ///< data is in xml format
+struct tag_csv {};            ///< data is in csv format
+struct tag_hex {};            ///< data is in hex format
+struct tag_base32 {};         ///< data is in base32 format
+struct tag_base64 {};         ///< data is in base64 format
+struct tag_uri {};            ///< data is in uri format (url encoded)
+struct tag_url {};            ///< data is in url format
+struct tag_path {};           ///< data is in path format
+struct tag_ascii {};          ///< data is in ascii format
+struct tag_utf8 {};           ///< data is in utf8 format
+
+// ----------------------------------------------------------------------------
 // ## operation related tag dispatchers
 struct tag_raw {};            ///< do not perform any smart operations, just raw data
 

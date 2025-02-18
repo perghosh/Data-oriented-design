@@ -31,6 +31,10 @@ TEST_CASE( "print_arguments", "[howto_gd_arguments]" ) {
    arguments_.set("third",3333);
    arguments_.remove("second");
    print_arguments( arguments_ );                                              // prints - "first": 1000, "third": 3333"
+   arguments_.remove(1);
+   print_arguments( arguments_ );                                              // prints - "first": 1000
+   // arguments_.append_pair( { "uint16", uint16_t(1000) } );
+   // arguments_ << { "uint16", uint16_t(1000) };
 }
 
 struct test_struct {

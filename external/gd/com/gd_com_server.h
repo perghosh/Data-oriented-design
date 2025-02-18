@@ -374,6 +374,8 @@ struct command : public gd::com::server::command_i
    /// Wraper to manage full url sent internally, no runtime error checks
    std::vector< std::string_view > add_querystring( const std::string_view& stringQueryString );
 
+   // ## add commands, command can hold multiple commands
+
    /// add command and arguments for that command
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) override;
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );

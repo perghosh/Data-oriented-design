@@ -721,7 +721,6 @@ public:
       static_assert(std::is_pointer<POINTER>::value);
       return append(pbszName, uNameLength, uType, (const_pointer)pBuffer, uLength);
    }
-
    arguments& append( const arguments& arguments_ );
    arguments& append( const std::vector<std::pair<std::string_view,std::string_view>>& vectorStringValue );
    arguments& append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue );
@@ -729,6 +728,11 @@ public:
    arguments& append( const std::vector<std::pair<std::string_view,std::string_view>>& vectorStringValue, tag_parse_type );
    arguments& append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue, tag_parse_type );
    std::pair<bool, std::string>  append( const std::string_view& stringValue, tag_parse );
+
+   template<typename VALUE>
+   arguments& append_pair( const std::pair<std::string_view,VALUE>& pair_ ) {
+      return append_argument( pair_.first, pair_.second );
+   }
 
    /// Append named `argument`
    arguments& append_argument(const std::string_view& stringName, argument argumentValue);
@@ -987,6 +991,8 @@ public:
    bool reserve(unsigned int uCount);
    /// Remove param starting at position, remember that if you are string positions in buffer they are invalidated with this method
    void remove( const std::string_view& stringName );
+   /// Remove param at index
+   void remove( size_t uIndex );
    void remove(const_pointer pPosition);
    void remove(const_iterator it) { remove( static_cast<const_pointer>(it) ); }
    /// make sure internal buffer can hold specified number of bytes, no copying just reserving data
