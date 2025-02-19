@@ -54,23 +54,23 @@ enum enumPriority
 };
 
 /// get priority contant from string 
-constexpr enumPriority priority_g( const std::string_view& stringPriority )
+constexpr unsigned to_command_priority_g( const std::string_view& stringPriority )
 {                                                                                                  assert( stringPriority.length() >= 3 );
    using namespace gd::types::detail;
-   enumPriority ePriority = ePriorityUnknown;
+   unsigned uPriority = ePriorityUnknown;
 
    uint32_t uPriorityName = hash_type( stringPriority );
    switch( uPriorityName )
    {
-   case hash_type("unkn"): ePriority = ePriorityUnknown;  break;               // unknown (0)
-   case hash_type("regi"): ePriority = ePriorityRegister;  break;              // register priority, highest type
-   case hash_type("stac"): ePriority = ePriorityStack;  break;                 // stack priority, like lokals
-   case hash_type("comm"): ePriority = ePriorityCommand;  break;               // command or members for specific named command
-   case hash_type("glob"): ePriority = ePriorityGlobal;  break;                // globals, accessible for all
+   case hash_type("unkn"): uPriority = ePriorityUnknown;  break;               // unknown (0)
+   case hash_type("regi"): uPriority = ePriorityRegister;  break;              // register priority, highest type
+   case hash_type("stac"): uPriority = ePriorityStack;  break;                 // stack priority, like lokals
+   case hash_type("comm"): uPriority = ePriorityCommand;  break;               // command or members for specific named command
+   case hash_type("glob"): uPriority = ePriorityGlobal;  break;                // globals, accessible for all
    default: assert(false);
    }
 
-   return ePriority;
+   return uPriority;
 }
 
 /// all flags, used this to mask
@@ -309,6 +309,7 @@ struct command : public gd::com::server::command_i
       arguments( unsigned uPriority, const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& arguments_ ): m_uPriority(uPriority), m_stringKey( stringKey ), m_arguments( arguments_ ) { m_strings32Command.append( stringCommand ); }
       arguments( unsigned uPriority, const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& arguments_ ): m_uPriority(uPriority), m_stringKey( stringKey ), m_strings32Command(vectorCommand), m_arguments( arguments_ ) {}
       arguments( unsigned uPriority, const gd::argument::arguments& arguments_ ): arguments( uPriority, std::string_view(), arguments_ ) {}
+      arguments(unsigned uPriority, const std::vector<std::string_view>& vectorCommand) : m_uPriority(uPriority), m_strings32Command(vectorCommand) {}
       arguments( const std::string_view& stringKey, const gd::argument::arguments& arguments_ ): arguments( ePriorityCommand, stringKey, arguments_ ) {}
       arguments( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& arguments_ ): arguments( ePriorityCommand, stringKey, stringCommand, arguments_ ) {}
       arguments( const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& arguments_ ): arguments( ePriorityCommand, stringKey, vectorCommand, arguments_ ) {}
@@ -343,6 +344,13 @@ struct command : public gd::com::server::command_i
       unsigned get_priority() const { return m_uPriority; }
       void set_index( int iIndex ) { m_iCommandIndex = iIndex; }
 
+      arguments& append(const std::vector<std::pair<std::string_view,std::string_view>>& vectorArgument) { m_arguments.append(vectorArgument, gd::argument::tag_parse_type{}); return *this; }
+      arguments& append(const std::vector<std::pair<std::string,std::string>>& vectorArgument) { m_arguments.append(vectorArgument, gd::argument::tag_parse_type{}); return *this; }
+      arguments& append(const std::pair<std::string_view, gd::variant>& pairArgument) { m_arguments.append(pairArgument); return *this; }
+
+      std::string print() const;
+
+   // ## attributes ----------------------------------------------------------------
       unsigned m_uPriority = ePriorityGlobal; ///< priority, this is used to order values and in what order values are looked for
       int m_iCommandIndex = -1;     ///<
       std::string m_stringKey;      ///< command key to access command, this is also used to connect return values
@@ -377,10 +385,13 @@ struct command : public gd::com::server::command_i
    // ## add commands, command can hold multiple commands
 
    /// add command and arguments for that command
+   std::pair<bool, std::string> append(arguments&& argumentsCommand) { m_vectorArgument.push_back(std::move(argumentsCommand)); return { true, "" }; }
+   std::pair<bool, std::string> append( const std::string_view& stringQueryString, gd::types::tag_uri );
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) override;
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );
    void add_command( const std::vector<std::string_view>& vectorCommand );
    void add_command( const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal );
+   /// add command and arguments for that command (command string is formated as command/sub-command/sub-sub-command in uri encoded format)
 
    arguments* get_command(size_t uIndex) const;
 
@@ -398,6 +409,7 @@ struct command : public gd::com::server::command_i
    size_t size() const { return m_vectorArgument.size(); }
    /// Clear internal data in command, based on whats passed different type of data can be cleared
    void clear( const gd::variant_view& variantviewToClear ) override;
+   void clear();
    /// Check if command object is empty
    bool empty() const { return m_vectorArgument.empty(); }
 
@@ -408,9 +420,14 @@ struct command : public gd::com::server::command_i
 
    size_t find_last_priority_position( unsigned uPriority ) const;
 
-   int m_iReference = 1;
-   gd::com::server::server_i* m_pserver = nullptr;
-   std::vector< arguments > m_vectorArgument;// variables in command, priority decides how to search for value
+   /// print command object, useful for debugging
+   std::string print() const;
+
+// ## attributes ----------------------------------------------------------------
+public:
+   int m_iReference = 1;   ///< reference counter
+   gd::com::server::server_i* m_pserver = nullptr; ///< server object that command is connected to
+   std::vector< arguments > m_vectorArgument; ///< command and arguments or only arguments, priority decides how to search for argument value
 };
 
 /// adds command information to command object, command are able to hold more than one command
@@ -448,6 +465,7 @@ inline gd::argument::arguments* command::find( const std::string_view& stringKey
    for( auto& it : m_vectorArgument ) { if( it == stringKey ) return (gd::argument::arguments*)it; }
    return nullptr;
 }
+
 
 // ================================================================================================
 // ======================================================================================= response

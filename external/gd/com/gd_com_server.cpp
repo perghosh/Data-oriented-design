@@ -44,7 +44,7 @@ std::pair<bool, std::string> command::add_arguments( const gd::variant_view& var
 
    if( variantviewPriority.is_string() == true )
    {
-      uPriority = priority_g( variantviewPriority.as_string_view() );
+      uPriority = to_command_priority_g( variantviewPriority.as_string_view() );
    }
    else 
    {
@@ -153,6 +153,64 @@ std::pair<bool, std::string> command::add_command( const std::string_view& strin
    m_vectorArgument.back().set_index( iIndex );
    return { true, "" };
 }
+
+/** --------------------------------------------------------------------------
+ * @brief Appends a command and its arguments parsed from a query string to this command object.
+ *
+ * This function parses a query string in URI format, separates the command path from 
+ * arguments, splits them into components, handles URL encoding for argument values, 
+ * and appends these to the current command structure.
+ *
+ * @param stringQueryString A string view containing the query string in URI format.
+ * @param tag_uri An tag dispatcher indicating that this is a URI formatted query string.
+ * @return std::pair<bool, std::string> Returns a pair where the boolean indicates success 
+ *         (always true in this implementation) and the string is empty or could contain 
+ *         an error message if needed for future extensions.
+ *
+ * @details 
+ * - Splits the query string into command path and arguments using '?' as separator.
+ * - Further splits the command path by '/' to get command components.
+ * - Parses arguments separated by '&' and '=' into key-value pairs.
+ * - Decodes URL-encoded values in the arguments.
+ * - Appends the parsed command and arguments to this command object.
+ */
+std::pair<bool, std::string> command::append(const std::string_view& stringQueryString, gd::types::tag_uri)
+{
+   std::string_view stringCommandPath;
+   std::string_view stringArguments;
+
+   auto position_ = stringQueryString.find('?');
+   if( position_ != std::string_view::npos )
+   {
+      stringCommandPath = stringQueryString.substr( 0, position_ );
+      stringArguments = stringQueryString.substr( position_ + 1 );
+   }
+   else
+   {
+      stringCommandPath = stringQueryString;
+   }
+
+   std::vector<std::string_view> vectorCommand = gd::utf8::split( stringCommandPath, '/' );
+   command::arguments argumentsLocal( gd::com::server::to_command_priority_g( std::string_view( "command" ) ), vectorCommand );
+
+   std::vector< std::pair<std::string, std::string> > vectorArguments = gd::utf8::split_pair( stringArguments, '=', '&', gd::utf8::tag_string{} );
+   // ## Convert values that need to be converted because of url encoding
+   for( auto& it : vectorArguments )
+   {
+      if( it.second.find('%') != std::string::npos )
+      {
+         std::string stringValue;
+         gd::utf8::uri::convert_uri_to_uf8(it.second, stringValue);
+         it.second = stringValue;
+      }
+      argumentsLocal.append(it);
+   }
+   argumentsLocal.append(vectorArguments);
+   append( std::move(argumentsLocal) );
+
+   return { true, "" };
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Retrieves an argument value based on the index and priority.
@@ -423,8 +481,14 @@ void command::clear( const gd::variant_view& variantviewToClear )
       }), m_vectorArgument.end());
 }
 
+/// clear all values in command
+void command::clear()
+{
+   m_vectorArgument.clear();
+}
 
-/**
+
+/** ---------------------------------------------------------------------------
  * @brief Find last position for priority among arguments
  * Arguments are ordered in priority, it starts with low and increase
  * global priority is the highest value
@@ -447,6 +511,45 @@ size_t command::find_last_priority_position( unsigned uPriority ) const
    }
 
    return std::distance( m_vectorArgument.begin(), itPosition );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Print all command arguments as a formatted string.
+ * @return std::string A formatted string representing the command arguments.
+ */
+std::string command::print() const
+{
+   std::string stringReturn;
+   for( auto it : m_vectorArgument )
+   {
+      if( stringReturn.empty() == false ) stringReturn += '\n';
+      stringReturn += it.print();
+   }
+   return stringReturn;
+}
+/** ---------------------------------------------------------------------------
+ * @brief Prints the command arguments as a formatted string.
+ * 
+ * This method iterates through the command path and formats them into a single string.
+ * Each command is separated by " / " and followed by its respective arguments.
+ * The arguments are indented and printed on a new line.
+ * 
+ * @return std::string A formatted string representing the command arguments.
+ */
+std::string command::arguments::print() const
+{ 
+   std::string stringReturn;
+   for( auto it : m_strings32Command )
+   {
+      if( it.empty() == false ) stringReturn += std::string_view{ " / " };
+      stringReturn += it;
+   }
+
+   stringReturn += "\n    ";                                                   // add new line and indent   
+
+   stringReturn += m_arguments.print();
+
+   return stringReturn;
 }
 
 // ================================================================================================
