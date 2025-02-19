@@ -92,6 +92,16 @@ namespace gd {
           0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, /* 0xF0-0xFF */
       };
 
+      // TODO: rewrite like this
+      /*
+      static const uint8_t pHexValue_s[256] = {
+         // ... (all zeros)
+         ['0'] = 0, ['1'] = 1, ['2'] = 2, ['3'] = 3, ['4'] = 4, ['5'] = 5, ['6'] = 6, ['7'] = 7, ['8'] = 8, ['9'] = 9,
+         ['A'] = 10, ['B'] = 11, ['C'] = 12, ['D'] = 13, ['E'] = 14, ['F'] = 15,
+         ['a'] = 10, ['b'] = 11, ['c'] = 12, ['d'] = 13, ['e'] = 14, ['f'] = 15
+      };
+      */
+
       /**
        * @brief Lookup table used to validate hexadecimal value in text to
        * value stored in byte.
@@ -1411,6 +1421,13 @@ namespace gd {
             return pubszPosition;
          }
 
+         /**
+          * @brief Finds the first occurrence of a specified UTF-8 character in a given text buffer.
+          * 
+          * @param pubszPosition Pointer to the start of the text buffer where the search begins.
+          * @param uCharacter The Unicode code point of the character to find.
+          * @return const uint8_t* Pointer to the position of the found character in the buffer, or nullptr if the character is not found.
+          */
          const uint8_t* find( const uint8_t* pubszPosition, uint32_t uCharacter )
          {
             uint8_t puBuffer[SIZE32_MAX_UTF_SIZE + 1];
@@ -1533,8 +1550,75 @@ namespace gd {
             return nullptr;
          }
 
+         /**
+         * @brief Finds the nth occurrence of a specified UTF-8 character in a given text buffer.
+         * 
+         * @param pubszPosition Pointer to the start of the text buffer where the search begins.
+         * @param uNth The occurrence number of the character to find (1-based index).
+         * @param uCharacter The Unicode code point of the character to find.
+         * @return const uint8_t* Pointer to the position of the nth occurrence of the character in the buffer, or nullptr if the character is not found.
+         */
+         const uint8_t* find_nth(const uint8_t* pubszPosition, uint32_t uNth, uint32_t uCharacter)
+         {
+            uint8_t puBuffer[SIZE32_MAX_UTF_SIZE + 1];
+            auto uLength = gd::utf8::convert( uCharacter, puBuffer );
+            puBuffer[uLength] = '\0';
 
-         
+            while( uNth > 0 )
+            {
+               pubszPosition = find_character(pubszPosition, puBuffer, uLength);
+               if( pubszPosition == nullptr ) return nullptr;
+               pubszPosition = next(pubszPosition);
+
+               uNth--;
+            }
+         }
+
+         /**
+         * @brief Finds the nth occurrence of a specified UTF-8 character in a given text buffer within a specified range.
+         * 
+         * @param pubszPosition Pointer to the start of the text buffer where the search begins.
+         * @param pubszEnd Pointer to the end of the text buffer where the search ends.
+         * @param uNth The occurrence number of the character to find (1-based index).
+         * @param uCharacter The Unicode code point of the character to find.
+         * @return const uint8_t* Pointer to the position of the nth occurrence of the character in the buffer, or nullptr if the character is not found.
+         */
+         const uint8_t* find_nth(const uint8_t* pubszPosition, const uint8_t* pubszEnd, uint32_t uNth, uint32_t uCharacter)
+         {
+            uint8_t puBuffer[SIZE32_MAX_UTF_SIZE + 1];
+            auto uLength = gd::utf8::convert(uCharacter, puBuffer);
+            puBuffer[uLength] = '\0';
+
+            while(uNth > 0 && pubszPosition < pubszEnd)
+            {
+               pubszPosition = find_character(pubszPosition, pubszEnd, puBuffer, uLength);
+               if (pubszPosition == nullptr) return nullptr;
+               pubszPosition = next(pubszPosition);
+
+               uNth--;
+            }
+
+            return pubszPosition;
+         }
+
+         /**
+          * @brief Finds the nth occurrence of a specified UTF-8 character in a given string view.
+          * 
+          * @param stringText The string view to search within.
+          * @param uNth The occurrence number of the character to find (1-based index).
+          * @param uCharacter The Unicode code point of the character to find.
+          * @return std::string_view A string view starting from the nth occurrence of the character, or an empty string view if the character is not found.
+          */
+         std::string_view find_nth(const std::string_view& stringText, uint32_t uNth, uint32_t uCharacter)
+         {
+            const uint8_t* pubszPosition = reinterpret_cast<const uint8_t*>(stringText.data());
+            const uint8_t* pubszEnd = pubszPosition + stringText.size();
+
+            pubszPosition = find_nth(pubszPosition, pubszEnd, uNth, uCharacter);
+            if(pubszPosition == nullptr) { return std::string_view(); }
+
+            return std::string_view(reinterpret_cast<const char*>(pubszPosition), pubszEnd - pubszPosition);
+         }
       } // move
 
       /** ---------------------------------------------------------------------
@@ -1884,17 +1968,38 @@ namespace gd {
       /** ---------------------------------------------------------------------
        * @brief methods used to convert text from browser that is formatted to be 
        * converted into utf8
-      */
+       */
       namespace uri {
 
-         /** ------------------------------------------------------------------
-          * @brief get character value for uri character
-          * Format for uri character are % and number.  This format is used in
-          * query string (url)
-          * Sample: `%C3%83` = O
-          * @param pubszCharacter uri character to convert
-          * @return uint32_t number for character
-         */
+         /**
+          * @brief Converts a URL-encoded character into its corresponding unicode code point.
+          * 
+          * This function decodes a URL-encoded character string where:
+          * - '%' followed by two hexadecimal digits represents a character.
+          * - The function supports multi-byte characters using UTF-8 encoding:
+          *   - 1 byte for characters in the range 0x00 to 0x7F
+          *   - 2 bytes for characters in the range 0x80 to 0x7FF
+          *   - 3 bytes for characters above 0x7FF
+          *
+          * @param pubszCharacter Pointer to the start of the URL-encoded character string.
+          * @return uint32_t The Unicode code point of the character. If the character is not 
+          *                   URL-encoded, it returns the character itself.
+          *
+          * @note 
+          * - Assumes that pHexValue_s is an array mapping hexadecimal characters to their values.
+          * - pNeededByteCount_s is assumed to be an array that determines the number of bytes 
+          *   needed for the character based on its initial value.
+          * - CHARACTER_1_BYTE_MASK, CHARACTER_2_BYTE_MASK, CHARACTER_3_BYTE_MASK are masks used 
+          *   for bit manipulation to ensure correct Unicode representation.
+          *
+          * @pre The input string must be null-terminated or end with a valid sequence.
+          * @pre The function assumes correct formatting for URL-encoded strings where 
+          *      '%' is always followed by two valid hexadecimal digits.
+          * 
+          * @example 
+          *   - Input: "%20"  -> Output: 32 (Space character)
+          *   - Input: "%C3%A9" -> Output: 233 (é - Latin small letter e with acute)
+          *   - Input: "a"    -> Output: 97 ('a' character)          */
          uint32_t character( const uint8_t* pubszCharacter )
          {
             uint32_t uCharacter = 0;
