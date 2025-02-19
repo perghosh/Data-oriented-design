@@ -499,7 +499,7 @@ namespace gd {
             return reinterpret_cast<const UTF8_TYPE*>( find( reinterpret_cast<const uint8_t*>(pubszPosition), reinterpret_cast<const uint8_t*>(pubszEnd), uNth, uCharacter ) );
          }
 
-         /// 
+         /// Finds the nth occurrence of a specified UTF-8 character in a given string view and returns new string view starting from that character.
          std::string_view find_nth(const std::string_view& stringText, size_t uNth, uint32_t uCharacter);
       }
 
