@@ -477,9 +477,9 @@ namespace gd {
          inline const uint8_t* find( const uint8_t* pubszText, const uint8_t* pubszEnd, const uint8_t* pubszFind ) { return find( pubszText, pubszEnd, pubszFind, static_cast<uint32_t>( std::strlen( reinterpret_cast<const char*>(pubszFind) ) ) ); }
 
          /// Finds the nth occurrence of a specific character in a byte array.
-         const uint8_t* find_nth(const uint8_t* pubszPosition, uint32_t uNth, uint32_t uCharacter);
+         const uint8_t* find_nth(const uint8_t* pubszPosition, size_t uNth, uint32_t uCharacter);
          template <typename UTF8_TYPE, typename CHARACTER>
-         const UTF8_TYPE* find_nth( const UTF8_TYPE* pubszPosition, uint32_t uNth, CHARACTER Character ) { // -------- find
+         const UTF8_TYPE* find_nth( const UTF8_TYPE* pubszPosition, size_t uNth, CHARACTER Character ) { // -------- find
             static_assert(sizeof(UTF8_TYPE) == 1, "Value isn't compatible with uint8_t");
             uint32_t uCharacter;
             if constexpr( sizeof(Character) == sizeof(uint8_t) ) uCharacter = static_cast<uint8_t>(Character);       // 1 byte
@@ -488,9 +488,9 @@ namespace gd {
             return reinterpret_cast<const UTF8_TYPE*>( find_nth( reinterpret_cast<const uint8_t*>(pubszPosition), uCharacter ) );
          }
 
-         const uint8_t* find_nth( const uint8_t* pubszPosition, const uint8_t* pubszEnd, uint32_t uNth, uint32_t uCharacter ); // find
+         const uint8_t* find_nth( const uint8_t* pubszPosition, const uint8_t* pubszEnd, size_t uNth, uint32_t uCharacter ); // find
          template <typename UTF8_TYPE, typename CHARACTER>
-         const UTF8_TYPE* find_nth( const UTF8_TYPE* pubszPosition, const UTF8_TYPE* pubszEnd, uint32_t uNth, CHARACTER Character ) { // find
+         const UTF8_TYPE* find_nth( const UTF8_TYPE* pubszPosition, const UTF8_TYPE* pubszEnd, size_t uNth, CHARACTER Character ) { // find
             static_assert(sizeof(UTF8_TYPE) == 1, "Value isn't compatible with uint8_t");
             uint32_t uCharacter;
             if constexpr( sizeof(Character) == sizeof(uint8_t) ) uCharacter = static_cast<uint8_t>(Character);       // 1 byte
@@ -500,7 +500,7 @@ namespace gd {
          }
 
          /// 
-         std::string_view find_nth(const std::string_view& stringText, uint32_t uNth, uint32_t uCharacter);
+         std::string_view find_nth(const std::string_view& stringText, size_t uNth, uint32_t uCharacter);
       }
 
       /**
