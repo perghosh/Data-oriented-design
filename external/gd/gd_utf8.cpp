@@ -1558,7 +1558,7 @@ namespace gd {
          * @param uCharacter The Unicode code point of the character to find.
          * @return const uint8_t* Pointer to the position of the nth occurrence of the character in the buffer, or nullptr if the character is not found.
          */
-         const uint8_t* find_nth(const uint8_t* pubszPosition, uint32_t uNth, uint32_t uCharacter)
+         const uint8_t* find_nth(const uint8_t* pubszPosition, size_t uNth, uint32_t uCharacter)
          {
             uint8_t puBuffer[SIZE32_MAX_UTF_SIZE + 1];
             auto uLength = gd::utf8::convert( uCharacter, puBuffer );
@@ -1583,7 +1583,7 @@ namespace gd {
          * @param uCharacter The Unicode code point of the character to find.
          * @return const uint8_t* Pointer to the position of the nth occurrence of the character in the buffer, or nullptr if the character is not found.
          */
-         const uint8_t* find_nth(const uint8_t* pubszPosition, const uint8_t* pubszEnd, uint32_t uNth, uint32_t uCharacter)
+         const uint8_t* find_nth(const uint8_t* pubszPosition, const uint8_t* pubszEnd, size_t uNth, uint32_t uCharacter)
          {
             uint8_t puBuffer[SIZE32_MAX_UTF_SIZE + 1];
             auto uLength = gd::utf8::convert(uCharacter, puBuffer);
@@ -1609,7 +1609,7 @@ namespace gd {
           * @param uCharacter The Unicode code point of the character to find.
           * @return std::string_view A string view starting from the nth occurrence of the character, or an empty string view if the character is not found.
           */
-         std::string_view find_nth(const std::string_view& stringText, uint32_t uNth, uint32_t uCharacter)
+         std::string_view find_nth(const std::string_view& stringText, size_t uNth, uint32_t uCharacter)
          {
             const uint8_t* pubszPosition = reinterpret_cast<const uint8_t*>(stringText.data());
             const uint8_t* pubszEnd = pubszPosition + stringText.size();
