@@ -13,6 +13,7 @@
 
 
 TEST_CASE( "[com_server] add commands", "[com_server]" ) {
+   using namespace gd::com::server;
    std::array<std::string_view, 10> arrayUrl = 
    {
       "https://example.com/search?q=blue%20widgets&sort=price%3Aasc",
@@ -40,11 +41,28 @@ TEST_CASE( "[com_server] add commands", "[com_server]" ) {
    pcommand->clear();
 
    for( const auto& stringUrl : arrayUrl ) {
-      std::string_view s_ = gd::utf8::move::find_nth(stringUrl, 3, '/');
-      auto result = pcommand->append(s_, gd::types::tag_uri{});                                    REQUIRE(result.first == true);
+      std::string_view s_ = gd::utf8::move::find_nth(stringUrl, 2, '/');
+      if( s_.empty() == false ) { auto result = pcommand->append(s_, gd::types::tag_uri{});         REQUIRE(result.first == true);}
    }
 
    stringCommand = pcommand->print();
    std::cout << stringCommand << std::endl;
+
+   auto uCount = pcommand->count(to_command_priority_g("command"));
+   std::cout << "count: " << uCount << std::endl;
+   uCount = pcommand->count(to_command_priority_g("stack"));
+   std::cout << "count: " << uCount << std::endl;
+   { auto result = pcommand->append( to_command_priority_g("stack"), gd::argument::arguments({{"one", 1}, {"two", 2}}) );REQUIRE(result.first == true); }
+
+   std::cout << pcommand->print() << std::endl;
+   pcommand->sort();
+   std::cout << pcommand->print() << std::endl;
+
+   { auto result = pcommand->append( to_command_priority_g("register"), gd::argument::arguments({{"register-one", 1}, {"register-two", 2}}) );REQUIRE(result.first == true); }
+   std::cout << pcommand->print() << std::endl;
+   pcommand->sort();
+   std::cout << pcommand->print() << std::endl;
+
+   // { auto result = pcommand->append( to_command_priority_g("stack"), gd::types::tag_uri{});         REQUIRE(result.first == true); }
 
 }
