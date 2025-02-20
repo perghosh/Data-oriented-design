@@ -41,7 +41,7 @@ TEST_CASE( "[com_server] add commands", "[com_server]" ) {
 
    for( const auto& stringUrl : arrayUrl ) {
       std::string_view s_ = gd::utf8::move::find_nth(stringUrl, 3, '/');
-      auto result = pcommand->append(s_, gd::types::tag_uri{});                             REQUIRE(result.first == true);
+      auto result = pcommand->append(s_, gd::types::tag_uri{});                                    REQUIRE(result.first == true);
    }
 
    stringCommand = pcommand->print();

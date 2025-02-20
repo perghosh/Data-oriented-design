@@ -476,6 +476,10 @@ namespace gd {
          inline const uint8_t* find( const uint8_t* pubszText, const uint8_t* pubszFind ) { return find( pubszText, pubszText + std::strlen( reinterpret_cast<const char*>(pubszText) ), pubszFind, static_cast<uint32_t>( std::strlen( reinterpret_cast<const char*>(pubszFind) ) ) ); }
          inline const uint8_t* find( const uint8_t* pubszText, const uint8_t* pubszEnd, const uint8_t* pubszFind ) { return find( pubszText, pubszEnd, pubszFind, static_cast<uint32_t>( std::strlen( reinterpret_cast<const char*>(pubszFind) ) ) ); }
 
+         /// Finds the specified UTF-8 character in a given string view and returns new string view starting from that character.
+         std::string_view find(const std::string_view& stringText, uint32_t uCharacter);
+
+
          /// Finds the nth occurrence of a specific character in a byte array.
          const uint8_t* find_nth(const uint8_t* pubszPosition, size_t uNth, uint32_t uCharacter);
          template <typename UTF8_TYPE, typename CHARACTER>
@@ -485,9 +489,10 @@ namespace gd {
             if constexpr( sizeof(Character) == sizeof(uint8_t) ) uCharacter = static_cast<uint8_t>(Character);       // 1 byte
             else if constexpr( sizeof(Character) == sizeof(uint16_t) ) uCharacter = static_cast<uint16_t>(Character);// 2 byte value
             else uCharacter = static_cast<uint32_t>(Character);                                                      // 4 byte or over
-            return reinterpret_cast<const UTF8_TYPE*>( find_nth( reinterpret_cast<const uint8_t*>(pubszPosition), uCharacter ) );
+            return reinterpret_cast<const UTF8_TYPE*>( find_nth( reinterpret_cast<const uint8_t*>(pubszPosition), uNth, uCharacter ) );
          }
 
+         /// Searches for the nth occurrence of a specified UTF-8 character within a given range of bytes and returns a pointer to its position or nullptr if not found.
          const uint8_t* find_nth( const uint8_t* pubszPosition, const uint8_t* pubszEnd, size_t uNth, uint32_t uCharacter ); // find
          template <typename UTF8_TYPE, typename CHARACTER>
          const UTF8_TYPE* find_nth( const UTF8_TYPE* pubszPosition, const UTF8_TYPE* pubszEnd, size_t uNth, CHARACTER Character ) { // find
@@ -496,7 +501,7 @@ namespace gd {
             if constexpr( sizeof(Character) == sizeof(uint8_t) ) uCharacter = static_cast<uint8_t>(Character);       // 1 byte
             else if constexpr( sizeof(Character) == sizeof(uint16_t) ) uCharacter = static_cast<uint16_t>(Character);// 2 byte value
             else uCharacter = static_cast<uint32_t>(Character);                                                      // 4 byte or over
-            return reinterpret_cast<const UTF8_TYPE*>( find( reinterpret_cast<const uint8_t*>(pubszPosition), reinterpret_cast<const uint8_t*>(pubszEnd), uNth, uCharacter ) );
+            return reinterpret_cast<const UTF8_TYPE*>( find_nth( reinterpret_cast<const uint8_t*>(pubszPosition), reinterpret_cast<const uint8_t*>(pubszEnd), uNth, uCharacter ) );
          }
 
          /// Finds the nth occurrence of a specified UTF-8 character in a given string view and returns new string view starting from that character.

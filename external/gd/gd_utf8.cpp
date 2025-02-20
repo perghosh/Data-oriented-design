@@ -1498,7 +1498,7 @@ namespace gd {
           * @return 
          */
          const uint8_t* find( const uint8_t* pubszPosition, const uint8_t* pubszEnd, const uint8_t* pubszFind, uint32_t uSize )
-         {
+         {                                                                                         assert( pubszPosition <= pubszEnd );
             pubszEnd -= uSize;
             uSize--;
             while( pubszPosition < pubszEnd )
@@ -1514,6 +1514,23 @@ namespace gd {
             return nullptr;
          }
 
+         /**
+          * @brief Finds a specified UTF-8 character in a given string view.
+          * 
+          * @param stringText The string view to search within.
+          * @param uCharacter The Unicode code point of the character to find.
+          * @return std::string_view A string view starting from the character found, or an empty string view if the character is not found.
+          */
+         std::string_view find(const std::string_view& stringText, uint32_t uCharacter)
+         {
+            const uint8_t* pubszPosition = reinterpret_cast<const uint8_t*>(stringText.data());
+            const uint8_t* pubszEnd = pubszPosition + stringText.size();
+
+            pubszPosition = find(pubszPosition, pubszEnd, uCharacter);
+            if(pubszPosition == nullptr) { return std::string_view(); }
+
+            return std::string_view(reinterpret_cast<const char*>(pubszPosition), pubszEnd - pubszPosition);
+         }
 
          /**
           * @brief Find utf8 character sequence in buffer
@@ -1559,19 +1576,21 @@ namespace gd {
          * @return const uint8_t* Pointer to the position of the nth occurrence of the character in the buffer, or nullptr if the character is not found.
          */
          const uint8_t* find_nth(const uint8_t* pubszPosition, size_t uNth, uint32_t uCharacter)
-         {
+         {                                                                                         assert( uNth < 0x00ff'ffff ); // realistic
             uint8_t puBuffer[SIZE32_MAX_UTF_SIZE + 1];
             auto uLength = gd::utf8::convert( uCharacter, puBuffer );
             puBuffer[uLength] = '\0';
 
-            while( uNth > 0 )
+            while( uNth != (size_t)-1 )
             {
                pubszPosition = find_character(pubszPosition, puBuffer, uLength);
                if( pubszPosition == nullptr ) return nullptr;
-               pubszPosition = next(pubszPosition);
+               else if( uNth > 0 ) pubszPosition = next(pubszPosition);
 
                uNth--;
             }
+
+            return pubszPosition;
          }
 
          /**
@@ -1584,16 +1603,16 @@ namespace gd {
          * @return const uint8_t* Pointer to the position of the nth occurrence of the character in the buffer, or nullptr if the character is not found.
          */
          const uint8_t* find_nth(const uint8_t* pubszPosition, const uint8_t* pubszEnd, size_t uNth, uint32_t uCharacter)
-         {
+         {                                                                                         assert( uNth < 0x00ff'ffff ); // realistic
             uint8_t puBuffer[SIZE32_MAX_UTF_SIZE + 1];
             auto uLength = gd::utf8::convert(uCharacter, puBuffer);
             puBuffer[uLength] = '\0';
 
-            while(uNth > 0 && pubszPosition < pubszEnd)
+            while(uNth != (size_t)-1 && pubszPosition < pubszEnd)
             {
                pubszPosition = find_character(pubszPosition, pubszEnd, puBuffer, uLength);
                if (pubszPosition == nullptr) return nullptr;
-               pubszPosition = next(pubszPosition);
+               else if( uNth > 0 ) pubszPosition = next(pubszPosition);
 
                uNth--;
             }
