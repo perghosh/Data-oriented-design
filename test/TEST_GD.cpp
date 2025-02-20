@@ -166,4 +166,25 @@ TEST_CASE("Path Methods", "[path]") {
 }
 
 
+TEST_CASE("Move namespace UTF-8 operations") {
+   using namespace gd::utf8;
+   const uint8_t* puszTextString = reinterpret_cast<const uint8_t*>("Hello\tWorld\nTest  End");
+
+   REQUIRE(move::next(puszTextString) == puszTextString + 1);  // Basic next char
+   REQUIRE(move::next(puszTextString, {2}) == puszTextString + 2);  // Next with count
+   REQUIRE(move::previous(move::next(puszTextString)) == puszTextString);  // Previous after next
+   REQUIRE(move::previous(puszTextString + 1, {1}) == puszTextString);  // Previous with count from start doesn't move
+   REQUIRE(move::advance(puszTextString, {1}) == puszTextString + 1);  // Positive advance
+   REQUIRE(move::advance(puszTextString + 1, {-1}) == puszTextString);  // Negative advance from start
+   REQUIRE(move::end(puszTextString) == puszTextString + 21);  // End of string (assuming null-terminated)
+   REQUIRE(move::next_space(puszTextString + 4) == puszTextString + 5);  // Find tab after "Hello"
+   REQUIRE(move::next_non_space(puszTextString + 5) == puszTextString + 6);  // Find 'W' after tab
+   REQUIRE(move::find(puszTextString, 'W') == puszTextString + 6);  // Find 'W'
+   REQUIRE(move::find(puszTextString, puszTextString + 5, 'W') == nullptr);  // 'W' not in first 5 chars
+   REQUIRE(move::find_character(puszTextString, reinterpret_cast<const uint8_t*>("World"), {5}) == puszTextString + 6);  // Find "World"
+   REQUIRE(std::string(move::find("Hello World", 'W')) == "World");  // string_view find
+   REQUIRE(move::find_nth(puszTextString, {1}, 'l') == puszTextString + 3);  // Second 'l'
+   REQUIRE(move::find_nth(puszTextString, puszTextString + 5, {0}, 'l') == puszTextString + 2);  // First 'l' in range
+   REQUIRE(std::string(move::find_nth("Hello World", {1}, 'l')) == "lo World");  // Second 'l' in string_view
+}
 
