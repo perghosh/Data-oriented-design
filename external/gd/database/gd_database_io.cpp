@@ -7,7 +7,7 @@ _GD_DATABASE_BEGIN
 /// Generate columns in table
 static void prepare_columns_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer )
 {
-   for( unsigned u = 0, uMax = precord->size(); u < uMax; u++ )
+   for( unsigned u = 0, uMax = (unsigned)precord->size(); u < uMax; u++ )
    {
       auto pcolumn = precord->get_column( u );
       std::string_view stringName = precord->name_get( u );

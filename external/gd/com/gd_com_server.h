@@ -387,6 +387,8 @@ struct command : public gd::com::server::command_i
    /// add command and arguments for that command
    std::pair<bool, std::string> append(arguments&& argumentsCommand) { m_vectorArgument.push_back(std::move(argumentsCommand)); return { true, "" }; }
    std::pair<bool, std::string> append( const std::string_view& stringQueryString, gd::types::tag_uri );
+   std::pair<bool, std::string> append( enumPriority ePriority, const gd::argument::arguments& arguments_ );
+   std::pair<bool, std::string> append(uint32_t uPriority, const gd::argument::arguments& arguments_) { return append((enumPriority)uPriority, arguments_); }
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) override;
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );
    void add_command( const std::vector<std::string_view>& vectorCommand );
@@ -407,6 +409,8 @@ struct command : public gd::com::server::command_i
 
    /// Get number of commands in command object (note that one command object could hold more than one command)
    size_t size() const { return m_vectorArgument.size(); }
+   /// Count number of commands with specific priority
+   size_t count( uint32_t uPriority ) const;
    /// Clear internal data in command, based on whats passed different type of data can be cleared
    void clear( const gd::variant_view& variantviewToClear ) override;
    void clear();
@@ -419,6 +423,7 @@ struct command : public gd::com::server::command_i
    gd::argument::arguments* find( const std::string_view& stringName );
 
    size_t find_last_priority_position( unsigned uPriority ) const;
+   void sort();
 
    /// print command object, useful for debugging
    std::string print() const;
@@ -465,6 +470,14 @@ inline gd::argument::arguments* command::find( const std::string_view& stringKey
    for( auto& it : m_vectorArgument ) { if( it == stringKey ) return (gd::argument::arguments*)it; }
    return nullptr;
 }
+
+/// count number of commands with specific priority bits set and return how many commands that are found
+inline size_t gd::com::server::router::command::count(uint32_t uPriority) const {
+   size_t uCount = 0;
+   for( const auto& a_ : m_vectorArgument ) { if( a_.get_priority() & uPriority ) { ++uCount; } }
+   return uCount;
+}
+
 
 
 // ================================================================================================

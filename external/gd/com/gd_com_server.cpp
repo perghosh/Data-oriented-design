@@ -211,6 +211,13 @@ std::pair<bool, std::string> command::append(const std::string_view& stringQuery
    return { true, "" };
 }
 
+std::pair<bool, std::string> command::append(enumPriority ePriority, const gd::argument::arguments& arguments_)
+{
+   arguments argumentsLocal(ePriority, arguments_);
+   append( std::move(argumentsLocal) );
+   return { true, "" };
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Retrieves an argument value based on the index and priority.
@@ -514,13 +521,30 @@ size_t command::find_last_priority_position( unsigned uPriority ) const
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Sorts the command arguments based on their priority.
+ *
+ * This method sorts the internal vector of command arguments in ascending order
+ * of their priority values. The sorting ensures that arguments with lower priority
+ * values come before those with higher priority values.
+ * 
+ * To get values it is importan t that values are placed in correct order
+ */
+void command::sort()
+{
+   std::sort(m_vectorArgument.begin(), m_vectorArgument.end(), [](const arguments& arguments1_, const arguments& arguments2_) 
+   {
+      return arguments1_.get_priority() < arguments2_.get_priority();
+   });
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Print all command arguments as a formatted string.
  * @return std::string A formatted string representing the command arguments.
  */
 std::string command::print() const
 {
    std::string stringReturn;
-   for( auto it : m_vectorArgument )
+   for( const auto& it : m_vectorArgument )
    {
       if( stringReturn.empty() == false ) stringReturn += '\n';
       stringReturn += it.print();
