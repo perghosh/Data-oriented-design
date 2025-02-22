@@ -1189,6 +1189,7 @@ public:
    static const_pointer next_s(const_pointer pPosition);
    static const_pointer next_s(const_pointer pPosition, unsigned uSecondIndex, const_pointer pEnd );
    static pointer next_s(pointer pPosition, unsigned uSecondIndex, const_pointer pEnd );
+   static size_t next_s(const_pointer pbuffer, size_t uOffset);
 
    /// ## Calculate size in bytes needed for argument values stored in arguments object
    static unsigned int sizeof_s(const argument& argumentValue);

@@ -2668,6 +2668,23 @@ arguments::pointer arguments::next_s( pointer pPosition, unsigned uSecondIndex, 
    return nullptr;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Advances to the next value position in a arguments buffer and returns the new offset.
+ *
+ * @param pbuffer Pointer to the constant buffer containing the data
+ * @param uOffset Initial offset position within the buffer
+ * @return size_t New offset position after advancing to the next value in the buffer
+ *
+ * @warning Ensure pbuffer is valid and properly allocated before calling this method
+ */
+size_t arguments::next_s(const_pointer pbuffer, size_t uOffset)
+{
+   const_pointer p_ =  pbuffer + uOffset;
+   p_ = next_s( p_ );
+   uOffset = p_ - pbuffer;
+   return uOffset;
+}
+
 
 /*----------------------------------------------------------------------------- sizeof_s */ /**
  * Return size for argument in bytes
