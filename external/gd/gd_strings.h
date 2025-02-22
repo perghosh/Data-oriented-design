@@ -506,7 +506,7 @@ TYPE get( const strings32& strings_  )
    else if constexpr ( std::is_same<TYPE, std::vector<std::string>>::value ) 
    {
       std::vector<std::string> vector_;
-      for( const auto& it : strings_ ) { vector_.push_back(it); }
+      for( const auto& it : strings_ ) { vector_.push_back(std::string(it)); }
       return vector_;
    }
    else if constexpr ( std::is_same<TYPE, std::list<std::string_view>>::value ) 
@@ -518,7 +518,7 @@ TYPE get( const strings32& strings_  )
    else if constexpr ( std::is_same<TYPE, std::list<std::string>>::value ) 
    {
       std::list<std::string> list_;
-      for( const auto& it : strings_ ) { list_.push_back(it); }
+      for( const auto& it : strings_ ) { list_.push_back(std::string(it)); }
       return list_;
    }
    else static_assert( gdd::always_false<TYPE>::value, "unsupported type" );

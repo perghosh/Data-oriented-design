@@ -1885,7 +1885,7 @@ void table::cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& v
       else
       {   
          if( columnSet.is_length() == true )
-         {                                                                                         assert( variantviewValue.length() <= columnSet.size() );
+         {                                                                                         // assert( variantviewValue.length() <= columnSet.size() );
             unsigned uMaxSize = columnSet.size();
             unsigned uLength = gd::types::value_size_g( variantviewValue.type(), variantviewValue.length() ); // value size in bytes (remember that non fixed value types starts with length information before actual value)
             if( uLength <= uMaxSize )
@@ -1893,6 +1893,16 @@ void table::cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& v
                *( uint32_t* )puRowValue = variantviewValue.length();           // set length as first part in buffer
                puRowValue += sizeof( uint32_t );                               // move to data
                memcpy( puRowValue, puBuffer, uLength );                        // copy value
+            }
+            else
+            {
+               // ## value is too big to fit in column, truncate it 
+               //    should you really allow this to happen?
+               //    if you do then you should have a way to check if value is truncated
+               decltype( uMaxSize ) uNewSize = uMaxSize - 1;
+               *( uint32_t* )puRowValue = uNewSize;                            // set length as first part in buffer
+               puRowValue += sizeof( uint32_t );                               // move to data
+               memcpy( puRowValue, puBuffer, uNewSize );                       // copy value
             }
          }
          else if( columnSet.is_reference() == true )

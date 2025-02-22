@@ -63,6 +63,29 @@ TEST_CASE( "[com_server] add commands", "[com_server]" ) {
    pcommand->sort();
    std::cout << pcommand->print() << std::endl;
 
+   auto values_ = pcommand->get_all_arguments("command");
+   auto uSize = values_.size(); std::cout << "size: " << uSize << std::endl;
+   /*
+   auto it = values_.begin();
+   auto itEnd = values_.end();
+   if( it != itEnd )
+   {
+      std::cout << "test" << std::endl;
+   }
+   */
+
+   for( auto it : values_ )
+   {
+      std::cout << it.as_string() << std::endl;
+   }
+
+
+   for( auto it = std::cbegin(values_); it != std::cend(values_); ++it )
+   {
+      std::cout << it.name() << std::endl;
+   }
+
+
    // { auto result = pcommand->append( to_command_priority_g("stack"), gd::types::tag_uri{});         REQUIRE(result.first == true); }
 
 }

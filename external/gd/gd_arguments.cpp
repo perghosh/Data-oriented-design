@@ -957,6 +957,11 @@ arguments& arguments::append(const arguments& argumentsFrom)
          auto argument_ = arguments::get_argument_s( pPosition );
          append_argument( name_, argument_ );
       }
+      else
+      {
+         auto argument_ = arguments::get_argument_s(pPosition);
+         append_argument(argument_);
+      }
    }
 
    return *this;
@@ -2299,7 +2304,7 @@ bool arguments::compare_argument_group_s(const argument& argument1, const gd::va
 */
 bool arguments::compare_exists_s( const arguments& argumentsSource, const arguments& argumentsExists )
 {
-   for( auto it = argumentsExists.begin(), itEnd = argumentsExists.end(); it != itEnd; it++ )
+   for( auto it = argumentsExists.cbegin(), itEnd = argumentsExists.cend(); it != itEnd; it++ )
    {
       auto stringExistsName = it.name( tag_view{} );
       if( stringExistsName.empty() == false )
@@ -2508,7 +2513,20 @@ arguments::pointer arguments::next_s(pointer pPosition)
    pPosition++;                                                                // move past type
    if( (uType & eType_MASK) == 0 )
    {
-      pPosition += ctype_size[uType];
+      if( uType < eTypeNumberString ) { pPosition += ctype_size[uType]; }
+      else
+      {
+         if( uType == eTypeNumberString ||
+            uType == eTypeNumberUtf8String ) pPosition += strlen((const char*)pPosition) + 1;
+         else if( uType == eTypeNumberString ) pPosition += wcslen((const wchar_t*)pPosition) * 2 + 2;
+         else if( uType == eTypeNumberUtf32String )
+         {
+            unsigned uLength = 0;
+            while( *((const char32_t*)pPosition + uLength) ) uLength++;
+            pPosition += (uLength + 1) * sizeof(char32_t);
+         }
+         else assert(false);
+      }
    }
    else
    {
