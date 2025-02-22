@@ -63,8 +63,10 @@ struct tag_io_column {};
 
 /// tag dispatcher used for csv formatting
 struct tag_io_csv {};
-/// tag dispatcher used for csv formatting
+/// tag dispatcher used for json formatting
 struct tag_io_json {};
+/// tag dispatcher used for xml formatting
+struct tag_io_xml {};
 /// tag dispatcher used for command line interface
 struct tag_io_cli {};
 /// tag dispatcher for uri formatting

@@ -49,6 +49,7 @@ enum enumPriority
    ePriorityStack    = 0x02,     ///< like the closest stack value, removed when command is executed
    ePriorityCommand  = 0x04,     ///< follow command
    ePriorityGlobal   = 0x08,     ///< global reach within command
+   ePriorityALL      = ePriorityRegister + ePriorityStack + ePriorityCommand + ePriorityGlobal, ///< all priorities
 
    ePriorityMAX      = ePriorityGlobal, ///< max priority value
 };
@@ -400,6 +401,7 @@ struct command : public gd::com::server::command_i
    gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) override;
    gd::variant_view get_argument( const gd::variant_view& index_ ) { return get_argument( index_, 0 ); }
    gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override;
+   gd::argument::arguments get_all_arguments() { return get_all_arguments(0); }
    std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override;
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override;
    /// wrapper to select first value for name

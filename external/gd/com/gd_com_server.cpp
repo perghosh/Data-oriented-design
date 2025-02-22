@@ -320,12 +320,27 @@ gd::variant_view command::get_argument( const gd::variant_view& index_, uint32_t
  * @param index_ 
  * @return 
  */
+
 gd::argument::arguments command::get_all_arguments( const gd::variant_view& index_ )
 {
+   unsigned uPriority = ePriorityALL;
+
+   if( index_.is_true() == true )
+   {
+      if( index_.is_string() == true )
+      {
+         uPriority = to_command_priority_g(index_.as_string_view());
+      }
+      else if( index_.is_integer() == true )
+      {
+         uPriority = index_.as_uint();
+      }
+   }
+
    gd::argument::arguments argumentsReturn;
    for( auto it = std::begin( m_vectorArgument ), itEnd = std::end( m_vectorArgument ); it != itEnd; it++ )
    {
-      if( it->get_priority() != ePriorityCommand ) 
+      if( it->get_priority() & uPriority ) 
       {
          const gd::argument::arguments& arguments_ = it->get_arguments();
          if( arguments_.empty() == false )
