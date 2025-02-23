@@ -46,6 +46,7 @@ public:
    /// Initialize main server
    std::pair<bool, std::string> Initialize();
    std::pair<bool, std::string> Execute( const std::string_view& stringCommand, gd::com::server::response_i** ppresponse );
+   std::pair<bool, std::string> Execute( gd::com::server::command_i* pcommand,  gd::com::server::response_i** ppresponse );
    std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand,  gd::com::server::response_i** ppresponse );
 
    bool is_endpoint(const std::string_view& stringCommand) override;

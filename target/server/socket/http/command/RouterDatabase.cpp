@@ -14,6 +14,7 @@ std::pair<bool, std::string> CRouterDatabase::get(gd::com::server::command_i* pc
    {
       auto* parguments = pcommand_->get_command(0);
       auto stringCommand = (*parguments)[0];
+      if( stringCommand == std::string_view{"database"} ) { stringCommand = (*parguments)[1]; }
       auto result_ = Execute( stringCommand, pcommand_, presponse );
    }
 
@@ -27,7 +28,9 @@ std::pair<bool, std::string> CRouterDatabase::Execute(const std::string_view& st
 
    if( stringCommand == "create" )
    {
-      auto arguments_ = pcommand_->query_select( { "filename", "dsn" } );
+      gd::argument::arguments arguments_;
+      if( pcommand_->get_active() != -1 ) arguments_ = pcommand_->query_select( { "filename", "dsn" }, (size_t)pcommand_->get_active() );
+      else                                arguments_ = pcommand_->query_select( { "filename", "dsn" } );
       return CreateDatabase(arguments_);
    }
 
@@ -48,7 +51,7 @@ std::pair<bool, std::string> CRouterDatabase::CreateDatabase(const gd::argument:
       if ( stringName.empty() == true ) return { false, "No database name" };
 
       // ## Create database
-      gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i(stringName);
+      gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i(stringFile);
       auto result_ = pdatabase->open({ {"file", pathDatabaseFile.string()}, {"create", true}});
       
       
@@ -65,5 +68,10 @@ std::pair<bool, std::string> CRouterDatabase::CreateDatabase(const gd::argument:
       return { false, "No database file" };
    }
 
-   return std::pair<bool, std::string>();
+   return {true, ""};
+}
+
+std::pair<bool, std::string> CRouterDatabase::RemoveDatabase(const gd::argument::arguments& arguments_)
+{
+   return {true, ""};
 }

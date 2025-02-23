@@ -373,8 +373,18 @@ struct command : public gd::com::server::command_i
    arguments& operator[](size_t uIndex) { return m_vectorArgument[uIndex]; }
    arguments& at(size_t uIndex) { return m_vectorArgument[uIndex]; }
 
+/** \name GET/SET
+*///@{
    /// get server object for command (each command object is connected to one server object)
    server_i* get_server() override { return m_pserver; }
+   /// activate specific command in command object, -1 is used to deactivate command
+   void activate(int iIndex) { m_iCommandIndex = iIndex; assert( iIndex >= -1 && iIndex < size()); }
+   /// get active command index
+   int get_active() const { return m_iCommandIndex; }
+//@}
+
+/** \name OPERATION
+*///@{
    /// add global arguments, all commands in command object are able to use global arguments
    std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewPriority, const gd::argument::arguments* pargumentsGlobal ) override;
    void arguments_remove( unsigned uPriority );
@@ -396,6 +406,8 @@ struct command : public gd::com::server::command_i
    void add_command( const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal );
    /// add command and arguments for that command (command string is formated as command/sub-command/sub-sub-command in uri encoded format)
 
+   // ## Methods to access internal command information, command may hold more than one command
+
    arguments* get_command(size_t uIndex) const;
 
    gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) override;
@@ -406,8 +418,12 @@ struct command : public gd::com::server::command_i
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override;
    /// wrapper to select first value for name
    gd::variant_view query_select( const std::string_view& stringSelector );
+   gd::variant_view query_select( const std::string_view& stringSelector, const std::variant<size_t,std::string>& variantKey );
    gd::argument::arguments query_select( const std::initializer_list<std::string_view>& listSelector );
+   gd::argument::arguments query_select( const std::initializer_list<std::string_view>& listSelector, const std::variant<size_t,std::string>& variantKey );
    std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override;
+
+   // ## general operations for all commands
 
    /// Get number of commands in command object (note that one command object could hold more than one command)
    size_t size() const { return m_vectorArgument.size(); }
@@ -429,10 +445,12 @@ struct command : public gd::com::server::command_i
 
    /// print command object, useful for debugging
    std::string print() const;
+//@}
 
 // ## attributes ----------------------------------------------------------------
 public:
    int m_iReference = 1;   ///< reference counter
+   int m_iCommandIndex = -1; ///< index for active command
    gd::com::server::server_i* m_pserver = nullptr; ///< server object that command is connected to
    std::vector< arguments > m_vectorArgument; ///< command and arguments or only arguments, priority decides how to search for argument value
 };

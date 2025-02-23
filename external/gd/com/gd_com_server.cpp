@@ -430,12 +430,78 @@ gd::variant_view command::query_select( const std::string_view& stringSelector )
    return variantviewValue;
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Retrieves a variant view of an argument based on a selector and a key.
+ *
+ * This function searches for an argument within the command's argument collection
+ * based on a string selector and a key, which can be either an index or a string.
+ * The search can be filtered by priority levels, which determine the
+ * scope or context of the argument (e.g., register, stack, command, global).
+ *
+ * @param stringSelector The name of the argument to search for.
+ * @param variantKey The key to search for, which can be either an index (size_t) or a string.
+ * @return gd::variant_view A variant view of the found argument. If no argument 
+ *         matches the given criteria, it returns an empty or default-initialized 
+ *         variant_view.
+ *
+ * @note 
+ * - If `variantKey` is an index, the function searches for the argument at that index.
+ * - If `variantKey` is a string, the function searches for the argument with that key.
+ * - If no argument matches the given criteria, the function performs a secondary search
+ *   using the `query_select` method with the provided string selector.
+ */
+gd::variant_view command::query_select(const std::string_view& stringSelector, const std::variant<size_t, std::string>& variantKey) 
+{
+   gd::variant_view variantviewValue;
+   if( variantKey.index() == 0 )
+   {
+      size_t uIndex = std::get<0>(variantKey);
+      if( uIndex < m_vectorArgument.size() )
+      {
+         const auto& arguments_ = m_vectorArgument.at(uIndex);
+         variantviewValue = arguments_.get_arguments().get_argument(stringSelector).as_variant_view();
+      }
+   }
+   else
+   {
+      std::string_view stringName = std::get<1>(variantKey);
+      for( auto it : m_vectorArgument )
+      {
+         if( it.get_key() == stringName )
+         {
+            variantviewValue = it.get_arguments().get_argument(stringSelector).as_variant_view();
+            break;
+         }
+      }
+   }
+
+   if( variantviewValue.empty() == true )
+   {
+      variantviewValue = query_select( stringSelector );
+   }
+
+   return variantviewValue;
+}
+
 gd::argument::arguments command::query_select( const std::initializer_list<std::string_view>& listSelector )
 {
    gd::argument::arguments argumentsReturn;
    for( auto itName : listSelector )
    {
       auto value_ = query_select( itName );
+      if( value_.empty() == false ) argumentsReturn.append_argument(itName, value_);
+   }
+   return argumentsReturn;
+}
+
+
+gd::argument::arguments command::query_select( const std::initializer_list<std::string_view>& listSelector, const std::variant<size_t,std::string>& variantKey )
+{
+   gd::argument::arguments argumentsReturn;
+   for( auto itName : listSelector )
+   {
+      auto value_ = query_select( itName, variantKey );
       if( value_.empty() == false ) argumentsReturn.append_argument(itName, value_);
    }
    return argumentsReturn;
