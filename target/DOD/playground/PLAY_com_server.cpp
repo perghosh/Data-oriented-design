@@ -66,67 +66,16 @@ TEST_CASE( "[com_server] add commands", "[com_server]" ) {
    pcommand->sort();
    std::cout << pcommand->print() << std::endl;
 
-   auto values_ = pcommand->get_all_arguments();
-
-   auto vector_ = values_.get_argument_all( gd::types::tag_view{}, gd::types::tag_pair{});
-   gd::argument::shared::arguments arguments_( vector_ );
-   arguments_.append(vector_);
-
-   for( auto it : arguments_ )
-   {
-      std::cout << it.as_string() << ", ";
-   }
-   std::cout << std::endl;
-
-   arguments_ = vector_;
-
-   for( auto it : arguments_ )
-   {
-      std::cout << it.as_string() << ", ";
-   }
-   std::cout << std::endl;
-
-
-   arguments_ += vector_;
-
-   values_ = pcommand->get_all_arguments("command");
-   auto uSize = values_.size(); std::cout << "size: " << uSize << std::endl;
-   /*
-   auto it = values_.begin();
-   auto itEnd = values_.end();
-   if( it != itEnd )
-   {
-      std::cout << "test" << std::endl;
-   }
-   */
-
-   //static_assert(std::ranges::forward_range<gd::argument::arguments>);
-   //static_assert(std::ranges::forward_range<std::vector<double>>);
-   //auto find1_ = std::ranges::find( values_, "35" );
-
+   auto argumentsValue = pcommand->get_all_arguments();
    
 
-
-   for( auto it : values_ )
    {
-      std::cout << it.as_string() << std::endl;
+      auto vector_ = argumentsValue.get_argument_all( gd::types::tag_view{}, gd::types::tag_pair{});
+      gd::argument::shared::arguments argumentsValue2(vector_);
+      std::cout << argumentsValue2.print() << std::endl;
+      std::vector<gd::variant_view> vectorValue;
+      for( auto& it : vector_ ) { vectorValue.push_back( it.second ); }
+      argumentsValue2 = vectorValue;
+      std::cout << "\n\n\n" << argumentsValue2.print() << std::endl;
    }
-
-
-   for( auto it = std::cbegin(values_); it != std::cend(values_); ++it )
-   {
-      std::cout << it.name() << std::endl;
-   }
-
-   // gd::argument::shared::arguments arguments_;
-   arguments_.append("command", "command");
-
-   for( auto it : arguments_ )
-   {
-      std::cout << it.as_string() << std::endl;
-   }
-
-
-   // { auto result = pcommand->append( to_command_priority_g("stack"), gd::types::tag_uri{});         REQUIRE(result.first == true); }
-
 }

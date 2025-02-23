@@ -656,86 +656,6 @@ public:
    };
 
 
-
-   /**
-    * @brief iterator for iterating values in params object.
-   */
-   /*
-   struct const_iterator
-   {
-      using iterator_category = std::forward_iterator_tag;
-      using self = const_iterator;
-
-      const_iterator() : m_parguments(nullptr), m_pPosition(nullptr) {}
-      const_iterator(arguments::const_pointer pPosition ): m_pPosition(pPosition) {}
-      const_iterator(const arguments* pparams, arguments::const_pointer pPosition) : m_parguments(pparams), m_pPosition(pPosition) {}
-      const_iterator(const const_iterator& o) { m_parguments = o.m_parguments; m_pPosition = o.m_pPosition; }
-      const_iterator& operator=(const const_iterator& o) { m_parguments = o.m_parguments; m_pPosition = o.m_pPosition; return *this; }
-
-      argument operator*() const {                                                                 assert( m_parguments->verify_d( m_pPosition ));
-         return get_argument();
-      }
-      self& operator++() {                                                                         assert( m_parguments->verify_d( m_pPosition ));
-         m_pPosition = m_parguments->next(m_pPosition); return *this;
-      }
-      self& operator++(int) {                                                                      assert( m_parguments->verify_d( m_pPosition ));
-         m_pPosition = m_parguments->next(m_pPosition); return *this;
-      }
-      bool operator==(const_iterator& o) { return m_pPosition == o.m_pPosition; }
-      bool operator!=(const_iterator& o) { return m_pPosition != o.m_pPosition; }
-
-      operator const arguments*() const { return m_parguments; }
-      operator arguments::const_pointer() const { return m_pPosition; }
-
-      std::string name() const {                                                                   assert( m_parguments->verify_d( m_pPosition ));
-         if( arguments::is_name_s(m_pPosition) == true )
-         {
-            return std::string(arguments::get_name_s(m_pPosition));
-         }
-         return std::string();
-      }
-
-      std::string_view name(tag_view) const {                                                      assert( m_parguments->verify_d( m_pPosition ));
-         if( arguments::is_name_s(m_pPosition) == true )
-         {
-            return arguments::get_name_s(m_pPosition);
-         }
-         return std::string_view();
-      }
-
-      bool compare_name(std::string_view stringName) const { 
-         if( arguments::is_name_s(m_pPosition) == true )
-         {
-            if( arguments::get_name_s(m_pPosition) == stringName ) return true;
-         }
-         return false;
-      }
-
-      argument get_argument() {
-         auto v_ =arguments::get_argument_s(m_pPosition);
-         return v_;
-      }
-      const argument get_argument() const { 
-         auto v_ =arguments::get_argument_s(m_pPosition);
-         return v_;
-      }
-
-      template<std::size_t uIndex>
-      auto get() const
-      {
-         static_assert(uIndex < 2, "Allowed index are 0 and 1, above is not valid");
-         if constexpr( uIndex == 0 ) return name();
-         if constexpr( uIndex == 1 ) return get_argument();
-      }
-
-
-      // attributes
-   public:
-      const shared::arguments* m_parguments;
-      arguments::const_pointer m_pPosition;
-   };
-   */
-
 // ## typedefs -----------------------------------------------------------------
 public:
    using iterator =           iterator_<arguments>;
@@ -771,8 +691,9 @@ public:
    arguments& operator=(const arguments& o) { common_construct(o); return *this; }
    arguments& operator=(arguments&& o) noexcept { common_construct(o); return *this; }
 
-   arguments& operator=(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair);
-   arguments& operator=(std::vector<std::pair<std::string_view, gd::variant_view>> vectorPair);
+   arguments& operator=(const std::vector<gd::variant_view>& vectorValue);
+   arguments& operator=(const std::initializer_list<std::pair<std::string_view, gd::variant>>& listPair);
+   arguments& operator=(const std::vector<std::pair<std::string_view, gd::variant_view>>& vectorPair);
 
    ~arguments() { 
       buffer_delete();
@@ -944,6 +865,7 @@ public:
    }
 
    arguments& append( const arguments& arguments_ );
+   arguments& append( const std::vector<gd::variant_view>& vectorValue );
    arguments& append( const std::vector<std::pair<std::string_view,std::string_view>>& vectorStringValue );
    arguments& append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue );
    arguments& append( const std::vector<std::pair<std::string,gd::variant>>& vectorStringVariant );
@@ -1451,15 +1373,22 @@ public:
 
 };
 
+/// append values from vector with variant_view items
+inline arguments& arguments::append( const std::vector<gd::variant_view>& vectorValue ) {
+   for( const auto& it : vectorValue  ) append( it, tag_view{} );
+   return *this;
+}
+
+
 /// append values from vector with pairs of string_view items
 inline arguments& arguments::append( const std::vector<std::pair<std::string_view, std::string_view>>& vectorStringValue ) {
-   for( auto it : vectorStringValue ) append( it.first, it.second );
+   for( const auto& it : vectorStringValue ) append( it.first, it.second );
    return *this;
 }
 
 /// append values from vector with pairs of string items
 inline arguments& arguments::append( const std::vector<std::pair<std::string, std::string>>& vectorStringValue ) {
-   for( auto it : vectorStringValue ) append( it.first, it.second );
+   for( const auto& it : vectorStringValue ) append( it.first, it.second );
    return *this;
 }
 

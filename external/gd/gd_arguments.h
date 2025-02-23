@@ -610,7 +610,11 @@ public:
    arguments& operator=(const arguments& o) { clear(); common_construct(o); return *this; }
    arguments& operator=(arguments&& o) noexcept { clear(); common_construct(o); return *this; }
 
-   arguments& operator=(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair);
+   arguments& operator=(const std::vector<gd::variant_view>& vectorValue);
+   arguments& operator=(const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair);
+   arguments& operator=(const std::initializer_list<std::pair<std::string_view, gd::variant>>& listPair);
+   arguments& operator=(const std::vector<std::pair<std::string_view, gd::variant_view>>& vectorPair);
+
 
    ~arguments() { buffer_delete(); }
 protected:
@@ -717,6 +721,9 @@ public:
       append( value_ ); 
       if constexpr (sizeof...(next_) > 0) { append_many( next_... ); }
    }
+   arguments& append( const argument& argumentValue, tag_argument );
+   arguments& append( const gd::variant_view& variantValue, tag_view );
+
 
    arguments& append(param_type uType, const_pointer pBuffer, unsigned int uLength);
 
@@ -747,9 +754,11 @@ public:
       return append(pbszName, uNameLength, uType, (const_pointer)pBuffer, uLength);
    }
    arguments& append( const arguments& arguments_ );
+   arguments& append( const std::vector<gd::variant_view>& vectorValue );
    arguments& append( const std::vector<std::pair<std::string_view,std::string_view>>& vectorStringValue );
    arguments& append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue );
    arguments& append( const std::vector<std::pair<std::string,gd::variant>>& vectorStringVariant );
+   arguments& append( const std::vector<std::pair<std::string_view, gd::variant_view>>& vectorStringVariantView );
    arguments& append( const std::vector<std::pair<std::string_view,std::string_view>>& vectorStringValue, tag_parse_type );
    arguments& append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue, tag_parse_type );
    std::pair<bool, std::string>  append( const std::string_view& stringValue, tag_parse );
@@ -1256,6 +1265,41 @@ public:
 
 };
 
+/// assign arguments with vector containing gd::variant_view values
+inline arguments& arguments::operator=( const std::vector<gd::variant_view>& vectorValue)
+{
+   clear();
+   return append(vectorValue);
+}
+/// assign arguments with vector containing pair of string and gd::variant values
+inline arguments& arguments::operator=(const std::initializer_list<std::pair<std::string_view, gd::variant>>& listPair)
+{
+   clear();
+   for( const auto& it : listPair ) append_argument(it);
+   return *this;
+}
+
+/// assign arguments with vector containing pair of string and gd::variant values
+inline arguments& arguments::operator=(const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair)
+{
+   clear();
+   for( const auto& it : listPair ) append_argument(it, tag_view{});
+   return *this;
+}
+
+/// assign arguments with vector containing pair of string and gd::variant_view values
+inline arguments& arguments::operator=( const std::vector<std::pair<std::string_view, gd::variant_view>>& vectorPair)
+{
+   clear();
+   return append(vectorPair);
+}
+
+/// append values from vector with variant_view items
+inline arguments& arguments::append( const std::vector<gd::variant_view>& vectorValue ) {
+   for( const auto& it : vectorValue  ) append( it, tag_view{} );
+   return *this;
+}
+
 /// append values from vector with pairs of string_view items
 inline arguments& arguments::append( const std::vector<std::pair<std::string_view, std::string_view>>& vectorStringValue ) {
    for( auto it : vectorStringValue ) append( it.first, it.second );
@@ -1273,6 +1317,13 @@ inline arguments& arguments::append( const std::vector<std::pair<std::string,gd:
    for( auto it : vectorStringVariant ) append_argument( it.first, it.second );
    return *this;
 }
+
+/// append values from vector with pair of string_view and variant_view items
+inline arguments& arguments::append(const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorStringVariantView ) {
+   for( auto it : vectorStringVariantView ) append_argument(it.first, it.second);
+   return *this;
+}
+
 
 /// append values from vector with variant items
 inline arguments& arguments::append( const std::vector<std::pair<std::string_view,std::string_view>>& vectorStringValue, tag_parse_type ) {
