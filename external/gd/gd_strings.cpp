@@ -443,3 +443,23 @@ namespace pointer {
 }
 
 _GD_END
+
+/**
+* @class strings32
+* 
+* *Sample on how to add multiple values to strings32*
+* ```cpp
+gd::strings32 strings2_;
+std::vector<gd::variant_view> vectorValue = { {10}, {20}, {30}, {40}, {50} };
+strings2_.append_any(1);
+strings2_.append_any(gd::variant_view(1));
+strings2_.append_any(true);
+strings2_.append_any(1.1);
+strings2_.append_any(vectorValue);
+strings2_.append_any({ {10}, {20}, {30}, {35}, {40}, {50}, {60}, {70} });
+auto find1_ = std::ranges::find( strings2_, "35" );  assert(find1_ != strings2_.end());
+auto find2_ = std::find( strings2_.begin(), strings2_.end(), "35"); assert(find2_ != strings2_.end());
+* ```
+* 
+* 
+*/
