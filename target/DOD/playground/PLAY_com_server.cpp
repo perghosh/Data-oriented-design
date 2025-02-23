@@ -1,4 +1,7 @@
+#include <algorithm>
 #include <array>
+#include <ranges>
+
 
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
@@ -73,6 +76,11 @@ TEST_CASE( "[com_server] add commands", "[com_server]" ) {
       std::cout << "test" << std::endl;
    }
    */
+
+   //static_assert(std::ranges::forward_range<gd::argument::arguments>);
+   //static_assert(std::ranges::forward_range<std::vector<double>>);
+   //auto find1_ = std::ranges::find( values_, "35" );
+
 
    for( auto it : values_ )
    {
