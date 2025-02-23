@@ -111,6 +111,7 @@ public:
    typedef uint8_t            param_type;
    typedef uint8_t            argument_type;
 
+   using tag_pair          = gd::types::tag_pair;                              // tag dispatcher used to select working with pair items
    using tag_view          = gd::types::tag_view;                              // used when working with view objects (not owning its data)
    using tag_argument      = gd::types::tag_argument;                          // argument related operations
    using tag_name          = gd::types::tag_name;                              // there is some name related logic involved
@@ -970,9 +971,10 @@ public:
       return argument();
    }
 
-   /// return all values for name
+   /// return all values for name, name for value do not need to be unique. if name is not found empty vector is returned
    [[nodiscard]] std::vector<argument> get_argument_all(std::string_view stringName) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName); }
    [[nodiscard]] std::vector<gd::variant_view> get_argument_all(std::string_view stringName, tag_view) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
+   [[nodiscard]] std::vector<std::pair<std::string_view, gd::variant_view>> get_argument_all(tag_view, tag_pair) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), tag_view{}, tag_pair{} ); }
    [[nodiscard]] std::vector<gd::variant_view> get_argument_section(std::string_view stringName, tag_view) const { return get_argument_section_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
 
    std::vector<argument> get_argument( std::vector< std::string_view > vectorName ) const;
@@ -1086,6 +1088,7 @@ public:
    static unsigned int get_total_param_length_s(std::string_view stringName, const argument argumentValue);
    static std::vector<argument> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName);
    static std::vector<gd::variant_view> get_argument_all_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
+   static std::vector<std::pair<std::string_view, gd::variant_view>> get_argument_all_s(const_pointer pBegin, const_pointer pEnd,  tag_view, tag_pair);
    static std::vector<gd::variant_view> get_argument_section_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view);
 
    /// ## move methods

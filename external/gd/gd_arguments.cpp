@@ -2461,6 +2461,43 @@ std::vector<gd::variant_view> arguments::get_argument_all_s(const_pointer pBegin
    return vectorArgument;
 }
 
+/** ---------------------------------------------------------------------------
+ * Extracts all arguments from a data range into a vector of name-value pairs.
+ * Iterates through the range between pBegin and pEnd, parsing named and unnamed arguments.
+ * Named arguments are paired with their values, while unnamed arguments use an empty name.
+ * @param {const_pointer} pBegin - Starting pointer of the data range to parse.
+ * @param {const_pointer} pEnd - Ending pointer of the data range (exclusive).
+ * @param {tag_view} tag_view - Tag for overload resolution, typically an empty struct.
+ * @param {tag_pair} tag_pair - Tag for overload resolution, typically an empty struct.
+ * @returns {std::vector<std::pair<std::string_view, gd::variant_view>>} 
+ *          A vector of pairs where each pair contains an optional name (std::string_view) 
+ *          and a value (gd::variant_view). Unnamed arguments have an empty name.
+ */
+std::vector<std::pair<std::string_view, gd::variant_view>> arguments::get_argument_all_s(const_pointer pBegin, const_pointer pEnd, tag_view, tag_pair) 
+{
+   std::vector<std::pair<std::string_view, gd::variant_view>> vectorArgument;
+
+   const_pointer pPosition = pBegin;
+   while (pPosition < pEnd) 
+   {
+      if(is_name_s(pPosition)) 
+      {
+         std::string_view stringName = get_name_s(pPosition);
+         gd::variant_view value_ = get_argument_s(pPosition).as_variant_view();
+         vectorArgument.emplace_back(stringName, value_);
+      }
+      else
+      {
+         gd::variant_view value_ = get_argument_s(pPosition).as_variant_view();
+         vectorArgument.emplace_back(std::string_view(), value_);
+      }
+      pPosition = next_s(pPosition);
+   }
+
+   return vectorArgument;
+}
+
+
 /// return all values from name and traling values with no name
 /// this is handy if you store a list or lists of values in arguments object and they start with some name
 std::vector<gd::variant_view> arguments::get_argument_section_s(const_pointer pBegin, const_pointer pEnd, std::string_view stringName, tag_view)
