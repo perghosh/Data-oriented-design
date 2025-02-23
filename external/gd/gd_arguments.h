@@ -569,9 +569,8 @@ public:
 
       // attributes
    public:
-      const ARGUMENTS* m_parguments;
-      //arguments::pointer m_pPosition;
-      size_t m_uPosition;
+      const ARGUMENTS* m_parguments; ///< pointer to arguments object
+      size_t m_uPosition;            ///< offset position in buffer
    };
 
 // ## typedefs -----------------------------------------------------------------

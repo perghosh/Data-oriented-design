@@ -93,6 +93,14 @@ TEST_CASE( "[com_server] add commands", "[com_server]" ) {
       std::cout << it.name() << std::endl;
    }
 
+   gd::argument::shared::arguments arguments_;
+   arguments_.append("command", "command");
+
+   for( auto it : arguments_ )
+   {
+      std::cout << it.as_string() << std::endl;
+   }
+
 
    // { auto result = pcommand->append( to_command_priority_g("stack"), gd::types::tag_uri{});         REQUIRE(result.first == true); }
 

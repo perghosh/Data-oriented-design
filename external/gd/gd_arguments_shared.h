@@ -563,10 +563,104 @@ public:
       arguments::pointer m_pValue;
    };
 
+   /**
+    * @brief iterator_ for iterating values in params object.
+    */
+   template<typename ARGUMENTS>
+   struct iterator_
+   {
+      using value_type = argument;  
+      using iterator_category = std::forward_iterator_tag;
+      using self = iterator_;
+      using difference_type = std::ptrdiff_t;
+      using pointer = const argument*;
+      using reference = const argument&;
+
+
+      iterator_() : m_parguments(nullptr), m_uPosition(0) {}
+      iterator_(const arguments* parguments) : m_parguments(parguments), m_uPosition(0) {}
+      iterator_( const arguments* parguments, size_t uPosition) : m_parguments(parguments), m_uPosition( uPosition ) {}
+      iterator_(const iterator_& o) { m_parguments = o.m_parguments; m_uPosition = o.m_uPosition; }
+      iterator_& operator=(const iterator_& o) { m_parguments = o.m_parguments; m_uPosition = o.m_uPosition; return *this; }
+
+      bool operator==(const self& o) { assert( m_parguments == o.m_parguments ); return m_uPosition == o.m_uPosition; }
+      bool operator!=(const self& o) { return !(*this == o); }
+
+      operator const ARGUMENTS*() const { return m_parguments; }
+      operator arguments::const_pointer() const { return buffer_offset(); }
+
+      argument operator*() const {                                                                 assert( m_parguments->verify_d( buffer_offset() ));
+         return get_argument();
+      }
+      self& operator++() {                                                                         assert( m_parguments->verify_d( buffer_offset() ));
+         m_uPosition = arguments::next_s(m_parguments->buffer_data(), m_uPosition);                assert(m_parguments->verify_d(buffer_offset()));
+         return *this;
+      }
+      self operator++(int) {                                                                       assert( m_parguments->verify_d( buffer_offset() ));
+         iterator_ it = *this; 
+         ++(*this);
+         return it;
+      }
+
+      /// Compound assignment operator to advance the iterator by a specified number of values.
+      self& operator+=(size_t uCount) {
+         // Use existing increment operator
+         for(size_t i = 0; i < uCount; ++i) { ++(*this); }
+         return *this; // Return a reference to this iterator
+      }
+
+      /// Advance the iterator by a specified number of string blocks.
+      self operator+(size_t uCount) const {
+         iterator it = *this;
+         for( size_t i = 0; i < uCount; ++i ) ++it;
+         return it;
+      }
+
+      std::string name() const {                                                                   assert( m_parguments->verify_d( buffer_offset() ));
+         if( ARGUMENTS::is_name_s(buffer_offset()) == true ) { return std::string(ARGUMENTS::get_name_s(buffer_offset())); }
+         return std::string();
+      }
+
+      std::string_view name(tag_view) const {                                                      assert( m_parguments->verify_d( buffer_offset() ));
+         if( arguments::is_name_s(buffer_offset()) == true ) { return ARGUMENTS::get_name_s(buffer_offset()); }
+         return std::string_view();
+      }
+
+      bool compare_name(std::string_view stringName) const { 
+         if( ARGUMENTS::is_name_s(buffer_offset()) == true )
+         {
+            if( ARGUMENTS::get_name_s(buffer_offset()) == stringName ) return true;
+         }
+         return false;
+      }
+
+      argument get_argument() { return ARGUMENTS::get_argument_s(buffer_offset()); }
+      const argument get_argument() const { return ARGUMENTS::get_argument_s(buffer_offset()); }
+
+
+      template<std::size_t uIndex>
+      auto get() const
+      {
+         static_assert(uIndex < 2, "Allowed index are 0 and 1, above is not valid");
+         if constexpr( uIndex == 0 ) return name();
+         if constexpr( uIndex == 1 ) return get_argument();
+      }
+
+      arguments::const_pointer buffer_offset() const { return m_parguments->buffer_offset(m_uPosition); }
+
+
+      // attributes
+   public:
+      const ARGUMENTS* m_parguments; ///< pointer to arguments object
+      size_t m_uPosition;            ///< offset position in buffer
+   };
+
+
 
    /**
     * @brief iterator for iterating values in params object.
    */
+   /*
    struct const_iterator
    {
       using iterator_category = std::forward_iterator_tag;
@@ -640,9 +734,15 @@ public:
       const shared::arguments* m_parguments;
       arguments::const_pointer m_pPosition;
    };
+   */
+
+// ## typedefs -----------------------------------------------------------------
+public:
+   using iterator =           iterator_<arguments>;
+   using const_iterator =     iterator_<const arguments>;
 
 
-   // ## construction -------------------------------------------------------------
+// ## construction -------------------------------------------------------------
 public:
    arguments() {}
 
@@ -940,8 +1040,12 @@ public:
    pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
 //@}
 
-   const_iterator begin() const { return const_iterator( this, buffer_data() ); }
-   const_iterator end() const { return const_iterator( nullptr ); }
+   iterator begin() { return iterator( this ); }
+   iterator end() { return iterator( this, buffer_size() ); }
+   const_iterator begin() const { return const_iterator( this ); }
+   const_iterator end() const { return const_iterator( this, buffer_size() ); }
+   const_iterator cbegin() const { return const_iterator( this ); }
+   const_iterator cend() const { return const_iterator( this, buffer_size() ); }
 
    [[nodiscard]] uint64_t capacity() const { return buffer_buffer_size(); }
 
@@ -1107,7 +1211,7 @@ public:
 
 
 #if defined(_DEBUG) || defined(DEBUG) || !defined(NODEBUG)
-   bool verify_d(const_pointer pPosition) const { return pPosition >= m_pbuffer->data() && pPosition < ( m_pbuffer->data() + m_pbuffer->size() ) ? true : false; }
+   bool verify_d(const_pointer pPosition) const { return pPosition >= m_pbuffer->data() && pPosition <= ( m_pbuffer->data() + m_pbuffer->size() ) ? true : false; }
 #endif
 //@}
 
@@ -1320,6 +1424,8 @@ public:
       }
    }
    unsigned buffer_reference_count() const { return m_pbuffer->m_iReferenceCount; }
+   size_t buffer_offset( const_pointer pPosition ) const { assert( verify_d( pPosition ) ); return (pPosition - buffer_data()); }
+   const_pointer buffer_offset( size_t uPosition ) const { assert( uPosition <= (size_t)buffer_size() ); return (buffer_data() + uPosition); }
 
 
 
