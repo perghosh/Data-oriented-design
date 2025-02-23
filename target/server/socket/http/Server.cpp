@@ -15,10 +15,15 @@ std::pair<bool, std::string> CServer::Initialize()
 
 std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringCommand, std::vector<std::pair<std::string, std::string>>& vectorResponse) 
 {
+                                                                                                   LOG_INFORMATION_RAW("Command: " + std::string(stringCommand));
    // ## Create command object from request
    gd::com::server::server_i* pserver = m_ppapplication->ROUTER_GetActiveServer();
    gd::com::pointer< gd::com::server::router::command > pcommand = gd::com::pointer< gd::com::server::router::command >( new gd::com::server::router::command( pserver ) );   
-   std::vector< std::string_view > vectorCommand = static_cast<gd::com::server::router::command*>( pcommand )->add_querystring( stringCommand );
+   auto result_ = static_cast<gd::com::server::router::command*>( pcommand )->append(stringCommand, gd::types::tag_uri{});
+   if( result_.first == false ) { return { false, "Failed to append command: " + std::string(stringCommand)  + " - " + result_.second }; }
+
+
+   //std::vector< std::string_view > vectorCommand = static_cast<gd::com::server::router::command*>( pcommand )->add_querystring( stringCommand );
 
    /*
    vectorCommand.erase(std::remove_if(vectorCommand.begin(), vectorCommand.end(), [](const auto& string_) {
@@ -31,7 +36,7 @@ std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eV
 
    if(eVerb == boost::beast::http::verb::get) 
    {
-      auto result_ = Execute( vectorCommand, pcommand );
+      auto result_ = Execute( pcommand );
       // Handle GET request
       vectorResponse.push_back({"Content-Type", "text/plain"});
       return {true, "GET request processed for target: " + std::string(stringCommand)};
@@ -47,6 +52,32 @@ std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eV
       return {false, "Unsupported HTTP verb"};
    }
 }
+
+std::pair<bool, std::string> CServer::Execute(gd::com::server::command_i* pcommand)
+{
+   CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
+
+   gd::com::server::response_i* presponse = nullptr;
+
+   auto result_ = phttpserver->Execute( pcommand, &presponse );
+
+
+   //std::string_view stringCommand = vectorCommand[0];
+
+   //gd::com::server::server_i* pserver = m_router.GetServer( stringCommand );
+   // CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
+
+   // auto result_ = phttpserver->Get( vectorCommand, pcommand );
+
+   // if( pserver == nullptr ) { return { false, "No server found for command: " + std::string(stringCommand) }; }
+
+   // pserver->get( vectorCommand, nullptr, pcommand, nullptr);
+
+
+
+   return { true, "" };
+}
+
 
 std::pair<bool, std::string> CServer::Execute(const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand)
 {                                                                                                  assert( vectorCommand.empty() == false );

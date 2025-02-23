@@ -75,6 +75,7 @@ protected:
 /** \name INTERNAL
 *///@{
    std::pair<bool, std::string> CreateDatabase( const gd::argument::arguments& arguments_ );
+   std::pair<bool, std::string> RemoveDatabase( const gd::argument::arguments& arguments_ );
 //@}
 
 public:

@@ -59,6 +59,37 @@ std::pair<bool, std::string> CHttpServer::Execute(const std::string_view& string
    return { true, "" };
 }
 
+std::pair<bool, std::string> CHttpServer::Execute( gd::com::server::command_i* pcommand, gd::com::server::response_i** ppresponse )
+{
+   using namespace gd::com::server::router;
+
+   command* pcommandRun = (command*)pcommand;
+
+   for( size_t u = 0; u < pcommandRun->size(); u++ )
+   {
+      command::arguments& arguments_ = (*pcommandRun)[u];
+
+      std::string_view stringServer = arguments_[0];
+      gd::com::server::server_i* pserver = GetServer(stringServer);
+      if( pserver == nullptr ) { return { false, std::string("No server found for command: ") + stringServer.data() }; }
+
+
+      pcommandRun->activate(u);
+      auto result = pserver->get(pcommand, *ppresponse);
+   }
+
+   /*
+   std::string_view stringServerName = (*pcommandRun)[(size_t)0];
+
+   server* pserver = (server*)GetServer(stringServerName);
+   if( pserver == nullptr ) { return { false, std::string( "No server found for command: " ) + stringServerName.data() }; }
+
+   auto result = pserver->get( pcommand, *ppresponse );
+   */
+
+   return { true, "" };
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Executes a command given as a vector of string views.
  * 

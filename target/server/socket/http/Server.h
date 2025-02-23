@@ -88,6 +88,7 @@ public:
 *///@{
    std::pair<bool, std::string> Initialize();
    std::pair<bool, std::string> ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringTarget, std::vector<std::pair<std::string, std::string>>& vectorResponse);
+   std::pair<bool, std::string> Execute( gd::com::server::command_i* pcommand );
    std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand );
 //@}
 
