@@ -864,27 +864,6 @@ void arguments::set(pointer pposition, const argument& argumentSet, tag_argument
 {                                                                                                  assert( pposition >= get_buffer_start() ); assert( pposition < get_buffer_end() );
    pointer ppositionValue = move_to_value_s( pposition );
    set(pposition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
-   /*
-   auto eTypeArgument = argumentSet.type_number();
-   auto uType = type_s( ppositionValue );
-   if( is_type_fixed_size_s(eTypeArgument) == true && eTypeArgument == uType )
-   {
-      auto pPosition = ppositionValue;
-      pPosition += sizeof( uint32_t );                                         assert(pPosition < get_buffer_end());
-      memcpy(pPosition, pBuffer, uLength);
-
-      pPosition += sizeof( uint32_t );                                         assert(pPosition < get_buffer_end());
-      memcpy(pPosition, pBuffer, uLength);
-
-      auto pValueData = ppositionValue + 1;                                    // move past type to data (one byte is used to describe type)
-      unsigned uSize = ctype_size[eTypeArgument];
-      memcpy(pValueData, argumentSet.get_value_buffer(), uSize);
-   }
-   else
-   {
-      set(pposition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
-   }
-   */
 }
 
 
@@ -934,14 +913,21 @@ arguments::arguments(const std::string_view& stringName, const gd::variant& vari
    append_argument(stringName, variantValue);
 }
 
-arguments& arguments::operator=(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair)
+/// assign arguments with vector containing gd::variant_view values
+arguments& arguments::operator=( const std::vector<gd::variant_view>& vectorValue)
+{
+   clear();
+   return append(vectorValue);
+}
+/// assign arguments with vector containing pair of string and gd::variant values
+arguments& arguments::operator=(const std::initializer_list<std::pair<std::string_view, gd::variant>>& listPair)
 {
    clear();
    for( auto it : listPair ) append_argument(it);
    return *this;
 }
-
-arguments& arguments::operator=(std::vector<std::pair<std::string_view, gd::variant_view>> vectorPair)
+/// assign arguments with vector containing pair of string and gd::variant_view values
+arguments& arguments::operator=( const std::vector<std::pair<std::string_view, gd::variant_view>>& vectorPair)
 {
    clear();
    return append(vectorPair);
@@ -1005,7 +991,8 @@ arguments::argument_edit arguments::operator[](const index_edit& index_edit_)
    return argument_edit();
 }
 
-
+/// append argument value to arguments
+/// tagged with tag_arguments to avoid conflicting with other append methods
 arguments& arguments::append(const argument& argumentValue, tag_argument)
 {
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
@@ -1015,6 +1002,8 @@ arguments& arguments::append(const argument& argumentValue, tag_argument)
    return append( uType, pData, argumentValue.length() );
 }
 
+/// append variant_view value to arguments
+/// tagged with tag_view to avoid conflicting with other append methods
 arguments& arguments::append(const gd::variant_view& variantValue, tag_view)
 {
    auto argumentValue = get_argument_s(variantValue);

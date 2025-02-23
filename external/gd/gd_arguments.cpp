@@ -872,19 +872,6 @@ arguments::arguments(const std::string_view& stringName, const gd::variant& vari
    append_argument(stringName, variantValue);
 }
 
-/*
-arguments::arguments(std::pair<std::string_view, gd::variant> pairArgument, pair_tag)
-{
-   zero();
-   append_argument(pairArgument);
-}
-*/
-
-arguments& arguments::operator=(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair)
-{
-   for( auto it : listPair ) append_argument(it);
-   return *this;
-}
 
 /** ---------------------------------------------------------------------------
  * @brief index operator where editable argument is returned.
@@ -939,6 +926,26 @@ arguments::argument_edit arguments::operator[](const index_edit& index_edit_)
    }
 
    return argument_edit();
+}
+
+/// append argument value to arguments
+/// tagged with tag_arguments to avoid conflicting with other append methods
+arguments& arguments::append(const argument& argumentValue, tag_argument)
+{
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();
+   if( uType > ARGUMENTS_NO_LENGTH ) { uType |= eValueLength; }
+
+   return append( uType, pData, argumentValue.length() );
+}
+
+
+/// append variant_view value to arguments
+/// tagged with tag_view to avoid conflicting with other append methods
+arguments& arguments::append(const gd::variant_view& variantValue, tag_view)
+{
+   auto argumentValue = get_argument_s(variantValue);
+   return append( argumentValue, tag_argument{});
 }
 
 
