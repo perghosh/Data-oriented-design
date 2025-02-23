@@ -96,14 +96,17 @@ void print( const gd::argument::arguments& arguments_ )
  */
 class arguments
 {
+// ## typedefs -----------------------------------------------------------------
 public:
-   typedef uint8_t            value_type;
-   typedef value_type*        pointer;
-   typedef const value_type*  const_pointer;
-   typedef value_type&        reference;
-   typedef const value_type&  const_reference;
-   typedef size_t             size_type;
-   typedef ptrdiff_t          difference_type;
+   struct argument;
+   using iterator_category =  std::forward_iterator_tag;
+   using value_type =         argument;
+   using pointer =            uint8_t*;
+   using const_pointer =      const uint8_t*;
+   using reference =          value_type&;
+   using const_reference =    const value_type&;
+   using size_type =          size_t ;
+   using difference_type =    std::ptrdiff_t;
 
    typedef uint8_t            param_type;
    typedef uint8_t            argument_type;
@@ -492,54 +495,65 @@ public:
       using reference = const argument&;
 
 
-      iterator_() : m_parguments(nullptr), m_pPosition(nullptr) {}
-      iterator_( const arguments* parguments, const arguments::pointer pPosition) : m_parguments(parguments), m_pPosition(pPosition) {}
-      iterator_(const iterator_& o) { m_parguments = o.m_parguments; m_pPosition = o.m_pPosition; }
-      iterator_& operator=(const iterator_& o) { m_parguments = o.m_parguments; m_pPosition = o.m_pPosition; return *this; }
+      iterator_() : m_parguments(nullptr), m_uPosition(0) {}
+      iterator_(const arguments* parguments) : m_parguments(parguments), m_uPosition(0) {}
+      iterator_( const arguments* parguments, size_t uPosition) : m_parguments(parguments), m_uPosition( uPosition ) {}
+      iterator_(const iterator_& o) { m_parguments = o.m_parguments; m_uPosition = o.m_uPosition; }
+      iterator_& operator=(const iterator_& o) { m_parguments = o.m_parguments; m_uPosition = o.m_uPosition; return *this; }
 
-      argument operator*() const {                                                                 assert( m_parguments->verify_d( m_pPosition ));
+      bool operator==(const self& o) { assert( m_parguments == o.m_parguments ); return m_uPosition == o.m_uPosition; }
+      bool operator!=(const self& o) { return !(*this == o); }
+
+      operator const ARGUMENTS*() const { return m_parguments; }
+      operator arguments::const_pointer() const { return buffer_offset(); }
+
+      argument operator*() const {                                                                 assert( m_parguments->verify_d( buffer_offset() ));
          return get_argument();
       }
-      self& operator++() {                                                                         assert( m_parguments->verify_d( m_pPosition ));
-         m_pPosition = arguments::next_s(m_pPosition);                                             assert( m_parguments->verify_d(m_pPosition) );
+      self& operator++() {                                                                         assert( m_parguments->verify_d( buffer_offset() ));
+         m_uPosition = arguments::next_s(m_parguments->buffer_data(), m_uPosition);                assert(m_parguments->verify_d(buffer_offset()));
          return *this;
       }
-      self operator++(int) {                                                                       assert( m_parguments->verify_d( m_pPosition ));
+      self operator++(int) {                                                                       assert( m_parguments->verify_d( buffer_offset() ));
          iterator_ it = *this; 
          ++(*this);
          return it;
       }
-      bool operator==(const self& o) {
-#ifndef NDEBUG
-         auto iDiff_d = o.m_pPosition - m_pPosition; assert( iDiff_d >= 0 );
-#endif
-         return m_pPosition == o.m_pPosition; 
+
+      /// Compound assignment operator to advance the iterator by a specified number of values.
+      self& operator+=(size_t uCount) {
+         // Use existing increment operator
+         for(size_t i = 0; i < uCount; ++i) { ++(*this); }
+         return *this; // Return a reference to this iterator
       }
-      bool operator!=(const self& o) { return !(*this == o); }
 
-      operator const ARGUMENTS*() const { return m_parguments; }
-      operator ARGUMENTS::pointer() const { return m_pPosition; }
+      /// Advance the iterator by a specified number of string blocks.
+      self operator+(size_t uCount) const {
+         iterator it = *this;
+         for( size_t i = 0; i < uCount; ++i ) ++it;
+         return it;
+      }
 
-      std::string name() const {                                                                   assert( m_parguments->verify_d( m_pPosition ));
-         if( ARGUMENTS::is_name_s(m_pPosition) == true ) { return std::string(ARGUMENTS::get_name_s(m_pPosition)); }
+      std::string name() const {                                                                   assert( m_parguments->verify_d( buffer_offset() ));
+         if( ARGUMENTS::is_name_s(buffer_offset()) == true ) { return std::string(ARGUMENTS::get_name_s(buffer_offset())); }
          return std::string();
       }
 
-      std::string_view name(tag_view) const {                                                      assert( m_parguments->verify_d( m_pPosition ));
-         if( arguments::is_name_s(m_pPosition) == true ) { return ARGUMENTS::get_name_s(m_pPosition); }
+      std::string_view name(tag_view) const {                                                      assert( m_parguments->verify_d( buffer_offset() ));
+         if( arguments::is_name_s(buffer_offset()) == true ) { return ARGUMENTS::get_name_s(buffer_offset()); }
          return std::string_view();
       }
 
       bool compare_name(std::string_view stringName) const { 
-         if( ARGUMENTS::is_name_s(m_pPosition) == true )
+         if( ARGUMENTS::is_name_s(buffer_offset()) == true )
          {
-            if( ARGUMENTS::get_name_s(m_pPosition) == stringName ) return true;
+            if( ARGUMENTS::get_name_s(buffer_offset()) == stringName ) return true;
          }
          return false;
       }
 
-      argument get_argument() { return ARGUMENTS::get_argument_s(m_pPosition); }
-      const argument get_argument() const { return ARGUMENTS::get_argument_s(m_pPosition); }
+      argument get_argument() { return ARGUMENTS::get_argument_s(buffer_offset()); }
+      const argument get_argument() const { return ARGUMENTS::get_argument_s(buffer_offset()); }
 
 
       template<std::size_t uIndex>
@@ -549,98 +563,23 @@ public:
          if constexpr( uIndex == 0 ) return name();
          if constexpr( uIndex == 1 ) return get_argument();
       }
+
+      arguments::const_pointer buffer_offset() const { return m_parguments->buffer_offset(m_uPosition); }
 
 
       // attributes
    public:
       const ARGUMENTS* m_parguments;
-      arguments::pointer m_pPosition;
-   };
-
-
-
-   /**
-    * @brief iterator for iterating values in params object.
-    */
-   struct const_iterator
-   {
-      using value_type = argument;  
-      using iterator_category = std::forward_iterator_tag;
-      using self = const_iterator;
-      using difference_type = std::ptrdiff_t;
-      using pointer = const argument*;
-      using reference = const argument&;
-
-
-      const_iterator() : m_pArguments(nullptr), m_pPosition(nullptr) {}
-      explicit const_iterator(const arguments* pparams, arguments::const_pointer pPosition) : m_pArguments(pparams), m_pPosition(pPosition) {}
-      const_iterator(const const_iterator& o) { m_pArguments = o.m_pArguments; m_pPosition = o.m_pPosition; }
-      const_iterator& operator=(const const_iterator& o) { m_pArguments = o.m_pArguments; m_pPosition = o.m_pPosition; return *this; }
-
-      argument operator*() const {                                                                 assert( m_pArguments->verify_d( m_pPosition ));
-         return get_argument();
-      }
-      self& operator++() {                                                                         assert( m_pArguments->verify_d( m_pPosition ));
-         m_pPosition = arguments::next_s(m_pPosition); return *this;
-      }
-      self operator++(int) {                                                                      assert( m_pArguments->verify_d( m_pPosition ));
-         const_iterator it = *this; 
-         ++(*this);
-         return it;
-      }
-      bool operator==(const self& o) { 
-#ifndef NDEBUG
-         auto iDiff_d = o.m_pPosition - m_pPosition; assert( iDiff_d >= 0 );
-#endif
-         return m_pPosition == o.m_pPosition; 
-      }
-      bool operator!=(const self& o) { return !(*this == o); }
-
-      operator const arguments*() const { return m_pArguments; }
-      operator arguments::const_pointer() const { return m_pPosition; }
-
-      std::string name() const {                                                                   assert( m_pArguments->verify_d( m_pPosition ));
-         if( arguments::is_name_s(m_pPosition) == true ) { return std::string(arguments::get_name_s(m_pPosition)); }
-         return std::string();
-      }
-
-      std::string_view name(tag_view) const {                                                      assert( m_pArguments->verify_d( m_pPosition ));
-         if( arguments::is_name_s(m_pPosition) == true ) { return arguments::get_name_s(m_pPosition); }
-         return std::string_view();
-      }
-
-      bool compare_name(std::string_view stringName) const { 
-         if( arguments::is_name_s(m_pPosition) == true ) { if( arguments::get_name_s(m_pPosition) == stringName ) return true;  }
-         return false;
-      }
-
-      argument get_argument() {
-         return arguments::get_argument_s(m_pPosition);
-      }
-      const argument get_argument() const { 
-         return arguments::get_argument_s(m_pPosition);
-      }
-
-
-      template<std::size_t uIndex>
-      auto get() const
-      {
-         static_assert(uIndex < 2, "Allowed index are 0 and 1, above is not valid");
-         if constexpr( uIndex == 0 ) return name();
-         if constexpr( uIndex == 1 ) return get_argument();
-      }
-
-
-      // attributes
-   public:
-      const arguments* m_pArguments;
-      arguments::const_pointer m_pPosition;
+      //arguments::pointer m_pPosition;
+      size_t m_uPosition;
    };
 
 // ## typedefs -----------------------------------------------------------------
 public:
-   using iterator = iterator_<arguments>;
-   //using const_iterator = iterator_<const arguments>;
+   using iterator =           iterator_<arguments>;
+   using const_iterator =     iterator_<const arguments>;
+
+
 
 // ## construction -------------------------------------------------------------
 public:
@@ -899,12 +838,12 @@ public:
    // pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
 //@}
 
-   iterator begin() { return iterator(this, buffer_data()); }
-   iterator end() { return iterator( this, buffer_data_end() ); }
-   const_iterator begin() const { return const_iterator( this, buffer_data() ); }
-   const_iterator end() const { return const_iterator( this, buffer_data_end() ); }
-   const_iterator cbegin() const { return const_iterator( this, buffer_data() ); }
-   const_iterator cend() const { return const_iterator( this, buffer_data_end() ); }
+   iterator begin() { return iterator( this ); }
+   iterator end() { return iterator( this, m_uLength ); }
+   const_iterator begin() const { return const_iterator( this ); }
+   const_iterator end() const { return const_iterator( this, m_uLength ); }
+   const_iterator cbegin() const { return const_iterator( this ); }
+   const_iterator cend() const { return const_iterator( this, m_uLength ); }
 
    [[nodiscard]] unsigned int capacity() const { assert(m_pBuffer != nullptr); return m_uBufferLength; }
 
@@ -1299,6 +1238,8 @@ public:
    unsigned int buffer_size() const { return m_uLength; }
    void buffer_set_size(unsigned uSize) { m_uLength = uSize; }
    unsigned int buffer_buffer_size() const { return m_uBufferLength; }
+   size_t buffer_offset( const_pointer pPosition ) const { assert( verify_d( pPosition ) ); return (pPosition - m_pBuffer); }
+   const_pointer buffer_offset( size_t uPosition ) const { assert( uPosition <= (size_t)m_uLength ); return (m_pBuffer + uPosition); }
 
 
 
