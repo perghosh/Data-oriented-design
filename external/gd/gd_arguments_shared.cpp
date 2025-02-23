@@ -922,10 +922,10 @@ arguments::arguments( std::initializer_list<std::pair<std::string_view, gd::vari
    for( auto it : listPair ) append_argument( it, tag_view{} );
 }
 
-arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>> listPair, tag_view )
+arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>> vectorPair, tag_view )
 {
    zero();
-   for( auto it : listPair ) append_argument( it, tag_view{} );
+   append(vectorPair);
 }
 
 arguments::arguments(const std::string_view& stringName, const gd::variant& variantValue, arguments::tag_no_initializer_list)
@@ -936,9 +936,19 @@ arguments::arguments(const std::string_view& stringName, const gd::variant& vari
 
 arguments& arguments::operator=(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair)
 {
+   clear();
    for( auto it : listPair ) append_argument(it);
    return *this;
 }
+
+arguments& arguments::operator=(std::vector<std::pair<std::string_view, gd::variant_view>> vectorPair)
+{
+   clear();
+   return append(vectorPair);
+}
+
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief index operator where editable argument is returned.
@@ -1262,18 +1272,39 @@ arguments& arguments::append_argument(const variant& variantValue)
    return append(uType, pData, argumentValue.length());
 }
 
-/*----------------------------------------------------------------------------- append_argument */ /**
- * Add argument from variant_view
- * \param stringName argument name
- * \param variantValue argument value added
- * \return arguments::arguments& reference to this if nested operations is wanted
+/** --------------------------------------------------------------------------
+ * Appends an argument with an optional name and value to the arguments collection.
+ * @description Adds a named or unnamed argument to the collection based on the provided name and value.
+ *              Handles different value types, adjusting type flags and lengths as needed (e.g., for strings or binary data).
+ * @param {const std::string_view&} stringName - The name of the argument (optional; empty if unnamed).
+ * @param {const gd::variant_view&} variantValue - The value of the argument, stored as a variant view.
+ * @returns {arguments&} A reference to the current arguments object for chaining.
  */
 arguments& arguments::append_argument(const std::string_view& stringName, const gd::variant_view& variantValue)
 {
    auto argumentValue = get_argument_s(variantValue);
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
-   unsigned uType = argumentValue.type_number();
-   unsigned uLength;
+   unsigned uType = argumentValue.type_number();                               // get type for value
+   unsigned uLength;                                                           // length for value
+   if( stringName.empty() == false )                                           // if name is given then add name to value
+   {
+      if( uType > ARGUMENTS_NO_LENGTH )
+      {
+         unsigned uZeroEnd = 0;
+         if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
+
+         uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+
+         return append(stringName, uType, pData, uLength);
+      }
+      else
+      {
+         return append(stringName, uType, pData, argumentValue.length());
+      }
+   }
+
+   // ## no name, just add value
+
    if( uType > ARGUMENTS_NO_LENGTH )
    {
       unsigned uZeroEnd = 0;
@@ -1281,12 +1312,26 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
 
       uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
 
-      return append(stringName, uType, pData, uLength);
+      return append(uType, pData, uLength);
    }
-   return append(stringName, uType, pData, argumentValue.length());
+
+   return append(uType, pData, argumentValue.length());
 }
 
-arguments& arguments::append_argument(const std::string_view stringName, const std::string_view& stringValue, tag_parse_type )
+/** --------------------------------------------------------------------------
+ * @brief Appends a named argument with a string value to the arguments collection, converting it to an appropriate type.
+ *
+ * This method takes a name and a string value, detects the value’s type (e.g., integer, floating-point, or string), 
+ * and appends it to the collection as a variant. It attempts to convert the string to an integer or double if applicable, 
+ * falling back to the original string value otherwise.
+ *
+ * @param stringName The name of the argument (can be empty for unnamed arguments).
+ * @param stringValue The string value to append, which will be type-detected and converted.
+ * @param tag_parse_type Tag for overload resolution, typically an empty struct.
+ * @return arguments& A reference to the current arguments object for chaining.
+ * @note The method uses type detection to determine if the string represents an integer or floating-point value.
+ */
+arguments& arguments::append_argument(const std::string_view& stringName, const std::string_view& stringValue, tag_parse_type )
 {
    gd::variant_view v_ = stringValue;
    unsigned uTypeGroup = gd::types::detect_ctypegroup_g( stringValue );
@@ -1305,6 +1350,7 @@ arguments& arguments::append_argument(const std::string_view stringName, const s
    return *this;
 }
 
+/// @brief Appends a named argument with a string value to the arguments collection, converting it to an appropriate type.
 arguments& arguments::append_argument( const std::initializer_list< std::pair<std::string_view, gd::variant_view> >& vectorArgument, tag_view )
 {
    for( const auto& it : vectorArgument )
@@ -1315,7 +1361,7 @@ arguments& arguments::append_argument( const std::initializer_list< std::pair<st
    return *this;
 }
 
-
+/// @brief Appends a named argument with a string value to the arguments collection, converting it to an appropriate type.
 arguments& arguments::append_argument( const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorArgument, tag_view )
 {
    for( const auto& it : vectorArgument )
