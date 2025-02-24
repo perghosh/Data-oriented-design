@@ -48,7 +48,7 @@ std::string_view strings32::at(uint64_t uOffset) const
 void strings32::append(const std::string_view& stringAppend)  
 {                                                                                                  assert( stringAppend.length() < 0xffff'ffff );
    auto uSize = stringAppend.size();                                          // uSize: Length of the appended string                                            
-   decltype( uSize ) uBlockSize = align32_g(uSize + sizeof(uint32_t));        // uBlockSize: Total block size (length size header + string data + padding)
+   decltype( uSize ) uBlockSize = align32_g(uSize + static_cast<decltype( stringAppend.size() )>(sizeof(uint32_t))); // uBlockSize: Total block size (length size header + string data + padding)
    reserve_add(uBlockSize);                                                   // Ensure there is enough capacity in the buffer for the new block
 
    // Position the insertion pointer at the end of the buffer
