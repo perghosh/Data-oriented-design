@@ -583,8 +583,10 @@ public:
       iterator_(const iterator_& o) { m_parguments = o.m_parguments; m_uPosition = o.m_uPosition; }
       iterator_& operator=(const iterator_& o) { m_parguments = o.m_parguments; m_uPosition = o.m_uPosition; return *this; }
 
-      bool operator==(const self& o) { assert( m_parguments == o.m_parguments ); return m_uPosition == o.m_uPosition; }
-      bool operator!=(const self& o) { return !(*this == o); }
+      bool operator==(const self& o) const { assert( m_parguments == o.m_parguments ); return m_uPosition == o.m_uPosition; }
+      bool operator!=(const self& o) const { return !(*this == o); }
+      bool operator>(const self& o) const { return m_uPosition > o.m_uPosition; }
+      bool operator<(const self& o) const { return m_uPosition < o.m_uPosition; }
 
       operator const ARGUMENTS*() const { return m_parguments; }
       operator arguments::const_pointer() const { return buffer_offset(); }
@@ -1146,6 +1148,10 @@ public:
 
 /** \name BUFFER
 *///@{
+/// erase argument value at iterator
+   iterator erase(iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < end() ? itPosition : end(); }
+   /// erase argument value at iterator
+   const_iterator erase(const_iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < cend() ? itPosition : cend(); }
    /// make sure internal buffer can hold specified number of bytes, buffer data is copied if increased
    bool reserve(uint64_t uCount);
    /// Remove param starting at position, remember that if you are string positions in buffer they are invalidated with this method

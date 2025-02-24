@@ -22,19 +22,19 @@ void print_arguments(const gd::argument::arguments& arguments_) {
 TEST_CASE( "print_arguments", "[howto_gd_arguments]" ) {
    print_arguments({ { "first", 1000 }, {"second", 2000.02} } );               // prints - "first": 1000, "second": 2000.02"
    gd::argument::arguments arguments_;
-   arguments_ += { "first", 1000 };
-   print_arguments( arguments_ );                                              // prints - "first": 1000
-   arguments_ += {"second", 2000.0201};
-   print_arguments( arguments_ );                                              // prints - "first": 1000, "second": 2000.02"
-   arguments_ += { "third", "3000" };
-   print_arguments( arguments_ );                                              // prints - "first": 1000, "second": 2000.02", "third": 3000"
-   arguments_.set("third",3333);
-   arguments_.remove("second");
-   print_arguments( arguments_ );                                              // prints - "first": 1000, "third": 3333"
-   arguments_.remove(1);
-   print_arguments( arguments_ );                                              // prints - "first": 1000
-   // arguments_.append_pair( { "uint16", uint16_t(1000) } );
-   // arguments_ << { "uint16", uint16_t(1000) };
+   arguments_ += { "first", 1000 }; print_arguments( arguments_ );             // prints - "first": 1000
+   arguments_ += {"second", 2000.0201}; print_arguments(arguments_);           // prints - "first": 1000, "second": 2000.02"
+   arguments_ += { "third", "3000" }; print_arguments( arguments_ );           // prints - "first": 1000, "second": 2000.02", "third": 3000"
+   arguments_.set("third",3333); arguments_.remove("second");                  // prints - "first": 1000, "third": 3333"
+   arguments_.remove(1); print_arguments( arguments_ );                        // prints - "first": 1000
+   arguments_ += { "", 2000 }; print_arguments(arguments_);                    // prints - "first": 1000, 2000
+   arguments_.append( { 3000, 4000, 5000 } ); print_arguments(arguments_);     // prints - "first": 1000, 2000, 3000, 4000, 5000
+   arguments_ += {{ "DC", 600 }, { "DCC", 700 }, { "DCCC", 800 } }; print_arguments(arguments_); // prints - "first": 1000, 2000, 3000, 4000, 5000, "DC": 600, "DCC": 700, "DCCC": 800
+
+   auto it = arguments_.begin();
+   std::advance(it, 5);
+   std::cout << it.get_argument().as_string() << std::endl;
+   arguments_.erase(it); print_arguments(arguments_);                         // prints - "first": 1000, 2000, 3000, 4000, 5000, "DCC": 700, "DCCC": 800 arguments_.erase(it); print_arguments(arguments_);                        // prints - "first": 1000, 2000, 3000, 4000, 5000, "DCC": 700, "DCCC": 800
 }
 
 struct test_struct {

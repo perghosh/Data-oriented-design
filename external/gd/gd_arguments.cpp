@@ -1168,8 +1168,27 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
 {
    auto argumentValue = get_argument_s(variantValue);
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
-   unsigned uType = argumentValue.type_number();
-   unsigned uLength;
+   unsigned uType = argumentValue.type_number();                               // get type for value
+   unsigned uLength;                                                           // length for value
+   if( stringName.empty() == false )                                           // if name is given then add name to value
+   {
+      if( uType > ARGUMENTS_NO_LENGTH )
+      {
+         unsigned uZeroEnd = 0;
+         if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
+
+         uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+
+         return append(stringName, uType, pData, uLength);
+      }
+      else
+      {
+         return append(stringName, uType, pData, argumentValue.length());
+      }
+   }
+
+   // ## no name, just add value
+
    if( uType > ARGUMENTS_NO_LENGTH )
    {
       unsigned uZeroEnd = 0;
@@ -1177,9 +1196,10 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
 
       uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
 
-      return append(stringName, uType, pData, uLength);
+      return append(uType, pData, uLength);
    }
-   return append(stringName, uType, pData, argumentValue.length());
+
+   return append(uType, pData, argumentValue.length());
 }
 
 /// Add argument named value and try to convert string to proper type
