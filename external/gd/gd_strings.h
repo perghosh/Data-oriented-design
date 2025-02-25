@@ -91,7 +91,7 @@ namespace strings {
       /// Compound assignment operator to advance the iterator by a specified number of string blocks.
       iterator& operator+=(size_t uCount)
       {
-         for (size_t i = 0; i < uCount; ++i) {
+         for(size_t i = 0; i < uCount; ++i) {
             ++(*this); // Use existing increment operator
          }
          return *this; // Return a reference to this iterator
@@ -101,13 +101,9 @@ namespace strings {
       iterator operator+(size_t uCount) const
       {
          iterator it = *this;
-         for ( size_t i = 0; i < uCount; ++i ) ++it;
+         for( size_t i = 0; i < uCount; ++i ) ++it;
          return it;
       }
-
-      /// Get the current position in the buffer
-      uint8_t* get_position() const { return m_pstrings->get_position( m_uOffset ); }
-
 
       uint64_t m_uOffset;  ///< Offset of the current string in the buffer
       STRINGS* m_pstrings; ///< Pointer to the strings container
@@ -146,7 +142,9 @@ public:
 // ## construction -------------------------------------------------------------
 public:
    strings32() : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) {}
-   strings32( const std::string_view& string_ ) : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) { append( string_ ); }
+   explicit strings32( const char* pisz_ ) : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) { append( std::string_view( pisz_ ) ); }
+   explicit strings32( const std::string_view& string_ ) : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) { append( string_ ); }
+   explicit strings32( const std::string& string_ ) : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) { append( std::string_view( string_ ) ); }
    strings32( const std::initializer_list<std::string_view>& listString ) : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) { append( listString ); }
    template<typename CONTAINER>
    strings32(const CONTAINER& container) : m_puBuffer(nullptr), m_uSize(0), m_uBufferSize(0) { append(container); }
@@ -168,8 +166,15 @@ private:
 public:
    /// Provides indexed access to the stored strings.  
    std::string_view operator[](size_t uIndex) const;
-   /// Appends a new string to the buffer.
+   
+   // ## += operator to add strings to the buffer
+
+
    strings32& operator+=(const std::string_view& stringAppend) { append(stringAppend); return *this; }
+   strings32& operator+=(const gd::strings32& strings_) { append(strings_, gd::types::tag_internal{}); return *this; }
+   template<typename VALUE>
+   strings32& operator+=(const VALUE& value_) { append_any(value_); return *this; }
+
    /// appends different types that is convertible to string to the buffer.
    template<typename VALUE>
    strings32& operator<<(const VALUE& value_) { append_any(value_); return *this; }
@@ -215,6 +220,10 @@ public:
    /// Appends types that is convertible to string to the buffer.
    strings32& append(const gd::variant_view& variant_view, gd::types::tag_view ) { append(variant_view.as_string()); return *this; }
 
+   // ## Append special values
+   strings32& append(const gd::strings32& strings_, gd::types::tag_internal);
+   strings32& append(const std::nullptr_t, gd::types::tag_internal) { append(std::string_view("")); return *this; }
+
    /// Appends any number of strings to the buffer using variadic templates.
    template<typename... ARGUMENTS>
    strings32& add(ARGUMENTS&&... args);
@@ -223,11 +232,13 @@ public:
 
 
    /// Erases the string at the specified iterator position from the buffer.
-   void erase( iterator itPosition );
+   iterator erase( const iterator& it );
+   /// Erases the string at the specified iterator position from the buffer.
+   const_iterator erase( const const_iterator& it );
 
    /// Replaces the string at the specified iterator position with a new string.  
    void replace( uint8_t* puPosition, const std::string_view& stringReplace);
-   void replace(iterator itPosition, const std::string_view& stringReplace) { replace(itPosition.get_position(), stringReplace); }
+   void replace(iterator itPosition, const std::string_view& stringReplace) { replace(buffer() + itPosition.offset(), stringReplace); }
    void replace(const_iterator itPosition, const std::string_view& stringReplace) { replace(buffer() + itPosition.offset(), stringReplace); }
 
 
@@ -272,6 +283,8 @@ public:
    const uint8_t* buffer() const { return m_puBuffer; }
    uint8_t* buffer_end() { return m_puBuffer + m_uSize; }
    const uint8_t* buffer_end() const { return m_puBuffer + m_uSize; }
+   uint64_t buffer_size() const { return m_uSize; }
+   uint64_t buffer_capacity() const { return m_uBufferSize; } 
 //@}
 
 // ## attributes ----------------------------------------------------------------
@@ -325,7 +338,7 @@ inline void strings32::common_construct(strings32&& o) noexcept {
 inline std::string_view strings32::operator[](size_t uIndex) const 
 {  
    auto it = begin();
-   for ( size_t i = 0; i < uIndex; ++i ) ++it;
+   for( size_t i = 0; i < uIndex; ++i ) ++it;
    return it.as_string_view();
 }  
 
@@ -333,35 +346,35 @@ inline std::string_view strings32::operator[](size_t uIndex) const
 /// Appends strings to internal buffer.
 inline strings32& strings32::append(const std::initializer_list<std::string_view>& listString)
 {
-   for (const auto& string_ : listString) { append(string_);  }
+   for(const auto& string_ : listString) { append(string_);  }
    return *this;
 }
 
 /// Appends strings to internal buffer.
 inline strings32& strings32::append(const std::vector<std::string>& vectorString)
 {
-   for (const auto& string_ : vectorString) { append(string_);  }
+   for(const auto& string_ : vectorString) { append(string_);  }
    return *this;
 }
 
 /// Appends strings to internal buffer.
 inline strings32& strings32::append(const std::vector<std::string_view>& vectorString)
 {
-   for (const auto& string_ : vectorString) { append(string_);  }
+   for(const auto& string_ : vectorString) { append(string_);  }
    return *this;
 }
 
 /// Appends values from initializer list to internal buffer.
 inline strings32& strings32::append_any(const std::initializer_list<gd::variant_view>& listValue)
 {
-   for ( const auto& v_ : listValue ) { append(v_, gd::types::tag_view{}); }
+   for( const auto& v_ : listValue ) { append(v_, gd::types::tag_view{}); }
    return *this;
 }
 
 /// Appends values from vector to internal buffer.
 inline strings32& strings32::append_any(const std::vector<gd::variant_view>& vectorValue)
 {
-   for ( const auto& v_ : vectorValue ) { append(v_, gd::types::tag_view{}); }
+   for( const auto& v_ : vectorValue ) { append(v_, gd::types::tag_view{}); }
    return *this;
 }
 
@@ -378,6 +391,7 @@ strings32& strings32::append_any(const VALUE& value) {
    else if constexpr ( std::is_same<VALUE, std::string>::value ) append(value);
    else if constexpr ( std::is_same<VALUE, const char*>::value ) append(value);
    else if constexpr ( std::is_convertible<VALUE, gd::variant_view>::value ) append(value, gd::types::tag_view{});
+   else if constexpr ( std::is_convertible<VALUE, gd::strings32>::value ) append(value, gd::types::tag_internal{});
    else static_assert(gdd::always_false<VALUE>::value, "unsupported type");
    return *this;
 }
@@ -624,7 +638,7 @@ namespace pointer {
       void append(const char* pitext);
       void append( const strings& strings_ );
       void append( const std::vector<const char*>& vectorText ) { append(strings(vectorText)); }
-      void append( const std::vector<gd::variant_view>& vectorText ) { assert(is_owner() == true); for ( auto& v_ : vectorText ) { append(v_.as_string().c_str()); } }
+      void append( const std::vector<gd::variant_view>& vectorText ) { assert(is_owner() == true); for( auto& v_ : vectorText ) { append(v_.as_string().c_str()); } }
 
       /// Get the number of names
       size_t size() const { return m_vectorText.size(); }
@@ -734,7 +748,7 @@ namespace view {
 
       strings(const char** ppiList, size_t uCount)
       {
-         for (size_t u = 0; u < uCount; u++) { m_vectorText.push_back(std::string_view(ppiList[u])); }
+         for(size_t u = 0; u < uCount; u++) { m_vectorText.push_back(std::string_view(ppiList[u])); }
       }
 
       /// Copy constructor
@@ -765,9 +779,9 @@ namespace view {
       // ## append methods
 
       void append(const std::string_view& stringText) { m_vectorText.push_back(std::string_view(stringText)); }
-      void append(const strings& strings_) { for ( const auto& s_ : strings_ ) { append(s_); } }
-      void append(const std::vector<std::string_view>& vectorText) { for ( const auto& s_ : vectorText ) { append(s_); } }
-      void append(const std::vector<std::string>& vectorText) { for ( const auto& s_ : vectorText ) { append(s_); } }
+      void append(const strings& strings_) { for( const auto& s_ : strings_ ) { append(s_); } }
+      void append(const std::vector<std::string_view>& vectorText) { for( const auto& s_ : vectorText ) { append(s_); } }
+      void append(const std::vector<std::string>& vectorText) { for( const auto& s_ : vectorText ) { append(s_); } }
 
       /// Get the number of texts
       size_t size() const { return m_vectorText.size(); }
@@ -782,7 +796,7 @@ namespace view {
       /// Check if name exists in list
       bool exists(const std::string_view& stringText) const
       {
-         for (const auto& s_ : m_vectorText) { if (s_ == stringText) return true; }
+         for(const auto& s_ : m_vectorText) { if (s_ == stringText) return true; }
          return false;
       }
 
@@ -817,7 +831,7 @@ public:
                 
                 if (*read == '}') {
                     size_t index = 0;
-                    for (const char* p = start; p != read; ++p) {
+                    for(const char* p = start; p != read; ++p) {
                         index = index * 10 + (*p - '0');
                     }
                     

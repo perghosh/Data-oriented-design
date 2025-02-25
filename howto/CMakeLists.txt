@@ -39,6 +39,17 @@ endif()
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
+   set(TEST_NAME_ "HOWTO_gd_strings")
+   add_executable(${TEST_NAME_} "main.cpp" ${external_gd_core} ${external_catch2} 
+      "gd/HOWTO_strings.cpp"
+   )
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+endif()
+
+
+set( USE_TEST_ ON )
+if( USE_TEST_ )
    set(TEST_NAME_ "HOWTO_gd_table")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd_core} ${external_catch2} 
       "gd/HOWTO_table.cpp"
