@@ -85,6 +85,20 @@ std::pair<bool, std::string> command::add_arguments( const gd::variant_view& var
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief find arguments for key
+ * @param uIndexKey key to search for
+ * @return pointer to arguments if found, nullptr if not found
+ */
+command::arguments* command::find_arguments( uint32_t uIndexKey )
+{
+   for( auto& itArguments : m_vectorArgument )
+   {
+      if( itArguments == uIndexKey ) { return &itArguments; }
+   }
+   return nullptr;
+}
+
+/** ---------------------------------------------------------------------------
  * @brief remove arguments in vector with priority flag
  * @param uPriority flags for arguments to remove
  */
@@ -162,6 +176,7 @@ std::pair<bool, std::string> command::add_command( const std::string_view& strin
  * and appends these to the current command structure.
  *
  * @param stringQueryString A string view containing the query string in URI format.
+ * @param arguments_ additional arguments to append to the command.
  * @param tag_uri An tag dispatcher indicating that this is a URI formatted query string.
  * @return std::pair<bool, std::string> Returns a pair where the boolean indicates success 
  *         (always true in this implementation) and the string is empty or could contain 
@@ -174,7 +189,7 @@ std::pair<bool, std::string> command::add_command( const std::string_view& strin
  * - Decodes URL-encoded values in the arguments.
  * - Appends the parsed command and arguments to this command object.
  */
-std::pair<bool, std::string> command::append(const std::string_view& stringQueryString, gd::types::tag_uri)
+std::pair<bool, std::string> command::append(const std::string_view& stringQueryString, const gd::argument::arguments& arguments_, gd::types::tag_uri)
 {
    std::string_view stringCommandPath;
    std::string_view stringArguments;
@@ -206,6 +221,10 @@ std::pair<bool, std::string> command::append(const std::string_view& stringQuery
       argumentsLocal.append(it);
    }
    argumentsLocal.append(vectorArguments);
+
+   if( arguments_.empty() == false ) argumentsLocal.append( arguments_ );
+
+   argumentsLocal.set_index(next_command_index());
    append( std::move(argumentsLocal) );
 
    return { true, "" };
@@ -228,6 +247,8 @@ std::pair<bool, std::string> command::append(enumPriority ePriority, const gd::a
  * scope or context of the argument (e.g., register, stack, command, global).
  *
  * @param index_ The identifier of the argument, expected to be a string.
+ * @param iCommandIndex The index of the command to search within. If set to -1 
+ *        skips to find for selected command.
  * @param uPriority Specifies the priority filter for searching arguments. If set to 
  *        non-zero, it overrides the default behavior where all priorities except 
  *        'ePriorityCommand' are considered. The priority can be a combination of:
@@ -249,12 +270,36 @@ std::pair<bool, std::string> command::append(enumPriority ePriority, const gd::a
  * - For higher priority filters, it processes each byte of `uPriority` to determine 
  *   the priority for searching, ensuring each priority is checked in sequence.
  */
-gd::variant_view command::get_argument( const gd::variant_view& index_, uint32_t uPriority )
+gd::variant_view command::get_argument( const gd::variant_view& index_, int32_t iCommandIndex, uint32_t uPriority )
 {
    gd::variant_view value_;
    uint32_t uPriorityFilter = (ePriorityRegister | ePriorityStack | ePriorityCommand | ePriorityGlobal);
+
+   if( iCommandIndex != -1 )
+   {
+      arguments* parguments = find_arguments(iCommandIndex);                                       assert(parguments != nullptr);
+      if( parguments != nullptr )
+      {
+         // ## Try to find value in arguments
+
+         if( index_.is_string() )                                              // named value ?
+         {
+            std::string_view stringName = index_.as_string_view();
+            value_ = parguments->get_variant_view(stringName);
+         }
+         else if( index_.is_integer() == true )                                // indexed value ?
+         {
+            value_ = parguments->get_variant_view(index_.as_uint());
+         }
+
+         if( value_.empty() == false ) { return value_; }                      // If value is found, return it
+      }
+
+      // If value is not found in command arguments, try to find it in local, stack or global values
+      uPriorityFilter = (ePriorityRegister | ePriorityStack | ePriorityGlobal);
+   }
    
-   if( uPriority != 0 ) uPriorityFilter = uPriority;                           // if priority is set use that
+   if( uPriority != 0 ) uPriorityFilter = uPriority;                           // if priority is sent use that
 
    if( index_.is_string() )
    {
@@ -316,11 +361,27 @@ gd::variant_view command::get_argument( const gd::variant_view& index_, uint32_t
 }
 
 /** ---------------------------------------------------------------------------
- * @brief return all data in command. mostly stack and global values
- * @param index_ 
- * @return 
+ * @brief Retrieves all arguments from the command object.
+ *
+ * This function retrieves all arguments from the command object, including 
+ * command-specific arguments, stack values, and global values. The function 
+ * filters the arguments based on the priority level specified in the index.
+ * 
+ * If m_iCommandIndex is set then it tages arguments from that command and add
+ * those first in returned arguments object.
+ *
+ * @param index_ The index or priority level to filter the arguments.
+ * @return gd::argument::arguments A collection of arguments based on the priority level.
+ *
+ * @note 
+ * - If `index_` is a boolean `true`, the function uses the default priority level 
+ *   `ePriorityALL` to retrieve all arguments.
+ * - If `index_` is a string, the function converts it to a priority level using 
+ *   `to_command_priority_g()` and retrieves arguments based on that level.
+ * - If `index_` is an integer, the function retrieves arguments based on that index.
+ * - The function first retrieves command-specific arguments and then appends 
+ *   stack and global values based on the priority level.
  */
-
 gd::argument::arguments command::get_all_arguments( const gd::variant_view& index_ )
 {
    unsigned uPriority = ePriorityALL;
@@ -338,6 +399,18 @@ gd::argument::arguments command::get_all_arguments( const gd::variant_view& inde
    }
 
    gd::argument::arguments argumentsReturn;
+
+   if( m_iCommandIndex != -1 )
+   {
+      arguments* parguments = find_arguments(m_iCommandIndex);                                     assert(parguments != nullptr);
+      if( parguments != nullptr )
+      {
+         argumentsReturn.append(parguments->get_arguments());
+      }
+
+      uPriority &= ~ePriorityCommand;
+   }
+
    for( auto it = std::begin( m_vectorArgument ), itEnd = std::end( m_vectorArgument ); it != itEnd; it++ )
    {
       if( it->get_priority() & uPriority ) 

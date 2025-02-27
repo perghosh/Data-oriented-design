@@ -200,8 +200,8 @@ void strings32::replace( uint8_t* puPosition, const std::string_view& stringRepl
    uint32_t uOldBlockSize = align32_g(uOldLength + (uint32_t)sizeof(uint32_t));// uOldBlockSize: Total block size of the existing string  
 
    // ## Calculate the new block size and check if the buffer can accommodate the new string
-   uint32_t uNewLength = static_cast<uint32_t>(stringReplace.size());           // uNewLength: Length of the new string  
-   uint32_t uNewBlockSize = align32_g(uNewLength + (uint32_t)sizeof(uint32_t));         // uNewBlockSize: Total block size required for the new string  
+   uint32_t uNewLength = static_cast<uint32_t>(stringReplace.size());          // uNewLength: Length of the new string  
+   uint32_t uNewBlockSize = align32_g(uNewLength + (uint32_t)sizeof(uint32_t)); // uNewBlockSize: Total block size required for the new string  
    int64_t iSizeDifference = static_cast<int64_t>(uNewBlockSize) - static_cast<int64_t>(uOldBlockSize);  // iSizeDifference: Difference between new and old block sizes  
 
    // ## Check if the new block is larger than the old one, then make sure the buffer can accommodate the extra bytes and update position
