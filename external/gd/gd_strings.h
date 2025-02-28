@@ -230,6 +230,10 @@ public:
    template<typename VALUE>
    strings32& append_any(const VALUE& value);
 
+   void get( std::vector<std::string>& vectorString ) const;
+   void get( std::vector<std::string_view>& vectorString ) const;
+   void get( std::vector<gd::variant_view>& vectorString ) const;
+
 
    /// Erases the string at the specified iterator position from the buffer.
    iterator erase( const iterator& it );

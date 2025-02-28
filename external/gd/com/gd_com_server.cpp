@@ -30,6 +30,28 @@ unsigned command::release()
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Activates the next command in the sequence based on command priority.
+ *
+ * This method iterates through the argument vector to find and activate the next command
+ * with priority flag ePriorityCommand. It maintains state in m_iCommandIndex.
+ *
+ * @return int Returns the index of the activated command, or -1 if no next command is found.
+ */
+int command::activate_next()  
+{  
+  int iCommandIndex = m_iCommandIndex;  
+  for( const auto it : m_vectorArgument )  
+  {  
+     if( it.get_priority() & ePriorityCommand )  
+     {  
+        if( iCommandIndex == -1 ) { m_iCommandIndex = it.get_index(); return m_iCommandIndex; }  
+        else if( iCommandIndex == it.get_index() ) { iCommandIndex = -1; }  
+     }  
+  }  
+  return iCommandIndex;  
+}
+
+/** ---------------------------------------------------------------------------
  * @brief add arguments to internal list with arguments objects
  * command may hold a lot of arguments and these could be used depending on how
  * command's are packed. theare may be global, command arguments, stack or register
