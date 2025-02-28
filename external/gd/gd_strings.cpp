@@ -114,6 +114,33 @@ strings32& strings32::append(const gd::strings32& strings_, gd::types::tag_inter
    return *this;
 }
 
+/// Appends strings from strings32 object
+void strings32::get(std::vector<std::string>& vectorString) const
+{
+   for(const auto& it : *this) 
+   {
+      vectorString.push_back( std::string( it ));
+   }
+}
+
+/// Appends strings from strings32 object
+void strings32::get(std::vector<std::string_view>& vectorString) const
+{
+   for(const auto& it : *this) 
+   {
+      vectorString.push_back(it);
+   }
+}
+
+/// Appends strings from strings32 object
+void strings32::get(std::vector<gd::variant_view>& vectorString) const
+{
+   for(const auto& it : *this) 
+   {
+      vectorString.push_back(gd::variant_view(it));
+   }
+}
+
 /** ---------------------------------------------------------------------------
  * Removes a string from the buffer at the given iterator position.
  * 

@@ -334,6 +334,8 @@ struct command : public gd::com::server::command_i
       std::string_view operator[](size_t uIndex) const { return m_strings32Command[uIndex]; }
 
       operator int() const { return m_iCommandIndex; }
+      operator std::vector<std::string>() const { std::vector<std::string> v_; m_strings32Command.get( v_ ); return v_; }
+      operator std::vector<std::string_view>() const { std::vector<std::string_view> v_; m_strings32Command.get( v_ ); return v_; }
       // operator const gd::argument::arguments&() const { return m_arguments; }
       operator gd::argument::arguments*() { return &m_arguments; }
       operator const gd::argument::arguments*() const { return &m_arguments; }
@@ -391,6 +393,8 @@ struct command : public gd::com::server::command_i
    server_i* get_server() override { return m_pserver; }
    /// activate specific command in command object, -1 is used to deactivate command
    void activate(int iIndex) { m_iCommandIndex = iIndex; assert( iIndex >= -1 && iIndex < size()); }
+   /// Activate next command in command object, returns index of activated command
+   int activate_next();
    /// get active command index
    int get_active() const { return m_iCommandIndex; }
 //@}
@@ -400,6 +404,7 @@ struct command : public gd::com::server::command_i
    /// add global arguments, all commands in command object are able to use global arguments
    std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewPriority, const gd::argument::arguments* pargumentsGlobal ) override;
    arguments* find_arguments( uint32_t uIndexKey );
+   arguments* find_active_arguments() { return find_arguments(m_iCommandIndex); }
    void arguments_remove( unsigned uPriority );
    /// add query string variables as stack values
    std::pair<bool, std::string> add_querystring( const gd::variant_view& variantviewPriority, const std::string_view& stringQueryString );
