@@ -1542,15 +1542,6 @@ arguments& arguments::set(pointer pPosition , param_type uType, const_pointer pB
 }
 
 
-/// set value at position that pointer is at, make sure that pPosition is on a valid position
-/*
-arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength)
-{
-   set( pPosition, uType, pBuffer, uLength, tag_internal{});
-   return *this;
-}
-*/
-
 /** ---------------------------------------------------------------------------
 * @brief set value at position that pointer is at, make sure that pPosition is on a valid position
  * @param pPosition pointer to position where value is set
@@ -2091,22 +2082,6 @@ std::string arguments::print(std::string_view stringFormat) const
       itPosition = itTo;
    }
 
-   /*
-   for( auto itPosition = std::begin( stringFormat ); itPosition != std::end( stringFormat ); itPosition++ )
-   {
-      if( *itPosition == '{' )
-      {
-         itPosition++;
-         if( itPosition == std::end(stringFormat) || *(itPosition + 1) == '{' )
-         {
-            stringPrint += '{';
-            if( itPosition != std::end(stringFormat) ) itPosition++;
-            continue;
-         }
-      }
-   }
-   */
-
    return stringPrint;
 }
 
@@ -2175,6 +2150,63 @@ std::string arguments::print( const_iterator itBegin, const_iterator itEnd, std:
 
    return stringPrint;
 }
+
+/** --------------------------------------------------------------------------- print */ /**
+ * @brief Prints the names of all arguments, separated by the specified string.
+ *
+ * This method iterates through all arguments and appends their names to a string,
+ * separated by the provided delimiter. Only the names of the arguments are included
+ * in the output string.
+ *
+ * @param stringSplit The string used to separate the names of the arguments.
+ * @param tag_key A tag to specify that only the keys (names) of the arguments should be printed.
+ * @return A string containing the names of all arguments, separated by the specified string.
+ */
+std::string arguments::print( const std::string_view& stringSplit, gd::types::tag_key) const
+{
+   std::string stringPrint;
+
+   for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
+   {
+      if( stringPrint.empty() == false ) stringPrint += stringSplit;
+
+      if( is_name_s(pPosition) == true )
+      {
+         print_name_s(pPosition, stringPrint);
+      }
+   }
+
+   return stringPrint;
+}
+
+/** --------------------------------------------------------------------------- print */ /**
+ * @brief Prints the values of all arguments, separated by the specified string.
+ *
+ * This method iterates through all arguments and appends their values to a string,
+ * separated by the provided delimiter. Only the values of the arguments are included
+ * in the output string.
+ *
+ * @param stringSplit The string used to separate the values of the arguments.
+ * @param tag_value A tag to specify that only the values of the arguments should be printed.
+ * @return A string containing the values of all arguments, separated by the specified string.
+ */
+std::string arguments::print( const std::string_view& stringSplit, gd::types::tag_value) const
+{
+   std::string stringPrint;
+
+   for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
+   {
+      if( stringPrint.empty() == false ) stringPrint += stringSplit;
+
+      if( is_name_s(pPosition) == true )
+      {
+         print_name_s(pPosition, stringPrint);
+      }
+   }
+
+   return stringPrint;
+}
+
 
 
 
@@ -3696,29 +3728,6 @@ namespace debug {
 
       return stringPrint;
    }
-
-   /** ------------------------------------------------------------------------
-    * @brief print vector with arguments items
-    * @param pvectorToPrint values in vector to print
-    * @return string with printed arguments values found in vector
-   */
-   /*
-   std::string print( const std::vector<arguments>* pvectorToPrint )
-   {
-      std::string stringPrint;
-
-      for( auto it = std::begin( *pvectorToPrint ), itEnd = std::end( *pvectorToPrint ); it != itEnd; it++ )
-      {
-         if( stringPrint.empty() == false ) stringPrint += "\n";
-
-         stringPrint += "[ ";
-         stringPrint += print( *it );
-         stringPrint += " ]";
-      }
-
-      return stringPrint;
-   }
-   */
 
 }
 _GD_ARGUMENT_SHARED_END

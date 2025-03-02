@@ -59,6 +59,7 @@ struct tag_id {};             ///< id is used in some form
 struct tag_key {};            ///< key is used in some form
 struct tag_name {};           ///< name is used in some form
 struct tag_tag {};            ///< tag value
+struct tag_value {};          ///< value used in some form
 
 struct tag_main_type {};      /// main type if there are secondary types
 struct tag_secondary_type {}; /// secondary type if there are main types

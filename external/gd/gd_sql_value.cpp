@@ -571,19 +571,34 @@ std::tuple<uint64_t, std::string, std::string> make_bulk_g( const std::string_vi
 namespace {
 }
 
-/** --------------------------------------------------------------------------- format`replace_g`
- * @brief replace value with sql formating
- * @param stringSource string with values to replace
- * @param argumentsValue arguments that holds values to replace with
- * @return  std::string string with replaced values
+/** ---------------------------------------------------------------------------
+ * @brief Replaces placeholders in a source string with values from an argument list, producing a new string.
+ *
+ * This function processes a source string, replacing placeholders (denoted by curly braces `{}`) with corresponding
+ * values from the provided `argumentsValue`. Placeholders can reference arguments by index (e.g., `{0}`) or name
+ * (e.g., `{name}`). Special syntax like `{*name}` indicates a required value, and `{=name}` indicates raw value
+ * insertion without SQL-specific escaping. The resulting string is built in `stringNew`. The function handles
+ * quoted strings and skips them appropriately.
+ *
+ * @param stringSource The input string containing placeholders to be replaced (as a string_view).
+ * @param argumentsValue The collection of arguments providing values for placeholder substitution.
+ * @param[out] stringNew The output string where the result is constructed.
+ * @param tag_brace A tag indicating this function processes brace-style placeholders (implementation-specific).
+ *
+ * @return A pair containing:
+ *         - `bool`: `true` if the replacement succeeded, `false` if an error occurred (e.g., missing required value or unclosed quote).
+ *         - `std::string`: An error message if the operation failed; empty if successful.
+ *
+ * @note The function assumes the input string is well-formed except where errors are explicitly checked (e.g., unclosed quotes).
+ * @note If a placeholder starts with '=', the value is appended raw without SQL escaping.
+ * @note The function modifies `stringNew` incrementally and clears it only implicitly via assignment.
  */
-std::string replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_brace)
+std::pair<bool,std::string> replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, std::string& stringNew, tag_brace)
 {
    using namespace gd::types;
 
    unsigned uArgumentIndex = 0;
    std::string stringName;       // current variable name that is replaced
-   std::string stringNew;        // new created string
 
    for(auto it = std::begin( stringSource ), itEnd = std::end( stringSource ); it != itEnd; it++ )
    {
@@ -598,18 +613,25 @@ std::string replace_g(const std::string_view& stringSource, const gd::argument::
             {
                auto uSize = (pbszFind - &(*it));
                stringNew.append( &(*it), uSize + 1);                           // append text including first quote (note + 1)
-               it += uSize;
+               it += uSize;                                                    // move iterator to end of string
             }
             else
             {
-               return stringNew;                                               // end of string not found, return text
+               auto uSizeToEnd = std::distance(it, itEnd);                     // get distance to end of string
+               if( uSizeToEnd > 20 ) uSizeToEnd = 20;                          // limit to 20 characters
+               const auto* pbszPosition = &( *it );
+               return { false, std::string("no quote ending: ") + std::string( pbszPosition, uSizeToEnd) }; // end of string not found, return text and the first 20 characters
             }
          }
       }
       else
       {
-         stringName.clear();
+         bool bRequired = false;                                               // mark if value is required
          it++;
+         if( *it == '*' ) { bRequired = true; it++; }                          // check if value is required
+
+         // ## copy name of variable
+         stringName.clear();
          while(*it != '}' && it != itEnd)
          {
             stringName += *it;
@@ -653,13 +675,19 @@ std::string replace_g(const std::string_view& stringSource, const gd::argument::
                }
             }
 
+            // ## check if value is required and if value is found return error
+            if( bRequired == true && v_.is_null() == true )
+            {
+               return { false, std::string("required value not found: ") + stringName };
+            }
+
             if( bRaw == false ) append_g( v_, stringNew );                     // add value to work in sql
             else                append_g( v_, stringNew, gd::sql::tag_raw{});  // add value to string without fix for quotes if needed for value
          }// if(*it == '}') {
       }
    }// for(auto it = std::begin( stringSource ...
 
-   return stringNew;
+   return { true, std::string{} };
 }
 
 /** --------------------------------------------------------------------------- format `replace_g`
