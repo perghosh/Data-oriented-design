@@ -2,6 +2,7 @@
 
 #include "command/RouterDatabase.h"
 #include "command/RouterScript.h"
+#include "command/RouterApplication.h"
 
 CHttpServer::~CHttpServer()
 {
@@ -32,10 +33,12 @@ std::pair<bool, std::string> CHttpServer::Initialize()
    // ## Add default routers
    // Routers are like sub servers, they handle a set of commands
 
-   CRouterDatabase* prouterdatabase = new CRouterDatabase("database");         // Create a new router for database
+   CRouterDatabase* prouterdatabase = new CRouterDatabase("database", "db");   // Create a new router for database
    m_vectorServer.push_back(prouterdatabase);                                  // Keep server router for database
-   CRouterScript* prouterscript = new CRouterScript("database");               // Create a new router for database
-   m_vectorServer.push_back(prouterscript);                                    // Keep server router for database
+   CRouterScript* prouterscript = new CRouterScript("script");                 // Create a new router for script
+   m_vectorServer.push_back(prouterscript);                                    // Keep server router for script
+   CRouterApplication* prouterapplication = new CRouterApplication("application", "app");// Create a new router for application
+   m_vectorServer.push_back(prouterapplication);                               // Keep server router for application
 
 
    //prouterdatabase->add_reference();                                           // Add reference to router
@@ -74,7 +77,7 @@ std::pair<bool, std::string> CHttpServer::Execute( gd::com::server::command_i* p
       if( pserver == nullptr ) { return { false, std::string("No server found for command: ") + stringServer.data() }; }
 
 
-      pcommandRun->activate(u);
+      pcommandRun->activate((int)u);
       auto result = pserver->get(pcommand, *ppresponse);
    }
 
