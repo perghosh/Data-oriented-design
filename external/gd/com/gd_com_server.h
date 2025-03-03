@@ -411,11 +411,13 @@ struct command : public gd::com::server::command_i
    /// Wraper to manage full url sent internally, no runtime error checks
    std::vector< std::string_view > add_querystring( const std::string_view& stringQueryString );
 
-   // ## add commands, command can hold multiple commands
 
-   /// add command and arguments for that command
+/** \name APPEND
+* Group of methods for appending or adding commands and arguments to an internal collection.
+* These overloaded methods facilitate the addition of commands, arguments, some in uri format to a managed container (e.g., `m_vectorArgument`).
+*///@{
    std::pair<bool, std::string> append(arguments&& argumentsCommand) { m_vectorArgument.push_back(std::move(argumentsCommand)); return { true, "" }; }
-   std::pair<bool, std::string> append( const std::string_view& stringQueryString, gd::types::tag_uri );
+   std::pair<bool, std::string> append(const std::string_view& stringQueryString, gd::types::tag_uri) { return append(stringQueryString, gd::argument::arguments(), gd::types::tag_uri()); }
    std::pair<bool, std::string> append( const std::string_view& stringQueryString, const gd::argument::arguments& arguments_, gd::types::tag_uri );
    std::pair<bool, std::string> append( enumPriority ePriority, const gd::argument::arguments& arguments_ );
    std::pair<bool, std::string> append(uint32_t uPriority, const gd::argument::arguments& arguments_) { return append((enumPriority)uPriority, arguments_); }
@@ -423,12 +425,22 @@ struct command : public gd::com::server::command_i
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );
    void add_command( const std::vector<std::string_view>& vectorCommand );
    void add_command( const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal );
+//@}
+
    /// add command and arguments for that command (command string is formated as command/sub-command/sub-sub-command in uri encoded format)
 
    // ## Methods to access internal command information, command may hold more than one command
 
    arguments* get_command(size_t uIndex) const;
 
+/** \name ARGUMENT
+* Command holds argument values in different levels and these levels mimics how values are stored
+* in computer. Register values have the highest priority, stack values are next and then command and last global.
+* Get argument are mostly used by finding value for name but can be found using index.
+* Running a command the normal way will be to first try to find value connected to the active command within
+* command (this is the command that is active). If value is not found then register and stack values are searched and lastly
+* global argument values.
+*///@{
    gd::variant_view get_argument( const gd::variant_view& index_, int32_t iCommandIndex, uint32_t uPriority ) override;
    gd::variant_view get_argument( const gd::variant_view& index_ ) { return get_argument( index_, m_iCommandIndex, 0 ); }
    gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) { return get_argument( index_, m_iCommandIndex, uPriority ); }
@@ -442,8 +454,10 @@ struct command : public gd::com::server::command_i
    gd::argument::arguments query_select( const std::initializer_list<std::string_view>& listSelector );
    gd::argument::arguments query_select( const std::initializer_list<std::string_view>& listSelector, const std::variant<size_t,std::string>& variantKey );
    std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override;
+//@}
 
-   // ## general operations for all commands
+/** \name MISCELLANEOUS
+*///@{
 
    /// Get number of commands in command object (note that one command object could hold more than one command)
    size_t size() const { return m_vectorArgument.size(); }
@@ -454,7 +468,7 @@ struct command : public gd::com::server::command_i
    void clear();
    /// Check if command object is empty
    bool empty() const { return m_vectorArgument.empty(); }
-
+//@}
 
    /// find pointer to arguments for name (should match any of command name found in command object)
    const gd::argument::arguments* find( const std::string_view& stringName ) const;   
