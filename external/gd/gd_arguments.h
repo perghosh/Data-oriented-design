@@ -1012,6 +1012,10 @@ public:
    std::string print( const_iterator itBegin ) const { return print(itBegin, cend(), ", "); };
    std::string print( const_iterator itBegin, const_iterator itEnd ) const { return print(itBegin, itEnd, ", "); };
    std::string print( const_iterator itBegin, const_iterator itEnd, std::string_view stringSplit) const;
+   std::string print( const std::string_view& stringSplit, gd::types::tag_key ) const;
+   std::string print( gd::types::tag_key ) const { return print( std::string_view(", "), gd::types::tag_key{}); }
+   std::string print( const std::string_view& stringSplit, gd::types::tag_value ) const;
+   std::string print( gd::types::tag_value ) const { return print( std::string_view(", "), gd::types::tag_value{}); }
    std::string print_json() const;
 
    std::string print(std::string_view stringFormat) const;

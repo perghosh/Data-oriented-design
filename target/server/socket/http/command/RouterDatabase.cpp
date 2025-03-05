@@ -44,7 +44,15 @@ std::pair<bool, std::string> CRouterDatabase::CreateDatabase(const gd::argument:
    
    if( arguments_.exists("filename") == true )
    {
+      auto stringFolder = arguments_["folder"].as_string();
       auto stringFile = arguments_["filename"].as_string();
+
+      if( stringFolder.empty() == true ) { stringFolder = std::filesystem::current_path().string(); }
+
+      // ## Create full path
+      gd::file::path path_( stringFolder );
+      path_ += stringFile;
+      stringFile = path_.string();
 
       gd::file::path pathDatabaseFile(stringFile);
       std::string stringName = pathDatabaseFile.stem().string();               // get filename without extension

@@ -59,6 +59,7 @@ struct tag_id {};             ///< id is used in some form
 struct tag_key {};            ///< key is used in some form
 struct tag_name {};           ///< name is used in some form
 struct tag_tag {};            ///< tag value
+struct tag_value {};          ///< value used in some form
 
 struct tag_main_type {};      /// main type if there are secondary types
 struct tag_secondary_type {}; /// secondary type if there are main types
@@ -103,12 +104,14 @@ struct tag_construct {};
 /// methods used for some sort of debug related logic
 struct tag_debug {};
 
+/// for internal use only
+struct tag_internal {};
+
 /// operations using owner objects, objects that own the data
 struct tag_owner {};
 
 /// operations using view objects, objects that do not own the data, just views data stored in other objects
 struct tag_view {};
-
 
 /// argument related operations, could be things like passing arguments or something else
 struct tag_argument {};
