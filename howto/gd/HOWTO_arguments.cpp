@@ -34,7 +34,7 @@ TEST_CASE( "print_arguments", "[howto_gd_arguments]" ) {
    auto it = arguments_.begin();
    std::advance(it, 5);
    std::cout << it.get_argument().as_string() << std::endl;
-   arguments_.erase(it); print_arguments(arguments_);                         // prints - "first": 1000, 2000, 3000, 4000, 5000, "DCC": 700, "DCCC": 800 arguments_.erase(it); print_arguments(arguments_);                        // prints - "first": 1000, 2000, 3000, 4000, 5000, "DCC": 700, "DCCC": 800
+   arguments_.erase(it); print_arguments(arguments_);                         // prints - "first": 1000, 2000, 3000, 4000, 5000, "DCC": 700, "DCCC": 800 
 }
 
 struct test_struct {

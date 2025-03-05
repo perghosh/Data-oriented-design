@@ -1740,6 +1740,65 @@ std::string arguments::print() const
    return stringPrint;
 }
 
+
+
+/** --------------------------------------------------------------------------- print */ /**
+ * @brief Prints the names of all arguments, separated by the specified string.
+ *
+ * This method iterates through all arguments and appends their names to a string,
+ * separated by the provided delimiter. Only the names of the arguments are included
+ * in the output string.
+ *
+ * @param stringSplit The string used to separate the names of the arguments.
+ * @param tag_key A tag to specify that only the keys (names) of the arguments should be printed.
+ * @return A string containing the names of all arguments, separated by the specified string.
+ */
+std::string arguments::print( const std::string_view& stringSplit, gd::types::tag_key) const
+{
+   std::string stringPrint;
+
+   for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
+   {
+      if( stringPrint.empty() == false ) stringPrint += stringSplit;
+
+      if( is_name_s(pPosition) == true )
+      {
+         print_name_s(pPosition, stringPrint);
+      }
+   }
+
+   return stringPrint;
+}
+
+/** --------------------------------------------------------------------------- print */ /**
+ * @brief Prints the values of all arguments, separated by the specified string.
+ *
+ * This method iterates through all arguments and appends their values to a string,
+ * separated by the provided delimiter. Only the values of the arguments are included
+ * in the output string.
+ *
+ * @param stringSplit The string used to separate the values of the arguments.
+ * @param tag_value A tag to specify that only the values of the arguments should be printed.
+ * @return A string containing the values of all arguments, separated by the specified string.
+ */
+std::string arguments::print( const std::string_view& stringSplit, gd::types::tag_value) const
+{
+   std::string stringPrint;
+
+   for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
+   {
+      if( stringPrint.empty() == false ) stringPrint += stringSplit;
+
+      if( is_name_s(pPosition) == true )
+      {
+         print_name_s(pPosition, stringPrint);
+      }
+   }
+
+   return stringPrint;
+}
+
+
 std::string arguments::print(std::string_view stringFormat) const
 {
    char pbszBuffer[256];
@@ -3466,5 +3525,4 @@ namespace debug {
 
 }
 _GD_ARGUMENT_END
-
 

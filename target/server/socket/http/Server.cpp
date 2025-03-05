@@ -13,13 +13,15 @@ std::pair<bool, std::string> CServer::Initialize()
    return { true, "" };
 }
 
+
 std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringCommand, std::vector<std::pair<std::string, std::string>>& vectorResponse) 
-{
-                                                                                                   LOG_INFORMATION_RAW("Command: " + std::string(stringCommand));
+{                                                                                                     LOG_INFORMATION_RAW("Command: " + std::string(stringCommand));
+   using namespace gd::com::server::router;
    // ## Create command object from request
    gd::com::server::server_i* pserver = m_ppapplication->ROUTER_GetActiveServer();
-   gd::com::pointer< gd::com::server::router::command > pcommand = gd::com::pointer< gd::com::server::router::command >( new gd::com::server::router::command( pserver ) );   
-   auto result_ = static_cast<gd::com::server::router::command*>( pcommand )->append(stringCommand, gd::types::tag_uri{});
+   gd::com::pointer< command > pcommand = gd::com::pointer< gd::com::server::router::command >( new gd::com::server::router::command( pserver ) );   
+
+   auto result_ = pcommand->append(stringCommand, gd::types::tag_uri{});
    if( result_.first == false ) { return { false, "Failed to append command: " + std::string(stringCommand)  + " - " + result_.second }; }
 
 

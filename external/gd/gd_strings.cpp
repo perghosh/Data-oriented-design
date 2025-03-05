@@ -48,7 +48,7 @@ std::string_view strings32::at(uint64_t uOffset) const
 void strings32::append(const std::string_view& stringAppend)  
 {                                                                                                  assert( stringAppend.length() < 0xffff'ffff );
    auto uSize = stringAppend.size();                                          // uSize: Length of the appended string                                            
-   decltype( uSize ) uBlockSize = align32_g(uSize + sizeof(uint32_t));        // uBlockSize: Total block size (length size header + string data + padding)
+   decltype( uSize ) uBlockSize = align32_g(uSize + static_cast<decltype( stringAppend.size() )>(sizeof(uint32_t))); // uBlockSize: Total block size (length size header + string data + padding)
    reserve_add(uBlockSize);                                                   // Ensure there is enough capacity in the buffer for the new block
 
    // Position the insertion pointer at the end of the buffer
@@ -65,8 +65,7 @@ void strings32::append(const std::string_view& stringAppend)
 #endif
 
    m_uSize += uBlockSize;                                                     // Update the used buffer size to include the new block  
-}  
-
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Counts the total number of stored strings.
@@ -93,6 +92,55 @@ size_t strings32::count() const
    return uCount;                                                             // Return the total count of stored strings  
 }  
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Appends the contents of another strings32 object to this buffer.
+ *
+ * This method appends the entire buffer of the provided strings32 object to the current buffer.
+ * It ensures that there is enough space in the current buffer to accommodate the new data by reserving additional space if necessary.
+ * The data is then copied from the source buffer to the end of the current buffer.
+ *
+ * @param strings_ The strings32 object whose buffer contents are to be appended.
+ * @param tag_internal A tag to differentiate this method from other overloads.
+ * @return A reference to the current strings32 object after appending the new data.
+ */
+strings32& strings32::append(const gd::strings32& strings_, gd::types::tag_internal)
+{
+   auto uSize = strings_.buffer_size();
+   reserve_add( uSize );
+   memcpy(m_puBuffer + m_uSize, strings_.buffer(), uSize);                    // Copy the string data from the source buffer to the end of the current buffer
+   m_uSize += uSize;                                                          // Update the used buffer size to include the new block
+
+   return *this;
+}
+
+/// Appends strings from strings32 object
+void strings32::get(std::vector<std::string>& vectorString) const
+{
+   for(const auto& it : *this) 
+   {
+      vectorString.push_back( std::string( it ));
+   }
+}
+
+/// Appends strings from strings32 object
+void strings32::get(std::vector<std::string_view>& vectorString) const
+{
+   for(const auto& it : *this) 
+   {
+      vectorString.push_back(it);
+   }
+}
+
+/// Appends strings from strings32 object
+void strings32::get(std::vector<gd::variant_view>& vectorString) const
+{
+   for(const auto& it : *this) 
+   {
+      vectorString.push_back(gd::variant_view(it));
+   }
+}
+
 /** ---------------------------------------------------------------------------
  * Removes a string from the buffer at the given iterator position.
  * 
@@ -109,16 +157,32 @@ size_t strings32::count() const
  * - `align32_g` is assumed to be a function for 32-bit alignment.
  * - `memmove` is used for safe memory movement due to potential overlapping regions.
  */
-void strings32::erase( iterator it )   
+strings32::const_iterator strings32::erase( const const_iterator& it )   
 {  
-   uint8_t* puPosition = it.get_position();                                                        assert( puPosition < buffer_end() ); assert( puPosition >= buffer() );
+   uint8_t* puPosition = buffer() + it.offset();                                                   assert( puPosition < buffer_end() ); assert( puPosition >= buffer() );
    uint32_t uLength = *reinterpret_cast<uint32_t*>(puPosition);               // uLength: Length of the string to remove  
    uint32_t uBlockSize = align32_g(uLength + (uint32_t)sizeof(uint32_t));     // uBlockSize: Total block size (header + data + padding) of the string to remove
    uint8_t* puNext = puPosition + uBlockSize;                                 // puNext: Pointer to the next block after the removed string
    uint64_t uMoveSize = m_uSize - (puNext - m_puBuffer);                      // uMoveSize: Number of bytes to shift left to fill the gap  
    memmove(puPosition, puNext, uMoveSize);                                    // Shift the subsequent blocks left to overwrite the removed block  
    m_uSize -= uBlockSize;                                                     // Decrease the used buffer size by the size of the removed block  
+
+   return it.offset() < m_uSize ? it : cend();
 }  
+
+strings32::iterator strings32::erase( const iterator& it )   
+{  
+   uint8_t* puPosition = buffer() + it.offset();                                                  assert( puPosition < buffer_end() ); assert( puPosition >= buffer() );
+   uint32_t uLength = *reinterpret_cast<uint32_t*>(puPosition);               // uLength: Length of the string to remove  
+   uint32_t uBlockSize = align32_g(uLength + (uint32_t)sizeof(uint32_t));     // uBlockSize: Total block size (header + data + padding) of the string to remove
+   uint8_t* puNext = puPosition + uBlockSize;                                 // puNext: Pointer to the next block after the removed string
+   uint64_t uMoveSize = m_uSize - (puNext - m_puBuffer);                      // uMoveSize: Number of bytes to shift left to fill the gap  
+   memmove(puPosition, puNext, uMoveSize);                                    // Shift the subsequent blocks left to overwrite the removed block  
+   m_uSize -= uBlockSize;                                                     // Decrease the used buffer size by the size of the removed block  
+
+   return it.offset() < m_uSize ? it : end();
+}  
+
 
 
 /** ---------------------------------------------------------------------------
@@ -163,8 +227,8 @@ void strings32::replace( uint8_t* puPosition, const std::string_view& stringRepl
    uint32_t uOldBlockSize = align32_g(uOldLength + (uint32_t)sizeof(uint32_t));// uOldBlockSize: Total block size of the existing string  
 
    // ## Calculate the new block size and check if the buffer can accommodate the new string
-   uint32_t uNewLength = static_cast<uint32_t>(stringReplace.size());           // uNewLength: Length of the new string  
-   uint32_t uNewBlockSize = align32_g(uNewLength + (uint32_t)sizeof(uint32_t));         // uNewBlockSize: Total block size required for the new string  
+   uint32_t uNewLength = static_cast<uint32_t>(stringReplace.size());          // uNewLength: Length of the new string  
+   uint32_t uNewBlockSize = align32_g(uNewLength + (uint32_t)sizeof(uint32_t)); // uNewBlockSize: Total block size required for the new string  
    int64_t iSizeDifference = static_cast<int64_t>(uNewBlockSize) - static_cast<int64_t>(uOldBlockSize);  // iSizeDifference: Difference between new and old block sizes  
 
    // ## Check if the new block is larger than the old one, then make sure the buffer can accommodate the extra bytes and update position

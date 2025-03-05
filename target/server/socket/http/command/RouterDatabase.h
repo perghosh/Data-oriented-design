@@ -33,6 +33,7 @@ public:
    CRouterDatabase() {}
    /// create database with name
    CRouterDatabase(const std::string_view& stringName) : m_stringName(stringName) {}
+   CRouterDatabase(const std::string_view& stringName, const std::string_view& stringShort) : m_stringName(stringName), m_stringShortName( stringShort ) {}
    // copy
    CRouterDatabase(const CRouterDatabase& o) { common_construct(o); }
    CRouterDatabase(CRouterDatabase&& o) noexcept { common_construct(std::move(o)); }
@@ -60,7 +61,7 @@ public:
 /** \name INTERFACE
 *///@{
    /// Check if command is endpoint
-   bool is_endpoint(const std::string_view& stringCommand) override { return m_stringName == stringCommand; }
+   bool is_endpoint(const std::string_view& stringCommand) override { return (m_stringShortName == stringCommand || m_stringName == stringCommand); }
    std::pair<bool, std::string> get( gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse) override;
 //@}
 
@@ -88,6 +89,7 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    std::string m_stringName; ///< Name of the database server
+   std::string m_stringShortName; ///< Short mame for the database server
 
 
 // ## free functions ------------------------------------------------------------
