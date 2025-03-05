@@ -10,7 +10,7 @@ namespace gd {
        * @param pbszText string to compare with
        * @param pbszWildcard string to compare with
        * @return 0 if string is equal, negative if first string is less than second string, positive if first string is greater than second string
-      */
+       */
       int strcmp( const char* pbszText, const char* pbszWildcard, utf8::tag_wildcard )
       {
          unsigned uPosition = 0;
@@ -28,6 +28,43 @@ namespace gd {
          }
 
          return (pbszText[uPosition] - pbszWildcard[uPosition]);
+      }
+
+
+      /**
+       * @brief Compares two std::string_view objects lexicographically, ignoring case.
+       *
+       * This function performs a case-insensitive comparison of two string views.
+       * It returns an integer indicating their relative order:
+       * - 0 if the strings are equal (ignoring case),
+       * - a negative value if the first string is lexicographically less than the second,
+       * - a positive value if the first string is lexicographically greater than the second.
+       *
+       * @param string1_ The first string view to compare.
+       * @param string2_ The second string view to compare.
+       * @return int 0 if equal, < 0 if string1_ < string2_, > 0 if string1_ > string2_ (case-insensitive).
+       * @note This function uses std::tolower, which supports ASCII case conversion only.
+       *       For Unicode case-insensitive comparison, consider a library like ICU.
+       */
+      int stricmp( std::string_view string1_, std::string_view string2_ )
+      {
+         size_t uLength1 = string1_.length();
+         size_t uLength2 = string2_.length();
+         size_t uShortestLength = (uLength1 < uLength2) ? uLength1 : uLength2;
+
+         // ## Compare characters up to the shorter length
+         for(size_t u = 0; u < uShortestLength; ++u) 
+         {
+            unsigned char uChar1 = static_cast<unsigned char>(string1_[u]);
+            unsigned char uChar2 = static_cast<unsigned char>(string2_[u]);
+            int iDifference = std::tolower(uChar1) - std::tolower(uChar2);
+            if( iDifference != 0 ) { return iDifference; }
+         }
+
+         // If all characters match up to min_len, compare lengths
+         if( uLength1 < uLength2 ) return -1;
+         if( uLength1 > uLength2 ) return 1;
+         return 0;
       }
    }
 } // gd

@@ -700,6 +700,8 @@ namespace gd {
        */
       ///@{ 
       int strcmp( const char* pbsz1, const char* pbsz2, utf8::tag_wildcard );
+
+      int stricmp(std::string_view string1, std::string_view string2);
       ///@}
    }
 } // gd
