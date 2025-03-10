@@ -162,6 +162,9 @@ public:
    /// Ask for single value from database, handy to use without fiddle with cursor
    std::pair<bool, std::string> ask( const std::string_view& stringStatement, gd::variant* pvariantValue );
 
+   /// execution operation related to transaction logic
+   std::pair<bool, std::string> transaction( const gd::variant_view& transaction_ );
+
    /// get last inserted key
    gd::variant get_insert_key() const;
    std::pair<bool, std::string> get_insert_key( gd::variant& variantKey ) const;
@@ -574,6 +577,7 @@ public:
    std::pair<bool, std::string> open( const gd::argument::arguments& argumentsConnect ) override;
    std::pair<bool, std::string> execute( const std::string_view& stringStatement ) override;
    std::pair<bool, std::string> ask( const std::string_view& stringStatement, gd::variant* pvariantValue ) override;
+   std::pair<bool, std::string> transaction(const gd::variant_view& transaction_) override;
 
    std::pair<bool, std::string> get_cursor( gd::database::cursor_i** ppCursor ) override;
 

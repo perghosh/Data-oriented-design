@@ -18,6 +18,17 @@ _GD_DATABASE_BEGIN
 /// Forward declare record, record is used to store data from one single row
 class record;
 
+/**
+* @brief Enum class representing SQL transaction types.
+*/
+enum enumTransaction
+{
+   eTransactionBegin,         ///< Begin a new transaction.
+   eTransactionCommit,        ///< Commit the current transaction.
+   eTransactionRollback,      ///< Rollback the current transaction.
+   eTransactionMerge,         ///< Merge uncommitted changes into the database.
+};
+
 
 /**
  * \brief
@@ -87,8 +98,12 @@ struct database_i : public unknown_i
    virtual std::pair<bool, std::string> open( const gd::argument::arguments& argumentsConnect ) = 0;
    /// execute sql statement
    virtual std::pair<bool, std::string> execute( const std::string_view& stringStatement ) = 0;
+   /// execute sql statement that returns one single value, handy i many situations to get database information without having to use cursor
    virtual std::pair<bool, std::string> ask( const std::string_view& stringStatement, gd::variant* pvariantValue ) = 0;
+   /// create cursor for database, remember to close/release cursor when done
    virtual std::pair<bool, std::string> get_cursor( cursor_i** ppCursor ) = 0;
+   /// execute operattion related to transaction logic
+   virtual std::pair<bool, std::string> transaction( const gd::variant_view& transaction_ ) = 0;
    /// close connection to database
    virtual void close() = 0;
    virtual void erase() = 0;

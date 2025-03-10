@@ -56,6 +56,65 @@ std::pair<bool, std::string> database::ask( const std::string_view& stringStatem
    return { true, "" };
 }
 
+/**---------------------------------------------------------------------------
+ * @brief Executes a database transaction based on the provided variant view.
+ *
+ * This method processes a transaction command specified either as a string
+ * ("begin", "commit", "rollback", or a raw SQL command) or as an integer using
+ * predefined transaction enumeration values. It returns a pair containing a
+ * boolean indicating success/failure and a string with the result or error message.
+ *
+ * @param transaction_ The transaction command as a gd::variant_view, which can contain
+ *                     either a string or integer representation of the transaction.
+ * @return std::pair<bool, std::string> A pair where:
+ *         - first: true if the transaction succeeded, false otherwise
+ *         - second: result message or error description
+ *
+ * @note Supported string commands:
+ *       - "begin": Starts a new transaction
+ *       - "commit": Commits the current transaction
+ *       - "rollback": Rolls back the current transaction
+ *       - Any other string: Treated as a raw SQL command to execute
+ * @note Supported integer commands:
+ *       - eTransactionBegin: Begins a transaction
+ *       - eTransactionCommit: Commits a transaction
+ *       - eTransactionRollback: Rolls back a transaction
+ * @note If the input type or value is not supported, returns {false, "not implemented"}.
+ */
+std::pair<bool, std::string> database::transaction( const gd::variant_view& transaction_ )
+{
+   if( transaction_.is_string() == true )
+   {
+      std::string stringTransaction = transaction_.as_string();
+      if( stringTransaction == "begin" ) return execute("BEGIN TRANSACTION");
+      if( stringTransaction == "commit" ) return execute("COMMIT TRANSACTION");
+      if( stringTransaction == "rollback" ) return execute("ROLLBACK TRANSACTION");
+      else return execute( stringTransaction );
+   }
+   else if( transaction_.is_int() == true )
+   {
+      int iTransaction = transaction_.as_int();
+      if( iTransaction == eTransactionBegin ) return execute("BEGIN TRANSACTION");
+      if( iTransaction == eTransactionCommit ) return execute("COMMIT TRANSACTION");
+      if( iTransaction == eTransactionRollback ) return execute("ROLLBACK TRANSACTION");
+      if( iTransaction == eTransactionMerge ) 
+      {
+         auto iResult = ::sqlite3_wal_checkpoint(m_psqlite3, nullptr);
+         if( iResult != SQLITE_OK ) 
+         {
+            std::string stringError = sqlite3_errmsg(m_psqlite3);
+            return { false, stringError };
+         } 
+
+         return { true, "" };
+      }
+   }
+
+   return { false, "not implemented" };
+}
+
+
+
 /** -----------------------------------------------------------------------------------------------
  * @brief Returns last insert key that was generated using auto increment
  * @return gd::variant last generated key
@@ -1050,6 +1109,11 @@ std::pair<bool, std::string> database_i::execute( const std::string_view& string
 std::pair<bool, std::string> database_i::ask( const std::string_view& stringStatement, gd::variant* pvariantValue )
 {                                                                                                  assert( m_pdatabase != nullptr );
    return m_pdatabase->ask( stringStatement, pvariantValue );
+}
+
+std::pair<bool, std::string> database_i::transaction(const gd::variant_view& transaction_)
+{                                                                                                  assert(m_pdatabase != nullptr);
+   return m_pdatabase->transaction(transaction_);
 }
 
 std::pair<bool, std::string> database_i::get_cursor( gd::database::cursor_i** ppCursor )

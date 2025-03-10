@@ -203,6 +203,53 @@ std::pair<bool, std::string> database::ask( const std::string_view& stringStatem
 
 }
 
+/**---------------------------------------------------------------------------
+ * @brief Executes a database transaction based on the provided variant view.
+ *
+ * This method processes a transaction command specified either as a string
+ * ("begin", "commit", "rollback", or a raw SQL command) or as an integer using
+ * predefined transaction enumeration values. It returns a pair containing a
+ * boolean indicating success/failure and a string with the result or error message.
+ *
+ * @param transaction_ The transaction command as a gd::variant_view, which can contain
+ *                     either a string or integer representation of the transaction.
+ * @return std::pair<bool, std::string> A pair where:
+ *         - first: true if the transaction succeeded, false otherwise
+ *         - second: result message or error description
+ *
+ * @note Supported string commands:
+ *       - "begin": Starts a new transaction
+ *       - "commit": Commits the current transaction
+ *       - "rollback": Rolls back the current transaction
+ *       - Any other string: Treated as a raw SQL command to execute
+ * @note Supported integer commands:
+ *       - eTransactionBegin: Begins a transaction
+ *       - eTransactionCommit: Commits a transaction
+ *       - eTransactionRollback: Rolls back a transaction
+ * @note If the input type or value is not supported, returns {false, "not implemented"}.
+ */
+std::pair<bool, std::string> database::transaction( const gd::variant_view& transaction_ )
+{
+   if( transaction_.is_string() == true )
+   {
+      std::string stringTransaction = transaction_.as_string();
+      if( stringTransaction == "begin" ) return execute("BEGIN TRANSACTION");
+      if( stringTransaction == "commit" ) return execute("COMMIT TRANSACTION");
+      if( stringTransaction == "rollback" ) return execute("ROLLBACK TRANSACTION");
+      else return execute( stringTransaction );
+   }
+   else if( transaction_.is_int() == true )
+   {
+      int iTransaction = transaction_.as_int();
+      if( iTransaction == eTransactionBegin ) return execute("BEGIN TRANSACTION");
+      if( iTransaction == eTransactionCommit ) return execute("COMMIT TRANSACTION");
+      if( iTransaction == eTransactionRollback ) return execute("ROLLBACK TRANSACTION");
+   }
+
+   return { false, "not implemented" };
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief close database connection
 */
@@ -466,7 +513,6 @@ std::pair<bool, std::string> cursor::bind_parameter( int iIndex, const gd::varia
 std::pair<bool, std::string> cursor::add_columns( SQLHANDLE hStatement, record& recordAddTo, unsigned uCount )
 {
    SQLSMALLINT iFieldNameLength;       // Gets field name length 
-   SQLSMALLINT iNullable;              // if field is nullable
    SQLULEN     uFieldSize;             // Length of field if value is stored in array like text or binary
    SQLCHAR     pszFieldName[256];      // name of field
 
@@ -474,7 +520,7 @@ std::pair<bool, std::string> cursor::add_columns( SQLHANDLE hStatement, record& 
    for( unsigned u = 0; u < uCount; u++ )
    {
       
-      SQLSMALLINT iColumnNameLength, iSqlType, iDecimalDigits, iNullable;
+      SQLSMALLINT iSqlType, iDecimalDigits, iNullable;
       
       uFieldSize = 0;
       SQLRETURN iReturn = ::SQLDescribeCol( hStatement, (SQLUSMALLINT) (u + 1), pszFieldName, sizeof(pszFieldName ),  &iFieldNameLength, &iSqlType, &uFieldSize, &iDecimalDigits, &iNullable );
@@ -497,12 +543,12 @@ std::pair<bool, std::string> cursor::add_columns( SQLHANDLE hStatement, record& 
             if( gd::database::value_group_type_g( uType ) == eColumnTypeGroupString ) 
             { 
                uSize = 0; 
-               uStartBufferSize = (uFieldSize > 0 && uFieldSize < 256 ? uFieldSize : 128); 
+               uStartBufferSize = (unsigned)(uFieldSize > 0 && uFieldSize < 256 ? uFieldSize : 128); 
             }
             else if( gd::database::value_group_type_g( uType ) == eColumnTypeGroupBinary ) 
             { 
                uSize = 0;
-               uStartBufferSize = (uFieldSize > 0 && uFieldSize < 256 ? uFieldSize : 32); 
+               uStartBufferSize = (unsigned)(uFieldSize > 0 && uFieldSize < 256 ? uFieldSize : 32); 
             }
 
             if( uStartBufferSize != uFieldSize ) 
@@ -740,8 +786,8 @@ std::pair<bool, std::string> cursor::update_blob()
 */
 void cursor::update( unsigned uFrom, unsigned uTo )
 {                                                                              assert( m_hStatement != nullptr );
-   enumColumnTypeComplete eType; // column type
-   uint8_t* pbBuffer;            // pointer to active field in sqlite stmt (statement)
+   //enumColumnTypeComplete eType; // column type
+   //uint8_t* pbBuffer;            // pointer to active field in sqlite stmt (statement)
    int iValueSize = 0;           // gets value size for field that do not have a max limit for size
 
    for( auto u = uFrom; u < uTo; u++ )
@@ -1197,6 +1243,12 @@ std::pair<bool, std::string> database_i::ask( const std::string_view& stringStat
 {                                                                                                  assert( m_pdatabase != nullptr );
    return m_pdatabase->ask( stringStatement, pvariantValue );
 }
+
+std::pair<bool, std::string> database_i::transaction(const gd::variant_view& transaction_)
+{                                                                                                  assert(m_pdatabase != nullptr);
+   return m_pdatabase->transaction(transaction_);
+}
+
 
 std::pair<bool, std::string> database_i::get_cursor( gd::database::cursor_i** ppCursor )
 {                                                                                                  assert( ppCursor != nullptr );
