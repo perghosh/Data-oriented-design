@@ -163,6 +163,12 @@ struct path
    // ## methods -----------------------------------------------------------------
    /// Checks if path has filename
    bool has_filename() const { return m_stringPath.empty() == false ? std::filesystem::path(m_stringPath).has_filename() : false; }
+   /// Checks if path has extension
+   bool has_extension() const { return m_stringPath.empty() == false ? std::filesystem::path(m_stringPath).has_extension() : false; }
+   /// Checks if path has parent path
+   bool has_parent_path() const { return m_stringPath.empty() == false ? std::filesystem::path(m_stringPath).has_parent_path() : false; }
+   /// Checks if path has relative path
+   bool has_relative_path() const { return m_stringPath.empty() == false ? std::filesystem::path(m_stringPath).has_relative_path() : false; }
    /// Checks if path ends with folder separator
    bool has_separator() const { return m_stringPath.back() == m_iPathDivider_s; }
    /// Checks if path starts with folder separator
@@ -189,6 +195,9 @@ struct path
    path& add(const std::vector<std::string_view>& vectorName);
    /// Add folders from vector with folder names and maybe filename to path and for each folder call callback
    std::pair<bool, std::string> add(const std::vector<std::string_view>& vectorName, std::function< bool( const std::string& stringName )> callback_ );
+   /// Add separator to path, if separator already exists it will not add another
+   path& add_separator() { if( has_separator() == false ) m_stringPath.push_back(m_iPathDivider_s); return *this; }
+
    /// Concatenate two paths
    path concatenate(const path& path_) const;
 

@@ -130,6 +130,9 @@ public:
    /// Ask for single value from database, handy to use without fiddle with cursor
    std::pair<bool, std::string> ask( const std::string_view& stringStatement, gd::variant* pvariantValue );
 
+   /// Execute a transaction operation based on the provided variant view.
+   std::pair<bool, std::string> transaction(const gd::variant_view& transaction_);
+
 
    void close();
    bool error( std::string& stringError );
@@ -497,6 +500,7 @@ public:
    std::pair<bool, std::string> open( const gd::argument::arguments& argumentsConnect ) override;
    std::pair<bool, std::string> execute( const std::string_view& stringStatement ) override;
    std::pair<bool, std::string> ask( const std::string_view& stringStatement, gd::variant* pvariantValue ) override;
+   std::pair<bool, std::string> transaction(const gd::variant_view& transaction_) override;
    std::pair<bool, std::string> get_cursor( gd::database::cursor_i** ppCursor ) override;
    void close() override;
    void erase() override;

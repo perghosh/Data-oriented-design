@@ -20,15 +20,15 @@
    <!-- Table with two collumns, first has button and second have description-->
    <table>
       <tr>
-         <td><button onclick="http('app/property:folder;database/create?name=test&filename=test%2Esqlite')">Create database named to test</button></td>
+         <td><button onclick="http('database/create?name=test&filename=test%2Esqlite')">Create database named to test</button></td>
          <td>Send url to server with information about create sqlite database</td>
       </tr>
       <tr>
-         <td><button onclick="changeColor('red')">Set application property</button></td>
+         <td><button onclick="http('app-property;db-create?name=test&filename=test%2Esqlite')">Get property and create db</button></td>
          <td>Change color to red</td>
       </tr>
       <tr>
-         <td><button onclick="changeColor('green')">Green</button></td>
+         <td><button onclick="http('app,01;db?name=test&filename=test%2Esqlite')">Get property and create db</button></td>
          <td>Change color to green</td>
       </tr>
       <tr>
