@@ -11,12 +11,18 @@
 #include <boost/beast/version.hpp>
 #include <boost/asio.hpp>
 
+#include "pugixml/pugixml.hpp"
+
 #include "gd/gd_file.h"
 #include "gd/gd_file_rotate.h"
 
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_printer.h"
 #include "gd/gd_log_logger_define.h"
+
+#if defined(_MSC_VER)
+#   include "windows.h"   
+#endif
 
 
 #include "Server.h"
@@ -64,14 +70,42 @@ CApplication::~CApplication()
 
 std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszArgument[], std::function<bool(const std::string_view&, const gd::variant_view&)> process_)
 {
-   int iResult = Main_s( iArgumentCount, ppbszArgument );
+   std::string stringApplicationFolder;   // folder where application is stored
+   std::string stringRootFolder;          // root folder for site
+   char pbszPathBuffer[MAX_PATH];         // buffer to store path
 
+
+   // ## Store application folder
+#if defined(_MSC_VER)
+   ::GetModuleFileNameA( nullptr, pbszPathBuffer, MAX_PATH );
+   stringApplicationFolder = pbszPathBuffer;
+#else
+   stringApplicationFolder = ppbszArgument[0];
+#endif
+   auto position_ = stringApplicationFolder.find_last_of("\\/");
+   if( position_ != std::string::npos ) { stringApplicationFolder = stringApplicationFolder.substr( 0, position_ + 1 ); }
+
+   papplication_g->PROPERTY_Add("folder-application", stringApplicationFolder);
+
+
+   int iResult = Main_s( iArgumentCount, ppbszArgument );
 
    return application::basic::CApplication::Main( iArgumentCount, ppbszArgument, nullptr );
 }
 
 std::pair<bool, std::string> CApplication::Initialize()
 {
+   {
+      gd::file::path pathFolderApplication( papplication_g->PROPERTY_Get("folder-application").as_string() );
+      pathFolderApplication += "configuration.xml";
+      if( std::filesystem::exists( pathFolderApplication ) == true )
+      {
+         auto result_ = CONFIGURATION_Read(pathFolderApplication);
+         if( result_.first == false ) { return result_; }
+      }
+
+   }
+
    // ## Configure log settings
    {
       using namespace gd::log;
@@ -309,6 +343,50 @@ std::vector<std::string_view> CApplication::ROUTER_Resolv_s(const std::string_vi
 
    return { true, "" };
 }
+
+std::pair<bool, std::string> CApplication::CONFIGURATION_Read( const std::string_view& stringFileName )
+{
+   using namespace pugi;
+   xml_document xmldocument;   // xml document used to load xml from file
+
+   if( std::filesystem::exists( stringFileName ) == false ) return { true, "" };
+
+   // ## Load xml data
+   xml_parse_result xmlparseresult = xmldocument.load_file( stringFileName.data() );
+   if( (bool)xmlparseresult == false ) return { false, xmlparseresult.description() };
+
+   {
+      // ## get all properties nodes found in xml
+      auto xmlnodeProperties = xmldocument.document_element().child( "properties" );
+      while( xmlnodeProperties.empty() == false )
+      {
+         pugi::xml_node xmlnode = xmlnodeProperties.first_child();
+         while( xmlnode.empty() == false )
+         {
+            // ## check for property value, if found read value and store in application
+            if( std::string_view( xmlnode.name() ) == "property" )
+            {
+               const char* pbszName = xmlnode.attribute( "name" ).value();
+               const char* pbszValue = xmlnode.attribute( "value" ).value();
+
+               if( *pbszName != '\0' && *pbszValue != '\0' )
+               {
+                  if( PROPERTY_Has( pbszName ) == false )                      // check if property is added, if not then it is ok to add from configuration
+                  {
+                     PROPERTY_Add( pbszName, pbszValue );                      // add property
+                  }
+               }
+            }
+            xmlnode = xmlnode.next_sibling();
+         }
+
+         xmlnodeProperties = xmlnodeProperties.next_sibling( "properties" );
+      }
+   }
+
+   return { true, "" };
+}
+
 
 
 

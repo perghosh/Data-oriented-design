@@ -20,6 +20,13 @@ class CServer;
 * \brief
 *
 *
+* ## Properties (application)
+* - file-log : log file name
+* - log-console : log console severity
+* - log-level : log severity level
+* - folder-root : root folder for site
+* - system-treadcount : number of threads to use
+* - ip : ip address to bind to
 *
 \code
 \endcode
@@ -97,6 +104,13 @@ public:
    bool DATABASE_Empty() const { return m_vectorDatabase.empty(); }
 //@}
 
+/** \name CONFIGURATION
+*///@{
+    /// Read configuration file, reads settings from xml or json file
+   std::pair<bool, std::string> CONFIGURATION_Read( const std::string_view& stringFileName );
+//@}
+
+
 
 protected:
    /** \name INTERNAL
@@ -160,6 +174,7 @@ inline gd::database::database_i* CApplication::DATABASE_Get(const std::string_vi
    }
    return nullptr;
 }
+
 
 /// Global pointer to application object
 extern CApplication* papplication_g;
