@@ -401,7 +401,7 @@ bool options::find( const std::string_view& stringName, const gd::variant_view& 
 /// @param stringName name for value to check if found
 /// @param callback_ callback method to execute with value if value is found
 /// @return true if value was faound
-bool options::iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > callback_ )
+bool options::iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > callback_ ) const
 {
    gd::variant_view variantviewValue = get_variant_view( stringName );
    if( variantviewValue.is_true() == true )
@@ -413,7 +413,7 @@ bool options::iif( const std::string_view& stringName, std::function< void( cons
    return false;
 }
 
-void options::iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > true_, std::function< void( const gd::variant_view& ) > false_ )
+void options::iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > true_, std::function< void( const gd::variant_view& ) > false_ ) const
 {
    gd::variant_view variantviewValue = get_variant_view( stringName );
    if( variantviewValue.is_true() == true )

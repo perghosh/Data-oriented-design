@@ -250,8 +250,8 @@ public:
    // ## find parsed values
    bool find( const std::string_view& stringName, const gd::variant_view& variantviewValue ) const;
 
-   bool iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > callback_ );
-   void iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > true_, std::function< void( const gd::variant_view& ) > false_ );
+   bool iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > callback_ ) const;
+   void iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > true_, std::function< void( const gd::variant_view& ) > false_ ) const;
 
    void print_documentation( std::string& stringDocumentation ) const;
 

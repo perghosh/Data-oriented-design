@@ -847,25 +847,49 @@ arguments::arguments(std::pair<std::string_view, gd::variant> pairArgument)
 }
 
 
-
+/** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from an initializer list of string-variant pairs.
+ * @param listPair An initializer list of pairs containing string views and gd::variant values.
+ * Initializes the object by appending each pair from the list.
+ */
 arguments::arguments(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair)
 {
    zero();
    for( auto it : listPair ) append_argument(it);
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from an initializer list of string-variant_view pairs with a tag_view.
+ * @param listPair An initializer list of pairs containing string views and gd::variant_view values.
+ * @param tag_view A tag indicating the use of variant_view (distinguishes constructor overload).
+ * Initializes the object by appending each pair from the list using the tag_view overload.
+ */
 arguments::arguments( std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view )
 {
    zero();
    for( auto it : listPair ) append_argument( it, tag_view{} );
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from a vector of string-variant_view pairs with a tag_view.
+ * @param listPair A vector of pairs containing string views and gd::variant_view values.
+ * @param tag_view A tag indicating the use of variant_view (distinguishes constructor overload).
+ * Initializes the object by appending each pair from the vector using the tag_view overload.
+ */
 arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>> listPair, tag_view )
 {
    zero();
    for( auto it : listPair ) append_argument( it, tag_view{} );
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from a single string-variant pair with a tag to bypass initializer list.
+ * @param stringName The string view representing the argument name.
+ * @param variantValue The gd::variant value associated with the argument name.
+ * @param tag_no_initializer_list A tag to explicitly indicate this constructor does not use an initializer list.
+ * Initializes the object by appending the single name-value pair.
+ */
 arguments::arguments(const std::string_view& stringName, const gd::variant& variantValue, arguments::tag_no_initializer_list)
 {
    zero();
@@ -1086,7 +1110,7 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
  * \return arguments& argument object for nested calls
  */
 arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argument_type uType, const_pointer pBuffer, unsigned int uLength)
-{                                                                                                  assert(strlen(pbszName) < 255); assert(m_uLength < 0xffffff); assert(uLength < 0xffffff);
+{                                                                                                  assert(uNameLength < 255); assert(m_uLength < 0xffffff); assert(uLength < 0xffffff);
 #ifdef _DEBUG
    enumCType debug_eCType = (enumCType)(uType & ~eTypeNumber_MASK);            // get absolute variable type
    auto uLength_d = m_uLength;

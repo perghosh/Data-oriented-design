@@ -19,6 +19,8 @@
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_printer.h"
 #include "gd/gd_log_logger_define.h"
+#include "gd/gd_cli_options.h"
+
 
 #if defined(_MSC_VER)
 #   include "windows.h"   
@@ -86,6 +88,17 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    if( position_ != std::string::npos ) { stringApplicationFolder = stringApplicationFolder.substr( 0, position_ + 1 ); }
 
    papplication_g->PROPERTY_Add("folder-application", stringApplicationFolder);
+
+   gd::cli::options optionsConfiguration;
+   Prepare_s(optionsConfiguration);
+
+   // ## Parse arguments if sent
+   if( iArgumentCount > 1 )																	 // do we have arguments ? (first is application)
+   {
+      auto [bOk, stringError] = optionsConfiguration.parse( iArgumentCount, ppbszArgument );
+      if( bOk == false ) { return { bOk, stringError }; }
+   }
+
 
 
    int iResult = Main_s( iArgumentCount, ppbszArgument );
@@ -205,6 +218,11 @@ std::pair<bool, std::string> CApplication::Exit()
    return application::basic::CApplication::Exit();
 }
 
+std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& optionsApplication)
+{
+   return std::pair<bool, std::string>();
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Start the web server
  * @return true if ok, false and error information on error
@@ -305,6 +323,37 @@ int CApplication::Main_s(int iArgumentCount, char* ppbszArgument[])
    */
 
    return 0;
+}
+
+void CApplication::Prepare_s(gd::cli::options& optionsApplication)
+{
+   // ## Log settings
+   optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
+   optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
+   
+   optionsApplication.add({"logging-severity", "Set specific severity for logger, severity acts as a filter"});
+   optionsApplication.add({"logging-tags", "set active log-tags to filter log messages"});
+   optionsApplication.add({"logging-show", "Default is to log messages (non tagged), with this you can turn them on or off. If setting tag/tags then this turns off if not set to be on, value 0|1"});
+
+   // ## Folder settings
+   optionsApplication.add({"path", "Global path variable used to find files in any of the folders if not found in selected folder, folders are separated by semicolon"});
+   optionsApplication.add({"folder-configuration", "Folder where to read configuration files"});
+   optionsApplication.add({"folder-logging", "Set folder where logger places log files"});
+}
+
+std::pair<bool, std::string> CApplication::Read_s(CApplication* papplication_, gd::cli::options& optionsApplication)
+{
+   const auto* poptions_ = optionsApplication.sub_find_active();               // find active sub parser for arguments
+   if( poptions_ == nullptr ) poptions_ = &optionsApplication;                 // set to root options
+
+   // Set path property, it holds paths to folders that may be used as path in os system
+   if( (*poptions_)["path"].is_true() == true ) { papplication_->PROPERTY_Add( "path", (*poptions_)["path"].as_string() ); }
+
+   poptions_->iif( std::string_view("folder-configuration"), [papplication_]( const std::string_view& s_ ) { papplication_->PROPERTY_Add( "folder-configuration", s_ ); } );
+   //if( (*poptions_)["folder-configuration"].is_true() == true ) { papplication_->PROPERTY_Add( "folder-configuration", (*poptions_)["folder-configuration"].as_string() ); }
+
+
+   return { true, "" };
 }
 
 
