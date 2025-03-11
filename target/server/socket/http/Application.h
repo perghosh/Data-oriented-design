@@ -15,6 +15,7 @@
 #include "application/ApplicationBasic.h"
 
 class CServer;
+namespace gd { namespace cli { class options; } }
 
 /**
 * \brief
@@ -70,6 +71,10 @@ public:
    std::pair<bool, std::string> Initialize();
    /// Use this for clean up
    std::pair<bool, std::string> Exit();
+
+   /// Configure global application arguments
+   std::pair< bool, std::string > Configure( const gd::cli::options& optionsApplication );
+
 
 //@}
 
@@ -141,6 +146,11 @@ public:
 public:
    //static std::pair<bool, std::string> Start( CApplication* papplication );
    static int Main_s( int iArgumentCount, char* ppbszArgument[] );
+
+   /// Prepare application options for command line
+   void Prepare_s( gd::cli::options& optionsApplication );
+   /// Read parsed options and set properties
+   std::pair<bool, std::string> Read_s( CApplication* papplication_, gd::cli::options& optionsApplication );
 
    /// Resolve command string into commands and set position to commands
    static std::vector<std::string_view> ROUTER_Resolv_s(const std::string_view& stringCommand, size_t* puOffset );
