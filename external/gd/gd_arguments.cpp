@@ -884,6 +884,38 @@ arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>>
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from an initializer list and another arguments object.
+ *
+ * appending key-value pairs from the provided initializer list, and appending all elements from another arguments object.
+ * 
+ * `´´{.cpp}
+void print( const gd::argument::arguments arguments_ )
+{
+   std::cout << arguments_.print() << std::endl;
+}
+
+TEST_CASE( "add from arguments", "[arguments]" ) {
+   gd::argument::arguments arguments_( { {"1", 1}, {"1", 1}, {"1", 1} } );
+
+   // how to do a one liner
+   print({ { {"2", 2}, { "3", 3 } }, arguments_});
+   print({ { {"4", 4}, { "5", 5 } }, { {"1", 1}, {"1", 1}, {"1", 1} } });
+}
+ * ```
+ *
+ * @param listPair An initializer list of pairs containing string views as keys and 
+ *                 gd::variant_view as values to be added to the arguments object.
+ * @param arguments_ A const reference to another arguments object whose contents 
+ *                   will be appended to this object.
+ */
+arguments::arguments(std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, const arguments& arguments_ )
+{
+   zero();
+   for( auto it : listPair ) append_argument(it, tag_view{});
+   append(arguments_);
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Constructs an arguments object from a single string-variant pair with a tag to bypass initializer list.
  * @param stringName The string view representing the argument name.
  * @param variantValue The gd::variant value associated with the argument name.
