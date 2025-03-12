@@ -604,6 +604,7 @@ public:
    arguments(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair); // construct arguments with vector like {{},{}}
    arguments(std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}
    arguments(std::vector<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}   
+   arguments(std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, const arguments& arguments_ );
 
    // copy
    arguments(const arguments& o) { buffer_set(); common_construct(o); }
