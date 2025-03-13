@@ -1,8 +1,48 @@
 /**
  * \file gd_arguments.h
  * 
- * \brief Pack primitive value and some common derived values in byte buffer. 
+ * \brief Pack primitive and common derived values into a byte buffer for efficient storage and access.
+ *
+ * The `arguments` class is designed to manage a collection of named or unnamed values stored in a contiguous byte buffer,
+ * optimized for minimal memory usage and fast access. It supports a variety of data types, including integers, floating-point
+ * numbers, strings, and binary data, with a flexible memory layout. Each argument is stored as a sequence of bytes
+ * following the format: `[uint16 name length][name-data][uint8 type]{[uint32 data length]}[data]`. The class provides methods
+ * for appending, retrieving, and manipulating arguments, along with iterators for traversal. It is particularly useful
+ * for scenarios requiring compact serialization or key-value pair management.
+ *
+ * ### Key Features
+ * - Compact memory layout with optional names for key-value pairs.
+ * - Support for all primitive types (e.g., `int32_t`, `double`) and derived types (e.g., strings, binary blobs).
+ * - Efficient append and retrieval operations with minimal overhead.
+ * - Iterators for forward traversal of arguments.
+ *
+ * ### Example Usage
+ * Iterate and print values in `arguments`:
+ * \code
+ * void print(const gd::argument::arguments& args) {
+ *    for (auto pos = args.next(); pos != nullptr; pos = args.next(pos)) {
+ *       auto name = gd::argument::arguments::get_name_s(pos);
+ *       auto value = gd::argument::arguments::get_argument_s(pos).as_variant_view();
+ *       std::cout << "Name: " << name << ", Value: " << value.as_string() << "\n";
+ *    }
+ * }
+ * \endcode
+ *
+ * ### Memory Management
+ * The class can either own its buffer (allocated on the heap) or use an externally provided buffer. If the buffer is owned,
+ * it is automatically freed in the destructor.
  * 
+ * ### :TAG: File navigation, mark and jump to often used parts
+ * - `:TAG:argument` - Represents a single argument in `arguments`.
+ * - `:TAG:iterator` - Provides forward traversal of arguments in `arguments`.
+ * - `:TAG:construct.arguments` - Constructors and destructors for `arguments`.
+ * - `:TAG:operator.arguments` - Overloaded operators for `arguments`.
+ * - `:TAG:append.arguments` - Methods for appending values to `arguments`.
+ * - `:TAG:set.arguments` - Methods for setting values in the `arguments`.
+ * - `:TAG:get.arguments` - Methods for retrieving values from `arguments`.
+ * - `:TAG:print.arguments` - Methods for printing values in `arguments`.
+ * - `:TAG:free_functions.arguments` - Free functions for working with `arguments`.
+ * - `:TAG:buffer.arguments` - Methods for managing the buffer in `arguments`.
  */
 
 
@@ -244,7 +284,7 @@ public:
    };
 
 public:
-   struct argument
+   struct argument  //:TAG:argument - gd::argument::arguments::argument
    {
       union value;   // forward declare
       /// default constructor
@@ -486,7 +526,7 @@ public:
     * @brief iterator_ for iterating values in params object.
     */
    template<typename ARGUMENTS>
-   struct iterator_
+   struct iterator_  //:TAG:iterator - iterator used to move forward for values whithin arguments
    {
       using value_type = argument;  
       using iterator_category = std::forward_iterator_tag;
@@ -584,7 +624,7 @@ public:
 
 
 // ## construction -------------------------------------------------------------
-public:
+public: //:TAG:construct.arguments
    arguments() { buffer_set(); }
 
    /** Set buffer and size, use this to avoid heap allocations (if internal data grows over buffer size you will get heap allocation)  */
@@ -644,7 +684,7 @@ protected:
    void zero() { buffer_set(); };
 
    // ## operator -----------------------------------------------------------------
-public:
+public: //:TAG:operator.arguments
    argument operator[](unsigned uIndex) { return get_argument(uIndex); }
    argument operator[](std::string_view stringName) { return get_argument(stringName); }
    argument operator[](arguments::const_pointer p) { return get_argument(p); }
@@ -685,7 +725,7 @@ public:
    // ## methods ------------------------------------------------------------------
 public:
 /** \name GET/SET
-*///@{
+*///@{ 
 /// return start position to buffer where values are stored
    pointer get_buffer_start() { return m_pBuffer; }
    const_pointer get_buffer_start() const { return m_pBuffer; }
@@ -700,7 +740,7 @@ public:
    // return if object owns memory, if it does it should be deleted when arguments goes out of scope
    bool is_owner() const noexcept { return m_bOwner; }
 
-   // ## append adds values to stream
+   // ## append adds values to stream :TAG:append.arguments
    //    note: remember that each value has its type and type in stream is just
    //    one byte. That means that the amount of information about the type is
    //    limited. This is the reason why each type only has it's type number.
@@ -814,6 +854,10 @@ public:
    arguments& append_object(const std::string_view& stringName, const OBJECT object );
    template<typename OBJECT>
    arguments& append_object( const OBJECT object ) { return append_object( std::string_view(), object ); }
+
+   // ## set methods  :TAG:set.arguments
+   //    Set values for selected position in buffer, it could be for a name, index or pointer
+   //    If position is not found, new value is appended to buffer
 
    arguments& set(const std::string_view& stringName, std::nullptr_t) { return set(stringName, eTypeNumberBool, nullptr, 0); }
    arguments& set(const std::string_view& stringName, bool v) { return set(stringName, eTypeNumberBool, (const_pointer)&v, sizeof(bool)); }
@@ -942,6 +986,7 @@ public:
    void clear();
 
 /** \name ARGUMENT
+* :TAG:get.arguments
 * get argument value from arguments
 *///@{
    [[nodiscard]] argument get_argument() const { return get_argument_s(m_pBuffer); }
@@ -1008,6 +1053,7 @@ public:
 
 
 /** \name PRINT
+* :TAG:print.arguments
 * Methods used to format argument values into text
 *///@{
    std::string print() const;
@@ -1065,6 +1111,7 @@ public:
    std::string_view get_name(const_pointer pPosition) { return get_name_s( pPosition ); }
 
 /** \name INTERNAL FREE FUNCTIONS
+* :TAG:free_functions.arguments
 *///@{
    /// ## Move logic
    static pointer move_to_value_s(pointer pPosition);
@@ -1240,16 +1287,7 @@ public:
 
 // ## 
 public:
-   /*
-   struct buffer
-   {
-      unsigned int   m_uFlags;         ///< flags for arguments states (eg "owner" of memory etc.)
-      unsigned int   m_uLength;        ///< length in use
-      unsigned int   m_uBufferLength;  ///< length for byte array
-      int            m_iReferenceCount;///< used for reference counting
-      pointer        m_pBuffer;        ///< pointer to byte array
-   };
-   */
+   // ## buffer methods, used to access buffer data :TAG:buffer.arguments
 
    void buffer_set() { memset( this, 0, sizeof( arguments ) ); }
    void buffer_set( pointer p_ ) { m_pBuffer = p_; }

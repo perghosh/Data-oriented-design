@@ -11,6 +11,19 @@
 | `set*` | set or appends value  | `set*` sets value for existing value or if not found it appends it.  |
 
  * 
+ * 
+ * ### :TAG: File navigation, mark and jump to often used parts
+ * - `:TAG:argument` - Represents a single argument in `arguments`.
+ * - `:TAG:iterator` - Provides forward traversal of arguments in `arguments`.
+ * - `:TAG:construct.arguments` - Constructors and destructors for `arguments`.
+ * - `:TAG:operator.arguments` - Overloaded operators for `arguments`.
+ * - `:TAG:append.arguments` - Methods for appending values to `arguments`.
+ * - `:TAG:set.arguments` - Methods for setting values in the `arguments`.
+ * - `:TAG:get.arguments` - Methods for retrieving values from `arguments`.
+ * - `:TAG:print.arguments` - Methods for printing values in `arguments`.
+ * - `:TAG:free_functions.arguments` - Free functions for working with `arguments`.
+ * - `:TAG:buffer.arguments` - Methods for managing the buffer in `arguments`.
+ * 
  */
 
 
@@ -326,7 +339,7 @@ public:
 
 
 
-   struct argument
+   struct argument  //:TAG:argument 
    {
       union value;   // forward declare
       /// default constructor
@@ -567,7 +580,7 @@ public:
     * @brief iterator_ for iterating values in params object.
     */
    template<typename ARGUMENTS>
-   struct iterator_
+   struct iterator_  //:TAG:iterator - iterator used to move forward for values whithin arguments
    {
       using value_type = argument;  
       using iterator_category = std::forward_iterator_tag;
@@ -665,7 +678,7 @@ public:
 
 
 // ## construction -------------------------------------------------------------
-public:
+public: //:TAG:construct.arguments
    arguments() {}
 
    /** Set buffer and size, use this to avoid heap allocations (if internal data grows over buffer size you will get heap allocation)  */
@@ -732,7 +745,7 @@ public:
    bool is_null() const { return m_pbuffer == &m_buffer_s; }
 
 // ## operator -----------------------------------------------------------------
-public:
+public: //:TAG:operator.arguments
    argument operator[](unsigned uIndex) { return get_argument(uIndex); }
    argument operator[](std::string_view stringName) { return get_argument(stringName); }
    argument operator[](arguments::const_pointer p) { return get_argument(p); }
@@ -810,7 +823,7 @@ public:
 /** \name OPERATION
 *///@{
 
-   // ## append adds values to stream
+   // ## append adds values to stream  :TAG:append.arguments
    //    note: remember that each value has its type and type in stream is just
    //    one byte. That means that the amount of information about the type is
    //    limited. This is the reason why each type only has it's type number.
@@ -925,6 +938,10 @@ public:
    arguments& append_object(const std::string_view& stringName, const OBJECT object );
    template<typename OBJECT>
    arguments& append_object( const OBJECT object ) { return append_object( std::string_view(), object ); }
+
+   // ## set methods  :TAG:set.arguments
+   //    Set values for selected position in buffer, it could be for a name, index or pointer
+   //    If position is not found, new value is appended to buffer
 
    arguments& set(const std::string_view& stringName, std::nullptr_t) { return set(stringName, eTypeNumberBool, nullptr, 0); }
    arguments& set(const std::string_view& stringName, bool v) { return set(stringName, eTypeNumberBool, (const_pointer)&v, sizeof(bool)); }
@@ -1062,6 +1079,7 @@ public:
    void clear();
 
 /** \name ARGUMENT
+* :TAG:get.arguments
 * get argument value from arguments
 *///@{
    [[nodiscard]] argument get_argument() const { if( buffer_size() ) return get_argument_s(buffer_data()); else return argument();  }
@@ -1129,6 +1147,7 @@ public:
 
 
 /** \name PRINT
+* :TAG:print.arguments
 * Methods used to format argument values into text
 *///@{
    std::string print() const;
@@ -1180,6 +1199,7 @@ public:
    std::string_view get_name(const_pointer pPosition) { return get_name_s( pPosition ); }
 
 /** \name INTERNAL FREE FUNCTIONS
+* :TAG:free_functions.arguments
 *///@{
    /// ## Move logic
    static pointer move_to_value_s(pointer pPosition);
@@ -1372,10 +1392,6 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   //bool           m_bOwner;      ///< if buffer is owned (delete in destructor)
-   //pointer        m_pBuffer;     ///< pointer to byte array
-   //unsigned int   m_uLength;     ///< length in use
-   //unsigned int   m_uBufferLength;///< length for byte array
 
    buffer* m_pbuffer = &m_buffer_s;
 

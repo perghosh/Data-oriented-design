@@ -931,15 +931,15 @@ arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>>
 * `´´{.cpp}
 void print( const gd::argument::shared::arguments arguments_ )
 {
-std::cout << arguments_.print() << std::endl;
+   std::cout << arguments_.print() << std::endl;
 }
 
 TEST_CASE( "add from arguments", "[arguments]" ) {
 gd::argument::shared::arguments arguments_( { {"1", 1}, {"1", 1}, {"1", 1} } );
 
-// how to do a one liner
-print({ { {"2", 2}, { "3", 3 } }, arguments_});
-print({ arguments_, { {"1", 1}, {"1", 1} } });
+   // how to do a one liner
+   print({ { {"2", 2}, { "3", 3 } }, arguments_});
+   print({ arguments_, { {"1", 1}, {"1", 1} } });
 }
 * ```
 *
