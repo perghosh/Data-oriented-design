@@ -888,25 +888,87 @@ arguments::arguments(std::pair<std::string_view, gd::variant> pairArgument)
 }
 
 
-
+/** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from an initializer list of string-variant pairs.
+ * @param listPair An initializer list of pairs containing string views and gd::variant values.
+ * Initializes the object by appending each pair from the list.
+ */
 arguments::arguments(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair)
 {
    zero();
    for( auto it : listPair ) append_argument(it);
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from an initializer list of string-variant_view pairs with a tag_view.
+ * @param listPair An initializer list of pairs containing string views and gd::variant_view values.
+ * @param tag_view A tag indicating the use of variant_view (distinguishes constructor overload).
+ * Initializes the object by appending each pair from the list using the tag_view overload.
+ */
 arguments::arguments( std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view )
 {
    zero();
    for( auto it : listPair ) append_argument( it, tag_view{} );
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from a vector of string-variant_view pairs with a tag_view.
+ * @param listPair A vector of pairs containing string views and gd::variant_view values.
+ * @param tag_view A tag indicating the use of variant_view (distinguishes constructor overload).
+ * Initializes the object by appending each pair from the vector using the tag_view overload.
+ */
 arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>> vectorPair, tag_view )
 {
    zero();
    append(vectorPair);
 }
 
+/** ---------------------------------------------------------------------------
+* @brief Constructs an arguments object from an initializer list and another arguments object.
+*
+* appending key-value pairs from the provided initializer list, and appending all elements from another arguments object.
+* 
+* `´´{.cpp}
+void print( const gd::argument::shared::arguments arguments_ )
+{
+std::cout << arguments_.print() << std::endl;
+}
+
+TEST_CASE( "add from arguments", "[arguments]" ) {
+gd::argument::shared::arguments arguments_( { {"1", 1}, {"1", 1}, {"1", 1} } );
+
+// how to do a one liner
+print({ { {"2", 2}, { "3", 3 } }, arguments_});
+print({ arguments_, { {"1", 1}, {"1", 1} } });
+}
+* ```
+*
+* @param listPair An initializer list of pairs containing string views as keys and 
+*                 gd::variant_view as values to be added to the arguments object.
+* @param arguments_ A const reference to another arguments object whose contents 
+*                   will be appended to this object.
+*/
+arguments::arguments(const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair, const arguments& arguments_ )
+{
+   zero();
+   for( auto it : listPair ) append_argument(it, tag_view{});
+   append(arguments_);
+}
+
+arguments::arguments(const arguments& arguments_ , const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair )
+{
+   zero();
+   append(arguments_);
+   for( auto it : listPair ) append_argument(it, tag_view{});
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from a single string-variant pair with a tag to bypass initializer list.
+ * @param stringName The string view representing the argument name.
+ * @param variantValue The gd::variant value associated with the argument name.
+ * @param tag_no_initializer_list A tag to explicitly indicate this constructor does not use an initializer list.
+ * Initializes the object by appending the single name-value pair.
+ */
 arguments::arguments(const std::string_view& stringName, const gd::variant& variantValue, arguments::tag_no_initializer_list)
 {
    zero();

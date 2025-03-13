@@ -899,7 +899,7 @@ TEST_CASE( "add from arguments", "[arguments]" ) {
 
    // how to do a one liner
    print({ { {"2", 2}, { "3", 3 } }, arguments_});
-   print({ { {"4", 4}, { "5", 5 } }, { {"1", 1}, {"1", 1}, {"1", 1} } });
+   print({ arguments_, { {"1", 1}, {"1", 1} } });
 }
  * ```
  *
@@ -908,12 +908,20 @@ TEST_CASE( "add from arguments", "[arguments]" ) {
  * @param arguments_ A const reference to another arguments object whose contents 
  *                   will be appended to this object.
  */
-arguments::arguments(std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, const arguments& arguments_ )
+arguments::arguments(const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair, const arguments& arguments_ )
 {
    zero();
    for( auto it : listPair ) append_argument(it, tag_view{});
    append(arguments_);
 }
+
+arguments::arguments(const arguments& arguments_ , const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair )
+{
+   zero();
+   append(arguments_);
+   for( auto it : listPair ) append_argument(it, tag_view{});
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Constructs an arguments object from a single string-variant pair with a tag to bypass initializer list.
