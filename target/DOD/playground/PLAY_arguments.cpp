@@ -9,6 +9,21 @@
 #include "catch2/catch_amalgamated.hpp"
 
 
+void print( const gd::argument::arguments arguments_ )
+{
+   std::cout << arguments_.print() << std::endl;
+}
+
+TEST_CASE( "add from arguments", "[arguments]" ) {
+   gd::argument::arguments arguments_( { {"1", 1}, {"1", 1}, {"1", 1} } );
+
+   // how to do a one liner
+   print({ { {"2", 2}, { "3", 3 } }, arguments_});
+   print({ arguments_, { {"1", 1}, {"1", 1} } });
+}
+
+
+
 // Run logic on arguments to test new features --------------------------------
 TEST_CASE( "[arguments] add variables", "[arguments]" ) {
    gd::argument::arguments arguments_;
