@@ -20,6 +20,13 @@ TEST_CASE( "add from arguments", "[arguments]" ) {
    // how to do a one liner
    print({ { {"2", 2}, { "3", 3 } }, arguments_});
    print({ arguments_, { {"1", 1}, {"1", 1} } });
+
+   {
+      gd::argument::arguments arguments_( { {"A", "A"}, {"B", "B"}, {"C", "C"} } );
+      gd::argument::arguments argumentsMerge( { {"B", "B"}, {"C", "C"}, {"D", "D"}, {"E", "E"} } );
+      arguments_.merge(argumentsMerge);
+      print(arguments_);
+   }
 }
 
 

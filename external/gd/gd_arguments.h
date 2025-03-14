@@ -32,7 +32,7 @@
  * The class can either own its buffer (allocated on the heap) or use an externally provided buffer. If the buffer is owned,
  * it is automatically freed in the destructor.
  * 
- * ### 0TAG0 File navigation, mark and jump to often used parts
+ * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0argument` - Represents a single argument in `arguments`.
  * - `0TAG0iterator` - Provides forward traversal of arguments in `arguments`.
  * - `0TAG0construct.arguments` - Constructors and destructors for `arguments`.
@@ -577,17 +577,25 @@ public:
          return it;
       }
 
+      /// chevk if name is present for value
+      bool is_name() const {                                                                       assert(m_parguments->verify_d(buffer_offset()));
+         return ARGUMENTS::is_name_s(buffer_offset());
+      }
+
+      /// get name for value
       std::string name() const {                                                                   assert( m_parguments->verify_d( buffer_offset() ));
          if( ARGUMENTS::is_name_s(buffer_offset()) == true ) { return std::string(ARGUMENTS::get_name_s(buffer_offset())); }
          return std::string();
       }
 
+      /// get name as string_view for value
       std::string_view name(tag_view) const {                                                      assert( m_parguments->verify_d( buffer_offset() ));
          if( arguments::is_name_s(buffer_offset()) == true ) { return ARGUMENTS::get_name_s(buffer_offset()); }
          return std::string_view();
       }
 
-      bool compare_name(std::string_view stringName) const { 
+      /// compare name with string
+      bool compare_name(const std::string_view& stringName) const { 
          if( ARGUMENTS::is_name_s(buffer_offset()) == true )
          {
             if( ARGUMENTS::get_name_s(buffer_offset()) == stringName ) return true;
@@ -894,6 +902,14 @@ public:
    pointer insert( pointer pPosition, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
    // pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
 //@}
+
+/** \name MERGE
+ * Add values to arguments if not found
+ *///@{
+   /// merge values from another arguments object, onlye named values are merged
+   arguments& merge(const arguments& arguments_);
+//@}
+
 
    iterator begin() { return iterator( this ); }
    iterator end() { return iterator( this, m_uLength ); }

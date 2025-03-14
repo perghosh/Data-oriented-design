@@ -1549,7 +1549,38 @@ arguments::pointer arguments::insert(pointer pPosition, const std::string_view& 
    return pPosition;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Merge two arguments objects
+ @code
+ void print( const gd::argument::arguments arguments_ )
+{
+   std::cout << arguments_.print() << std::endl;
+}
 
+TEST_CASE( "merge", "[arguments]" ) {
+   gd::argument::arguments arguments_( { {"A", "A"}, {"B", "B"}, {"C", "C"} } );
+   gd::argument::arguments argumentsMerge( { {"B", "B"}, {"C", "C"}, {"D", "D"}, {"E", "E"} } );
+   arguments_.merge(argumentsMerge);
+   print(arguments_);  // prints "A": A, "B": B, "C": C, "D": D, "E": E
+}
+@endcode
+ * @param arguments_ arguments object to merge with
+ * @return arguments& reference to this
+ */ 
+arguments& arguments::merge(const arguments& arguments_)
+{
+   for( auto it = std::begin(arguments_); it != std::end(arguments_); it++ )
+   {
+      if( it.is_name() == true )
+      {
+         if( find(it.name()) == nullptr )
+         {
+            append_argument(it.name(), it.get_argument());
+         }
+      }
+   }
+   return *this;
+}
 
 
 /*----------------------------------------------------------------------------- count */ /**
