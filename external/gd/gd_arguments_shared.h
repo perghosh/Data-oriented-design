@@ -990,6 +990,14 @@ public:
    pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
 //@}
 
+/** \name MERGE
+ * Add values to arguments if not found
+ *///@{
+   /// merge values from another arguments object, onlye named values are merged
+   arguments& merge(const arguments& argumentsFrom);
+//@}
+
+
    iterator begin() { return iterator( this ); }
    iterator end() { return iterator( this, buffer_size() ); }
    const_iterator begin() const { return const_iterator( this ); }
