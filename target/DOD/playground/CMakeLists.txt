@@ -77,7 +77,7 @@ endif()
 
 
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_console")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
@@ -87,7 +87,7 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
 endif()
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_file")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
@@ -98,7 +98,7 @@ if( USE_TEST_ )
 endif()
 
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_formula")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
@@ -151,7 +151,7 @@ endif()
 
 
 
-set( USE_TEST_ OFF )
+set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_router")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 

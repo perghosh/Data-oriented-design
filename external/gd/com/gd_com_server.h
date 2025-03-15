@@ -421,10 +421,16 @@ struct command : public gd::com::server::command_i
    std::pair<bool, std::string> append( const std::string_view& stringQueryString, const gd::argument::arguments& arguments_, gd::types::tag_uri );
    std::pair<bool, std::string> append( enumPriority ePriority, const gd::argument::arguments& arguments_ );
    std::pair<bool, std::string> append(uint32_t uPriority, const gd::argument::arguments& arguments_) { return append((enumPriority)uPriority, arguments_); }
+   /// append variable with priority stack (mimics local variables)
+   std::pair<bool, std::string> append(const gd::argument::arguments& arguments_, gd::types::tag_variable);
+   std::pair<bool, std::string> append(uint32_t uPriority, const gd::argument::arguments& arguments_, gd::types::tag_variable);
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) override;
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );
    void add_command( const std::vector<std::string_view>& vectorCommand );
    void add_command( const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal );
+
+   std::pair<bool, std::string> get_variable(gd::argument::arguments* parguments_, uint32_t uPriority );
+   gd::argument::arguments get_variable(uint32_t uPriority, gd::types::tag_variable) { gd::argument::arguments arguments_; get_variable(&arguments_, uPriority); return arguments_; }
 //@}
 
    /// add command and arguments for that command (command string is formated as command/sub-command/sub-sub-command in uri encoded format)
@@ -446,6 +452,7 @@ struct command : public gd::com::server::command_i
    gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) { return get_argument( index_, m_iCommandIndex, uPriority ); }
    gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override;
    gd::argument::arguments get_all_arguments() { return get_all_arguments(gd::variant_view()); }
+   /// get arguments for index, index can be numeric or string that identifies command
    std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override;
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override;
    /// wrapper to select first value for name
@@ -498,6 +505,7 @@ public:
    int m_iNextCommandIndex = 0; ///< index for next free command index
    gd::com::server::server_i* m_pserver = nullptr; ///< server object that command is connected to
    std::vector< arguments > m_vectorArgument; ///< command and arguments or only arguments, priority decides how to search for argument value
+   std::vector< arguments > m_vectorVariable; ///< variables that are used in command/commands stored in server
 };
 
 /// adds command information to command object, command are able to hold more than one command

@@ -631,6 +631,11 @@ public:
          return it;
       }
 
+      /// check if name is present for value
+      bool is_name() const {                                                                       assert(m_parguments->verify_d(buffer_offset()));
+      return ARGUMENTS::is_name_s(buffer_offset());
+      }
+
       std::string name() const {                                                                   assert( m_parguments->verify_d( buffer_offset() ));
          if( ARGUMENTS::is_name_s(buffer_offset()) == true ) { return std::string(ARGUMENTS::get_name_s(buffer_offset())); }
          return std::string();

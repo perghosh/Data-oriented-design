@@ -1796,7 +1796,7 @@ TEST_CASE( "merge", "[arguments]" ) {
  */ 
 arguments& arguments::merge(const arguments& argumentsFrom)
 {
-   for( auto it = std::begin(arguments_); it != std::end(arguments_); it++ )
+   for( auto it = std::begin(argumentsFrom); it != std::end(argumentsFrom); it++ )
    {
       if( it.is_name() == true )
       {

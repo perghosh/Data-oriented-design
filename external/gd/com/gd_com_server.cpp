@@ -76,7 +76,7 @@ std::pair<bool, std::string> command::add_arguments( const gd::variant_view& var
    if( (uPriority & ePriorityRegister) != 0 )                                  // register has top priority and only one register arguments is allowed
    {
       arguments_remove( ePriorityRegister );                                   // only one register item, remove rest
-      m_vectorArgument.push_back( arguments( uPriority, *pargumentsVariable ) );
+      m_vectorVariable.push_back(arguments(uPriority, *pargumentsVariable));
 #ifndef NDEBUG
       [[maybe_unused]] std::string stringArguments_d = pargumentsVariable->print();
 #endif
@@ -127,12 +127,12 @@ command::arguments* command::find_arguments( uint32_t uIndexKey )
 void command::arguments_remove(unsigned uPriority)
 {
    /// loop backwards because it is a bit faster
-   for( auto it = m_vectorArgument.rbegin(); it != m_vectorArgument.rend(); ) 
+   for( auto it = m_vectorVariable.rbegin(); it != m_vectorVariable.rend(); ) 
    {
       if( it->get_priority() & uPriority )
       {
          // tricky for removing backwards iterators
-         it = std::vector<arguments>::reverse_iterator( m_vectorArgument.erase( (it + 1).base() ));
+         it = std::vector<arguments>::reverse_iterator( m_vectorVariable.erase( (it + 1).base() ));
       }
       else
       {
@@ -180,6 +180,34 @@ std::vector<std::string_view> command::add_querystring(const std::string_view& s
    vectorCommand = gd::utf8::split( stringCommand, '/' );
 
    return vectorCommand;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Append stack variables to command object
+ * 
+ * @param arguments_ object with variables to add with stack priority
+ * @return true if ok, false and error informaton if error
+ */
+std::pair<bool, std::string> command::append(const gd::argument::arguments& arguments_, gd::types::tag_variable)
+{
+   m_vectorVariable.push_back(arguments( ePriorityStack, arguments_ ));
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Append variables to command object
+ * 
+ * Command object may hold 0 or more commands, each command may have it's own arguments.
+ * But the command object may also hold variables that are used for all commands. These variables
+ * are stored in a separate vector and are associated with different priorities.
+ * @param uPriority priority for variables added
+ * @param arguments_ object with variables to add
+ * @return true if ok, false and error informaton if error
+ */
+std::pair<bool, std::string> command::append(uint32_t uPriority, const gd::argument::arguments& arguments_, gd::types::tag_variable)
+{
+   m_vectorVariable.push_back(arguments(uPriority, arguments_));
+   return { true, "" };
 }
 
 std::pair<bool, std::string> command::add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal )
@@ -258,6 +286,20 @@ std::pair<bool, std::string> command::append(enumPriority ePriority, const gd::a
    append( std::move(argumentsLocal) );
    return { true, "" };
 }
+
+std::pair<bool, std::string> command::get_variable(gd::argument::arguments* parguments_, uint32_t uPriority)
+{
+   for( const auto& it : m_vectorVariable )
+   {
+      if( it.get_priority() & uPriority )
+      {
+         *parguments_ += it.get_arguments();
+      }
+   }
+   return { true, "" };
+}
+
+
 
 
 /** ---------------------------------------------------------------------------
@@ -636,16 +678,17 @@ void command::clear( const gd::variant_view& variantviewToClear )
    if( variantviewToClear.is_string() == true )
    {
       std::string_view stringType = variantviewToClear.as_string_view();
-      if( stringType == "stack" ) uType = ePriorityStack;
+      if( stringType == "register" ) uType = ePriorityRegister;
+      else if( stringType == "stack" ) uType = ePriorityStack;
       else if( stringType == "command" ) uType = ePriorityCommand;
       else if( stringType == "global" ) uType = ePriorityGlobal;
       else
       {
-         for( auto it = std::begin( m_vectorArgument ), itEnd = std::end( m_vectorArgument ); it != itEnd; it++ )
+         for( auto it = std::begin( m_vectorVariable), itEnd = std::end( m_vectorVariable ); it != itEnd; it++ )
          {
             if( it->get_key() == stringType )
             {
-               it = m_vectorArgument.erase( it );
+               it = m_vectorVariable.erase( it );
             }
          }
       }
@@ -655,19 +698,28 @@ void command::clear( const gd::variant_view& variantviewToClear )
       uType = variantviewToClear.as_uint();
    }
 
-   // ## Clear values in vector holding command values
-   m_vectorArgument.erase(std::remove_if(m_vectorArgument.begin(), m_vectorArgument.end(), 
-      [uType](const arguments a_ ) 
-      { 
-         bool b_ = (a_.get_priority() & uType) != 0;
-         return b_;
-      }), m_vectorArgument.end());
+   if( uType & ePriorityCommand )                                             // if command values are to be cleared
+   {
+      m_vectorArgument.clear();
+   }
+
+   if( uType & ( ePriorityRegister | ePriorityStack | ePriorityGlobal ) )     // if variables are to be cleared
+   {
+      // ## Clear values in vector holding variables
+      m_vectorVariable.erase(std::remove_if(m_vectorVariable.begin(), m_vectorVariable.end(), 
+         [uType](const arguments& a_ ) 
+         { 
+            bool b_ = (a_.get_priority() & uType) != 0;
+            return b_;
+         }), m_vectorVariable.end());
+   }
 }
 
 /// clear all values in command
 void command::clear()
 {
    m_vectorArgument.clear();
+   m_vectorVariable.clear();
 }
 
 
