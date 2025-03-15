@@ -1,6 +1,6 @@
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
-#include "gd/gd_com_server.h"
+#include "gd/com/gd_com_server.h"
 
 #include "main.h"
 
@@ -9,7 +9,34 @@
 // forward declare run method
 std::pair<bool, std::string> Run(const std::string_view& stringCommand, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse );
 
+TEST_CASE( "[router] add variables", "[router]" ) {
+   using namespace gd::com::server::router;
+   auto pserver = gd::com::pointer< server >(new server);
+   auto pcommand = gd::com::pointer< command >(new command(pserver));
+
+   // appends three stack variables (like lokal variables)
+   pcommand->append( {{"iso", "2025-03-15"}, {"european", "15/03/2025"}, {"long", "March 15, 2025"}}, gd::types::tag_variable{});
+   pcommand->append( 4, {{"iso", "2000-03-15"}, {"european", "15/03/2000"}, {"long", "March 15, 2000"}}, gd::types::tag_variable{});
+   // appends a command with argument called query
+   pcommand->append("database/select?query=test-name", gd::types::tag_uri{});
+
+   gd::argument::arguments arguments_;
+   pcommand->get_arguments( 0u, &arguments_ );
+   std::cout << "arguments: " << arguments_.print() << "\n";
+   pcommand->get_variable(&arguments_, 1);
+   std::cout << "arguments: " << arguments_.print() << "\n";
+   pcommand->get_variable( &arguments_, 2);
+   std::cout << "arguments: " << arguments_.print() << "\n";
+   pcommand->get_variable( &arguments_, 42);
+   std::cout << "arguments: " << arguments_.print() << "\n";
+   pcommand->clear( "stack" );
+   arguments_ = pcommand->get_variable(7, gd::types::tag_variable{});
+   std::cout << "arguments: " << arguments_.print() << "\n";
+
+}
+
 // Run logic on arguments to test new features --------------------------------
+/*
 TEST_CASE( "[router] add variables", "[router]" ) {
    using namespace gd::com::server::router;
 
@@ -24,6 +51,7 @@ TEST_CASE( "[router] add variables", "[router]" ) {
 
    //gd::com::pointer
 }
+*/
 
 
 std::pair<bool, std::string> Run(const std::string_view& stringCommand, gd::com::server::command_i* pcommand, gd::com::server::response_i* presponse )

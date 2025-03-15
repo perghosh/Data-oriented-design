@@ -64,6 +64,10 @@ struct tag_value {};          ///< value used in some form
 struct tag_main_type {};      /// main type if there are secondary types
 struct tag_secondary_type {}; /// secondary type if there are main types
 
+struct tag_method {};         ///< method is used in some form
+struct tag_property {};       ///< property is used in some form
+struct tag_variable {};       ///< variable is used in some form
+
 
 // ----------------------------------------------------------------------------
 // ## stl tag dispatchers, used to glue with stl
