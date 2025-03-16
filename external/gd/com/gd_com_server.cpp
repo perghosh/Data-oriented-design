@@ -287,8 +287,20 @@ std::pair<bool, std::string> command::append(enumPriority ePriority, const gd::a
    return { true, "" };
 }
 
-std::pair<bool, std::string> command::get_variable(gd::argument::arguments* parguments_, uint32_t uPriority)
+std::pair<bool, std::string> command::get_variable(gd::argument::arguments* parguments_, const std::variant<size_t, std::string_view>& priority_)
 {
+   uint32_t uPriority = 0;
+   if( priority_.index() == 0 )
+   {
+      uPriority = std::get<size_t>(priority_);
+   }
+   else if( priority_.index() == 1 )
+   {
+      std::string_view stringPriority = std::get<std::string_view>(priority_);
+      uPriority = to_command_priority_g(stringPriority);
+   }
+
+
    for( const auto& it : m_vectorVariable )
    {
       if( it.get_priority() & uPriority )
@@ -296,6 +308,46 @@ std::pair<bool, std::string> command::get_variable(gd::argument::arguments* parg
          *parguments_ += it.get_arguments();
       }
    }
+   return { true, "" };
+}
+
+std::pair<bool, std::string> command::get_command_variable( const std::variant<size_t, std::string_view> index_, const std::variant<size_t, std::string_view>& priority_, gd::argument::arguments* pargumentsVariable )
+{
+   size_t uPriority = 0;
+   arguments* parguments_ = nullptr;
+   if( index_.index() == 0 )
+   {
+      size_t uIndex = std::get<size_t>(index_);
+      parguments_ = get_command(uIndex);
+   }
+   else if( index_.index() == 1 )
+   {
+      std::string_view stringName = std::get<std::string_view>(index_);
+      parguments_ = get_command(stringName);
+   }
+
+   // ## Harvest variables from command and if specified also from variables in different levels
+
+   if( parguments_ != nullptr ) 
+   { 
+      *pargumentsVariable += parguments_->get_arguments();                     // add command arguments to passed arguments
+   }
+
+   if( priority_.index() == 0 )
+   {
+      uPriority = std::get<size_t>(priority_);
+   }
+   else if( priority_.index() == 1 )
+   {
+      std::string_view stringPriority = std::get<std::string_view>(priority_);
+      uPriority = to_command_priority_g(stringPriority);
+   }
+
+   if( uPriority != 0 )
+   {
+      get_variable(pargumentsVariable, uPriority);                            // add variables with priority to passed arguments
+   }
+
    return { true, "" };
 }
 
@@ -334,6 +386,7 @@ std::pair<bool, std::string> command::get_variable(gd::argument::arguments* parg
  * - For higher priority filters, it processes each byte of `uPriority` to determine 
  *   the priority for searching, ensuring each priority is checked in sequence.
  */
+/*
 gd::variant_view command::get_argument( const gd::variant_view& index_, int32_t iCommandIndex, uint32_t uPriority )
 {
    gd::variant_view value_;
@@ -423,6 +476,7 @@ gd::variant_view command::get_argument( const gd::variant_view& index_, int32_t 
 
    return value_;
 }
+*/
 
 /** ---------------------------------------------------------------------------
  * @brief Retrieves all arguments from the command object.
@@ -496,19 +550,26 @@ gd::argument::arguments command::get_all_arguments( const gd::variant_view& inde
  * @param parguments_ arguments item where values are placed
  * @return true if ok, false and error information on error
  */
-std::pair<bool, std::string> command::get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ )
-{                                                                                                  assert( parguments_ != nullptr );
-   if( index_.index() == 1 )
+std::pair<bool, std::string> command::get_command( const gd::variant_view& index_, void** ppCommand )
+{                                                                                                  assert( ppCommand != nullptr );
+   *ppCommand = nullptr; // set to null to indicate that no command was found
+
+   if( index_.is_number() == true )
    {
-      std::string_view stringName = get<1>( index_ );
-      const gd::argument::arguments* pargumentsFind = find( stringName );
-      if( pargumentsFind != nullptr ) { parguments_->append( *pargumentsFind ); }
+      unsigned uIndex = index_.as_uint();
+      *ppCommand = (void*)get_command(uIndex);
    }
-   else
-   {                                                                                               assert( get<0>( index_ ) < m_vectorArgument.size() );
-      auto uIndex = get<0>( index_ );
-      const auto& arguments_ = m_vectorArgument.at( uIndex );
-      parguments_->append( arguments_.get_arguments() );
+   else if( index_.is_string() == true )
+   {
+      std::string_view stringName = index_.as_string_view();
+      for( auto it : m_vectorArgument )
+      {
+         if( it.get_key() == stringName )
+         {
+            *ppCommand = &it;
+            break;
+         }
+      }
    }
 
    return { true, "" };
@@ -678,10 +739,12 @@ void command::clear( const gd::variant_view& variantviewToClear )
    if( variantviewToClear.is_string() == true )
    {
       std::string_view stringType = variantviewToClear.as_string_view();
-      if( stringType == "register" ) uType = ePriorityRegister;
-      else if( stringType == "stack" ) uType = ePriorityStack;
-      else if( stringType == "command" ) uType = ePriorityCommand;
-      else if( stringType == "global" ) uType = ePriorityGlobal;
+      uType = to_command_priority_g(stringType);
+      if( stringType == "register" )      uType = ePriorityRegister;
+      else if( stringType == "stack" )    uType = ePriorityStack;
+      else if( stringType == "command" )  uType = ePriorityCommand;
+      else if( stringType == "global" )   uType = ePriorityGlobal;
+      else if( stringType == "all" )      uType = (ePriorityRegister | ePriorityStack | ePriorityGlobal);
       else
       {
          for( auto it = std::begin( m_vectorVariable), itEnd = std::end( m_vectorVariable ); it != itEnd; it++ )
