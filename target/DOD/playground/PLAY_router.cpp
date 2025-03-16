@@ -16,18 +16,27 @@ TEST_CASE( "[router] add variables", "[router]" ) {
 
    // appends three stack variables (like lokal variables)
    pcommand->append( {{"iso", "2025-03-15"}, {"european", "15/03/2025"}, {"long", "March 15, 2025"}}, gd::types::tag_variable{});
-   pcommand->append( 4, {{"iso", "2000-03-15"}, {"european", "15/03/2000"}, {"long", "March 15, 2000"}}, gd::types::tag_variable{});
+   pcommand->append( gd::com::server::ePriorityGlobal, {{"iso", "2000-03-15"}, {"european", "15/03/2000"}, {"long", "March 15, 2000"}}, gd::types::tag_variable{});
    // appends a command with argument called query
    pcommand->append("database/select?query=test-name", gd::types::tag_uri{});
 
    gd::argument::arguments arguments_;
-   pcommand->get_arguments( 0u, &arguments_ );
+   pcommand->get_command_variable(0u, 0u, &arguments_ );
    std::cout << "arguments: " << arguments_.print() << "\n";
-   pcommand->get_variable(&arguments_, 1);
+   arguments_.clear();
+
+   pcommand->get_command_variable(0u, "all", &arguments_);
    std::cout << "arguments: " << arguments_.print() << "\n";
-   pcommand->get_variable( &arguments_, 2);
+   arguments_.clear();
+
+   pcommand->get_command_variable(0u, 0u, &arguments_ );
    std::cout << "arguments: " << arguments_.print() << "\n";
-   pcommand->get_variable( &arguments_, 42);
+
+   pcommand->get_variable(&arguments_, 1u);
+   std::cout << "arguments: " << arguments_.print() << "\n";
+   pcommand->get_variable( &arguments_, 2u);
+   std::cout << "arguments: " << arguments_.print() << "\n";
+   pcommand->get_variable( &arguments_, "global");
    std::cout << "arguments: " << arguments_.print() << "\n";
    pcommand->clear( "stack" );
    arguments_ = pcommand->get_variable(7, gd::types::tag_variable{});

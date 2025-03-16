@@ -60,14 +60,15 @@ constexpr unsigned to_command_priority_g( const std::string_view& stringPriority
    using namespace gd::types::detail;
    unsigned uPriority = ePriorityUnknown;
 
-   uint32_t uPriorityName = hash_type( stringPriority );
+   uint32_t uPriorityName = hash_type16( stringPriority );
    switch( uPriorityName )
    {
-   case hash_type("unkn"): uPriority = ePriorityUnknown;  break;               // unknown (0)
-   case hash_type("regi"): uPriority = ePriorityRegister;  break;              // register priority, highest type
-   case hash_type("stac"): uPriority = ePriorityStack;  break;                 // stack priority, like lokals
-   case hash_type("comm"): uPriority = ePriorityCommand;  break;               // command or members for specific named command
-   case hash_type("glob"): uPriority = ePriorityGlobal;  break;                // globals, accessible for all
+   case hash_type16( "un" ): uPriority = ePriorityUnknown;  break;               // unknown (0)
+   case hash_type16( "re" ): uPriority = ePriorityRegister;  break;              // register priority, highest type
+   case hash_type16( "st" ): uPriority = ePriorityStack;  break;                 // stack priority, like lokals
+   case hash_type16( "co" ): uPriority = ePriorityCommand;  break;               // command or members for specific named command
+   case hash_type16( "gl" ): uPriority = ePriorityGlobal;  break;                // globals, accessible for all
+   case hash_type16( "al" ): uPriority = ( ePriorityRegister | ePriorityStack | ePriorityGlobal );  break;
    default: assert(false);
    }
 
@@ -163,9 +164,9 @@ struct command_i : public unknown_i
    virtual std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsValue ) = 0;
    virtual std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) = 0;
    //virtual uint64_t get_command_count() = 0;
-   virtual gd::variant_view get_argument( const gd::variant_view& index_, int32_t iCommandIndex, uint32_t uPriority ) = 0;
+   //virtual gd::variant_view get_argument( const gd::variant_view& index_, int32_t iCommandIndex, uint32_t uPriority ) = 0;
    virtual gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) = 0;
-   virtual std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) = 0;
+   virtual std::pair<bool, std::string> get_command( const gd::variant_view& index_, void** ppCommand ) = 0;
    virtual std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) = 0;
    virtual std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) = 0;
    virtual void clear( const gd::variant_view& variantviewType ) = 0;
@@ -217,9 +218,9 @@ struct command : public command_i
    unsigned release() override { return 0; }
    std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsGlobal ) override { return { true, "" }; }
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsGlobal ) override { return { true, "" }; }
-   gd::variant_view get_argument( const gd::variant_view& index_, int32_t iCommandIndex, uint32_t uPriority ) override { return gd::variant_view(); }
+   //gd::variant_view get_argument( const gd::variant_view& index_, int32_t iCommandIndex, uint32_t uPriority ) override { return gd::variant_view(); }
    gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override { return gd::argument::arguments(); }
-   std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override { return { true, "" }; }
+   std::pair<bool, std::string> get_command( const gd::variant_view& index_, void** ppCommand ) override { return { true, "" }; }
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override { return { true, "" }; }
    std::pair<bool, std::string> query_select_all( const gd::variant_view& selector_, std::vector<gd::variant_view>* pvectorValue ) override { return { true, "" }; }
    void clear( const gd::variant_view& variantviewType ) override {}
@@ -429,15 +430,18 @@ struct command : public gd::com::server::command_i
    void add_command( const std::vector<std::string_view>& vectorCommand );
    void add_command( const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal );
 
-   std::pair<bool, std::string> get_variable(gd::argument::arguments* parguments_, uint32_t uPriority );
+   std::pair<bool, std::string> get_variable(gd::argument::arguments* parguments_, const std::variant<size_t, std::string_view>& priority_ );
    gd::argument::arguments get_variable(uint32_t uPriority, gd::types::tag_variable) { gd::argument::arguments arguments_; get_variable(&arguments_, uPriority); return arguments_; }
+   /// get variables for command, it also returns variables for specified priorities
+   std::pair<bool, std::string> get_command_variable(const std::variant<size_t, std::string_view> index_, const std::variant<size_t, std::string_view>& priority_, gd::argument::arguments* pargumentsVariable );
 //@}
 
-   /// add command and arguments for that command (command string is formated as command/sub-command/sub-sub-command in uri encoded format)
 
    // ## Methods to access internal command information, command may hold more than one command
 
-   arguments* get_command(size_t uIndex) const;
+   /// get command for index, index is used to find command in command object
+   arguments* get_command(size_t uIndex) const { return uIndex < m_vectorArgument.size() ? const_cast<arguments*>(&m_vectorArgument[uIndex]) : nullptr; }
+   arguments* get_command(const std::string_view& stringKey) const;
 
 /** \name ARGUMENT
 * Command holds argument values in different levels and these levels mimics how values are stored
@@ -447,13 +451,10 @@ struct command : public gd::com::server::command_i
 * command (this is the command that is active). If value is not found then register and stack values are searched and lastly
 * global argument values.
 *///@{
-   gd::variant_view get_argument( const gd::variant_view& index_, int32_t iCommandIndex, uint32_t uPriority ) override;
-   gd::variant_view get_argument( const gd::variant_view& index_ ) { return get_argument( index_, m_iCommandIndex, 0 ); }
-   gd::variant_view get_argument( const gd::variant_view& index_, uint32_t uPriority ) { return get_argument( index_, m_iCommandIndex, uPriority ); }
    gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override;
    gd::argument::arguments get_all_arguments() { return get_all_arguments(gd::variant_view()); }
    /// get arguments for index, index can be numeric or string that identifies command
-   std::pair<bool, std::string> get_arguments( const std::variant<uint64_t, std::string_view> index_, gd::argument::arguments* parguments_ ) override;
+   std::pair<bool, std::string> get_command( const gd::variant_view& index_, void** ppCommand ) override;
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override;
    /// wrapper to select first value for name
    gd::variant_view query_select( const std::string_view& stringSelector );
@@ -521,13 +522,10 @@ inline void command::add_command(const std::vector<std::string_view>& vectorComm
 inline void command::add_command(const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal) {
    m_vectorArgument.push_back( arguments( stringKey, vectorCommand, argumentsLocal ) );
 }
-/// get pointer to command for index if found
-inline command::arguments* command::get_command(size_t uIndex) const {
+/// get pointer to command for key value
+inline command::arguments* command::get_command(const std::string_view& stringKey) const {
    for( auto& it : m_vectorArgument ) { 
-      if( it.get_priority() & ePriorityCommand) {
-         if( uIndex == 0 ) return (arguments*)&it; 
-         uIndex--;
-      }
+      if( it == stringKey ) return (command::arguments*)&it;
    }
    return nullptr;
 }
