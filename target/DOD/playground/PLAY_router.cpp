@@ -41,6 +41,13 @@ TEST_CASE( "[router] add variables", "[router]" ) {
    pcommand->clear( "stack" );
    pcommand->get_variables(&arguments_, "stack");
 
+   pcommand->append( {{"iso", "2025-03-15"}, {"european", "15/03/2025"}, {"long", "March 15, 2025"}}, gd::types::tag_variable{});
+   pcommand->append( gd::com::server::ePriorityGlobal, {{"iso", "2000-03-15"}, {"european1", "15/03/2000 - 24:00:00"}, {"long", "March 15, 2000"}}, gd::types::tag_variable{});
+
+
+   { auto v_ = pcommand->get_variable(0u, "european1", "all" ); std::cout << v_.as_string() << std::endl; }
+   { auto v_ = pcommand->get_variable(0u, "long", "all" ); std::cout << v_.as_string() << std::endl; }
+
 }
 
 // Run logic on arguments to test new features --------------------------------

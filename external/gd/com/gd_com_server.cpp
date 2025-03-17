@@ -313,7 +313,7 @@ std::pair<bool, std::string> command::append(enumPriority ePriority, const gd::a
  *   using the overloaded get_variable() method with the variable_ and uPriority.
  * - If the command is not found or the variable lookup fails, an empty variant view is returned.
  */
-gd::variant_view command::get_variable(const gd::variant_view& command_, const gd::variant_view& variable_, uint32_t uPriority)
+gd::variant_view command::get_variable(const gd::variant_view& command_, const gd::variant_view& variable_, uint32_t uPriority) const
 {
    arguments* parguments_ = nullptr;
 
@@ -335,14 +335,14 @@ gd::variant_view command::get_variable(const gd::variant_view& command_, const g
       {
          stringVariable = variable_.as_string_view();
          gd::variant_view value_ = parguments_->get_variant_view( stringVariable );
-         if( value_.empty() != false ) return value_;
+         if( value_.empty() != true ) return value_;
          return get_variable(variable_, uPriority);
       }
       else if( variable_.is_string() == true )
       {
          std::string stringVariable = variable_.as_string();
          gd::variant_view value_ = parguments_->get_variant_view( stringVariable );
-         if( value_.empty() != false ) return value_;
+         if( value_.empty() != true ) return value_;
          return get_variable(variable_, uPriority);
       }
       else if( variable_.is_number() == true )
@@ -354,10 +354,19 @@ gd::variant_view command::get_variable(const gd::variant_view& command_, const g
             return parguments_->get_arguments()[uIndex].get_variant_view();
          }
 
-         uIndex -= uCount;
+         uIndex -= (unsigned)uCount;
          return get_variable(uIndex, uPriority);
       }
    }
+
+   return gd::variant_view();
+}
+
+/// get variable values from command and then if not found it searches in register, stack or global based on passed arguments
+gd::variant_view command::get_variable(const gd::variant_view& command_, const gd::variant_view& variable_, const std::string_view& stringPriority) const
+{
+   uint32_t uPriority = to_command_priority_g(stringPriority);
+   return get_variable(command_, variable_, uPriority);
 }
 
 
@@ -386,7 +395,7 @@ gd::variant_view command::get_variable(const gd::variant_view& command_, const g
  * - The function returns the first non-empty value found or an empty variant view
  *   if no match is found or the index is out of bounds.
  */
-gd::variant_view command::get_variable(const gd::variant_view& variable_, uint32_t uPriority)
+gd::variant_view command::get_variable(const gd::variant_view& variable_, uint32_t uPriority) const
 {
    if( variable_.is_char_string() == true )
    {
@@ -396,7 +405,7 @@ gd::variant_view command::get_variable(const gd::variant_view& variable_, uint32
          if( it.get_priority() & uPriority )
          {
             gd::variant_view value_ = it.get_variant_view(stringVariable);
-            if( value_.empty() != false ) return value_;
+            if( value_.empty() != true ) return value_;
          }
       }
    }
@@ -408,7 +417,7 @@ gd::variant_view command::get_variable(const gd::variant_view& variable_, uint32
          if( it.get_priority() & uPriority )
          {
             gd::variant_view value_ = it.get_variant_view(stringVariable);
-            if( value_.empty() != false ) return value_;
+            if( value_.empty() != true ) return value_;
          }
       }
    }
@@ -425,7 +434,7 @@ gd::variant_view command::get_variable(const gd::variant_view& variable_, uint32
                return it.get_arguments()[uIndex].get_variant_view();
             }
             
-            uIndex -= uCount;
+            uIndex -= (unsigned)uCount;
          }
       }
    }
@@ -439,12 +448,12 @@ gd::variant_view command::get_variable(const gd::variant_view& variable_, uint32
  * @param priority_ A variant that can either be a size_t representing the priority or a string_view representing the priority as a string.
  * @return A pair consisting of a boolean indicating success and a string (currently empty).
  */
-std::pair<bool, std::string> command::get_variables(gd::argument::arguments* parguments_, const std::variant<size_t, std::string_view>& priority_)
+std::pair<bool, std::string> command::get_variables(gd::argument::arguments* parguments_, const std::variant<size_t, std::string_view>& priority_) const
 {
    uint32_t uPriority = 0;
    if( priority_.index() == 0 )
    {
-      uPriority = std::get<size_t>(priority_);
+      uPriority = (unsigned)std::get<size_t>(priority_);
    }
    else if( priority_.index() == 1 )
    {
