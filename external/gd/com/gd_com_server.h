@@ -165,6 +165,7 @@ struct command_i : public unknown_i
    virtual std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) = 0;
    //virtual uint64_t get_command_count() = 0;
    //virtual gd::variant_view get_argument( const gd::variant_view& index_, int32_t iCommandIndex, uint32_t uPriority ) = 0;
+   virtual gd::variant_view get_variable(const gd::variant_view& command_, const gd::variant_view& variable_, uint32_t uPriority) = 0;
    virtual gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) = 0;
    virtual std::pair<bool, std::string> get_command( const gd::variant_view& index_, void** ppCommand ) = 0;
    virtual std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) = 0;
@@ -219,6 +220,7 @@ struct command : public command_i
    std::pair<bool, std::string> add_arguments( const gd::variant_view& variantviewLocality, const gd::argument::arguments* pargumentsGlobal ) override { return { true, "" }; }
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsGlobal ) override { return { true, "" }; }
    //gd::variant_view get_argument( const gd::variant_view& index_, int32_t iCommandIndex, uint32_t uPriority ) override { return gd::variant_view(); }
+   gd::variant_view get_variable(const gd::variant_view& command_, const gd::variant_view& variable_, uint32_t uPriority) override { return gd::variant_view(); }
    gd::argument::arguments get_all_arguments( const gd::variant_view& index_ ) override { return gd::argument::arguments(); }
    std::pair<bool, std::string> get_command( const gd::variant_view& index_, void** ppCommand ) override { return { true, "" }; }
    std::pair<bool, std::string> query_select( unsigned uPriority, const gd::variant_view& selector_, gd::variant_view* pvariantview_ ) override { return { true, "" }; }
@@ -347,8 +349,8 @@ struct command : public gd::com::server::command_i
       bool is_command() const { return m_uPriority & ePriorityCommand; }
       const std::string& get_key() const { return m_stringKey; }
       const gd::argument::arguments& get_arguments() const { return m_arguments; }
-      gd::variant_view get_variant_view(const std::string_view& stringName) const { return m_arguments[stringName]; }
-      gd::variant_view get_variant_view(unsigned uIndex) const { return m_arguments[uIndex]; }
+      gd::variant_view get_variant_view(const std::string_view& stringName) const { return m_arguments[stringName].as_variant_view(); }
+      gd::variant_view get_variant_view(unsigned uIndex) const { return m_arguments[uIndex].as_variant_view(); }
       unsigned get_priority() const { return m_uPriority; }
       void set_index( int iIndex ) { m_iCommandIndex = iIndex; }
       int32_t get_index() const { return (uint32_t)m_iCommandIndex; }
@@ -430,8 +432,12 @@ struct command : public gd::com::server::command_i
    void add_command( const std::vector<std::string_view>& vectorCommand );
    void add_command( const std::string_view& stringKey, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsLocal );
 
-   std::pair<bool, std::string> get_variable(gd::argument::arguments* parguments_, const std::variant<size_t, std::string_view>& priority_ );
-   gd::argument::arguments get_variable(uint32_t uPriority, gd::types::tag_variable) { gd::argument::arguments arguments_; get_variable(&arguments_, uPriority); return arguments_; }
+   gd::variant_view get_variable(const gd::variant_view& command_, const gd::variant_view& variable_, uint32_t uPriority) override;
+   gd::variant_view get_variable(const gd::variant_view& variable_, uint32_t uPriority);
+
+   /// get variable values from register, stack or global
+   std::pair<bool, std::string> get_variables(gd::argument::arguments* parguments_, const std::variant<size_t, std::string_view>& priority_ );
+   //gd::argument::arguments get_variable(uint32_t uPriority, gd::types::tag_variable) { gd::argument::arguments arguments_; get_variable(&arguments_, uPriority); return arguments_; }
    /// get variables for command, it also returns variables for specified priorities
    std::pair<bool, std::string> get_command_variable(const std::variant<size_t, std::string_view> index_, const std::variant<size_t, std::string_view>& priority_, gd::argument::arguments* pargumentsVariable );
 //@}

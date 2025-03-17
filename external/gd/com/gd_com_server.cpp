@@ -287,7 +287,159 @@ std::pair<bool, std::string> command::append(enumPriority ePriority, const gd::a
    return { true, "" };
 }
 
-std::pair<bool, std::string> command::get_variable(gd::argument::arguments* parguments_, const std::variant<size_t, std::string_view>& priority_)
+
+/** ---------------------------------------------------------------------------
+ * @brief Retrieves a variable value based on a command and variable identifier with priority.
+ *
+ * This function retrieves a variable value by first identifying a command (either by index or name)
+ * and then looking up the specified variable within that command's arguments. It supports multiple
+ * types for both the command and variable identifiers, falling back to a priority-based search
+ * if the variable is not found in the specified command.
+ *
+ * @param command_ The variant view identifying the command. Can be a number (index) or string (name).
+ * @param variable_ The variant view containing the variable identifier to look up.
+ *                  Can be a character string (name), string (name), or unsigned integer (index).
+ * @param uPriority The priority bit mask used for fallback variable lookup if the variable
+ *                  is not found in the specified command.
+ *
+ * @return A gd::variant_view containing the found value, or an empty gd::variant_view
+ *         if no matching variable is found.
+ *
+ * @details
+ * - If command_ is a number (checked via is_number()), it retrieves the command by index using get_command().
+ * - If command_ is a string (checked via is_string()), it retrieves the command by name using get_command().
+ * - If a value is found and not empty, it is returned immediately.
+ * - If no value is found in the command's arguments, it falls back to a priority-based search
+ *   using the overloaded get_variable() method with the variable_ and uPriority.
+ * - If the command is not found or the variable lookup fails, an empty variant view is returned.
+ */
+gd::variant_view command::get_variable(const gd::variant_view& command_, const gd::variant_view& variable_, uint32_t uPriority)
+{
+   arguments* parguments_ = nullptr;
+
+   if( command_.is_number() == true )                                          // if command is accessed using index
+   {
+      parguments_ = get_command( command_.get_uint64() );
+   }
+   else if( command_.is_string() == true )                                       // if command is named with name( key value for command )
+   {
+      std::string stringName = command_.as_string();
+      parguments_ = get_command(stringName);
+   }
+
+   // ## try to find variable
+   if( parguments_ != nullptr )
+   {
+      std::string_view stringVariable;
+      if( variable_.is_char_string() == true )
+      {
+         stringVariable = variable_.as_string_view();
+         gd::variant_view value_ = parguments_->get_variant_view( stringVariable );
+         if( value_.empty() != false ) return value_;
+         return get_variable(variable_, uPriority);
+      }
+      else if( variable_.is_string() == true )
+      {
+         std::string stringVariable = variable_.as_string();
+         gd::variant_view value_ = parguments_->get_variant_view( stringVariable );
+         if( value_.empty() != false ) return value_;
+         return get_variable(variable_, uPriority);
+      }
+      else if( variable_.is_number() == true )
+      {
+         unsigned uIndex = variable_.as_uint();
+         auto uCount = parguments_->get_arguments().size();
+         if( uCount > uIndex )
+         {
+            return parguments_->get_arguments()[uIndex].get_variant_view();
+         }
+
+         uIndex -= uCount;
+         return get_variable(uIndex, uPriority);
+      }
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Retrieves a variable value based on the provided variant view and priority.
+ *
+ * This function searches for a variable within the internal variable vector (m_vectorVariable)
+ * based on the input variant view and priority mask. It supports three types of variable
+ * lookups: character string, string, and unsigned integer index.
+ *
+ * @param variable_ The variant view containing the variable identifier to look up.
+ *                  Can be a character string (name), string (name), or unsigned integer (index).
+ * @param uPriority The priority bit mask used to filter which variables to consider.
+ *
+ * @return A gd::variant_view containing the found value, or an empty gd::variant_view
+ *         if no matching variable is found.
+ *
+ * @details
+ * - If variable_ is a character string (checked via is_char_string()), it uses the string
+ *   view to look up the value in each variable container that matches the priority.
+ * - If variable_ is a string (checked via is_string()), it converts it to a std::string
+ *   and performs the same lookup.
+ * - If variable_ is neither, it treats it as an unsigned integer index and searches
+ *   through argument lists of matching priority variables, subtracting the size of
+ *   each argument list until the correct index is found.
+ * - The function returns the first non-empty value found or an empty variant view
+ *   if no match is found or the index is out of bounds.
+ */
+gd::variant_view command::get_variable(const gd::variant_view& variable_, uint32_t uPriority)
+{
+   if( variable_.is_char_string() == true )
+   {
+      std::string_view stringVariable = variable_.as_string_view();
+      for( const auto& it : m_vectorVariable )
+      {
+         if( it.get_priority() & uPriority )
+         {
+            gd::variant_view value_ = it.get_variant_view(stringVariable);
+            if( value_.empty() != false ) return value_;
+         }
+      }
+   }
+   else if( variable_.is_string() == true )
+   {
+      std::string stringVariable = variable_.as_string();
+      for( const auto& it : m_vectorVariable )
+      {
+         if( it.get_priority() & uPriority )
+         {
+            gd::variant_view value_ = it.get_variant_view(stringVariable);
+            if( value_.empty() != false ) return value_;
+         }
+      }
+   }
+   else
+   {
+      unsigned uIndex = variable_.as_uint();
+      for( const auto& it : m_vectorVariable )
+      {
+         if( it.get_priority() & uPriority )
+         {
+            auto uCount = it.get_arguments().size();
+            if( uIndex < uCount )
+            {
+               return it.get_arguments()[uIndex].get_variant_view();
+            }
+            
+            uIndex -= uCount;
+         }
+      }
+   }
+
+   return gd::variant_view();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Retrieves variables based on the given priority and appends their values to the provided argument list.
+ * @param parguments_ A pointer to an argument list where the retrieved variables' arguments will be appended.
+ * @param priority_ A variant that can either be a size_t representing the priority or a string_view representing the priority as a string.
+ * @return A pair consisting of a boolean indicating success and a string (currently empty).
+ */
+std::pair<bool, std::string> command::get_variables(gd::argument::arguments* parguments_, const std::variant<size_t, std::string_view>& priority_)
 {
    uint32_t uPriority = 0;
    if( priority_.index() == 0 )
@@ -372,7 +524,7 @@ std::pair<bool, std::string> command::get_command_variable( const std::variant<s
    // ### variables from different levels
    if( uPriority != 0 )
    {
-      get_variable(pargumentsVariable, uPriority);                            // add variables with priority to passed arguments
+      get_variables(pargumentsVariable, uPriority);                            // add variables with priority to passed arguments
    }
 
    return { true, "" };
