@@ -311,16 +311,41 @@ std::pair<bool, std::string> command::get_variable(gd::argument::arguments* parg
    return { true, "" };
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Retrieves command variables based on index and priority specifications.
+ *
+ * This method fetches variables associated with a command identified by either an index or name,
+ * and optionally includes variables from specified priority levels. The results are stored in
+ * the provided arguments object.
+ *
+ * @param index_ Identifier for the command to retrieve variables from.
+ *        - If size_t: Numeric index of the command
+ *        - If string_view: Name of the command
+ * @param priority_ Specification of priority levels to include variables from.
+ *        - If size_t: Numeric priority value (bitmask)
+ *        - If string_view: Priority name/key to be converted to numeric value
+ * @param pargumentsVariable Pointer to arguments object where retrieved variables will be stored.
+ *        The command's arguments and priority-level variables (if specified) are appended to this object.
+ *
+ * @return std::pair<bool, std::string> containing:
+ *         - bool: Success indicator (true if successful)
+ *         - string: Error message (empty string if successful)
+ *
+ * The method first retrieves the command based on the index parameter, then adds its arguments
+ * to pargumentsVariable. If a priority is specified, it also adds variables from the matching
+ * priority levels.
+ */
 std::pair<bool, std::string> command::get_command_variable( const std::variant<size_t, std::string_view> index_, const std::variant<size_t, std::string_view>& priority_, gd::argument::arguments* pargumentsVariable )
 {
    size_t uPriority = 0;
    arguments* parguments_ = nullptr;
-   if( index_.index() == 0 )
+   if( index_.index() == 0 )                                                  // if command is accessed using index
    {
       size_t uIndex = std::get<size_t>(index_);
       parguments_ = get_command(uIndex);
    }
-   else if( index_.index() == 1 )
+   else if( index_.index() == 1 )                                              // if command is named with name( key value for command )
    {
       std::string_view stringName = std::get<std::string_view>(index_);
       parguments_ = get_command(stringName);
@@ -328,6 +353,7 @@ std::pair<bool, std::string> command::get_command_variable( const std::variant<s
 
    // ## Harvest variables from command and if specified also from variables in different levels
 
+   // ### variables from command
    if( parguments_ != nullptr ) 
    { 
       *pargumentsVariable += parguments_->get_arguments();                     // add command arguments to passed arguments
@@ -343,6 +369,7 @@ std::pair<bool, std::string> command::get_command_variable( const std::variant<s
       uPriority = to_command_priority_g(stringPriority);
    }
 
+   // ### variables from different levels
    if( uPriority != 0 )
    {
       get_variable(pargumentsVariable, uPriority);                            // add variables with priority to passed arguments
@@ -727,11 +754,26 @@ std::pair<bool, std::string> command::query_select_all( const gd::variant_view& 
    return { true, "" };
 }
 
-/** ---------------------------------------------------------------------------
- * @brief clear values used to execute commands
- * @param variantviewToClear what to delete, if number then `ePriorityStack`, `ePriorityCommand`, `ePriorityGlobal` are valid
- *        if string then "stack", "gommand", "global"
- */
+ /** --------------------------------------------------------------------------
+  * @brief Clears values used to execute commands based on the specified variant view.
+  * 
+  * This method clears command-related data depending on the provided variant view parameter.
+  * It supports both numeric and string-based specifications of what to clear.
+  * 
+  * @param variantviewToClear The specification of what to delete. 
+  *        - If a number: Valid values are `ePriorityRegister`, `ePriorityStack`, `ePriorityCommand`, `ePriorityGlobal`, or combinations thereof
+  *        - If a string: Valid values are "stack", "command", "global", "register", "all", or a variable name
+  * 
+  * When a string is provided:
+  * - "register": Clears register priority values
+  * - "stack": Clears stack priority values
+  * - "command": Clears command priority values and arguments
+  * - "global": Clears global priority values
+  * - "all": Clears register, stack, and global priority values
+  * - Other strings: Treated as a variable name to remove from m_vectorVariable
+  * 
+  * When a number is provided, it uses bitwise operations to determine which priority levels to clear.
+  */
 void command::clear( const gd::variant_view& variantviewToClear )
 {
    unsigned uType = 0;
