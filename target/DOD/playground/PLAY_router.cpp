@@ -32,15 +32,14 @@ TEST_CASE( "[router] add variables", "[router]" ) {
    pcommand->get_command_variable(0u, 0u, &arguments_ );
    std::cout << "arguments: " << arguments_.print() << "\n";
 
-   pcommand->get_variable(&arguments_, 1u);
+   pcommand->get_variables(&arguments_, 1u);
    std::cout << "arguments: " << arguments_.print() << "\n";
-   pcommand->get_variable( &arguments_, 2u);
+   pcommand->get_variables( &arguments_, 2u);
    std::cout << "arguments: " << arguments_.print() << "\n";
-   pcommand->get_variable( &arguments_, "global");
+   pcommand->get_variables( &arguments_, "global");
    std::cout << "arguments: " << arguments_.print() << "\n";
    pcommand->clear( "stack" );
-   arguments_ = pcommand->get_variable(7, gd::types::tag_variable{});
-   std::cout << "arguments: " << arguments_.print() << "\n";
+   pcommand->get_variables(&arguments_, "stack");
 
 }
 
