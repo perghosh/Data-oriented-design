@@ -426,7 +426,9 @@ struct command : public gd::com::server::command_i
    std::pair<bool, std::string> append(uint32_t uPriority, const gd::argument::arguments& arguments_) { return append((enumPriority)uPriority, arguments_); }
    /// append variable with priority stack (mimics local variables)
    std::pair<bool, std::string> append(const gd::argument::arguments& arguments_, gd::types::tag_variable);
+   /// append values as variables from arguments with the specified priority
    std::pair<bool, std::string> append(uint32_t uPriority, const gd::argument::arguments& arguments_, gd::types::tag_variable);
+   /// append values as variables from arguments with the specified priority name (register, stack and global)
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments* pargumentsLocal ) override;
    std::pair<bool, std::string> add_command( const std::string_view& stringKey, const std::string_view& stringCommand, const gd::argument::arguments& argumentsLocal );
    void add_command( const std::vector<std::string_view>& vectorCommand );
