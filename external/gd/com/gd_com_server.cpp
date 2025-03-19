@@ -717,7 +717,7 @@ gd::argument::arguments command::get_all_arguments( const gd::variant_view& inde
       uPriority &= ~ePriorityCommand;
    }
 
-   for( auto it = std::begin( m_vectorArgument ), itEnd = std::end( m_vectorArgument ); it != itEnd; it++ )
+   for( auto it = std::begin( m_vectorVariable ), itEnd = std::end( m_vectorVariable ); it != itEnd; it++ )
    {
       if( it->get_priority() & uPriority ) 
       {
