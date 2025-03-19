@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project("DOD" VERSION 1.0.0 LANGUAGES CXX C)
 
 
-message(STATUS "Compiler (CMAKE_CXX_COMPILER_ID) = ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "Compiler (CMAKE_CXX_COMPILER_ID) ===== ${CMAKE_CXX_COMPILER_ID}")
 
 
 # Enable Hot Reload for MSVC compilers if supported.
@@ -33,3 +33,4 @@ add_subdirectory( "target/server/socket" )
 add_subdirectory( "target/GD-samples" )
 add_subdirectory( "howto" )
 add_subdirectory( "test" )
+add_subdirectory( "target/TOOLS/FileCleaner" )
