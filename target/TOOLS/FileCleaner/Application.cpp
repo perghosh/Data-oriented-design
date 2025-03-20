@@ -82,6 +82,10 @@ CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName)
 {
    for( const auto& pdocument : m_vectorDocument ) 
    {
+#ifndef NDEBUG
+      auto stringName_d = pdocument->GetName();
+#endif // !NDEBUG
+
       if(pdocument->GetName() == stringName) 
       {
          return pdocument.get();

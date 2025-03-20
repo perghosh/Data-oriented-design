@@ -33,5 +33,8 @@ add_executable(${TARGET_NAME_}
    "main.cpp"
 )
 
+target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
+
 
 endif()

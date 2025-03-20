@@ -18,6 +18,8 @@
 
 #include "Document.h"
 
+#include "application/ApplicationBasic.h"
+
 /**
  * \brief
  *
@@ -26,7 +28,7 @@
  \code
  \endcode
  */
-class CApplication
+class CApplication : public application::basic::CApplication
 {
    // ## construction -------------------------------------------------------------
 public:  // 0TAG0construct.Application

@@ -51,8 +51,8 @@ public: // 0TAG0construct.Document
    ~CDocument() {}
 private:
 // common copy
-   void common_construct(const CDocument& o) {}
-   void common_construct(CDocument&& o) noexcept {}
+   void common_construct(const CDocument& o);
+   void common_construct(CDocument&& o) noexcept;
 
 // ## operator -----------------------------------------------------------------
 public:
@@ -72,6 +72,12 @@ public:
 *///@{
    /// Load document from file
    std::pair<bool, std::string> Load(const std::string_view& stringPath);
+
+   /// Save document to file
+   std::pair<bool, std::string> Save(const std::string_view& stringPath);
+
+   /// Count characters in file data
+   size_t Count( uint8_t uCharacter ) const;
 //@}
 
 protected:
