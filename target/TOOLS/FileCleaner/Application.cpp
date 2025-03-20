@@ -30,6 +30,37 @@ void CApplication::common_construct(CApplication&& o) noexcept
     m_vectorDocument = std::move(o.m_vectorDocument);
 }
 
+
+std::pair<bool, std::string> CApplication::Initialize()
+{
+   // Perform initialization tasks here
+   // For example, you might want to initialize documents or other resources
+
+   // Example: Initialize documents
+   // DOCUMENT_Add("example_document");
+
+   // If initialization is successful
+   return {true, ""};
+
+   // If initialization fails, return an appropriate error message
+   // return {false, "Initialization failed: <error details>"};
+}
+
+std::pair<bool, std::string> CApplication::Exit()
+{
+   // Perform cleanup tasks here
+   // For example, you might want to clear documents or release resources
+
+   // Example: Clear documents
+   DOCUMENT_Clear();
+
+   // If cleanup is successful
+   return {true, ""};
+
+   // If cleanup fails, return an appropriate error message
+   // return {false, "Exit failed: <error details>"};
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Adds a new document with the specified name.
  * 

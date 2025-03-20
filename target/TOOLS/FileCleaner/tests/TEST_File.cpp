@@ -20,6 +20,7 @@ std::string GetDataFolder()
 /// Test to create and delete documents
 TEST_CASE( "[file] load file into document", "[file]" ) {
    CApplication application;
+   application.Initialize();
    std::string stringDataFolder = GetDataFolder();
 
    for( auto i = 0; i < 10; i++ ) 
@@ -39,4 +40,8 @@ TEST_CASE( "[file] load file into document", "[file]" ) {
    }
 
    application.DOCUMENT_Clear();
+}
+
+TEST_CASE( "[file] passing arguments", "[file]" ) {
+
 }

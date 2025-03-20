@@ -62,9 +62,11 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   gd::variant_view Get(const std::string_view& stringName) const { return m_arguments[stringName].as_variant_view(); }
+   void Set(const std::string_view& stringName, const gd::variant_view& variantValue) { m_arguments.set(stringName, variantValue); }
+
    std::string_view GetName() const { return m_arguments["name"].as_string_view(); }
    void SetName(const std::string_view& stringName) { m_arguments.set("name", stringName); }
-   void Set(const std::string_view& stringName, const gd::variant_view& variantValue) { m_arguments.set(stringName, variantValue); }
 
 //@}
 

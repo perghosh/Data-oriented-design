@@ -57,6 +57,13 @@ public:
 
 //@}
 
+/** \name INTERFACE
+*///@{
+   std::pair<bool, std::string> Initialize() override;
+   std::pair<bool, std::string> Exit() override;
+//@}
+
+
 /** \name OPERATION
 *///@{
 
