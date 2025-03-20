@@ -3,12 +3,11 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
-project("file" LANGUAGES CXX C)
+project("cleaner" LANGUAGES CXX C)
 
 include(include_external)
 
 # add_subdirectory("playground") # use this to test code for later use in web server
-# add_subdirectory("tests") # tests to check logic in web server
 
 
 message( STATUS )
@@ -16,8 +15,23 @@ message( STATUS "# ----- ------------------------------------------------------"
 message( STATUS "# ----- file targets" )
 message( STATUS )
 
+file(GLOB TARGET_FILES_ "Application.*" "Document.*" )
+
+add_subdirectory("tests") # tests to check logic in web server
+
+set( SOURCE_DIRECTORY_ ${CMAKE_SOURCE_DIR}/source )
+set( APPLICATION_DIRECTORY_ ${SOURCE_DIRECTORY_}/application )
+
+set( USE_TARGET_ ON ) # ========================================================= ${cleaner}
+if( USE_TARGET_ )
+
 set(TARGET_NAME_ "cleaner")
 
 add_executable(${TARGET_NAME_}
-   main.cpp                                                           # main file where method main is located
- "main.h")
+   ${external_gd}
+   ${TARGET_FILES_}   
+   "main.cpp"
+)
+
+
+endif()

@@ -24,8 +24,6 @@ endif()
 # -- playground source code
 set(SOURCE_TEST_ "main.h" "main.cpp")
 
-message( STATUS "CMAKE_CONFIGURATION_TYPES = ${CMAKE_CONFIGURATION_TYPES}" )
-
 # -- TESTS for gd_core
 set( USE_TEST_ ON )
 if( USE_TEST_ )
