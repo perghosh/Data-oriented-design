@@ -1,0 +1,11 @@
+# This is a sample text file for testing
+Here's a line without comments
+count_me = "This string has 5 e's"  # Count 'e' characters here
+# Another comment to be removed
+skip_this = "Don't count e's in here"
+Regular line with 3 e's and no strings
+multi_line = """This is a
+multi-line string
+with 4 e's"""
+# Final comment
+Last line with 2 e's
