@@ -61,6 +61,7 @@ public:
 
 /** \name INTERFACE
 *///@{
+   std::pair<bool, std::string> Main( int iArgumentCount, char* ppbszArgument[], std::function<bool ( const std::string_view&, const gd::variant_view& )> process_ ) override;
    std::pair<bool, std::string> Initialize() override;
    std::pair<bool, std::string> Exit() override;
 //@}

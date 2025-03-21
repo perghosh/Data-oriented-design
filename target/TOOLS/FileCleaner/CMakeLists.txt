@@ -25,16 +25,18 @@ set( APPLICATION_DIRECTORY_ ${SOURCE_DIRECTORY_}/application )
 set( USE_TARGET_ ON ) # ========================================================= ${cleaner}
 if( USE_TARGET_ )
 
-set(TARGET_NAME_ "cleaner")
+   set(TARGET_NAME_ "cleaner")
 
-add_executable(${TARGET_NAME_}
-   ${external_gd}
-   ${TARGET_FILES_}   
-   "main.cpp"
-)
+   add_executable(${TARGET_NAME_}
+      ${external_gd}
+      ${TARGET_FILES_}   
+      ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
+      "main.cpp"
+   )
 
-target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
-target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
-
+   target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
+   target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
+   target_compile_definitions(${TARGET_NAME_} PRIVATE GD_LOG_SIMPLE)
 
 endif()
