@@ -32,6 +32,22 @@ void CApplication::common_construct(CApplication&& o) noexcept
     m_vectorDocument = std::move(o.m_vectorDocument);
 }
 
+std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszArgument[], std::function<bool(const std::string_view&, const gd::variant_view&)> process_)
+{
+   if( iArgumentCount > 1 )
+   {
+      gd::cli::options optionsApplication;
+      CApplication::Prepare_s(optionsApplication);
+      // Parse the command-line arguments
+      auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);
+      if( bOk == false ) { return { false, stringError }; }
+   }
+
+
+   // Process the command-line arguments
+   return { true, "" };
+}
+
 
 std::pair<bool, std::string> CApplication::Initialize()
 {
