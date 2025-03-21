@@ -20,6 +20,8 @@
 
 #include "application/ApplicationBasic.h"
 
+namespace gd { namespace cli { class options; } }
+
 /**
  * \brief
  *
@@ -118,7 +120,7 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
-
+   static void Prepare_s( gd::cli::options& optionsApplication );
 
 
 };

@@ -1,3 +1,5 @@
+#include "gd/gd_cli_options.h"
+
 #include "Application.h"
 
 
@@ -168,3 +170,37 @@ void CApplication::DOCUMENT_Clear()
 {
    m_vectorDocument.clear();
 }
+
+
+
+
+
+void CApplication::Prepare_s(gd::cli::options& optionsApplication)
+{
+   {  // ## `copy` command
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file from source to target" );
+      optionsCommand.add({"source", 's', "File to copy"});
+      optionsCommand.add({"destination", 'd', "Destination, where file is copied to"});
+      optionsCommand.add({"backup", 'b', "If destination file exits then make a backup"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
+   {  // ## `join` command
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "join", "join two or more files" );
+      optionsCommand.add({"source", 's', "Files to join"});
+      optionsCommand.add({"destination", 'd', "Destination, joined files result"});
+      optionsCommand.add({"backup", 'b', "If destination file exits then make a backup"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
+
+   {  // ## `help` print help about champion
+      gd::cli::options optionsCommand( "help", "Print command line help" );
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
+
+}
+ 
