@@ -47,7 +47,7 @@ message( STATUS "TARGET_FILES_: ${TARGET_FILES_}" )
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_File")
-   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd_core} ${external_catch2} 
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_catch2} 
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
       "${TARGET_FILES_}"
       "${TEST_NAME_}.cpp"

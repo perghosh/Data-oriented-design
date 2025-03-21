@@ -1,5 +1,6 @@
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
+#include "gd/gd_cli_options.h"
 #include "gd/gd_file.h"
 #include "gd/gd_variant.h"
 #include "gd/gd_table_column-buffer.h"
@@ -43,5 +44,19 @@ TEST_CASE( "[file] load file into document", "[file]" ) {
 }
 
 TEST_CASE( "[file] passing arguments", "[file]" ) {
+   gd::cli::options optionsApplication;
+   optionsApplication.set_first(0);                                         // set first argument as command, because we are not using executable then first argument is command
+   CApplication::Prepare_s(optionsApplication);
 
+   std::string stringDataFolder = GetDataFolder();
+
+   auto result_ = optionsApplication.parse( { "copy", "-s", stringDataFolder + "/python.txt", "-d", stringDataFolder + "/python_copy.txt" } );
+                                                                                                   REQUIRE(result_.first == true);
+
+   auto poptions = optionsApplication.find_active();
+   auto stringSource = ( *poptions )["source"].as_string();                                        REQUIRE(stringSource.find("python.txt") != -1);
+   auto stringDestination = ( *poptions )["destination"].as_string();                              REQUIRE(stringDestination.find("python_copy.txt") != -1);
+}
+
+TEST_CASE( "[file] ", "[file]" ) {
 }

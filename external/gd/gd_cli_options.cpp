@@ -279,14 +279,18 @@ std::pair<bool, std::string> options::parse(const std::vector<std::string>& vect
    const char** ppbszArgument = nullptr;
    std::pair<bool, std::string> result_( true, "" );
 
+   // allocate pointer to pointer buffer to point to all found parts in string.
+   // the custom deleter will delete the buffer when it goes out of scope
+   // this should mimic the argc and argv from main function
    std::unique_ptr<const char*, decltype([](auto p_){ delete [] p_; } )> ppArguments( new const char*[vectorArgument.size()]);
 
    for(auto it = std::begin(vectorArgument), itEnd = std::end(vectorArgument); it != itEnd; it++)
    {
+      // set pointer to string in vector
       ppArguments.get()[std::distance( std::begin(vectorArgument), it )] = it->c_str();
    }
 
-   ppbszArgument = ppArguments.get();
+   ppbszArgument = ppArguments.get();                                          // get pointer to pointer buffer, similar to argv
    result_ = parse( (int)vectorArgument.size(), ppbszArgument, nullptr );
 
    return result_;

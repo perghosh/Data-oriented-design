@@ -31,13 +31,59 @@ _GD_CLI_BEGIN
 #endif
 
 
-/**
- * \brief Manage command line options/arguments
+ /** --------------------------------------------------------------------------
+ * \class options
+ * \brief A class for handling and parsing command-line arguments passed to an executable.
  *
- *
- *
- \code
- \endcode
+ * The `options` class manages arguments passed to an executable, supporting subcommands and adhering to standard command-line conventions. 
+ * It provides functionality to define, parse, and retrieve option values, including support for ordinal positions of arguments. 
+ * Options can be configured with flags, types, and descriptions, and the class supports hierarchical structures through subcommands, 
+ * enabling complex argument parsing scenarios.
+ * 
+ * Example usage:
+ * \code
+ * #include "gd_cli_options.h"
+ * 
+ * int main(int argc, const char* argv[]) {
+ *     gd::cli::options cli_options;
+ *     
+ *     // Define options
+ *     cli_options.add({ "help", 'h', "Display help information" });
+ *     cli_options.add({ "version", 'v', "Display version information" });
+ *     cli_options.add({ "input", 'i', "Specify input file" });
+ *     cli_options.add({ "output", 'o', "Specify output file" });
+ *     
+ *     // Parse command-line arguments
+ *     auto [success, error_message] = cli_options.parse(argc, argv);
+ *     if (!success) {
+ *         std::cerr << "Error: " << error_message << std::endl;
+ *         return 1;
+ *     }
+ *     
+ *     // Check for options
+ *     if (cli_options.exists("help")) {
+ *         std::cout << "Help information..." << std::endl;
+ *         return 0;
+ *     }
+ *     
+ *     if (cli_options.exists("version")) {
+ *         std::cout << "Version 1.0.0" << std::endl;
+ *         return 0;
+ *     }
+ *     
+ *     if (cli_options.exists("input")) {
+ *         std::string input_file = cli_options.get_variant("input").as_string();
+ *         std::cout << "Input file: " << input_file << std::endl;
+ *     }
+ *     
+ *     if (cli_options.exists("output")) {
+ *         std::string output_file = cli_options.get_variant("output").as_string();
+ *         std::cout << "Output file: " << output_file << std::endl;
+ *     }
+ *     
+ *     return 0;
+ * }
+ * \endcode
  */
 class options
 {
@@ -223,6 +269,12 @@ public:
    const option* find( const std::string_view& stringName ) const;
    option* find( char chLetter );
 
+   // find parsed values
+   bool find( const std::string_view& stringName, const gd::variant_view& variantviewValue ) const;
+
+   /// find active option
+   const options* find_active() const;
+
    void set( const gd::argument::arguments& arguments_ ) { m_argumentsValue = arguments_; }
    void set( gd::argument::arguments&& arguments_ ) { m_argumentsValue = std::move( arguments_ ); }
 
@@ -247,8 +299,6 @@ public:
    std::vector<gd::variant> get_variant_all( const std::string_view& stringName ) const;
    std::vector<gd::variant_view> get_variant_view_all( const std::string_view& stringName ) const;
 
-   // ## find parsed values
-   bool find( const std::string_view& stringName, const gd::variant_view& variantviewValue ) const;
 
    bool iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > callback_ ) const;
    void iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > true_, std::function< void( const gd::variant_view& ) > false_ ) const;
@@ -356,7 +406,8 @@ inline options::option* options::find( char chLetter ) {
 
 inline options::option* options::find( const std::string_view& stringName ) {
    for( auto it = std::begin( m_vectorOption ), itEnd = std::end( m_vectorOption ); it != itEnd; it++ ) {
-      if( it->name() == stringName ) return &(*it);
+      if( it->name() == stringName ) return &(*it);                            // compare full option name
+      if( stringName.length() == 1 && it->letter() == stringName[0] ) return &( *it );// compare single letter
    }
 
    // ## check for comma separated string, if found then match all names within string
@@ -383,6 +434,13 @@ inline const options::option* options::find( const std::string_view& stringName 
    }
 
    return nullptr;
+}
+
+/// find the active options
+inline const options* options::find_active() const {
+   const options* poptionsActive = sub_find_active();
+   if( poptionsActive != nullptr ) return poptionsActive;
+   return this;
 }
 
 /// clear data from all sub options and root options
