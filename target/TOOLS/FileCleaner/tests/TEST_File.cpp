@@ -95,13 +95,17 @@ TEST_CASE( "[file] serialize", "[file]" ) {
 
       std::string s1 = "1111111", s2 = "2222222", s3 = "3333333";
       archiveStream.write_all(s1, s2, s3);
+      archiveStream.write_all(s1, s2, s3);
       archiveStream.close();
 
       archiveStream.open(pathFile, gd::io::tag_io_read{});
       std::string s1Read, s2Read, s3Read;
       archiveStream.read_all(s1Read, s2Read, s3Read);
+      std::string s1ReadAll, s2ReadAll, s3ReadAll;
+      archiveStream >> s1ReadAll >> s2ReadAll >> s3ReadAll;
 
       std::cout << "Read strings: " << s1Read << ", " << s2Read << ", " << s3Read << std::endl;
+      std::cout << "Read all strings: " << s1ReadAll << ", " << s2ReadAll << ", " << s3ReadAll << std::endl;
 
       archiveStream.close();
       std::filesystem::remove(pathFile);

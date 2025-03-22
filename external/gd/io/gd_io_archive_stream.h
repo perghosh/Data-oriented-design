@@ -13,6 +13,38 @@
 #define _GD_IO_STREAM_END } } }
 #endif
 
+/*
+improve speeed
+   void set_buffer_size(size_t size) {
+      if (m_buffer.size() != size) {
+         m_buffer.resize(size);
+         m_fstreamFile.rdbuf()->pubsetbuf(m_buffer.data(), size);
+      }
+   }
+
+
+
+   template<typename T>
+   archive& serialize(T& obj, typename std::enable_if<!std::is_fundamental<T>::value>::type* = nullptr) {
+      return obj.serialize(*this);
+   }
+   
+   // Example usage in a class:
+   /*
+   class MyClass {
+   public:
+      template<typename Archive>
+      Archive& serialize(Archive& ar) {
+         return ar << member1 >> member2;
+      }
+   private:
+      int member1;
+      std::string member2;
+   };
+   
+
+*/
+
 _GD_IO_STREAM_BEGIN
 
 /**
