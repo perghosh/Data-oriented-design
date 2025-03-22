@@ -118,8 +118,8 @@ public:
 
    archive& read_block(uint32_t& uSize, void* pdata_);
    archive& read_block(uint64_t& uSize, void* pdata_);
-   archive& read_block(const std::function<void*( uint32_t )>& callback_ );
-   archive& read_block(const std::function<void*( uint64_t )>& callback_ );
+   archive& read_block32(const std::function<void*( uint32_t )>& callback_ );
+   archive& read_block64(const std::function<void*( uint64_t )>& callback_ );
    archive& read_block(uint32_t& uSize, const std::function<void*( uint32_t )>& callback_ );
    archive& read_block(uint64_t& uSize, const std::function<void*( uint64_t )>& callback_ );
 
@@ -200,7 +200,7 @@ inline archive& archive::read_block(uint64_t& uSize, void* pdata_) {
 }
 
 /// read block of data from archive, first read size of block and then block of data, callback is called with size of block before reading block
-inline archive& archive::read_block(const std::function< void*(uint32_t) >& callback_)
+inline archive& archive::read_block32(const std::function< void*(uint32_t) >& callback_)
 {
    uint32_t uSize;
    read_size(uSize);
@@ -209,7 +209,7 @@ inline archive& archive::read_block(const std::function< void*(uint32_t) >& call
 }
 
 /// read block of data from archive, first read size of block and then block of data, callback is called with size of block before reading block
-inline archive& archive::read_block(const std::function<void*(uint64_t)>& callback_)
+inline archive& archive::read_block64(const std::function<void*(uint64_t)>& callback_)
 {
    uint64_t uSize;
    read_size(uSize);
