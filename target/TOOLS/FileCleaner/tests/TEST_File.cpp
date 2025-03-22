@@ -1,9 +1,13 @@
+#include <fstream>
+
+
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_file.h"
 #include "gd/gd_variant.h"
 #include "gd/gd_table_column-buffer.h"
+#include "gd/io/gd_io_archive_stream.h"
 
 #include "main.h"
 
@@ -58,5 +62,23 @@ TEST_CASE( "[file] passing arguments", "[file]" ) {
    auto stringDestination = ( *poptions )["destination"].as_string();                              REQUIRE(stringDestination.find("python_copy.txt") != -1);
 }
 
-TEST_CASE( "[file] ", "[file]" ) {
+TEST_CASE( "[file] serialize", "[file]" ) {
+   using namespace gd::io::stream;
+
+   std::string stringDataFolder = GetDataFolder();
+   gd::file::path pathFile(stringDataFolder + "/archive.bin");
+   if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+
+   archive archiveStream(pathFile, gd::io::tag_io_write{});
+
+   int iValue = 10, iValue2 = 20, iValue3 = 30;
+   archiveStream.write(iValue).write(iValue2).write(iValue3);
+   archiveStream.close();
+
+   archiveStream.open(pathFile, gd::io::tag_io_read{});
+   int iValueRead = 0, iValue2Read = 0, iValue3Read = 0;
+   archiveStream.read(iValueRead).read(iValue2Read).read(iValue3Read);
+
+   std::cout << "Read values: " << iValueRead << ", " << iValue2Read << ", " << iValue3Read << std::endl;
+
 }

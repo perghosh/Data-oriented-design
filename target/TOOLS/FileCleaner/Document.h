@@ -67,6 +67,8 @@ public:
 
    std::string_view GetName() const { return m_arguments["name"].as_string_view(); }
    void SetName(const std::string_view& stringName) { m_arguments.set("name", stringName); }
+   std::string_view Getpath() const { return m_arguments["path"].as_string_view(); }
+   void SetPath(const std::string_view& stringName) { m_arguments.set("path", stringName); }
 
 //@}
 
