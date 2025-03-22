@@ -159,5 +159,26 @@ TEST_CASE( "[file] serialize", "[file]" ) {
       std::filesystem::remove(pathFile);
    }
 
+   {
+      gd::file::path pathFile(stringDataFolder + "/archive.bin");
+      if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+      archive archiveStream(pathFile, gd::io::tag_io_write{});
+
+      gd::argument::shared::arguments arguments( {{"one", "one"}, {"one", "one"}, {"one", "one"}, {"one", "one"}, {"one", "one"}});
+      archiveStream.write_block( (uint64_t)arguments.buffer_size(), arguments.data() );
+      archiveStream.close();
+
+      archiveStream.open(pathFile, gd::io::tag_io_read{});
+      gd::argument::shared::arguments argumentsRead;
+      archiveStream.read_block64( [&argumentsRead](uint64_t uSize) -> void* { argumentsRead.reserve( uSize ); return (void*)argumentsRead.data(); });
+
+      std::cout << "Read arguments: " << argumentsRead.print() << std::endl;
+
+
+      archiveStream.close();
+      std::filesystem::remove(pathFile);
+   }
+
+
 
 }
