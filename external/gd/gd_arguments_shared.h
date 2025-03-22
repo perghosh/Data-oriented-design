@@ -1091,6 +1091,10 @@ public:
    /// cleans upp interal data and set it as empty
    void clear();
 
+   /// Return raw data buffer
+   [[nodiscard]] void* data() { return buffer_data(); }
+
+
 /** \name ARGUMENT
 * 0TAG0get.arguments
 * get argument value from arguments

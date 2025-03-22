@@ -111,4 +111,53 @@ TEST_CASE( "[file] serialize", "[file]" ) {
       std::filesystem::remove(pathFile);
    }
 
+   {
+      gd::file::path pathFile(stringDataFolder + "/archive.bin");
+      if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+      archive archiveStream(pathFile, gd::io::tag_io_write{});
+
+      gd::argument::arguments arguments( {{"one", "one"}, {"one", "one"}, {"one", "one"}, {"one", "one"}, {"one", "one"}});
+      archiveStream.write_block( (uint64_t)arguments.buffer_size(), arguments.data() );
+      archiveStream.close();
+
+      archiveStream.open(pathFile, gd::io::tag_io_read{});
+      gd::argument::arguments argumentsRead;
+      uint64_t uSize = 0;
+      archiveStream.read_size( uSize );
+      argumentsRead.reserve(uSize);
+      argumentsRead.buffer_set_size( uSize );
+      archiveStream.read(argumentsRead.data(), uSize );
+
+      std::cout << "Read arguments: " << argumentsRead.print() << std::endl;
+
+
+      archiveStream.close();
+      std::filesystem::remove(pathFile);
+   }
+
+   {
+      gd::file::path pathFile(stringDataFolder + "/archive.bin");
+      if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+      archive archiveStream(pathFile, gd::io::tag_io_write{});
+
+      gd::argument::shared::arguments arguments( {{"one", "one"}, {"one", "one"}, {"one", "one"}, {"one", "one"}, {"one", "one"}});
+      archiveStream.write_block( (uint64_t)arguments.buffer_size(), arguments.data() );
+      archiveStream.close();
+
+      archiveStream.open(pathFile, gd::io::tag_io_read{});
+      gd::argument::shared::arguments argumentsRead;
+      uint64_t uSize = 0;
+      archiveStream.read_size( uSize );
+      argumentsRead.reserve(uSize);
+      argumentsRead.buffer_set_size( uSize );
+      archiveStream.read(argumentsRead.data(), uSize );
+
+      std::cout << "Read arguments: " << argumentsRead.print() << std::endl;
+
+
+      archiveStream.close();
+      std::filesystem::remove(pathFile);
+   }
+
+
 }
