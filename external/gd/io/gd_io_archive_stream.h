@@ -87,6 +87,8 @@ public:
 
    archive& read(void* pdata_, uint64_t uSize);
 
+   archive& read(std::string& string_);
+
    template<typename TYPE>
    archive& read(TYPE& value_) { return read(&value_, sizeof(TYPE)); }
 
@@ -104,6 +106,9 @@ public:
    archive& write_block(uint64_t uSize, const void* pdata_);
 
    archive& write(const void* pdata_, uint64_t uSize);
+
+   archive& write(const std::string_view& stringData);
+   archive& write(const std::string& stringData);
 
    template<typename TYPE>
    archive& write(const TYPE& value_ ) { return write( &value_, sizeof(TYPE)); }
