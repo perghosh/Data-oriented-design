@@ -1,10 +1,10 @@
 #pragma once
 
 #include <fstream>
+#include <functional>
 #include <cstdint>
 #include <string>
 #include <utility>
-#include <stdexcept>
 
 #include "gd_io_archive.h"
 
@@ -88,6 +88,8 @@ public:
    // Stream insertion operator (<<) for writing
    template<typename TYPE>
    archive& operator<<(const TYPE& value_) { return write(value_); }
+   archive& operator<<(const std::pair<uint32_t,void*>& pair_) { return write_block(pair_.first, pair_.second); }
+   archive& operator<<(const std::pair<uint64_t,void*>& pair_) { return write_block(pair_.first, pair_.second); }
 
 
 // ## methods ------------------------------------------------------------------
@@ -109,13 +111,17 @@ public:
 
 
 /** \name READ
-* Read methods that reads from file
+* Methods that reads from file
 *///@{
    archive& read_size(uint32_t& uSize) { return read(&uSize, sizeof(uSize)); }
    archive& read_size(uint64_t& uSize) { return read(&uSize, sizeof(uSize)); }
 
    archive& read_block(uint32_t& uSize, void* pdata_);
    archive& read_block(uint64_t& uSize, void* pdata_);
+   archive& read_block(const std::function<void*( uint32_t )>& callback_ );
+   archive& read_block(const std::function<void*( uint64_t )>& callback_ );
+   archive& read_block(uint32_t& uSize, const std::function<void*( uint32_t )>& callback_ );
+   archive& read_block(uint64_t& uSize, const std::function<void*( uint64_t )>& callback_ );
 
    archive& read(void* pdata_, uint64_t uSize);
 
@@ -129,7 +135,7 @@ public:
 //@}
 
 /** \name WRITE
-* Write methods that writes to file
+* Methods that writes to file
 *///@{
    archive& write_size(uint32_t uSize) { return write(&uSize, sizeof(uSize)); }
    archive& write_size(uint64_t uSize) { return write(&uSize, sizeof(uSize)); }
@@ -190,6 +196,41 @@ inline archive& archive::read_block(uint32_t& uSize, void* pdata_) {
 /// read block of data from archive, first read size of block and then block of data
 inline archive& archive::read_block(uint64_t& uSize, void* pdata_) {
    read_size(uSize);
+   return read(pdata_, uSize);
+}
+
+/// read block of data from archive, first read size of block and then block of data, callback is called with size of block before reading block
+inline archive& archive::read_block(const std::function< void*(uint32_t) >& callback_)
+{
+   uint32_t uSize;
+   read_size(uSize);
+   void* pdata_ = callback_(uSize);
+   return read(pdata_, uSize);
+}
+
+/// read block of data from archive, first read size of block and then block of data, callback is called with size of block before reading block
+inline archive& archive::read_block(const std::function<void*(uint64_t)>& callback_)
+{
+   uint64_t uSize;
+   read_size(uSize);
+   void* pdata_ = callback_(uSize);
+   return read(pdata_, uSize);
+}
+
+
+/// read block of data from archive, first read size of block and then block of data, callback is called with size of block before reading block
+inline archive& archive::read_block(uint32_t& uSize, const std::function< void*(uint32_t) >& callback_)
+{
+   read_size(uSize);
+   void* pdata_ = callback_(uSize);
+   return read(pdata_, uSize);
+}
+
+/// read block of data from archive, first read size of block and then block of data, callback is called with size of block before reading block
+inline archive& archive::read_block(uint64_t& uSize, const std::function<void*(uint64_t)>& callback_)
+{
+   read_size(uSize);
+   void* pdata_ = callback_(uSize);
    return read(pdata_, uSize);
 }
 

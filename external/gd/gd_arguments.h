@@ -1001,6 +1001,9 @@ public:
    /// cleans upp interal data and set it as empty
    void clear();
 
+   /// Return raw data buffer
+   [[nodiscard]] void* data() { return m_pBuffer; }
+
 /** \name ARGUMENT
 * 0TAG0get.arguments
 * get argument value from arguments
@@ -1101,6 +1104,7 @@ public:
    const_iterator erase(const_iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < cend() ? itPosition : cend(); }
    /// make sure internal buffer can hold specified number of bytes, buffer data is copied if increased
    bool reserve(unsigned int uCount);
+   bool reserve(uint64_t uCount) { assert( uCount < 0x1'0000'0000 ); return reserve(static_cast<unsigned int>(uCount)); }
    /// Remove param starting at position, remember that if you are string positions in buffer they are invalidated with this method
    void remove( const std::string_view& stringName );
    /// Remove param at index
@@ -1314,6 +1318,7 @@ public:
    const_pointer buffer_data_end() const { return m_pBuffer + m_uLength; }
    unsigned int buffer_size() const { return m_uLength; }
    void buffer_set_size(unsigned uSize) { m_uLength = uSize; }
+   void buffer_set_size(uint64_t uSize) { m_uLength = (unsigned)uSize; }
    unsigned int buffer_buffer_size() const { return m_uBufferLength; }
    size_t buffer_offset( const_pointer pPosition ) const { assert( verify_d( pPosition ) ); return (pPosition - m_pBuffer); }
    const_pointer buffer_offset( size_t uPosition ) const { assert( uPosition <= (size_t)m_uLength ); return (m_pBuffer + uPosition); }
