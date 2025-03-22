@@ -73,12 +73,16 @@ TEST_CASE( "[file] serialize", "[file]" ) {
 
    int iValue = 10, iValue2 = 20, iValue3 = 30;
    archiveStream.write(iValue).write(iValue2).write(iValue3);
+   archiveStream.write_all(iValue, iValue2, iValue3);
    archiveStream.close();
 
    archiveStream.open(pathFile, gd::io::tag_io_read{});
    int iValueRead = 0, iValue2Read = 0, iValue3Read = 0;
    archiveStream.read(iValueRead).read(iValue2Read).read(iValue3Read);
+   int iValueReadAll[3] = { 0, 0, 0 };
+   archiveStream.read_all(iValueReadAll[0], iValueReadAll[1], iValueReadAll[2]);
 
    std::cout << "Read values: " << iValueRead << ", " << iValue2Read << ", " << iValue3Read << std::endl;
+   std::cout << "Read all values: " << iValueReadAll[0] << ", " << iValueReadAll[1] << ", " << iValueReadAll[2] << std::endl;
 
 }

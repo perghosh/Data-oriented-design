@@ -49,6 +49,13 @@ private:
 
 // ## operator -----------------------------------------------------------------
 public:
+   // Stream extraction operator (>>) for reading
+   template<typename TYPE>
+   archive& operator>>(TYPE& value_) { return read(value_); }
+
+   // Stream insertion operator (<<) for writing
+   template<typename TYPE>
+   archive& operator<<(const TYPE& value_) { return write(value_); }
 
 
 // ## methods ------------------------------------------------------------------
@@ -82,6 +89,9 @@ public:
 
    template<typename TYPE>
    archive& read(TYPE& value_) { return read(&value_, sizeof(TYPE)); }
+
+   template<typename... VALUES>
+   archive& read_all(VALUES&... values_);
 //@}
 
 /** \name WRITE
@@ -97,6 +107,9 @@ public:
 
    template<typename TYPE>
    archive& write(const TYPE& value_ ) { return write( &value_, sizeof(TYPE)); }
+
+   template<typename... VALUES>
+   archive& write_all(const VALUES&... values_);
 
 //@}
 
@@ -122,8 +135,6 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
    static std::pair<bool, std::string> open_s(std::fstream& fstreamFile,const std::string_view& stringPath, std::ios_base::openmode mode_);
-
-
 };
 
 /// open file stream
@@ -151,6 +162,13 @@ inline archive& archive::read(void* pdata_, uint64_t uSize) {
    return *this;
 }
 
+template<typename... VALUES>
+archive& archive::read_all(VALUES&... values_) {
+   (read(values_), ...);
+   return *this;
+}
+
+
 /// write block of data to archive, first write size of block and then block of data
 inline archive& archive::write_block(uint32_t uSize, const void* pdata_) {
    write_size(uSize);
@@ -170,6 +188,10 @@ inline archive& archive::write(const void* pdata_, uint64_t uSize) {
    return *this;
 }
 
-
+template<typename... VALUES>
+archive& archive::write_all(const VALUES&... values_) {
+   (write(values_), ...);
+   return *this;
+}
 
 _GD_IO_STREAM_END
