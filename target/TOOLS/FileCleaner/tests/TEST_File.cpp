@@ -85,4 +85,26 @@ TEST_CASE( "[file] serialize", "[file]" ) {
    std::cout << "Read values: " << iValueRead << ", " << iValue2Read << ", " << iValue3Read << std::endl;
    std::cout << "Read all values: " << iValueReadAll[0] << ", " << iValueReadAll[1] << ", " << iValueReadAll[2] << std::endl;
 
+   archiveStream.close();
+   std::filesystem::remove(pathFile);
+
+   {
+      gd::file::path pathFile(stringDataFolder + "/archive1.bin");
+      if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+      archive archiveStream(pathFile, gd::io::tag_io_write{});
+
+      std::string s1 = "1111111", s2 = "2222222", s3 = "3333333";
+      archiveStream.write_all(s1, s2, s3);
+      archiveStream.close();
+
+      archiveStream.open(pathFile, gd::io::tag_io_read{});
+      std::string s1Read, s2Read, s3Read;
+      archiveStream.read_all(s1Read, s2Read, s3Read);
+
+      std::cout << "Read strings: " << s1Read << ", " << s2Read << ", " << s3Read << std::endl;
+
+      archiveStream.close();
+      std::filesystem::remove(pathFile);
+   }
+
 }
