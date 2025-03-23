@@ -75,6 +75,46 @@ _GD_IO_STREAM_BEGIN
  * uint32_t read_value;
  * archiveRead >> read_value;
  * \endcode
+ * 
+ * Write samples - shows how to write values to file in different ways
+ * \code
+ * // pathFile = some file path
+ * archive ar_(pathFile, gd::io::tag_io_write{});
+ * int iValue = 10, iValue2 = 20, iValue3 = 30;
+ * ar_.write(iValue).write(iValue2).write(iValue3);
+ * ar_.write_all(iValue, iValue2, iValue3);
+ * ar_ << iValue << iValue2 << iValue3;
+ * 
+ * std::string s1 = "1111111", s2 = "2222222", s3 = "3333333";
+ * ar_.write_all(s1, s2, s3);
+ * 
+ * archive ar2_(pathFile2, gd::io::tag_io_write{});
+ * gd::argument::shared::arguments arguments( {{"one", "one"}, {"one", "one"}, {"one", "one"}, {"one", "one"}, {"one", "one"}});
+ * ar2_.write_block( (uint64_t)arguments.buffer_size(), arguments.data() );
+ * \endcode
+ * 
+  * Read samples - shows how to read values from file in different ways
+ * \code
+ * // pathFile = some file path
+ * archive ar_(pathFile, gd::io::tag_io_read{});
+ * int iValueRead = 0, iValue2Read = 0, iValue3Read = 0;
+ * ar_.read(iValueRead).read(iValue2Read).read(iValue3Read);
+ * ar_.read_all(iValueRead, iValue2Read, iValue3Read );
+ * ar_ >> iValueRead >> iValueRead >> iValueRead;
+ * 
+ * archive ar2_(pathFile2, gd::io::tag_io_read{});
+ * std::string s1, s2, s3;
+ * ar2_.read_all(s1, s2, s3);
+ * 
+ * archive ar2_(pathFile2, gd::io::tag_io_write{});
+ * gd::argument::shared::arguments arguments( {{"one", "one"}, {"one", "one"}, {"one", "one"}, {"one", "one"}, {"one", "one"}});
+ * ar2_.write_block( (uint64_t)arguments.buffer_size(), arguments.data() );
+ * ar2_.close();
+ * ar2_.open(pathFile, gd::io::tag_io_read{});
+ * gd::argument::shared::arguments argumentsRead;
+ * ar2_.read_block64( [&argumentsRead](uint64_t uSize) -> void* { argumentsRead.reserve( uSize ); return (void*)argumentsRead.data(); });
+ * \endcode
+* 
  */
 class archive
 {
@@ -174,7 +214,6 @@ public:
 
    template<typename... VALUES>
    archive& write_all(const VALUES&... values_);
-
 //@}
 
 protected:

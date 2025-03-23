@@ -74,6 +74,7 @@ TEST_CASE( "[file] serialize", "[file]" ) {
    int iValue = 10, iValue2 = 20, iValue3 = 30;
    archiveStream.write(iValue).write(iValue2).write(iValue3);
    archiveStream.write_all(iValue, iValue2, iValue3);
+   archiveStream << iValue << iValue2 << iValue3;
    archiveStream.close();
 
    archiveStream.open(pathFile, gd::io::tag_io_read{});
