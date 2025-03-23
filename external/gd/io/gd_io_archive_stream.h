@@ -71,9 +71,9 @@ _GD_IO_STREAM_BEGIN
  * ar << value;
  *
  * // Reading from a file
- * archive ar_read("output.bin", std::ios::in | std::ios::binary);
+ * archive archiveRead("output.bin", std::ios::in | std::ios::binary);
  * uint32_t read_value;
- * ar_read >> read_value;
+ * archiveRead >> read_value;
  * \endcode
  */
 class archive
