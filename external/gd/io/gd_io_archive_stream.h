@@ -112,7 +112,7 @@ _GD_IO_STREAM_BEGIN
  * ar2_.close();
  * ar2_.open(pathFile, gd::io::tag_io_read{});
  * gd::argument::shared::arguments argumentsRead;
- * ar2_.read_block64( [&argumentsRead](uint64_t uSize) -> void* { argumentsRead.reserve( uSize ); return (void*)argumentsRead.data(); });
+ * ar2_.read_block64( [&argumentsRead](uint64_t uSize) -> void* { argumentsRead.reserve( uSize ); argumentsRead.buffer_set_size( uSize ); return (void*)argumentsRead.data(); });
  * \endcode
 * 
  */
