@@ -48,12 +48,33 @@ improve speeed
 _GD_IO_STREAM_BEGIN
 
 /**
- * \brief
+ * \brief A class for handling binary file input/output operations.
  *
+ * The `archive` class provides a convenient interface for reading from and writing to binary files.
+ * It supports various data types through templated methods and operators, and includes functionality
+ * for handling blocks of data with size prefixes. The class manages a file stream and provides
+ * methods for opening, closing, and checking the status of the file, as well as reading and writing
+ * operations.
  *
+ * Key features:
+ * - Supports binary file operations with configurable open modes
+ * - Provides stream operators (>> and <<) for easy reading and writing
+ * - Handles block-based I/O with size prefixes (32-bit and 64-bit)
+ * - Includes templated methods for generic type support
+ * - Manages file stream lifecycle automatically
  *
- \code
- \endcode
+ * Usage example:
+ * \code
+ * // Writing to a file
+ * archive ar("output.bin", std::ios::out | std::ios::binary);
+ * uint32_t value = 42;
+ * ar << value;
+ *
+ * // Reading from a file
+ * archive ar_read("output.bin", std::ios::in | std::ios::binary);
+ * uint32_t read_value;
+ * ar_read >> read_value;
+ * \endcode
  */
 class archive
 {
@@ -67,17 +88,17 @@ public:
    /// open file stream, if open for write (the openmode is std::ios_base::out | std::ios_base::binary)
    archive(const std::string_view& stringPath, gd::io::tag_io_write ): m_stringPath( stringPath ) { open( stringPath, (std::ios::out | std::ios::binary) ); }
    // copy
-   archive(const archive& o) { common_construct(o); }
    archive(archive&& o) noexcept { common_construct(std::move(o)); }
    // assign
-   archive& operator=(const archive& o) { common_construct(o); return *this; }
    archive& operator=(archive&& o) noexcept { common_construct(std::move(o)); return *this; }
 
    ~archive() { close(); }
 private:
+   archive(const archive& o) { common_construct(o); }
+   archive& operator=(const archive& o) { common_construct(o); return *this; }
    // common copy
    void common_construct(const archive& o) {}
-   void common_construct(archive&& o) noexcept {}
+   void common_construct(archive&& o) noexcept { m_stringPath = std::move( o.m_stringPath ); m_fstreamFile = std::move( o.m_fstreamFile ); }
 
 // ## operator -----------------------------------------------------------------
 public:
@@ -159,7 +180,6 @@ public:
 protected:
 /** \name INTERNAL
 *///@{
-
 //@}
 
 public:
