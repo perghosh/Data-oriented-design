@@ -8,6 +8,7 @@
 #include "gd/gd_variant.h"
 #include "gd/gd_table_column-buffer.h"
 #include "gd/io/gd_io_archive_stream.h"
+#include "gd/io/gd_io_repository_stream.h"
 
 #include "main.h"
 
