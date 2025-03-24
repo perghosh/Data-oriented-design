@@ -25,6 +25,14 @@ TEST_CASE( "[file] serialize", "[file]" )
 {
    using namespace gd::io::stream;
 
+   const int iSize = 5;
+   int piNumbers[iSize];
+
+   for( int i = 0; i < iSize; i++ )
+   {
+      piNumbers[i] = i;
+   }
+
    std::string stringDataFolder = GetDataFolder();
    gd::file::path pathFile(stringDataFolder + "/archive2.bin");
    if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
@@ -33,13 +41,18 @@ TEST_CASE( "[file] serialize", "[file]" )
 
    std::string stringValue = "Hello";
    archiveStream.write(stringValue);
+
+   for( int i = 0; i < iSize; i++ )
+   {
+      archiveStream.write(piNumbers[i]);
+   }
+
    archiveStream.close();
 
    archiveStream.open(pathFile, gd::io::tag_io_read{});
    std::string stringValueRead = " ";
-   archiveStream.read(stringValueRead);
 
-   std::cout << "Values: " << stringValueRead << std::endl;
+   std::cout << "Values: " << std::endl;
    archiveStream.close();
 
 }
