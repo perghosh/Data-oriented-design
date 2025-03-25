@@ -1,4 +1,4 @@
-
+#include <algorithm>
 
 #include "gd_io_repository_stream.h"
 
@@ -64,8 +64,11 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
 {                                                                                                  assert( stringName.length() < 260 ); assert( m_pFile != nullptr );
    if(!m_pFile || stringName.length() >= sizeof(entry::m_piszName)) { return {false, std::string("Invalid file or name too long: ") + stringName.data()}; }
 
-   fseek(m_pFile, 0, SEEK_END);
-   uint64_t uOffset = ftell(m_pFile);
+   auto uStartOffset = calculate_first_content_position_s(*this);
+
+   fseek(m_pFile, 0, SEEK_END);                                                // Move to the end of the file
+   uint64_t uOffset = ftell(m_pFile);                                          // Get the current file position as the offset
+   uOffset -= uStartOffset;                                                    // Offset is relative to the start of the content section
 
    fwrite(pdata_, 1, uSize, m_pFile);
 
@@ -74,6 +77,22 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
 
    return {true, ""};
 }
+
+std::pair<bool, std::string> repository::add(const std::string_view& stringFile)
+{
+   std::ifstream ifstreamFile(stringFile.data(), std::ios::binary | std::ios::ate);
+   if (!ifstreamFile) { return {false, "Failed to open input file"}; }
+
+   std::streamsize uSize = ifstreamFile.tellg();
+   ifstreamFile.seekg(0, std::ios::beg);
+
+   std::vector<char> vectorBuffer(uSize);
+   if (!ifstreamFile.read(buffer.data(), uSize)) { return {false, std::string("Failed to read input file") + stringFile.data()}; }
+
+   std::string stringName = std::filesystem::path(stringFile).filename().string();
+   return add(stringName, vectorBuffer.data(), static_cast<uint64_t>(uSize));
+}
+
 
 
 /**
@@ -158,6 +177,29 @@ std::vector<std::string> repository::list() const
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Finds the index of an entry in the repository by name.
+ *
+ * Searches through the in-memory vector of entries (m_vectorEntry) to find the first entry
+ * that matches the specified name and is valid. Returns the index of the found entry or -1
+ * if no matching entry is found.
+ *
+ * @param stringName The name of the entry to find, provided as a string view.
+ * @return The index of the found entry as an int64_t, or -1 if no matching valid entry is found.
+ */
+int64_t repository::find(const std::string_view& stringName) const
+{
+   auto it = std::find_if(m_vectorEntry.begin(), m_vectorEntry.end(), [&stringName](const entry& e) 
+      { 
+         return e.is_valid() && e.get_name() == stringName; 
+      }
+   );
+
+   if( it == m_vectorEntry.end() ) { return -1; }
+ 
+   return std::distance(m_vectorEntry.begin(), it);
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Marks an entry with the specified name as deleted.
  *
  * Searches for an entry with the given name and marks it as deleted if found.
@@ -203,7 +245,7 @@ void repository::remove(std::size_t uIndex)
  * entry with the given name. This involves creating a temporary file, copying all other valid
  * entries, and then replacing the original file. The in-memory index (m_vectorEntry) is also updated.
  *
- * @param stringName The name of the entry to remove, provided as a string view.
+ * @param vectorIndexes The vector of indexes of entries to remove
  * @return A pair containing a boolean indicating success (true) or failure (false),
  *         and a string with an error message if the operation failed, or empty if successful.
  * @retval {false, "File not open"} If no file is currently open.
@@ -212,15 +254,16 @@ void repository::remove(std::size_t uIndex)
  * @retval {false, "Failed to write to temporary file"} If writing to the temporary file failed.
  * @retval {false, "Failed to replace original file"} If renaming the temporary file failed.
  */
-std::pair<bool, std::string> repository::remove_entry_from_file(const std::string_view& stringName)
+// std::pair<bool, std::string> repository::remove_entry_from_file(const std::string_view& stringName)
+std::pair<bool, std::string> repository::remove_entry_from_file(const std::vector<uint64_t>& vectorIndexes)
 {                                                                                                  assert( m_pFile != nullptr );
-   if (!m_pFile) { return {false, "File not open"}; }
+   if(m_pFile == nullptr) { return {false, "File not open"}; }
 
-   // Find the entry to remove
-   auto it = std::find_if(m_vectorEntry.begin(), m_vectorEntry.end(),
-      [&stringName](const entry& e) { return e.is_valid() && !e.is_deleted() && e.get_name() == stringName; });
-
-   if (it == m_vectorEntry.end()) { return {false, std::string("File not found: ") + stringName.data()}; }
+   for (const auto& index : vectorIndexes) {
+      if (index >= m_vectorEntry.size() || !m_vectorEntry[index].is_valid() || m_vectorEntry[index].is_deleted()) {
+         return {false, "Invalid index found"};
+      }
+   }
 
    // Create a temporary file
    std::string stringPathTemporary = m_stringRepositoryPath + ".tmp";
@@ -232,8 +275,19 @@ std::pair<bool, std::string> repository::remove_entry_from_file(const std::strin
 
    // Copy all valid entries except the one to be removed
    uint64_t uNewOffset = 0;
-   for( auto& entry_ : m_vectorEntry) {
-      if( entry_.is_valid() && !entry_.is_deleted() && entry_.get_name() != stringName) {
+   std::vector<uint64_t> vectorRemove(vectorIndexes.begin(), vectorIndexes.end());
+   std::sort(vectorRemove.begin(), vectorRemove.end(), std::greater<>()); // Sort in descending order for safe erasure
+
+   //for( auto& entry_ : m_vectorEntry) 
+   for (size_t u = 0; u < m_vectorEntry.size(); ++u)
+   {
+      bool bRemove = std::find(vectorIndexes.begin(), vectorIndexes.end(), u) != vectorIndexes.end();
+
+      //if( entry_.is_valid() && !entry_.is_deleted() && entry_.get_name() != stringName) 
+      if( bRemove == false )
+      {
+         entry& entry_ = m_vectorEntry[u];
+
          // Read the entry's data from the original file
          fseek(m_pFile, static_cast<long>(entry_.offset()), SEEK_SET);
          uint64_t uBytesRemaining = entry_.size();
@@ -250,7 +304,7 @@ std::pair<bool, std::string> repository::remove_entry_from_file(const std::strin
             }
 
             size_t uBytesWritten = fwrite(vectorBuffer.data(), 1, uBytesRead, pfileTemporary);
-            if (uBytesWritten != uBytesRead) 
+            if( uBytesWritten != uBytesRead ) 
             {
                fclose(pfileTemporary);
                std::remove(stringPathTemporary.c_str());
@@ -279,8 +333,11 @@ std::pair<bool, std::string> repository::remove_entry_from_file(const std::strin
    m_pFile = fopen(m_stringRepositoryPath.c_str(), "r+b");
    if( !m_pFile ) { return {false, "Failed to reopen updated file"};  }
 
-   // Remove the entry from the in-memory index
-   m_vectorEntry.erase(it);
+   // Remove the entries from the in-memory index in reverse order to maintain valid indexes
+   for(const auto& uIndex : vectorRemove) 
+   {
+      m_vectorEntry.erase(m_vectorEntry.begin() + uIndex);
+   }
 
    return {true, ""};
 }
@@ -293,6 +350,14 @@ void repository::close()
       fclose(m_pFile);
       m_pFile = nullptr;
    }
+}
+
+std::pair<bool, std::string> repository::write_entry_block_s(FILE* pfile, const void* pdata, uint64_t uSize, uint64_t uOffset)
+{                                                                                                  assert( uSize % sizeof( repository::entry ) == 0 ); assert( pfile != nullptr );
+   fseek(pfile, static_cast<long>( uOffset ), SEEK_SET);                        // seek (move) to offset
+   fwrite(pdata, 1, uSize, pfile);                                              // write data to file
+
+   return { true, "" };
 }
 
 
