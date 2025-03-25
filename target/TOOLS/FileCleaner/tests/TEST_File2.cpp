@@ -71,8 +71,6 @@ TEST_CASE( "[file] serialize", "[file]" )
 
    std::cout << "Values: " << stringValueRead << std::endl;
 
-
-
    archiveStream.close();
 
 }
@@ -89,6 +87,7 @@ TEST_CASE( "[file] serialize2", "[file]" )
    int iCount = 0;
    int iCount2 = 0;
    int iCount3 = 0;
+   std::string stringValue = "DDD";
 
    for( int i = 0; i < iSize; i++ )
    {
@@ -106,7 +105,10 @@ TEST_CASE( "[file] serialize2", "[file]" )
 
    archive archiveStream(pathFile, gd::io::tag_io_write{});
 
+   archiveStream.write(stringValue);
    archiveStream.write(iCount);
+   archiveStream.write(iCount2);
+   archiveStream.write(iCount3);
 
    for( int i = 0; i < iSize; i++ )
    {
@@ -122,20 +124,30 @@ TEST_CASE( "[file] serialize2", "[file]" )
    {
       archiveStream.write(piNumbers2[i]);
    }
+
    archiveStream.close();
 
    archiveStream.open(pathFile, gd::io::tag_io_read{});
 
    std::vector<int> vectorNumbersRead;
-   std::vector<bool> vectorNumbersRead2;
+   std::vector<double> vectorNumbersRead2;
    std::vector<int64_t> vectorNumbersRead3;
 
    int iCountRead;
    int iCountRead2;
    int iCountRead3;
-   archiveStream.read(iCountRead);
+   std::string stringValueRead = " ";
+   /*archiveStream.read(iCountRead);
    archiveStream.read(iCountRead2);
-   archiveStream.read(iCountRead3);
+   archiveStream.read(iCountRead3);*/
+
+   std::cout << "Values: ";
+
+   archiveStream.read(stringValueRead);
+   std::cout << stringValueRead;
+
+   archiveStream.read_all(iCountRead, iCountRead2, iCountRead3);
+
 
    for( int i = 0; i < iCountRead; i++ )
    {
@@ -143,6 +155,7 @@ TEST_CASE( "[file] serialize2", "[file]" )
 
       archiveStream.read(iTemp);
       vectorNumbersRead.push_back(iTemp);
+      std::cout << vectorNumbersRead[i];
    }
 
    for( int i = 0; i < iCountRead2; i++ )
@@ -151,6 +164,7 @@ TEST_CASE( "[file] serialize2", "[file]" )
 
       archiveStream.read(iTemp);
       vectorNumbersRead2.push_back(iTemp);
+      std::cout << vectorNumbersRead2[i];
    }
 
    for( int i = 0; i < iCountRead3; i++ )
@@ -159,8 +173,57 @@ TEST_CASE( "[file] serialize2", "[file]" )
 
       archiveStream.read(iTemp);
       vectorNumbersRead3.push_back(iTemp);
+      std::cout << vectorNumbersRead3[i];
+   }
+
+   std::cout << std::endl;
+
+   archiveStream.close();
+
+}
+
+TEST_CASE("[file] serialize3", "[file]")
+{
+   using namespace gd::io::stream;
+   const int iSize = 5;
+   char iCharacters[iSize] = { 'a', 'b', 'a', 'd', 'l' };
+   int iCount = iSize;
+
+   std::string stringDataFolder = GetDataFolder();
+   gd::file::path pathFile(stringDataFolder + "/archive4.bin");
+   if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+
+   archive archiveStream(pathFile, gd::io::tag_io_write{});
+
+   archiveStream.write(iCount);
+
+   for( int i = 0; i < iSize; i++ )
+   {
+      archiveStream.write(iCharacters[i]);
    }
 
    archiveStream.close();
+
+   archiveStream.open(pathFile, gd::io::tag_io_read{});
+
+   std::vector<char> vectorCharactersRead;
+   int iCountRead;
+
+   archiveStream.read(iCountRead);
+
+   std::cout << "Values: ";
+
+   for( int i = 0; i < iCount; i++ )
+   {
+      char iTemp;
+      archiveStream.read(iTemp);
+      vectorCharactersRead.push_back(iTemp);
+      std::cout << vectorCharactersRead[i];
+   }
+
+   std::cout << std::endl;
+
+   archiveStream.close();
+
 
 }
