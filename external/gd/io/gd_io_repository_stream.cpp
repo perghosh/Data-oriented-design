@@ -78,6 +78,22 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
    return {true, ""};
 }
 
+std::pair<bool, std::string> repository::add(const std::string_view& stringFile)
+{
+   std::ifstream ifstreamFile(stringFile.data(), std::ios::binary | std::ios::ate);
+   if (!ifstreamFile) { return {false, "Failed to open input file"}; }
+
+   std::streamsize uSize = ifstreamFile.tellg();
+   ifstreamFile.seekg(0, std::ios::beg);
+
+   std::vector<char> vectorBuffer(uSize);
+   if (!ifstreamFile.read(buffer.data(), uSize)) { return {false, std::string("Failed to read input file") + stringFile.data()}; }
+
+   std::string stringName = std::filesystem::path(stringFile).filename().string();
+   return add(stringName, vectorBuffer.data(), static_cast<uint64_t>(uSize));
+}
+
+
 
 /**
  * @brief Reads data from the repository associated with the specified name into a buffer.

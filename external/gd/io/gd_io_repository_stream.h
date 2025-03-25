@@ -106,26 +106,36 @@ public:
 
 /** \name OPERATION
 *///@{
+   // ## open file
+
    std::pair<bool, std::string> open(const std::string_view& stringPath);
    std::pair<bool, std::string> open(const std::string_view& stringPath, const std::string_view& stringMode );
 
+   // ## add data or files to repository
+   
    std::pair<bool, std::string> add(const std::string_view& stringName, const void* pdata, uint64_t uSize);
+   std::pair<bool, std::string> add(const std::string_view& stringFile);
+
+   // ## read data from repository
 
    std::pair<bool, std::string> read(const std::string_view& stringName, void* pdata, uint64_t uSize) const;
    std::pair<bool, std::string> read_to_file(const std::string_view& stringName, const std::string_view& stringPath) const;
 
+   // ## information about repository
+
    std::vector<std::string> list() const;
-
    int64_t find(const std::string_view& stringName) const;
-
    bool exists(const std::string_view& stringName) const { return find(stringName) != -1; }
-
    size_t size() const { return m_vectorEntry.size(); }
+
+   // ## remove data from repository
 
    std::pair<bool, std::string> remove( const std::string_view& stringName );
    void remove( std::size_t uIndex );
 
    std::pair<bool, std::string> remove_entry_from_file( const std::vector<uint64_t>& vectorIndexes );
+
+   // ## close repository
 
    void close();
 
