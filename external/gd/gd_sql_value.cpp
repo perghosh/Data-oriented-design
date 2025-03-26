@@ -592,6 +592,49 @@ namespace {
  * @note The function assumes the input string is well-formed except where errors are explicitly checked (e.g., unclosed quotes).
  * @note If a placeholder starts with '=', the value is appended raw without SQL escaping.
  * @note The function modifies `stringNew` incrementally and clears it only implicitly via assignment.
+ * 
+ * @par Examples
+ * @parblock
+ * **Example 1: Basic indexed placeholder replacement**  
+ * @code
+ * gd::argument::arguments args({"Alice", 42});
+ * std::string result;
+ * auto [success, error] = replace_g("Hello {0}, age {1}", args, result, tag_brace{});
+ * // success = true, result = "Hello Alice, age 42", error = ""
+ * @endcode
+ *
+ * **Example 2: Named placeholders with SQL escaping**  
+ * @code
+ * gd::argument::arguments args({{"name", "O'Reilly"}, {"id", 123}});
+ * std::string result;
+ * auto [success, error] = replace_g("WHERE name = '{name}' AND id = {id}", args, result, tag_brace{});
+ * // success = true, result = "WHERE name = 'O''Reilly' AND id = 123", error = ""
+ * @endcode
+ *
+ * **Example 3: Required value with missing argument**  
+ * @code
+ * gd::argument::arguments args({{"id", 123}});
+ * std::string result;
+ * auto [success, error] = replace_g("WHERE name = {*name}", args, result, tag_brace{});
+ * // success = false, result unchanged, error = "required value not found: name"
+ * @endcode
+ *
+ * **Example 4: Raw value insertion**  
+ * @code
+ * gd::argument::arguments args({{"table", "users"}});
+ * std::string result;
+ * auto [success, error] = replace_g("SELECT * FROM {=table}", args, result, tag_brace{});
+ * // success = true, result = "SELECT * FROM users", error = ""
+ * @endcode
+ *
+ * **Example 5: Unclosed quote error**  
+ * @code
+ * gd::argument::arguments args;
+ * std::string result;
+ * auto [success, error] = replace_g("WHERE name = 'test", args, result, tag_brace{});
+ * // success = false, result unchanged, error = "no quote ending: 'test"
+ * @endcode
+ * @endparblock
  */
 std::pair<bool,std::string> replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, std::string& stringNew, tag_brace)
 {
@@ -798,14 +841,29 @@ std::string replace_g(const std::string_view& stringSource, const gd::argument::
 }
 
 
-/** --------------------------------------------------------------------------- format`replace_g`
- * @brief replace value with sql formating
- * @verbatim
- * {?value_name,{insert this if value_name exists},{insert this if value_name is empty}}
- * @endverbatim
- * @param stringSource string with values to replace
- * @param find_ callback to get argument
- * @return  std::string string with replaced values
+ /** --------------------------------------------------------------------------
+ * @brief Processes a string with SQL-style conditional replacement expressions.
+ * 
+ * This function parses and replaces templated expressions in the input string with values determined by a provided callback.
+ * The expressions follow the format `{?name,true_value,false_value}`, where:
+ * - `name` is evaluated via the `find_` callback to determine a boolean condition.
+ * - `true_value` is inserted if the condition is true.
+ * - `false_value` (optional) is inserted if the condition is false.
+ * 
+ * The function handles SQL string literals (single-quoted text) by preserving them, including proper handling of escaped quotes.
+ * Non-expression text is copied as-is, except for single quotes, which trigger string literal parsing.
+ * 
+ * @param stringSource The input string containing text and optional replacement expressions.
+ * @param find_ A callback function that takes a `std::string_view` (the `name` in the expression) and returns a `gd::variant_view` 
+ *              indicating the condition's truth value.
+ * @param pbError Pointer to a boolean flag (optional). Set to `true` if a parsing error occurs; `false` otherwise. If `nullptr`, errors are silently ignored.
+ * @param tag_preprocess .
+ * @return A new `std::string` with all expressions replaced according to the `find_` callback results.
+ * 
+ * @example
+ * Input: "SELECT * FROM users WHERE active = {?status,1,0}"
+ * If find_("status") returns true: "SELECT * FROM users WHERE active = 1"
+ * If find_("status") returns false: "SELECT * FROM users WHERE active = 0"
  */
 std::string replace_g(const std::string_view& stringSource, std::function<gd::variant_view (const std::string_view&)> find_, bool* pbError, tag_preprocess )
 {
