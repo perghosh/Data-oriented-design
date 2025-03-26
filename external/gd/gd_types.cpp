@@ -1,3 +1,11 @@
+/**
+ * \file gd_types.cpp
+ * 
+ * \brief definitions for gd type system
+ * 
+ */
+
+
 #include "gd_types.h"
 
 _GD_TYPES_BEGIN
