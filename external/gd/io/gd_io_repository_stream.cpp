@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <filesystem>
 
 #include "gd_io_repository_stream.h"
 
@@ -87,7 +88,7 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringFile)
    ifstreamFile.seekg(0, std::ios::beg);
 
    std::vector<char> vectorBuffer(uSize);
-   if (!ifstreamFile.read(buffer.data(), uSize)) { return {false, std::string("Failed to read input file") + stringFile.data()}; }
+   if( !ifstreamFile.read(vectorBuffer.data(), uSize) ) { return {false, std::string("Failed to read input file") + stringFile.data()}; }
 
    std::string stringName = std::filesystem::path(stringFile).filename().string();
    return add(stringName, vectorBuffer.data(), static_cast<uint64_t>(uSize));
@@ -352,12 +353,64 @@ void repository::close()
    }
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Writes a block of entry data to a file at a specified offset.
+ *
+ * Writes a block of data, assumed to be composed of repository::entry objects (but can write any data pointer points to),
+ * to the given file starting at the specified offset. The size must be a multiple of the entry size.
+ *
+ * @param pfile Pointer to the file to write to (must not be null).
+ * @param pdata Pointer to the data to write (assumed to be repository::entry objects).
+ * @param uSize Size of the data in bytes (must be a multiple of sizeof(repository::entry)).
+ * @param uOffset Byte offset in the file where writing begins.
+ * @return std::pair<bool, std::string> Pair containing success flag (true) and an empty message on success.
+ * @pre uSize must be a multiple of sizeof(repository::entry).
+ * @pre pfile must not be null.
+ */
 std::pair<bool, std::string> repository::write_entry_block_s(FILE* pfile, const void* pdata, uint64_t uSize, uint64_t uOffset)
 {                                                                                                  assert( uSize % sizeof( repository::entry ) == 0 ); assert( pfile != nullptr );
    fseek(pfile, static_cast<long>( uOffset ), SEEK_SET);                        // seek (move) to offset
    fwrite(pdata, 1, uSize, pfile);                                              // write data to file
 
    return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Writes a block of repeated byte values to a file at a specified offset.
+ *
+ * This static function fills a block of the specified size with a single byte value and writes it
+ * to the file starting at the given offset. It includes error checking for file operations.
+ *
+ * @param pfile Pointer to the file to write to (must not be null).
+ * @param uFillValue Byte value to fill the block with (e.g., 0x00 for zeros).
+ * @param uSize Number of bytes to write.
+ * @param uOffset Byte offset in the file where writing begins.
+ * @return std::pair<bool, std::string> Pair containing success flag and a message:
+ *         - {true, ""} on success.
+ *         - {false, error message} on failure (e.g., invalid pointer, seek/write/flush error).
+ * @pre pfile must not be null.
+ */
+std::pair<bool, std::string> repository::write_block_s(FILE* pfile, uint8_t uFillValue, uint64_t uSize, uint64_t uOffset) 
+{                                                                                                  assert( pfile != nullptr );
+   if(pfile == nullptr) { return {false, "Invalid file pointer"}; }              // Check if the file pointer is valid
+
+   // Seek to the specified offset in the file
+   if( fseek(pfile, uOffset, SEEK_SET) != 0 ) { return {false, "Failed to seek to offset " + std::to_string(uOffset)}; }
+
+   // ## Write the block of data filled with uFillValue
+   for (uint64_t i = 0; i < uSize; ++i) 
+   {
+      if( fputc(uFillValue, pfile) == EOF ) 
+      {
+         return {false, "Failed to write byte at position " + std::to_string(uOffset + i)};
+      }
+   }
+
+   // Ensure the data is flushed to the file
+   if (fflush(pfile) != 0) {  return {false, "Failed to flush data to file"}; }
+
+   // Success case
+   return {true, ""};
 }
 
 
