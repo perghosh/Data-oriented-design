@@ -1,3 +1,11 @@
+/**
+ * \file gd_cli_options.cpp
+ * 
+ * \brief Definitions for gd command-line options
+ * 
+ */
+
+
 #include <memory>
 #include <sstream>
 
