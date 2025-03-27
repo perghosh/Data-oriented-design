@@ -8,6 +8,7 @@
 #include "gd/gd_variant.h"
 #include "gd/gd_table_column-buffer.h"
 #include "gd/io/gd_io_archive_stream.h"
+#include "History.h"
 
 #include "main.h"
 
@@ -234,6 +235,19 @@ struct Data
 {
    int m_iNumber = 5;
    int m_iNumber2 = 3;
+
+   void write(gd::io::stream::archive& archive_)
+   {
+      archive_ << m_iNumber;
+      archive_ << m_iNumber2;
+   }
+
+   void read(gd::io::stream::archive& archive_)
+   {
+      archive_ >> m_iNumber;
+      archive_ >> m_iNumber2;
+   }
+
 };
 
 TEST_CASE("[file] serialize4", "[file]")
@@ -247,7 +261,8 @@ TEST_CASE("[file] serialize4", "[file]")
    if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
 
    archive archiveStream(pathFile, gd::io::tag_io_write{});
-   archiveStream.write_all(dataWrite.m_iNumber, dataWrite.m_iNumber2);
+   dataWrite.write( archiveStream );
+   //archiveStream.write_all(dataWrite.m_iNumber, dataWrite.m_iNumber2);
 
    archiveStream.close();
 
@@ -306,4 +321,31 @@ TEST_CASE("[file] serialize5", "[file]")
 
    archiveStream.close();
 
+}
+
+TEST_CASE("[file] serialize6", "[file]")
+{
+   using namespace gd::io::stream;
+
+   std::string stringDataFolder = GetDataFolder();
+   gd::file::path pathFile(stringDataFolder + "/archive7.bin");
+   if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+
+   archive archiveStream(pathFile, gd::io::tag_io_write{});
+
+   CHistory history;
+   history.Add("HHH");
+   history.Add("BBB");
+   history.Add("AAA");
+
+   history.Write(archiveStream);
+
+   archiveStream.close();
+
+   archiveStream.open(pathFile, gd::io::tag_io_read{});
+
+   history.Read(archiveStream);
+
+   archiveStream.close();
+ 
 }
