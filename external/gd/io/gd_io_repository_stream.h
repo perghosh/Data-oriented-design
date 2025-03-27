@@ -36,6 +36,24 @@ public:
       eEntryFlagRemove     = 0x0004,   ///< Entry is marked for removal
    };
 public:
+
+   /**
+    * @brief 
+    */
+   struct header
+   {
+      header() = default;
+
+      void add_entry() { m_uEntryCount++; assert( m_uEntryCount < m_uEntrySize ); }
+
+      uint64_t size() const { return m_uEntrySize; }
+
+      uint64_t m_uMagic = repository::get_magic_number_s(); ///< Magic number
+      uint64_t m_uVersion = 1;    ///< Version number
+      uint64_t m_uEntrySize = 10; ///< Size of entry in bytes
+      uint64_t m_uEntryCount = 0; ///< Number of entries
+   };
+
    struct entry
    {
       entry(): m_uOffset(0), m_uSize(0), m_uFlags(0) { std::memset(this, 0, sizeof(entry)); }
@@ -70,6 +88,7 @@ public:
 
       uint64_t offset() const { return m_uOffset; }
       uint64_t size() const { return m_uSize; }
+      uint64_t offset_end() const { return offset() + size(); }
 
       char m_piszName[256];      ///< File name
       uint64_t m_uOffset;        ///< Offset in archive file
@@ -111,10 +130,17 @@ public:
    std::pair<bool, std::string> open(const std::string_view& stringPath);
    std::pair<bool, std::string> open(const std::string_view& stringPath, const std::string_view& stringMode );
 
+   std::pair<bool, std::string> create(const std::string_view& stringPath);
+   std::pair<bool, std::string> create();
+
    // ## add data or files to repository
    
    std::pair<bool, std::string> add(const std::string_view& stringName, const void* pdata, uint64_t uSize);
    std::pair<bool, std::string> add(const std::string_view& stringFile);
+
+   // ## updates internal data in repository to file
+
+   std::pair<bool, std::string> flush();
 
    // ## read data from repository
 
@@ -127,6 +153,8 @@ public:
    int64_t find(const std::string_view& stringName) const;
    bool exists(const std::string_view& stringName) const { return find(stringName) != -1; }
    size_t size() const { return m_vectorEntry.size(); }
+   size_t size_reserved() const { return m_header.size(); }
+   bool empty() const { return m_vectorEntry.empty(); }
 
    // ## remove data from repository
 
@@ -156,23 +184,60 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   header m_header;               ///< Header of repository
    FILE* m_pFile;                 ///< File handle for archive
    std::string m_stringRepositoryPath;///< Path to archive file
    std::vector<entry> m_vectorEntry;///< Index of files
-   uint64_t m_uEntrySize;         ///< Size of index in bytes
 
 
 // ## free functions ------------------------------------------------------------
 public:
+   /// @brief calculate position of entry block in repository file
+   static uint64_t calculte_entry_offset_s() { return (uint64_t)sizeof( header ); }
+   /// @brief calculate position of entry block in repository file
+   static uint64_t calculte_file_offset_s( const repository& repository_ ) { return calculte_entry_offset_s() + repository_.size_reserved() * sizeof( entry ); }
+   static std::pair<bool, std::string> write_header_s(FILE* pfile, const header& header_);
    /// @brief write entry block to file
    static std::pair<bool, std::string> write_entry_block_s(FILE* pfile, const void* pdata, uint64_t uSize, uint64_t uOffset);
    /// @brief fill block with fill value
    static std::pair<bool, std::string> write_block_s(FILE* pfile, uint8_t uFillValue, uint64_t uSize, uint64_t uOffset);
    /// @brief calculate the first position of content in repository file
-   static uint64_t calculate_first_content_position_s(const repository& repository_) { return repository_.size() * sizeof(repository::entry); }
+   static uint64_t calculate_first_content_position_s(const repository& repository_);
+   /// @brief calculate the first position of content in repository file
+   static uint64_t calculate_first_free_content_position_s(const repository& repository_);
+   /// @brief get size of entry buffer
+   static uint64_t size_entry_buffer_s(const repository& repository_) { return repository_.m_vectorEntry.size() * sizeof(entry); }
+   /// get size of reserved buffer for entry
+   static uint64_t size_entry_reserved_buffer_s(const repository& repository_) { return repository_.m_header.size() * sizeof( entry ); }
+   /// @brief get magic number used to identify repository file
+   static constexpr uint64_t get_magic_number_s();
 
 };
 
+/// create repository file
+inline std::pair<bool, std::string> repository::create(const std::string_view& stringPath) {
+   close();
+   m_stringRepositoryPath = stringPath;
+   return create();
+}
+
+inline uint64_t repository::calculate_first_content_position_s(const repository& repository_) { 
+   uint64_t uOffset = calculte_file_offset_s( repository_ );
+   return uOffset; 
+}
+
+
+/// calculate first free content position in repository file
+inline uint64_t repository::calculate_first_free_content_position_s(const repository& repository_) { 
+   uint64_t uOffset = calculte_file_offset_s( repository_ );
+   if( repository_.empty() == false ) uOffset += repository_.m_vectorEntry.back().offset_end();
+   return uOffset; 
+}
+
+/// returns the magic number used to identify repository file
+inline constexpr uint64_t repository::get_magic_number_s() {
+   return 0x2e2d2e2d2e2d2e2d; // .-.-.-.-
+}
 
 
 
