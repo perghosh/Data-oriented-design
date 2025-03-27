@@ -108,6 +108,33 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
    return {true, ""};
 }
 
+/** --
+ * @brief Adds a file to the repository by reading its contents from the filesystem.
+ *
+ * This method opens the specified file in binary mode, reads its contents into a buffer,
+ * extracts the filename from the path, and delegates to the `add` overload that accepts
+ * a name, data pointer, and size. If any step fails (e.g., file opening or reading),
+ * an error message is returned.
+ *
+ * @param stringFile The path to the file to be added (as a string_view).
+ * @return A pair containing:
+ *         - `bool`: `true` if the file was successfully added, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @note The file is opened in binary mode to preserve exact contents.
+ * @note The filename is extracted using `std::filesystem::path` for portability.
+ *
+ * @par Example:
+ * @code
+ * repository repo;
+ * auto result = repo.add("example.txt");
+ * if (result.first) {
+ *     std::cout << "File added successfully\n";
+ * } else {
+ *     std::cout << "Error: " << result.second << "\n";
+ * }
+ * @endcode
+ */
 std::pair<bool, std::string> repository::add(const std::string_view& stringFile)
 {
    std::ifstream ifstreamFile(stringFile.data(), std::ios::binary | std::ios::ate);
@@ -123,6 +150,31 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringFile)
    return add(stringName, vectorBuffer.data(), static_cast<uint64_t>(uSize));
 }
 
+/** -
+ * @brief Writes the repository's header and entry block to the underlying file.
+ *
+ * This method ensures that the in-memory state of the repository (header and entries)
+ * is persisted to the file. It writes the header first, followed by the entry block
+ * at the calculated offset. If any write operation fails, the file is closed, and
+ * an error is returned.
+ *
+ * @return A pair containing:
+ *         - `bool`: `true` if the flush operation succeeded, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @par Example:
+ * @code
+ * repository repo;
+ * repo.create("archive.repo"); // Assume this opens m_pFile
+ * repo.add("test.txt");        // Add a file
+ * auto result = repo.flush();
+ * if (result.first) {
+ *     std::cout << "Repository flushed successfully\n";
+ * } else {
+ *     std::cout << "Flush failed: " << result.second << "\n";
+ * }
+ * @endcode
+ */
 std::pair<bool, std::string> repository::flush() 
 {                                                                                                  assert( m_pFile != nullptr );
    // Write header to file
@@ -138,10 +190,7 @@ std::pair<bool, std::string> repository::flush()
    return {true, ""};
 }
 
-
-
-
-/**
+/** ---------------------------------------------------------------------------
  * @brief Reads data from the repository associated with the specified name into a buffer.
  *
  * Searches for an entry with the given name and reads its data into the provided buffer.
@@ -167,7 +216,7 @@ std::pair<bool, std::string> repository::read(const std::string_view& stringName
    return { true, "" };
 }
 
-/** -
+/** ---------------------------------------------------------------------------
  * @brief Reads data from the repository and writes it to a file at the specified path.
  *
  * Searches for an entry with the given name and saves its data to a new file at the provided path.
