@@ -227,3 +227,83 @@ TEST_CASE("[file] serialize3", "[file]")
 
 
 }
+
+// struct variabler skriva in och sedan läsas ut
+
+struct Data
+{
+   int m_iNumber = 5;
+   int m_iNumber2 = 3;
+};
+
+TEST_CASE("[file] serialize4", "[file]")
+{
+   using namespace gd::io::stream;
+
+   Data dataWrite;
+
+   std::string stringDataFolder = GetDataFolder();
+   gd::file::path pathFile(stringDataFolder + "/archive5.bin");
+   if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+
+   archive archiveStream(pathFile, gd::io::tag_io_write{});
+   archiveStream.write_all(dataWrite.m_iNumber, dataWrite.m_iNumber2);
+
+   archiveStream.close();
+
+   Data dataRead;
+
+   archiveStream.open(pathFile, gd::io::tag_io_read{});
+   archiveStream.read_all(dataRead.m_iNumber, dataRead.m_iNumber2);
+
+   archiveStream.close();
+
+}
+
+// struct sekvenser vector
+
+TEST_CASE("[file] serialize5", "[file]")
+{
+   using namespace gd::io::stream;
+
+   std::string stringDataFolder = GetDataFolder();
+   gd::file::path pathFile(stringDataFolder + "/archive6.bin");
+   if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+
+   archive archiveStream(pathFile, gd::io::tag_io_write{});
+
+   std::vector<Data> vectorDataWrite[3];
+   int iCount = 0;
+
+   for( int i = 0; i < 3; i++ )
+   {
+      Data dataTemp;
+      vectorDataWrite->push_back(dataTemp);
+      iCount++;
+   }
+
+   archiveStream.write(iCount);
+
+   for( int i = 0; i < vectorDataWrite->size(); i++ )
+   {
+      archiveStream.write(vectorDataWrite[i]);
+   }
+
+   archiveStream.close();
+
+   archiveStream.open(pathFile, gd::io::tag_io_read{});
+   std::vector<Data> vectorDataRead;
+   int iCountRead;
+
+   archiveStream.read(iCountRead);
+
+   for( int i = 0; i < iCountRead; i++ )
+   {
+      Data dataTemp;
+      archiveStream.read(dataTemp);
+      vectorDataRead.push_back(dataTemp);
+   }
+
+   archiveStream.close();
+
+}
