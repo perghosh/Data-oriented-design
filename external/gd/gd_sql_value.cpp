@@ -1,3 +1,10 @@
+/**
+ * \file gd_sql_value.cpp
+ * 
+ * \brief Sql functions working on sql values in sql expressions
+ * 
+ */
+
 #include <stdlib.h>
 
 #include "gd_utf8.h"
