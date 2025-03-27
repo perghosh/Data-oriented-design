@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <algorithm>
 #include <filesystem>
 
@@ -41,10 +42,32 @@ std::pair<bool, std::string> repository::open(const std::string_view& stringPath
    m_pFile = fopen(stringPath.data(), stringMode.data());
    if(!m_pFile) { return {false, std::string( "Failed to open file: " ) + stringPath.data()}; }
 
+
    m_stringRepositoryPath = stringPath;
 
    return {true, ""};
 }
+
+
+std::pair<bool, std::string> repository::create() 
+{
+   close();                                                                   // Close any existing file
+
+   // Open the file for writing
+   m_pFile = std::fopen(m_stringRepositoryPath.c_str(), "wb");
+   if (!m_pFile) { return {false, "Failed to create file: " + m_stringRepositoryPath}; }
+
+   auto result_ = write_header_s(m_pFile, m_header);   
+   if( result_.first == false ) { close(); return result_; }
+
+   uint64_t uEntryOffset = calculte_entry_offset_s();
+   uint64_t uEntrySize = size_entry_reserved_buffer_s(*this);
+   result_ = write_block_s(m_pFile, 0, uEntrySize, uEntryOffset);
+   if( result_.first == false ) { close(); return result_; }
+
+   return {true, ""};
+}
+
 
 
 /** ---------------------------------------------------------------------------
@@ -65,16 +88,22 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
 {                                                                                                  assert( stringName.length() < 260 ); assert( m_pFile != nullptr );
    if(!m_pFile || stringName.length() >= sizeof(entry::m_piszName)) { return {false, std::string("Invalid file or name too long: ") + stringName.data()}; }
 
-   auto uStartOffset = calculate_first_content_position_s(*this);
+   auto uStartOffset = calculate_first_free_content_position_s(*this);
 
    fseek(m_pFile, 0, SEEK_END);                                                // Move to the end of the file
    uint64_t uOffset = ftell(m_pFile);                                          // Get the current file position as the offset
-   uOffset -= uStartOffset;                                                    // Offset is relative to the start of the content section
+                                                                                                   assert( uOffset == uStartOffset );
+   //uOffset -= uStartOffset;                                                    // Offset is relative to the start of the content section
 
    fwrite(pdata_, 1, uSize, m_pFile);
 
-   entry entry_( stringName.data(), uOffset, uSize, eEntryFlagValid );
+   // ## Subtract the first position of content in repository file
+   auto uFirstPosition = calculate_first_content_position_s(*this);
+   uStartOffset -= uFirstPosition;
+
+   entry entry_( stringName.data(), uStartOffset, uSize, eEntryFlagValid );
    m_vectorEntry.push_back(entry_);
+   m_header.add_entry();
 
    return {true, ""};
 }
@@ -93,6 +122,22 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringFile)
    std::string stringName = std::filesystem::path(stringFile).filename().string();
    return add(stringName, vectorBuffer.data(), static_cast<uint64_t>(uSize));
 }
+
+std::pair<bool, std::string> repository::flush() 
+{                                                                                                  assert( m_pFile != nullptr );
+   // Write header to file
+   auto result_ = write_header_s(m_pFile, m_header);
+   if( result_.first == false ) { close(); return result_; }
+
+   uint64_t uEntryOffset = calculte_entry_offset_s();
+   uint64_t uEntrySize = size_entry_buffer_s(*this);
+
+   result_ = write_entry_block_s(m_pFile, m_vectorEntry.data(), uEntrySize, uEntryOffset);
+   if( result_.first == false ) { close(); return result_; }
+
+   return {true, ""};
+}
+
 
 
 
@@ -353,6 +398,20 @@ void repository::close()
    }
 }
 
+std::pair<bool, std::string> repository::write_header_s(FILE* pfile, const header& header_)
+{                                                                                                  assert( pfile != nullptr );
+   // Seek to the beginning of the file
+   if( std::fseek(pfile, 0, SEEK_SET) != 0 ) { return {false, "Failed to seek to the beginning of the file"}; }
+
+   // Write the header to the file
+   if (std::fwrite(&header_, sizeof(header), 1, pfile) != 1) { return {false, "Failed to write header to the file"}; }
+
+   // Flush the file to ensure the header is written
+   if (std::fflush(pfile) != 0) { return {false, "Failed to flush the file"}; }
+
+   return {true, ""};
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Writes a block of entry data to a file at a specified offset.
  *
@@ -395,7 +454,7 @@ std::pair<bool, std::string> repository::write_block_s(FILE* pfile, uint8_t uFil
    if(pfile == nullptr) { return {false, "Invalid file pointer"}; }              // Check if the file pointer is valid
 
    // Seek to the specified offset in the file
-   if( fseek(pfile, uOffset, SEEK_SET) != 0 ) { return {false, "Failed to seek to offset " + std::to_string(uOffset)}; }
+   if( std::fseek(pfile, (unsigned)uOffset, SEEK_SET) != 0 ) { return {false, "Failed to seek to offset " + std::to_string(uOffset)}; }
 
    // ## Write the block of data filled with uFillValue
    for (uint64_t i = 0; i < uSize; ++i) 
