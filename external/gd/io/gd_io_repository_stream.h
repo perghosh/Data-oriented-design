@@ -16,6 +16,8 @@
 
 _GD_IO_STREAM_BEGIN
 
+constexpr uint64_t uMaxFileNameLength_g = 260; ///< Maximum length of a file name in bytes
+
 /**
  * \brief
  *
@@ -75,6 +77,8 @@ public:
       }
 
       std::string_view get_name() const { return std::string_view(m_piszName); }
+      void set_name(const std::string_view& stringName) { 
+         assert( stringName.length() < uMaxFileNameLength_g ); std::strncpy(m_piszName, stringName.data(), sizeof(m_piszName) - 1); m_piszName[uMaxFileNameLength_g - 1] = '\0'; }
 
       void set_offset(uint64_t uOffset) { m_uOffset = uOffset; }
 
@@ -90,7 +94,7 @@ public:
       uint64_t size() const { return m_uSize; }
       uint64_t offset_end() const { return offset() + size(); }
 
-      char m_piszName[256];      ///< File name
+      char m_piszName[uMaxFileNameLength_g]; ///< File name
       uint64_t m_uOffset;        ///< Offset in archive file
       uint64_t m_uSize;          ///< Size of file content
       unsigned m_uFlags;         ///< Entry validity flag
@@ -109,7 +113,12 @@ public:
    ~repository() { close(); }
 private:
    // common copy
-   void common_construct(const repository& o) {}
+   void common_construct(const repository& o) {
+      m_header = o.m_header;
+      m_pFile = nullptr;
+      m_stringRepositoryPath = o.m_stringRepositoryPath;
+      m_vectorEntry = o.m_vectorEntry;
+   }
    void common_construct(repository&& o) noexcept {}
 
 // ## operator -----------------------------------------------------------------
@@ -120,13 +129,14 @@ public:
 public:
 /** \name GET/SET
 *///@{
-
+   const std::string& get_path() const { return m_stringRepositoryPath; }
 //@}
 
 /** \name OPERATION
 *///@{
    // ## open file
 
+   std::pair<bool, std::string> open();
    std::pair<bool, std::string> open(const std::string_view& stringPath);
    std::pair<bool, std::string> open(const std::string_view& stringPath, const std::string_view& stringMode );
 
@@ -137,6 +147,7 @@ public:
    
    std::pair<bool, std::string> add(const std::string_view& stringName, const void* pdata, uint64_t uSize);
    std::pair<bool, std::string> add(const std::string_view& stringFile);
+   void add_entry(const entry& entry_) { m_vectorEntry.push_back(entry_); m_header.add_entry(); }
 
    // ## updates internal data in repository to file
 
@@ -146,6 +157,8 @@ public:
 
    std::pair<bool, std::string> read(const std::string_view& stringName, void* pdata, uint64_t uSize) const;
    std::pair<bool, std::string> read_to_file(const std::string_view& stringName, const std::string_view& stringPath) const;
+
+   //std::pair<bool, std::string> write();
 
    // ## information about repository
 
@@ -158,9 +171,12 @@ public:
 
    // ## remove data from repository
 
+   //std::pair<bool, std::string> remove( size_t uIndex );
    std::pair<bool, std::string> remove( const std::string_view& stringName );
    void remove( std::size_t uIndex );
 
+   void remove_entry() { m_vectorEntry.clear(); }
+   std::pair<bool, std::string> remove_entry_from_file();
    std::pair<bool, std::string> remove_entry_from_file( const std::vector<uint64_t>& vectorIndexes );
 
    // ## close repository
@@ -196,21 +212,30 @@ public:
    static uint64_t calculte_entry_offset_s() { return (uint64_t)sizeof( header ); }
    /// @brief calculate position of entry block in repository file
    static uint64_t calculte_file_offset_s( const repository& repository_ ) { return calculte_entry_offset_s() + repository_.size_reserved() * sizeof( entry ); }
+   /// @brief calculate the first position of content in repository file
+   static uint64_t calculate_first_content_position_s(const repository& repository_);
+   /// @brief calculate the first position of content in repository file
+   static uint64_t calculate_first_free_content_position_s(const repository& repository_);
+
+   /// @brief write data to file
+   static size_t write_s(repository& repository_, const void* pdata_, size_t uCount);
+
+   /// @brief write header to file
    static std::pair<bool, std::string> write_header_s(FILE* pfile, const header& header_);
    /// @brief write entry block to file
    static std::pair<bool, std::string> write_entry_block_s(FILE* pfile, const void* pdata, uint64_t uSize, uint64_t uOffset);
    /// @brief fill block with fill value
    static std::pair<bool, std::string> write_block_s(FILE* pfile, uint8_t uFillValue, uint64_t uSize, uint64_t uOffset);
-   /// @brief calculate the first position of content in repository file
-   static uint64_t calculate_first_content_position_s(const repository& repository_);
-   /// @brief calculate the first position of content in repository file
-   static uint64_t calculate_first_free_content_position_s(const repository& repository_);
+
    /// @brief get size of entry buffer
    static uint64_t size_entry_buffer_s(const repository& repository_) { return repository_.m_vectorEntry.size() * sizeof(entry); }
    /// get size of reserved buffer for entry
    static uint64_t size_entry_reserved_buffer_s(const repository& repository_) { return repository_.m_header.size() * sizeof( entry ); }
    /// @brief get magic number used to identify repository file
    static constexpr uint64_t get_magic_number_s();
+
+   /// @brief copy entries from one repository to another
+   static void copy_entries_s(repository& repositoryTo, const repository& repositoryFrom);
 
 };
 
@@ -237,6 +262,11 @@ inline uint64_t repository::calculate_first_free_content_position_s(const reposi
 /// returns the magic number used to identify repository file
 inline constexpr uint64_t repository::get_magic_number_s() {
    return 0x2e2d2e2d2e2d2e2d; // .-.-.-.-
+}
+
+/// wrapper for c `fwrite` command
+inline size_t repository::write_s(repository& repository_, const void* pdata_, size_t uCount) {
+   return fwrite(pdata_, 1, uCount, repository_.m_pFile);
 }
 
 

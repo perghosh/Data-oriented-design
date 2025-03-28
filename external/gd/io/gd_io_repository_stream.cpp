@@ -48,21 +48,41 @@ std::pair<bool, std::string> repository::open(const std::string_view& stringPath
    return {true, ""};
 }
 
+std::pair<bool, std::string> repository::open()
+{
+   return open(m_stringRepositoryPath);
+}
 
+/** ---------------------------------------------------------------------------
+ * @brief Creates a new repository file and initializes it with a header and reserved entry space.
+ *
+ * This method attempts to create a new repository file at the path specified by `m_stringRepositoryPath`.
+ * It performs the following steps:
+ * 1. Closes any existing file associated with the repository.
+ * 2. Opens a new file for writing in binary mode.
+ * 3. Writes the repository header to the file.
+ * 4. Reserves space for the entry block by writing a block of zeros.
+ *
+ * If any of these steps fail, the method returns a pair with `false` and an error message.
+ * If all steps succeed, it returns `true` and an empty string.
+ *
+ * @return A pair containing a boolean indicating success (true) or failure (false),
+ *         and a string with an error message if the operation failed, or empty if successful.
+ */
 std::pair<bool, std::string> repository::create() 
 {
    close();                                                                   // Close any existing file
 
    // Open the file for writing
-   m_pFile = std::fopen(m_stringRepositoryPath.c_str(), "wb");
+   m_pFile = std::fopen(m_stringRepositoryPath.c_str(), "w+b");
    if (!m_pFile) { return {false, "Failed to create file: " + m_stringRepositoryPath}; }
 
-   auto result_ = write_header_s(m_pFile, m_header);   
+   auto result_ = write_header_s(m_pFile, m_header);                           // write the header to the file, place it at the beginning
    if( result_.first == false ) { close(); return result_; }
 
-   uint64_t uEntryOffset = calculte_entry_offset_s();
-   uint64_t uEntrySize = size_entry_reserved_buffer_s(*this);
-   result_ = write_block_s(m_pFile, 0, uEntrySize, uEntryOffset);
+   uint64_t uEntryOffset = calculte_entry_offset_s();                          // Calculate the offset for the entry block
+   uint64_t uEntrySize = size_entry_reserved_buffer_s(*this);                  // Calculate the size of the entry block 
+   result_ = write_block_s(m_pFile, 0, uEntrySize, uEntryOffset);              // fill the entry block with zeros
    if( result_.first == false ) { close(); return result_; }
 
    return {true, ""};
@@ -88,19 +108,20 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
 {                                                                                                  assert( stringName.length() < 260 ); assert( m_pFile != nullptr );
    if(!m_pFile || stringName.length() >= sizeof(entry::m_piszName)) { return {false, std::string("Invalid file or name too long: ") + stringName.data()}; }
 
-   auto uStartOffset = calculate_first_free_content_position_s(*this);
+   auto uStartOffset = calculate_first_free_content_position_s(*this);          // Calculate the start offset for the new data (end of the file)
 
    fseek(m_pFile, 0, SEEK_END);                                                // Move to the end of the file
    uint64_t uOffset = ftell(m_pFile);                                          // Get the current file position as the offset
                                                                                                    assert( uOffset == uStartOffset );
-   //uOffset -= uStartOffset;                                                    // Offset is relative to the start of the content section
 
-   fwrite(pdata_, 1, uSize, m_pFile);
+   auto uBytesWritten = fwrite(pdata_, 1, uSize, m_pFile);
+   if( uBytesWritten != uSize ) { return { false, "Failed to write data to file" }; }
 
-   // ## Subtract the first position of content in repository file
+   // ## Subtract the first position of content in repository file with the size of reposytory header and entry block
    auto uFirstPosition = calculate_first_content_position_s(*this);
    uStartOffset -= uFirstPosition;
 
+   // Create a new entry and add it to the repository
    entry entry_( stringName.data(), uStartOffset, uSize, eEntryFlagValid );
    m_vectorEntry.push_back(entry_);
    m_header.add_entry();
@@ -334,6 +355,31 @@ void repository::remove(std::size_t uIndex)
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Physically removes all deleted entries from the repository file.
+ *
+ * This method rewrites the repository file, excluding all entries marked as deleted.
+ * It involves creating a temporary file, copying all valid entries, and then replacing
+ * the original file. The in-memory index (m_vectorEntry) is also updated.
+ *
+ * @return A pair containing a boolean indicating success (true) or failure (false),
+ *         and a string with an error message if the operation failed, or empty if successful.
+ */
+std::pair<bool, std::string> repository::remove_entry_from_file()
+{                                                                                                  assert( m_pFile != nullptr );
+    // Collect indexes of entries marked as deleted
+    std::vector<uint64_t> vectorIndexes;
+    for( size_t u = 0; u < m_vectorEntry.size(); ++u ) 
+    {
+        if(m_vectorEntry[u].is_deleted()) 
+        {
+            vectorIndexes.push_back(u);
+        }
+    }
+
+    return remove_entry_from_file(vectorIndexes);                               // call remove method to remove selected entries
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Physically removes an entry from the repository file by name.
  *
  * Removes the specified entry from the file by rewriting the repository file, excluding the
@@ -354,55 +400,68 @@ std::pair<bool, std::string> repository::remove_entry_from_file(const std::vecto
 {                                                                                                  assert( m_pFile != nullptr );
    if(m_pFile == nullptr) { return {false, "File not open"}; }
 
-   for (const auto& index : vectorIndexes) {
-      if (index >= m_vectorEntry.size() || !m_vectorEntry[index].is_valid() || m_vectorEntry[index].is_deleted()) {
+   for (const auto& index_ : vectorIndexes) {
+      const entry& entry_ = m_vectorEntry[index_];
+      if( index_ >= m_header.size() ) 
+      {
          return {false, "Invalid index found"};
       }
    }
 
-   // Create a temporary file
-   std::string stringPathTemporary = m_stringRepositoryPath + ".tmp";
-   FILE* pfileTemporary = fopen(stringPathTemporary.c_str(), "w+b");
-   if(pfileTemporary == nullptr) { return {false, "Failed to create temporary file"}; }
+   repository repositoryCopy( *this );                                         // Create a copy of the repository
+   repositoryCopy.remove_entry();
 
-   // Buffer for copying data
+   // ## Create a temporary file
+   std::filesystem::path pathRepository(m_stringRepositoryPath);
+   pathRepository.replace_extension("tmp");
+   auto result_ = repositoryCopy.create(pathRepository.string());
+   if( result_.first == false ) { return result_; }
+   /*
+   std::string stringPathTemporary = pathRepository.string();
+   FILE* pfileTemporary = fopen(stringPathTemporary.data(), "w+b");
+   if(pfileTemporary == nullptr) { return {false, "Failed to create temporary file: " + stringPathTemporary}; }
+   */
+
    std::vector<uint8_t> vectorBuffer(1024 * 1024); // 1MB buffer for efficiency
 
-   // Copy all valid entries except the one to be removed
+   // ## Copy all valid entries except the one to be removed
+
    uint64_t uNewOffset = 0;
    std::vector<uint64_t> vectorRemove(vectorIndexes.begin(), vectorIndexes.end());
-   std::sort(vectorRemove.begin(), vectorRemove.end(), std::greater<>()); // Sort in descending order for safe erasure
+   std::sort(vectorRemove.begin(), vectorRemove.end(), std::greater<>());     // Sort in descending order for safe erasure
 
-   //for( auto& entry_ : m_vectorEntry) 
+   auto uFirstContentPosition = calculate_first_content_position_s(*this);
+
    for (size_t u = 0; u < m_vectorEntry.size(); ++u)
    {
       bool bRemove = std::find(vectorIndexes.begin(), vectorIndexes.end(), u) != vectorIndexes.end();
 
-      //if( entry_.is_valid() && !entry_.is_deleted() && entry_.get_name() != stringName) 
       if( bRemove == false )
       {
          entry& entry_ = m_vectorEntry[u];
 
-         // Read the entry's data from the original file
-         fseek(m_pFile, static_cast<long>(entry_.offset()), SEEK_SET);
+         // ### Read the entry's data from the original file
+         auto uOffset = uFirstContentPosition + entry_.offset();
+         auto iResult = fseek(m_pFile, static_cast<long>(uOffset), SEEK_SET);                      assert(iResult == 0);
          uint64_t uBytesRemaining = entry_.size();
          while( uBytesRemaining > 0 ) 
          {
             size_t uBytesToRead = std::min(static_cast<size_t>(uBytesRemaining), vectorBuffer.size());
-            size_t uBytesRead = fread(vectorBuffer.data(), 1, uBytesToRead, m_pFile);
+            size_t uBytesRead = fread(vectorBuffer.data(), 1, uBytesToRead, m_pFile);              assert(uBytesRead != 0);
 
-            if (uBytesRead != uBytesToRead) 
+            if( uBytesRead != uBytesToRead ) 
             {
-               fclose(pfileTemporary);
-               std::remove(stringPathTemporary.c_str());
+               repositoryCopy.close();
+               std::remove(repositoryCopy.get_path().c_str());
                return {false, "Failed to read from original file"};
             }
 
-            size_t uBytesWritten = fwrite(vectorBuffer.data(), 1, uBytesRead, pfileTemporary);
+            //size_t uBytesWritten = fwrite(vectorBuffer.data(), 1, uBytesRead, pfileTemporary);
+            size_t uBytesWritten = write_s(repositoryCopy, vectorBuffer.data(), uBytesRead );
             if( uBytesWritten != uBytesRead ) 
             {
-               fclose(pfileTemporary);
-               std::remove(stringPathTemporary.c_str());
+               repositoryCopy.close();
+               std::remove(repositoryCopy.get_path().c_str());
                return {false, "Failed to write to temporary file"};
             }
             uBytesRemaining -= uBytesRead;
@@ -410,29 +469,28 @@ std::pair<bool, std::string> repository::remove_entry_from_file(const std::vecto
          // Update the entry's offset
          entry_.set_offset( uNewOffset );
          uNewOffset += entry_.size();
+         repositoryCopy.add_entry( entry_ );
       }
    }
 
-   // Close both files
-   fclose(pfileTemporary);
+   repositoryCopy.flush();
+   repositoryCopy.close();
    close();
 
+   std::remove(m_stringRepositoryPath.c_str());
+
    // Replace the original file with the temporary file
-   if (std::rename(stringPathTemporary.c_str(), m_stringRepositoryPath.c_str()) != 0) 
+   if( std::rename(repositoryCopy.get_path().c_str(), m_stringRepositoryPath.c_str()) != 0 )
    {
-      std::remove(stringPathTemporary.c_str());
+      std::remove(repositoryCopy.get_path().c_str());
       return {false, "Failed to replace original file"};
    }
+                                                                                                   assert( m_pFile == nullptr );
+   result_ = open();
+   if( result_.first == false ) { return result_; }
 
-   // Reopen the updated file
-   m_pFile = fopen(m_stringRepositoryPath.c_str(), "r+b");
-   if( !m_pFile ) { return {false, "Failed to reopen updated file"};  }
-
-   // Remove the entries from the in-memory index in reverse order to maintain valid indexes
-   for(const auto& uIndex : vectorRemove) 
-   {
-      m_vectorEntry.erase(m_vectorEntry.begin() + uIndex);
-   }
+   copy_entries_s(*this, repositoryCopy);
+   flush();
 
    return {true, ""};
 }
@@ -447,6 +505,7 @@ void repository::close()
    }
 }
 
+/// Writes header repository information to file, this writes the header to the beginning of the file.
 std::pair<bool, std::string> repository::write_header_s(FILE* pfile, const header& header_)
 {                                                                                                  assert( pfile != nullptr );
    // Seek to the beginning of the file
@@ -500,8 +559,6 @@ std::pair<bool, std::string> repository::write_entry_block_s(FILE* pfile, const 
  */
 std::pair<bool, std::string> repository::write_block_s(FILE* pfile, uint8_t uFillValue, uint64_t uSize, uint64_t uOffset) 
 {                                                                                                  assert( pfile != nullptr );
-   if(pfile == nullptr) { return {false, "Invalid file pointer"}; }              // Check if the file pointer is valid
-
    // Seek to the specified offset in the file
    if( std::fseek(pfile, (unsigned)uOffset, SEEK_SET) != 0 ) { return {false, "Failed to seek to offset " + std::to_string(uOffset)}; }
 
@@ -517,9 +574,26 @@ std::pair<bool, std::string> repository::write_block_s(FILE* pfile, uint8_t uFil
    // Ensure the data is flushed to the file
    if (fflush(pfile) != 0) {  return {false, "Failed to flush data to file"}; }
 
-   // Success case
    return {true, ""};
 }
+
+void repository::copy_entries_s(repository& repositoryFrom, const repository& repositoryTo) 
+{
+   // Clear the destination repository's entries
+   repositoryFrom.m_vectorEntry.clear();
+   repositoryFrom.m_header.m_uEntryCount = 0;
+
+   // Copy each entry from the source repository to the destination repository
+   for( const auto& entry_ : repositoryTo.m_vectorEntry )  
+   {
+      repositoryFrom.m_vectorEntry.push_back(entry_);
+      repositoryFrom.m_header.add_entry();
+   }
+
+   // Update the header in the destination repository
+   repositoryFrom.m_header.m_uEntryCount = repositoryFrom.m_vectorEntry.size();
+}
+
 
 
 
