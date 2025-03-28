@@ -40,6 +40,21 @@ TEST_CASE( "[repository] create repository01", "[repository]" ) {
    stringFile = stringDataFolder + "/readme.md";
    result_ = repositoryStream.add(stringFile);                                                     REQUIRE(result_.first == true);
    result_ = repositoryStream.add(stringFile);                                                     REQUIRE(result_.first == true);
+   result_ = repositoryStream.add(stringFile);                                                     REQUIRE(result_.first == true);
+   result_ = repositoryStream.add(stringFile);                                                     REQUIRE(result_.first == true);
+   result_ = repositoryStream.add(stringFile);                                                     REQUIRE(result_.first == true);
+
+   repositoryStream.remove( 1 );
+   repositoryStream.remove( 2 );
+   repositoryStream.remove( 3 );
+
+   repositoryStream.remove_entry_from_file();
+
+   auto list_ = repositoryStream.list();
+   for( auto& stringName : list_ )
+   {
+      std::cout << "File: " << stringName << std::endl;
+   }
 
    repositoryStream.flush();
 }
