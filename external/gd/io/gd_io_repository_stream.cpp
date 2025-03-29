@@ -10,6 +10,14 @@
 
 #include "gd_io_repository_stream.h"
 
+#ifdef _WIN32
+    #define fseek_64_ _fseeki64
+    #define offset_t int64_t
+#else
+    #define fseek_64_ fseeko
+    #define offset_t off_t
+#endif
+
 _GD_IO_STREAM_BEGIN
 
 
@@ -128,7 +136,7 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
 
    auto uStartOffset = calculate_first_free_content_position_s(*this);          // Calculate the start offset for the new data (end of the file)
 
-   fseek(m_pFile, 0, SEEK_END);                                                // Move to the end of the file
+   fseek_64_(m_pFile, 0, SEEK_END);                                            // Move to the end of the file
    uint64_t uOffset = ftell(m_pFile);                                          // Get the current file position as the offset
                                                                                                    assert( uOffset == uStartOffset );
 
@@ -261,11 +269,13 @@ std::pair<bool, std::string> repository::read(const std::string_view& stringName
 
    if(it == m_vectorEntry.end() || uSize < it->size()) { return {false, "File not found or buffer too small"}; }
 
-   fseek(m_pFile, static_cast<long>(it->m_uOffset), SEEK_SET);
+   fseek_64_(m_pFile, static_cast<long>(it->m_uOffset), SEEK_SET);
    fread(pdata, 1, it->m_uSize, m_pFile);
 
    return { true, "" };
 }
+
+#include <sys/types.h>
 
 /** ---------------------------------------------------------------------------
  * @brief Reads data from the repository and writes it to a file at the specified path.
@@ -290,10 +300,16 @@ std::pair<bool, std::string> repository::read_to_file(const std::string_view& st
    std::ofstream ofstreamFile(stringPath.data(), std::ios::binary);
    if(!ofstreamFile) { return {false, "Failed to open output file"}; }
 
+   // ## Prepare data for read and write
    std::vector<uint8_t> vectorBuffer( it->size() );
-   fseek(m_pFile, static_cast<long>(it->m_uOffset), SEEK_SET);
+   uint64_t uBeginPosition = calculate_first_content_position_s(*this);
+   uBeginPosition += it->offset();
+
+   // ### read data from repository
+   fseek_64_(m_pFile, uBeginPosition, SEEK_SET);
    fread(vectorBuffer.data(), 1, it->m_uSize, m_pFile);
 
+   // ### write data to file
    ofstreamFile.write((const char*)vectorBuffer.data(), it->size());
    if(!ofstreamFile) { return {false, std::string("Failed to write to output file: ") + stringPath.data()}; }
 
@@ -495,7 +511,7 @@ std::pair<bool, std::string> repository::remove_entry_from_file(const std::vecto
 
          // ### Read the entry's data from the original file
          auto uOffset = uFirstContentPosition + entry_.offset();
-         auto iResult = fseek(m_pFile, static_cast<long>(uOffset), SEEK_SET);                      assert(iResult == 0);
+         auto iResult = fseek_64_(m_pFile, uOffset, SEEK_SET);                                     assert(iResult == 0);
          uint64_t uBytesRemaining = entry_.size();
          while( uBytesRemaining > 0 ) 
          {
@@ -509,7 +525,6 @@ std::pair<bool, std::string> repository::remove_entry_from_file(const std::vecto
                return {false, "Failed to read from original file"};
             }
 
-            //size_t uBytesWritten = fwrite(vectorBuffer.data(), 1, uBytesRead, pfileTemporary);
             size_t uBytesWritten = write_s(repositoryCopy, vectorBuffer.data(), uBytesRead );
             if( uBytesWritten != uBytesRead ) 
             {
@@ -606,7 +621,7 @@ std::pair<bool, std::string> repository::read_s(repository& repository_)
 std::pair<bool, std::string> repository::read_header_s(FILE* pfile, header& header_) 
 {                                                                                                  assert(pfile != nullptr);
    // Seek to the beginning of the file
-   if( std::fseek(pfile, 0, SEEK_SET) != 0 ) { return {false, "Failed to seek to the beginning of the file"}; }
+   if( fseek_64_(pfile, 0, SEEK_SET) != 0 ) { return {false, "Failed to seek to the beginning of the file"}; }
 
    // Read the header from the file
    if( std::fread( &header_, sizeof(header), 1, pfile ) != 1) { return {false, "Failed to read header from the file"};  }
@@ -621,7 +636,7 @@ std::pair<bool, std::string> repository::read_header_s(FILE* pfile, header& head
 std::pair<bool, std::string> repository::read_entry_block_s(FILE* pfile, std::vector<entry>& vectorEntry, uint64_t uSize, uint64_t uOffset) 
 {                                                                                                  assert(pfile != nullptr); assert(uSize % sizeof(entry) == 0); // Ensure the size is a multiple of entry size
    // Seek to the specified offset in the file
-   if (std::fseek(pfile, static_cast<long>(uOffset), SEEK_SET) != 0) { return {false, "Failed to seek to offset " + std::to_string(uOffset)}; }
+   if( fseek_64_(pfile, static_cast<long>(uOffset), SEEK_SET) != 0) { return {false, "Failed to seek to offset " + std::to_string(uOffset)}; }
 
    // Calculate the number of entries to read
    size_t uEntryCount = uSize / sizeof(entry);
@@ -638,7 +653,7 @@ std::pair<bool, std::string> repository::read_entry_block_s(FILE* pfile, std::ve
 std::pair<bool, std::string> repository::write_header_s(FILE* pfile, const header& header_)
 {                                                                                                  assert( pfile != nullptr );
    // Seek to the beginning of the file
-   if( std::fseek(pfile, 0, SEEK_SET) != 0 ) { return {false, "Failed to seek to the beginning of the file"}; }
+   if( fseek_64_(pfile, 0, SEEK_SET) != 0 ) { return {false, "Failed to seek to the beginning of the file"}; }
 
    // Write the header to the file
    if (std::fwrite(&header_, sizeof(header), 1, pfile) != 1) { return {false, "Failed to write header to the file"}; }
@@ -692,12 +707,9 @@ std::pair<bool, std::string> repository::write_block_s(FILE* pfile, uint8_t uFil
    if( std::fseek(pfile, (unsigned)uOffset, SEEK_SET) != 0 ) { return {false, "Failed to seek to offset " + std::to_string(uOffset)}; }
 
    // ## Write the block of data filled with uFillValue
-   for (uint64_t i = 0; i < uSize; ++i) 
+   for(uint64_t u = 0; u < uSize; ++u) 
    {
-      if( fputc(uFillValue, pfile) == EOF ) 
-      {
-         return {false, "Failed to write byte at position " + std::to_string(uOffset + i)};
-      }
+      if( fputc(uFillValue, pfile) == EOF ) { return {false, "Failed to write byte at position " + std::to_string(uOffset + u)}; }
    }
 
    // Ensure the data is flushed to the file
@@ -738,11 +750,12 @@ std::pair<bool, std::string> repository::expand( uint64_t uCount, uint64_t uBuff
 
    // Step 1: Read existing content into memory (or use a temp file for large data)
    std::vector<uint8_t> contentBuffer;
-   fseek(m_pFile, uOldContentOffset, SEEK_SET);
+   fseek_64_(m_pFile, uOldContentOffset, SEEK_SET);
    uint64_t uContentSize = calculate_first_free_content_position_s(*this) - uOldContentOffset;
    contentBuffer.resize(uContentSize);
    size_t uRead = fread(contentBuffer.data(), 1, uContentSize, m_pFile);
-   if (uRead != uContentSize) {
+   if (uRead != uContentSize) 
+   {
       return {false, "Failed to read content for shifting"};
    }
 
@@ -757,7 +770,7 @@ std::pair<bool, std::string> repository::expand( uint64_t uCount, uint64_t uBuff
 
    // Step 4: Shift content by rewriting it at the new offset
    uint64_t uNewContentOffset = uOldContentOffset + uShiftSize;
-   fseek(m_pFile, uNewContentOffset, SEEK_SET);
+   fseek_64_(m_pFile, uNewContentOffset, SEEK_SET);
    size_t uWritten = fwrite(contentBuffer.data(), 1, uContentSize, m_pFile);
    if (uWritten != uContentSize) {
       return {false, "Failed to shift content"};
