@@ -66,6 +66,23 @@ public:
       eEntryFlagDeleted    = 0x0002,   ///< Entry is deleted
       eEntryFlagRemove     = 0x0004,   ///< Entry is marked for removal
    };
+
+public:
+   struct entry;
+   // Standard type definitions
+   using value_type              = entry;
+   using pointer                 = value_type*;
+   using const_pointer           = const value_type*;
+   using reference               = value_type&;
+   using const_reference         = const value_type&;
+   using size_type               = std::size_t;
+   using difference_type         = std::ptrdiff_t;
+   using iterator                = std::vector<entry>::iterator;
+   using const_iterator          = std::vector<entry>::const_iterator;
+   using reverse_iterator        = std::vector<entry>::reverse_iterator;
+   using const_reverse_iterator  = std::vector<entry>::const_reverse_iterator;
+
+
 public:
 
    /**

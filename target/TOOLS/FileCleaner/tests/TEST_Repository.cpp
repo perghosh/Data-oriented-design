@@ -39,14 +39,16 @@ TEST_CASE( "[repository] create and read", "[repository]" ) {
    for( auto i = 0; i < 15; i++ )
    {
       std::string stringFile = stringDataFolder + "/readme.md";
-      auto result_ = repositoryStream.add(stringFile);                                             REQUIRE(result_.first == true);
+      std::string stringName = "readme" + std::to_string(i) + ".md";
+      auto result_ = repositoryStream.add(stringFile, stringName);                                 REQUIRE(result_.first == true);
    }
 
    repositoryStream.flush();
    repositoryStream.close();
    bool bOpen = repositoryStream.is_open();                                                        REQUIRE(repositoryStream.is_open() == false);
 
-   
+   std::cout << "Repository file: " << repositoryStream.dump() << std::endl;
+
 
    {
       gd::io::stream::repository repositoryRead(repositoryStream.get_path());
