@@ -333,10 +333,12 @@ TEST_CASE("[file] serialize6", "[file]")
 
    archive archiveStream(pathFile, gd::io::tag_io_write{});
 
+   gd::file::path pathFileObject(stringDataFolder);
+
    CHistory history;
-   history.Add("HHH");
-   history.Add("BBB");
-   history.Add("AAA");
+   history.Add(pathFile.string(), "test file");
+   history.Add("BBB", "false file");
+   history.Add("AAA", "false file");
 
    history.Write(archiveStream);
 
