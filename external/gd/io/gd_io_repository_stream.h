@@ -338,10 +338,14 @@ public:
    /// @brief fill block with fill value
    static std::pair<bool, std::string> write_block_s(FILE* pfile, uint8_t uFillValue, uint64_t uSize, uint64_t uOffset);
 
-   /// @brief get size of entry buffer
+   /// @brief get size of header in repository file
+   static uint64_t size_header_s() { return sizeof(header); }
+   /// @brief get size of entry buffer, this is the size of all entries in the repository
    static uint64_t size_entry_buffer_s(const repository& repository_) { return repository_.m_vectorEntry.size() * sizeof(entry); }
-   /// get size of reserved buffer for entry
+   /// get size of reserved buffer for entry, thish is the maximum buffer size of entries that can be stored
    static uint64_t size_entry_reserved_buffer_s(const repository& repository_) { return repository_.m_header.size() * sizeof( entry ); }
+   /// get size of all data in repository
+   static uint64_t size_all_s(const repository& repository_) { return calculate_first_free_content_position_s(repository_); }
    /// @brief get magic number used to identify repository file
    static constexpr uint64_t get_magic_number_s();
 
