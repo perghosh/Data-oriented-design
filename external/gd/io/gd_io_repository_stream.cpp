@@ -764,7 +764,8 @@ std::pair<bool, std::string> repository::write_content_to_file_s(const repositor
    }
 
    // Seek to the start of content in the repository file
-   if (fseek(repository_.m_pFile, uContentStart, SEEK_SET) != 0) {
+   if( fseek_64_(repository_.m_pFile, uContentStart, SEEK_SET) != 0) 
+   {
       fclose(pOutputFile);
       return {false, "Failed to seek to content start in repository"};
    }
@@ -800,21 +801,31 @@ std::pair<bool, std::string> repository::write_content_to_file_s(const repositor
    return {true, ""};
 }
 
+/// @brief make a path string preferred for the current platform 
+std::string repository::file_make_preffered_s(const std::string& stringPath)
+{
+   std::filesystem::path path_(stringPath);
+   path_ = std::filesystem::weakly_canonical(path_);
+   std::string stringPreffered = path_.make_preferred().string();
+   return stringPreffered;
+}
+
 /// @brief Generate a unique temporary file name based on the repository path
 /// @param stringSuffix Optional suffix to append before the counter (e.g., ".tmp")
 /// @return A pair containing the generated file path and a success flag with error message
-std::pair<bool, std::string> repository::generate_temporary_file_name(std::string& stringTemporary) const
-{                                                                                                  assert( m_stringRepositoryPath.empty() == false );
+std::pair<bool, std::string> repository::file_new_tempoary_s(const repository& repository_, std::string& stringTemporaryFile, bool bOpen )
+{
    // Extract the base directory and file name from the repository path
-   std::string stringBasePath = m_stringRepositoryPath;
-   std::string stringDir;
-   std::string stringFileName;
+   std::string stringBasePath = repository_.get_temporary_path();
+   std::string stringDir;  // Directory path
+   std::string stringFileName; // Base file name
 
+   // ## Extract directory and file name
    size_t uSlash = stringBasePath.find_last_of("/\\");
    if( uSlash != std::string::npos ) 
    {
-      stringDir = stringBasePath.substr(0, uSlash + 1);
-      stringFileName = stringBasePath.substr(uSlash + 1);
+      stringDir = stringBasePath.substr(0, uSlash + 1);                       // extract directory
+      stringFileName = stringBasePath.substr(uSlash + 1);                     // extract file name
    } 
    else 
    {
@@ -823,7 +834,7 @@ std::pair<bool, std::string> repository::generate_temporary_file_name(std::strin
 
    // Remove extension if it exists
    size_t uLastDot = stringFileName.find_last_of('.');
-   if(uLastDot != std::string::npos) { stringFileName = stringFileName.substr( 0, uSlashDot ); }
+   if(uLastDot != std::string::npos) { stringFileName = stringFileName.substr( 0, uLastDot ); }
 
    // Maximum attempts to prevent infinite loop
    constexpr uint32_t uMaxAttempts = 10000;
@@ -847,31 +858,29 @@ std::pair<bool, std::string> repository::generate_temporary_file_name(std::strin
 
       if( std::filesystem::exists(stringTempPath) == false )
       {
-         stringTemporary = std::move( stringTempPath );
+         stringTemporaryFile = std::move( stringTempPath );
          return {true, ""};
       }
 
-      // Construct temporary file name: directory + base_name + counter + suffix
-      std::ostringstream oss;
-      oss << stringDir << stringFileName << "_" << uCounter << stringSuffix;
-      std::string stringTempPath = oss.str();
-
+      /*
       // Check if file exists by trying to open it in read mode
       FILE* pTestFile = fopen(stringTempPath.c_str(), "r");
-      if (pTestFile == nullptr) {
+      if(pTestFile == nullptr ) 
+      {
          // File doesn't exist, this name is available
          return {stringTempPath, {true, ""}};
       }
-
       // File exists, close it and try next number
       fclose(pTestFile);
+      */
+
       uCounter++;
    }
 
    return {false, "Failed to find available temporary file name after " + std::to_string(uMaxAttempts) + " attempts"};
 }
 
-
+/*
 std::pair<bool, std::string> repository::expand( uint64_t uCount, uint64_t uBuffer ) 
 {                                                                                                  assert( m_pFile != nullptr );
 
@@ -932,5 +941,6 @@ std::pair<bool, std::string> repository::expand( uint64_t uCount, uint64_t uBuff
    fflush(m_pFile);
    return {true, ""};
 }
+*/
 
 _GD_IO_STREAM_END
