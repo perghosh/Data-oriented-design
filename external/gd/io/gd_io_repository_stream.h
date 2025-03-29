@@ -337,6 +337,8 @@ public:
    static std::pair<bool, std::string> write_entry_block_s(FILE* pfile, const void* pdata, uint64_t uSize, uint64_t uOffset);
    /// @brief fill block with fill value
    static std::pair<bool, std::string> write_block_s(FILE* pfile, uint8_t uFillValue, uint64_t uSize, uint64_t uOffset);
+   /// @brief write content to file
+   static std::pair<bool, std::string> write_content_to_file_s(const repository& repository_, const std::string_view& stringOutputPath);
 
    /// @brief get size of header in repository file
    static uint64_t size_header_s() { return sizeof(header); }
