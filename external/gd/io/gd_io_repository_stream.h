@@ -122,6 +122,7 @@ public:
       /// @brief Clear the header, setting the entry count to zero.
       void clear() { m_uEntryCount = 0; }
 
+   // ## attributes -----------------------------------------------------------
       uint64_t m_uMagic = repository::get_magic_number_s(); ///< Magic number
       uint64_t m_uVersion = 1;    ///< Version number
       uint64_t m_uMaxEntryCount = 10; ///< Mazimum number of entries that can be stored
@@ -138,7 +139,7 @@ public:
    {
       entry(): m_uOffset(0), m_uSize(0), m_uFlags(0) { std::memset(this, 0, sizeof(entry)); }
 
-      entry(const std::string& name, uint64_t uOffset, uint64_t uSize, unsigned uFlags): m_uOffset(uOffset), m_uSize(uSize), m_uFlags(uFlags) {
+      entry(const std::string& name, uint64_t uOffset, uint64_t uSize, unsigned uFlags): m_uOffset(uOffset), m_uSize(uSize), m_uFlags(uFlags), m_dTimeCreate(0.0), m_dTimeAccess(0.0) {
          std::strncpy(m_piszName, name.c_str(), sizeof(m_piszName) - 1);
          m_piszName[sizeof(m_piszName) - 1] = '\0'; // Ensure null-termination
       }
@@ -151,7 +152,7 @@ public:
       void copy(const entry& o) {
          std::strncpy(m_piszName, o.m_piszName, sizeof(m_piszName) - 1);
          m_piszName[sizeof(m_piszName) - 1] = '\0'; // Ensure null-termination
-         m_uOffset = o.m_uOffset; m_uSize = o.m_uSize; m_uFlags = o.m_uFlags;
+         m_uOffset = o.m_uOffset; m_uSize = o.m_uSize; m_uFlags = o.m_uFlags; m_dTimeCreate = o.m_dTimeCreate; m_dTimeAccess = o.m_dTimeAccess;
       }
 
       std::string_view get_name() const { return std::string_view(m_piszName); }
@@ -172,9 +173,12 @@ public:
       uint64_t size() const { return m_uSize; }
       uint64_t offset_end() const { return offset() + size(); }
 
+   // ## attributes -----------------------------------------------------------
       char m_piszName[uMaxFileNameLength_g]; ///< File name
       uint64_t m_uOffset;        ///< Offset in archive file
       uint64_t m_uSize;          ///< Size of file content
+      double   m_dTimeCreate;    ///< Time of creation
+      double   m_dTimeAccess;    ///< Time of last access
       unsigned m_uFlags;         ///< Entry validity flag
    };
 
@@ -237,11 +241,14 @@ public:
    std::pair<bool, std::string> add(const std::string_view& stringName, const void* pdata, uint64_t uSize);
    std::pair<bool, std::string> add(const std::string_view& stringFile);
    std::pair<bool, std::string> add(const std::string_view& stringFile, const std::string_view& stringName);
+   /// @brief Add an entry to the internal vector and update header repository. 
    void add_entry(const entry& entry_) { m_vectorEntry.push_back(entry_); m_header.add_entry(); }
 
    // ## updates internal data in repository to file
 
    std::pair<bool, std::string> flush();
+
+   std::pair<bool, std::string> expand( uint64_t uCount, uint64_t uBuffer );
 
    // ## read data from repository
 
@@ -262,7 +269,6 @@ public:
 
    // ## remove data from repository
 
-   //std::pair<bool, std::string> remove( size_t uIndex );
    std::pair<bool, std::string> remove( const std::string_view& stringName );
    void remove( std::size_t uIndex );
 
