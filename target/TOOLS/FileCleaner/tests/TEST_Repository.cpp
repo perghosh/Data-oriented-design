@@ -23,7 +23,42 @@ std::string GetDataFolder()
    return FOLDER_GetRoot_g("target/TOOLS/FileCleaner/tests/data");
 }
 
+TEST_CASE( "[repository] create and read", "[repository]" ) {
+   CApplication application;
+   application.Initialize();
+   std::string stringDataFolder = GetDataFolder();
+
+   std::string stringFile = stringDataFolder + "/repository.repo";
+   gd::file::path pathFile(stringFile);
+   if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+
+
+   gd::io::stream::repository repositoryStream(stringFile, 20);
+
+   repositoryStream.create();
+   for( auto i = 0; i < 15; i++ )
+   {
+      std::string stringFile = stringDataFolder + "/readme.md";
+      auto result_ = repositoryStream.add(stringFile);                                             REQUIRE(result_.first == true);
+   }
+
+   repositoryStream.flush();
+   repositoryStream.close();
+   bool bOpen = repositoryStream.is_open();                                                        REQUIRE(repositoryStream.is_open() == false);
+
+   
+
+   {
+      gd::io::stream::repository repositoryRead(repositoryStream.get_path());
+      repositoryRead.open();
+
+      std::cout << "Repository file: " << repositoryStream.dump() << std::endl;
+   }
+
+}
+
 /// Test to create and delete documents
+/*
 TEST_CASE( "[repository] create repository01", "[repository]" ) {
    CApplication application;
    application.Initialize();
@@ -56,5 +91,11 @@ TEST_CASE( "[repository] create repository01", "[repository]" ) {
       std::cout << "File: " << stringName << std::endl;
    }
 
-   repositoryStream.flush();
+   result_ = repositoryStream.add(stringFile);                                                     REQUIRE(result_.first == true);
+   list_ = repositoryStream.list();
+   for( auto& stringName : list_ )
+   {
+      std::cout << "File: " << stringName << std::endl;
+   }
 }
+*/

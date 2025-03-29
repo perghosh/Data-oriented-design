@@ -1,3 +1,32 @@
+/**
+* @file gd_io_repository_stream.h
+* @brief Defines the repository class for managing file-based repositories.
+*
+* This file contains the definition of the `repository` class, which provides
+* functionality for creating, opening, reading, writing, and managing file-based
+* repositories. The repository class supports operations such as adding data,
+* listing entries, removing entries, and flushing changes to the file.
+*
+* The repository class uses a header to store metadata about the repository,
+* including a magic number, version number, entry size, and entry count. Each
+* entry in the repository is represented by the `entry` struct, which contains
+* information about the file name, offset, size, and flags indicating the state
+* of the entry.
+*
+* The repository class provides methods for:
+* - Opening and creating repository files.
+* - Adding data or files to the repository.
+* - Reading data from the repository.
+* - Listing and finding entries in the repository.
+* - Removing entries from the repository.
+* - Flushing changes to the file.
+*
+* The repository class also includes static utility functions for writing data
+* to files, calculating offsets, and copying entries between repositories.
+*
+*/
+
+
 #pragma once
 
 #include <cassert>
@@ -40,22 +69,39 @@ public:
 public:
 
    /**
-    * @brief 
+    * @brief Represents the header of the repository.
+    *
+    * The header contains metadata about the repository, including a magic number,
+    * version number, entry size, and entry count. It provides methods to add entries
+    * and retrieve the size of the entry.
     */
    struct header
    {
       header() = default;
+      /// @brief Construct a header with the specified maximum entry size.
+      explicit header(uint64_t uMaxEntrySize) : m_uMaxEntryCount(uMaxEntrySize) {}
+      /// @brief Increment the entry count, this is the number of used entries.
+      void add_entry() { m_uEntryCount++; assert( m_uEntryCount < m_uMaxEntryCount ); }
 
-      void add_entry() { m_uEntryCount++; assert( m_uEntryCount < m_uEntrySize ); }
+      /// @brief Get the size of files that entry block is able to store.
+      /// @return The size of the entry in number of max number of files.
+      uint64_t size() const { return m_uMaxEntryCount; }
 
-      uint64_t size() const { return m_uEntrySize; }
+      /// @brief Get the number of entries in the repository.
+      uint64_t count() const { return m_uEntryCount; }
 
       uint64_t m_uMagic = repository::get_magic_number_s(); ///< Magic number
       uint64_t m_uVersion = 1;    ///< Version number
-      uint64_t m_uEntrySize = 10; ///< Size of entry in bytes
+      uint64_t m_uMaxEntryCount = 10; ///< Mazimum number of entries that can be stored
       uint64_t m_uEntryCount = 0; ///< Number of entries
    };
 
+   /**
+    * @brief Represents an entry in the repository.
+    *
+    * Each entry holds information about a file, including the file name, offset,
+    * size, and flags indicating the state of the entry (valid, deleted, or removed).
+    */
    struct entry
    {
       entry(): m_uOffset(0), m_uSize(0), m_uFlags(0) { std::memset(this, 0, sizeof(entry)); }
@@ -82,13 +128,13 @@ public:
 
       void set_offset(uint64_t uOffset) { m_uOffset = uOffset; }
 
-      bool is_valid() const { return ( m_uFlags & eEntryFlagValid ) != 0; }
+      bool is_valid() const   { return ( m_uFlags & eEntryFlagValid ) != 0; }
       bool is_deleted() const { return ( m_uFlags & eEntryFlagDeleted ) != 0; }
-      bool is_remove() const { return ( m_uFlags & eEntryFlagRemove ) != 0; }
+      bool is_remove() const  { return ( m_uFlags & eEntryFlagRemove ) != 0; }
 
-      void set_valid() { m_uFlags |= eEntryFlagValid; }
-      void set_deleted() { m_uFlags |= eEntryFlagDeleted; }
-      void set_remove() { m_uFlags |= eEntryFlagRemove; }
+      void set_valid()        { m_uFlags |= eEntryFlagValid; }
+      void set_deleted()      { m_uFlags |= eEntryFlagDeleted; }
+      void set_remove()       { m_uFlags |= eEntryFlagRemove; }
 
       uint64_t offset() const { return m_uOffset; }
       uint64_t size() const { return m_uSize; }
@@ -103,7 +149,11 @@ public:
 // ## construction -------------------------------------------------------------
 public:
    repository(): m_pFile(nullptr) {}
+   explicit repository(std::size_t uMaxFileCount) : m_pFile(nullptr), m_header(uMaxFileCount) {}
+   repository(const std::string_view& stringPath) : m_stringRepositoryPath(stringPath), m_pFile(nullptr) {}
+   repository(const std::string_view& stringPath, std::size_t uMaxFileCount) : m_stringRepositoryPath(stringPath), m_pFile(nullptr), m_header(uMaxFileCount) {}
    // copy
+   repository(const header& o) : m_header(o) {}
    repository(const repository& o) { common_construct(o); }
    repository(repository&& o) noexcept { common_construct(std::move(o)); }
    // assign
@@ -129,7 +179,12 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   /// @brief Check if the repository file is open.
+   bool is_open() const { return m_pFile != nullptr; }
+   /// @brief Get the path to the repository file.
    const std::string& get_path() const { return m_stringRepositoryPath; }
+   /// @brief Get the header of the repository.
+   const header& get_header() const { return m_header; }
 //@}
 
 /** \name OPERATION
@@ -140,6 +195,8 @@ public:
    std::pair<bool, std::string> open(const std::string_view& stringPath);
    std::pair<bool, std::string> open(const std::string_view& stringPath, const std::string_view& stringMode );
 
+   // ## create repository file
+
    std::pair<bool, std::string> create(const std::string_view& stringPath);
    std::pair<bool, std::string> create();
 
@@ -147,6 +204,7 @@ public:
    
    std::pair<bool, std::string> add(const std::string_view& stringName, const void* pdata, uint64_t uSize);
    std::pair<bool, std::string> add(const std::string_view& stringFile);
+   std::pair<bool, std::string> add(const std::string_view& stringFile, const std::string_view& stringName);
    void add_entry(const entry& entry_) { m_vectorEntry.push_back(entry_); m_header.add_entry(); }
 
    // ## updates internal data in repository to file
@@ -158,13 +216,14 @@ public:
    std::pair<bool, std::string> read(const std::string_view& stringName, void* pdata, uint64_t uSize) const;
    std::pair<bool, std::string> read_to_file(const std::string_view& stringName, const std::string_view& stringPath) const;
 
-   //std::pair<bool, std::string> write();
-
    // ## information about repository
 
-   std::vector<std::string> list() const;
    int64_t find(const std::string_view& stringName) const;
    bool exists(const std::string_view& stringName) const { return find(stringName) != -1; }
+   entry* find_entry(const std::string_view& stringName);
+   const entry* find_entry(const std::string_view& stringName) const;
+
+   std::vector<std::string> list() const;
    size_t size() const { return m_vectorEntry.size(); }
    size_t size_reserved() const { return m_header.size(); }
    bool empty() const { return m_vectorEntry.empty(); }
@@ -183,6 +242,15 @@ public:
 
    void close();
 
+   // ## iterator methods
+
+   std::vector<entry>::iterator begin() { return m_vectorEntry.begin(); }
+   std::vector<entry>::iterator end() { return m_vectorEntry.end(); }
+   std::vector<entry>::const_iterator begin() const { return m_vectorEntry.begin(); }
+   std::vector<entry>::const_iterator end() const { return m_vectorEntry.end(); }
+   std::vector<entry>::const_iterator cbegin() const { return m_vectorEntry.cbegin(); }
+   std::vector<entry>::const_iterator cend() const { return m_vectorEntry.cend(); }
+
 //@}
 
 protected:
@@ -194,7 +262,8 @@ protected:
 public:
 /** \name DEBUG
 *///@{
-
+   /// @brief Dump the repository to a string for debugging purposes.
+   std::string dump() const;
 //@}
 
 
@@ -216,6 +285,10 @@ public:
    static uint64_t calculate_first_content_position_s(const repository& repository_);
    /// @brief calculate the first position of content in repository file
    static uint64_t calculate_first_free_content_position_s(const repository& repository_);
+
+   static std::pair<bool, std::string> read_s(repository& repository_);
+   static std::pair<bool, std::string> read_header_s(FILE* pfile, header& header_);
+   static std::pair<bool, std::string> read_entry_block_s(FILE* pfile, std::vector<entry>& vectorEntry, uint64_t uSize, uint64_t uOffset);
 
    /// @brief write data to file
    static size_t write_s(repository& repository_, const void* pdata_, size_t uCount);
@@ -266,7 +339,9 @@ inline constexpr uint64_t repository::get_magic_number_s() {
 
 /// wrapper for c `fwrite` command
 inline size_t repository::write_s(repository& repository_, const void* pdata_, size_t uCount) {
-   return fwrite(pdata_, 1, uCount, repository_.m_pFile);
+   auto uSize = fwrite(pdata_, 1, uCount, repository_.m_pFile);
+   fflush(repository_.m_pFile);
+   return uSize;
 }
 
 
