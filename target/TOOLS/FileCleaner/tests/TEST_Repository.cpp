@@ -56,6 +56,12 @@ TEST_CASE( "[repository] create and read", "[repository]" ) {
       auto result_ = repositoryStream.add(stringFile, stringName);                                 REQUIRE(result_.first == true);
    }
 
+   {
+      std::string stringTemporary;
+      gd::io::stream::repository::file_new_tempoary_s(repositoryStream, stringTemporary, false);
+      std::cout << "Temporary file: " << stringTemporary << std::endl;
+   }
+
    repositoryStream.flush();
    repositoryStream.close();
    bool bOpen = repositoryStream.is_open();                                                        REQUIRE(repositoryStream.is_open() == false);

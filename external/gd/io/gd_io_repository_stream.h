@@ -186,8 +186,8 @@ public:
 public:
    repository(): m_pFile(nullptr) {}
    explicit repository(std::size_t uMaxFileCount): m_pFile(nullptr), m_header(uMaxFileCount) {}
-   repository(const std::string_view& stringPath): m_stringRepositoryPath(stringPath), m_pFile(nullptr) {}
-   repository(const std::string_view& stringPath, std::size_t uMaxFileCount): m_stringRepositoryPath(stringPath), m_pFile(nullptr), m_header(uMaxFileCount) {}
+   repository(const std::string_view& stringPath): m_stringRepositoryPath( file_make_preffered_s( std::string(stringPath) ) ), m_pFile(nullptr) {}
+   repository(const std::string_view& stringPath, std::size_t uMaxFileCount): m_stringRepositoryPath( file_make_preffered_s( std::string(stringPath) ) ), m_pFile(nullptr), m_header(uMaxFileCount) {}
    // copy
    repository(const header& o): m_header(o), m_pFile(nullptr) {}
    repository(const repository& o) { common_construct(o); }
@@ -219,6 +219,8 @@ public:
    bool is_open() const { return m_pFile != nullptr; }
    /// @brief Get the path to the repository file.
    const std::string& get_path() const { return m_stringRepositoryPath; }
+   /// @brief Get the path to the repository file.
+   const std::string& get_temporary_path() const { return m_stringTemporaryPath.empty() == false ? m_stringRepositoryPath : m_stringRepositoryPath; }
    /// @brief Get the header of the repository.
    const header& get_header() const { return m_header; }
 //@}
@@ -319,8 +321,16 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
+   /// @brief prepare string path for current platform
+   static std::string file_make_preffered_s(const std::string& stringPath);
+   /// @brief create a new temporary file
+   static std::pair<bool, std::string> file_new_tempoary_s(const repository& repository_, std::string& stringTemporaryFile, bool bOpen );
+
+   /// @brief set the repository extension, this extension is used to identify the repository file
    static void extension_set_repository_s( const std::string_view& stringExstension ) { m_stringRepositoryExtension_s = stringExstension; }
+   /// @brief set the temporary extension
    static void extension_set_temporary_s( const std::string_view& stringExstension ) { m_stringTemporaryExtension_s = stringExstension; }
+
    /// @brief calculate position of entry block in repository file
    static uint64_t calculte_entry_offset_s() { return (uint64_t)sizeof( header ); }
    /// @brief calculate position of entry block in repository file
@@ -330,8 +340,11 @@ public:
    /// @brief calculate the first position of content in repository file
    static uint64_t calculate_first_free_content_position_s(const repository& repository_);
 
+   /// @brief read repository file, internal data in repository is updated
    static std::pair<bool, std::string> read_s(repository& repository_);
+   /// @brief read repository header from file
    static std::pair<bool, std::string> read_header_s(FILE* pfile, header& header_);
+   /// @brief read entry block from file
    static std::pair<bool, std::string> read_entry_block_s(FILE* pfile, std::vector<entry>& vectorEntry, uint64_t uSize, uint64_t uOffset);
 
    /// @brief write data to file
