@@ -724,6 +724,64 @@ void repository::copy_entries_s(repository& repositoryFrom, const repository& re
 }
 
 
+std::pair<bool, std::string> repository::expand( uint64_t uCount, uint64_t uBuffer ) 
+{                                                                                                  assert( m_pFile != nullptr );
 
+   // Calculate new max entry count (e.g., double the current size)
+   uint64_t uNewMaxEntryCount = uCount;
+   uint64_t uOldEntryBlockSize = m_header.size() * sizeof(entry);
+   uint64_t uNewEntryBlockSize = uNewMaxEntryCount * sizeof(entry);
+   uint64_t uShiftSize = uNewEntryBlockSize - uOldEntryBlockSize;
+
+   // Calculate the current content start position
+   uint64_t uOldContentOffset = calculate_first_content_position_s(*this);
+
+   // Step 1: Read existing content into memory (or use a temp file for large data)
+   std::vector<uint8_t> contentBuffer;
+   fseek(m_pFile, uOldContentOffset, SEEK_SET);
+   uint64_t uContentSize = calculate_first_free_content_position_s(*this) - uOldContentOffset;
+   contentBuffer.resize(uContentSize);
+   size_t uRead = fread(contentBuffer.data(), 1, uContentSize, m_pFile);
+   if (uRead != uContentSize) {
+      return {false, "Failed to read content for shifting"};
+   }
+
+   // Step 2: Update header with new max entry count
+   m_header.m_uMaxEntryCount = uNewMaxEntryCount;
+
+   // Step 3: Write updated header
+   auto [headerSuccess, headerError] = write_header_s(m_pFile, m_header);
+   if (!headerSuccess) {
+      return {false, "Failed to write updated header: " + headerError};
+   }
+
+   // Step 4: Shift content by rewriting it at the new offset
+   uint64_t uNewContentOffset = uOldContentOffset + uShiftSize;
+   fseek(m_pFile, uNewContentOffset, SEEK_SET);
+   size_t uWritten = fwrite(contentBuffer.data(), 1, uContentSize, m_pFile);
+   if (uWritten != uContentSize) {
+      return {false, "Failed to shift content"};
+   }
+
+   // Step 5: Update entry offsets
+   for (auto& entry : m_vectorEntry) {
+      if (entry.m_uOffset >= uOldContentOffset) {
+         entry.m_uOffset += uShiftSize;
+      }
+   }
+
+   // Step 6: Write updated entry block (fill new space with zeros)
+   auto [entrySuccess, entryError] = write_entry_block_s(m_pFile, m_vectorEntry.data(), uOldEntryBlockSize, calculte_entry_offset_s());
+   if (!entrySuccess) {
+      return {false, "Failed to write updated entry block: " + entryError};
+   }
+   auto [fillSuccess, fillError] = write_block_s(m_pFile, 0, uShiftSize, calculte_entry_offset_s() + uOldEntryBlockSize);
+   if (!fillSuccess) {
+      return {false, "Failed to fill new entry space: " + fillError};
+   }
+
+   fflush(m_pFile);
+   return {true, ""};
+}
 
 _GD_IO_STREAM_END
