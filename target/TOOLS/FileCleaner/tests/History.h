@@ -20,38 +20,14 @@ class CHistory
 {
 public:
 
-   void Add(std::string stringFile)
-   {
-      m_vectorList.push_back(stringFile);
-   }
+   void Add(const std::string& stringFile, const std::string& stringDescription);
+
    
-   void Write(gd::io::stream::archive& archive_)
-   {
-      
-      size_t iCount = m_vectorList.size();
-      archive_ << iCount;
+   void Write(gd::io::stream::archive& archive_);
 
-      for( int i = 0; i < iCount; i++ )
-      {
-         archive_ << m_vectorList[i];
-      }
-   }
 
-   void Read(gd::io::stream::archive& archive_)
-   {
-      m_vectorList.clear();
+   void Read(gd::io::stream::archive& archive_);
 
-      size_t iCount = 0;
-      archive_ >> iCount;
-
-      for( int i = 0; i < iCount; i++ )
-      {
-         std::string stringTemp;
-         archive_.read(stringTemp);
-         m_vectorList.push_back(stringTemp);
-      }
-   }
-
-   std::vector<std::string> m_vectorList;
+   std::vector<std::tuple<std::string, std::string>> m_vectorList;
 
 };
