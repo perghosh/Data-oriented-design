@@ -735,6 +735,125 @@ void repository::copy_entries_s(repository& repositoryFrom, const repository& re
    repositoryFrom.m_header.m_uEntryCount = repositoryFrom.m_vectorEntry.size();
 }
 
+/// @brief Write only the content data from the repository to a specified file
+/// @param repository_ The source repository containing the content
+/// @param stringOutputPath The path to the output file where content will be written
+/// @return A pair indicating success/failure and an error message if applicable
+std::pair<bool, std::string> repository::write_content_to_file_s(const repository& repository_, const std::string_view& stringOutputPath)
+{
+   // Check if repository is open
+   if (!repository_.is_open()) {
+      return {false, "Repository is not open"};
+   }
+
+   // Open the output file in binary write mode
+   FILE* pOutputFile = fopen(stringOutputPath.data(), "wb");
+   if (!pOutputFile) {
+      return {false, "Failed to open output file: " + std::string(stringOutputPath)};
+   }
+
+   // Calculate the start position of content data
+   uint64_t uContentStart = calculate_first_content_position_s(repository_);
+   uint64_t uContentEnd = calculate_first_free_content_position_s(repository_);
+   uint64_t uContentSize = uContentEnd - uContentStart;
+
+   // If there's no content, return success with a note
+   if (uContentSize == 0) {
+      fclose(pOutputFile);
+      return {true, "No content data to write"};
+   }
+
+   // Seek to the start of content in the repository file
+   if (fseek(repository_.m_pFile, uContentStart, SEEK_SET) != 0) {
+      fclose(pOutputFile);
+      return {false, "Failed to seek to content start in repository"};
+   }
+
+   // Buffer for reading/writing content
+   constexpr size_t BUFFER_SIZE = 8192; // 8KB buffer
+   std::vector<uint8_t> buffer(BUFFER_SIZE);
+   uint64_t uBytesRemaining = uContentSize;
+
+   // Read and write content in chunks
+   while (uBytesRemaining > 0) {
+      size_t uBytesToRead = std::min(static_cast<size_t>(uBytesRemaining), BUFFER_SIZE);
+
+      // Read from repository
+      size_t uBytesRead = fread(buffer.data(), 1, uBytesToRead, repository_.m_pFile);
+      if (uBytesRead != uBytesToRead) {
+         fclose(pOutputFile);
+         return {false, "Failed to read content from repository"};
+      }
+
+      // Write to output file
+      size_t uBytesWritten = fwrite(buffer.data(), 1, uBytesRead, pOutputFile);
+      if (uBytesWritten != uBytesRead) {
+         fclose(pOutputFile);
+         return {false, "Failed to write content to output file"};
+      }
+
+      uBytesRemaining -= uBytesRead;
+   }
+
+   // Clean up and return success
+   fclose(pOutputFile);
+   return {true, ""};
+}
+
+/// @brief Generate a unique temporary file name based on the repository path
+/// @param stringSuffix Optional suffix to append before the counter (e.g., ".tmp")
+/// @return A pair containing the generated file path and a success flag with error message
+std::pair<std::string, std::pair<bool, std::string>> repository::generate_temp_file_name(const std::string_view& stringSuffix = ".tmp") const
+{
+   if (m_stringRepositoryPath.empty()) {
+      return {"", {false, "Repository path is empty"}};
+   }
+
+   // Extract the base directory and file name from the repository path
+   std::string stringBasePath = m_stringRepositoryPath;
+   std::string stringDir;
+   std::string stringFileName;
+
+   size_t uLastSlash = stringBasePath.find_last_of("/\\");
+   if (uLastSlash != std::string::npos) {
+      stringDir = stringBasePath.substr(0, uLastSlash + 1);
+      stringFileName = stringBasePath.substr(uLastSlash + 1);
+   } else {
+      stringFileName = stringBasePath;
+   }
+
+   // Remove extension if it exists
+   size_t uLastDot = stringFileName.find_last_of('.');
+   if (uLastDot != std::string::npos) {
+      stringFileName = stringFileName.substr(0, uLastDot);
+   }
+
+   // Maximum attempts to prevent infinite loop
+   constexpr uint32_t uMaxAttempts = 10000;
+   uint32_t uCounter = 0;
+
+   while (uCounter < uMaxAttempts) {
+      // Construct temporary file name: directory + base_name + counter + suffix
+      std::ostringstream oss;
+      oss << stringDir << stringFileName << "_" << uCounter << stringSuffix;
+      std::string stringTempPath = oss.str();
+
+      // Check if file exists by trying to open it in read mode
+      FILE* pTestFile = fopen(stringTempPath.c_str(), "r");
+      if (pTestFile == nullptr) {
+         // File doesn't exist, this name is available
+         return {stringTempPath, {true, ""}};
+      }
+
+      // File exists, close it and try next number
+      fclose(pTestFile);
+      uCounter++;
+   }
+
+   return {"", {false, "Failed to find available temporary file name after " + 
+      std::to_string(uMaxAttempts) + " attempts"}};
+}
+
 
 std::pair<bool, std::string> repository::expand( uint64_t uCount, uint64_t uBuffer ) 
 {                                                                                                  assert( m_pFile != nullptr );
