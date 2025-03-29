@@ -48,12 +48,24 @@ _GD_IO_STREAM_BEGIN
 constexpr uint64_t uMaxFileNameLength_g = 260; ///< Maximum length of a file name in bytes
 
 /**
- * \brief
+ * @class repository
+ * @brief Manages file-based repositories.
  *
+ * The repository class provides functionality for creating, opening, reading, writing, and managing file-based repositories.
+ * It supports operations such as adding data, listing entries, removing entries, and flushing changes to the file.
  *
+ * The repository class uses a header to store metadata about the repository, including a magic number, version number, entry size, and entry count.
+ * Each entry in the repository is represented by the `entry` struct, which contains information about the file name, offset, size, and flags indicating the state of the entry.
  *
- \code
- \endcode
+ * The repository class provides methods for:
+ * - Opening and creating repository files.
+ * - Adding data or files to the repository.
+ * - Reading data from the repository.
+ * - Listing and finding entries in the repository.
+ * - Removing entries from the repository.
+ * - Flushing changes to the file.
+ *
+ * The repository class also includes static utility functions for writing data to files, calculating offsets, and copying entries between repositories.
  */
 class repository
 {
@@ -106,6 +118,9 @@ public:
 
       /// @brief Get the number of entries in the repository.
       uint64_t count() const { return m_uEntryCount; }
+
+      /// @brief Clear the header, setting the entry count to zero.
+      void clear() { m_uEntryCount = 0; }
 
       uint64_t m_uMagic = repository::get_magic_number_s(); ///< Magic number
       uint64_t m_uVersion = 1;    ///< Version number
@@ -166,11 +181,11 @@ public:
 // ## construction -------------------------------------------------------------
 public:
    repository(): m_pFile(nullptr) {}
-   explicit repository(std::size_t uMaxFileCount) : m_pFile(nullptr), m_header(uMaxFileCount) {}
-   repository(const std::string_view& stringPath) : m_stringRepositoryPath(stringPath), m_pFile(nullptr) {}
-   repository(const std::string_view& stringPath, std::size_t uMaxFileCount) : m_stringRepositoryPath(stringPath), m_pFile(nullptr), m_header(uMaxFileCount) {}
+   explicit repository(std::size_t uMaxFileCount): m_pFile(nullptr), m_header(uMaxFileCount) {}
+   repository(const std::string_view& stringPath): m_stringRepositoryPath(stringPath), m_pFile(nullptr) {}
+   repository(const std::string_view& stringPath, std::size_t uMaxFileCount): m_stringRepositoryPath(stringPath), m_pFile(nullptr), m_header(uMaxFileCount) {}
    // copy
-   repository(const header& o) : m_header(o) {}
+   repository(const header& o): m_header(o), m_pFile(nullptr) {}
    repository(const repository& o) { common_construct(o); }
    repository(repository&& o) noexcept { common_construct(std::move(o)); }
    // assign
