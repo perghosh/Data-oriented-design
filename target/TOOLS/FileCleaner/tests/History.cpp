@@ -6,13 +6,20 @@ void CHistory::Add(const std::string& stringFile, const std::string& stringDescr
 
    if( std::filesystem::exists(pathFile) )
    {
-      m_vectorList.emplace_back(stringFile, stringDescription);
+      if( m_vectorList.size() < m_iCapacity )
+      {
+         m_vectorList.emplace_back(stringFile, stringDescription);
+      }
+      else
+      {
+         m_vectorList.erase(m_vectorList.begin());
+         m_vectorList.emplace_back(stringFile, stringDescription);
+      }
    }
    else
    {
       return;
    }
-
 }
 
 void CHistory::Write(gd::io::stream::archive& archive_)
