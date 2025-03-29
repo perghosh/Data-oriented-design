@@ -307,14 +307,20 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   header m_header;               ///< Header of repository
-   FILE* m_pFile;                 ///< File handle for archive
-   std::string m_stringRepositoryPath;///< Path to archive file
-   std::vector<entry> m_vectorEntry;///< Index of files
+   header m_header;                    ///< Header of repository
+   FILE* m_pFile;                      ///< File handle for archive
+   std::string m_stringRepositoryPath; ///< Path to archive file
+   std::string m_stringTemporaryPath;  ///< Path to folder where temporary files are generated, if not set same as repository file
+   std::vector<entry> m_vectorEntry;   ///< Index of files
+
+   inline static std::string m_stringRepositoryExtension_s = "repo"; ///<
+   inline static std::string m_stringTemporaryExtension_s = "tmp"; ///<
 
 
 // ## free functions ------------------------------------------------------------
 public:
+   static void extension_set_repository_s( const std::string_view& stringExstension ) { m_stringRepositoryExtension_s = stringExstension; }
+   static void extension_set_temporary_s( const std::string_view& stringExstension ) { m_stringTemporaryExtension_s = stringExstension; }
    /// @brief calculate position of entry block in repository file
    static uint64_t calculte_entry_offset_s() { return (uint64_t)sizeof( header ); }
    /// @brief calculate position of entry block in repository file
