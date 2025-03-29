@@ -62,6 +62,18 @@ TEST_CASE( "[repository] create and read", "[repository]" ) {
 
    std::cout << "Repository file: " << repositoryStream.dump() << std::endl;
 
+   /*
+   {
+      gd::io::stream::repository repositoryRead(repositoryStream.get_path());
+      repositoryRead.open();
+
+      for( const auto& it : repositoryRead )
+      {
+         repositoryRead.read_to_file(it.get_name(), stringDataFolder + "/" + it.get_name().data());
+      }
+      // repositoryRead
+   }
+   */
 
    {
       gd::io::stream::repository repositoryRead(repositoryStream.get_path());
@@ -83,7 +95,16 @@ TEST_CASE( "[repository] create and read", "[repository]" ) {
       std::cout << "Repository file: " << repositoryRead.dump() << std::endl;
    }
 
+   {
+      gd::io::stream::repository repositoryRead(repositoryStream.get_path());
+      repositoryRead.open();
 
+      for( const auto& it : repositoryRead )
+      {
+         repositoryRead.read_to_file(it.get_name(), stringDataFolder + "/" + it.get_name().data());
+      }
+      // repositoryRead
+   }
 }
 
 /// Test to create and delete documents
