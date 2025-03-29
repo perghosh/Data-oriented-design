@@ -803,36 +803,54 @@ std::pair<bool, std::string> repository::write_content_to_file_s(const repositor
 /// @brief Generate a unique temporary file name based on the repository path
 /// @param stringSuffix Optional suffix to append before the counter (e.g., ".tmp")
 /// @return A pair containing the generated file path and a success flag with error message
-std::pair<std::string, std::pair<bool, std::string>> repository::generate_temp_file_name(const std::string_view& stringSuffix = ".tmp") const
-{
-   if (m_stringRepositoryPath.empty()) {
-      return {"", {false, "Repository path is empty"}};
-   }
-
+std::pair<bool, std::string> repository::generate_temporary_file_name(std::string& stringTemporary) const
+{                                                                                                  assert( m_stringRepositoryPath.empty() == false );
    // Extract the base directory and file name from the repository path
    std::string stringBasePath = m_stringRepositoryPath;
    std::string stringDir;
    std::string stringFileName;
 
-   size_t uLastSlash = stringBasePath.find_last_of("/\\");
-   if (uLastSlash != std::string::npos) {
-      stringDir = stringBasePath.substr(0, uLastSlash + 1);
-      stringFileName = stringBasePath.substr(uLastSlash + 1);
-   } else {
+   size_t uSlash = stringBasePath.find_last_of("/\\");
+   if( uSlash != std::string::npos ) 
+   {
+      stringDir = stringBasePath.substr(0, uSlash + 1);
+      stringFileName = stringBasePath.substr(uSlash + 1);
+   } 
+   else 
+   {
       stringFileName = stringBasePath;
    }
 
    // Remove extension if it exists
    size_t uLastDot = stringFileName.find_last_of('.');
-   if (uLastDot != std::string::npos) {
-      stringFileName = stringFileName.substr(0, uLastDot);
-   }
+   if(uLastDot != std::string::npos) { stringFileName = stringFileName.substr( 0, uSlashDot ); }
 
    // Maximum attempts to prevent infinite loop
    constexpr uint32_t uMaxAttempts = 10000;
    uint32_t uCounter = 0;
 
-   while (uCounter < uMaxAttempts) {
+   while( uCounter < uMaxAttempts ) 
+   {
+      std::string stringTempPath = stringDir;
+      stringTempPath += stringFileName;
+      if( uCounter == 0 )
+      {
+         stringTempPath += '.';
+         stringTempPath += m_stringTemporaryExtension_s;
+      }
+      else
+      {
+         stringTempPath += std::to_string( uCounter );
+         stringTempPath += '.';
+         stringTempPath += m_stringTemporaryExtension_s;
+      }
+
+      if( std::filesystem::exists(stringTempPath) == false )
+      {
+         stringTemporary = std::move( stringTempPath );
+         return {true, ""};
+      }
+
       // Construct temporary file name: directory + base_name + counter + suffix
       std::ostringstream oss;
       oss << stringDir << stringFileName << "_" << uCounter << stringSuffix;
@@ -850,8 +868,7 @@ std::pair<std::string, std::pair<bool, std::string>> repository::generate_temp_f
       uCounter++;
    }
 
-   return {"", {false, "Failed to find available temporary file name after " + 
-      std::to_string(uMaxAttempts) + " attempts"}};
+   return {false, "Failed to find available temporary file name after " + std::to_string(uMaxAttempts) + " attempts"};
 }
 
 
