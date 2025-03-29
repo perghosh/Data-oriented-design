@@ -329,16 +329,21 @@ TEST_CASE("[file] serialize6", "[file]")
 
    std::string stringDataFolder = GetDataFolder();
    gd::file::path pathFile(stringDataFolder + "/archive7.bin");
+   gd::file::path pathFile2(stringDataFolder + "/archive6.bin");
    if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
 
    archive archiveStream(pathFile, gd::io::tag_io_write{});
 
-   gd::file::path pathFileObject(stringDataFolder);
-
    CHistory history;
-   history.Add(pathFile.string(), "test file");
+   //history.Add(pathFile.string(), "test file");
    history.Add("BBB", "false file");
    history.Add("AAA", "false file");
+
+   for( int i = 0; i < 10; i++ )
+   {
+      history.Add(pathFile.string(), "test file");
+   }
+   history.Add(pathFile2.string(), "test file");
 
    history.Write(archiveStream);
 

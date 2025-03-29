@@ -22,12 +22,11 @@ public:
 
    void Add(const std::string& stringFile, const std::string& stringDescription);
 
-   
    void Write(gd::io::stream::archive& archive_);
-
 
    void Read(gd::io::stream::archive& archive_);
 
    std::vector<std::tuple<std::string, std::string>> m_vectorList;
+   int m_iCapacity = 10;
 
 };
