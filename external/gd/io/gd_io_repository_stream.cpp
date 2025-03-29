@@ -465,7 +465,9 @@ std::pair<bool, std::string> repository::remove_entry_from_file(const std::vecto
       }
    }
 
-   repository repositoryCopy( get_header() );                                 // Create a copy of the repository
+   header headerCopy(get_header());                                           // Create a copy of the header
+   headerCopy.clear();
+   repository repositoryCopy( headerCopy );                                   // Create a copy of the repository
 
    // ## Create a temporary file
    std::filesystem::path pathRepository(m_stringRepositoryPath);
@@ -540,7 +542,6 @@ std::pair<bool, std::string> repository::remove_entry_from_file(const std::vecto
    result_ = open();
    if( result_.first == false ) { return result_; }
 
-   copy_entries_s(*this, repositoryCopy);
    flush();
 
    return {true, ""};

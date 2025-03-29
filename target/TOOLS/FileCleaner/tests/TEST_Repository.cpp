@@ -54,8 +54,22 @@ TEST_CASE( "[repository] create and read", "[repository]" ) {
       gd::io::stream::repository repositoryRead(repositoryStream.get_path());
       repositoryRead.open();
 
-      std::cout << "Repository file: " << repositoryStream.dump() << std::endl;
+      repositoryRead.remove("readme5.md" );
+      repositoryRead.remove("readme6.md" );
+      repositoryRead.remove("readme7.md" );
+      repositoryRead.remove("readme8.md" );
+      repositoryRead.remove_entry_from_file();
+
+//      std::cout << "Repository file: " << repositoryRead.dump() << std::endl;
    }
+
+   {
+      gd::io::stream::repository repositoryRead(repositoryStream.get_path());
+      repositoryRead.open();
+
+      std::cout << "Repository file: " << repositoryRead.dump() << std::endl;
+   }
+
 
 }
 
