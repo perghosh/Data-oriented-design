@@ -844,13 +844,13 @@ std::pair<bool, std::string> repository::file_new_tempoary_s(const repository& r
    {
       std::string stringTempPath = stringDir;
       stringTempPath += stringFileName;
-      if( uCounter == 0 )
+      if( uCounter == 0 )                                                      // First attempt, no counter                  
       {
          stringTempPath += '.';
          stringTempPath += m_stringTemporaryExtension_s;
       }
       else
-      {
+      {                                                                        // Subsequent attempts, add counter
          stringTempPath += std::to_string( uCounter );
          stringTempPath += '.';
          stringTempPath += m_stringTemporaryExtension_s;
@@ -858,6 +858,14 @@ std::pair<bool, std::string> repository::file_new_tempoary_s(const repository& r
 
       if( std::filesystem::exists(stringTempPath) == false )
       {
+         if( bOpen == true )
+         {
+            FILE* pTestFile = fopen(stringTempPath.c_str(), "w+b");
+            if( pTestFile == nullptr ) { return { false, "Failed to open temporary file for writing: " + stringTempPath }; }
+            // File exists, close it and try next number
+            fclose(pTestFile);
+            std::filesystem::remove(stringTempPath);
+         }
          stringTemporaryFile = std::move( stringTempPath );
          return {true, ""};
       }
