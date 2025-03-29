@@ -1,3 +1,9 @@
+/**
+* @file gd_io_repository_stream.cpp
+* @brief Implements the repository class for managing file-based repositories.
+*
+*/
+
 #include <cstdio>
 #include <algorithm>
 #include <filesystem>
@@ -19,7 +25,9 @@ _GD_IO_STREAM_BEGIN
  */
 std::pair<bool, std::string> repository::open(const std::string_view& stringPath) 
 {
-   return open(stringPath, "w+b");
+   if( std::filesystem::exists(stringPath) == false ) return create(stringPath);
+
+   return open(stringPath, "r+b");
 }
 
 /** ---------------------------------------------------------------------------
@@ -40,10 +48,20 @@ std::pair<bool, std::string> repository::open(const std::string_view& stringPath
 {
    close();
    m_pFile = fopen(stringPath.data(), stringMode.data());
-   if(!m_pFile) { return {false, std::string( "Failed to open file: " ) + stringPath.data()}; }
+   if( m_pFile == nullptr ) { return {false, std::string( "Failed to open file: " ) + stringPath.data()}; }
 
 
    m_stringRepositoryPath = stringPath;
+
+   // ## Read the header
+   auto result_ = read_header_s(m_pFile, m_header);
+   if( result_.first == false ) { close(); return result_; }
+
+   // ## Read the entry block
+   m_vectorEntry.clear();
+   m_vectorEntry.reserve(m_header.count());
+   result_ = read_entry_block_s(m_pFile, m_vectorEntry, m_header.count() * sizeof( entry ), sizeof( m_header ) );
+   if( result_.first == false ) { close(); return result_; }
 
    return {true, ""};
 }
@@ -138,6 +156,7 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
  * an error message is returned.
  *
  * @param stringFile The path to the file to be added (as a string_view).
+ * @param stringName The name to associate with the file (as a string_view). if empty, the filename is used.
  * @return A pair containing:
  *         - `bool`: `true` if the file was successfully added, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
@@ -156,8 +175,10 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
  * }
  * @endcode
  */
-std::pair<bool, std::string> repository::add(const std::string_view& stringFile)
+std::pair<bool, std::string> repository::add(const std::string_view& stringFile, const std::string_view& stringName)
 {
+   std::string stringName_ = stringName.empty() ? std::filesystem::path(stringFile).filename().string() : stringName.data();
+
    std::ifstream ifstreamFile(stringFile.data(), std::ios::binary | std::ios::ate);
    if (!ifstreamFile) { return {false, "Failed to open input file"}; }
 
@@ -167,11 +188,18 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringFile)
    std::vector<char> vectorBuffer(uSize);
    if( !ifstreamFile.read(vectorBuffer.data(), uSize) ) { return {false, std::string("Failed to read input file") + stringFile.data()}; }
 
-   std::string stringName = std::filesystem::path(stringFile).filename().string();
-   return add(stringName, vectorBuffer.data(), static_cast<uint64_t>(uSize));
+   return add(stringName_, vectorBuffer.data(), static_cast<uint64_t>(uSize));
 }
 
-/** -
+/// Adds a file to the repository by reading its contents from the and using the filename as the name.
+/// Check `add(const std::string_view&, const std::string_view&)` for more details.
+std::pair<bool, std::string> repository::add(const std::string_view& stringFile)
+{
+   return add(stringFile, std::string_view());
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief Writes the repository's header and entry block to the underlying file.
  *
  * This method ensures that the in-memory state of the repository (header and entries)
@@ -207,6 +235,8 @@ std::pair<bool, std::string> repository::flush()
 
    result_ = write_entry_block_s(m_pFile, m_vectorEntry.data(), uEntrySize, uEntryOffset);
    if( result_.first == false ) { close(); return result_; }
+
+   fflush(m_pFile);
 
    return {true, ""};
 }
@@ -315,6 +345,33 @@ int64_t repository::find(const std::string_view& stringName) const
    return std::distance(m_vectorEntry.begin(), it);
 }
 
+/// Finds an entry in the repository by name and returns a pointer to it.
+repository::entry* repository::find_entry(const std::string_view& stringName) 
+{
+   for( auto& entry_ : m_vectorEntry ) 
+   {
+      if( entry_.get_name() == stringName )
+      {
+         return &entry_;
+      }
+   }
+   return nullptr;
+}
+
+/// Finds an entry in the repository by name and returns a pointer to it.
+const repository::entry* repository::find_entry(const std::string_view& stringName) const
+{
+   for( const auto& entry_ : m_vectorEntry ) 
+   {
+      if( entry_.get_name() == stringName )
+      {
+         return &entry_;
+      }
+   }
+   return nullptr;
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Marks an entry with the specified name as deleted.
  *
@@ -408,21 +465,15 @@ std::pair<bool, std::string> repository::remove_entry_from_file(const std::vecto
       }
    }
 
-   repository repositoryCopy( *this );                                         // Create a copy of the repository
-   repositoryCopy.remove_entry();
+   repository repositoryCopy( get_header() );                                 // Create a copy of the repository
 
    // ## Create a temporary file
    std::filesystem::path pathRepository(m_stringRepositoryPath);
    pathRepository.replace_extension("tmp");
    auto result_ = repositoryCopy.create(pathRepository.string());
    if( result_.first == false ) { return result_; }
-   /*
-   std::string stringPathTemporary = pathRepository.string();
-   FILE* pfileTemporary = fopen(stringPathTemporary.data(), "w+b");
-   if(pfileTemporary == nullptr) { return {false, "Failed to create temporary file: " + stringPathTemporary}; }
-   */
 
-   std::vector<uint8_t> vectorBuffer(1024 * 1024); // 1MB buffer for efficiency
+   std::vector<uint8_t> vectorBuffer(1024 * 1024);                            // 1MB buffer for efficiency
 
    // ## Copy all valid entries except the one to be removed
 
@@ -500,10 +551,87 @@ void repository::close()
 {
    if(m_pFile)
    {
+      fflush(m_pFile);
       fclose(m_pFile);
       m_pFile = nullptr;
    }
 }
+
+/// @brief Dumps the repository information to a string for debugging purposes.
+std::string repository::dump() const 
+{
+   std::ostringstream oss;
+
+   // Dump header information
+   oss << "Repository Header:" << std::endl;
+   oss << "Magic Number: " << std::hex << m_header.m_uMagic << std::dec << std::endl;
+   oss << "Version: " << m_header.m_uVersion << std::endl;
+   oss << "Entry max count: " << m_header.m_uMaxEntryCount << std::endl;
+   oss << "Entry Count: " << m_header.m_uEntryCount << std::endl;
+
+   // Dump entries information
+   oss << "Entries:" << std::endl;
+   for (const auto& entry : m_vectorEntry) {
+      oss << "Name: " << entry.get_name() << std::endl;
+      oss << "Offset: " << entry.m_uOffset << ", ";
+      oss << "Size: " << entry.m_uSize << ", ";
+      oss << "Flags: " << entry.m_uFlags << std::endl;
+      oss << "Valid: " << ( entry.is_valid() ? "true" : "false" ) << ", ";
+      oss << "Deleted: " << (entry.is_deleted() ? "true" : "false") << ", ";
+      oss << "Remove: " << (entry.is_remove() ? "true" : "false") << std::endl;
+      oss << "------------------------" << std::endl;
+   }
+
+   return oss.str();
+}
+
+/// @brief Reads the repository header and entry block from the file and updates the in-memory state.
+std::pair<bool, std::string> repository::read_s(repository& repository_) 
+{                                                                                                  assert(repository_.m_pFile != nullptr);
+   // Read the header
+   auto result_ = read_header_s(repository_.m_pFile, repository_.m_header); if(result_.first == false) { return result_; }
+
+   // Calculate the size of the entry block
+   uint64_t uEntrySize = size_entry_reserved_buffer_s(repository_);
+   uint64_t uEntryOffset = calculte_entry_offset_s();
+
+   // Read the entry block
+   result_ = read_entry_block_s(repository_.m_pFile, repository_.m_vectorEntry, uEntrySize, uEntryOffset); if(result_.first == false) { return result_; }
+
+   return {true, ""};
+}
+
+/// @brief Reads the repository header from the file and updates the in-memory header.
+std::pair<bool, std::string> repository::read_header_s(FILE* pfile, header& header_) 
+{                                                                                                  assert(pfile != nullptr);
+   // Seek to the beginning of the file
+   if( std::fseek(pfile, 0, SEEK_SET) != 0 ) { return {false, "Failed to seek to the beginning of the file"}; }
+
+   // Read the header from the file
+   if( std::fread( &header_, sizeof(header), 1, pfile ) != 1) { return {false, "Failed to read header from the file"};  }
+
+   // Validate the magic number
+   if (header_.m_uMagic != repository::get_magic_number_s()) { return {false, "Invalid magic number in header"}; }
+
+   return {true, ""};
+}
+
+/// @brief Reads a block of entry data from the file at the specified offset.
+std::pair<bool, std::string> repository::read_entry_block_s(FILE* pfile, std::vector<entry>& vectorEntry, uint64_t uSize, uint64_t uOffset) 
+{                                                                                                  assert(pfile != nullptr); assert(uSize % sizeof(entry) == 0); // Ensure the size is a multiple of entry size
+   // Seek to the specified offset in the file
+   if (std::fseek(pfile, static_cast<long>(uOffset), SEEK_SET) != 0) { return {false, "Failed to seek to offset " + std::to_string(uOffset)}; }
+
+   // Calculate the number of entries to read
+   size_t uEntryCount = uSize / sizeof(entry);
+   vectorEntry.resize(uEntryCount);
+
+   // Read the entries from the file
+   if(std::fread(vectorEntry.data(), sizeof(entry), uEntryCount, pfile) != uEntryCount) { return {false, "Failed to read entry block from the file"}; }
+
+   return {true, ""};
+}
+
 
 /// Writes header repository information to file, this writes the header to the beginning of the file.
 std::pair<bool, std::string> repository::write_header_s(FILE* pfile, const header& header_)
