@@ -140,7 +140,7 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
       uint64_t uGrowTo = m_header.size();
       if( uGrowTo > 4 ) uGrowTo += (uGrowTo >> 1);
       else uGrowTo += 4;
-      expand(uGrowTo, 0);
+      expand(uGrowTo, 65536);  // 2^16 = 65536   
    }
 
    auto uStartOffset = calculate_first_free_content_position_s(*this);          // Calculate the start offset for the new data (end of the file)
@@ -704,6 +704,19 @@ std::pair<bool, std::string> repository::read_content_from_file_s(repository& re
     return {true, ""};
 }
 
+/// @brief reads content data from a buffer to the repository.
+std::pair<bool, std::string> repository::read_content_from_buffer_s(repository& repository_, const void* pBuffer, uint64_t uSize)
+{
+   // Calculate the start position of content data in the repository
+   uint64_t uContentStart = calculate_first_content_position_s(repository_);
+   if( fseek_64_(repository_.m_pFile, uContentStart, SEEK_SET) != 0 ) { return { false, "Failed to seek to content start in repository" }; }
+
+   size_t uBytesWritten = fwrite(pBuffer, 1, uSize, repository_.m_pFile);     // Write to repository
+   if( uBytesWritten != uSize ) { return { false, "Failed to write content to repository" }; }
+
+   return { true, "" };
+}
+
 
 /// Writes header repository information to file, this writes the header to the beginning of the file.
 std::pair<bool, std::string> repository::write_header_s(FILE* pfile, const header& header_)
@@ -811,9 +824,9 @@ std::pair<bool, std::string> repository::write_content_to_file_s(const repositor
    if(pfileOutput == nullptr ) { return {false, "Failed to open output file: " + stringOutputPath_}; }
 
    // Calculate the start position of content data
-   uint64_t uContentStart = calculate_first_content_position_s(repository_);
-   uint64_t uContentEnd = calculate_first_free_content_position_s(repository_);
-   uint64_t uContentSize = uContentEnd - uContentStart;
+   uint64_t uContentStart = calculate_first_content_position_s(repository_);    // Calculate the start of content data
+   uint64_t uContentEnd = calculate_first_free_content_position_s(repository_); // Calculate the end of content data
+   uint64_t uContentSize = uContentEnd - uContentStart;                        // Calculate the end of content data
 
    if( uContentSize == 0 )                                                     // If there's no content, return success with a note
    {
@@ -848,6 +861,24 @@ std::pair<bool, std::string> repository::write_content_to_file_s(const repositor
    fclose(pfileOutput);                                                                             assert( pfileOutput != nullptr );
 
    return {true, stringOutputPath_};
+}
+
+/// @brief Writes content data from the repository to a buffer. Make sure the buffer is large enough.
+std::pair<bool, std::string> repository::write_content_to_buffer_s(const repository& repository_, std::vector<uint8_t>& vectorBuffer)
+{
+   uint64_t uContentStart = calculate_first_content_position_s(repository_);    // Calculate the start of content data
+   uint64_t uContentEnd = calculate_first_free_content_position_s(repository_); // Calculate the end of content data
+   uint64_t uContentSize = uContentEnd - uContentStart;                        // Total size of content datac
+
+   if( uContentSize == 0 ) { return { true, "No content data to write" }; }
+   else if( vectorBuffer.size() < uContentSize ) { return { false, "Buffer too small to store content data" }; }
+
+   if( fseek_64_(repository_.m_pFile, uContentStart, SEEK_SET) != 0 ) { return { false, "Failed to seek to content start in repository" }; } // Seek to the start of content in the repository file
+
+   size_t uBytesRead = fread(vectorBuffer.data(), 1, uContentSize, repository_.m_pFile); // Read from repository
+   if(uBytesRead != uContentSize) { return {false, "Failed to read content from repository"}; }
+
+   return { true, "" };
 }
 
 /// @brief make a path string preferred for the current platform 
@@ -924,7 +955,19 @@ std::pair<bool, std::string> repository::file_new_tempoary_s(const repository& r
    return {false, "Failed to find available temporary file name after " + std::to_string(uMaxAttempts) + " attempts"};
 }
 
-
+/** ---------------------------------------------------------------------------
+* @brief Expands the repository to accommodate more entries.
+*
+* This method increases the maximum number of entries that the repository can store.
+* It moves the content in the file where file data is stored to make space for the new entries.
+* If the content size exceeds the specified buffer size, the content is temporarily stored in a file.
+* Otherwise, the content is read into a vector.
+*
+* @param uCount The new maximum number of entries.
+* @param uBuffer The buffer size to use for in-memory content storage.
+* @return A pair containing a boolean indicating success (true) or failure (false),
+*         and a string with an error message if the operation failed, or empty if successful.
+*/
 std::pair<bool, std::string> repository::expand(uint64_t uCount, uint64_t uBuffer) 
 {                                                                                                  assert( m_pFile != nullptr );
    uint64_t uEntrySize = size_entry_reserved_buffer_s(*this);
@@ -955,59 +998,18 @@ std::pair<bool, std::string> repository::expand(uint64_t uCount, uint64_t uBuffe
    } 
    else 
    {
-      /*
-      // Content fits in memory, use vector
-      std::vector<uint8_t> contentBuffer(uCurrentContentSize);
+      std::vector<uint8_t> vectorBuffer(uContentSize);
+      auto result_ = write_content_to_buffer_s(*this, vectorBuffer);           // write content to temporary file
+      if( result_.first == false ) { return result_; }
 
-      // Read existing content into buffer
-      if (uCurrentContentSize > 0) {
-         fseek(m_pFile, calculate_first_content_position_s(*this), SEEK_SET);
-         size_t readSize = fread(contentBuffer.data(), 1, uCurrentContentSize, m_pFile);
-         if (readSize != uCurrentContentSize) {
-            return {false, "Failed to read existing content"};
-         }
-      }
+      m_header.set_max_size(uCount);                                           // update header with new max entry count   
+      result_  = write_header_s(m_pFile, m_header);
+      if( result_.first == false ) { return result_; }
 
-      // Close and reopen file in write mode
-      fclose(m_pFile);
-      m_pFile = fopen(m_stringRepositoryPath.c_str(), "wb+");
-      if (!m_pFile) {
-         return {false, "Failed to reopen repository file"};
-      }
+      result_ = read_content_from_buffer_s(*this, vectorBuffer);               // read content from temporary file
+      if( result_.first == false ) { return result_; }
 
-      // Update header with new max entry count
-      m_header.m_uMaxEntryCount = uNewMaxEntryCount;
 
-      // Write new header
-      auto headerResult = write_header_s(m_pFile, m_header);
-      if (!headerResult.first) {
-         return headerResult;
-      }
-
-      // Write existing entries
-      auto entryResult = write_entry_block_s(m_pFile, m_vectorEntry.data(), 
-         m_vectorEntry.size() * sizeof(entry), calculte_entry_offset_s());
-      if (!entryResult.first) {
-         return entryResult;
-      }
-
-      // Fill new reserved space with zeros
-      uint64_t uNewReservedSize = uCount * sizeof(entry);
-      auto fillResult = write_block_s(m_pFile, 0, uNewReservedSize, 
-         calculte_entry_offset_s() + m_vectorEntry.size() * sizeof(entry));
-      if (!fillResult.first) {
-         return fillResult;
-      }
-
-      // Write content back to new position
-      if (uCurrentContentSize > 0) {
-         fseek(m_pFile, calculate_first_content_position_s(*this), SEEK_SET);
-         size_t written = fwrite(contentBuffer.data(), 1, uCurrentContentSize, m_pFile);
-         if (written != uCurrentContentSize) {
-            return {false, "Failed to write content back to file"};
-         }
-      }
-      */
    }
 
    // Update file pointer position
@@ -1016,67 +1018,5 @@ std::pair<bool, std::string> repository::expand(uint64_t uCount, uint64_t uBuffe
    return {true, "Repository expanded successfully"};
 }
 
-/*
-std::pair<bool, std::string> repository::expand( uint64_t uCount, uint64_t uBuffer ) 
-{                                                                                                  assert( m_pFile != nullptr );
-
-   // Calculate new max entry count (e.g., double the current size)
-   uint64_t uNewMaxEntryCount = uCount;
-   uint64_t uOldEntryBlockSize = m_header.size() * sizeof(entry);
-   uint64_t uNewEntryBlockSize = uNewMaxEntryCount * sizeof(entry);
-   uint64_t uShiftSize = uNewEntryBlockSize - uOldEntryBlockSize;
-
-   // Calculate the current content start position
-   uint64_t uOldContentOffset = calculate_first_content_position_s(*this);
-
-   // Step 1: Read existing content into memory (or use a temp file for large data)
-   std::vector<uint8_t> contentBuffer;
-   fseek_64_(m_pFile, uOldContentOffset, SEEK_SET);
-   uint64_t uContentSize = calculate_first_free_content_position_s(*this) - uOldContentOffset;
-   contentBuffer.resize(uContentSize);
-   size_t uRead = fread(contentBuffer.data(), 1, uContentSize, m_pFile);
-   if (uRead != uContentSize) 
-   {
-      return {false, "Failed to read content for shifting"};
-   }
-
-   // Step 2: Update header with new max entry count
-   m_header.m_uMaxEntryCount = uNewMaxEntryCount;
-
-   // Step 3: Write updated header
-   auto [headerSuccess, headerError] = write_header_s(m_pFile, m_header);
-   if (!headerSuccess) {
-      return {false, "Failed to write updated header: " + headerError};
-   }
-
-   // Step 4: Shift content by rewriting it at the new offset
-   uint64_t uNewContentOffset = uOldContentOffset + uShiftSize;
-   fseek_64_(m_pFile, uNewContentOffset, SEEK_SET);
-   size_t uWritten = fwrite(contentBuffer.data(), 1, uContentSize, m_pFile);
-   if (uWritten != uContentSize) {
-      return {false, "Failed to shift content"};
-   }
-
-   // Step 5: Update entry offsets
-   for (auto& entry : m_vectorEntry) {
-      if (entry.m_uOffset >= uOldContentOffset) {
-         entry.m_uOffset += uShiftSize;
-      }
-   }
-
-   // Step 6: Write updated entry block (fill new space with zeros)
-   auto [entrySuccess, entryError] = write_entry_block_s(m_pFile, m_vectorEntry.data(), uOldEntryBlockSize, calculte_entry_offset_s());
-   if (!entrySuccess) {
-      return {false, "Failed to write updated entry block: " + entryError};
-   }
-   auto [fillSuccess, fillError] = write_block_s(m_pFile, 0, uShiftSize, calculte_entry_offset_s() + uOldEntryBlockSize);
-   if (!fillSuccess) {
-      return {false, "Failed to fill new entry space: " + fillError};
-   }
-
-   fflush(m_pFile);
-   return {true, ""};
-}
-*/
 
 _GD_IO_STREAM_END

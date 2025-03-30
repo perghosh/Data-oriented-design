@@ -359,6 +359,9 @@ public:
    static std::pair<bool, std::string> read_entry_block_s(FILE* pfile, std::vector<entry>& vectorEntry, uint64_t uSize, uint64_t uOffset);
    /// @brief read content from file
    static std::pair<bool, std::string> read_content_from_file_s(repository& repository_, const std::string_view& stringInputPath);
+   /// @brief read content from buffer and write to repository file
+   static std::pair<bool, std::string> read_content_from_buffer_s(repository& repository_, const void* pBuffer, uint64_t uSize );
+   static std::pair<bool, std::string> read_content_from_buffer_s(repository& repository_, const std::vector<uint8_t>& vectorBuffer) { return read_content_from_buffer_s(repository_, vectorBuffer.data(), vectorBuffer.size()); }
 
    // ## write
    /// @brief write data to file
@@ -372,6 +375,8 @@ public:
    /// @brief write content to file
    static std::pair<bool, std::string> write_content_to_file_s(const repository& repository_, const std::string_view& stringOutputPath);
    static std::pair<bool, std::string> write_content_to_file_s(const repository& repository_) { return write_content_to_file_s(repository_, ""); }
+   /// @brief write content data from the repository in to a buffer
+   static std::pair<bool, std::string> write_content_to_buffer_s(const repository& repository_, std::vector<uint8_t>& vectorBuffer);
 
    // ## size
    /// @brief get size of header in repository file
