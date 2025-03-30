@@ -109,12 +109,17 @@ public:
       header() = default;
       /// @brief Construct a header with the specified maximum entry size.
       explicit header(uint64_t uMaxEntrySize) : m_uMaxEntryCount(uMaxEntrySize) {}
+
+      /// @brief set maximum entry size
+      void set_max_size(uint64_t uMaxEntrySize) { m_uMaxEntryCount = uMaxEntrySize; }
       /// @brief Increment the entry count, this is the number of used entries.
-      void add_entry() { m_uEntryCount++; assert( m_uEntryCount < m_uMaxEntryCount ); }
+      void add_entry() { assert( m_uEntryCount < m_uMaxEntryCount ); m_uEntryCount++; }
 
       /// @brief Get the size of files that entry block is able to store.
       /// @return The size of the entry in number of max number of files.
       uint64_t size() const { return m_uMaxEntryCount; }
+      /// @brief Get the number of free entries in the repository.
+      uint64_t size_free() const { return m_uMaxEntryCount - m_uEntryCount; }
 
       /// @brief Get the number of entries in the repository.
       uint64_t count() const { return m_uEntryCount; }
@@ -243,13 +248,14 @@ public:
    std::pair<bool, std::string> add(const std::string_view& stringName, const void* pdata, uint64_t uSize);
    std::pair<bool, std::string> add(const std::string_view& stringFile);
    std::pair<bool, std::string> add(const std::string_view& stringFile, const std::string_view& stringName);
-   /// @brief Add an entry to the internal vector and update header repository. 
+   /// @brief Add an entry to the internal vector and update header repository. No data is written to the file.
    void add_entry(const entry& entry_) { m_vectorEntry.push_back(entry_); m_header.add_entry(); }
 
    // ## updates internal data in repository to file
 
    std::pair<bool, std::string> flush();
 
+   /// To be implemented
    std::pair<bool, std::string> expand( uint64_t uCount, uint64_t uBuffer );
 
    // ## read data from repository
@@ -315,41 +321,48 @@ public:
    std::string m_stringTemporaryPath;  ///< Path to folder where temporary files are generated, if not set same as repository file
    std::vector<entry> m_vectorEntry;   ///< Index of files
 
-   inline static std::string m_stringRepositoryExtension_s = "repo"; ///<
-   inline static std::string m_stringTemporaryExtension_s = "tmp"; ///<
+   inline static std::string m_stringRepositoryExtension_s = "repo"; ///< Default extension for repository file
+   inline static std::string m_stringTemporaryExtension_s = "tmp"; ///< Default extension for temporary file
 
 
 // ## free functions ------------------------------------------------------------
 public:
+   // ## file operations
    /// @brief prepare string path for current platform
    static std::string file_make_preffered_s(const std::string& stringPath);
    /// @brief create a new temporary file
    static std::pair<bool, std::string> file_new_tempoary_s(const repository& repository_, std::string& stringTemporaryFile, bool bOpen );
 
+   // ## file extension
    /// @brief set the repository extension, this extension is used to identify the repository file
    static void extension_set_repository_s( const std::string_view& stringExstension ) { m_stringRepositoryExtension_s = stringExstension; }
    /// @brief set the temporary extension
    static void extension_set_temporary_s( const std::string_view& stringExstension ) { m_stringTemporaryExtension_s = stringExstension; }
 
+   // ## calculate position
    /// @brief calculate position of entry block in repository file
    static uint64_t calculte_entry_offset_s() { return (uint64_t)sizeof( header ); }
-   /// @brief calculate position of entry block in repository file
+   /// @brief calculate position of content block in repository file, this is the first position wher file content is stored
    static uint64_t calculte_file_offset_s( const repository& repository_ ) { return calculte_entry_offset_s() + repository_.size_reserved() * sizeof( entry ); }
+   static uint64_t calculte_content_offset_s(const repository& repository_) { return calculte_file_offset_s(repository_); }
    /// @brief calculate the first position of content in repository file
    static uint64_t calculate_first_content_position_s(const repository& repository_);
    /// @brief calculate the first position of content in repository file
    static uint64_t calculate_first_free_content_position_s(const repository& repository_);
 
+   // ## read
    /// @brief read repository file, internal data in repository is updated
    static std::pair<bool, std::string> read_s(repository& repository_);
    /// @brief read repository header from file
    static std::pair<bool, std::string> read_header_s(FILE* pfile, header& header_);
    /// @brief read entry block from file
    static std::pair<bool, std::string> read_entry_block_s(FILE* pfile, std::vector<entry>& vectorEntry, uint64_t uSize, uint64_t uOffset);
+   /// @brief read content from file
+   static std::pair<bool, std::string> read_content_from_file_s(repository& repository_, const std::string_view& stringInputPath);
 
+   // ## write
    /// @brief write data to file
    static size_t write_s(repository& repository_, const void* pdata_, size_t uCount);
-
    /// @brief write header to file
    static std::pair<bool, std::string> write_header_s(FILE* pfile, const header& header_);
    /// @brief write entry block to file
@@ -358,14 +371,16 @@ public:
    static std::pair<bool, std::string> write_block_s(FILE* pfile, uint8_t uFillValue, uint64_t uSize, uint64_t uOffset);
    /// @brief write content to file
    static std::pair<bool, std::string> write_content_to_file_s(const repository& repository_, const std::string_view& stringOutputPath);
+   static std::pair<bool, std::string> write_content_to_file_s(const repository& repository_) { return write_content_to_file_s(repository_, ""); }
 
+   // ## size
    /// @brief get size of header in repository file
    static uint64_t size_header_s() { return sizeof(header); }
    /// @brief get size of entry buffer, this is the size of all entries in the repository
    static uint64_t size_entry_buffer_s(const repository& repository_) { return repository_.m_vectorEntry.size() * sizeof(entry); }
    /// get size of reserved buffer for entry, thish is the maximum buffer size of entries that can be stored
    static uint64_t size_entry_reserved_buffer_s(const repository& repository_) { return repository_.m_header.size() * sizeof( entry ); }
-   /// get size of all data in repository
+   /// get size of all data in repository, header, entry buffer and content
    static uint64_t size_all_s(const repository& repository_) { return calculate_first_free_content_position_s(repository_); }
    /// @brief get magic number used to identify repository file
    static constexpr uint64_t get_magic_number_s();
