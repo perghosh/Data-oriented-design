@@ -35,7 +35,55 @@ std::string get_current_time_as_string()
    return oss.str();
 }
 
+TEST_CASE( "[repository] create and read", "[repository]" ) {
+   CApplication application;
+   application.Initialize();
+   std::string stringDataFolder = GetDataFolder();
 
+   std::string stringFile = stringDataFolder + "/repository.repo";
+   gd::file::path pathFile(stringFile);
+   if( std::filesystem::exists(pathFile) == true ) std::filesystem::remove(pathFile);
+
+   gd::io::stream::repository repositoryStream(stringFile, 2);
+
+   repositoryStream.create();
+   for( auto i = 0; i < 50; i++ )
+   {
+      std::string stringFile = stringDataFolder + "/10.txt";
+      std::string stringName = "text" + std::to_string(i) + ".txt";
+      auto result_ = repositoryStream.add(stringFile, stringName);                                 REQUIRE(result_.first == true);
+   }
+   repositoryStream.flush();
+   repositoryStream.close();
+
+   {
+      gd::io::stream::repository repositoryRead(repositoryStream.get_path());
+      repositoryRead.open();
+
+      for( const auto& it : repositoryRead )
+      {
+         repositoryRead.read_to_file(it.get_name(), stringDataFolder + "/" + it.get_name().data());
+      }
+      // repositoryRead
+   }
+}
+
+TEST_CASE( "[repository] read", "[repository]" ) {
+   CApplication application;
+   application.Initialize();
+   std::string stringDataFolder = GetDataFolder();
+
+   std::string stringFile = stringDataFolder + "/repository.repo";
+
+   gd::io::stream::repository repositoryStream(stringFile);
+   repositoryStream.open();
+   for( const auto& it : repositoryStream )
+   {
+      std::cout << "File: " << it.get_name() << std::endl;
+   }
+}
+
+/*
 TEST_CASE( "[repository] create and read", "[repository]" ) {
    CApplication application;
    application.Initialize();
@@ -47,6 +95,8 @@ TEST_CASE( "[repository] create and read", "[repository]" ) {
 
 
    gd::io::stream::repository repositoryStream(stringFile, 20);
+
+
 
    repositoryStream.create();
    for( auto i = 0; i < 15; i++ )
@@ -68,7 +118,6 @@ TEST_CASE( "[repository] create and read", "[repository]" ) {
 
    std::cout << "Repository file: " << repositoryStream.dump() << std::endl;
 
-   /*
    {
       gd::io::stream::repository repositoryRead(repositoryStream.get_path());
       repositoryRead.open();
@@ -79,7 +128,6 @@ TEST_CASE( "[repository] create and read", "[repository]" ) {
       }
       // repositoryRead
    }
-   */
 
    {
       gd::io::stream::repository repositoryRead(repositoryStream.get_path());
@@ -112,6 +160,7 @@ TEST_CASE( "[repository] create and read", "[repository]" ) {
       // repositoryRead
    }
 }
+*/
 
 /// Test to create and delete documents
 /*

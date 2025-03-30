@@ -134,6 +134,15 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringName,
 {                                                                                                  assert( stringName.length() < 260 ); assert( m_pFile != nullptr );
    if(!m_pFile || stringName.length() >= sizeof(entry::m_piszName)) { return {false, std::string("Invalid file or name too long: ") + stringName.data()}; }
 
+   //
+   if( m_header.size_free() == 0 )
+   {
+      uint64_t uGrowTo = m_header.size();
+      if( uGrowTo > 4 ) uGrowTo += (uGrowTo >> 1);
+      else uGrowTo += 4;
+      expand(uGrowTo, 0);
+   }
+
    auto uStartOffset = calculate_first_free_content_position_s(*this);          // Calculate the start offset for the new data (end of the file)
 
    fseek_64_(m_pFile, 0, SEEK_END);                                            // Move to the end of the file
@@ -648,6 +657,53 @@ std::pair<bool, std::string> repository::read_entry_block_s(FILE* pfile, std::ve
    return {true, ""};
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Reads content data from a specified file into the repository.
+ *
+ * This static method reads the content data from a specified input file and writes it into the repository.
+ * It calculates the start position of the content data in the repository and writes the data in chunks.
+ * 
+ * When repository entry needs to be resized, content data is moved. To do that
+ * a temporary file is created, the content data is copied to it, and then the entry can be resized.
+ * After that, the content data is copied back to the repository.
+ * `write_content_to_file_s` and `read_content_from_file_s` are used to write and read content data.
+ *
+ * @param repository_ The target repository where the content will be written.
+ * @param stringInputPath The path to the input file from which content will be read.
+ * @return A pair containing a boolean indicating success (true) or failure (false),
+ *         and a string with an error message if the operation failed, or empty if successful.
+ */
+std::pair<bool, std::string> repository::read_content_from_file_s(repository& repository_, const std::string_view& stringInputPath)
+{                                                                                                  assert(repository_.is_open() == true);
+    // Open the input file in binary read mode
+    FILE* pfileReadFrom = fopen(stringInputPath.data(), "rb");
+    if(pfileReadFrom == nullptr ) { return {false, std::string( "Failed to open input file: " ) + stringInputPath.data()}; }
+
+    // Calculate the start position of content data in the repository
+    uint64_t uContentStart = calculate_first_content_position_s(repository_);
+
+    if( fseek_64_(repository_.m_pFile, uContentStart, SEEK_SET) != 0)         // Seek to the start of content in the repository file
+    {
+       fclose(pfileReadFrom); return {false, "Failed to seek to content start in repository"};
+    }
+
+    // Buffer for reading/writing content
+    constexpr size_t BUFFER_SIZE = 8192;                                      // 8KB buffer
+    std::vector<uint8_t> vectorBuffer(BUFFER_SIZE);
+    uint64_t uBytesRemaining = 0;
+
+    // ## Read and write content in chunks
+    while( (uBytesRemaining = fread(vectorBuffer.data(), 1, BUFFER_SIZE, pfileReadFrom)) > 0 ) 
+    {
+       size_t uBytesWritten = fwrite(vectorBuffer.data(), 1, uBytesRemaining, repository_.m_pFile); // Write to repository
+       if(uBytesWritten != uBytesRemaining) { fclose(pfileReadFrom); return {false, "Failed to write content to repository"}; }
+    }
+
+    // Clean up and return success
+    fclose(pfileReadFrom);
+    return {true, ""};
+}
+
 
 /// Writes header repository information to file, this writes the header to the beginning of the file.
 std::pair<bool, std::string> repository::write_header_s(FILE* pfile, const header& header_)
@@ -735,70 +791,63 @@ void repository::copy_entries_s(repository& repositoryFrom, const repository& re
    repositoryFrom.m_header.m_uEntryCount = repositoryFrom.m_vectorEntry.size();
 }
 
-/// @brief Write only the content data from the repository to a specified file
-/// @param repository_ The source repository containing the content
-/// @param stringOutputPath The path to the output file where content will be written
-/// @return A pair indicating success/failure and an error message if applicable
+/** ---------------------------------------------------------------------------
+ * @brief Write only the content data from the repository to a specified file.
+ *
+ * This static method writes the content data from the repository to a specified output file.
+ * It calculates the start and end positions of the content data, reads the content in chunks,
+ * and writes it to the output file. If the content size is zero, it returns success with a note.
+ *
+ * @param repository_ The source repository containing the content.
+ * @param stringOutputPath The path to the output file where content will be written.
+ * @return A pair containing a boolean indicating success (true) or failure (false),
+ *         and a string with an error message if the operation failed, or empty if successful.
+ */
 std::pair<bool, std::string> repository::write_content_to_file_s(const repository& repository_, const std::string_view& stringOutputPath)
-{
-   // Check if repository is open
-   if (!repository_.is_open()) {
-      return {false, "Repository is not open"};
-   }
-
+{                                                                                                  assert( repository_.is_open() == true );
+   std::string stringOutputPath_ = stringOutputPath.empty() == true ? repository_.get_temporary_path() : stringOutputPath.data();
    // Open the output file in binary write mode
-   FILE* pOutputFile = fopen(stringOutputPath.data(), "wb");
-   if (!pOutputFile) {
-      return {false, "Failed to open output file: " + std::string(stringOutputPath)};
-   }
+   FILE* pfileOutput = fopen(stringOutputPath_.data(), "w+b");
+   if(pfileOutput == nullptr ) { return {false, "Failed to open output file: " + stringOutputPath_}; }
 
    // Calculate the start position of content data
    uint64_t uContentStart = calculate_first_content_position_s(repository_);
    uint64_t uContentEnd = calculate_first_free_content_position_s(repository_);
    uint64_t uContentSize = uContentEnd - uContentStart;
 
-   // If there's no content, return success with a note
-   if (uContentSize == 0) {
-      fclose(pOutputFile);
-      return {true, "No content data to write"};
+   if( uContentSize == 0 )                                                     // If there's no content, return success with a note
+   {
+      fclose(pfileOutput); return {true, "No content data to write"};
    }
 
-   // Seek to the start of content in the repository file
-   if( fseek_64_(repository_.m_pFile, uContentStart, SEEK_SET) != 0) 
+   if( fseek_64_(repository_.m_pFile, uContentStart, SEEK_SET) != 0)           // Seek to the start of content in the repository file
    {
-      fclose(pOutputFile);
-      return {false, "Failed to seek to content start in repository"};
+      fclose(pfileOutput); return {false, "Failed to seek to content start in repository"};
    }
 
    // Buffer for reading/writing content
    constexpr size_t BUFFER_SIZE = 8192; // 8KB buffer
-   std::vector<uint8_t> buffer(BUFFER_SIZE);
+   std::vector<uint8_t> vectorBuffer(BUFFER_SIZE);
    uint64_t uBytesRemaining = uContentSize;
 
-   // Read and write content in chunks
-   while (uBytesRemaining > 0) {
+   // ## Read data from repository and write content in chunks to the output file
+   while( uBytesRemaining > 0 ) 
+   {
       size_t uBytesToRead = std::min(static_cast<size_t>(uBytesRemaining), BUFFER_SIZE);
 
-      // Read from repository
-      size_t uBytesRead = fread(buffer.data(), 1, uBytesToRead, repository_.m_pFile);
-      if (uBytesRead != uBytesToRead) {
-         fclose(pOutputFile);
-         return {false, "Failed to read content from repository"};
-      }
+      size_t uBytesRead = fread(vectorBuffer.data(), 1, uBytesToRead, repository_.m_pFile); // Read from repository
+      if(uBytesRead != uBytesToRead) { fclose(pfileOutput); return {false, "Failed to read content from repository"}; }
 
-      // Write to output file
-      size_t uBytesWritten = fwrite(buffer.data(), 1, uBytesRead, pOutputFile);
-      if (uBytesWritten != uBytesRead) {
-         fclose(pOutputFile);
-         return {false, "Failed to write content to output file"};
-      }
+      size_t uBytesWritten = fwrite(vectorBuffer.data(), 1, uBytesRead, pfileOutput); // Write to output file
+      if(uBytesWritten != uBytesRead) { fclose(pfileOutput); return {false, "Failed to write content to output file"}; }
 
-      uBytesRemaining -= uBytesRead;
+      uBytesRemaining -= uBytesRead;                                           // Update remaining bytes, subtract bytes read
    }
 
    // Clean up and return success
-   fclose(pOutputFile);
-   return {true, ""};
+   fclose(pfileOutput);                                                                             assert( pfileOutput != nullptr );
+
+   return {true, stringOutputPath_};
 }
 
 /// @brief make a path string preferred for the current platform 
@@ -832,12 +881,11 @@ std::pair<bool, std::string> repository::file_new_tempoary_s(const repository& r
       stringFileName = stringBasePath;
    }
 
-   // Remove extension if it exists
+   // ## Remove extension if it exists
    size_t uLastDot = stringFileName.find_last_of('.');
    if(uLastDot != std::string::npos) { stringFileName = stringFileName.substr( 0, uLastDot ); }
 
-   // Maximum attempts to prevent infinite loop
-   constexpr uint32_t uMaxAttempts = 10000;
+   constexpr uint32_t uMaxAttempts = 10000;                                    // Maximum number of attempts to find a unique file name
    uint32_t uCounter = 0;
 
    while( uCounter < uMaxAttempts ) 
@@ -870,22 +918,102 @@ std::pair<bool, std::string> repository::file_new_tempoary_s(const repository& r
          return {true, ""};
       }
 
-      /*
-      // Check if file exists by trying to open it in read mode
-      FILE* pTestFile = fopen(stringTempPath.c_str(), "r");
-      if(pTestFile == nullptr ) 
-      {
-         // File doesn't exist, this name is available
-         return {stringTempPath, {true, ""}};
-      }
-      // File exists, close it and try next number
-      fclose(pTestFile);
-      */
-
       uCounter++;
    }
 
    return {false, "Failed to find available temporary file name after " + std::to_string(uMaxAttempts) + " attempts"};
+}
+
+
+std::pair<bool, std::string> repository::expand(uint64_t uCount, uint64_t uBuffer) 
+{                                                                                                  assert( m_pFile != nullptr );
+   uint64_t uEntrySize = size_entry_reserved_buffer_s(*this);
+   uint64_t uNewEntrySize = uCount * sizeof(entry);
+
+   // ## Calculate the current content size (file data)
+   uint64_t uContentSize = calculate_first_free_content_position_s(*this);
+   uContentSize -= calculte_file_offset_s(*this);                                                    assert(uContentSize >= 0 && uContentSize < 0x0010'0000'0000); // 1TB limit, realistic value ?
+
+   if( uContentSize > uBuffer )                                                // if file content is more than max buffer size limit to store content in memmory
+   {
+      // ## Generate a temporary file to store content
+      std::string stringTemporary;
+      auto result_ = file_new_tempoary_s(*this, stringTemporary, false);
+      if( result_.first == false ) { return result_; }
+
+      result_ = write_content_to_file_s(*this, stringTemporary);                // write content to temporary file
+      if( result_.first == false ) { return result_; }
+
+      m_header.set_max_size(uCount);                                           // update header with new max entry count   
+      result_  = write_header_s(m_pFile, m_header);
+      if( result_.first == false ) { return result_; }
+
+      result_ = read_content_from_file_s(*this, stringTemporary);               // read content from temporary file
+      if( result_.first == false ) { return result_; }
+
+      std::filesystem::remove(stringTemporary);                                 // remove temporary file
+   } 
+   else 
+   {
+      /*
+      // Content fits in memory, use vector
+      std::vector<uint8_t> contentBuffer(uCurrentContentSize);
+
+      // Read existing content into buffer
+      if (uCurrentContentSize > 0) {
+         fseek(m_pFile, calculate_first_content_position_s(*this), SEEK_SET);
+         size_t readSize = fread(contentBuffer.data(), 1, uCurrentContentSize, m_pFile);
+         if (readSize != uCurrentContentSize) {
+            return {false, "Failed to read existing content"};
+         }
+      }
+
+      // Close and reopen file in write mode
+      fclose(m_pFile);
+      m_pFile = fopen(m_stringRepositoryPath.c_str(), "wb+");
+      if (!m_pFile) {
+         return {false, "Failed to reopen repository file"};
+      }
+
+      // Update header with new max entry count
+      m_header.m_uMaxEntryCount = uNewMaxEntryCount;
+
+      // Write new header
+      auto headerResult = write_header_s(m_pFile, m_header);
+      if (!headerResult.first) {
+         return headerResult;
+      }
+
+      // Write existing entries
+      auto entryResult = write_entry_block_s(m_pFile, m_vectorEntry.data(), 
+         m_vectorEntry.size() * sizeof(entry), calculte_entry_offset_s());
+      if (!entryResult.first) {
+         return entryResult;
+      }
+
+      // Fill new reserved space with zeros
+      uint64_t uNewReservedSize = uCount * sizeof(entry);
+      auto fillResult = write_block_s(m_pFile, 0, uNewReservedSize, 
+         calculte_entry_offset_s() + m_vectorEntry.size() * sizeof(entry));
+      if (!fillResult.first) {
+         return fillResult;
+      }
+
+      // Write content back to new position
+      if (uCurrentContentSize > 0) {
+         fseek(m_pFile, calculate_first_content_position_s(*this), SEEK_SET);
+         size_t written = fwrite(contentBuffer.data(), 1, uCurrentContentSize, m_pFile);
+         if (written != uCurrentContentSize) {
+            return {false, "Failed to write content back to file"};
+         }
+      }
+      */
+   }
+
+   // Update file pointer position
+   fseek(m_pFile, 0, SEEK_END);
+
+   return {true, "Repository expanded successfully"};
 }
 
 /*
