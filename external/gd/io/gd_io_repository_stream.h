@@ -255,7 +255,7 @@ public:
 
    std::pair<bool, std::string> flush();
 
-   /// To be implemented
+   /// @brief Expand the repository to hold more entries, one file is one entry.
    std::pair<bool, std::string> expand( uint64_t uCount, uint64_t uBuffer );
 
    // ## read data from repository
@@ -364,7 +364,7 @@ public:
    static std::pair<bool, std::string> read_content_from_buffer_s(repository& repository_, const std::vector<uint8_t>& vectorBuffer) { return read_content_from_buffer_s(repository_, vectorBuffer.data(), vectorBuffer.size()); }
 
    // ## write
-   /// @brief write data to file
+   /// @brief write data to file, like a wrapper for c `fwrite` command
    static size_t write_s(repository& repository_, const void* pdata_, size_t uCount);
    /// @brief write header to file
    static std::pair<bool, std::string> write_header_s(FILE* pfile, const header& header_);
