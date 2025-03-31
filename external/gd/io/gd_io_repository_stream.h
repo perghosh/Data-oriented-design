@@ -30,6 +30,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstring>
 #include <fstream>
 #include <functional>
 #include <cstdint>
