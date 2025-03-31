@@ -215,6 +215,88 @@ std::pair<bool, std::string> repository::add(const std::string_view& stringFile)
    return add(stringFile, std::string_view());
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Expands the repository to accommodate more entries.
+ *
+ * This method increases the maximum number of entries that the repository can store.
+ * It moves the content in the file where file data is stored to make space for the new entries.
+ * If the content size exceeds the specified buffer size, the content is temporarily stored in a file.
+ * Otherwise, the content is read into a vector.
+ *
+ * @param uCount The new maximum number of entries.
+ * @param uBuffer The buffer size to use for in-memory content storage.
+ * @return A pair containing a boolean indicating success (true) or failure (false),
+ *         and a string with an error message if the operation failed, or empty if successful.
+ * 
+ * @par Example:
+ * @code
+ * repository repo;
+ * repo.create("archive.repo"); // Assume this opens m_pFile
+ * 
+ * // Add some initial entries
+ * repo.add("file1.txt", "Hello, World!");
+ * repo.add("file2.txt", "Another file content");
+ * repo.add("file3.txt");
+ * 
+ * // Expand the repository to hold more entries
+ * auto result = repo.expand(100, 65536); // Expand to 100 entries with a buffer size of 64KB
+ * if (result.first) {
+ *     std::cout << "Repository expanded successfully\n";
+ * } else {
+ *     std::cout << "Expand failed: " << result.second << "\n";
+ * }
+ * @endcode
+ */
+std::pair<bool, std::string> repository::expand(uint64_t uCount, uint64_t uBuffer) 
+{                                                                                                  assert( m_pFile != nullptr );
+   uint64_t uEntrySize = size_entry_reserved_buffer_s(*this);
+   uint64_t uNewEntrySize = uCount * sizeof(entry);
+
+   // ## Calculate the current content size (file data)
+   uint64_t uContentSize = calculate_first_free_content_position_s(*this);
+   uContentSize -= calculte_file_offset_s(*this);                                                    assert(uContentSize >= 0 && uContentSize < 0x0010'0000'0000); // 1TB limit, realistic value ?
+
+   if( uContentSize > uBuffer )                                                // if file content is more than max buffer size limit to store content in memmory
+   {
+      // ## Generate a temporary file to store content
+      std::string stringTemporary;
+      auto result_ = file_new_tempoary_s(*this, stringTemporary, false);
+      if( result_.first == false ) { return result_; }
+
+      result_ = write_content_to_file_s(*this, stringTemporary);                // write content to temporary file
+      if( result_.first == false ) { return result_; }
+
+      m_header.set_max_size(uCount);                                           // update header with new max entry count   
+      result_  = write_header_s(m_pFile, m_header);
+      if( result_.first == false ) { return result_; }
+
+      result_ = read_content_from_file_s(*this, stringTemporary);               // read content from temporary file
+      if( result_.first == false ) { return result_; }
+
+      std::filesystem::remove(stringTemporary);                                 // remove temporary file
+   } 
+   else 
+   {
+      // ## Store content in memory, this is much faster but limited by memory
+      std::vector<uint8_t> vectorBuffer(uContentSize);
+      auto result_ = write_content_to_buffer_s(*this, vectorBuffer);           // write content to buffer
+      if( result_.first == false ) { return result_; }
+
+      m_header.set_max_size(uCount);                                           // update header with new max entry count   
+      result_  = write_header_s(m_pFile, m_header);
+      if( result_.first == false ) { return result_; }
+
+      result_ = read_content_from_buffer_s(*this, vectorBuffer);               // read content from buffer
+      if( result_.first == false ) { return result_; }
+
+
+   }
+
+   // Update file pointer position
+   fseek(m_pFile, 0, SEEK_END);
+
+   return {true, "Repository expanded successfully"};
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Writes the repository's header and entry block to the underlying file.
@@ -749,7 +831,7 @@ std::pair<bool, std::string> repository::write_header_s(FILE* pfile, const heade
  */
 std::pair<bool, std::string> repository::write_entry_block_s(FILE* pfile, const void* pdata, uint64_t uSize, uint64_t uOffset)
 {                                                                                                  assert( uSize % sizeof( repository::entry ) == 0 ); assert( pfile != nullptr );
-   fseek(pfile, static_cast<long>( uOffset ), SEEK_SET);                        // seek (move) to offset
+   fseek_64_(pfile, uOffset, SEEK_SET);                                         // seek (move) to offset
    fwrite(pdata, 1, uSize, pfile);                                              // write data to file
 
    return { true, "" };
@@ -773,7 +855,7 @@ std::pair<bool, std::string> repository::write_entry_block_s(FILE* pfile, const 
 std::pair<bool, std::string> repository::write_block_s(FILE* pfile, uint8_t uFillValue, uint64_t uSize, uint64_t uOffset) 
 {                                                                                                  assert( pfile != nullptr );
    // Seek to the specified offset in the file
-   if( std::fseek(pfile, (unsigned)uOffset, SEEK_SET) != 0 ) { return {false, "Failed to seek to offset " + std::to_string(uOffset)}; }
+   if( fseek_64_(pfile, (unsigned)uOffset, SEEK_SET) != 0 ) { return {false, "Failed to seek to offset " + std::to_string(uOffset)}; }
 
    // ## Write the block of data filled with uFillValue
    for(uint64_t u = 0; u < uSize; ++u) 
@@ -782,7 +864,7 @@ std::pair<bool, std::string> repository::write_block_s(FILE* pfile, uint8_t uFil
    }
 
    // Ensure the data is flushed to the file
-   if (fflush(pfile) != 0) {  return {false, "Failed to flush data to file"}; }
+   if(fflush(pfile) != 0) {  return {false, "Failed to flush data to file"}; }
 
    return {true, ""};
 }
@@ -955,68 +1037,6 @@ std::pair<bool, std::string> repository::file_new_tempoary_s(const repository& r
    return {false, "Failed to find available temporary file name after " + std::to_string(uMaxAttempts) + " attempts"};
 }
 
-/** ---------------------------------------------------------------------------
-* @brief Expands the repository to accommodate more entries.
-*
-* This method increases the maximum number of entries that the repository can store.
-* It moves the content in the file where file data is stored to make space for the new entries.
-* If the content size exceeds the specified buffer size, the content is temporarily stored in a file.
-* Otherwise, the content is read into a vector.
-*
-* @param uCount The new maximum number of entries.
-* @param uBuffer The buffer size to use for in-memory content storage.
-* @return A pair containing a boolean indicating success (true) or failure (false),
-*         and a string with an error message if the operation failed, or empty if successful.
-*/
-std::pair<bool, std::string> repository::expand(uint64_t uCount, uint64_t uBuffer) 
-{                                                                                                  assert( m_pFile != nullptr );
-   uint64_t uEntrySize = size_entry_reserved_buffer_s(*this);
-   uint64_t uNewEntrySize = uCount * sizeof(entry);
-
-   // ## Calculate the current content size (file data)
-   uint64_t uContentSize = calculate_first_free_content_position_s(*this);
-   uContentSize -= calculte_file_offset_s(*this);                                                    assert(uContentSize >= 0 && uContentSize < 0x0010'0000'0000); // 1TB limit, realistic value ?
-
-   if( uContentSize > uBuffer )                                                // if file content is more than max buffer size limit to store content in memmory
-   {
-      // ## Generate a temporary file to store content
-      std::string stringTemporary;
-      auto result_ = file_new_tempoary_s(*this, stringTemporary, false);
-      if( result_.first == false ) { return result_; }
-
-      result_ = write_content_to_file_s(*this, stringTemporary);                // write content to temporary file
-      if( result_.first == false ) { return result_; }
-
-      m_header.set_max_size(uCount);                                           // update header with new max entry count   
-      result_  = write_header_s(m_pFile, m_header);
-      if( result_.first == false ) { return result_; }
-
-      result_ = read_content_from_file_s(*this, stringTemporary);               // read content from temporary file
-      if( result_.first == false ) { return result_; }
-
-      std::filesystem::remove(stringTemporary);                                 // remove temporary file
-   } 
-   else 
-   {
-      std::vector<uint8_t> vectorBuffer(uContentSize);
-      auto result_ = write_content_to_buffer_s(*this, vectorBuffer);           // write content to temporary file
-      if( result_.first == false ) { return result_; }
-
-      m_header.set_max_size(uCount);                                           // update header with new max entry count   
-      result_  = write_header_s(m_pFile, m_header);
-      if( result_.first == false ) { return result_; }
-
-      result_ = read_content_from_buffer_s(*this, vectorBuffer);               // read content from temporary file
-      if( result_.first == false ) { return result_; }
-
-
-   }
-
-   // Update file pointer position
-   fseek(m_pFile, 0, SEEK_END);
-
-   return {true, "Repository expanded successfully"};
-}
 
 
 _GD_IO_STREAM_END

@@ -35,23 +35,8 @@ std::string get_current_time_as_string()
    return oss.str();
 }
 
-void test1( std::string_view string_ )
-{
-   std::cout << "Test1: " << string_ << std::endl;
-}
-
-void test2( const std::string_view& string_ )
-{
-   std::cout << "Test1: " << string_ << std::endl;
-}
-
 
 TEST_CASE( "[repository] create and read", "[repository]" ) {
-   std::string_view s("test");
-   test1(s);
-   test2(s);
-
-
    CApplication application;
    application.Initialize();
    std::string stringDataFolder = GetDataFolder();
