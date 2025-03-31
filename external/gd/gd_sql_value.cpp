@@ -5,6 +5,7 @@
  * 
  */
 
+
 #include <stdlib.h>
 
 #include "gd_utf8.h"
@@ -925,7 +926,7 @@ std::string replace_g(const std::string_view& stringSource, std::function<gd::va
          // ## check name
          stringExpression = std::string_view( pbszBegin, pbszSemicolon - pbszBegin );
          //std::string_view string_( pbszBegin, pbszSemicolon - pbszBegin );
-         bool bTrue = find_( stringExpression ).is_true();
+         bool bTrue = find_(stringExpression).is_null() == false ? true : false;
 
          // ### extract rest
          pbszBegin = pbszSemicolon + 1;
