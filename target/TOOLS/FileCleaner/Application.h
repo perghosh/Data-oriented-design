@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <iostream>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -98,6 +100,11 @@ public:
    std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_End() const;
 //@}
 
+   void COMMAND_Read(char** ppbszArgument);
+
+   void COMMAND_Print(const std::string& stringArgument);
+
+   void COMMAND_Count(const std::string& stringArgument);
 
 protected:
 /** \name INTERNAL
