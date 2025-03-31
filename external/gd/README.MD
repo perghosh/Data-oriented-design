@@ -46,6 +46,8 @@ you know the rest.
 | `gd_variant` | Variant object are able to store any C++ primitive value and some common extended data types, variant holds meta data about value and can be used to generalise logic |
 | `gd_utf8` | String operations, there are a lot of operations working with strings, focus on utf8 formats but should work on almost all utf8 and ascii strings |
 | `gd_uuid` | Code to work with uuid values |
+| `io/gd_io_archive_stream` | Read and write objects, suitable for serialization and deserialization  |
+| `io/gd_io_repository_stream` | Read and write information to and from streams, like files, memory, network etc and store multiple streams in a repository |
 
      
 
@@ -138,6 +140,9 @@ you know the rest.
         ├── gd_variant_view.cpp
         ├── gd_variant_view.h
         └── io
-            ├── gd_serialize.h
-            └── gd_serialize_stream.h
+            ├── gd_io_archive.h
+            ├── gd_io_archive_stream.cpp
+            ├── gd_io_archive_stream.h
+            ├── gd_io_repository_stream.cpp
+            └── gd_io_repository_stream.h
 ```
