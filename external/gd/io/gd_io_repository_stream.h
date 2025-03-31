@@ -118,7 +118,7 @@ public:
       /// @brief Get the size of files that entry block is able to store.
       /// @return The size of the entry in number of max number of files.
       uint64_t size() const { return m_uMaxEntryCount; }
-      /// @brief Get the number of free entries in the repository.
+      /// @brief Get the number of free entries in the repository. There are limited number of entries.
       uint64_t size_free() const { return m_uMaxEntryCount - m_uEntryCount; }
 
       /// @brief Get the number of entries in the repository.
@@ -128,10 +128,10 @@ public:
       void clear() { m_uEntryCount = 0; }
 
    // ## attributes -----------------------------------------------------------
-      uint64_t m_uMagic = repository::get_magic_number_s(); ///< Magic number
-      uint64_t m_uVersion = 1;    ///< Version number
-      uint64_t m_uMaxEntryCount = 10; ///< Mazimum number of entries that can be stored
-      uint64_t m_uEntryCount = 0; ///< Number of entries
+      uint64_t m_uMagic = repository::get_magic_number_s(); ///< Magic number, used to identify the repository
+      uint64_t m_uVersion = 1;    ///< Version number, used to track changes to the repository format
+      uint64_t m_uMaxEntryCount = 10; ///< Maximum number of entries that can be stored
+      uint64_t m_uEntryCount = 0; ///< Number of entries used in the repository
    };
 
    /**
@@ -180,11 +180,11 @@ public:
 
    // ## attributes -----------------------------------------------------------
       char m_piszName[uMaxFileNameLength_g]; ///< File name
-      uint64_t m_uOffset;        ///< Offset in archive file
+      uint64_t m_uOffset;        ///< Offset in archive file, where the file content starts and zero is the entries end, not the file start
       uint64_t m_uSize;          ///< Size of file content
       double   m_dTimeCreate;    ///< Time of creation
       double   m_dTimeAccess;    ///< Time of last access
-      unsigned m_uFlags;         ///< Entry validity flag
+      unsigned m_uFlags;         ///< Entry validity flag, each entry can be valid, deleted or marked for removal
    };
 
 // ## construction -------------------------------------------------------------
@@ -206,14 +206,23 @@ private:
    // common copy
    void common_construct(const repository& o) {
       m_header = o.m_header;
-      m_pFile = nullptr;
+      m_pFile = nullptr;      // do not copy file handle
       m_stringRepositoryPath = o.m_stringRepositoryPath;
       m_vectorEntry = o.m_vectorEntry;
    }
-   void common_construct(repository&& o) noexcept {}
+   void common_construct(repository&& o) noexcept {
+      m_header = std::move(o.m_header);
+      m_pFile = o.m_pFile;
+      m_stringRepositoryPath = std::move(o.m_stringRepositoryPath);
+      m_vectorEntry = std::move(o.m_vectorEntry);
+      o.m_pFile = nullptr;
+   }
 
 // ## operator -----------------------------------------------------------------
 public:
+   repository::entry& operator[](std::size_t uIndex) { return m_vectorEntry[uIndex]; }
+   const repository::entry& operator[](std::size_t uIndex) const { return m_vectorEntry[uIndex]; }
+   repository::entry& operator[](const std::string_view& stringName) { assert(find_entry(stringName) != nullptr); return *find_entry(stringName); }
 
 
 // ## methods ------------------------------------------------------------------
@@ -257,6 +266,8 @@ public:
 
    /// @brief Expand the repository to hold more entries, one file is one entry.
    std::pair<bool, std::string> expand( uint64_t uCount, uint64_t uBuffer );
+   /// @brief Expand the repository to hold more entries and use temporary file to store data
+   std::pair<bool, std::string> expand(uint64_t uCount) { return expand(uCount, 0); }
 
    // ## read data from repository
 
