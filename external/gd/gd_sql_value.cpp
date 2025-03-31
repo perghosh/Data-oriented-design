@@ -930,7 +930,7 @@ std::string replace_g(const std::string_view& stringSource, std::function<gd::va
 
          // ### extract rest
          pbszBegin = pbszSemicolon + 1;
-         stringExpression = std::string_view( pbszBegin, pbszEnd );
+         stringExpression = std::string_view( pbszBegin, pbszEnd - pbszBegin );
          std::vector<std::string_view> vectorPart;
          gd::utf8::split( stringExpression, iSemicolon_g, vectorPart );
 
