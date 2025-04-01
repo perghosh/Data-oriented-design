@@ -870,5 +870,37 @@ void path::normalize_path_s(std::string& stringPath)
 }
 
 
+// ----------------------------------------------------------------------------
+// ------------------------------------------------------------------ directory
+// ----------------------------------------------------------------------------
+
+
+std::pair<bool, std::string> directory::dir()
+{
+   for( const auto& it : std::filesystem::directory_iterator( std::filesystem::path(m_stringPath) ) )
+   {
+      if(it.is_regular_file())
+      {
+        add( it.path().string() );
+      }
+   }
+   return { true, "" };
+}
+
+std::pair<bool, std::string> directory::dir( gd::types::tag_recursive )
+{
+   /*
+   for( const auto& it : std::filesystem::recursive_directory_iterator(std::filesystem::path(m_stringPath)) )
+   {
+      if( it.is_regular_file() )
+      {
+         add(it.path().string());
+      }
+   }
+   */
+   return std::pair<bool, std::string>();
+}
+
+
 _GD_FILE_END
 

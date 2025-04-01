@@ -79,6 +79,10 @@ struct tag_tuple {};          ///< stl std::tuple object is used in some form
 struct tag_vector {};         ///< stl std::vector object is used in some form
 struct tag_map {};            ///< stl std::map object is used in some form
 struct tag_set {};            ///< stl std::set object is used in some form
+struct tag_stack {};          ///< stl std::stack object is used in some form
+struct tag_queue {};          ///< stl std::queue object is used in some form
+
+struct tag_recursive {};      ///< stl std::recursive object is used in some form
 
 // ----------------------------------------------------------------------------
 // ## format related tag dispatchers

@@ -268,5 +268,61 @@ inline bool operator!=(const path& p, const std::filesystem::path& p_) { return 
 inline bool operator!=(const std::filesystem::path& p_, const path& p) { return !(p_ == p); }
 
 
+
+/**
+ * \brief
+ *
+ *
+ */
+struct directory
+{
+   // ## construction ------------------------------------------------------------
+   directory() {}
+   // copy
+   directory(const directory& o) { common_construct(o); }
+   directory(directory&& o) noexcept { common_construct(std::move(o)); }
+   // assign
+   directory& operator=(const directory& o) { common_construct(o); return *this; }
+   directory& operator=(directory&& o) noexcept { common_construct(std::move(o)); return *this; }
+
+   ~directory() {}
+   // common copy
+   void common_construct(const directory& o) {}
+   void common_construct(directory&& o) noexcept {}
+
+   std::string_view get_name( std::size_t uIndex ) const { assert( uIndex < m_vectorFile.size() ); return m_vectorFile[uIndex]["name"].as_string_view(); }
+
+   
+
+// ## methods -----------------------------------------------------------------
+   directory& add( const std::string_view& stringPath );
+
+   std::pair<bool, std::string> dir();
+   std::pair<bool, std::string> dir(std::string_view stringPath) { m_stringPath = stringPath; return dir(); }
+   std::pair<bool, std::string> dir( gd::types::tag_recursive );
+
+/** \name DEBUG
+*///@{
+
+//@}
+
+// ## attributes --------------------------------------------------------------
+   std::string m_stringPath;
+   std::vector<gd::argument::arguments> m_vectorFile;
+   std::vector<directory> m_vectorDirectory;
+
+// ## free functions ----------------------------------------------------------
+
+};
+
+inline directory& directory::add(const std::string_view& stringPath)
+{
+   gd::argument::arguments arguments_({ {"name", stringPath} }, gd::types::tag_view{});
+   m_vectorFile.push_back(arguments_);
+   return *this;
+}
+
+
+
 _GD_FILE_END
 
