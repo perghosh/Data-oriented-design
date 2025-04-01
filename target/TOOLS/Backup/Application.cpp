@@ -41,6 +41,21 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       // Parse the command-line arguments
       auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);
       if( bOk == false ) { return { false, stringError }; }
+
+      // Get the active options
+      const gd::cli::options* poptions = optionsApplication.find_active();
+      if( poptions != nullptr )
+      {
+         std::string stringName = poptions->name();
+         auto vectorValue = poptions->get_arguments().get_argument_all( gd::types::tag_view{}, gd::types::tag_pair{} );
+         gd::argument::shared::arguments arguments_( vectorValue );
+
+         CCommands commands_;
+         commands_.Add(CCommand(stringName, arguments_));
+
+         CDocument document_(std::move(commands_));
+         DOCUMENT_Add(document_);
+      }
    }
 
 
@@ -90,18 +105,6 @@ void CApplication::DOCUMENT_Add(const std::string_view& stringName)
    m_vectorDocument.push_back(std::move(pdocument));
 }
 
-/** ---------------------------------------------------------------------------
- * @brief Adds a new document based on the provided arguments.
- * 
- * @param arguments_ The arguments used to create the document.
- */
-void CApplication::DOCUMENT_Add(const gd::argument::shared::arguments& arguments_) 
-{
-   auto pdocument = std::make_unique<CDocument>( arguments_ );
-   // Assuming CDocument has a method to initialize from arguments
-   // doc->Initialize(arguments_);
-   m_vectorDocument.push_back(std::move(pdocument));
-}
 
 /** ---------------------------------------------------------------------------
  * @brief Retrieves a document by its name.
@@ -193,6 +196,14 @@ void CApplication::DOCUMENT_Clear()
 
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
+   {  // ## `copy` command
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "ls", "List files" );
+      optionsCommand.add({"filter", 'f', "Filter files that is shown"});
+      optionsCommand.add({"recursive", 'r', "List files recursive"});
+      optionsCommand.add({"level", 'l', "Levels deep when list files recursive"});
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
    {  // ## `copy` command
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file from source to target" );
       optionsCommand.add({"source", 's', "File to copy"});

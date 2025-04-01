@@ -22,6 +22,8 @@
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
 
+#include "command/Commands.h"
+
 
 
 
@@ -39,8 +41,8 @@ class CDocument
 // ## construction -------------------------------------------------------------
 public: // 0TAG0construct.Document
    CDocument() {}
-   CDocument( const std::string_view& stringName ) { m_arguments.append( "name", stringName ); }
-   CDocument( const gd::argument::shared::arguments& arguments_ ): m_arguments( arguments_ ) {}
+   CDocument(const std::string_view& stringName) : m_stringName(stringName) {}
+   CDocument(CCommands&& commands) { m_vectorCommand.emplace_back(std::move(commands)); }
 // copy
    CDocument(const CDocument& o) { common_construct(o); }
    CDocument(CDocument&& o) noexcept { common_construct(std::move(o)); }
@@ -62,26 +64,12 @@ public:
 public:
 /** \name GET/SET
 *///@{
-   gd::variant_view Get(const std::string_view& stringName) const { return m_arguments[stringName].as_variant_view(); }
-   void Set(const std::string_view& stringName, const gd::variant_view& variantValue) { m_arguments.set(stringName, variantValue); }
-
-   std::string_view GetName() const { return m_arguments["name"].as_string_view(); }
-   void SetName(const std::string_view& stringName) { m_arguments.set("name", stringName); }
-   std::string_view Getpath() const { return m_arguments["path"].as_string_view(); }
-   void SetPath(const std::string_view& stringName) { m_arguments.set("path", stringName); }
+   std::string_view GetName() const { return m_stringName; }
 
 //@}
 
 /** \name OPERATION
 *///@{
-   /// Load document from file
-   std::pair<bool, std::string> Load(const std::string_view& stringPath);
-
-   /// Save document to file
-   std::pair<bool, std::string> Save(const std::string_view& stringPath);
-
-   /// Count characters in file data
-   size_t Count( uint8_t uCharacter ) const;
 //@}
 
 protected:
@@ -99,8 +87,8 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   gd::argument::shared::arguments m_arguments;///< document information (members)
-   std::vector<uint8_t> m_vectorData;///< document data (file content)
+   std::string m_stringName; ///< Name of the document
+   std::vector<CCommands> m_vectorCommand; ///< List of commands for this document
 
 // ## free functions ------------------------------------------------------------
 public:

@@ -77,7 +77,9 @@ public:
 *///@{
    // ## Add documents
    void DOCUMENT_Add(const std::string_view& stringName);
-   void DOCUMENT_Add(const gd::argument::shared::arguments& arguments_);
+   void DOCUMENT_Add( const CDocument& document_ );
+   void DOCUMENT_Add(CDocument&& document_);
+   void DOCUMENT_Add(CDocument* pdocument_);
 
    // ## Get documents
    const CDocument* DOCUMENT_Get(const std::string_view& stringName) const;
@@ -125,6 +127,21 @@ public:
 
 
 };
+
+inline void CApplication::DOCUMENT_Add(const CDocument& document_) {
+   m_vectorDocument.push_back(std::make_unique<CDocument>(document_));
+}
+
+inline void CApplication::DOCUMENT_Add(CDocument&& document_) {
+   m_vectorDocument.push_back(std::make_unique<CDocument>(std::move(document_)));
+}
+
+inline void CApplication::DOCUMENT_Add(CDocument* pdocument_) {
+   if (pdocument_ != nullptr) {
+      m_vectorDocument.push_back(std::unique_ptr<CDocument>(pdocument_));
+   }
+}
+
 
 /// return iterator to the beginning of the document list
 inline std::vector<std::unique_ptr<CDocument>>::iterator CApplication::DOCUMENT_Begin() {

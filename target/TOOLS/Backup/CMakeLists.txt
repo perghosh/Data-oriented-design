@@ -15,7 +15,7 @@ message( STATUS "# ----- ------------------------------------------------------"
 message( STATUS "# ----- backup targets" )
 message( STATUS )
 
-file(GLOB TARGET_FILES_ "Application.*" "Document.*" )
+file(GLOB TARGET_FILES_ "Application.*" "Document.*" "command/*.h" "command/*.cpp" )
 
 # add_subdirectory("tests") # tests to check logic in web server
 
