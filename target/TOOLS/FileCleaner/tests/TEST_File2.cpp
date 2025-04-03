@@ -368,5 +368,6 @@ TEST_CASE("[file] count", "[file]")
    rowCount.Add(file1);
    rowCount.Add(file2);
    std::cout << rowCount.Count_all() << std::endl;
+   std::cout << rowCount.Count_all() << std::endl;
 
 }
