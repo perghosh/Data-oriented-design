@@ -27,6 +27,7 @@ void CRowCount::Add(const std::string& stringFile)
 
 int CRowCount::Count_all()
 {
+   m_iCount = 0;
    m_bCount = true;
    
    for( int i = 0; i < m_vectorFiles.size(); i++ )
@@ -34,9 +35,7 @@ int CRowCount::Count_all()
       Count(m_vectorFiles[i]);
    }
 
-   return m_iCount;
-
    m_bCount = false;
-   m_iCount = 0;
 
+   return m_iCount;
 }
