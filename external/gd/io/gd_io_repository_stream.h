@@ -36,7 +36,9 @@
 #include <cstdint>
 #include <string>
 #include <utility>
+#include <variant>
 
+#include "../gd_types.h"
 #include "gd_io_archive.h"
 
 #ifndef _GD_IO_STREAM_BEGIN
@@ -278,14 +280,18 @@ public:
    /// @brief Expand the repository to hold more entries and use temporary file to store data
    std::pair<bool, std::string> expand(uint64_t uCount) { return expand(uCount, 0); }
    /// @brief Expand the repository to hold more entries by rotating file content. The lowest part is moved to top and entries are recalculated.
-   std::pair<bool, std::string> expand_rotate(uint64_t uCount);
+   //std::pair<bool, std::string> expand_rotate(uint64_t uCount);
 
    // ## read data from repository
 
-   std::pair<bool, std::string> read(const std::string_view& stringName, void* pdata, uint64_t uSize, uint64_t* puReadSize) const;
+   std::pair<bool, std::string> read( const std::string_view& stringName, void* pdata, uint64_t uSize, uint64_t* puReadSize) const;
    std::pair<bool, std::string> read( const std::string_view& stringName, std::vector<uint8_t>& vectorContent ) const;
+   std::pair<bool, std::string> read( const std::string_view& stringName, std::string& stringContent) const;
+   std::vector<uint8_t> read( const std::variant<size_t,std::string_view>& index_, gd::types::tag_vector ) const;
    std::pair<bool, std::string> read( size_t uIndex, void* pdata, uint64_t uSize, uint64_t* puReadSize) const;
    std::pair<bool, std::string> read( size_t uIndex, std::vector<uint8_t>& vectorContent ) const;
+   std::pair<bool, std::string> read( size_t uIndex, std::string& stringContent ) const;
+   std::string read( const std::variant<size_t,std::string_view>& index_, gd::types::tag_string ) const;
    std::pair<bool, std::string> read_to_file(const std::string_view& stringName, const std::string_view& stringPath) const;
 
    // ## information about repository
@@ -429,6 +435,15 @@ inline std::pair<bool, std::string> repository::create(const std::string_view& s
 }
 
 /// read repository file into vector
+inline std::pair<bool, std::string> repository::read(const std::string_view& stringName, std::string& stringContent) const {
+   auto iIndex = find(stringName);
+   if( iIndex == -1 ) return { false, std::string( "file not found: " ) + stringName.data() };
+   auto uSize = m_vectorEntry[iIndex].size();                                                      assert(uSize != 0);
+   stringContent.resize(uSize);
+   return read(iIndex, stringContent.data(), uSize, nullptr);
+}
+
+/// read repository file into vector
 inline std::pair<bool, std::string> repository::read(const std::string_view& stringName, std::vector<uint8_t>& vectorContent) const {
    auto iIndex = find(stringName);
    if( iIndex == -1 ) return { false, std::string( "file not found: " ) + stringName.data() };
@@ -438,11 +453,48 @@ inline std::pair<bool, std::string> repository::read(const std::string_view& str
 }
 
 /// read repository file into vector
+inline std::vector<uint8_t> repository::read(const std::variant<size_t, std::string_view>& index_, gd::types::tag_vector) const {
+   std::vector<uint8_t> vectorContent;
+   if( index_.index() == 0 ) {
+      auto uIndex = std::get<size_t>(index_);
+      read( uIndex, vectorContent );
+   }
+   else if( index_.index() == 1 ) {
+      auto stringName = std::get<std::string_view>(index_);
+      read( stringName, vectorContent );
+   }
+   return vectorContent;
+}
+
+/// read repository file into vector
 inline std::pair<bool, std::string> repository::read(size_t uIndex, std::vector<uint8_t>& vectorContent) const {
    auto uSize = m_vectorEntry[uIndex].size();                                                      assert(uSize != 0);
    vectorContent.resize(uSize);
    return read(uIndex, vectorContent.data(), uSize, nullptr);
 }
+
+/// read repository file into vector
+inline std::pair<bool, std::string> repository::read(size_t uIndex, std::string& stringContent) const {
+   auto uSize = m_vectorEntry[uIndex].size();                                                      assert(uSize != 0);
+   stringContent.resize(uSize);
+   return read(uIndex, stringContent.data(), uSize, nullptr);
+}
+
+/// read repository file into string
+inline std::string repository::read( const std::variant<size_t, std::string_view>& index_, gd::types::tag_string ) const {
+   std::string stringContent;
+   if( index_.index() == 0 ) {
+      auto uIndex = std::get<size_t>(index_);
+      read( uIndex, stringContent );
+   }
+   else if( index_.index() == 1 ) {
+      auto stringName = std::get<std::string_view>(index_);
+      read( stringName, stringContent );
+   }
+   return stringContent;
+}
+
+
 
 
 inline uint64_t repository::calculate_first_content_position_s(const repository& repository_) { 
