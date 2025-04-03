@@ -360,10 +360,13 @@ TEST_CASE("[file] serialize6", "[file]")
 
 TEST_CASE("[file] count", "[file]")
 {
-   std::string file1 = "D:\dev\work\DOD\target\TOOLS\FileCleaner\tests\data\python.txt";
+   std::string file1 = "D:\\dev\\work\\DOD\\target\\TOOLS\\FileCleaner\\tests\\data\\python.txt";
+   std::string file2 = "D:\\dev\\work\\DOD\\target\\TOOLS\\FileCleaner\\tests\\data\\10.txt";
 
    CRowCount rowCount;
 
-   rowCount.Count(file1);
+   rowCount.Add(file1);
+   rowCount.Add(file2);
+   std::cout << rowCount.Count_all() << std::endl;
 
 }
