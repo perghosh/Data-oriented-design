@@ -9,6 +9,7 @@
 #include "gd/gd_table_column-buffer.h"
 #include "gd/io/gd_io_archive_stream.h"
 #include "History.h"
+#include "RowCount.h"
 
 #include "main.h"
 
@@ -355,4 +356,14 @@ TEST_CASE("[file] serialize6", "[file]")
 
    archiveStream.close();
  
+}
+
+TEST_CASE("[file] count", "[file]")
+{
+   std::string file1 = "D:\dev\work\DOD\target\TOOLS\FileCleaner\tests\data\python.txt";
+
+   CRowCount rowCount;
+
+   rowCount.Count(file1);
+
 }
