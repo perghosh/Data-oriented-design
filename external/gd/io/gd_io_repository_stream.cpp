@@ -298,6 +298,7 @@ std::pair<bool, std::string> repository::expand(uint64_t uCount, uint64_t uBuffe
    return {true, "Repository expanded successfully"};
 }
 
+
 /** ---------------------------------------------------------------------------
  * @brief Writes the repository's header and entry block to the underlying file.
  *
@@ -349,11 +350,12 @@ std::pair<bool, std::string> repository::flush()
  * @param stringName The name of the data to read, provided as a string view.
  * @param pdata Pointer to the buffer where the data will be stored.
  * @param uSize Size of the buffer in bytes.
+ * @param puReadSize Pointer to a variable where the size of the read data will be stored.
  * @return A pair containing a boolean indicating success (true) or failure (false),
  *         and a string with an error or success message.
  * @retval {false, "File not found or buffer too small"} If no matching entry is found or the buffer is insufficient.
  */
-std::pair<bool, std::string> repository::read(const std::string_view& stringName, void* pdata, uint64_t uSize) const
+std::pair<bool, std::string> repository::read(const std::string_view& stringName, void* pdata, uint64_t uSize, uint64_t* puReadSize) const
 {                                                                                                  assert( m_pFile != nullptr );
    auto it = std::find_if(m_vectorEntry.begin(), m_vectorEntry.end(),
       [&stringName](const entry& e) { return e.is_valid() && e.get_name() == stringName; });
@@ -361,7 +363,38 @@ std::pair<bool, std::string> repository::read(const std::string_view& stringName
    if(it == m_vectorEntry.end() || uSize < it->size()) { return {false, "File not found or buffer too small"}; }
 
    fseek_64_(m_pFile, static_cast<long>(it->m_uOffset), SEEK_SET);
-   fread(pdata, 1, it->m_uSize, m_pFile);
+   auto uReadSize = fread(pdata, 1, it->m_uSize, m_pFile);
+   if( puReadSize != nullptr ) *puReadSize = uReadSize;
+
+   return { true, "" };
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Reads data from the repository at the specified index into a buffer.
+ *
+ * Reads the data associated with the entry at the given index into the provided buffer.
+ * The buffer must be large enough to hold the data.
+ *
+ * @param uIndex The index of the entry to read.
+ * @param pdata Pointer to the buffer where the data will be stored.
+ * @param uSize Size of the buffer in bytes.
+ * @param puReadSize Pointer to a variable where the size of the read data will be stored.
+ * @return A pair containing a boolean indicating success (true) or failure (false),
+ *         and a string with an error or success message.
+ * @retval {false, "Buffer too small"} If the buffer is insufficient for the entry size.
+ */ 
+std::pair<bool, std::string> repository::read(size_t uIndex, void* pdata, uint64_t uSize, uint64_t* puReadSize ) const
+{                                                                                                  assert(m_pFile != nullptr); assert( uIndex < m_vectorEntry.size() );
+   auto itEntry = std::next(m_vectorEntry.begin(), uIndex);
+   if( itEntry->size() > uSize ) { return { false, "Buffer too small" }; }
+
+   uint64_t uOffset = itEntry->offset();
+   uOffset += calculte_file_offset_s(*this); // Calculate the offset for the entry
+
+   fseek_64_(m_pFile, uOffset, SEEK_SET);
+   auto uReadSize = fread(pdata, 1, itEntry->size(), m_pFile);
+   if( puReadSize != nullptr ) *puReadSize = uReadSize;
 
    return { true, "" };
 }

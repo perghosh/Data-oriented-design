@@ -1184,7 +1184,7 @@ arguments::pointer arguments::insert(pointer pPosition, argument_type uType, con
  * \return arguments& reference to arguments object
  */
 arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsigned int uLength)
-{                                                                                                  //assert( (uLength > 0 && pBuffer != nullptr) || (uLength == 0 && pBuffer == nullptr) );
+{ 
    uint64_t uReserveLength = buffer_size();                                    // current buffer size
    uReserveLength += uLength + sizeof(uint32_t) * 2;                           // value length (and prefix value length for strings)
    uReserveLength += sizeof( uint16_t ) + sizeof(uint32_t);                    // value type and value length if needed
@@ -1192,7 +1192,7 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
 
    reserve( uReserveLength );
 
-   auto uPosition = buffer_size();                                             assert( uPosition % 4 == 0 ); // get active position for next value in buffer
+   auto uPosition = buffer_size();                                                                 assert( uPosition % 4 == 0 ); // get active position for next value in buffer
 #ifndef NDEBUG
    auto uBegin_d = uPosition;                                                  // used to calculate the total size for value stored in arguments object
 #endif // _DEBUG
@@ -1202,7 +1202,7 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
    auto uCopySize = memcpy_s( pdata_, uType, pBuffer, uLength );
 
    uPosition += uCopySize;
-   buffer_set_size( uPosition );                                               assert(buffer_size() < buffer_buffer_size());
+   buffer_set_size( uPosition );                                                                   assert(buffer_size() < buffer_buffer_size());
 
 #ifndef NDEBUG
    auto uValueSize_d = uPosition - uBegin_d;
