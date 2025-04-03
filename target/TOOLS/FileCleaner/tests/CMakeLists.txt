@@ -67,6 +67,7 @@ if( USE_TEST_ )
       "${TEST_NAME_}.cpp"
       "main.cpp"
       "History.cpp"
+      "RowCount.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
