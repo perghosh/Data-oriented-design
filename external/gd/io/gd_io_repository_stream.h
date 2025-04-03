@@ -128,11 +128,17 @@ public:
       /// @brief Clear the header, setting the entry count to zero.
       void clear() { m_uEntryCount = 0; }
 
+      /// @brief get the offset to where content starts in the repository file
+      uint64_t margin() const { return m_uMarginToContent; }
+      /// @brief sets the offset to where content starts in the repository file
+      void set_margin(uint64_t uMargin) { m_uMarginToContent = uMargin; }
+
    // ## attributes -----------------------------------------------------------
       uint64_t m_uMagic = repository::get_magic_number_s(); ///< Magic number, used to identify the repository
       uint64_t m_uVersion = 1;    ///< Version number, used to track changes to the repository format
       uint64_t m_uMaxEntryCount = 10; ///< Maximum number of entries that can be stored
       uint64_t m_uEntryCount = 0; ///< Number of entries used in the repository
+      uint64_t m_uMarginToContent = 0; ///< Margin to content, used for padding and can be used as space for more entries
    };
 
    /**
@@ -238,6 +244,8 @@ public:
    const std::string& get_temporary_path() const { return m_stringTemporaryPath.empty() == false ? m_stringRepositoryPath : m_stringRepositoryPath; }
    /// @brief Get the header of the repository.
    const header& get_header() const { return m_header; }
+   /// @brief Get the margin space between the the end of entries and the start of content.
+   uint64_t margin() const { return m_header.margin(); }
 //@}
 
 /** \name OPERATION
@@ -269,10 +277,15 @@ public:
    std::pair<bool, std::string> expand( uint64_t uCount, uint64_t uBuffer );
    /// @brief Expand the repository to hold more entries and use temporary file to store data
    std::pair<bool, std::string> expand(uint64_t uCount) { return expand(uCount, 0); }
+   /// @brief Expand the repository to hold more entries by rotating file content. The lowest part is moved to top and entries are recalculated.
+   std::pair<bool, std::string> expand_rotate(uint64_t uCount);
 
    // ## read data from repository
 
-   std::pair<bool, std::string> read(const std::string_view& stringName, void* pdata, uint64_t uSize) const;
+   std::pair<bool, std::string> read(const std::string_view& stringName, void* pdata, uint64_t uSize, uint64_t* puReadSize) const;
+   std::pair<bool, std::string> read( const std::string_view& stringName, std::vector<uint8_t>& vectorContent ) const;
+   std::pair<bool, std::string> read( size_t uIndex, void* pdata, uint64_t uSize, uint64_t* puReadSize) const;
+   std::pair<bool, std::string> read( size_t uIndex, std::vector<uint8_t>& vectorContent ) const;
    std::pair<bool, std::string> read_to_file(const std::string_view& stringName, const std::string_view& stringPath) const;
 
    // ## information about repository
@@ -355,7 +368,8 @@ public:
    /// @brief calculate position of entry block in repository file
    static uint64_t calculte_entry_offset_s() { return (uint64_t)sizeof( header ); }
    /// @brief calculate position of content block in repository file, this is the first position wher file content is stored
-   static uint64_t calculte_file_offset_s( const repository& repository_ ) { return calculte_entry_offset_s() + repository_.size_reserved() * sizeof( entry ); }
+   /// `calculte_file_offset_s` is same as `calculte_content_offset_s`
+   static uint64_t calculte_file_offset_s( const repository& repository_ );
    static uint64_t calculte_content_offset_s(const repository& repository_) { return calculte_file_offset_s(repository_); }
    /// @brief calculate the first position of content in repository file
    static uint64_t calculate_first_content_position_s(const repository& repository_);
@@ -414,11 +428,36 @@ inline std::pair<bool, std::string> repository::create(const std::string_view& s
    return create();
 }
 
+/// read repository file into vector
+inline std::pair<bool, std::string> repository::read(const std::string_view& stringName, std::vector<uint8_t>& vectorContent) const {
+   auto iIndex = find(stringName);
+   if( iIndex == -1 ) return { false, std::string( "file not found: " ) + stringName.data() };
+   auto uSize = m_vectorEntry[iIndex].size();                                                      assert(uSize != 0);
+   vectorContent.resize(uSize);
+   return read(iIndex, vectorContent.data(), uSize, nullptr);
+}
+
+/// read repository file into vector
+inline std::pair<bool, std::string> repository::read(size_t uIndex, std::vector<uint8_t>& vectorContent) const {
+   auto uSize = m_vectorEntry[uIndex].size();                                                      assert(uSize != 0);
+   vectorContent.resize(uSize);
+   return read(uIndex, vectorContent.data(), uSize, nullptr);
+}
+
+
 inline uint64_t repository::calculate_first_content_position_s(const repository& repository_) { 
    uint64_t uOffset = calculte_file_offset_s( repository_ );
    return uOffset; 
 }
 
+/// calculate position of content in repository file
+/// this is the first position wher file content is stored
+/// If `content_offset` is set to 0, it will be calculated as the size of the header and entry block
+/// and the size of the reserved buffer for entries
+/// if `content_offset` is set to a value, it will be used as the content offset
+inline uint64_t repository::calculte_file_offset_s( const repository& repository_ ) { 
+   return calculte_entry_offset_s() + repository_.size_reserved() * sizeof( entry ) + repository_.margin(); 
+}
 
 /// calculate first free content position in repository file
 inline uint64_t repository::calculate_first_free_content_position_s(const repository& repository_) { 
