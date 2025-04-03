@@ -813,7 +813,7 @@ std::size_t path::count() const
    std::size_t uCount = 1;
    for( auto it = m_stringPath.begin(), itEnd = m_stringPath.end(); it != itEnd; it++ )
    {
-      if ( *it == m_iPathDivider_s ) uCount++;
+      if( *it == m_iPathDivider_s ) uCount++;
    }
    return uCount;
 }
