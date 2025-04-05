@@ -63,7 +63,11 @@ TEST_CASE( "[repository] create and read", "[repository]" ) {
 
       for( const auto& it : repositoryRead )
       {
-         repositoryRead.read_to_file(it.get_name(), stringDataFolder + "/" + it.get_name().data());
+         std::vector<uint8_t> vectorContent;
+         repositoryRead.read(it.get_name(), vectorContent);
+         std::string stringData = repositoryRead.read( it.get_name(), gd::types::tag_string{});
+         std::cout << "File: " << it.get_name() << " Size: " << vectorContent.size() << " " << stringData << std::endl;
+         //repositoryRead.read_to_file(it.get_name(), stringDataFolder + "/" + it.get_name().data());
       }
       // repositoryRead
    }

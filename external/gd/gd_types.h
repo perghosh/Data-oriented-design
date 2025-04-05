@@ -58,9 +58,9 @@ struct tag_description {};    ///< description is used in some form
 struct tag_id {};             ///< id is used in some form
 struct tag_key {};            ///< key is used in some form
 struct tag_name {};           ///< name is used in some form
+struct tag_table {};          ///< table is used in some form
 struct tag_tag {};            ///< tag value
 struct tag_value {};          ///< value used in some form
-struct tag_table {};          ///< table is used in some form
 
 struct tag_main_type {};      /// main type if there are secondary types
 struct tag_secondary_type {}; /// secondary type if there are main types
@@ -74,29 +74,30 @@ struct tag_variable {};       ///< variable is used in some form
 // ## stl tag dispatchers, used to glue with stl
 
 struct tag_list {};           ///< stl std::list object is used in some form
-struct tag_pair {};           ///< stl std::pair object is used in some form
-struct tag_tuple {};          ///< stl std::tuple object is used in some form
-struct tag_vector {};         ///< stl std::vector object is used in some form
 struct tag_map {};            ///< stl std::map object is used in some form
+struct tag_pair {};           ///< stl std::pair object is used in some form
+struct tag_queue {};          ///< stl std::queue object is used in some form
 struct tag_set {};            ///< stl std::set object is used in some form
 struct tag_stack {};          ///< stl std::stack object is used in some form
-struct tag_queue {};          ///< stl std::queue object is used in some form
+struct tag_string {};         ///< stl std::string object is used in some form
+struct tag_tuple {};          ///< stl std::tuple object is used in some form
+struct tag_vector {};         ///< stl std::vector object is used in some form
 
 struct tag_recursive {};      ///< stl std::recursive object is used in some form
 
 // ----------------------------------------------------------------------------
 // ## format related tag dispatchers
-struct tag_json {};           ///< data is in json format
-struct tag_xml {};            ///< data is in xml format
-struct tag_csv {};            ///< data is in csv format
-struct tag_hex {};            ///< data is in hex format
+struct tag_ascii {};          ///< data is in ascii format
 struct tag_base32 {};         ///< data is in base32 format
 struct tag_base64 {};         ///< data is in base64 format
+struct tag_csv {};            ///< data is in csv format
+struct tag_hex {};            ///< data is in hex format
+struct tag_json {};           ///< data is in json format
+struct tag_path {};           ///< data is in path format
 struct tag_uri {};            ///< data is in uri format (url encoded)
 struct tag_url {};            ///< data is in url format
-struct tag_path {};           ///< data is in path format
-struct tag_ascii {};          ///< data is in ascii format
 struct tag_utf8 {};           ///< data is in utf8 format
+struct tag_xml {};            ///< data is in xml format
 
 // ----------------------------------------------------------------------------
 // ## operation related tag dispatchers
