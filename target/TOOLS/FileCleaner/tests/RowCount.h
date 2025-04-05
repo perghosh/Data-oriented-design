@@ -22,13 +22,14 @@ class CRowCount
 public:
 
    void Count(const std::string& stringFile);
-
    void Add(const std::string& stringFile);
+   void Add_filter(const std::string& stringFile);
    void List(const std::string& stringDirectory);
 
    int Count_all();
 
    std::vector<std::string> m_vectorFiles;
+   std::vector<std::string> m_vectorFilter;
    bool m_bCount = false;
    size_t m_iCount = 0;
 
