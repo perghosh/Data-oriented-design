@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <filesystem>
 
 
 #include "gd/gd_utf8.h"
@@ -23,6 +24,7 @@ public:
    void Count(const std::string& stringFile);
 
    void Add(const std::string& stringFile);
+   void List(const std::string& stringDirectory);
 
    int Count_all();
 
