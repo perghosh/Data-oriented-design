@@ -25,13 +25,41 @@ void CRowCount::Add(const std::string& stringFile)
    m_vectorFiles.push_back(stringFile);
 }
 
+void CRowCount::Add_filter(const std::string& stringFile)
+{
+   m_vectorFilter.push_back(stringFile);
+}
+
 void CRowCount::List(const std::string& stringDirectory)
 {
    for( const auto& it : std::filesystem::directory_iterator(stringDirectory) )
    {
       if( it.is_regular_file() )
       {
-         m_vectorFiles.push_back(it.path().string());
+         std::string stringFilePath = it.path().string();
+         std::string stringFileType = it.path().extension().string();
+
+         if( m_vectorFilter.empty() )
+         {
+            m_vectorFiles.push_back(stringFilePath);
+            continue;
+         }
+         else
+         {
+            for( int i = 0; i < m_vectorFilter.size(); i++ )
+            {
+               if( stringFileType == m_vectorFilter[i] )
+               {
+                  m_vectorFiles.push_back(stringFilePath);
+               }
+               else
+               {
+                  continue;
+               }
+            }
+         }
+
+         //m_vectorFiles.push_back(stringFilePath);
       }
    }
 }
