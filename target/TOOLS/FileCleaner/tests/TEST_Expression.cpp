@@ -31,7 +31,7 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
    CApplication application;
    application.Initialize();
    std::vector<gd::expression::token> vectorToken;
-   std::string stringExpression = "10 + 20 + 30 + 40 + '''Per Ghosh''' + 50";
+   std::string stringExpression = "10 + 20 + 30 + 40 + 50";
    /*
    std::string stringDataFolder = GetDataFolder();
    std::string stringFile = stringDataFolder + "/expression.txt";
@@ -55,4 +55,8 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
    {
       std::cout << "Token: " << it.get_name() << " Type: " << it.get_type() << std::endl;
    }
+
+   gd::expression::value valueResult;
+   gd::expression::token::evaluate_s(vectorCalculate, &valueResult);
+   std::cout << "Result: " << valueResult.as_string() << std::endl;
 }
