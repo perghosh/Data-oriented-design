@@ -1,5 +1,7 @@
 #include <stack>
 
+#include "gd_expression_operator.h"
+#include "gd_expression_runtime.h"
 #include "gd_expression_token.h"
 
 _GD_EXPRESSION_BEGIN
@@ -200,18 +202,30 @@ std::pair<bool, std::string> token::convert_s(const std::vector<token>& vectorIn
 
    for( const auto& token_ : vectorIn )
    {
+#ifndef NDEBUG
+      auto stringToken_d = token_.get_name();
+#endif
+
       uint32_t uTokenType = token_.get_token_type();
       switch( uTokenType )
       {
       case token_type_s("OPERATOR"):
+      {
+         while( stackOperator.empty() == false )
+         {
+            vectorOut.push_back(stackOperator.top());
+            stackOperator.pop();
+         }
+
          stackOperator.push(token_);
-         break;
+      }
+      break;
       case token_type_s("VALUE"):
-         vectorOut.emplace_back(token_);
-         break;
+         vectorOut.push_back(token_);
+      break;
       case token_type_s("VARIABLE"):
-         vectorOut.emplace_back(token_);
-         break;
+         vectorOut.push_back(token_);
+      break;
 
       default:
          assert( false );
@@ -230,17 +244,70 @@ std::pair<bool, std::string> token::convert_s(const std::vector<token>& vectorIn
    return { true, "" };
 }
 
-value add(const value& lhs, const value& rhs)
-{
-   if( lhs.is_integer() && rhs.is_integer() ) return value(lhs.as_integer() + rhs.as_integer());
-   if( lhs.is_double() && rhs.is_double() ) return value(lhs.as_double() + rhs.as_double());
-   if( lhs.is_string() && rhs.is_string() ) return value(lhs.as_string() + rhs.as_string());
-   return value();
+/**
+ * @brief Evaluates binary operations based on the operator string
+ *
+ * This function dispatches to the appropriate operation function based on the
+ * provided operator string. It uses a switch statement on the first character
+ * for efficiency, with nested checks for multi-character operators.
+ *
+ * @param stringOperator The operator to evaluate ("+", "-", "*", etc.)
+ * @param valueLeft Left operand
+ * @param valueRight Right operand
+ * @param pruntime Pointer to runtime environment for error reporting
+ * @return value Result of the operation
+ * @throws std::invalid_argument If the operator is not supported
+ */
+value evaluate_operator_g(const std::string_view& stringOperator, value& valueLeft, value& valueRight, runtime* pruntime)
+{                                                                                                  assert( stringOperator.empty() == false );
+   // Switch on the first character for efficiency
+   switch (stringOperator[0]) {
+   case '+': 
+      return add(valueLeft, valueRight, pruntime);
+
+   case '-': 
+      return subtract(valueLeft, valueRight, pruntime);
+
+   case '*': 
+      return multiply(valueLeft, valueRight, pruntime);
+
+   case '/': 
+      return divide(valueLeft, valueRight, pruntime);
+
+   case '%': 
+      return modulo(valueLeft, valueRight, pruntime);
+
+   case '=': 
+      // Check for "=="
+      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return equal(valueLeft, valueRight, pruntime); }
+      break;
+
+   case '!': 
+      // Check for "!="
+      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return not_equal(valueLeft, valueRight, pruntime); }
+      break;
+
+   case '<': 
+      // Check for "<=" or just "<"
+      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return less_equal(valueLeft, valueRight, pruntime); } 
+      else { return less(valueLeft, valueRight, pruntime); }
+
+   case '>': 
+      // Check for ">=" or just ">"
+      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return greater_equal(valueLeft, valueRight, pruntime); } 
+      else { return greater(valueLeft, valueRight, pruntime); }
+   }
+
+   // If we get here, the operator wasn't recognized
+   if (pruntime != nullptr) { pruntime->add("[evaluate_operator_g] - Unsupported operator: " + std::string(stringOperator), tag_error{}); }
+
+   throw std::invalid_argument("Unsupported operator: " + std::string(stringOperator));
 }
 
 
 std::pair<bool, std::string> token::evaluate_s(const std::vector<token>& vectorToken, value* pvalueResult )
 {
+   runtime runtime_;
    std::stack<value> stackValue;
 
    for( const auto& token_ : vectorToken )
@@ -251,11 +318,13 @@ std::pair<bool, std::string> token::evaluate_s(const std::vector<token>& vectorT
          stackValue.push(token_.as_value());
          break;
       case token::token_type_s("OPERATOR"):
-         value valueLeft = stackValue.top(); 
+         auto stringOerator = token_.get_name();
+
+         value valueRight = stackValue.top(); 
          stackValue.pop();
-         value valueRight = stackValue.top();
+         value valueLeft = stackValue.top();
          stackValue.pop();
-         value result_ = add(valueLeft, valueRight);
+         value result_ = evaluate_operator_g(stringOerator, valueLeft, valueRight, &runtime_ );
          stackValue.push( result_ );
          break;
       }
@@ -271,109 +340,6 @@ std::pair<bool, std::string> token::evaluate_s(const std::vector<token>& vectorT
 }
 
 
-// ----------------------------------------------------------------------------
-// ---------------------------------------------------------------------- value
-// ----------------------------------------------------------------------------
-
-bool value::get_bool() const 
-{
-   if( is_bool() ) return std::get<bool>(m_value);
-   if( is_integer() ) return std::get<int64_t>(m_value) != 0;
-   if( is_double() ) return std::get<double>(m_value) != 0.0;
-   return false;
-}
-
-/// @brief get integer value, returns 0 unable to convert
-int64_t value::as_integer() const
-{
-   if( is_integer() == true ) return std::get<int64_t>(m_value);
-   if( is_double() == true ) return static_cast<int64_t>( std::get<double>(m_value) );
-   if( is_bool() == true ) return static_cast<int64_t>( std::get<bool>(m_value) );
-   if( is_string() == true )
-   {
-      try { return std::stoll(std::get<std::string>(m_value)); }
-      catch( ... ) { return 0; }
-   }
-   return 0;
-}
-
-/// @brief get double value, converts integer if needed, returns 0.0 if unable to convert
-double value::as_double() const 
-{
-   if( is_double() == true ) { return std::get<double>(m_value); } 
-   else if( is_integer() == true ) { return static_cast<double>(std::get<int64_t>(m_value)); } 
-   else if( is_bool() == true ) { return static_cast<double>(std::get<bool>(m_value)); }
-   else if( is_string() == true ) 
-   {
-      try { return std::stod(std::get<std::string>(m_value));} 
-      catch (...) 
-      {
-         return 0.0;
-      }
-   }
-   return 0.0;
-}
-
-/// @brief get string value, converts other types if possible 
-std::string value::as_string() const
-{
-   if( is_string() == true ) return std::get<std::string>(m_value);
-   if( is_integer() == true ) return std::to_string(std::get<int64_t>(m_value));
-   if( is_double() == true ) return std::to_string(std::get<double>(m_value));
-   if( is_bool() == true ) return std::get<bool>(m_value) ? "true" : "false";
-   return "";
-}
-
-/// @brief get boolean value, converts other types if possible
-bool value::as_bool() const
-{
-   if( is_bool() == true ) return std::get<bool>(m_value);
-   if( is_integer() == true ) return std::get<int64_t>(m_value) != 0;
-   if( is_double() == true ) return std::get<double>(m_value) != 0.0;
-   if( is_string() == true )
-   {
-      const auto& string_ = std::get<std::string>(m_value);
-      return !string_.empty() && (string_ != "0" && string_ != "false");
-   }
-   return false;
-}
-
-/// @brief attempt to convert current value to integer
-bool value::to_integer() 
-{
-   if( is_integer() ) return true;
-   if( is_double() ) { m_value = static_cast<int64_t>(std::get<double>(m_value)); return true; }
-   if( is_bool() ) { m_value = static_cast<int64_t>(std::get<bool>(m_value)); return true; }
-   if( is_string() ) 
-   {
-      try { m_value = std::stoll(std::get<std::string>(m_value)); return true; }
-      catch( ... ) { return false; }
-   }
-   return false;
-}
-/// @brief attempt to convert current value to double
-bool value::to_double() 
-{
-   if( is_double() ) return true;
-   if( is_integer() ) { m_value = static_cast<double>(std::get<int64_t>(m_value)); return true; }
-   if( is_bool() ) { m_value = static_cast<double>(std::get<bool>(m_value)); return true; }
-   if( is_string() ) 
-   {
-      try { m_value = std::stod(std::get<std::string>(m_value)); return true; }
-      catch( ... ) { return false; }
-   }
-   return false;
-}
-
-/// @brief attempt to convert current value to string
-bool value::to_string()
-{
-   if( is_string() ) return true;
-   if( is_integer() ) { m_value = std::to_string(std::get<int64_t>(m_value)); return true; }
-   if( is_double() ) { m_value = std::to_string(std::get<double>(m_value)); return true; }
-   if( is_bool() ) { m_value = std::get<bool>(m_value) ? "true" : "false"; return true; }
-   return false;
-}
 
 
 _GD_EXPRESSION_END
