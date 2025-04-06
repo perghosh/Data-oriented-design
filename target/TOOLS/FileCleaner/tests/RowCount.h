@@ -41,6 +41,8 @@ public:
 // TODO: PerG
 // - Add a filter object with information about filters and that are able to match file names
 //   The problem now is that CRowCount does many things (both filter and count) (difficulty 4)  
+// - Add constructors that takes a list of files and a filter object (difficulty 3)
+// - Add copy constructors and assignment operators (difficulty 3)
 // - Remove the variables m_bCount and m_iCount from CRowCount, not needed (difficulty 1)
 // - Count enmpty lines (only spaces) (difficulty 2)
 // - Count lines with only comments (difficulty 7)
