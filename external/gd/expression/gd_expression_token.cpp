@@ -38,6 +38,35 @@ constexpr uint8_t puCharacterGroup_g[0x100] =
 };
 
 
+/**
+ * @brief Returns the type of the token as value
+ * 
+ * value is a variant type that can hold different types of values, based on the token type value gets the proper type
+ * 
+ * @return value for token
+ */
+value token::as_value() const 
+{
+   if( get_token_type() == eTokenTypeValue) 
+   {
+      switch (get_value_type()) 
+      {
+      case eValueTypeBoolean:
+         return value(m_stringName == "true");
+      case eValueTypeInteger:
+         return value(std::stoll(std::string(m_stringName)));
+      case eValueTypeDecimal:
+         return value(std::stod(std::string(m_stringName)));
+      case eValueTypeString:
+         return value(std::string(m_stringName));
+      default:
+         assert(false); throw std::invalid_argument("Unsupported value type");
+      }
+   }
+   return value();
+}
+
+
 inline const char* token::skip_whitespace_s(const char* piszBegin, const char* piszEnd)
 {
    const char* pisz_ = piszBegin;
@@ -201,10 +230,150 @@ std::pair<bool, std::string> token::convert_s(const std::vector<token>& vectorIn
    return { true, "" };
 }
 
+value add(const value& lhs, const value& rhs)
+{
+   if( lhs.is_integer() && rhs.is_integer() ) return value(lhs.as_integer() + rhs.as_integer());
+   if( lhs.is_double() && rhs.is_double() ) return value(lhs.as_double() + rhs.as_double());
+   if( lhs.is_string() && rhs.is_string() ) return value(lhs.as_string() + rhs.as_string());
+   return value();
+}
 
 
+std::pair<bool, std::string> token::evaluate_s(const std::vector<token>& vectorToken, value* pvalueResult )
+{
+   std::stack<value> stackValue;
+
+   for( const auto& token_ : vectorToken )
+   {
+      switch( token_.get_token_type() )
+      {
+      case token::token_type_s("VALUE"):
+         stackValue.push(token_.as_value());
+         break;
+      case token::token_type_s("OPERATOR"):
+         value valueLeft = stackValue.top(); 
+         stackValue.pop();
+         value valueRight = stackValue.top();
+         stackValue.pop();
+         value result_ = add(valueLeft, valueRight);
+         stackValue.push( result_ );
+         break;
+      }
+   }
+
+   if( stackValue.empty() == false )
+   {
+      *pvalueResult = stackValue.top();
+      stackValue.pop();
+   }
+
+   return { true, "" };
+}
 
 
+// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------- value
+// ----------------------------------------------------------------------------
+
+bool value::get_bool() const 
+{
+   if( is_bool() ) return std::get<bool>(m_value);
+   if( is_integer() ) return std::get<int64_t>(m_value) != 0;
+   if( is_double() ) return std::get<double>(m_value) != 0.0;
+   return false;
+}
+
+/// @brief get integer value, returns 0 unable to convert
+int64_t value::as_integer() const
+{
+   if( is_integer() == true ) return std::get<int64_t>(m_value);
+   if( is_double() == true ) return static_cast<int64_t>( std::get<double>(m_value) );
+   if( is_bool() == true ) return static_cast<int64_t>( std::get<bool>(m_value) );
+   if( is_string() == true )
+   {
+      try { return std::stoll(std::get<std::string>(m_value)); }
+      catch( ... ) { return 0; }
+   }
+   return 0;
+}
+
+/// @brief get double value, converts integer if needed, returns 0.0 if unable to convert
+double value::as_double() const 
+{
+   if( is_double() == true ) { return std::get<double>(m_value); } 
+   else if( is_integer() == true ) { return static_cast<double>(std::get<int64_t>(m_value)); } 
+   else if( is_bool() == true ) { return static_cast<double>(std::get<bool>(m_value)); }
+   else if( is_string() == true ) 
+   {
+      try { return std::stod(std::get<std::string>(m_value));} 
+      catch (...) 
+      {
+         return 0.0;
+      }
+   }
+   return 0.0;
+}
+
+/// @brief get string value, converts other types if possible 
+std::string value::as_string() const
+{
+   if( is_string() == true ) return std::get<std::string>(m_value);
+   if( is_integer() == true ) return std::to_string(std::get<int64_t>(m_value));
+   if( is_double() == true ) return std::to_string(std::get<double>(m_value));
+   if( is_bool() == true ) return std::get<bool>(m_value) ? "true" : "false";
+   return "";
+}
+
+/// @brief get boolean value, converts other types if possible
+bool value::as_bool() const
+{
+   if( is_bool() == true ) return std::get<bool>(m_value);
+   if( is_integer() == true ) return std::get<int64_t>(m_value) != 0;
+   if( is_double() == true ) return std::get<double>(m_value) != 0.0;
+   if( is_string() == true )
+   {
+      const auto& string_ = std::get<std::string>(m_value);
+      return !string_.empty() && (string_ != "0" && string_ != "false");
+   }
+   return false;
+}
+
+/// @brief attempt to convert current value to integer
+bool value::to_integer() 
+{
+   if( is_integer() ) return true;
+   if( is_double() ) { m_value = static_cast<int64_t>(std::get<double>(m_value)); return true; }
+   if( is_bool() ) { m_value = static_cast<int64_t>(std::get<bool>(m_value)); return true; }
+   if( is_string() ) 
+   {
+      try { m_value = std::stoll(std::get<std::string>(m_value)); return true; }
+      catch( ... ) { return false; }
+   }
+   return false;
+}
+/// @brief attempt to convert current value to double
+bool value::to_double() 
+{
+   if( is_double() ) return true;
+   if( is_integer() ) { m_value = static_cast<double>(std::get<int64_t>(m_value)); return true; }
+   if( is_bool() ) { m_value = static_cast<double>(std::get<bool>(m_value)); return true; }
+   if( is_string() ) 
+   {
+      try { m_value = std::stod(std::get<std::string>(m_value)); return true; }
+      catch( ... ) { return false; }
+   }
+   return false;
+}
+
+/// @brief attempt to convert current value to string
+bool value::to_string()
+{
+   if( is_string() ) return true;
+   if( is_integer() ) { m_value = std::to_string(std::get<int64_t>(m_value)); return true; }
+   if( is_double() ) { m_value = std::to_string(std::get<double>(m_value)); return true; }
+   if( is_bool() ) { m_value = std::get<bool>(m_value) ? "true" : "false"; return true; }
+   return false;
+}
 
 
 _GD_EXPRESSION_END
