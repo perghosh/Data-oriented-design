@@ -12,10 +12,6 @@
 #include "gd/gd_table_column-buffer.h"
 #include "gd/io/gd_io_archive_stream.h"
 
-#include "../Document.h"
-#include "../Application.h"
-
-#include "catch2/catch_amalgamated.hpp"
 
 /**
  * @brief Counts the number of lines in a files
