@@ -45,16 +45,26 @@ _GD_TYPES_BEGIN
    #pragma warning( disable : 4267 26495 26812 )
 #endif
 
+#define GD_TYPES_VERSION 0x00000001 ///< version number for gd types
+
 /*
  * tag dispatchers used in gd code
  * tag dispatchers have zero cost and removes the need to create a lot of different names for methods
  */
 
 // ----------------------------------------------------------------------------
+// ## state related tag dispatchers
+struct tag_state_success {};  ///< success state
+struct tag_state_failure {};  ///< failure state
+
+// ----------------------------------------------------------------------------
 // ## value related tag dispatchers
 
 struct tag_date {};           ///< date is used in some form
 struct tag_description {};    ///< description is used in some form
+struct tag_success {};        ///< success is used in some form
+struct tag_warning {};        ///< warning is used in some form
+struct tag_error {};          ///< error is used in some form
 struct tag_id {};             ///< id is used in some form
 struct tag_key {};            ///< key is used in some form
 struct tag_name {};           ///< name is used in some form
