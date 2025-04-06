@@ -25,34 +25,6 @@
 _GD_EXPRESSION_BEGIN 
 
 
-/*
-
-Eventuellt OT men möjligen intressant problem och hur samma typ av lösning hade sett ut i olika språk.
-
-Håller på att skriva ihop en skript hantering. Efter en del letande tror jag enklaste är att göra en egen variant för det enkla som behövs. Men för att dra nytta av koden i varianter av skript (om man behöver flera än en) försöker jag skriva metoder som kan användas i olika lösningar.
-
-Då är ett "skal" nedan, metoden är en metod som körs när två värden plussas ihop "1 + 1". Det kommer finnas en hel hög med sådana här enklare metoder. För skriptet jag gör nu så kan varje värde (VALUE) sköta sig själv. Men det kommer troligen en annan variant där värdet inte sköter sig själv utan blir mer av en view där data finns i "runtime". Skrivs ett skriptspråk där det skall gå och göra större skript och de behöver vara snabba, då finns mer möjligheter om värden ligger kopplade till något slags container objekt, även för trådar och annat. 
-
-Nedan är då ett exempel på metod
-
-[code]
-template<typename VALUE,typename RUNTIME>
-VALUEadd( const VALUE& l_, const VALUE& r_, RUNTIME* pr_ )
-{
-   l_.synchronize(r_, pr_);
-
-   if( l_.is_integer() ) return value(l_.get_integer() + r_.get_integer());
-   if( l_.is_double() ) return value(l_.get_double() + r_.get_double());
-   if( l_.is_string() ) return value(l_.get_string() + r_.get_string());
-
-   if( pr_ != nullptr ) pr_.add("[add] - Invalid addition operation", tag_error{});
-
-   return VALUE();
-}
-[/code]
-
-*/
-
 /** ---------------------------------------------------------------------------
  * @brief Adds two VALUE objects together
  * 

@@ -174,6 +174,7 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
       {
          continue;
       }
+
       if( uCharacterType & STRING_DELIMITER_BIT )                              // String delimiter
       {
          std::string_view string_;
@@ -187,10 +188,25 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
          }
          continue;
       }
+
       if( uCharacterType & SPECIAL_CHAR_BIT )                                           // Special character
       {
-         //vectorToken.emplace_back(std
+         uint32_t uTokenType = token::token_type_s( "SPECIAL_CHAR" );
+         vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
+         piszPosition++;
+         continue;
       }
+
+
+      if( uCharacterType & SEPARATOR_BIT )                                           // Special character
+      {
+         uint32_t uTokenType = token::token_type_s( "SEPARATOR" );
+         vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
+         piszPosition++;
+         continue;
+      }
+
+      piszPosition++;
    }
 
    return { true, "" };
@@ -234,6 +250,28 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       break;
       case token_type_s("VARIABLE"):
          vectorOut.push_back(token_);
+      break;
+      case token_type_s("SPECIAL_CHAR"):
+         {
+            vectorOut.push_back(token_);
+            auto stringToken = token_.get_name();
+            char iCharacter = stringToken[0];
+            if( iCharacter == '(' )
+            {
+               stackOperator.push(token_);
+            }
+            else if( iCharacter == ')' )
+            {
+               while( stackOperator.empty() == false )
+               {
+                  auto stringOperator = stackOperator.top().get_name();
+                  if( stringOperator == "(" ) { break; }
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+               if( stackOperator.empty() == false ) { stackOperator.pop(); }
+            }
+         }
       break;
 
       default:
