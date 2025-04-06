@@ -126,6 +126,9 @@ struct tag_construct {};
 /// methods used for some sort of debug related logic
 struct tag_debug {};
 
+/// methods that are optimized for speed, like when there are multiple versions
+struct tag_optimize {};
+
 /// for internal use only
 struct tag_internal {};
 
