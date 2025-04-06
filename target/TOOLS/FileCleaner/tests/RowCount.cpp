@@ -1,5 +1,50 @@
 #include "RowCount.h"
 
+
+void CRowCount::Add(const std::string& stringFile)
+{
+   m_vectorFiles.push_back(stringFile);
+}
+
+void CRowCount::AddFilter(const std::string& stringFile)
+{
+   m_vectorFilter.push_back(stringFile);
+}
+
+void CRowCount::List(const std::string& stringDirectory)
+{
+   for( const auto& it : std::filesystem::directory_iterator(stringDirectory) )
+   {
+      if( it.is_regular_file() )
+      {
+         std::string stringFilePath = it.path().string();                      // full path to file
+         std::string stringFileType = it.path().extension().string();          // .txt, .csv, .json, etc holds the file type
+
+         if( m_vectorFilter.empty() )
+         {
+            m_vectorFiles.push_back(stringFilePath);
+            continue;
+         }
+         else
+         {
+            for( int u = 0; u < m_vectorFilter.size(); u++ )
+            {
+               if( stringFileType == m_vectorFilter[u] )
+               {
+                  m_vectorFiles.push_back(stringFilePath);
+               }
+               else
+               {
+                  continue;
+               }
+            }
+         }
+
+         //m_vectorFiles.push_back(stringFilePath);
+      }
+   }
+}
+
 void CRowCount::Count(const std::string& stringFile)
 {
    std::ifstream ifstreamFile(stringFile);
@@ -20,51 +65,8 @@ void CRowCount::Count(const std::string& stringFile)
    }
 }
 
-void CRowCount::Add(const std::string& stringFile)
-{
-   m_vectorFiles.push_back(stringFile);
-}
 
-void CRowCount::Add_filter(const std::string& stringFile)
-{
-   m_vectorFilter.push_back(stringFile);
-}
-
-void CRowCount::List(const std::string& stringDirectory)
-{
-   for( const auto& it : std::filesystem::directory_iterator(stringDirectory) )
-   {
-      if( it.is_regular_file() )
-      {
-         std::string stringFilePath = it.path().string();
-         std::string stringFileType = it.path().extension().string();
-
-         if( m_vectorFilter.empty() )
-         {
-            m_vectorFiles.push_back(stringFilePath);
-            continue;
-         }
-         else
-         {
-            for( int i = 0; i < m_vectorFilter.size(); i++ )
-            {
-               if( stringFileType == m_vectorFilter[i] )
-               {
-                  m_vectorFiles.push_back(stringFilePath);
-               }
-               else
-               {
-                  continue;
-               }
-            }
-         }
-
-         //m_vectorFiles.push_back(stringFilePath);
-      }
-   }
-}
-
-int CRowCount::Count_all()
+int CRowCount::CountAll()
 {
    m_iCount = 0;
    m_bCount = true;
