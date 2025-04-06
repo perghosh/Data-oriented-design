@@ -8,6 +8,7 @@
 #include <utility>
 #include <variant>
 
+#include "gd_expression.h"
 #include "gd_expression_value.h"
 
 #ifndef _GD_EXPRESSION_BEGIN
@@ -144,7 +145,7 @@ struct token
    static const char* skip_whitespace_s(const char* piszBegin, const char* piszEnd);
    static std::pair<bool, std::string> parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_formula);
    static std::pair<bool, std::string> parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula);
-   static std::pair<bool, std::string> convert_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix);
+   static std::pair<bool, std::string> compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix);
    static std::pair<bool, std::string> evaluate_s( const std::vector<token>& vectorToken, value* pvalueResult );
 
    static uint32_t read_number_s(const char* piszBegin, const char* piszEnd, std::string_view& string_); 
