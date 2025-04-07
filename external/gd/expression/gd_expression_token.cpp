@@ -130,8 +130,27 @@ uint32_t token::read_string_s(const char* piszBegin, const char* piszEnd, std::s
    return STRING_DELIMITER_BIT;
 }
 
+std::pair<uint32_t, enumTokenType> token::read_variable_and_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char** ppiszReadTo)
+{
+   enumTokenType eTokenPartType = eTokenTypeVariable;
+   uint32_t uType = 0;
+   const char* pisz_ = piszBegin;
 
+   // ## read all characters, characters can be a-z, A-Z, 0-9, _, @
+   while( pisz_ < piszEnd && ( puCharacterGroup_g[static_cast<uint8_t>(*pisz_)] & ALPHABETIC_BIT ) )
+   {
+      ++pisz_;
+   }
 
+   if( pisz_ < piszEnd && *pisz_ == '(' ) { ++pisz_; eTokenPartType = eTokenTypeFunction; } // Function
+   else if( pisz_ < piszEnd && *pisz_ == ':' ) { ++pisz_; eTokenPartType = eTokenTypeLabel; } // Label is like a name that can be jumped to
+   else if( pisz_ < piszEnd && *pisz_ == '.' ) { ++pisz_; eTokenPartType = eTokenTypeMember; } // Member is like a name that can be accessed
+
+   string_ = std::string_view(piszBegin, pisz_ - piszBegin);
+   if( ppiszReadTo != nullptr ) { *ppiszReadTo = pisz_; }
+
+   return { ALPHABETIC_BIT, eTokenPartType };
+}
 
 std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_formula )
 {
@@ -158,8 +177,30 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
          continue;
       }
 
-      if( uCharacterType & ALPHABETIC_BIT )                                             // Identifier
+      // ### Check for variable, method or keyword
+      //     Characters can be different things where variable is just a "word"
+      //     and method is a "method" with a "(" at the end. Keyword is a reserved word
+      //     and needs to be checked against the keyword list.
+      if( uCharacterType & ALPHABETIC_BIT )                                    // Identifier
       {
+         std::string_view string_;
+         const char* piszEnd_ = nullptr;
+         auto [uType, uTokenType] = read_variable_and_s(piszPosition, piszEnd, string_, &piszEnd_);
+         if( uType != 0 )
+         {
+            if( uTokenType == token::token_type_s("VARIABLE") )
+            {
+               vectorToken.emplace_back(token(uTokenType, string_));
+            }
+            else if( uTokenType == token::token_type_s("FUNCTION") )
+            {
+               vectorToken.emplace_back(token(uTokenType, string_));
+               // TODO: manage how to handle function calls
+            }
+            
+            piszPosition = piszEnd_;
+         }
+         continue;
       }
 
       if( uCharacterType & OPERATOR_BIT )                                      // Operator
@@ -352,27 +393,44 @@ value evaluate_operator_g(const std::string_view& stringOperator, value& valueLe
 }
 
 
-std::pair<bool, std::string> token::evaluate_s(const std::vector<token>& vectorToken, value* pvalueResult )
+std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_ )
 {
-   runtime runtime_;
    std::stack<value> stackValue;
 
    for( const auto& token_ : vectorToken )
    {
       switch( token_.get_token_type() )
       {
+      case token::token_type_s("OPERATOR"):
+         {
+            auto stringOerator = token_.get_name();
+
+            value valueRight = stackValue.top(); 
+            stackValue.pop();
+            value valueLeft = stackValue.top();
+            stackValue.pop();
+            value result_ = evaluate_operator_g(stringOerator, valueLeft, valueRight, &runtime_ );
+            stackValue.push( result_ );
+         }
+         break;
       case token::token_type_s("VALUE"):
          stackValue.push(token_.as_value());
          break;
-      case token::token_type_s("OPERATOR"):
-         auto stringOerator = token_.get_name();
-
-         value valueRight = stackValue.top(); 
-         stackValue.pop();
-         value valueLeft = stackValue.top();
-         stackValue.pop();
-         value result_ = evaluate_operator_g(stringOerator, valueLeft, valueRight, &runtime_ );
-         stackValue.push( result_ );
+      case token::token_type_s("VARIABLE"):
+         {
+            auto stringVariable = token_.get_name();
+            int iIndex = runtime_.find_variable(stringVariable);
+            if( iIndex >= 0 )
+            {
+               stackValue.push(value( runtime_.get_variable(iIndex) ));
+            }
+            else
+            {
+               assert(false);
+               //if( runtime_.pr_ != nullptr ) { runtime_.pr_->add("[calculate_s] - Variable not found: " + std::string(stringVariable), tag_error{}); }
+               //return { false, "Variable not found: " + std::string(stringVariable) };
+            }
+         }
          break;
       }
    }

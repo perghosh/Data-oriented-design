@@ -29,12 +29,17 @@ _GD_EXPRESSION_BEGIN
  */
 struct value
 {
+   using variant_t = std::variant<int64_t, double, std::string, bool>; ///< value type
+   using value_type = variant_t; ///< value type
+
 // ## construction ------------------------------------------------------------
    value(): m_value( int64_t{0} ) {}
    explicit value( int64_t iValue ): m_value( iValue ) {}
    explicit value( double dValue ): m_value( dValue ) {}
    explicit value( const std::string stringValue ): m_value( stringValue ) {}
    explicit value( bool bValue ): m_value( bValue ) {}
+   explicit value( const variant_t& value_ ): m_value( value_ ) {}
+   explicit value(variant_t&& value_) : m_value(std::move(value_)) {}
    // copy
    value(const value& o) { common_construct(o); }
    value(value&& o) noexcept { common_construct(std::move(o)); }
