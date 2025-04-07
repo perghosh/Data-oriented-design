@@ -20,7 +20,7 @@ constexpr uint8_t puCharacterGroup_g[0x100] =
    //         0,   1,   2,   3,    4,   5,   6,   7,    8,   9,   A,   B,    C,   D,   E,   F
    /* 0 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x01,0x01,0x01,0x01, 0x01,0x01,0x00,0x00,  /* 0   - 15  */
    /* 1 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 16  - 31  */
-   /* 2 */ 0x01,0x40,0x20,0x40, 0x40,0x48,0x40,0x20, 0x40,0x40,0x48,0x48, 0x10,0x48,0x12,0x48,  /* 32  - 47   ' ',!,",#,$,%,&,',(,),*,+,,,-,.,/ */
+   /* 2 */ 0x01,0x48,0x20,0x40, 0x40,0x48,0x40,0x20, 0x40,0x40,0x48,0x48, 0x10,0x48,0x12,0x48,  /* 32  - 47   ' ',!,",#,$,%,&,',(,),*,+,,,-,.,/ */
    /* 3 */ 0x02,0x02,0x02,0x02, 0x02,0x02,0x02,0x02, 0x02,0x02,0x40,0x10, 0x48,0x48,0x48,0x40,  /* 48  - 63  0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */  
 
    /* 4 */ 0x40,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04,  /* 64  - 79  @,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O */
@@ -481,32 +481,37 @@ value evaluate_operator_g(const std::string_view& stringOperator, value& valueLe
 
    case '=': 
       // Check for "=="
-      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return equal(valueLeft, valueRight, pruntime); }
+      if(stringOperator.size() > 1 && stringOperator[1] == '=') { return equal(valueLeft, valueRight, pruntime); }
       break;
 
    case '!': 
       // Check for "!="
-      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return not_equal(valueLeft, valueRight, pruntime); }
+      if(stringOperator.size() > 1 && stringOperator[1] == '=') { return not_equal(valueLeft, valueRight, pruntime); }
       break;
 
    case '<': 
       // Check for "<=" or just "<"
-      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return less_equal(valueLeft, valueRight, pruntime); } 
+      if(stringOperator.size() > 1 && stringOperator[1] == '=') { return less_equal(valueLeft, valueRight, pruntime); } 
       else { return less(valueLeft, valueRight, pruntime); }
 
    case '>': 
       // Check for ">=" or just ">"
-      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return greater_equal(valueLeft, valueRight, pruntime); } 
+      if(stringOperator.size() > 1 && stringOperator[1] == '=') { return greater_equal(valueLeft, valueRight, pruntime); } 
       else { return greater(valueLeft, valueRight, pruntime); }
 
    case '&':
       // Check for "&&" or just "&"
       if( stringOperator.size() > 1 && stringOperator[1] == '&' ) { return logical_and(valueLeft, valueRight, pruntime); }
       else { return bitwise_and(valueLeft, valueRight, pruntime); }
+
+   case '|':
+      // Check for "||" or just "|"
+      if( stringOperator.size() > 1 && stringOperator[1] == '|' ) { return logical_or(valueLeft, valueRight, pruntime); }
+      else { return bitwise_or(valueLeft, valueRight, pruntime); }
    }
 
    // If we get here, the operator wasn't recognized
-   if (pruntime != nullptr) { pruntime->add("[evaluate_operator_g] - Unsupported operator: " + std::string(stringOperator), tag_error{}); }
+   if(pruntime != nullptr) { pruntime->add("[evaluate_operator_g] - Unsupported operator: " + std::string(stringOperator), tag_error{}); }
 
    throw std::invalid_argument("Unsupported operator: " + std::string(stringOperator));
 }
