@@ -10,6 +10,7 @@
 
 #include "gd_expression.h"
 #include "gd_expression_value.h"
+#include "gd_expression_runtime.h"
 
 #ifndef _GD_EXPRESSION_BEGIN
 #define _GD_EXPRESSION_BEGIN namespace gd { namespace expression {
@@ -21,7 +22,7 @@ _GD_EXPRESSION_BEGIN
 struct tag_formula {}; ///< tag for formula
 struct tag_expression {}; ///< tag for expression
 struct tag_postfix {}; ///< tag for postfix
-
+/*
 enum enumParseValue
 {
    eParseValueNone = 0x0000,
@@ -33,6 +34,7 @@ enum enumParseValue
    eParseValueFunction = 0x0006,
    eParseValueVariable = 0x0007,
 };
+*/
 
 enum enumTokenType
 {
@@ -47,7 +49,9 @@ enum enumTokenType
    eTokenTypeFormula = 8,
    eTokenTypeFunction = 9,
    eTokenTypeVariable = 10,
-   eTokenTypeEnd = 11,
+   eTokenTypeLabel = 11,
+   eTokenTypeMember = 12,
+   eTokenTypeEnd = 13,
 };
 
 
@@ -137,35 +141,39 @@ struct token
 *///@{
 //@}
 
-   // ## attributes --------------------------------------------------------------
+// ## attributes --------------------------------------------------------------
    uint32_t m_uType;
    std::string_view m_stringName;
 
-   // ## free functions ----------------------------------------------------------
+// ## free functions ----------------------------------------------------------
    static const char* skip_whitespace_s(const char* piszBegin, const char* piszEnd);
    static std::pair<bool, std::string> parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_formula);
    static std::pair<bool, std::string> parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula);
    static std::pair<bool, std::string> compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix);
-   static std::pair<bool, std::string> evaluate_s( const std::vector<token>& vectorToken, value* pvalueResult );
+   static std::pair<bool, std::string> calculate_s( const std::vector<token>& vectorToken, value* pvalueResult );
+   static std::pair<bool, std::string> calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_);
+   /// @brief calculate_s that is simplified for one liner expression that returns single value, make sure that the formula is correct, only compile time checks and twrows
+   static value calculate_s( const std::string_view& stringExpression, const std::vector< std::pair<std::string, value::variant_t>>& vectorVariable );
+   static value calculate_s( const std::string_view& stringExpression, runtime& runtime_ );
 
    static uint32_t read_number_s(const char* piszBegin, const char* piszEnd, std::string_view& string_); 
    static uint32_t read_string_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo );
-   //static uint32_t read_variable_s(const char* piszBegin, const char* piszEnd, std::string_view& string_); 
-
-
+   static std::pair<uint32_t, enumTokenType> read_variable_and_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo); 
 
    static uint32_t type_s( uint32_t uType, enumTokenPart eTokenPart );
    static uint32_t to_type_s( uint32_t uType, enumTokenPart eTokenPart );
 
    static constexpr uint32_t token_type_s(const std::string_view& s_);
-   
-
 };
 
 inline std::pair<bool, std::string> token::parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula) {
    return parse_s(stringExpression.data(), stringExpression.data() + stringExpression.length(), vectorToken, tag_formula());
 }
 
+inline std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult) {
+   runtime runtime_;
+   return calculate_s(vectorToken, pvalueResult, runtime_);
+}
 
 /// \brief get type information from token type
 inline uint32_t token::type_s(uint32_t uType, enumTokenPart eTokenPart) {

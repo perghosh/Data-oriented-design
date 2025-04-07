@@ -20,7 +20,7 @@ constexpr uint8_t puCharacterGroup_g[0x100] =
    //         0,   1,   2,   3,    4,   5,   6,   7,    8,   9,   A,   B,    C,   D,   E,   F
    /* 0 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x01,0x01,0x01,0x01, 0x01,0x01,0x00,0x00,  /* 0   - 15  */
    /* 1 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 16  - 31  */
-   /* 2 */ 0x01,0x40,0x20,0x40, 0x40,0x48,0x40,0x20, 0x40,0x40,0x48,0x48, 0x10,0x48,0x12,0x48,  /* 32  - 47   ' ',!,",#,$,%,&,',(,),*,+,,,-,.,/ */
+   /* 2 */ 0x01,0x48,0x20,0x40, 0x40,0x48,0x40,0x20, 0x40,0x40,0x48,0x48, 0x10,0x48,0x12,0x48,  /* 32  - 47   ' ',!,",#,$,%,&,',(,),*,+,,,-,.,/ */
    /* 3 */ 0x02,0x02,0x02,0x02, 0x02,0x02,0x02,0x02, 0x02,0x02,0x40,0x10, 0x48,0x48,0x48,0x40,  /* 48  - 63  0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */  
 
    /* 4 */ 0x40,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04,  /* 64  - 79  @,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O */
@@ -69,6 +69,24 @@ value token::as_value() const
 }
 
 
+/** --------------------------------------------------------------------------
+ * @brief Skips whitespace characters in the input string.
+ *
+ * This function skips whitespace characters in the input string and returns
+ * a pointer to the first non-whitespace character.
+ *
+ * @code
+ * // sample usage
+ * const char* input = "   Hello, World!";
+ * const char* end = input + strlen(input);
+ * const char* result = token::skip_whitespace_s(input, end);
+ * std::cout << "First non-whitespace character: " << *result << std::endl;
+ * @endcode
+ *
+ * @param piszBegin Pointer to the beginning of the input string.
+ * @param piszEnd Pointer to the end of the input string.
+ * @return Pointer to the first non-whitespace character.
+ */
 inline const char* token::skip_whitespace_s(const char* piszBegin, const char* piszEnd)
 {
    const char* pisz_ = piszBegin;
@@ -79,6 +97,28 @@ inline const char* token::skip_whitespace_s(const char* piszBegin, const char* p
    return pisz_;
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Reads a number from the input string.
+ *
+ * This function reads a number from the input string and returns its type.
+ *
+ * The function reads until it finds a non-digit character. It also handles
+ * the sign of the number.
+ *
+ * @code
+ * // sample usage
+ * const char* input = "12345";
+ * const char* end = input + strlen(input);
+ * std::string_view result;
+ * uint32_t type = token::read_number_s(input, end, result);
+ * std::cout << "Read number: " << result << std::endl;
+ * @endcode
+ *
+ * @param piszBegin Pointer to the beginning of the input string.
+ * @param piszEnd Pointer to the end of the input string.
+ * @param string_ Reference to a string_view to store the read number.
+ * @return The type of the token.
+ */
 uint32_t token::read_number_s(const char* piszBegin, const char* piszEnd, std::string_view& string_)
 {
    uint32_t uType = 0;
@@ -96,6 +136,33 @@ uint32_t token::read_number_s(const char* piszBegin, const char* piszEnd, std::s
 }
 
 
+/** --------------------------------------------------------------------------
+ * @brief Reads a string from the input string.
+ *
+ * This function reads a string from the input string and returns its type.
+ * 
+ * First character is used to determine the delimiter, and the function reads until it
+ * finds the matching delimiter. If there are multiple delimiters, it will read until
+ * finds the same number of delimiters. Like `'''` or `"""` will be treated as a single
+ * delimiter. And reads until the next matching delimiter.
+ * 
+ * @code
+ * // sample usage 
+ * const char* input = "\"Hello, World!\"";
+ * const char* end = input + strlen(input);
+ * std::string_view result;
+ * const char* readTo;
+ * uint32_t type = token::read_string_s(input, end, result, &readTo);
+ * std::cout << "Read string: " << result << std::endl;
+ * std::cout << "Next position: " << (readTo - input) << std::endl;
+ * @endcode
+ *
+ * @param piszBegin Pointer to the beginning of the input string.
+ * @param piszEnd Pointer to the end of the input string.
+ * @param string_ Reference to a string_view to store the read string.
+ * @param ppiszReadTo Pointer to a pointer to store the position after the read string.
+ * @return The type of the token.
+ */
 uint32_t token::read_string_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char** ppiszReadTo) 
 {
    char iDelimiter = *piszBegin;
@@ -131,8 +198,53 @@ uint32_t token::read_string_s(const char* piszBegin, const char* piszEnd, std::s
 }
 
 
+ /** --------------------------------------------------------------------------
+  * @brief Reads a variable, function or label name from the input string.
+  *
+  * This function reads a variable or function name from the input string and
+  * returns its type and the corresponding token type.
+  *
+  * @param piszBegin Pointer to the beginning of the input string.
+  * @param piszEnd Pointer to the end of the input string.
+  * @param string_ Reference to a string_view to store the read name.
+  * @param ppiszReadTo Pointer to a pointer to store the position after the read name.
+  * @return A pair containing the type of the token and its token type.
+  */
+std::pair<uint32_t, enumTokenType> token::read_variable_and_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char** ppiszReadTo)
+{
+   enumTokenType eTokenPartType = eTokenTypeVariable; // default is variable
+   uint32_t uType = 0;
+   const char* pisz_ = piszBegin;
 
+   // ## read all characters, characters can be a-z, A-Z, 0-9, _, @
+   while( pisz_ < piszEnd && ( puCharacterGroup_g[static_cast<uint8_t>(*pisz_)] & ALPHABETIC_BIT ) )
+   {
+      ++pisz_;
+   }
 
+   if( pisz_ < piszEnd && *pisz_ == '(' ) { ++pisz_; eTokenPartType = eTokenTypeFunction; } // Function
+   else if( pisz_ < piszEnd && *pisz_ == ':' ) { ++pisz_; eTokenPartType = eTokenTypeLabel; } // Label is like a name that can be jumped to
+   else if( pisz_ < piszEnd && *pisz_ == '.' ) { ++pisz_; eTokenPartType = eTokenTypeMember; } // Member is like a name that can be accessed
+
+   string_ = std::string_view(piszBegin, pisz_ - piszBegin);
+   if( ppiszReadTo != nullptr ) { *ppiszReadTo = pisz_; }
+
+   return { ALPHABETIC_BIT, eTokenPartType };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Parses a string into tokens based on the provided formula.
+ *
+ * This function processes the input string and generates a vector of tokens.
+ * It handles different types of tokens such as numbers, identifiers, operators,
+ * string literals, and special characters.
+ *
+ * @param piszBegin Pointer to the beginning of the input string.
+ * @param piszEnd Pointer to the end of the input string.
+ * @param vectorToken Vector to store the generated tokens.
+ * @param tag_formula Tag to indicate the parsing mode (formula in this case).
+ * @return A pair containing a boolean indicating success and a string with an error message if any.
+ */
 std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_formula )
 {
    const char* piszPosition = piszBegin;                                       // Current position
@@ -158,15 +270,46 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
          continue;
       }
 
-      if( uCharacterType & ALPHABETIC_BIT )                                             // Identifier
+      // ### Check for variable, method or keyword
+      //     Characters can be different things where variable is just a "word"
+      //     and method is a "method" with a "(" at the end. Keyword is a reserved word
+      //     and needs to be checked against the keyword list.
+      if( uCharacterType & ALPHABETIC_BIT )                                    // Identifier
       {
+         std::string_view string_;
+         const char* piszEnd_ = nullptr;
+         auto [uType, uTokenType] = read_variable_and_s(piszPosition, piszEnd, string_, &piszEnd_);
+         if( uType != 0 )
+         {
+            if( uTokenType == token::token_type_s("VARIABLE") )
+            {
+               vectorToken.emplace_back(token(uTokenType, string_));
+            }
+            else if( uTokenType == token::token_type_s("FUNCTION") )
+            {
+               vectorToken.emplace_back(token(uTokenType, string_));
+               // TODO: manage how to handle function calls
+            }
+            
+            piszPosition = piszEnd_;
+         }
+         continue;
       }
 
       if( uCharacterType & OPERATOR_BIT )                                      // Operator
       {
          uint32_t uTokenType = token::token_type_s( "OPERATOR" );
-         vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
-         piszPosition++;
+         if( uCharacterType & SPECIAL_CHAR_BIT && piszPosition[1] == '=' )         // Handle special operators that have two characters like >=, <=, == etc
+         {
+            uTokenType = token::token_type_s("OPERATOR");
+            vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 2)));
+            piszPosition += 2;
+         }
+         else
+         {
+            vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 1)));
+            piszPosition++;
+         }
          continue;
       }
 
@@ -174,6 +317,7 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
       {
          continue;
       }
+
       if( uCharacterType & STRING_DELIMITER_BIT )                              // String delimiter
       {
          std::string_view string_;
@@ -187,15 +331,42 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
          }
          continue;
       }
+
       if( uCharacterType & SPECIAL_CHAR_BIT )                                           // Special character
       {
-         //vectorToken.emplace_back(std
+         uint32_t uTokenType = token::token_type_s( "SPECIAL_CHAR" );
+         vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
+         piszPosition++;
+         continue;
       }
+
+
+      if( uCharacterType & SEPARATOR_BIT )                                           // Special character
+      {
+         uint32_t uTokenType = token::token_type_s( "SEPARATOR" );
+         vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
+         piszPosition++;
+         continue;
+      }
+
+      piszPosition++;
    }
 
    return { true, "" };
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Compiles the input tokens into postfix notation.
+ *
+ * This function takes a vector of tokens and converts them into postfix
+ * notation using the Shunting Yard algorithm. It handles operators, values,
+ * variables, and special characters.
+ *
+ * @param vectorIn Input vector of tokens to be compiled.
+ * @param vectorOut Output vector to store the compiled tokens in postfix notation.
+ * @param tag_postfix Tag to indicate the compilation mode (postfix in this case).
+ * @return A pair containing a boolean indicating success and a string with an error message if any.
+ */
 std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix)
 {
    std::stack<token> stackOperator;
@@ -235,6 +406,28 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       case token_type_s("VARIABLE"):
          vectorOut.push_back(token_);
       break;
+      case token_type_s("SPECIAL_CHAR"):
+         {
+            vectorOut.push_back(token_);
+            auto stringToken = token_.get_name();
+            char iCharacter = stringToken[0];
+            if( iCharacter == '(' )
+            {
+               stackOperator.push(token_);
+            }
+            else if( iCharacter == ')' )
+            {
+               while( stackOperator.empty() == false )
+               {
+                  auto stringOperator = stackOperator.top().get_name();
+                  if( stringOperator == "(" ) { break; }
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+               if( stackOperator.empty() == false ) { stackOperator.pop(); }
+            }
+         }
+      break;
 
       default:
          assert( false );
@@ -253,7 +446,7 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
    return { true, "" };
 }
 
-/**
+/** ---------------------------------------------------------------------------
  * @brief Evaluates binary operations based on the operator string
  *
  * This function dispatches to the appropriate operation function based on the
@@ -288,53 +481,102 @@ value evaluate_operator_g(const std::string_view& stringOperator, value& valueLe
 
    case '=': 
       // Check for "=="
-      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return equal(valueLeft, valueRight, pruntime); }
+      if(stringOperator.size() > 1 && stringOperator[1] == '=') { return equal(valueLeft, valueRight, pruntime); }
       break;
 
    case '!': 
       // Check for "!="
-      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return not_equal(valueLeft, valueRight, pruntime); }
+      if(stringOperator.size() > 1 && stringOperator[1] == '=') { return not_equal(valueLeft, valueRight, pruntime); }
       break;
 
    case '<': 
       // Check for "<=" or just "<"
-      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return less_equal(valueLeft, valueRight, pruntime); } 
+      if(stringOperator.size() > 1 && stringOperator[1] == '=') { return less_equal(valueLeft, valueRight, pruntime); } 
       else { return less(valueLeft, valueRight, pruntime); }
 
    case '>': 
       // Check for ">=" or just ">"
-      if (stringOperator.size() > 1 && stringOperator[1] == '=') { return greater_equal(valueLeft, valueRight, pruntime); } 
+      if(stringOperator.size() > 1 && stringOperator[1] == '=') { return greater_equal(valueLeft, valueRight, pruntime); } 
       else { return greater(valueLeft, valueRight, pruntime); }
+
+   case '&':
+      // Check for "&&" or just "&"
+      if( stringOperator.size() > 1 && stringOperator[1] == '&' ) { return logical_and(valueLeft, valueRight, pruntime); }
+      else { return bitwise_and(valueLeft, valueRight, pruntime); }
+
+   case '|':
+      // Check for "||" or just "|"
+      if( stringOperator.size() > 1 && stringOperator[1] == '|' ) { return logical_or(valueLeft, valueRight, pruntime); }
+      else { return bitwise_or(valueLeft, valueRight, pruntime); }
    }
 
    // If we get here, the operator wasn't recognized
-   if (pruntime != nullptr) { pruntime->add("[evaluate_operator_g] - Unsupported operator: " + std::string(stringOperator), tag_error{}); }
+   if(pruntime != nullptr) { pruntime->add("[evaluate_operator_g] - Unsupported operator: " + std::string(stringOperator), tag_error{}); }
 
    throw std::invalid_argument("Unsupported operator: " + std::string(stringOperator));
 }
 
 
-std::pair<bool, std::string> token::evaluate_s(const std::vector<token>& vectorToken, value* pvalueResult )
+/** -----------------------------------------------------------------------------
+ * @brief Calculates the result of an expression from postfix tokens using runtime context
+ * 
+ * Evaluates a postfix expression by processing tokens sequentially:
+ * - For operators: pops two values from stack, applies operator, pushes result
+ * - For values: pushes token value to stack
+ * - For variables: looks up value in runtime context and pushes to stack
+ * 
+ * @param vectorToken Vector of tokens in postfix notation
+ * @param pvalueResult Pointer to store the resulting value
+ * @param runtime_ Runtime context for variable resolution
+ * @return Pair of success flag and error message (if any)
+ */
+std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_ )
 {
-   runtime runtime_;
    std::stack<value> stackValue;
 
    for( const auto& token_ : vectorToken )
    {
       switch( token_.get_token_type() )
       {
+      case token::token_type_s("OPERATOR"):
+         {
+            auto stringOerator = token_.get_name();
+
+            value valueRight = stackValue.top(); 
+            stackValue.pop();
+            value valueLeft = stackValue.top();
+            stackValue.pop();
+            value result_ = evaluate_operator_g(stringOerator, valueLeft, valueRight, &runtime_ );
+            stackValue.push( result_ );
+         }
+         break;
       case token::token_type_s("VALUE"):
          stackValue.push(token_.as_value());
          break;
-      case token::token_type_s("OPERATOR"):
-         auto stringOerator = token_.get_name();
-
-         value valueRight = stackValue.top(); 
-         stackValue.pop();
-         value valueLeft = stackValue.top();
-         stackValue.pop();
-         value result_ = evaluate_operator_g(stringOerator, valueLeft, valueRight, &runtime_ );
-         stackValue.push( result_ );
+      case token::token_type_s("VARIABLE"):
+         {
+            auto stringVariable = token_.get_name();
+            int iIndex = runtime_.find_variable(stringVariable);
+            if( iIndex >= 0 )
+            {
+               stackValue.push(value( runtime_.get_variable(iIndex) ));
+            }
+            else
+            {
+               // ## try to find variable using callback
+               auto stringVariable = token_.get_name();
+               value::variant_t variantValue;
+               bool bFound = runtime_.find_value(stringVariable, &variantValue);
+               if( bFound == true )
+               {
+                  stackValue.push(value( variantValue ));
+               }
+               else
+               {
+                  return { false, "[calculate_s] - Variable not found: " + std::string(stringVariable) };
+               }
+            }
+         }
          break;
       }
    }
@@ -348,7 +590,66 @@ std::pair<bool, std::string> token::evaluate_s(const std::vector<token>& vectorT
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Simplified one-liner expression evaluator
+ * 
+ * Convenience method that combines parsing, compilation and calculation in one step.
+ * Only performs compile-time checks and throws exceptions on errors.
+ * 
+ * @param stringExpression The expression to evaluate
+ * @param vectorVariable Vector of variable name/value pairs for evaluation
+ * @return The calculated result
+ * @throws std::invalid_argument if parsing, compilation or calculation fails
+ */
+value token::calculate_s( const std::string_view& stringExpression, const std::vector< std::pair<std::string, value::variant_t>>& vectorVariable )
+{
+   // ## convert string to tokens
+   std::vector<token> vectorToken;
+   std::pair<bool, std::string> result = parse_s(stringExpression, vectorToken, tag_formula{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
 
+   // ## compile tokens and that menas to convert tokens to postfix, place them in correct order to be processed
+   std::vector<token> vectorPostfix;
+   result = compile_s(vectorToken, vectorPostfix, tag_postfix{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   // ## calculate the result
+   runtime runtime_(vectorVariable);
+   value valueResult;
+   result = calculate_s(vectorPostfix, &valueResult, runtime_);
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+   return valueResult;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Simplified one-liner expression evaluator using runtime context
+ * 
+ * Convenience method that combines parsing, compilation and calculation in one step.
+ * Uses a runtime context for variable resolution.
+ * 
+ * @param stringExpression The expression to evaluate
+ * @param runtime_ Runtime context for variable resolution
+ * @return The calculated result
+ * @throws std::invalid_argument if parsing, compilation or calculation fails
+ */
+value token::calculate_s( const std::string_view& stringExpression, runtime& runtime_ )
+{
+   // ## convert string to tokens
+   std::vector<token> vectorToken;
+   std::pair<bool, std::string> result = token::parse_s(stringExpression, vectorToken, tag_formula{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   // ## compile tokens and that menas to convert tokens to postfix, place them in correct order to be processed
+   std::vector<token> vectorPostfix;
+   result = token::compile_s(vectorToken, vectorPostfix, tag_postfix{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   // ## calculate the result
+   value valueResult;
+   result = token::calculate_s(vectorPostfix, &valueResult, runtime_);
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+   return valueResult;
+}
 
 
 _GD_EXPRESSION_END
