@@ -32,6 +32,31 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
    application.Initialize();
 
    {
+      auto valueResult = gd::expression::token::calculate_s( "10 >= x", {{"x", 10}} );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+      valueResult = gd::expression::token::calculate_s( "10 > x", {{"x", 10}} );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+      valueResult = gd::expression::token::calculate_s( "10 < x", {{"x", 10}} );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+      std::cout << "\n\n";
+   }
+
+   {
+      gd::expression::runtime runtime( []( auto string_, auto* pvalue_ ) -> bool {  
+         if( string_ == "x" ) { *pvalue_ = 10; return true; }
+         return false;
+      });
+
+      auto valueResult = gd::expression::token::calculate_s( "10 >= x", runtime );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+      valueResult = gd::expression::token::calculate_s( "10 * 10 * x", runtime );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+      std::cout << "\n\n";
+   }
+
+
+
+   {
       std::vector<gd::expression::token> vectorToken;
       std::string stringExpression = "10 + x";
       // tokenize the expression
@@ -64,40 +89,6 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
       for( const auto& it : vectorCalculate ) { std::cout << "[ \"" << it.get_name() << "\" (" << it.get_type() << ") ] "; }
       std::cout << "\n\n";
    }
-
-
-   {
-      std::vector<gd::expression::token> vectorToken;
-      std::string stringExpression = "10 + 20 + 30 + 40 + 50";
-      // tokenize the expression
-      auto result_ = gd::expression::token::parse_s(stringExpression.c_str(), stringExpression.c_str() + stringExpression.length(), vectorToken, gd::expression::tag_formula{}); REQUIRE(result_.first == true);
-      // prepare the expression
-      std::vector<gd::expression::token> vectorCalculate;
-      gd::expression::token::compile_s(vectorToken, vectorCalculate, gd::expression::tag_postfix{});
-
-      gd::expression::value valueResult;
-      gd::expression::token::calculate_s(vectorCalculate, &valueResult);
-      std::cout << "Result: " << valueResult.as_string() << std::endl;
-      for( const auto& it : vectorCalculate ) { std::cout << "[ \"" << it.get_name() << "\" (" << it.get_type() << ") ] "; }
-      std::cout << "\n\n";
-   }
-
-   {
-      std::vector<gd::expression::token> vectorToken;
-      std::string stringExpression = "'1000' + 50 + 70 + 20000";
-      // tokenize the expression
-      auto result_ = gd::expression::token::parse_s(stringExpression.c_str(), stringExpression.c_str() + stringExpression.length(), vectorToken, gd::expression::tag_formula{}); REQUIRE(result_.first == true);
-      // prepare the expression
-      std::vector<gd::expression::token> vectorCalculate;
-      gd::expression::token::compile_s(vectorToken, vectorCalculate, gd::expression::tag_postfix{});
-
-      gd::expression::value valueResult;
-      gd::expression::token::calculate_s(vectorCalculate, &valueResult);
-      std::cout << "Result: " << valueResult.as_string() << std::endl;
-      for( const auto& it : vectorCalculate ) { std::cout << "[ \"" << it.get_name() << "\" (" << it.get_type() << ") ] "; }
-      std::cout << "\n\n";
-   }
-
 
    {
       std::vector<gd::expression::token> vectorToken;

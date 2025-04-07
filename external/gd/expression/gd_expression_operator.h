@@ -323,5 +323,132 @@ VALUE not_equal(VALUE& l_, VALUE& r_, RUNTIME* pr_)
    return VALUE();
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Performs bitwise AND operation on two VALUE objects
+ *
+ * Values are synchronized to ensure type compatibility before operation.
+ *
+ * @tparam VALUE The value type being operated on
+ * @tparam RUNTIME Runtime environment type for error reporting
+ * @param l_ Left operand
+ * @param r_ Right operand
+ * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @return VALUE Result of bitwise AND, or empty VALUE on error
+ */
+template<typename VALUE, typename RUNTIME>
+VALUE bitwise_and( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
+{
+   bool bOk = l_.synchronize(r_, pr_);
+   if( bOk == true )
+   {
+      if( l_.is_integer() == true ) return VALUE(l_.get_integer() & r_.get_integer());
+   }
+   if( pr_ != nullptr ) pr_->add("[and] - Invalid and operation", tag_error{});
+   return VALUE();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Performs logical AND operation on two VALUE objects
+ *
+ * Values are synchronized to ensure type compatibility before operation.
+ *
+ * @tparam VALUE The value type being operated on
+ * @tparam RUNTIME Runtime environment type for error reporting
+ * @param l_ Left operand
+ * @param r_ Right operand
+ * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @return VALUE Result of logical AND, or empty VALUE on error
+ */
+template<typename VALUE, typename RUNTIME>
+VALUE logical_and( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
+{
+   bool bOk = l_.synchronize(r_, pr_);
+   if( bOk == true )
+   {
+      if( l_.is_bool() == true ) return VALUE(l_.get_bool() && r_.get_bool());
+      if( l_.is_integer() == true ) return VALUE(l_.get_integer() && r_.get_integer());
+      if( l_.is_double() == true ) return VALUE(l_.get_double() && r_.get_double());
+      if( l_.is_string() == true ) return VALUE(l_.get_string().empty() == false && r_.get_string().empty() == false );
+   }
+   if( pr_ != nullptr ) pr_->add("[and] - Invalid and operation", tag_error{});
+   return VALUE();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Performs bitwise OR operation on two VALUE objects
+ *
+ * Values are synchronized to ensure type compatibility before operation.
+ *
+ * @tparam VALUE The value type being operated on
+ * @tparam RUNTIME Runtime environment type for error reporting
+ * @param l_ Left operand
+ * @param r_ Right operand
+ * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @return VALUE Result of bitwise OR, or empty VALUE on error
+ */
+template<typename VALUE, typename RUNTIME>
+VALUE bitwise_or( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
+{
+   bool bOk = l_.synchronize(r_, pr_);
+   if( bOk == true )
+   {
+      if( l_.is_integer() == true ) return VALUE(l_.get_integer() | r_.get_integer());
+   }
+   if( pr_ != nullptr ) pr_->add("[and] - Invalid and operation", tag_error{});
+   return VALUE();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Performs logical OR operation on two VALUE objects
+ *
+ * Values are synchronized to ensure type compatibility before operation.
+ *
+ * @tparam VALUE The value type being operated on
+ * @tparam RUNTIME Runtime environment type for error reporting
+ * @param l_ Left operand
+ * @param r_ Right operand
+ * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @return VALUE Result of logical OR, or empty VALUE on error
+ */
+template<typename VALUE, typename RUNTIME>
+VALUE logical_or( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
+{
+   bool bOk = l_.synchronize(r_, pr_);
+   if( bOk == true )
+   {
+      if( l_.is_bool() == true ) return VALUE(l_.get_bool() || r_.get_bool());
+      if( l_.is_integer() == true ) return VALUE(l_.get_integer() || r_.get_integer());
+      if( l_.is_double() == true ) return VALUE(l_.get_double() || r_.get_double());
+      if( l_.is_string() == true ) return VALUE(l_.get_string().empty() == false || r_.get_string().empty() == false );
+   }
+   if( pr_ != nullptr ) pr_->add("[and] - Invalid and operation", tag_error{});
+   return VALUE();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Performs bitwise XOR operation on two VALUE objects
+ *
+ * Values are synchronized to ensure type compatibility before operation.
+ *
+ * @tparam VALUE The value type being operated on
+ * @tparam RUNTIME Runtime environment type for error reporting
+ * @param l_ Left operand
+ * @param r_ Right operand
+ * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @return VALUE Result of bitwise XOR, or empty VALUE on error
+ */
+template<typename VALUE, typename RUNTIME>
+VALUE bitwise_xor( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
+{
+   bool bOk = l_.synchronize(r_, pr_);
+   if( bOk == true )
+   {
+      if( l_.is_integer() == true ) return VALUE(l_.get_integer() ^ r_.get_integer());
+   }
+   if( pr_ != nullptr ) pr_->add("[and] - Invalid and operation", tag_error{});
+   return VALUE();
+}
+
+
 
 _GD_EXPRESSION_END
