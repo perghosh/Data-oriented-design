@@ -6,9 +6,9 @@ void CRowCount::Add(const std::string& stringFile)
    m_vectorFiles.push_back(stringFile);
 }
 
-void CRowCount::AddFilter(const std::string& stringFile)
+void CRowCount::AddFilter(const std::string& stringFilter)
 {
-   m_vectorFilter.push_back(stringFile);
+   m_vectorFilter.push_back(stringFilter);
 }
 
 void CRowCount::List(const std::string& stringDirectory)
@@ -45,7 +45,7 @@ void CRowCount::List(const std::string& stringDirectory)
    }
 }
 
-void CRowCount::Count(const std::string& stringFile)
+int CRowCount::Count(const std::string& stringFile)
 {
    std::ifstream ifstreamFile(stringFile);
    std::string stringText;
@@ -55,21 +55,17 @@ void CRowCount::Count(const std::string& stringFile)
       iCount++;
    }
 
-   std::cout << iCount << " Rows" << std::endl;
+   //std::cout << iCount << " Rows" << std::endl;
 
    ifstreamFile.close();
 
-   if( m_bCount == true )
-   {
-      m_iCount += iCount;
-   }
+   return iCount;
 }
 
 
 int CRowCount::CountAll()
 {
-   m_iCount = 0;
-   m_bCount = true;
+   int iCount = 0;
    
    /*for( int i = 0; i < m_vectorFiles.size(); i++ )
    {
@@ -78,10 +74,10 @@ int CRowCount::CountAll()
 
    for( auto it : m_vectorFiles )
    {
-      Count(it);
+      iCount += Count(it);
    }
 
-   m_bCount = false;
+   //bCount = false;
 
-   return m_iCount;
+   return iCount;
 }
