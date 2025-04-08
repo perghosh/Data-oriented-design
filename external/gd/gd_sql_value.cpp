@@ -923,10 +923,14 @@ std::string replace_g(const std::string_view& stringSource, std::function<gd::va
             return std::string();
          }
 
-         // ## check name
+         // ## check name or expression
          stringExpression = std::string_view( pbszBegin, pbszSemicolon - pbszBegin );
-         //std::string_view string_( pbszBegin, pbszSemicolon - pbszBegin );
-         bool bTrue = find_(stringExpression).is_null() == false ? true : false;
+         gd::variant_view value_ = find_(stringExpression);
+         bool bTrue = true;
+         if( value_.empty() == true ) bTrue = false;
+         else { bTrue = value_.is_true(); }
+
+         //bool bTrue = find_(stringExpression).is_null() == false ? true : false;
 
          // ### extract rest
          pbszBegin = pbszSemicolon + 1;
