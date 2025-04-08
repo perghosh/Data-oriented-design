@@ -700,29 +700,38 @@ void repository::close()
 /// @brief Dumps the repository information to a string for debugging purposes.
 std::string repository::dump() const 
 {
-   std::ostringstream oss;
-
+   std::string stringDump;
    // Dump header information
-   oss << "Repository Header:" << std::endl;
-   oss << "Magic Number: " << std::hex << m_header.m_uMagic << std::dec << std::endl;
-   oss << "Version: " << m_header.m_uVersion << std::endl;
-   oss << "Entry max count: " << m_header.m_uMaxEntryCount << std::endl;
-   oss << "Entry Count: " << m_header.m_uEntryCount << std::endl;
+   stringDump += "Repository Header:\n";
+
+   // For hex conversion of magic number
+   std::string stringHexMagic;
+   unsigned int iMagic = m_header.m_uMagic;
+   const char phex_[] = "0123456789abcdef";
+   do {
+      stringHexMagic = phex_[iMagic & 0xF] + stringHexMagic;
+      iMagic >>= 4;
+   } while (iMagic > 0);
+
+   stringDump += "Magic Number: 0x" + stringHexMagic + "\n";
+   stringDump += "Version: " + std::to_string(m_header.m_uVersion) + "\n";
+   stringDump += "Entry max count: " + std::to_string(m_header.m_uMaxEntryCount) + "\n";
+   stringDump += "Entry Count: " + std::to_string(m_header.m_uEntryCount) + "\n";
 
    // Dump entries information
-   oss << "Entries:" << std::endl;
-   for (const auto& entry : m_vectorEntry) {
-      oss << "Name: " << entry.get_name() << std::endl;
-      oss << "Offset: " << entry.m_uOffset << ", ";
-      oss << "Size: " << entry.m_uSize << ", ";
-      oss << "Flags: " << entry.m_uFlags << std::endl;
-      oss << "Valid: " << ( entry.is_valid() ? "true" : "false" ) << ", ";
-      oss << "Deleted: " << (entry.is_deleted() ? "true" : "false") << ", ";
-      oss << "Remove: " << (entry.is_remove() ? "true" : "false") << std::endl;
-      oss << "------------------------" << std::endl;
+   stringDump += "Entries:\n";
+   for(const auto& entry : m_vectorEntry) 
+   {
+      stringDump += "Name: " + std::string( entry.get_name() ) + "\n";
+      stringDump += "Offset: " + std::to_string(entry.m_uOffset) + ", ";
+      stringDump += "Size: " + std::to_string(entry.m_uSize) + ", ";
+      stringDump += "Flags: " + std::to_string(entry.m_uFlags) + "\n";
+      stringDump += "Valid: " + std::string(entry.is_valid() ? "true" : "false") + ", ";
+      stringDump += "Deleted: " + std::string(entry.is_deleted() ? "true" : "false") + ", ";
+      stringDump += "Remove: " + std::string(entry.is_remove() ? "true" : "false") + "\n";
+      stringDump += "------------------------\n";
    }
-
-   return oss.str();
+   return stringDump;
 }
 
 /// @brief Reads the repository header and entry block from the file and updates the in-memory state.

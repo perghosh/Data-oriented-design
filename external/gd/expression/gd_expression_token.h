@@ -155,6 +155,7 @@ struct token
    /// @brief calculate_s that is simplified for one liner expression that returns single value, make sure that the formula is correct, only compile time checks and twrows
    static value calculate_s( const std::string_view& stringExpression, const std::vector< std::pair<std::string, value::variant_t>>& vectorVariable );
    static value calculate_s( const std::string_view& stringExpression, runtime& runtime_ );
+   static value calculate_s( const std::string_view& stringExpression );
 
    static uint32_t read_number_s(const char* piszBegin, const char* piszEnd, std::string_view& string_); 
    static uint32_t read_string_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo );
@@ -166,10 +167,12 @@ struct token
    static constexpr uint32_t token_type_s(const std::string_view& s_);
 };
 
+/// @brief parse expression string to tokens
 inline std::pair<bool, std::string> token::parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula) {
    return parse_s(stringExpression.data(), stringExpression.data() + stringExpression.length(), vectorToken, tag_formula());
 }
 
+/// @brief calculate_s that is simplified  where this version removes then need for runtime
 inline std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult) {
    runtime runtime_;
    return calculate_s(vectorToken, pvalueResult, runtime_);
@@ -180,6 +183,7 @@ inline uint32_t token::type_s(uint32_t uType, enumTokenPart eTokenPart) {
    return (uType >> (static_cast<unsigned>(eTokenPart) * 8)) & 0xFF;
 }
 
+/// @brief get byte part from type, conviniense method to get byte part from type
 inline uint32_t token::to_type_s(uint32_t uType, enumTokenPart eTokenPart) {
    return uType << (static_cast<unsigned>(eTokenPart) * 8);
 }
