@@ -56,7 +56,7 @@ value token::as_value() const
       case eValueTypeBoolean:
          return value(m_stringName == "true");
       case eValueTypeInteger:
-         return value(std::stoll(std::string(m_stringName)));
+         return value((int64_t)std::stoll(std::string(m_stringName)));
       case eValueTypeDecimal:
          return value(std::stod(std::string(m_stringName)));
       case eValueTypeString:
