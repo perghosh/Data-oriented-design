@@ -372,10 +372,10 @@ TEST_CASE("[file] count", "[file]")
    std::cout << rowCount.Count_all() << std::endl;
    std::cout << rowCount.Count_all() << std::endl;     */
 
-   rowCount.Add_filter(".txt");
-   rowCount.Add_filter(".bin");
+   rowCount.AddFilter(".txt");
+   rowCount.AddFilter(".bin");
    rowCount.List(stringFolder);
-   std::cout << rowCount.Count_all() << std::endl;
+   std::cout << rowCount.CountAll() << std::endl;
 
 
 }
