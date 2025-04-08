@@ -299,17 +299,35 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
       if( uCharacterType & OPERATOR_BIT )                                      // Operator
       {
          uint32_t uTokenType = token::token_type_s( "OPERATOR" );
-         if( uCharacterType & SPECIAL_CHAR_BIT && piszPosition[1] == '=' )         // Handle special operators that have two characters like >=, <=, == etc
+         if( uCharacterType & SPECIAL_CHAR_BIT )
          {
-            uTokenType = token::token_type_s("OPERATOR");
-            vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 2)));
-            piszPosition += 2;
+            if( piszPosition[1] == '=' )                                      // Handle special operators that have two characters like >=, <=, == etc
+            {
+               vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 2)));
+               piszPosition += 2;
+               continue;
+            }
+            else if( piszPosition[0] == '-' )
+            {
+               auto type_ = vectorToken.empty() == false ? vectorToken.back().get_token_type() : token::token_type_s("OPERATOR");
+               if( type_ == token::token_type_s("OPERATOR") )                  // Was previous token an operator
+               {
+                  // ## this has to be a unary operator for negative number try to read number
+                  uTokenType = token::token_type_s( "VALUE" );                 // value token
+                  std::string_view string_; // string that gets value
+                  uint32_t uType = read_number_s(piszPosition, piszEnd, string_);// read number
+                  if( uType & SEPARATOR_BIT ) { uTokenType += to_type_s( eValueTypeDecimal, eTokenPartType ); } // is it decimal?
+                  else { uTokenType += to_type_s(eValueTypeInteger, eTokenPartType); } // integer
+
+                  vectorToken.emplace_back( token( uTokenType, string_ ) );
+                  piszPosition += string_.length();
+                  continue;
+               }
+            }
          }
-         else
-         {
-            vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 1)));
-            piszPosition++;
-         }
+
+         vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 1)));
+         piszPosition++;
          continue;
       }
 
@@ -649,6 +667,12 @@ value token::calculate_s( const std::string_view& stringExpression, runtime& run
    result = token::calculate_s(vectorPostfix, &valueResult, runtime_);
    if( result.first == false ) { throw std::invalid_argument(result.second); }
    return valueResult;
+}
+
+/// @brief Simplified wrapper for one-liner expression evaluator
+value token::calculate_s( const std::string_view& stringExpression )
+{
+   return calculate_s(stringExpression, std::vector<std::pair<std::string, value::variant_t>>());
 }
 
 
