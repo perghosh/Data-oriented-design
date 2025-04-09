@@ -55,7 +55,7 @@ namespace variant_type
    struct tag_scientific {};                                                   // tag for use when you need exact numbers
    struct tag_explicit {};                                                     // tag used to avoid implicit convertions using variant items
 
-   struct tag_std_variant {};                                                  // operations involving variant from stl
+   using tag_std_variant = gd::types::tag_variant;                             // operations involving variant from stl
 
    enum enumGroup
    {
@@ -370,8 +370,9 @@ public:
    void assign( const std::wstring& v ) { _set_value( v ); }
    template<typename TYPE>
    void assign( const TYPE* v, unsigned int uType, unsigned int uLength, variant_type::tag_raw ) { clear(); m_uType = uType|variant_type::eFlagAllocate; m_uSize = uLength; m_V.p = (void*)allocate( uLength * sizeof(TYPE) ); memcpy( m_V.p, v, uLength * sizeof(TYPE) ); }
-   //void assign_binary( const uint8_t* p, size_t uLength ) { _set_binary_value( p, uLength ); }
 
+   template <typename VARIANT>
+   void assign(const VARIANT& v_, gd::types::tag_value );
 
    operator bool() const      { assert(type_number() == variant_type::eTypeNumberBool); return m_V.b; }
    operator int8_t() const    { assert(type_number() == variant_type::eTypeNumberInt8); return m_V.int8; }
@@ -714,6 +715,8 @@ public:
       return format_s( list_ );
    }
 };
+
+
 
 /**
  * @brief method to simplify code writing, using similar style as `std::get`
