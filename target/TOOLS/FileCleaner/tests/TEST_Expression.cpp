@@ -32,6 +32,17 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
    application.Initialize();
 
    {
+      auto valueResult = gd::expression::token::calculate_s( "10 - -10" );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+      valueResult = gd::expression::token::calculate_s( "1 * -1" );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+      valueResult = gd::expression::token::calculate_s( "-1" );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+      std::cout << "\n\n";
+   }
+
+
+   {
       auto valueResult = gd::expression::token::calculate_s( "10 >= x", {{"x", 10}} );
       std::cout << "Result: " << valueResult.as_string() << std::endl;
       valueResult = gd::expression::token::calculate_s( "10 > x", {{"x", 10}} );
@@ -140,7 +151,7 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
 
    {
       std::vector<gd::expression::token> vectorToken;
-      std::string stringExpression = "5 = 5";
+      std::string stringExpression = "5 == 5";
       // tokenize the expression
       auto result_ = gd::expression::token::parse_s(stringExpression.c_str(), stringExpression.c_str() + stringExpression.length(), vectorToken, gd::expression::tag_formula{}); REQUIRE(result_.first == true);
       // prepare the expression
