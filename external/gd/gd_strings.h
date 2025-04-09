@@ -211,9 +211,13 @@ public:
    strings32& append_any(const std::initializer_list<gd::variant_view>& listValue);
    strings32& append_any(const std::vector<gd::variant_view>& vectorValue);
 
+   /// @brief Appends all elements from a vector to the internal buffer.
+   /// This method iterates over the elements of the provided vector and appends each element to the internal buffer. The method is enabled only if the input is a `std::vector` type.
    template<typename TYPE, typename ALLOC, typename = std::enable_if_t<gd::types::is_vector<std::vector<TYPE, ALLOC>>::value>>
    strings32& append(const std::vector<TYPE, ALLOC>& vector_) { for( const auto& it : vector_ ) { append( it ); } return *this; }
 
+   /// @brief Appends all elements from a list to the internal buffer.
+   /// This method iterates over the elements of the provided list and appends each element to the internal buffer. The method is enabled only if the input is a `std::list` type.
    template<typename TYPE, typename ALLOC, typename = std::enable_if_t<gd::types::is_list<std::list<TYPE, ALLOC>>::value>>
    strings32& append(const std::list<TYPE, ALLOC>& list_) { for( const auto& it : list_ ) { append( it ); } return *this; }
 
