@@ -426,8 +426,23 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       case token_type_s("FUNCTION"):
          stackOperator.push(token_);
       break;
-      case token::token_type_s( "SEPARATOR" ):
-         stackOperator.push(token_);
+      case token::token_type_s("SEPARATOR"):
+         {
+            auto stringToken = token_.get_name();
+            if( stringToken == "," )
+            {
+               while( stackOperator.empty() == false )
+               {
+                  auto& tokenTop = stackOperator.top();
+                  if( tokenTop.get_token_type() == token_type_s("VALUE") || tokenTop.get_token_type() == token_type_s("VARIABLE") ) 
+                  { 
+                     vectorOut.push_back(std::move(tokenTop));
+                     stackOperator.pop();
+                  }
+                  else { break; }
+               }
+            }
+         }
       break;
 
       case token_type_s("SPECIAL_CHAR"):
@@ -633,6 +648,11 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
          break;
       case token::token_type_s("SEPARATOR"):
          {
+            auto stringSeparator = token_.get_name();
+            if( stringSeparator == "," )
+            {
+               // ## do nothing
+            }
          }
          break;
       }
