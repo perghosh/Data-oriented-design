@@ -78,6 +78,28 @@ bool value::as_bool() const
    return false;
 }
 
+gd::expression::variant_t value::as_variant() const 
+{
+   if(std::holds_alternative<std::string>(m_value)) 
+   {
+      return std::get<std::string>(m_value); // Return std::string directly
+   } 
+   else if(std::holds_alternative<int64_t>(m_value)) 
+   {
+      return std::get<int64_t>(m_value);
+   } 
+   else if(std::holds_alternative<double>(m_value)) 
+   {
+      return std::get<double>(m_value);
+   }
+   else if(std::holds_alternative<bool>(m_value)) 
+   {
+      return std::get<bool>(m_value);
+   }
+   return {}; // Default case (should not occur)
+}
+
+
 /// @brief attempt to convert current value to integer
 bool value::to_integer() 
 {

@@ -32,7 +32,9 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
    application.Initialize();
 
    {
-      auto valueResult = gd::expression::token::calculate_s("length( text )", { {"text", "0123456789"} });
+      auto valueResult = gd::expression::token::calculate_s("length( text )", { {"text", "0123456789012345"} });
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+      valueResult = gd::expression::token::calculate_s("max( 100, 200 ) + 999", { {"text", "0123456789012345"} });
       std::cout << "Result: " << valueResult.as_string() << std::endl;
    }
 

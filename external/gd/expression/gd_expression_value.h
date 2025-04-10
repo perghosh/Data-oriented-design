@@ -15,6 +15,8 @@
 #include <utility>
 #include <variant>
 
+#include "gd_expression.h"
+
 #ifndef _GD_EXPRESSION_BEGIN
 #define _GD_EXPRESSION_BEGIN namespace gd { namespace expression {
 #define _GD_EXPRESSION_END } }
@@ -53,6 +55,8 @@ struct value
    void common_construct(value&& o) noexcept { m_value = std::move(o.m_value); }
 
 // ## operator ----------------------------------------------------------------
+   value& operator=(int64_t v_) { m_value = v_; return *this; }
+   value& operator=(double v_) { m_value = v_; return *this; }
 
    operator int64_t() const { return as_integer(); } ///< convert to int64_t
    /// @brief compare two values, returns true if equal
@@ -117,6 +121,7 @@ struct value
    double as_double() const;
    std::string as_string() const;
    bool as_bool() const;
+   gd::expression::variant_t as_variant() const;
 //@}
 
 
