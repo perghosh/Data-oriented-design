@@ -33,6 +33,64 @@ _GD_EXPRESSION_BEGIN
  *
  *
  */
+struct method
+{
+// ## construction ------------------------------------------------------------
+   method() : m_pmethod(nullptr), m_stringName(""), m_uArgumentCount(0) {}
+   method(void(*methodPtr)(), const std::string& name, size_t paramCount)
+      : m_pmethod(methodPtr), m_stringName(name), m_uArgumentCount(paramCount) {}
+
+   // copy
+   method(const method& o) { common_construct(o); }
+   method(method&& o) noexcept { common_construct(std::move(o)); }
+
+   // assign
+   method& operator=(const method& o) { common_construct(o); return *this; }
+   method& operator=(method&& o) noexcept { common_construct(std::move(o)); return *this; }
+
+   ~method() {}
+
+   // common copy
+   void common_construct(const method& o) {
+      m_pmethod = o.m_pmethod;
+      m_stringName = o.m_stringName;
+      m_uArgumentCount = o.m_uArgumentCount;
+   }
+
+   void common_construct(method&& o) noexcept {
+      m_pmethod = std::move(o.m_pmethod);
+      m_stringName = std::move(o.m_stringName);
+      m_uArgumentCount = o.m_uArgumentCount;
+   }
+
+// ## methods -----------------------------------------------------------------
+/** \name DEBUG
+*///@{
+   std::string dump() const {
+      return "Method Name: " + m_stringName + ", Parameter Count: " + std::to_string(m_uArgumentCount);
+   }
+//@}
+
+// ## operators ---------------------------------------------------------------
+
+   /// @brief Overload the < operator for sorting by name
+   bool operator<(const method& other) const { return m_stringName < o.m_stringName; }
+   /// @brief Overload the == operator for equality comparison.
+   bool operator==(const method& o) const { return m_stringName == o.m_stringName; }
+
+// ## attributes --------------------------------------------------------------
+   void (*m_pmethod)(); ///< Pointer to the method.
+   std::string m_stringName;        ///< Name of the method.
+   size_t m_uArgumentCount;       ///< Number of parameters the method takes.
+
+// ## free functions ----------------------------------------------------------
+};
+
+/**
+ * \brief
+ *
+ *
+ */
 struct runtime
 {
 // ## construction ------------------------------------------------------------

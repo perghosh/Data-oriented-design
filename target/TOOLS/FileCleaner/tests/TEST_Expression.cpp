@@ -32,6 +32,12 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
    application.Initialize();
 
    {
+      auto valueResult = gd::expression::token::calculate_s("length( text )", { {"text", "0123456789"} });
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+   }
+
+
+   {
       auto valueResult = gd::expression::token::calculate_s( "10 - -10" );
       std::cout << "Result: " << valueResult.as_string() << std::endl;
       valueResult = gd::expression::token::calculate_s( "1 * -1" );
