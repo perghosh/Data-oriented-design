@@ -9,6 +9,8 @@
 
 #include <cassert>
 #include <cstdint>
+#include <string>
+#include <string_view>
 #include <variant>
 
 #ifndef _GD_EXPRESSION_BEGIN
