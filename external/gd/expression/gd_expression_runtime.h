@@ -74,7 +74,7 @@ struct method
 // ## operators ---------------------------------------------------------------
 
    /// @brief Overload the < operator for sorting by name
-   bool operator<(const method& other) const { return m_stringName < o.m_stringName; }
+   bool operator<(const method& o) const { return m_stringName < o.m_stringName; }
    /// @brief Overload the == operator for equality comparison.
    bool operator==(const method& o) const { return m_stringName == o.m_stringName; }
 
