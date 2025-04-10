@@ -58,6 +58,7 @@ struct value
    value& operator=(int64_t v_) { m_value = v_; return *this; }
    value& operator=(double v_) { m_value = v_; return *this; }
 
+   operator variant_t&() { return m_value; } ///< convert to variant_t
    operator int64_t() const { return as_integer(); } ///< convert to int64_t
    /// @brief compare two values, returns true if equal
    bool operator==(const value& o) const 
@@ -120,6 +121,7 @@ struct value
    int64_t as_integer() const;
    double as_double() const;
    std::string as_string() const;
+   std::string_view as_string_view() const;
    bool as_bool() const;
    gd::expression::variant_t as_variant() const;
 //@}

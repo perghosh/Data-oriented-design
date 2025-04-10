@@ -30,8 +30,8 @@ _GD_EXPRESSION_BEGIN
 
 struct method
 {
-   using method_1 = std::pair<bool, std::string>(*)(const std::vector<variant_t>&, value*);
-   using method_2 = std::pair<bool, std::string>(*)(const std::vector<variant_t>&, std::vector<variant_t>& );
+   using method_1 = std::pair<bool, std::string>(*)(const std::vector<value>&, value*);
+   using method_2 = std::pair<bool, std::string>(*)(const std::vector<value>&, std::vector<variant_t>& );
 
    bool operator<(const std::string_view& stringName) const { return std::string_view(m_piName) < stringName; }
 

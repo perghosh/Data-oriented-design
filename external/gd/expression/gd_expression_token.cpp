@@ -431,15 +431,15 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
             auto stringToken = token_.get_name();
             if( stringToken == "," )
             {
-               while( stackOperator.empty() == false )
+               if( stackOperator.empty() == false )
                {
                   auto& tokenTop = stackOperator.top();
+                  // test for value or variable and if any the put that value in vector with sorted values for postfix
                   if( tokenTop.get_token_type() == token_type_s("VALUE") || tokenTop.get_token_type() == token_type_s("VARIABLE") ) 
                   { 
                      vectorOut.push_back(std::move(tokenTop));
                      stackOperator.pop();
                   }
-                  else { break; }
                }
             }
          }
@@ -571,7 +571,7 @@ value evaluate_operator_g(const std::string_view& stringOperator, value& valueLe
  */
 std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_ )
 {
-   std::vector<variant_t> vectorArguments;
+   std::vector<value> vectorArguments;
    std::stack<value> stackValue;
 
    for( const auto& token_ : vectorToken )
@@ -631,7 +631,7 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                {
                   if( stackValue.empty() == false )
                   {
-                     vectorArguments.push_back(stackValue.top().as_variant());
+                     vectorArguments.push_back( std::move( stackValue.top() ) );
                      stackValue.pop();
                   }
                }

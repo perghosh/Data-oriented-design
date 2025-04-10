@@ -34,7 +34,7 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
    {
       auto valueResult = gd::expression::token::calculate_s("length( text )", { {"text", "0123456789012345"} });
       std::cout << "Result: " << valueResult.as_string() << std::endl;
-      valueResult = gd::expression::token::calculate_s("max( 100, 200 ) + 999", { {"text", "0123456789012345"} });
+      valueResult = gd::expression::token::calculate_s("min( 100, 200 ) + 999 + max( 10, 30 )", { {"text", "0123456789012345"} });
       std::cout << "Result: " << valueResult.as_string() << std::endl;
    }
 
