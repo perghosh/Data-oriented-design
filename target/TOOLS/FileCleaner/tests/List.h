@@ -122,6 +122,26 @@ public:
  */
 class CFilter
 {
+public:
+
+   /**
+    * \brief
+    *
+    *
+    */
+   struct filter
+   {
+      // ## construction -------------------------------------------------------------
+
+      filter() {}
+      ~filter() {}
+
+      // ## attributes
+      unsigned m_uType;				///< [insert comment here]
+      std::string m_stringFilter;	///< [insert comment here]
+   };
+
+
    // ## construction -------------------------------------------------------------
 public:
    CFilter() {}
@@ -178,7 +198,8 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   std::vector<std::string> m_vectorFilter;
+   /// List of filter, and filter can be different types, like regular expression, wildcards and so on. sample: "README.MD", "*.cpp", "^X.*"
+   std::vector< std::string > m_vectorFilter;
 
 // ## free functions ------------------------------------------------------------
 public:
