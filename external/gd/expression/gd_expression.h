@@ -8,6 +8,8 @@
 #pragma once
 
 #include <cassert>
+#include <cstdint>
+#include <variant>
 
 #ifndef _GD_EXPRESSION_BEGIN
 #define _GD_EXPRESSION_BEGIN namespace gd { namespace expression {
@@ -29,6 +31,9 @@ _GD_EXPRESSION_BEGIN
 int to_precedence_g(const char iOperator);
 /// get the precedence of the operator
 int to_precedence_g(const char iOperator, tag_optimize );
+
+/// @brief general variant type with the basic types used in the expressions
+using variant_t = std::variant<int64_t, double, std::string_view, bool>; ///< value type
 
 
 
