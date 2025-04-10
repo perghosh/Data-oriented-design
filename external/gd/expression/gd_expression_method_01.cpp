@@ -2,18 +2,18 @@
 
 _GD_EXPRESSION_BEGIN 
 
-std::pair<bool, std::string> average_g(const std::vector<variant_t>& vectorArgument, value* pvalueResult)
+std::pair<bool, std::string> average_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 2);
    const auto& l_ = vectorArgument[0]; 
    const auto& r_ = vectorArgument[1];
 
-   if( std::holds_alternative<int64_t>( l_ ) == true && std::holds_alternative<int64_t>( r_ ) == true )
+   if(  l_.is_integer() == true && r_.is_integer() == true )
    {
-      *pvalueResult = ( std::get<int64_t>( l_ ) + std::get<int64_t>( r_ ) ) / 2;
+      *pvalueResult = ( l_.as_integer() + r_.as_integer() ) / 2;
    }
-   else if( std::holds_alternative<double>( l_ ) == true && std::holds_alternative<double>( r_ ) == true )
+   else if( l_.is_double() == true && r_.is_double() == true )
    {
-      *pvalueResult = ( std::get<double>( l_ ) + std::get<double>( r_ ) ) / 2.0;
+      *pvalueResult = ( l_.as_double() + r_.as_double() ) / 2.0;
    }
    else
    {
@@ -23,28 +23,28 @@ std::pair<bool, std::string> average_g(const std::vector<variant_t>& vectorArgum
    return { true, "" };
 }
 
-std::pair<bool, std::string> length_g( const std::vector< variant_t>& vectorArgument, value* pvalueResult )
+std::pair<bool, std::string> length_g( const std::vector< value >& vectorArgument, value* pvalueResult )
 {                                                                                                  assert( vectorArgument.size() > 0 );
-   if( std::holds_alternative<std::string_view>(vectorArgument[0]) == false ) { return { false, "length_g - Invalid argument type" }; }
+   if( vectorArgument[0].is_string() == false ) { return {false, "length_g - Invalid argument type"}; }
 
-   auto string_ = std::get<std::string_view>(vectorArgument[0]);
+   auto string_ = vectorArgument[0].as_string_view();
    *pvalueResult = static_cast<int64_t>( string_.length() );
  
    return { true, "" };
 }
 
-std::pair<bool, std::string> max_g(const std::vector<variant_t>& vectorArgument, value* pvalueResult)
+std::pair<bool, std::string> max_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
    const auto& l_ = vectorArgument[0];
    const auto& r_ = vectorArgument[1];
 
-   if( std::holds_alternative<int64_t>(l_) == true && std::holds_alternative<int64_t>(r_) == true )
+   if( l_.is_integer() == true && r_.is_integer() == true )
    {
-      *pvalueResult = std::max(std::get<int64_t>(l_), std::get<int64_t>(r_));
+      *pvalueResult = std::max(l_.as_integer(), r_.as_integer());
    }
-   else if( std::holds_alternative<double>(l_) == true && std::holds_alternative<double>(r_) == true )
+   else if( l_.is_double() == true && r_.is_double() == true )
    {
-      *pvalueResult = std::max(std::get<double>(l_), std::get<double>(r_));
+      *pvalueResult = std::max(l_.as_double(), r_.as_double());
    }
    else
    {
@@ -54,18 +54,18 @@ std::pair<bool, std::string> max_g(const std::vector<variant_t>& vectorArgument,
    return { true, "" };
 }
 
-std::pair<bool, std::string> min_g(const std::vector<variant_t>& vectorArgument, value* pvalueResult)
+std::pair<bool, std::string> min_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
    const auto& l_ = vectorArgument[0];
    const auto& r_ = vectorArgument[1];
    
-   if( std::holds_alternative<int64_t>(l_) == true && std::holds_alternative<int64_t>(r_) == true )
+   if( l_.is_integer() == true && r_.is_integer() == true )
    {
-      *pvalueResult = std::min(std::get<int64_t>(l_), std::get<int64_t>(r_));
+      *pvalueResult = std::min(l_.as_integer(), r_.as_integer());
    }
-   else if( std::holds_alternative<double>(l_) == true && std::holds_alternative<double>(r_) == true )
+   else if( l_.is_double() == true && r_.is_double() == true )
    {
-      *pvalueResult = std::min(std::get<double>(l_), std::get<double>(r_));
+      *pvalueResult = std::min(l_.as_double(), r_.as_double());
    }
    else
    {
@@ -75,18 +75,18 @@ std::pair<bool, std::string> min_g(const std::vector<variant_t>& vectorArgument,
    return { true, "" };
 }
 
-std::pair<bool, std::string> sum_g(const std::vector<variant_t>& vectorArgument, value* pvalueResult)
+std::pair<bool, std::string> sum_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
    const auto& l_ = vectorArgument[0];
    const auto& r_ = vectorArgument[1];
    
-   if( std::holds_alternative<int64_t>(l_) == true && std::holds_alternative<int64_t>(r_) == true )
+   if( l_.is_integer() == true && r_.is_integer() == true )
    {
-      *pvalueResult = std::get<int64_t>(l_) + std::get<int64_t>(r_);
+      *pvalueResult = l_.as_integer() + r_.as_integer();
    }
-   else if( std::holds_alternative<double>(l_) == true && std::holds_alternative<double>(r_) == true )
+   else if( l_.is_double() == true && r_.is_double() == true )
    {
-      *pvalueResult = std::get<double>(l_) + std::get<double>(r_);
+      *pvalueResult = l_.as_double() + r_.as_double();
    }
    else
    {

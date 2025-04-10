@@ -26,11 +26,11 @@
 
 _GD_EXPRESSION_BEGIN 
 
-std::pair<bool, std::string> average_g(const std::vector<variant_t>& vectorArgument, value* pvalueResult);
-std::pair<bool, std::string> length_g( const std::vector< variant_t >& vectorArgument, value* pvalueResult );
-std::pair<bool, std::string> max_g(const std::vector<variant_t>& vectorArgument, value* pvalueResult);
-std::pair<bool, std::string> min_g(const std::vector<variant_t>& vectorArgument, value* pvalueResult);  
-std::pair<bool, std::string> sum_g(const std::vector<variant_t>& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> average_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> length_g( const std::vector< value >& vectorArgument, value* pvalueResult );
+std::pair<bool, std::string> max_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> min_g(const std::vector< value >& vectorArgument, value* pvalueResult);  
+std::pair<bool, std::string> sum_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 
 
 // Array of MethodInfo definitions

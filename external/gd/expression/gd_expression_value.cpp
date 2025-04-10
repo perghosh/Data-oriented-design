@@ -64,6 +64,14 @@ std::string value::as_string() const
    return "";
 }
 
+/// @brief get string value, converts other types if possible 
+std::string_view value::as_string_view() const
+{
+   if( is_string() == true ) return std::get<std::string>(m_value);
+   return "";
+}
+
+
 /// @brief get boolean value, converts other types if possible
 bool value::as_bool() const
 {
