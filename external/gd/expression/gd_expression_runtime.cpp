@@ -2,6 +2,28 @@
 
 _GD_EXPRESSION_BEGIN
 
+
+/// @brief find method by name, returns pointer to method or nullptr if not found
+const method* runtime::find_method(const std::string_view& stringName) const 
+{
+   // Define a lambda for comparing the method name with the search string
+   auto compare_ = [](const method* pmethod, const std::string_view& stringName) -> bool {
+      bool bCompare = pmethod->name()[0] == stringName[0]; // compare first character
+      if( bCompare == false ) return false; // if first character is not equal, return false
+      return std::string_view(pmethod->name()) < stringName;
+   };
+
+   for( auto it = m_vectorMethod.cbegin(); it != m_vectorMethod.cend(); ++it )
+   {
+      const method* pmethodBegin = it->second;
+      const method* pmethodEnd = pmethodBegin + it->first;
+      const method* pmethodFind = std::lower_bound(pmethodBegin, pmethodEnd, stringName );
+      if( pmethodFind != pmethodEnd ) return pmethodFind;
+   }
+
+   return nullptr; // Return nullptr if no match is found
+}
+
 /// @brief find variable by name, returns index or -1 if not found
 int runtime::find_variable(const std::string_view& stringName) const
 {

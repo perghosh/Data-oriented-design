@@ -3,6 +3,7 @@
 #include "gd_expression_operator.h"
 #include "gd_expression_runtime.h"
 #include "gd_expression_token.h"
+#include "gd_expression_method_01.h"
 
 _GD_EXPRESSION_BEGIN
 
@@ -222,11 +223,14 @@ std::pair<uint32_t, enumTokenType> token::read_variable_and_s(const char* piszBe
       ++pisz_;
    }
 
-   if( pisz_ < piszEnd && *pisz_ == '(' ) { ++pisz_; eTokenPartType = eTokenTypeFunction; } // Function
-   else if( pisz_ < piszEnd && *pisz_ == ':' ) { ++pisz_; eTokenPartType = eTokenTypeLabel; } // Label is like a name that can be jumped to
-   else if( pisz_ < piszEnd && *pisz_ == '.' ) { ++pisz_; eTokenPartType = eTokenTypeMember; } // Member is like a name that can be accessed
+   if( pisz_ < piszEnd && *pisz_ == '(' ) { string_ = std::string_view(piszBegin, pisz_ - piszBegin); ++pisz_; eTokenPartType = eTokenTypeFunction; } // Function
+   else if( pisz_ < piszEnd && *pisz_ == ':' ) { string_ = std::string_view(piszBegin, pisz_ - piszBegin); ++pisz_; eTokenPartType = eTokenTypeLabel; } // Label is like a name that can be jumped to
+   else if( pisz_ < piszEnd && *pisz_ == '.' ) { string_ = std::string_view(piszBegin, pisz_ - piszBegin); ++pisz_; eTokenPartType = eTokenTypeMember; } // Member is like a name that can be accessed
+   else
+   {
+      string_ = std::string_view(piszBegin, pisz_ - piszBegin);
+   }
 
-   string_ = std::string_view(piszBegin, pisz_ - piszBegin);
    if( ppiszReadTo != nullptr ) { *ppiszReadTo = pisz_; }
 
    return { ALPHABETIC_BIT, eTokenPartType };
@@ -331,11 +335,6 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
          continue;
       }
 
-      if( uCharacterType & SEPARATOR_BIT )                                     // Separator
-      {
-         continue;
-      }
-
       if( uCharacterType & STRING_DELIMITER_BIT )                              // String delimiter
       {
          std::string_view string_;
@@ -424,6 +423,13 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       case token_type_s("VARIABLE"):
          vectorOut.push_back(token_);
       break;
+      case token_type_s("FUNCTION"):
+         stackOperator.push(token_);
+      break;
+      case token::token_type_s( "SEPARATOR" ):
+         stackOperator.push(token_);
+      break;
+
       case token_type_s("SPECIAL_CHAR"):
          {
             vectorOut.push_back(token_);
@@ -550,6 +556,7 @@ value evaluate_operator_g(const std::string_view& stringOperator, value& valueLe
  */
 std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_ )
 {
+   std::vector<variant_t> vectorArguments;
    std::stack<value> stackValue;
 
    for( const auto& token_ : vectorToken )
@@ -558,14 +565,15 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
       {
       case token::token_type_s("OPERATOR"):
          {
-            auto stringOerator = token_.get_name();
+            auto stringOerator = token_.get_name();                            // get operator character
 
-            value valueRight = stackValue.top(); 
-            stackValue.pop();
-            value valueLeft = stackValue.top();
-            stackValue.pop();
+            value valueRight = stackValue.top();                               // get right value
+            stackValue.pop();                                                  // pop it
+            value valueLeft = stackValue.top();                                // get left value
+            stackValue.pop();                                                  // pop it
+            // call operator function
             value result_ = evaluate_operator_g(stringOerator, valueLeft, valueRight, &runtime_ );
-            stackValue.push( result_ );
+            stackValue.push(result_);                                          // push result to stack
          }
          break;
       case token::token_type_s("VALUE"):
@@ -596,7 +604,39 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
             }
          }
          break;
+      case token::token_type_s("FUNCTION"):
+         {
+            vectorArguments.clear();
+            auto stringMethod = token_.get_name();
+            const method* pmethod_ = runtime_.find_method( stringMethod );
+            if( pmethod_ != nullptr )
+            {
+               unsigned uCount = pmethod_->in_count();
+               for( unsigned i = 0; i < uCount; i++ )
+               {
+                  if( stackValue.empty() == false )
+                  {
+                     vectorArguments.push_back(stackValue.top().as_variant());
+                     stackValue.pop();
+                  }
+               }
+
+               if( pmethod_->out_count() == 1 )
+               {
+                  value valueResult;
+                  auto result_ = reinterpret_cast<method::method_1>(pmethod_->m_pmethod)( vectorArguments, &valueResult );
+                  if( result_.first == true ) { stackValue.push(valueResult); }
+                  else { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
+               }
+            }
+         }
+         break;
+      case token::token_type_s("SEPARATOR"):
+         {
+         }
+         break;
       }
+      
    }
 
    if( stackValue.empty() == false )
@@ -633,6 +673,7 @@ value token::calculate_s( const std::string_view& stringExpression, const std::v
 
    // ## calculate the result
    runtime runtime_(vectorVariable);
+   runtime_.add( { 5, pmethodDefault_g } );
    value valueResult;
    result = calculate_s(vectorPostfix, &valueResult, runtime_);
    if( result.first == false ) { throw std::invalid_argument(result.second); }

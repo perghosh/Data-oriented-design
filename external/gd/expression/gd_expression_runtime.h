@@ -28,63 +28,23 @@
 
 _GD_EXPRESSION_BEGIN 
 
-/**
- * \brief
- *
- *
- */
 struct method
 {
-// ## construction ------------------------------------------------------------
-   method() : m_pmethod(nullptr), m_stringName(""), m_uArgumentCount(0) {}
-   method(void(*methodPtr)(), const std::string& name, size_t paramCount)
-      : m_pmethod(methodPtr), m_stringName(name), m_uArgumentCount(paramCount) {}
+   using method_1 = std::pair<bool, std::string>(*)(const std::vector<variant_t>&, value*);
+   using method_2 = std::pair<bool, std::string>(*)(const std::vector<variant_t>&, std::vector<variant_t>& );
 
-   // copy
-   method(const method& o) { common_construct(o); }
-   method(method&& o) noexcept { common_construct(std::move(o)); }
+   bool operator<(const std::string_view& stringName) const { return std::string_view(m_piName) < stringName; }
 
-   // assign
-   method& operator=(const method& o) { common_construct(o); return *this; }
-   method& operator=(method&& o) noexcept { common_construct(std::move(o)); return *this; }
+   const char* name() const { return m_piName; } ///< get name of the method
+   unsigned in_count() const { return m_uInCount; } ///< get number of input arguments
+   unsigned out_count() const { return m_uOutCount; } ///< get number of output arguments
 
-   ~method() {}
-
-   // common copy
-   void common_construct(const method& o) {
-      m_pmethod = o.m_pmethod;
-      m_stringName = o.m_stringName;
-      m_uArgumentCount = o.m_uArgumentCount;
-   }
-
-   void common_construct(method&& o) noexcept {
-      m_pmethod = std::move(o.m_pmethod);
-      m_stringName = std::move(o.m_stringName);
-      m_uArgumentCount = o.m_uArgumentCount;
-   }
-
-// ## methods -----------------------------------------------------------------
-/** \name DEBUG
-*///@{
-   std::string dump() const {
-      return "Method Name: " + m_stringName + ", Parameter Count: " + std::to_string(m_uArgumentCount);
-   }
-//@}
-
-// ## operators ---------------------------------------------------------------
-
-   /// @brief Overload the < operator for sorting by name
-   bool operator<(const method& o) const { return m_stringName < o.m_stringName; }
-   /// @brief Overload the == operator for equality comparison.
-   bool operator==(const method& o) const { return m_stringName == o.m_stringName; }
-
-// ## attributes --------------------------------------------------------------
-   void (*m_pmethod)(); ///< Pointer to the method.
-   std::string m_stringName;        ///< Name of the method.
-   size_t m_uArgumentCount;       ///< Number of parameters the method takes.
-
-// ## free functions ----------------------------------------------------------
+   void* m_pmethod;        ///< Pointer to the method
+   const char* m_piName;   ///< Name of the method
+   unsigned m_uInCount;    ///< Number of arguments
+   unsigned m_uOutCount;   ///< Number of returned arguments
 };
+
 
 /**
  * \brief
@@ -112,7 +72,10 @@ struct runtime
 
 // ## methods -----------------------------------------------------------------
    void add(const std::string_view& stringName, const value::variant_t& value_) { m_vectorVariable.push_back(std::make_pair(std::string(stringName), value_)); }
+   void add(const std::pair<unsigned, const method*>& pair_) { m_vectorMethod.push_back(pair_); }
    void add(const std::string& stringError, tag_error ) { m_stringError.push_back(stringError); }
+
+   const method* find_method(const std::string_view& stringName) const;
 
    int find_variable(const std::string_view& stringName) const;
    const value::variant_t& get_variable(size_t uIndex) const;
@@ -130,6 +93,8 @@ struct runtime
    std::vector< std::pair<std::string, value::variant_t>> m_vectorVariable; ///< vector of values  
    /// @brief callback function used to find variable from external source
    std::function<bool (const std::string_view&, value::variant_t* )> m_functionFind; ///< function to find variable
+   /// @brief vector of methods
+   std::vector<std::pair<unsigned,const method*>> m_vectorMethod; ///< vector of methods
    /// @brief error strings, colleting error messsages
    std::vector<std::string> m_stringError;
 
