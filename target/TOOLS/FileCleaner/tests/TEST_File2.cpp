@@ -10,6 +10,7 @@
 #include "gd/io/gd_io_archive_stream.h"
 #include "History.h"
 #include "RowCount.h"
+#include "List.h"
 
 #include "main.h"
 
@@ -365,17 +366,28 @@ TEST_CASE("[file] count", "[file]")
 
    std::string stringFolder = "D:\\dev\\work\\DOD\\target\\TOOLS\\FileCleaner\\tests\\data";
 
-   CRowCount rowCount;
+   //CRowCount rowCount;
 
    /*rowCount.Add(file1);
    rowCount.Add(file2);
    std::cout << rowCount.Count_all() << std::endl;
    std::cout << rowCount.Count_all() << std::endl;     */
 
-   rowCount.AddFilter(".txt");
+   /*rowCount.AddFilter(".txt");
    rowCount.AddFilter(".bin");
    rowCount.List(stringFolder);
-   std::cout << rowCount.CountAll() << std::endl;
+   std::cout << rowCount.CountAll() << std::endl;*/
+
+   std::vector<std::string> vectorFilter = { ".bin", ".txt" };
+   std::vector<std::string> vectorFiles;
+
+   CList list(vectorFilter);
+
+   list.Sort(stringFolder);
+   vectorFiles = list.GetFiles();
+
+   CList list2(list);
+
 
 
 }

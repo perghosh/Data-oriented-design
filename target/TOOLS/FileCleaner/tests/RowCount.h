@@ -36,8 +36,12 @@ public:
 
    CRowCount& operator=(const CRowCount& o)
    {
-      m_vectorFiles = o.m_vectorFiles;
-      m_vectorFilter = o.m_vectorFilter;
+      if( this != &o )
+      {
+         m_vectorFiles = o.m_vectorFiles;
+         m_vectorFilter = o.m_vectorFilter;
+      }
+      return *this;
    }
 
    /// @brief Adds a file to the list of files to be counted

@@ -19,6 +19,7 @@
 #include <string>
 #include <string_view>
 #include <list>
+#include <variant>
 #include <vector>
 
 #ifndef _GD_TYPES
@@ -92,6 +93,7 @@ struct tag_stack {};          ///< stl std::stack object is used in some form
 struct tag_string {};         ///< stl std::string object is used in some form
 struct tag_tuple {};          ///< stl std::tuple object is used in some form
 struct tag_vector {};         ///< stl std::vector object is used in some form
+struct tag_variant {};        ///< stl std::variant object is used in some form
 
 struct tag_recursive {};      ///< stl std::recursive object is used in some form
 
@@ -907,22 +909,41 @@ inline unsigned align_g( unsigned uType ) { return align_g( enumTypeNumber(uType
 
 // ## helpers for templates
 
+// ### std::list 
+
 // Default case: any type T is not considered a list, hence false
 template <typename T>
 struct is_list : std::false_type {};
-
 // Specialization for std::list: this type is indeed a list, so true
 template <typename T, typename Alloc>
 struct is_list<std::list<T, Alloc>> : std::true_type {};
 
+// ### std::vector
+
 // Default case: any type T is not considered a vector, hence false
 template <typename T>
 struct is_vector : std::false_type {};
-
 // Specialization for std::vector: this type is indeed a vector, so true
 template <typename T, typename Alloc>
 struct is_vector<std::vector<T, Alloc>> : std::true_type {};
 
+// ### std::variant
+ 
+// Default case: any type T is not considered a variant, hence false
+template <typename T>
+struct is_variant : std::false_type {};
+// Specialization for std::variant: this type is indeed a variant, so true
+template <typename... Types>
+struct is_variant<std::variant<Types...>> : std::true_type {};
+
+// ### std::deque
+
+// Default case: any type T is not considered a deque, hence false
+// template <typename T>
+// struct is_deque : std::false_type {};
+// Specialization for std::deque: this type is indeed a deque, so true
+// template <typename T, typename Alloc>
+// struct is_deque<std::deque<T, Alloc>> : std::true_type {};
 
 
 
