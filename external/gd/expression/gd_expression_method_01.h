@@ -35,11 +35,11 @@ std::pair<bool, std::string> sum_g(const std::vector< value >& vectorArgument, v
 
 // Array of MethodInfo definitions
 const method pmethodDefault_g[] = {
-   { &average_g, "average", 2, 1 },
-   { &length_g, "length", 1, 1 },
-   { &max_g, "max", 2, 1 },
-   { &min_g, "min", 2, 1 },
-   { &sum_g, "sum", 2, 1 }
+   { (void*)&average_g, "average", 2, 1},
+   { (void*)&length_g, "length", 1, 1 },
+   { (void*)&max_g, "max", 2, 1 },
+   { (void*)&min_g, "min", 2, 1 },
+   { (void*)&sum_g, "sum", 2, 1 }
 };
 
 
