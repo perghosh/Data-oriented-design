@@ -47,9 +47,12 @@ struct method
 
 
 /**
- * \brief
- *
- *
+ * @brief Manages the runtime environment for evaluating expressions.
+ * 
+ * The `runtime` struct provides functionality to manage variables, methods, 
+ * and error handling during the evaluation of expressions. It supports adding 
+ * variables and methods, finding variables and methods by name, and debugging 
+ * the runtime state.
  */
 struct runtime
 {
@@ -71,8 +74,27 @@ struct runtime
    void common_construct(runtime&& o) noexcept { m_vectorVariable = std::move( o.m_vectorVariable ); m_functionFind = std::move( o.m_functionFind ); m_stringError = std::move( o.m_stringError ); }
 
 // ## methods -----------------------------------------------------------------
+   /**
+    * @brief Adds a variable to the runtime.
+    * 
+    * @param stringName The name of the variable.
+    * @param value_ The value of the variable.
+    */
    void add(const std::string_view& stringName, const value::variant_t& value_) { m_vectorVariable.push_back(std::make_pair(std::string(stringName), value_)); }
+   
+   /**
+    * @brief Adds a methods to the runtime.
+    * Methods need to be sorted because runtime uses binary search to find them.
+    * @param pair_ A pair containing the method count and pointer to first method
+    */
    void add(const std::pair<unsigned, const method*>& pair_) { m_vectorMethod.push_back(pair_); }
+
+   /**
+    * @brief Adds an error message to the runtime.
+    *
+    * @param stringError The error message.
+    * @param tag_error A tag indicating the type of error (default is empty).
+    */
    void add(const std::string& stringError, tag_error ) { m_stringError.push_back(stringError); }
 
    const method* find_method(const std::string_view& stringName) const;
