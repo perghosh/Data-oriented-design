@@ -155,6 +155,7 @@ struct token
    /// @brief calculate_s that is simplified for one liner expression that returns single value, make sure that the formula is correct, only compile time checks and twrows
    static value calculate_s( const std::string_view& stringExpression, const std::vector< std::pair<std::string, value::variant_t>>& vectorVariable );
    static value calculate_s( const std::string_view& stringExpression, runtime& runtime_ );
+   static value calculate_s( const std::string_view& stringExpression, std::unique_ptr<runtime>& pruntime );
    static value calculate_s( const std::string_view& stringExpression );
 
    static uint32_t read_number_s(const char* piszBegin, const char* piszEnd, std::string_view& string_); 

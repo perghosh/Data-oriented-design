@@ -40,7 +40,13 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
    {
       auto valueResult = gd::expression::token::calculate_s( "x = 10; x" );
       std::cout << "Result: " << valueResult.as_string() << std::endl;
-      //valueResult = gd::expression::token::calculate_s( "x = 10; x" );
+      std::unique_ptr<gd::expression::runtime> pruntime;
+      valueResult = gd::expression::token::calculate_s( "x = 10; y = 11; z = 12;", pruntime );
+      auto variables_ = pruntime->get_all_variables();
+      for( auto& it : variables_ ) {
+         std::cout << "Variable: " << it.first << " = " << gd::expression::value( it.second ).as_string() << std::endl;
+      }
+
       //std::cout << "Result: " << valueResult.as_string() << std::endl;
    }
 

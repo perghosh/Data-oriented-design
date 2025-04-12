@@ -602,6 +602,7 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                if( stringAssignVariable.empty() == false )
                {
                   runtime_.set_variable(stringAssignVariable, value_);         // set variable
+                  stringAssignVariable.clear();                                // clear variable name, important to make the logic work, it may be multiple variables that are assigned
                }
                else
                {                                                                                   assert(false);
@@ -773,6 +774,18 @@ value token::calculate_s( const std::string_view& stringExpression, runtime& run
 value token::calculate_s( const std::string_view& stringExpression )
 {
    return calculate_s(stringExpression, std::vector<std::pair<std::string, value::variant_t>>());
+}
+
+/// @brief Simplified wrapper for one-liner expression evaluator and possibility to get the runtime context
+value token::calculate_s(const std::string_view& stringExpression, std::unique_ptr<runtime>& pruntime )
+{
+   if( pruntime == nullptr ) 
+   { 
+      pruntime = std::make_unique<runtime>();
+      pruntime->add({ 5, pmethodDefault_g });
+   }
+
+   return calculate_s(stringExpression, *pruntime.get() );
 }
 
 
