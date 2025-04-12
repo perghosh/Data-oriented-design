@@ -108,6 +108,11 @@ struct runtime
    void set_variable(size_t uIndex, const value::variant_t& value_) { m_vectorVariable[uIndex].second = value_; }
    void set_variable(const std::string_view& stringName, const value::variant_t& value_);
 
+   void get_all_variables(std::vector<std::pair<std::string, value::variant_t>>& vectorVariable) const;
+   void get_all_variables(std::vector<std::pair<std::string, value::variant_t>>&& vectorVariable) const;
+   std::vector< std::pair<std::string, value::variant_t>> get_all_variables() const { return m_vectorVariable; }
+
+
    /// @brief try to find variable value by name and use callback function to find it
    bool find_value( const std::string_view& stringName, value::variant_t* pvariant_ ) ;
 
@@ -137,6 +142,19 @@ inline void runtime::set_variable(const std::string_view& stringName, const valu
    if( iIndex >= 0 ) { m_vectorVariable[iIndex].second = value_; }
    else { add(stringName, value_); }
 }
+
+/// @brief get all variables and copy them to the vector
+inline void runtime::get_all_variables(std::vector<std::pair<std::string, value::variant_t>>& vectorVariable) const
+{
+   vectorVariable = m_vectorVariable;
+}
+
+/// @brief get all variables and move them to the vector
+inline void runtime::get_all_variables(std::vector<std::pair<std::string, value::variant_t>>&& vectorVariable) const
+{
+   vectorVariable = std::move(m_vectorVariable);
+}
+
 
 
 _GD_EXPRESSION_END
