@@ -100,7 +100,6 @@ public:
    std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_Begin() const;
    std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_End() const;
 //@}
-   std::pair<bool, std::string> COMMAND_Prepare();
 
    void COMMAND_Read(char** ppbszArgument);
 
