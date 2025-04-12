@@ -71,6 +71,7 @@ public:
 
 /** \name OPERATION
 *///@{
+   std::pair<bool, std::string> Initialize( gd::cli::options& optionsApplication );
 
 //@}
 
@@ -78,8 +79,8 @@ public:
 * Documents are used to store information for each file that is beeing processed
 *///@{
    // ## Add documents
-   void DOCUMENT_Add(const std::string_view& stringName);
-   void DOCUMENT_Add(const gd::argument::shared::arguments& arguments_);
+   CDocument* DOCUMENT_Add(const std::string_view& stringName);
+   CDocument* DOCUMENT_Add(const gd::argument::shared::arguments& arguments_);
 
    // ## Get documents
    const CDocument* DOCUMENT_Get(const std::string_view& stringName) const;
@@ -99,6 +100,7 @@ public:
    std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_Begin() const;
    std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_End() const;
 //@}
+   std::pair<bool, std::string> COMMAND_Prepare();
 
    void COMMAND_Read(char** ppbszArgument);
 
