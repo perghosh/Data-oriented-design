@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -8,12 +8,13 @@
 #define JSONCONS_ENCODE_JSON_HPP
 
 #include <iostream>
-#include <string>
+#include <system_error>
 #include <tuple>
-#include <memory>
-#include <istream> // std::basic_istream
+
 #include <jsoncons/encode_traits.hpp>
+#include <jsoncons/json_exception.hpp>
 #include <jsoncons/json_cursor.hpp>
+#include <jsoncons/basic_json.hpp>
 
 namespace jsoncons {
 
@@ -198,7 +199,7 @@ namespace jsoncons {
     {
         std::error_code ec;
         encode_traits<T,CharT>::encode(val, encoder, basic_json<CharT>(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -284,7 +285,7 @@ namespace jsoncons {
 
 //end legacy
 
-} // jsoncons
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_ENCODE_JSON_HPP
 

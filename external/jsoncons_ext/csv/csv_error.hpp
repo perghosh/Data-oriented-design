@@ -1,14 +1,15 @@
-/// Copyright 2013-2024 Daniel Parker
+/// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_CSV_CSV_ERROR_HPP
-#define JSONCONS_CSV_CSV_ERROR_HPP
+#ifndef JSONCONS_EXT_CSV_CSV_ERROR_HPP
+#define JSONCONS_EXT_CSV_CSV_ERROR_HPP
 
+#include <string>
 #include <system_error>
-#include <jsoncons/json_exception.hpp>
+#include <type_traits>
 
 namespace jsoncons { namespace csv {
 
@@ -21,7 +22,8 @@ namespace jsoncons { namespace csv {
         syntax_error,
         invalid_parse_state,
         invalid_escaped_char,
-        unexpected_char_between_fields
+        unexpected_char_between_fields,
+        max_nesting_depth_exceeded
     };
 
 class csv_error_category_impl
@@ -50,6 +52,8 @@ public:
                 return "Invalid character following quote escape character";
             case csv_errc::unexpected_char_between_fields:
                 return "Unexpected character between fields";
+            case csv_errc::max_nesting_depth_exceeded:
+                return "Data item nesting exceeds limit in options";
             default:
                 return "Unknown CSV parser error";
         }
@@ -69,13 +73,14 @@ std::error_code make_error_code(csv_errc result)
     return std::error_code(static_cast<int>(result),csv_error_category());
 }
 
-}}
+} // namespace jsonpath
+} // namespace jsoncons
 
 namespace std {
     template<>
     struct is_error_code_enum<jsoncons::csv::csv_errc> : public true_type
     {
     };
-}
+} // namespace std
 
-#endif
+#endif // JSONCONS_EXT_CSV_CSV_ERROR_HPP

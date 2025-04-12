@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -7,29 +7,32 @@
 #ifndef JSONCONS_JSON_TYPE_TRAITS_HPP
 #define JSONCONS_JSON_TYPE_TRAITS_HPP
 
-#include <chrono>
-#include <array>
-#include <string>
-#include <vector>
-#include <valarray>
-#include <exception>
-#include <cstring>
-#include <utility>
 #include <algorithm> // std::swap
-#include <limits> // std::numeric_limits
-#include <type_traits> // std::enable_if
+#include <array>
+#include <bitset> // std::bitset
+#include <chrono>
+#include <cstdint>
+#include <cstring>
+#include <functional>
 #include <iterator> // std::iterator_traits, std::input_iterator_tag
-#include <jsoncons/json_type.hpp>
-#include <jsoncons/bigint.hpp>
-#include <jsoncons/json_visitor.hpp>
-#include <jsoncons/extension_traits.hpp>
+#include <map>
+#include <memory>
 #include <string>
 #include <tuple>
-#include <map>
-#include <functional>
-#include <memory>
-#include <bitset> // std::bitset
+#include <type_traits> // std::enable_if
+#include <utility>
+#include <valarray>
+#include <vector>
+
+#include <jsoncons/config/compiler_support.hpp>
+#include <jsoncons/config/jsoncons_config.hpp>
+#include <jsoncons/utility/byte_string.hpp>
 #include <jsoncons/conv_error.hpp>
+#include <jsoncons/json_type.hpp>
+#include <jsoncons/json_visitor.hpp>
+#include <jsoncons/tag_type.hpp>
+#include <jsoncons/utility/bigint.hpp>
+#include <jsoncons/utility/extension_traits.hpp>
 #include <jsoncons/value_converter.hpp>
 
 #if defined(JSONCONS_HAS_STD_VARIANT)
@@ -583,7 +586,7 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
             {
                 value_converter<byte_string_view,T> converter;
                 auto v = converter.convert(j.as_byte_string_view(),j.tag(), ec);
-                if (ec)
+                if (JSONCONS_UNLIKELY(ec))
                 {
                     JSONCONS_THROW(conv_error(ec));
                 }
@@ -593,7 +596,7 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
             {
                 value_converter<basic_string_view<char>,T> converter;
                 auto v = converter.convert(j.as_string_view(),j.tag(), ec);
-                if (ec)
+                if (JSONCONS_UNLIKELY(ec))
                 {
                     JSONCONS_THROW(conv_error(ec));
                 }
@@ -1076,7 +1079,7 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
             {
             }
         };
-    } // namespace detail
+    } // namespace tuple_detail
 
     template <typename Json,typename... E>
     struct json_type_traits<Json, std::tuple<E...>>
@@ -1182,7 +1185,9 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
                                                     !std::is_polymorphic<ValueType>::value
     >::type>
     {
-        static bool is(const Json& j) noexcept 
+        using allocator_type = typename Json::allocator_type;
+
+        static bool is(const Json& j) noexcept
         {
             return j.is_null() || j.template is<ValueType>();
         }
@@ -1192,11 +1197,12 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
             return j.is_null() ? std::shared_ptr<ValueType>(nullptr) : std::make_shared<ValueType>(j.template as<ValueType>());
         }
 
-        static Json to_json(const std::shared_ptr<ValueType>& ptr) 
+        static Json to_json(const std::shared_ptr<ValueType>& ptr, 
+            const allocator_type& alloc = allocator_type())
         {
             if (ptr.get() != nullptr) 
             {
-                Json j(*ptr);
+                Json j(*ptr, alloc);
                 return j;
             }
             else 
@@ -1212,7 +1218,9 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
                                                     !std::is_polymorphic<ValueType>::value
     >::type>
     {
-        static bool is(const Json& j) noexcept 
+        using allocator_type = typename Json::allocator_type;
+
+        static bool is(const Json& j) noexcept
         {
             return j.is_null() || j.template is<ValueType>();
         }
@@ -1222,11 +1230,12 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
             return j.is_null() ? std::unique_ptr<ValueType>(nullptr) : jsoncons::make_unique<ValueType>(j.template as<ValueType>());
         }
 
-        static Json to_json(const std::unique_ptr<ValueType>& ptr) 
+        static Json to_json(const std::unique_ptr<ValueType>& ptr,
+            const allocator_type& alloc = allocator_type())
         {
             if (ptr.get() != nullptr) 
             {
-                Json j(*ptr);
+                Json j(*ptr, alloc);
                 return j;
             }
             else 
@@ -1240,6 +1249,7 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
     struct json_type_traits<Json, jsoncons::optional<T>,
                             typename std::enable_if<!is_json_type_traits_declared<jsoncons::optional<T>>::value>::type>
     {
+        using allocator_type = typename Json::allocator_type;
     public:
         static bool is(const Json& j) noexcept
         {
@@ -1251,9 +1261,10 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
             return j.is_null() ? jsoncons::optional<T>() : jsoncons::optional<T>(j.template as<T>());
         }
         
-        static Json to_json(const jsoncons::optional<T>& val)
+        static Json to_json(const jsoncons::optional<T>& val, 
+            const allocator_type& alloc = allocator_type())
         {
-            return val.has_value() ? Json(*val) : Json::null();
+            return val.has_value() ? Json(*val, alloc) : Json::null();
         }
     };
 
@@ -1285,6 +1296,7 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
     struct json_type_traits<Json, basic_bigint<Allocator>>
     {
     public:
+        using allocator_type = typename Json::allocator_type;
         using char_type = typename Json::char_type;
 
         static bool is(const Json& j) noexcept
@@ -1324,6 +1336,13 @@ has_can_convert = extension_traits::is_detected<traits_can_convert_t, Json, T>;
         }
         
         static Json to_json(const basic_bigint<Allocator>& val)
+        {
+            std::basic_string<char_type> s;
+            val.write_string(s);
+            return Json(s,semantic_tag::bigint);
+        }
+
+        static Json to_json(const basic_bigint<Allocator>& val, const allocator_type&)
         {
             std::basic_string<char_type> s;
             val.write_string(s);
@@ -1898,6 +1917,6 @@ namespace variant_detail
         }
     };
 
-} // jsoncons
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_JSON_TYPE_TRAITS_HPP

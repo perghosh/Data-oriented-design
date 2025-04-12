@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -7,17 +7,23 @@
 #ifndef JSONCONS_ENCODE_TRAITS_HPP
 #define JSONCONS_ENCODE_TRAITS_HPP
 
-#include <string>
-#include <tuple>
 #include <array>
+#include <cstddef>
 #include <memory>
+#include <utility>
+#include <string>
+#include <system_error>
+#include <tuple>
 #include <type_traits> // std::enable_if, std::true_type, std::false_type
-#include <jsoncons/json_visitor.hpp>
-#include <jsoncons/json_decoder.hpp>
-#include <jsoncons/json_options.hpp>
-#include <jsoncons/json_encoder.hpp>
-#include <jsoncons/json_type_traits.hpp>
+
 #include <jsoncons/conv_error.hpp>
+#include <jsoncons/json_decoder.hpp>
+#include <jsoncons/json_encoder.hpp>
+#include <jsoncons/json_options.hpp>
+#include <jsoncons/json_type_traits.hpp>
+#include <jsoncons/json_visitor.hpp>
+#include <jsoncons/tag_type.hpp>
+#include <jsoncons/utility/extension_traits.hpp>
 
 namespace jsoncons {
 
@@ -172,11 +178,11 @@ namespace jsoncons {
                            std::error_code& ec)
         {
             encoder.begin_array(2,semantic_tag::none,ser_context(),ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
             encode_traits<T1,CharT>::encode(val.first, encoder, proto, ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
             encode_traits<T2,CharT>::encode(val.second, encoder, proto, ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
             encoder.end_array(ser_context(),ec);
         }
     };
@@ -198,7 +204,7 @@ namespace jsoncons {
                                std::error_code& ec)
             {
                 encode_traits<element_type,char_type>::encode(std::get<Size-Pos>(tuple), encoder, proto, ec);
-                if (ec) return;
+                if (JSONCONS_UNLIKELY(ec)) {return;}
                 next::encode(tuple, encoder, proto, ec);
             }
         };
@@ -231,9 +237,9 @@ namespace jsoncons {
         {
             using helper = jsoncons::detail::json_serialize_tuple_helper<size, size, Json, std::tuple<E...>>;
             encoder.begin_array(size,semantic_tag::none,ser_context(),ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
             helper::encode(val, encoder, proto, ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
             encoder.end_array(ser_context(),ec);
         }
     };
@@ -255,11 +261,11 @@ namespace jsoncons {
                            std::error_code& ec)
         {
             encoder.begin_array(val.size(),semantic_tag::none,ser_context(),ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
             for (auto it = std::begin(val); it != std::end(val); ++it)
             {
                 encode_traits<value_type,CharT>::encode(*it, encoder, proto, ec);
-                if (ec) return;
+                if (JSONCONS_UNLIKELY(ec)) {return;}
             }
             encoder.end_array(ser_context(), ec);
         }
@@ -298,11 +304,11 @@ namespace jsoncons {
                            std::error_code& ec)
         {
             encoder.begin_array(val.size(),semantic_tag::none,ser_context(),ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
             for (auto it = std::begin(val); it != std::end(val); ++it)
             {
                 encode_traits<value_type,CharT>::encode(*it, encoder, proto, ec);
-                if (ec) return;
+                if (JSONCONS_UNLIKELY(ec)) {return;}
             }
             encoder.end_array(ser_context(),ec);
         }
@@ -328,15 +334,15 @@ namespace jsoncons {
                            std::error_code& ec)
         {
             encoder.begin_object(val.size(), semantic_tag::none, ser_context(), ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
             for (auto it = std::begin(val); it != std::end(val); ++it)
             {
-                encoder.key(it->first);
-                encode_traits<mapped_type,CharT>::encode(it->second, encoder, proto, ec);
-                if (ec) return;
+                encoder.key((*it).first);
+                encode_traits<mapped_type,CharT>::encode((*it).second, encoder, proto, ec);
+                if (JSONCONS_UNLIKELY(ec)) {return;}
             }
             encoder.end_object(ser_context(), ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
         }
     };
 
@@ -358,21 +364,21 @@ namespace jsoncons {
                            std::error_code& ec)
         {
             encoder.begin_object(val.size(), semantic_tag::none, ser_context(), ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
             for (auto it = std::begin(val); it != std::end(val); ++it)
             {
                 std::basic_string<typename Json::char_type> s;
-                jsoncons::detail::from_integer(it->first,s);
+                jsoncons::detail::from_integer((*it).first,s);
                 encoder.key(s);
-                encode_traits<mapped_type,CharT>::encode(it->second, encoder, proto, ec);
-                if (ec) return;
+                encode_traits<mapped_type,CharT>::encode((*it).second, encoder, proto, ec);
+                if (JSONCONS_UNLIKELY(ec)) {return;}
             }
             encoder.end_object(ser_context(), ec);
-            if (ec) return;
+            if (JSONCONS_UNLIKELY(ec)) {return;}
         }
     };
 
-} // jsoncons
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_ENCODE_TRAITS_HPP
 

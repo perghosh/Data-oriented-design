@@ -1,14 +1,17 @@
-/// Copyright 2013-2024 Daniel Parker
+/// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_JSONPATCH_JSONPATCH_ERROR_HPP
-#define JSONCONS_JSONPATCH_JSONPATCH_ERROR_HPP
+#ifndef JSONCONS_EXT_JSONPATCH_JSONPATCH_ERROR_HPP
+#define JSONCONS_EXT_JSONPATCH_JSONPATCH_ERROR_HPP
+
+#include <string>
+#include <system_error>
+#include <type_traits>
 
 #include <jsoncons/json_exception.hpp>
-#include <system_error>
 
 namespace jsoncons { namespace jsonpatch {
 
@@ -70,15 +73,15 @@ namespace jsoncons { namespace jsonpatch {
         return std::error_code(static_cast<int>(result),jsonpatch_error_category());
     }
 
-} // jsonpatch
-} // jsoncons
+} // namespace jsonpatch
+} // namespace jsoncons
 
 namespace std {
     template<>
     struct is_error_code_enum<jsoncons::jsonpatch::jsonpatch_errc> : public true_type
     {
     };
-}
+} // namespace std
 
 namespace jsoncons { namespace jsonpatch {
 
@@ -115,7 +118,8 @@ namespace jsoncons { namespace jsonpatch {
             return std::system_error::what();
         }
     };
-} // jsonpatch
-} // jsoncons
+    
+} // namespace jsonpatch
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_EXT_JSONPATCH_JSONPATCH_ERROR_HPP

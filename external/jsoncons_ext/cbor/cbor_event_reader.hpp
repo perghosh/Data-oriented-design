@@ -1,25 +1,25 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_CBOR_EVENT_READER_HPP
-#define JSONCONS_CBOR_EVENT_READER_HPP
+#ifndef JSONCONS_EXT_CBOR_EVENT_READER_HPP
+#define JSONCONS_EXT_CBOR_EVENT_READER_HPP
 
-#include <memory> // std::allocator
-#include <string>
-#include <vector>
-#include <stdexcept>
-#include <system_error>
+#include <cstddef>
+#include <functional>
 #include <ios>
-#include <istream> // std::basic_istream
-#include <jsoncons/byte_string.hpp>
+#include <memory> // std::allocator
+#include <system_error>
+
+#include <jsoncons/utility/byte_string.hpp>
 #include <jsoncons/config/jsoncons_config.hpp>
 #include <jsoncons/item_event_visitor.hpp>
 #include <jsoncons/json_exception.hpp>
-#include <jsoncons/staj_event_reader.hpp>
+#include <jsoncons/ser_context.hpp>
 #include <jsoncons/source.hpp>
+#include <jsoncons/staj_event_reader.hpp>
 #include <jsoncons_ext/cbor/cbor_parser.hpp>
 
 namespace jsoncons { 
@@ -34,24 +34,23 @@ namespace cbor {
         using allocator_type = Allocator;
     private:
         basic_cbor_parser<Source,Allocator> parser_;
-        basic_item_event_receiver<char_type> event_receiver_;
-        bool eof_;
-
-        // Noncopyable and nonmoveable
-        cbor_event_reader(const cbor_event_reader&) = delete;
-        cbor_event_reader& operator=(const cbor_event_reader&) = delete;
+        basic_item_event_receiver<char_type> cursor_visitor_;
+        bool eof_{false};
 
     public:
         using string_view_type = string_view;
 
+        // Noncopyable and nonmoveable
+        cbor_event_reader(const cbor_event_reader&) = delete;
+        cbor_event_reader(cbor_event_reader&&) = delete;
+
         template <typename Sourceable>
         cbor_event_reader(Sourceable&& source,
-                          const cbor_decode_options& options = cbor_decode_options(),
-                          const Allocator& alloc = Allocator())
-            : parser_(std::forward<Sourceable>(source), options, alloc), 
-              event_receiver_(accept_all), 
-              eof_(false)
+            const cbor_decode_options& options = cbor_decode_options(),
+            const Allocator& alloc = Allocator())
+            : parser_(std::forward<Sourceable>(source), options, alloc)
         {
+            parser_.cursor_mode(true);
             if (!done())
             {
                 next();
@@ -61,45 +60,49 @@ namespace cbor {
         // Constructors that set parse error codes
 
         template <typename Sourceable>
-        cbor_event_reader(Sourceable&& source, 
-                          std::error_code& ec)
+        cbor_event_reader(Sourceable&& source, std::error_code& ec)
             : cbor_event_reader(std::allocator_arg, Allocator(),
-                                std::forward<Sourceable>(source), 
-                                cbor_decode_options(), 
-                                ec)
+                  std::forward<Sourceable>(source), 
+                  cbor_decode_options(), 
+                  ec)
         {
         }
 
         template <typename Sourceable>
         cbor_event_reader(Sourceable&& source, 
-                          const cbor_decode_options& options,
-                          std::error_code& ec)
+            const cbor_decode_options& options,
+            std::error_code& ec)
             : cbor_event_reader(std::allocator_arg, Allocator(),
-                                std::forward<Sourceable>(source), 
-                                options, 
-                                ec)
+                  std::forward<Sourceable>(source), 
+                  options, 
+                  ec)
         {
         }
 
         template <typename Sourceable>
         cbor_event_reader(std::allocator_arg_t, const Allocator& alloc, 
-                          Sourceable&& source,
-                          const cbor_decode_options& options,
-                          std::error_code& ec)
-           : parser_(std::forward<Sourceable>(source), options, alloc), 
-             event_receiver_(accept_all),
+            Sourceable&& source,
+            const cbor_decode_options& options,
+            std::error_code& ec)
+           : parser_(std::forward<Sourceable>(source), options, alloc),
              eof_(false)
         {
+            parser_.cursor_mode(true);
             if (!done())
             {
                 next(ec);
             }
         }
+        
+        ~cbor_event_reader() = default;
+
+        cbor_event_reader& operator=(const cbor_event_reader&) = delete;
+        cbor_event_reader& operator=(cbor_event_reader&&) = delete;
 
         void reset()
         {
             parser_.reset();
-            event_receiver_.reset();
+            cursor_visitor_.reset();
             eof_ = false;
             if (!done())
             {
@@ -111,7 +114,7 @@ namespace cbor {
         void reset(Sourceable&& source)
         {
             parser_.reset(std::forward<Sourceable>(source));
-            event_receiver_.reset();
+            cursor_visitor_.reset();
             eof_ = false;
             if (!done())
             {
@@ -122,7 +125,7 @@ namespace cbor {
         void reset(std::error_code& ec)
         {
             parser_.reset();
-            event_receiver_.reset();
+            cursor_visitor_.reset();
             eof_ = false;
             if (!done())
             {
@@ -134,7 +137,7 @@ namespace cbor {
         void reset(Sourceable&& source, std::error_code& ec)
         {
             parser_.reset(std::forward<Sourceable>(source));
-            event_receiver_.reset();
+            cursor_visitor_.reset();
             eof_ = false;
             if (!done())
             {
@@ -149,30 +152,55 @@ namespace cbor {
 
         bool is_typed_array() const
         {
-            return event_receiver_.is_typed_array();
+            return cursor_visitor_.is_typed_array();
         }
 
         const basic_staj_event<char_type>& current() const override
         {
-            return event_receiver_.event();
+            return cursor_visitor_.event();
         }
 
         void read_to(basic_item_event_visitor<char_type>& visitor) override
         {
             std::error_code ec;
             read_to(visitor, ec);
-            if (ec)
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec,parser_.line(),parser_.column()));
             }
         }
 
-        void read_to(basic_item_event_visitor<char_type>& visitor,
-                     std::error_code& ec) override
+        void read_to(basic_item_event_visitor<char_type>& visitor, 
+            std::error_code& ec) override
         {
-            if (event_receiver_.dump(visitor, *this, ec))
+            if (is_typed_array())
             {
+                cursor_visitor_.dump(visitor, *this, ec);
+            }
+            else if (is_begin_container(current().event_type()))
+            {
+                parser_.cursor_mode(false);
+                parser_.mark_level(parser_.level());
+                cursor_visitor_.dump(visitor, *this, ec);
+                if (JSONCONS_UNLIKELY(ec))
+                {
+                    return;
+                }
                 read_next(visitor, ec);
+                parser_.cursor_mode(true);
+                parser_.mark_level(0);
+                if (current().event_type() == staj_event_type::begin_object)
+                {
+                    cursor_visitor_.end_object(*this);
+                }
+                else
+                {
+                    cursor_visitor_.end_array(*this);
+                }
+            }
+            else
+            {
+                cursor_visitor_.dump(visitor, *this, ec);
             }
         }
 
@@ -180,7 +208,7 @@ namespace cbor {
         {
             std::error_code ec;
             next(ec);
-            if (ec)
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec,parser_.line(),parser_.column()));
             }
@@ -213,30 +241,25 @@ namespace cbor {
 
         friend
         staj2_filter_view operator|(cbor_event_reader& cursor, 
-                                   std::function<bool(const item_event&, const ser_context&)> pred)
+            std::function<bool(const item_event&, const ser_context&)> pred)
         {
             return staj2_filter_view(cursor, pred);
         }
 
     private:
-        static bool accept_all(const item_event&, const ser_context&) 
-        {
-            return true;
-        }
-
         void read_next(std::error_code& ec)
         {
-            if (event_receiver_.in_available())
+            if (cursor_visitor_.in_available())
             {
-                event_receiver_.send_available(ec);
+                cursor_visitor_.send_available(ec);
             }
             else
             {
                 parser_.restart();
                 while (!parser_.stopped())
                 {
-                    parser_.parse(event_receiver_, ec);
-                    if (ec) return;
+                    parser_.parse(cursor_visitor_, ec);
+                    if (JSONCONS_UNLIKELY(ec)) {return;}
                 }
             }
         }
@@ -247,7 +270,7 @@ namespace cbor {
             while (!parser_.stopped())
             {
                 parser_.parse(visitor, ec);
-                if (ec)
+                if (JSONCONS_UNLIKELY(ec))
                 {
                     return;
                 }

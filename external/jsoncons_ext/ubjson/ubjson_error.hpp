@@ -1,13 +1,16 @@
-/// Copyright 2013-2024 Daniel Parker
+/// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_UBJSON_UBJSON_ERROR_HPP
-#define JSONCONS_UBJSON_UBJSON_ERROR_HPP
+#ifndef JSONCONS_EXT_UBJSON_UBJSON_ERROR_HPP
+#define JSONCONS_EXT_UBJSON_UBJSON_ERROR_HPP
 
+#include <string>
 #include <system_error>
+#include <type_traits>
+
 #include <jsoncons/config/jsoncons_config.hpp>
 
 namespace jsoncons { namespace ubjson {
@@ -88,13 +91,14 @@ std::error_code make_error_code(ubjson_errc e)
 }
 
 
-}}
+} // namespace ubjson
+} // namespace jsoncons
 
 namespace std {
     template<>
     struct is_error_code_enum<jsoncons::ubjson::ubjson_errc> : public true_type
     {
     };
-}
+} // namespace std
 
-#endif
+#endif // JSONCONS_EXT_UBJSON_UBJSON_ERROR_HPP

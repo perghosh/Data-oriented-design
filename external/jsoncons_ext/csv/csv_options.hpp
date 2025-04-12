@@ -1,19 +1,20 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_CSV_CSV_OPTIONS_HPP
-#define JSONCONS_CSV_CSV_OPTIONS_HPP
+#ifndef JSONCONS_EXT_CSV_CSV_OPTIONS_HPP
+#define JSONCONS_EXT_CSV_CSV_OPTIONS_HPP
 
-#include <string>
-#include <vector>
-#include <utility> // std::pair
-#include <unordered_map> // std::unordered_map
-#include <map>
-#include <limits> // std::numeric_limits
+#include <cstdint>
 #include <cwchar>
+#include <limits> // std::numeric_limits
+#include <map>
+#include <string>
+#include <unordered_map> // std::unordered_map
+#include <utility> // std::pair
+
 #include <jsoncons/json_options.hpp>
 
 namespace jsoncons { namespace csv {
@@ -107,7 +108,8 @@ void parse_column_names(const std::basic_string<CharT>& names,
         cont.push_back(buffer);
         buffer.clear();
     }
-}
+
+} // namespace detail
 
 template <typename CharT,typename Container>
 void parse_column_types(const std::basic_string<CharT>& types, 
@@ -155,7 +157,7 @@ void parse_column_types(const std::basic_string<CharT>& types,
                         if (level > 0)
                         {
                             for (auto it = column_types.rbegin();
-                                 it != column_types.rend() && level == it->level;
+                                 it != column_types.rend() && level == (*it).level;
                                  ++it)
                             {
                                 ++offset;
@@ -185,7 +187,7 @@ void parse_column_types(const std::basic_string<CharT>& types,
                         auto it = type_dictionary.find(buffer);
                         if (it != type_dictionary.end())
                         {
-                            column_types.emplace_back(it->second,depth);
+                            column_types.emplace_back((*it).second,depth);
                             buffer.clear();
                         }
                         else
@@ -200,7 +202,7 @@ void parse_column_types(const std::basic_string<CharT>& types,
                         auto it = type_dictionary.find(buffer);
                         if (it != type_dictionary.end())
                         {
-                            column_types.emplace_back(it->second,depth);
+                            column_types.emplace_back((*it).second,depth);
                             buffer.clear();
                         }
                         else
@@ -217,7 +219,7 @@ void parse_column_types(const std::basic_string<CharT>& types,
                         auto it = type_dictionary.find(buffer);
                         if (it != type_dictionary.end())
                         {
-                            column_types.emplace_back(it->second,depth);
+                            column_types.emplace_back((*it).second,depth);
                             buffer.clear();
                         }
                         else
@@ -245,7 +247,7 @@ void parse_column_types(const std::basic_string<CharT>& types,
         auto it = type_dictionary.find(buffer);
         if (it != type_dictionary.end())
         {
-            column_types.emplace_back(it->second,depth);
+            column_types.emplace_back((*it).second,depth);
             buffer.clear();
         }
         else
@@ -255,7 +257,7 @@ void parse_column_types(const std::basic_string<CharT>& types,
     }
 }
 
-} // detail
+} // namespace detail
 
 template <typename CharT>
 class basic_csv_options;
@@ -268,11 +270,12 @@ public:
     using char_type = CharT;
     using string_type = std::basic_string<CharT>;
 private:
-    char_type field_delimiter_;
-    char_type quote_char_;
-    char_type quote_escape_char_;
-    char_type subfield_delimiter_;
+    char_type field_delimiter_{','};
+    char_type quote_char_{'\"'};
+    char_type quote_escape_char_{'\"'};
+    char_type subfield_delimiter_{char_type{}};
 
+    bool flat_:1;
     bool enable_nan_to_num_:1;
     bool enable_inf_to_num_:1;
     bool enable_neginf_to_num_:1;
@@ -290,22 +293,21 @@ private:
     string_type inf_to_str_;
     string_type neginf_to_str_;
     string_type column_names_;
+    std::vector<std::pair<std::string,std::string>> column_mapping_; 
+    std::size_t max_nesting_depth_{1024};
 
 protected:
     basic_csv_options_common()
-      : field_delimiter_(','),
-        quote_char_('\"'),
-        quote_escape_char_('\"'),
-        subfield_delimiter_(char_type()),
-        enable_nan_to_num_(false),
-        enable_inf_to_num_(false),
-        enable_neginf_to_num_(false),
-        enable_nan_to_str_(false),
-        enable_inf_to_str_(false),
-        enable_neginf_to_str_(false),
-        enable_str_to_nan_(false),
-        enable_str_to_inf_(false),
-        enable_str_to_neginf_(false)
+      : flat_{true},                  
+        enable_nan_to_num_{false},    
+        enable_inf_to_num_{false},    
+        enable_neginf_to_num_{false}, 
+        enable_nan_to_str_{false},    
+        enable_inf_to_str_{false},    
+        enable_neginf_to_str_{false}, 
+        enable_str_to_nan_{false},    
+        enable_str_to_inf_{false},    
+        enable_str_to_neginf_{false}
     {
     }
 
@@ -313,8 +315,18 @@ protected:
     basic_csv_options_common& operator=(const basic_csv_options_common&) = default;
     //basic_csv_options_common& operator=(basic_csv_options_common&&) = default;
 
-    virtual ~basic_csv_options_common() noexcept = default;
+    virtual ~basic_csv_options_common() = default;
 public:
+
+    bool flat() const 
+    {
+        return flat_;
+    }
+
+    std::size_t max_nesting_depth() const 
+    {
+        return max_nesting_depth_;
+    }
 
     char_type field_delimiter() const 
     {
@@ -336,9 +348,14 @@ public:
         return quote_escape_char_;
     }
 
-    string_type column_names() const 
+    const string_type& column_names() const 
     {
         return column_names_;
+    }
+
+    const std::vector<std::pair<std::string,std::string>>& column_mapping() const 
+    {
+        return column_mapping_;
     }
 
     bool enable_nan_to_num() const
@@ -465,10 +482,10 @@ private:
     bool unquoted_empty_value_is_null_:1;
     bool infer_types_:1;
     bool lossless_number_:1;
-    char_type comment_starter_;
-    csv_mapping_kind mapping_;
-    std::size_t header_lines_;
-    std::size_t max_lines_;
+    char_type comment_starter_{'\0'};
+    csv_mapping_kind mapping_kind_{};
+    std::size_t header_lines_{0};
+    std::size_t max_lines_{(std::numeric_limits<std::size_t>::max)()};
     string_type column_types_;
     string_type column_defaults_;
 public:
@@ -482,16 +499,12 @@ public:
           trim_trailing_inside_quotes_(false),
           unquoted_empty_value_is_null_(false),
           infer_types_(true),
-          lossless_number_(false),
-          comment_starter_('\0'),
-          mapping_(),
-          header_lines_(0),
-          max_lines_((std::numeric_limits<std::size_t>::max)())
+          lossless_number_(false)
     {}
 
     basic_csv_decode_options(const basic_csv_decode_options& other) = default;
 
-    basic_csv_decode_options(basic_csv_decode_options&& other)
+    basic_csv_decode_options(basic_csv_decode_options&& other) noexcept
         : super_type(std::move(other)),
           assume_header_(other.assume_header_),
           ignore_empty_values_(other.ignore_empty_values_),
@@ -504,7 +517,7 @@ public:
           infer_types_(other.infer_types_),
           lossless_number_(other.lossless_number_),
           comment_starter_(other.comment_starter_),
-          mapping_(other.mapping_),
+          mapping_kind_(other.mapping_kind_),
           header_lines_(other.header_lines_),
           max_lines_(other.max_lines_),
           column_types_(std::move(other.column_types_)),
@@ -588,7 +601,7 @@ public:
 
     csv_mapping_kind mapping_kind() const 
     {
-        return mapping_ != csv_mapping_kind() ? mapping_ : (assume_header() || this->column_names().size() > 0 ? csv_mapping_kind::n_objects : csv_mapping_kind::n_rows);
+        return mapping_kind_ != csv_mapping_kind() ? mapping_kind_ : (assume_header() || this->column_names().size() > 0 ? csv_mapping_kind::n_objects : csv_mapping_kind::n_rows);
     }
 
     std::size_t max_lines() const 
@@ -616,22 +629,19 @@ public:
     using typename super_type::char_type;
     using typename super_type::string_type;
 private:
-    quote_style_kind quote_style_;
-    float_chars_format float_format_;
-    int8_t precision_;
+    quote_style_kind quote_style_{quote_style_kind::minimal};
+    float_chars_format float_format_{float_chars_format::general};
+    int8_t precision_{0};
     string_type line_delimiter_;
 public:
     basic_csv_encode_options()
-      : quote_style_(quote_style_kind::minimal),
-        float_format_(float_chars_format::general),
-        precision_(0)
     {
         line_delimiter_.push_back('\n');
     }
 
     basic_csv_encode_options(const basic_csv_encode_options& other) = default;
 
-    basic_csv_encode_options(basic_csv_encode_options&& other)
+    basic_csv_encode_options(basic_csv_encode_options&& other) noexcept
         : super_type(std::move(other)),
           quote_style_(other.quote_style_),
           float_format_(other.float_format_),
@@ -682,11 +692,14 @@ public:
     using basic_csv_decode_options<CharT>::nan_to_num;
     using basic_csv_decode_options<CharT>::inf_to_num;
     using basic_csv_decode_options<CharT>::neginf_to_num;
+    using basic_csv_decode_options<CharT>::flat;
+    using basic_csv_decode_options<CharT>::max_nesting_depth;
     using basic_csv_decode_options<CharT>::field_delimiter;
     using basic_csv_decode_options<CharT>::subfield_delimiter;
     using basic_csv_decode_options<CharT>::quote_char;
     using basic_csv_decode_options<CharT>::quote_escape_char;
     using basic_csv_decode_options<CharT>::column_names;
+    using basic_csv_decode_options<CharT>::column_mapping;
     using basic_csv_decode_options<CharT>::header_lines; 
     using basic_csv_decode_options<CharT>::assume_header; 
     using basic_csv_decode_options<CharT>::ignore_empty_values; 
@@ -806,6 +819,12 @@ public:
         return *this;
     }
 
+    basic_csv_options& column_mapping(const std::vector<std::pair<std::string,std::string>>& value)
+    {
+        this->column_mapping_ = value;
+        return *this;
+    }
+
     basic_csv_options& column_types(const string_type& value)
     {
         this->column_types_ = value;
@@ -815,6 +834,18 @@ public:
     basic_csv_options& column_defaults(const string_type& value)
     {
         this->column_defaults_ = value;
+        return *this;
+    }
+
+    basic_csv_options& flat(bool value)
+    {
+        this->flat_ = value;
+        return *this;
+    }
+
+    basic_csv_options& max_nesting_depth(std::size_t value)
+    {
+        this->max_nesting_depth_ = value;
         return *this;
     }
 
@@ -874,7 +905,7 @@ public:
 
     basic_csv_options& mapping_kind(csv_mapping_kind value)
     {
-        this->mapping_ = value;
+        this->mapping_kind_ = value;
         return *this;
     }
 
@@ -940,5 +971,7 @@ public:
 using csv_options = basic_csv_options<char>;
 using wcsv_options = basic_csv_options<wchar_t>;
 
-}}
-#endif
+} // namespace jsonpath
+} // namespace jsoncons
+
+#endif // JSONCONS_EXT_CSV_CSV_OPTIONS_HPP

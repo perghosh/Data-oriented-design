@@ -1,22 +1,21 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_BSON_BSON_READER_HPP
-#define JSONCONS_BSON_BSON_READER_HPP
+#ifndef JSONCONS_EXT_BSON_BSON_READER_HPP
+#define JSONCONS_EXT_BSON_BSON_READER_HPP
 
-#include <string>
-#include <vector>
+#include <cstddef>
 #include <memory>
+#include <system_error>
 #include <utility> // std::move
-#include <jsoncons/json.hpp>
-#include <jsoncons/source.hpp>
+
+#include <jsoncons/config/compiler_support.hpp>
+#include <jsoncons/json_exception.hpp>
 #include <jsoncons/json_visitor.hpp>
-#include <jsoncons/config/jsoncons_config.hpp>
-#include <jsoncons_ext/bson/bson_type.hpp>
-#include <jsoncons_ext/bson/bson_error.hpp>
+#include <jsoncons/source.hpp>
 #include <jsoncons_ext/bson/bson_parser.hpp>
 
 namespace jsoncons { namespace bson {
@@ -52,7 +51,7 @@ public:
     {
         std::error_code ec;
         read(ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec,line(),column()));
         }
@@ -62,7 +61,7 @@ public:
     {
         parser_.reset();
         parser_.parse(visitor_, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             return;
         }
@@ -82,6 +81,7 @@ public:
 using bson_stream_reader = basic_bson_reader<jsoncons::binary_stream_source>;
 using bson_bytes_reader = basic_bson_reader<jsoncons::bytes_source>;
 
-}}
+} // namespace bson
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_EXT_BSON_BSON_READER_HPP

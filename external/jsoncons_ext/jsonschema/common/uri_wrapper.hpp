@@ -1,15 +1,19 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_JSONSCHEMA_COMMON_SCHEMA_IDENTIFIER_HPP
-#define JSONCONS_JSONSCHEMA_COMMON_SCHEMA_IDENTIFIER_HPP
+#ifndef JSONCONS_EXT_JSONSCHEMA_COMMON_URI_WRAPPER_HPP
+#define JSONCONS_EXT_JSONSCHEMA_COMMON_URI_WRAPPER_HPP
+
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <system_error>
 
 #include <jsoncons/config/jsoncons_config.hpp>
-#include <jsoncons/uri.hpp>
-#include <jsoncons/json.hpp>
+#include <jsoncons/utility/uri.hpp>
 #include <jsoncons_ext/jsonpointer/jsonpointer.hpp>
 #include <jsoncons_ext/jsonschema/jsonschema_error.hpp>
 
@@ -95,11 +99,6 @@ namespace jsonschema {
             return identifier_;
         }
 
-        uri_wrapper resolve(const uri_wrapper& uri) const
-        {
-            return uri_wrapper(uri_.resolve(uri.uri_));
-        }
-
         int compare(const uri_wrapper& other) const
         {
             int result = uri_.compare(other.uri_);
@@ -115,7 +114,7 @@ namespace jsonschema {
             if (has_plain_name_fragment())
                 return *this;
 
-            jsoncons::jsonpointer::json_pointer pointer(std::string(uri_.encoded_fragment()));
+            jsoncons::jsonpointer::json_pointer pointer(std::string(uri_.fragment()));
             pointer /= field;
 
             jsoncons::uri new_uri(uri_, uri_fragment_part, pointer.to_string());
@@ -177,4 +176,4 @@ namespace jsonschema {
 } // namespace jsonschema
 } // namespace jsoncons
 
-#endif // JSONCONS_JSONSCHEMA_SCHEMA_LOCATION_HPP
+#endif // JSONCONS_EXT_JSONSCHEMA_COMMON_URI_WRAPPER_HPP

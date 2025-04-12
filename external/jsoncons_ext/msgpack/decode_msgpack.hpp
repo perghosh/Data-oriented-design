@@ -1,23 +1,26 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_MSGPACK_DECODE_MSGPACK_HPP
-#define JSONCONS_MSGPACK_DECODE_MSGPACK_HPP
+#ifndef JSONCONS_EXT_MSGPACK_DECODE_MSGPACK_HPP
+#define JSONCONS_EXT_MSGPACK_DECODE_MSGPACK_HPP
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <type_traits> // std::enable_if
 #include <istream> // std::basic_istream
-#include <jsoncons/json.hpp>
+#include <type_traits> // std::enable_if
+
 #include <jsoncons/allocator_set.hpp>
-#include <jsoncons/config/jsoncons_config.hpp>
+#include <jsoncons/config/compiler_support.hpp>
+#include <jsoncons/utility/extension_traits.hpp>
+#include <jsoncons/basic_json.hpp>
+#include <jsoncons/conv_error.hpp>
+#include <jsoncons/decode_traits.hpp>
+#include <jsoncons/source.hpp>
+
+#include <jsoncons_ext/msgpack/msgpack_cursor.hpp>
 #include <jsoncons_ext/msgpack/msgpack_encoder.hpp>
 #include <jsoncons_ext/msgpack/msgpack_reader.hpp>
-#include <jsoncons_ext/msgpack/msgpack_cursor.hpp>
 
 namespace jsoncons { 
 namespace msgpack {
@@ -50,7 +53,7 @@ namespace msgpack {
 
         std::error_code ec;
         T val = decode_traits<T,char>::decode(cursor, decoder, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec, cursor.context().line(), cursor.context().column()));
         }
@@ -83,7 +86,7 @@ namespace msgpack {
 
         std::error_code ec;
         T val = decode_traits<T,char>::decode(cursor, decoder, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec, cursor.context().line(), cursor.context().column()));
         }
@@ -116,7 +119,7 @@ namespace msgpack {
 
         std::error_code ec;
         T val = decode_traits<T,char>::decode(cursor, decoder, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec, cursor.context().line(), cursor.context().column()));
         }
@@ -155,7 +158,7 @@ namespace msgpack {
 
         std::error_code ec;
         T val = decode_traits<T,char>::decode(cursor, decoder, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec, cursor.context().line(), cursor.context().column()));
         }
@@ -190,14 +193,14 @@ namespace msgpack {
 
         std::error_code ec;
         T val = decode_traits<T,char>::decode(cursor, decoder, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec, cursor.context().line(), cursor.context().column()));
         }
         return val;
     }
 
-} // msgpack
-} // jsoncons
+} // namespace msgpack
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_EXT_MSGPACK_DECODE_MSGPACK_HPP

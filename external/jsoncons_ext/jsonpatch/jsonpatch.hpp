@@ -1,20 +1,23 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_JSONPATCH_JSONPATCH_HPP
-#define JSONCONS_JSONPATCH_JSONPATCH_HPP
+#ifndef JSONCONS_EXT_JSONPATCH_JSONPATCH_HPP
+#define JSONCONS_EXT_JSONPATCH_JSONPATCH_HPP
 
-#include <string>
-#include <vector> 
-#include <memory>
 #include <algorithm> // std::min
+#include <cstddef>
+#include <string>
+#include <system_error>
 #include <utility> // std::move
-#include <jsoncons/json.hpp>
-#include <jsoncons_ext/jsonpointer/jsonpointer.hpp>
+#include <vector> 
+
+#include <jsoncons/tag_type.hpp>
+
 #include <jsoncons_ext/jsonpatch/jsonpatch_error.hpp>
+#include <jsoncons_ext/jsonpointer/jsonpointer.hpp>
 
 namespace jsoncons { namespace jsonpatch {
 
@@ -164,30 +167,30 @@ namespace detail {
             {
                 for (auto it = stack.rbegin(); it != stack.rend(); ++it)
                 {
-                    if (it->op == op_type::add)
+                    if ((*it).op == op_type::add)
                     {
-                        jsonpointer::add(target,it->path,it->value,ec);
-                        if (ec)
+                        jsonpointer::add(target,(*it).path,(*it).value,ec);
+                        if (JSONCONS_UNLIKELY(ec))
                         {
-                            //std::cout << "add: " << it->path << std::endl;
+                            //std::cout << "add: " << (*it).path << '\n';
                             break;
                         }
                     }
-                    else if (it->op == op_type::remove)
+                    else if ((*it).op == op_type::remove)
                     {
-                        jsonpointer::remove(target,it->path,ec);
-                        if (ec)
+                        jsonpointer::remove(target,(*it).path,ec);
+                        if (JSONCONS_UNLIKELY(ec))
                         {
-                            //std::cout << "remove: " << it->path << std::endl;
+                            //std::cout << "remove: " << (*it).path << '\n';
                             break;
                         }
                     }
-                    else if (it->op == op_type::replace)
+                    else if ((*it).op == op_type::replace)
                     {
-                        jsonpointer::replace(target,it->path,it->value,ec);
-                        if (ec)
+                        jsonpointer::replace(target,(*it).path,(*it).value,ec);
+                        if (JSONCONS_UNLIKELY(ec))
                         {
-                            //std::cout << "replace: " << it->path << std::endl;
+                            //std::cout << "replace: " << (*it).path << '\n';
                             break;
                         }
                     }
@@ -255,7 +258,7 @@ namespace detail {
                 auto it = target.find(a.key());
                 if (it != target.object_range().end())
                 {
-                    auto temp_diff = from_diff(a.value(),it->value(),ss);
+                    auto temp_diff = from_diff(a.value(),(*it).value(),ss);
                     result.insert(result.array_range().end(),temp_diff.array_range().begin(),temp_diff.array_range().end());
                 }
                 else
@@ -293,7 +296,8 @@ namespace detail {
 
         return result;
     }
-}
+
+} // namespace detail
 
 template <typename Json>
 void apply_patch(Json& target, const Json& patch, std::error_code& ec)
@@ -574,12 +578,13 @@ void apply_patch(Json& target, const Json& patch)
 {
     std::error_code ec;
     apply_patch(target, patch, ec);
-    if (ec)
+    if (JSONCONS_UNLIKELY(ec))
     {
         JSONCONS_THROW(jsonpatch_error(ec));
     }
 }
 
-}}
+} // namespace jsonpatch
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_EXT_JSONPATCH_JSONPATCH_HPP

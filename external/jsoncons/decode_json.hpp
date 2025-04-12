@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -8,13 +8,16 @@
 #define JSONCONS_DECODE_JSON_HPP
 
 #include <iostream>
-#include <string>
-#include <tuple>
-#include <memory>
 #include <istream> // std::basic_istream
+#include <tuple>
+
+#include <jsoncons/config/compiler_support.hpp>
+#include <jsoncons/allocator_set.hpp>
+#include <jsoncons/conv_error.hpp>
 #include <jsoncons/decode_traits.hpp>
 #include <jsoncons/json_cursor.hpp>
-#include <jsoncons/allocator_set.hpp>
+#include <jsoncons/basic_json.hpp>
+#include <jsoncons/source.hpp>
 
 namespace jsoncons {
 
@@ -50,7 +53,7 @@ namespace jsoncons {
         jsoncons::json_decoder<basic_json<char_type>> decoder;
         std::error_code ec;
         T val = decode_traits<T,char_type>::decode(cursor, decoder, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec, cursor.context().line(), cursor.context().column()));
         }
@@ -82,7 +85,7 @@ namespace jsoncons {
 
         std::error_code ec;
         T val = decode_traits<T,CharT>::decode(cursor, decoder, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec, cursor.line(), cursor.column()));
         }
@@ -119,7 +122,7 @@ namespace jsoncons {
         jsoncons::json_decoder<basic_json<char_type>> decoder;
         std::error_code ec;
         T val = decode_traits<T,char_type>::decode(cursor, decoder, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec, cursor.line(), cursor.column()));
         }
@@ -162,7 +165,7 @@ namespace jsoncons {
 
         std::error_code ec;
         T val = decode_traits<T,char_type>::decode(cursor, decoder, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec, cursor.context().line(), cursor.context().column()));
         }
@@ -197,7 +200,7 @@ namespace jsoncons {
 
         std::error_code ec;
         T val = decode_traits<T,CharT>::decode(cursor, decoder, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec, cursor.context().line(), cursor.context().column()));
         }
@@ -205,7 +208,7 @@ namespace jsoncons {
     }
 
 
-} // jsoncons
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_DECODE_JSON_HPP
 

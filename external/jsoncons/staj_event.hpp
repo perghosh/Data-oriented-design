@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -7,44 +7,62 @@
 #ifndef JSONCONS_STAJ_EVENT_HPP
 #define JSONCONS_STAJ_EVENT_HPP
 
-#include <memory> // std::allocator
-#include <string>
-#include <stdexcept>
-#include <system_error>
-#include <ios>
-#include <type_traits> // std::enable_if
 #include <array> // std::array
+#include <cstddef>
+#include <cstdint>
 #include <functional> // std::function
+#include <ios>
+#include <memory> // std::allocator
+#include <system_error>
+#include <type_traits> // std::enable_if
+
+#include <jsoncons/config/compiler_support.hpp>
+#include <jsoncons/conv_error.hpp>
+#include <jsoncons/detail/write_number.hpp>
+#include <jsoncons/item_event_visitor.hpp>
 #include <jsoncons/json_exception.hpp>
-#include <jsoncons/json_visitor.hpp>
-#include <jsoncons/bigint.hpp>
 #include <jsoncons/json_parser.hpp>
+#include <jsoncons/json_type_traits.hpp>
+#include <jsoncons/json_visitor.hpp>
 #include <jsoncons/ser_context.hpp>
 #include <jsoncons/sink.hpp>
-#include <jsoncons/detail/write_number.hpp>
-#include <jsoncons/json_type_traits.hpp>
+#include <jsoncons/tag_type.hpp>
 #include <jsoncons/typed_array_view.hpp>
+#include <jsoncons/utility/bigint.hpp>
+#include <jsoncons/utility/extension_traits.hpp>
+
 #include <jsoncons/value_converter.hpp>
-#include <jsoncons/item_event_visitor.hpp>
 
 namespace jsoncons {
 
-enum class staj_event_type
+enum class staj_event_type : uint8_t
 {
-    begin_array,
-    end_array,
-    begin_object,
-    end_object,
-    key,
-    string_value,
-    byte_string_value,
-    null_value,
-    bool_value,
-    int64_value,
-    uint64_value,
-    half_value,
-    double_value
+    key = 0,                // 0000
+    string_value = 1,       // 0001
+    byte_string_value = 2,  // 0010
+    null_value = 3,         // 0011
+    bool_value = 4,         // 0100
+    int64_value = 5,        // 0101
+    uint64_value = 6,       // 0110
+    half_value = 8,         // 1000
+    double_value = 9,       // 1001
+    begin_object = 13,      // 1101
+    end_object = 7,         // 0111    
+    begin_array = 14,       // 1110
+    end_array = 15          // 1111
 };
+
+inline bool is_begin_container(staj_event_type event_type) noexcept
+{
+    static const uint8_t mask{ uint8_t(staj_event_type::begin_object) & uint8_t(staj_event_type::begin_array) };
+    return (uint8_t(event_type) & mask) == mask;
+}
+
+inline bool is_end_container(staj_event_type event_type) noexcept
+{
+    static const uint8_t mask{ uint8_t(staj_event_type::end_object) & uint8_t(staj_event_type::end_array) };
+    return (uint8_t(event_type) & mask) == mask;
+}
 
 template <typename CharT>
 std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os, staj_event_type tag)
@@ -139,7 +157,7 @@ class basic_staj_event
 {
     staj_event_type event_type_;
     semantic_tag tag_;
-    uint64_t ext_tag_;
+    uint64_t ext_tag_{0};
     union
     {
         bool bool_value_;
@@ -150,51 +168,51 @@ class basic_staj_event
         const CharT* string_data_;
         const uint8_t* byte_string_data_;
     } value_;
-    std::size_t length_;
+    std::size_t length_{0};
 public:
     using string_view_type = jsoncons::basic_string_view<CharT>;
 
     basic_staj_event(staj_event_type event_type, semantic_tag tag = semantic_tag::none)
-        : event_type_(event_type), tag_(tag), ext_tag_(0), value_(), length_(0)
+        : event_type_(event_type), tag_(tag), value_()
     {
     }
 
     basic_staj_event(staj_event_type event_type, std::size_t length, semantic_tag tag = semantic_tag::none)
-        : event_type_(event_type), tag_(tag), ext_tag_(0), value_(), length_(length)
+        : event_type_(event_type), tag_(tag), value_(), length_(length)
     {
     }
 
     basic_staj_event(null_type, semantic_tag tag)
-        : event_type_(staj_event_type::null_value), tag_(tag), ext_tag_(0), value_(), length_(0)
+        : event_type_(staj_event_type::null_value), tag_(tag), value_()
     {
     }
 
     basic_staj_event(bool value, semantic_tag tag)
-        : event_type_(staj_event_type::bool_value), tag_(tag), ext_tag_(0), length_(0)
+        : event_type_(staj_event_type::bool_value), tag_(tag)
     {
         value_.bool_value_ = value;
     }
 
     basic_staj_event(int64_t value, semantic_tag tag)
-        : event_type_(staj_event_type::int64_value), tag_(tag), ext_tag_(0), length_(0)
+        : event_type_(staj_event_type::int64_value), tag_(tag)
     {
         value_.int64_value_ = value;
     }
 
     basic_staj_event(uint64_t value, semantic_tag tag)
-        : event_type_(staj_event_type::uint64_value), tag_(tag), ext_tag_(0), length_(0)
+        : event_type_(staj_event_type::uint64_value), tag_(tag)
     {
         value_.uint64_value_ = value;
     }
 
     basic_staj_event(half_arg_t, uint16_t value, semantic_tag tag)
-        : event_type_(staj_event_type::half_value), tag_(tag), ext_tag_(0), length_(0)
+        : event_type_(staj_event_type::half_value), tag_(tag)
     {
         value_.half_value_ = value;
     }
 
     basic_staj_event(double value, semantic_tag tag)
-        : event_type_(staj_event_type::double_value), tag_(tag), ext_tag_(0), length_(0)
+        : event_type_(staj_event_type::double_value), tag_(tag)
     {
         value_.double_value_ = value;
     }
@@ -202,7 +220,7 @@ public:
     basic_staj_event(const string_view_type& s,
         staj_event_type event_type,
         semantic_tag tag = semantic_tag::none)
-        : event_type_(event_type), tag_(tag), ext_tag_(0), length_(s.length())
+        : event_type_(event_type), tag_(tag), length_(s.length())
     {
         value_.string_data_ = s.data();
     }
@@ -210,7 +228,7 @@ public:
     basic_staj_event(const byte_string_view& s,
         staj_event_type event_type,
         semantic_tag tag = semantic_tag::none)
-        : event_type_(event_type), tag_(tag), ext_tag_(0), length_(s.size())
+        : event_type_(event_type), tag_(tag), length_(s.size())
     {
         value_.byte_string_data_ = s.data();
     }
@@ -222,6 +240,8 @@ public:
     {
         value_.byte_string_data_ = s.data();
     }
+    
+    ~basic_staj_event() = default;
 
     std::size_t size() const
     {
@@ -233,7 +253,7 @@ public:
     {
         std::error_code ec;
         T val = get<T>(ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -459,77 +479,103 @@ private:
         }
     }
 public:
-    bool send_json_event(basic_json_visitor<CharT>& visitor,
+    void send_json_event(basic_json_visitor<CharT>& visitor,
         const ser_context& context,
         std::error_code& ec) const
     {
         switch (event_type())
         {
             case staj_event_type::begin_array:
-                return visitor.begin_array(tag(), context);
+                visitor.begin_array(tag(), context);
+                break;
             case staj_event_type::end_array:
-                return visitor.end_array(context);
+                visitor.end_array(context);
+                break;
             case staj_event_type::begin_object:
-                return visitor.begin_object(tag(), context, ec);
+                visitor.begin_object(tag(), context, ec);
+                break;
             case staj_event_type::end_object:
-                return visitor.end_object(context, ec);
+                visitor.end_object(context, ec);
+                break;
             case staj_event_type::key:
-                return visitor.key(string_view_type(value_.string_data_,length_), context);
+                visitor.key(string_view_type(value_.string_data_,length_), context);
+                break;
             case staj_event_type::string_value:
-                return visitor.string_value(string_view_type(value_.string_data_,length_), tag(), context);
+                visitor.string_value(string_view_type(value_.string_data_,length_), tag(), context);
+                break;
             case staj_event_type::byte_string_value:
-                return visitor.byte_string_value(byte_string_view(value_.byte_string_data_,length_), tag(), context);
+                visitor.byte_string_value(byte_string_view(value_.byte_string_data_,length_), tag(), context);
+                break;
             case staj_event_type::null_value:
-                return visitor.null_value(tag(), context);
+                visitor.null_value(tag(), context);
+                break;
             case staj_event_type::bool_value:
-                return visitor.bool_value(value_.bool_value_, tag(), context);
+                visitor.bool_value(value_.bool_value_, tag(), context);
+                break;
             case staj_event_type::int64_value:
-                return visitor.int64_value(value_.int64_value_, tag(), context);
+                visitor.int64_value(value_.int64_value_, tag(), context);
+                break;
             case staj_event_type::uint64_value:
-                return visitor.uint64_value(value_.uint64_value_, tag(), context);
+                visitor.uint64_value(value_.uint64_value_, tag(), context);
+                break;
             case staj_event_type::half_value:
-                return visitor.half_value(value_.half_value_, tag(), context);
+                visitor.half_value(value_.half_value_, tag(), context);
+                break;
             case staj_event_type::double_value:
-                return visitor.double_value(value_.double_value_, tag(), context);
+                visitor.double_value(value_.double_value_, tag(), context);
+                break;
             default:
-                return false;
+                break;
         }
     }
     
-    bool send_value_event(basic_item_event_visitor<CharT>& visitor,
+    void send_value_event(basic_item_event_visitor<CharT>& visitor,
         const ser_context& context,
         std::error_code& ec) const
     {
         switch (event_type())
         {
             case staj_event_type::key:
-                return visitor.string_value(string_view_type(value_.string_data_,length_), tag(), context);
+                visitor.string_value(string_view_type(value_.string_data_,length_), tag(), context);
+                break;
             case staj_event_type::begin_array:
-                return visitor.begin_array(tag(), context);
+                visitor.begin_array(tag(), context);
+                break;
             case staj_event_type::end_array:
-                return visitor.end_array(context);
+                visitor.end_array(context);
+                break;
             case staj_event_type::begin_object:
-                return visitor.begin_object(tag(), context, ec);
+                visitor.begin_object(tag(), context, ec);
+                break;
             case staj_event_type::end_object:
-                return visitor.end_object(context, ec);
+                visitor.end_object(context, ec);
+                break;
             case staj_event_type::string_value:
-                return visitor.string_value(string_view_type(value_.string_data_,length_), tag(), context);
+                visitor.string_value(string_view_type(value_.string_data_,length_), tag(), context);
+                break;
             case staj_event_type::byte_string_value:
-                return visitor.byte_string_value(byte_string_view(value_.byte_string_data_,length_), tag(), context);
+                visitor.byte_string_value(byte_string_view(value_.byte_string_data_,length_), tag(), context);
+                break;
             case staj_event_type::null_value:
-                return visitor.null_value(tag(), context);
+                visitor.null_value(tag(), context);
+                break;
             case staj_event_type::bool_value:
-                return visitor.bool_value(value_.bool_value_, tag(), context);
+                visitor.bool_value(value_.bool_value_, tag(), context);
+                break;
             case staj_event_type::int64_value:
-                return visitor.int64_value(value_.int64_value_, tag(), context);
+                visitor.int64_value(value_.int64_value_, tag(), context);
+                break;
             case staj_event_type::uint64_value:
-                return visitor.uint64_value(value_.uint64_value_, tag(), context);
+                visitor.uint64_value(value_.uint64_value_, tag(), context);
+                break;
             case staj_event_type::half_value:
-                return visitor.half_value(value_.half_value_, tag(), context);
+                visitor.half_value(value_.half_value_, tag(), context);
+                break;
             case staj_event_type::double_value:
-                return visitor.double_value(value_.double_value_, tag(), context);
+                visitor.double_value(value_.double_value_, tag(), context);
+                break;
             default:
-                return false;
+                break;
         }
     }
 
@@ -537,5 +583,5 @@ public:
 
 } // namespace jsoncons
 
-#endif
+#endif // JSONCONS_STAJ_EVENT_HPP
 

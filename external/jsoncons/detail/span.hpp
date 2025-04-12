@@ -1,18 +1,24 @@
+// Copyright 2013-2025 Daniel Parker
+// Distributed under the Boost license, Version 1.0.
+// (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+// See https://github.com/danielaparker/jsoncons for latest version
+
 #ifndef JSONCONS_DETAIL_SPAN_HPP
 #define JSONCONS_DETAIL_SPAN_HPP
 
-#include <utility> // std::swap
-#include <memory> // std::addressof
-#include <type_traits> // std::enable_if, std::true_type, std::false_type
-#include <jsoncons/config/compiler_support.hpp>
-#include <jsoncons/extension_traits.hpp>
+#include <array>
+#include <cstddef>
 #include <iterator>
 #include <limits>
+#include <memory> // std::addressof
+#include <type_traits> // std::enable_if, std::true_type, std::false_type
 
-namespace jsoncons
-{
-namespace detail
-{
+#include <jsoncons/utility/extension_traits.hpp>
+
+namespace jsoncons {
+namespace detail {
+
     constexpr std::size_t dynamic_extent = (std::numeric_limits<std::size_t>::max)();
 
     template< typename T, std::size_t Extent = dynamic_extent>
@@ -43,13 +49,12 @@ namespace detail
         using reverse_iterator = std::reverse_iterator<iterator>;
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     private:
-        pointer data_;
-        size_type size_;
+        pointer data_{nullptr};
+        size_type size_{0};
     public:
         static constexpr std::size_t extent = Extent;
 
         constexpr span() noexcept
-            : data_(nullptr), size_(0)
         {
         }
         constexpr span(pointer data, size_type size)
@@ -98,9 +103,9 @@ namespace detail
         {
         }
 
-        constexpr span(const span& other) noexcept = default;
+        constexpr span(const span& other) = default;
 
-        span& operator=( const span& other ) noexcept = default;
+        span& operator=( const span& other ) = default;
 
         constexpr pointer data() const noexcept
         {
@@ -185,4 +190,4 @@ namespace detail
 } // namespace detail
 } // namespace jsoncons
 
-#endif
+#endif // JSONCONS_DETAIL_SPAN_HPP

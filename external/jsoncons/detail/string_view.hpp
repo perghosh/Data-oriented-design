@@ -1,23 +1,21 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_STRING_VIEW_HPP
-#define JSONCONS_STRING_VIEW_HPP
+#ifndef JSONCONS_DETAIL_STRING_VIEW_HPP
+#define JSONCONS_DETAIL_STRING_VIEW_HPP
 
+#include <algorithm> // std::find, std::min, std::reverse
+#include <cmath>
+#include <cstddef>
+#include <iterator>
+#include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <string>
-#include <vector>
-#include <ostream>
-#include <cmath>
-#include <algorithm> // std::find, std::min, std::reverse
-#include <memory>
-#include <iterator>
-#include <exception>
-#include <stdexcept>
-#include <istream> // std::basic_istream
+
 #include <jsoncons/config/compiler_support.hpp>
 
 namespace jsoncons { 
@@ -28,7 +26,7 @@ namespace detail {
     {
     private:
         const CharT* data_;
-        std::size_t length_;
+        std::size_t length_{0};
     public:
         using value_type = CharT;
         using const_reference = const CharT&;
@@ -40,7 +38,7 @@ namespace detail {
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
         constexpr basic_string_view() noexcept
-            : data_(nullptr), length_(0)
+            : data_(nullptr)
         {
         }
         constexpr basic_string_view(const CharT* data, std::size_t length)
@@ -52,13 +50,15 @@ namespace detail {
             : data_(data), length_(Traits::length(data))
         {
         }
-        constexpr basic_string_view(const basic_string_view& other) noexcept = default;
+        constexpr basic_string_view(const basic_string_view& other) = default;
 
         template <typename Tr,typename Allocator>
         JSONCONS_CPP14_CONSTEXPR  basic_string_view(const std::basic_string<CharT,Tr,Allocator>& s) noexcept
             : data_(s.data()), length_(s.length())
         {
         }
+        
+        ~basic_string_view() = default;
 
         JSONCONS_CPP14_CONSTEXPR basic_string_view& operator=( const basic_string_view& view ) noexcept
         {
@@ -541,12 +541,12 @@ namespace std {
     template <typename CharT,typename Traits>
     struct hash<jsoncons::detail::basic_string_view<CharT, Traits>>
     {
-        size_t operator()(const jsoncons::detail::basic_string_view<CharT, Traits>& s) const noexcept
+        std::size_t operator()(const jsoncons::detail::basic_string_view<CharT, Traits>& s) const noexcept
         {
             const int p = 53;
             const int m = 1000000009;
-            size_t hash_value = 0;
-            size_t p_pow = 1;
+            std::size_t hash_value = 0;
+            std::size_t p_pow = 1;
             for (CharT c : s) {
                 hash_value = (hash_value + (c - 'a' + 1) * p_pow) % m;
                 p_pow = (p_pow * p) % m;
@@ -556,4 +556,4 @@ namespace std {
     };
 } // namespace std
 
-#endif
+#endif // JSONCONS_DETAIL_STRING_VIEW_HPP

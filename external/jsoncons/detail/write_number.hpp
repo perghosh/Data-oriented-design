@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -7,18 +7,24 @@
 #ifndef JSONCONS_DETAIL_WRITE_NUMBER_HPP
 #define JSONCONS_DETAIL_WRITE_NUMBER_HPP
 
-#include <stdexcept>
-#include <string>
+#include <clocale>
 #include <cmath>
-#include <locale>
+#include <cstddef>
+#include <cstdint>
 #include <limits> // std::numeric_limits
-#include <exception>
+#include <locale>
+#include <stdexcept>
 #include <stdio.h> // snprintf
+#include <string>
+#include <type_traits>
+
+#include <jsoncons/config/compiler_support.hpp>
 #include <jsoncons/config/jsoncons_config.hpp>
-#include <jsoncons/json_options.hpp>
 #include <jsoncons/detail/grisu3.hpp>
 #include <jsoncons/detail/parse_number.hpp>
-#include <jsoncons/extension_traits.hpp>
+#include <jsoncons/json_exception.hpp>
+#include <jsoncons/json_options.hpp>
+#include <jsoncons/utility/extension_traits.hpp>
 
 namespace jsoncons { 
 namespace detail {
@@ -293,7 +299,7 @@ namespace detail {
             return true;
         }
 
-        jsoncons::detail::chars_to to_double_;
+        const jsoncons::detail::chars_to to_double;
 
         char buffer[100];
         int precision = std::numeric_limits<double>::digits10;
@@ -302,7 +308,7 @@ namespace detail {
         {
             return false;
         }
-        if (to_double_(buffer, sizeof(buffer)) != val)
+        if (to_double(buffer, sizeof(buffer)) != val)
         {
             const int precision2 = std::numeric_limits<double>::max_digits10;
             length = snprintf(buffer, sizeof(buffer), "%1.*e", precision2, val);
@@ -326,7 +332,7 @@ namespace detail {
             return true;
         }
 
-        jsoncons::detail::chars_to to_double_;
+        const jsoncons::detail::chars_to to_double;
 
         char buffer[100];
         int precision = std::numeric_limits<double>::digits10;
@@ -335,7 +341,7 @@ namespace detail {
         {
             return false;
         }
-        if (to_double_(buffer, sizeof(buffer)) != val)
+        if (to_double(buffer, sizeof(buffer)) != val)
         {
             const int precision2 = std::numeric_limits<double>::max_digits10;
             length = snprintf(buffer, sizeof(buffer), "%1.*g", precision2, val);
@@ -393,7 +399,7 @@ namespace detail {
             return true;
         }
 
-        jsoncons::detail::chars_to to_double_;
+        const jsoncons::detail::chars_to to_double;
 
         char buffer[100];
         int precision = std::numeric_limits<double>::digits10;
@@ -402,7 +408,7 @@ namespace detail {
         {
             return false;
         }
-        if (to_double_(buffer, sizeof(buffer)) != val)
+        if (to_double(buffer, sizeof(buffer)) != val)
         {
             const int precision2 = std::numeric_limits<double>::max_digits10;
             length = snprintf(buffer, sizeof(buffer), "%1.*f", precision2, val);
@@ -563,4 +569,4 @@ namespace detail {
 } // namespace detail
 } // namespace jsoncons
 
-#endif
+#endif // JSONCONS_DETAIL_WRITE_NUMBER_HPP

@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -7,16 +7,22 @@
 #ifndef JSONCONS_JSON_VISITOR_HPP
 #define JSONCONS_JSON_VISITOR_HPP
 
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <string>
+#include <system_error>
 #include <utility>
-#include <jsoncons/json_exception.hpp>
-#include <jsoncons/bigint.hpp>
-#include <jsoncons/ser_context.hpp>
-#include <jsoncons/json_options.hpp>
+
+#include <jsoncons/utility/byte_string.hpp>
+#include <jsoncons/config/compiler_support.hpp>
 #include <jsoncons/config/jsoncons_config.hpp>
+#include <jsoncons/json_exception.hpp>
+#include <jsoncons/json_options.hpp>
+#include <jsoncons/ser_context.hpp>
 #include <jsoncons/tag_type.hpp>
-#include <jsoncons/byte_string.hpp>
+#include <jsoncons/utility/bigint.hpp>
+#include <jsoncons/utility/extension_traits.hpp>
 
 namespace jsoncons {
 
@@ -31,853 +37,781 @@ namespace jsoncons {
 
         basic_json_visitor() = default;
 
-        virtual ~basic_json_visitor() noexcept = default;
+        virtual ~basic_json_visitor() = default;
 
         void flush()
         {
             visit_flush();
         }
 
-        bool begin_object(semantic_tag tag=semantic_tag::none,
-                          const ser_context& context=ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE begin_object(semantic_tag tag=semantic_tag::none,
+            const ser_context& context=ser_context())
         {
             std::error_code ec;
-            bool more = visit_begin_object(tag, context, ec);
-            if (ec)
+            visit_begin_object(tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool begin_object(std::size_t length, 
-                          semantic_tag tag=semantic_tag::none, 
-                          const ser_context& context = ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE begin_object(std::size_t length, 
+            semantic_tag tag=semantic_tag::none, 
+            const ser_context& context = ser_context())
         {
             std::error_code ec;
-            bool more = visit_begin_object(length, tag, context, ec);
-            if (ec)
+            visit_begin_object(length, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool end_object(const ser_context& context = ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE end_object(const ser_context& context = ser_context())
         {
             std::error_code ec;
-            bool more = visit_end_object(context, ec);
-            if (ec)
+            visit_end_object(context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool begin_array(semantic_tag tag=semantic_tag::none,
-                         const ser_context& context=ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE begin_array(semantic_tag tag=semantic_tag::none,
+            const ser_context& context=ser_context())
         {
             std::error_code ec;
-            bool more = visit_begin_array(tag, context, ec);
-            if (ec)
+            visit_begin_array(tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool begin_array(std::size_t length, 
-                         semantic_tag tag=semantic_tag::none,
-                         const ser_context& context=ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE begin_array(std::size_t length, 
+            semantic_tag tag=semantic_tag::none,
+            const ser_context& context=ser_context())
         {
             std::error_code ec;
-            bool more = visit_begin_array(length, tag, context, ec);
-            if (ec)
+            visit_begin_array(length, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool end_array(const ser_context& context=ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE end_array(const ser_context& context=ser_context())
         {
             std::error_code ec;
-            bool more = visit_end_array(context, ec);
-            if (ec)
+            visit_end_array(context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool key(const string_view_type& name, const ser_context& context=ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE key(const string_view_type& name, const ser_context& context=ser_context())
         {
             std::error_code ec;
-            bool more = visit_key(name, context, ec);
-            if (ec)
+            visit_key(name, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool null_value(semantic_tag tag = semantic_tag::none,
-                        const ser_context& context=ser_context()) 
+        JSONCONS_VISITOR_RETURN_TYPE null_value(semantic_tag tag = semantic_tag::none,
+            const ser_context& context=ser_context()) 
         {
             std::error_code ec;
-            bool more = visit_null(tag, context, ec);
-            if (ec)
+            visit_null(tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool bool_value(bool value, 
-                        semantic_tag tag = semantic_tag::none,
-                        const ser_context& context=ser_context()) 
+        JSONCONS_VISITOR_RETURN_TYPE bool_value(bool value, 
+            semantic_tag tag = semantic_tag::none,
+            const ser_context& context=ser_context()) 
         {
             std::error_code ec;
-            bool more = visit_bool(value, tag, context, ec);
-            if (ec)
+            visit_bool(value, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool string_value(const string_view_type& value, 
-                          semantic_tag tag = semantic_tag::none, 
-                          const ser_context& context=ser_context()) 
+        JSONCONS_VISITOR_RETURN_TYPE string_value(const string_view_type& value, 
+            semantic_tag tag = semantic_tag::none, 
+            const ser_context& context=ser_context()) 
         {
             std::error_code ec;
-            bool more = visit_string(value, tag, context, ec);
-            if (ec)
+            visit_string(value, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        template <typename ByteStringLike>
+        JSONCONS_VISITOR_RETURN_TYPE byte_string_value(const ByteStringLike& b, 
+            semantic_tag tag=semantic_tag::none, 
+            const ser_context& context=ser_context(),
+            typename std::enable_if<extension_traits::is_byte_sequence<ByteStringLike>::value,int>::type = 0)
+        {
+            std::error_code ec;
+            visit_byte_string(byte_string_view(reinterpret_cast<const uint8_t*>(b.data()),b.size()), tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
+            {
+                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
+            }
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        template <typename ByteStringLike>
+        JSONCONS_VISITOR_RETURN_TYPE byte_string_value(const ByteStringLike& b, 
+            uint64_t ext_tag, 
+            const ser_context& context=ser_context(),
+            typename std::enable_if<extension_traits::is_byte_sequence<ByteStringLike>::value,int>::type = 0)
+        {
+            std::error_code ec;
+            visit_byte_string(byte_string_view(reinterpret_cast<const uint8_t*>(b.data()),b.size()), ext_tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
+            {
+                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
+            }
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE uint64_value(uint64_t value, 
+            semantic_tag tag = semantic_tag::none, 
+            const ser_context& context=ser_context())
+        {
+            std::error_code ec;
+            visit_uint64(value, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
+            {
+                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
+            }
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE int64_value(int64_t value, 
+            semantic_tag tag = semantic_tag::none, 
+            const ser_context& context=ser_context())
+        {
+            std::error_code ec;
+            visit_int64(value, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
+            {
+                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
+            }
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE half_value(uint16_t value, 
+            semantic_tag tag = semantic_tag::none, 
+            const ser_context& context=ser_context())
+        {
+            std::error_code ec;
+            visit_half(value, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
+            {
+                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
+            }
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE double_value(double value, 
+            semantic_tag tag = semantic_tag::none, 
+            const ser_context& context=ser_context())
+        {
+            std::error_code ec;
+            visit_double(value, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
+            {
+                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
+            }
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE begin_object(semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec)
+        {
+            visit_begin_object(tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE begin_object(std::size_t length, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec)
+        {
+            visit_begin_object(length, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE end_object(const ser_context& context, std::error_code& ec)
+        {
+            visit_end_object(context, ec);
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE begin_array(semantic_tag tag, const ser_context& context, std::error_code& ec)
+        {
+            visit_begin_array(tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE begin_array(std::size_t length, semantic_tag tag, const ser_context& context, std::error_code& ec)
+        {
+            visit_begin_array(length, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE end_array(const ser_context& context, std::error_code& ec)
+        {
+            visit_end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE key(const string_view_type& name, const ser_context& context, std::error_code& ec)
+        {
+            visit_key(name, context, ec);
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE null_value(semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec) 
+        {
+            visit_null(tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE bool_value(bool value, 
+            semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec) 
+        {
+            visit_bool(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
+        }
+
+        JSONCONS_VISITOR_RETURN_TYPE string_value(const string_view_type& value, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec) 
+        {
+            visit_string(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
         template <typename Source>
-        bool byte_string_value(const Source& b, 
-                               semantic_tag tag=semantic_tag::none, 
-                               const ser_context& context=ser_context(),
-                               typename std::enable_if<extension_traits::is_byte_sequence<Source>::value,int>::type = 0)
+        JSONCONS_VISITOR_RETURN_TYPE byte_string_value(const Source& b, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec,
+            typename std::enable_if<extension_traits::is_byte_sequence<Source>::value,int>::type = 0)
         {
-            std::error_code ec;
-            bool more = visit_byte_string(byte_string_view(reinterpret_cast<const uint8_t*>(b.data()),b.size()), tag, context, ec);
-            if (ec)
-            {
-                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
-            }
-            return more;
+            visit_byte_string(byte_string_view(reinterpret_cast<const uint8_t*>(b.data()),b.size()), tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
         template <typename Source>
-        bool byte_string_value(const Source& b, 
-                               uint64_t ext_tag, 
-                               const ser_context& context=ser_context(),
-                               typename std::enable_if<extension_traits::is_byte_sequence<Source>::value,int>::type = 0)
+        JSONCONS_VISITOR_RETURN_TYPE byte_string_value(const Source& b, 
+            uint64_t ext_tag, 
+            const ser_context& context,
+            std::error_code& ec,
+            typename std::enable_if<extension_traits::is_byte_sequence<Source>::value,int>::type = 0)
         {
-            std::error_code ec;
-            bool more = visit_byte_string(byte_string_view(reinterpret_cast<const uint8_t*>(b.data()),b.size()), ext_tag, context, ec);
-            if (ec)
-            {
-                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
-            }
-            return more;
+            visit_byte_string(byte_string_view(reinterpret_cast<const uint8_t*>(b.data()),b.size()), ext_tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool uint64_value(uint64_t value, 
-                          semantic_tag tag = semantic_tag::none, 
-                          const ser_context& context=ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE uint64_value(uint64_t value, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec)
         {
-            std::error_code ec;
-            bool more = visit_uint64(value, tag, context, ec);
-            if (ec)
-            {
-                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
-            }
-            return more;
+            visit_uint64(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool int64_value(int64_t value, 
-                         semantic_tag tag = semantic_tag::none, 
-                         const ser_context& context=ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE int64_value(int64_t value, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec)
         {
-            std::error_code ec;
-            bool more = visit_int64(value, tag, context, ec);
-            if (ec)
-            {
-                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
-            }
-            return more;
+            visit_int64(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool half_value(uint16_t value, 
-                        semantic_tag tag = semantic_tag::none, 
-                        const ser_context& context=ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE half_value(uint16_t value, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec)
         {
-            std::error_code ec;
-            bool more = visit_half(value, tag, context, ec);
-            if (ec)
-            {
-                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
-            }
-            return more;
+            visit_half(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool double_value(double value, 
-                          semantic_tag tag = semantic_tag::none, 
-                          const ser_context& context=ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE double_value(double value, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec)
         {
-            std::error_code ec;
-            bool more = visit_double(value, tag, context, ec);
-            if (ec)
-            {
-                JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
-            }
-            return more;
-        }
-
-        bool begin_object(semantic_tag tag,
-                          const ser_context& context,
-                          std::error_code& ec)
-        {
-            return visit_begin_object(tag, context, ec);
-        }
-
-        bool begin_object(std::size_t length, 
-                          semantic_tag tag, 
-                          const ser_context& context,
-                          std::error_code& ec)
-        {
-            return visit_begin_object(length, tag, context, ec);
-        }
-
-        bool end_object(const ser_context& context, std::error_code& ec)
-        {
-            return visit_end_object(context, ec);
-        }
-
-        bool begin_array(semantic_tag tag, const ser_context& context, std::error_code& ec)
-        {
-            return visit_begin_array(tag, context, ec);
-        }
-
-        bool begin_array(std::size_t length, semantic_tag tag, const ser_context& context, std::error_code& ec)
-        {
-            return visit_begin_array(length, tag, context, ec);
-        }
-
-        bool end_array(const ser_context& context, std::error_code& ec)
-        {
-            return visit_end_array(context, ec);
-        }
-
-        bool key(const string_view_type& name, const ser_context& context, std::error_code& ec)
-        {
-            return visit_key(name, context, ec);
-        }
-
-        bool null_value(semantic_tag tag,
-                        const ser_context& context,
-                        std::error_code& ec) 
-        {
-            return visit_null(tag, context, ec);
-        }
-
-        bool bool_value(bool value, 
-                        semantic_tag tag,
-                        const ser_context& context,
-                        std::error_code& ec) 
-        {
-            return visit_bool(value, tag, context, ec);
-        }
-
-        bool string_value(const string_view_type& value, 
-                          semantic_tag tag, 
-                          const ser_context& context,
-                          std::error_code& ec) 
-        {
-            return visit_string(value, tag, context, ec);
-        }
-
-        template <typename Source>
-        bool byte_string_value(const Source& b, 
-                               semantic_tag tag, 
-                               const ser_context& context,
-                               std::error_code& ec,
-                               typename std::enable_if<extension_traits::is_byte_sequence<Source>::value,int>::type = 0)
-        {
-            return visit_byte_string(byte_string_view(reinterpret_cast<const uint8_t*>(b.data()),b.size()), tag, context, ec);
-        }
-
-        template <typename Source>
-        bool byte_string_value(const Source& b, 
-                               uint64_t ext_tag, 
-                               const ser_context& context,
-                               std::error_code& ec,
-                               typename std::enable_if<extension_traits::is_byte_sequence<Source>::value,int>::type = 0)
-        {
-            return visit_byte_string(byte_string_view(reinterpret_cast<const uint8_t*>(b.data()),b.size()), ext_tag, context, ec);
-        }
-
-        bool uint64_value(uint64_t value, 
-                          semantic_tag tag, 
-                          const ser_context& context,
-                          std::error_code& ec)
-        {
-            return visit_uint64(value, tag, context, ec);
-        }
-
-        bool int64_value(int64_t value, 
-                         semantic_tag tag, 
-                         const ser_context& context,
-                         std::error_code& ec)
-        {
-            return visit_int64(value, tag, context, ec);
-        }
-
-        bool half_value(uint16_t value, 
-                        semantic_tag tag, 
-                        const ser_context& context,
-                        std::error_code& ec)
-        {
-            return visit_half(value, tag, context, ec);
-        }
-
-        bool double_value(double value, 
-                          semantic_tag tag, 
-                          const ser_context& context,
-                          std::error_code& ec)
-        {
-            return visit_double(value, tag, context, ec);
+            visit_double(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
         template <typename T>
-        bool typed_array(const jsoncons::span<T>& data, 
-                         semantic_tag tag=semantic_tag::none,
-                         const ser_context& context=ser_context())
+        JSONCONS_VISITOR_RETURN_TYPE typed_array(const jsoncons::span<T>& data, 
+            semantic_tag tag=semantic_tag::none,
+            const ser_context& context=ser_context())
         {
             std::error_code ec;
-            bool more = visit_typed_array(data, tag, context, ec);
-            if (ec)
+            visit_typed_array(data, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
         template <typename T>
-        bool typed_array(const jsoncons::span<T>& data, 
-                         semantic_tag tag,
-                         const ser_context& context,
-                         std::error_code& ec)
+        JSONCONS_VISITOR_RETURN_TYPE typed_array(const jsoncons::span<T>& data, 
+            semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec)
         {
-            return visit_typed_array(data, tag, context, ec);
+            visit_typed_array(data, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool typed_array(half_arg_t, const jsoncons::span<const uint16_t>& s,
+        JSONCONS_VISITOR_RETURN_TYPE typed_array(half_arg_t, const jsoncons::span<const uint16_t>& s,
             semantic_tag tag = semantic_tag::none,
             const ser_context& context = ser_context())
         {
             std::error_code ec;
-            bool more = visit_typed_array(half_arg, s, tag, context, ec);
-            if (ec)
+            visit_typed_array(half_arg, s, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool typed_array(half_arg_t, const jsoncons::span<const uint16_t>& s,
-                         semantic_tag tag,
-                         const ser_context& context,
-                         std::error_code& ec)
+        JSONCONS_VISITOR_RETURN_TYPE typed_array(half_arg_t, const jsoncons::span<const uint16_t>& s,
+            semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec)
         {
-            return visit_typed_array(half_arg, s, tag, context, ec);
+            visit_typed_array(half_arg, s, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool begin_multi_dim(const jsoncons::span<const size_t>& shape,
-                             semantic_tag tag = semantic_tag::multi_dim_row_major,
-                             const ser_context& context=ser_context()) 
+        JSONCONS_VISITOR_RETURN_TYPE begin_multi_dim(const jsoncons::span<const size_t>& shape,
+            semantic_tag tag = semantic_tag::multi_dim_row_major,
+            const ser_context& context=ser_context()) 
         {
             std::error_code ec;
-            bool more = visit_begin_multi_dim(shape, tag, context, ec);
-            if (ec)
+            visit_begin_multi_dim(shape, tag, context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool begin_multi_dim(const jsoncons::span<const size_t>& shape,
-                             semantic_tag tag,
-                             const ser_context& context,
-                             std::error_code& ec) 
+        JSONCONS_VISITOR_RETURN_TYPE begin_multi_dim(const jsoncons::span<const size_t>& shape,
+            semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec) 
         {
-            return visit_begin_multi_dim(shape, tag, context, ec);
+            visit_begin_multi_dim(shape, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool end_multi_dim(const ser_context& context=ser_context()) 
+        JSONCONS_VISITOR_RETURN_TYPE end_multi_dim(const ser_context& context=ser_context()) 
         {
             std::error_code ec;
-            bool more = visit_end_multi_dim(context, ec);
-            if (ec)
+            visit_end_multi_dim(context, ec);
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, context.line(), context.column()));
             }
-            return more;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool end_multi_dim(const ser_context& context,
+        JSONCONS_VISITOR_RETURN_TYPE end_multi_dim(const ser_context& context,
                            std::error_code& ec) 
         {
-            return visit_end_multi_dim(context, ec);
+            visit_end_multi_dim(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
     private:
 
         virtual void visit_flush() = 0;
 
-        virtual bool visit_begin_object(semantic_tag tag, 
-                                     const ser_context& context, 
-                                     std::error_code& ec) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_begin_object(semantic_tag tag, 
+            const ser_context& context, 
+            std::error_code& ec) = 0;
 
-        virtual bool visit_begin_object(std::size_t /*length*/, 
-                                     semantic_tag tag, 
-                                     const ser_context& context, 
-                                     std::error_code& ec)
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_begin_object(std::size_t /*length*/, 
+            semantic_tag tag, 
+            const ser_context& context, 
+            std::error_code& ec)
         {
-            return visit_begin_object(tag, context, ec);
+            visit_begin_object(tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_end_object(const ser_context& context, 
-                                   std::error_code& ec) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_end_object(const ser_context& context, 
+            std::error_code& ec) = 0;
 
-        virtual bool visit_begin_array(semantic_tag tag, 
-                                    const ser_context& context, 
-                                    std::error_code& ec) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_begin_array(semantic_tag tag, 
+            const ser_context& context, 
+            std::error_code& ec) = 0;
 
-        virtual bool visit_begin_array(std::size_t /*length*/, 
-                                    semantic_tag tag, 
-                                    const ser_context& context, 
-                                    std::error_code& ec)
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_begin_array(std::size_t /*length*/, 
+            semantic_tag tag, 
+            const ser_context& context, 
+            std::error_code& ec)
         {
-            return visit_begin_array(tag, context, ec);
+            visit_begin_array(tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_end_array(const ser_context& context, 
-                                  std::error_code& ec) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_end_array(const ser_context& context, 
+            std::error_code& ec) = 0;
 
-        virtual bool visit_key(const string_view_type& name, 
-                             const ser_context& context, 
-                             std::error_code&) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_key(const string_view_type& name, 
+            const ser_context& context, 
+            std::error_code&) = 0;
 
-        virtual bool visit_null(semantic_tag tag, 
-                             const ser_context& context, 
-                             std::error_code& ec) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_null(semantic_tag tag, 
+            const ser_context& context, 
+            std::error_code& ec) = 0;
 
-        virtual bool visit_bool(bool value, 
-                             semantic_tag tag, 
-                             const ser_context& context, 
-                             std::error_code&) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_bool(bool value, 
+            semantic_tag tag, 
+            const ser_context& context, 
+            std::error_code&) = 0;
 
-        virtual bool visit_string(const string_view_type& value, 
-                               semantic_tag tag, 
-                               const ser_context& context, 
-                               std::error_code& ec) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_string(const string_view_type& value, 
+            semantic_tag tag, 
+            const ser_context& context, 
+            std::error_code& ec) = 0;
 
-        virtual bool visit_byte_string(const byte_string_view& value, 
-                                       semantic_tag tag, 
-                                       const ser_context& context,
-                                       std::error_code& ec) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_byte_string(const byte_string_view& value, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec) = 0;
 
-        virtual bool visit_byte_string(const byte_string_view& value, 
-                                       uint64_t /* ext_tag */, 
-                                       const ser_context& context,
-                                       std::error_code& ec) 
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_byte_string(const byte_string_view& value, 
+            uint64_t /* ext_tag */, 
+            const ser_context& context,
+            std::error_code& ec) 
         {
-            return visit_byte_string(value, semantic_tag::none, context, ec);
+            visit_byte_string(value, semantic_tag::none, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_uint64(uint64_t value, 
-                               semantic_tag tag, 
-                               const ser_context& context,
-                               std::error_code& ec) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_uint64(uint64_t value, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec) = 0;
 
-        virtual bool visit_int64(int64_t value, 
-                              semantic_tag tag,
-                              const ser_context& context,
-                              std::error_code& ec) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_int64(int64_t value, 
+            semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec) = 0;
 
-        virtual bool visit_half(uint16_t value, 
-                             semantic_tag tag,
-                             const ser_context& context,
-                             std::error_code& ec)
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_half(uint16_t value, 
+            semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec)
         {
-            return visit_double(binary::decode_half(value),
-                             tag,
-                             context,
-                             ec);
+            visit_double(binary::decode_half(value),
+                tag,
+                context,
+                ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_double(double value, 
-                               semantic_tag tag,
-                               const ser_context& context,
-                               std::error_code& ec) = 0;
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_double(double value, 
+            semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec) = 0;
 
-        virtual bool visit_typed_array(const jsoncons::span<const uint8_t>& s, 
-                                    semantic_tag tag,
-                                    const ser_context& context, 
-                                    std::error_code& ec)  
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(const jsoncons::span<const uint8_t>& s, 
+            semantic_tag tag,
+            const ser_context& context, 
+            std::error_code& ec)  
         {
-            bool more = begin_array(s.size(), tag, context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag, context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = uint64_value(*p, semantic_tag::none, context, ec);
+                uint64_value(*p, semantic_tag::none, context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_typed_array(const jsoncons::span<const uint16_t>& s, 
-                                    semantic_tag tag, 
-                                    const ser_context& context, 
-                                    std::error_code& ec)  
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(const jsoncons::span<const uint16_t>& s, 
+            semantic_tag tag, 
+            const ser_context& context, 
+            std::error_code& ec)  
         {
-            bool more = begin_array(s.size(), tag, context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag, context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = uint64_value(*p, semantic_tag::none, context, ec);
+                uint64_value(*p, semantic_tag::none, context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_typed_array(const jsoncons::span<const uint32_t>& s, 
-                                    semantic_tag tag,
-                                    const ser_context& context, 
-                                    std::error_code& ec) 
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(const jsoncons::span<const uint32_t>& s, 
+            semantic_tag tag,
+            const ser_context& context, 
+            std::error_code& ec) 
         {
-            bool more = begin_array(s.size(), tag, context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag, context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = uint64_value(*p, semantic_tag::none, context, ec);
+                uint64_value(*p, semantic_tag::none, context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_typed_array(const jsoncons::span<const uint64_t>& s, 
-                                    semantic_tag tag,
-                                    const ser_context& context, 
-                                    std::error_code& ec) 
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(const jsoncons::span<const uint64_t>& s, 
+            semantic_tag tag,
+            const ser_context& context, 
+            std::error_code& ec) 
         {
-            bool more = begin_array(s.size(), tag, context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag, context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = uint64_value(*p,semantic_tag::none,context, ec);
+                uint64_value(*p,semantic_tag::none,context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_typed_array(const jsoncons::span<const int8_t>& s, 
-                                    semantic_tag tag,
-                                    const ser_context& context, 
-                                    std::error_code& ec)  
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(const jsoncons::span<const int8_t>& s, 
+            semantic_tag tag,
+            const ser_context& context, 
+            std::error_code& ec)  
         {
-            bool more = begin_array(s.size(), tag,context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag,context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = int64_value(*p,semantic_tag::none,context, ec);
+                int64_value(*p,semantic_tag::none,context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_typed_array(const jsoncons::span<const int16_t>& s, 
-                                    semantic_tag tag,
-                                    const ser_context& context, 
-                                    std::error_code& ec)  
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(const jsoncons::span<const int16_t>& s, 
+            semantic_tag tag,
+            const ser_context& context, 
+            std::error_code& ec)  
         {
-            bool more = begin_array(s.size(), tag,context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag,context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = int64_value(*p,semantic_tag::none,context, ec);
+                int64_value(*p,semantic_tag::none,context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_typed_array(const jsoncons::span<const int32_t>& s, 
-                                    semantic_tag tag,
-                                    const ser_context& context, 
-                                    std::error_code& ec)  
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(const jsoncons::span<const int32_t>& s, 
+            semantic_tag tag,
+            const ser_context& context, 
+            std::error_code& ec)  
         {
-            bool more = begin_array(s.size(), tag,context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag,context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = int64_value(*p,semantic_tag::none,context, ec);
+                int64_value(*p,semantic_tag::none,context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_typed_array(const jsoncons::span<const int64_t>& s, 
-                                    semantic_tag tag,
-                                    const ser_context& context, 
-                                    std::error_code& ec)  
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(const jsoncons::span<const int64_t>& s, 
+            semantic_tag tag,
+            const ser_context& context, 
+            std::error_code& ec)  
         {
-            bool more = begin_array(s.size(), tag,context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag,context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = int64_value(*p,semantic_tag::none,context, ec);
+                int64_value(*p,semantic_tag::none,context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_typed_array(half_arg_t, 
-                                    const jsoncons::span<const uint16_t>& s, 
-                                    semantic_tag tag, 
-                                    const ser_context& context, 
-                                    std::error_code& ec)  
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(half_arg_t, 
+            const jsoncons::span<const uint16_t>& s, 
+            semantic_tag tag, 
+            const ser_context& context, 
+            std::error_code& ec)  
         {
-            bool more = begin_array(s.size(), tag, context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag, context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = half_value(*p, semantic_tag::none, context, ec);
+                half_value(*p, semantic_tag::none, context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_typed_array(const jsoncons::span<const float>& s, 
-                                    semantic_tag tag,
-                                    const ser_context& context, 
-                                    std::error_code& ec)  
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(const jsoncons::span<const float>& s, 
+            semantic_tag tag,
+            const ser_context& context, 
+            std::error_code& ec)  
         {
-            bool more = begin_array(s.size(), tag,context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag,context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = double_value(*p,semantic_tag::none,context, ec);
+                double_value(*p,semantic_tag::none,context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_typed_array(const jsoncons::span<const double>& s, 
-                                    semantic_tag tag,
-                                    const ser_context& context, 
-                                    std::error_code& ec)  
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_typed_array(const jsoncons::span<const double>& s, 
+            semantic_tag tag,
+            const ser_context& context, 
+            std::error_code& ec)  
         {
-            bool more = begin_array(s.size(), tag,context, ec);
-            for (auto p = s.begin(); more && p != s.end(); ++p)
+            begin_array(s.size(), tag,context, ec);
+            for (auto p = s.begin(); p != s.end(); ++p)
             {
-                more = double_value(*p,semantic_tag::none,context, ec);
+                double_value(*p,semantic_tag::none,context, ec);
             }
-            if (more)
-            {
-                more = end_array(context, ec);
-            }
-            return more;
+            end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_begin_multi_dim(const jsoncons::span<const size_t>& shape,
-                                        semantic_tag tag,
-                                        const ser_context& context, 
-                                        std::error_code& ec) 
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_begin_multi_dim(const jsoncons::span<const size_t>& shape,
+            semantic_tag tag,
+            const ser_context& context, 
+            std::error_code& ec) 
         {
-            bool more = visit_begin_array(2, tag, context, ec);
-            if (more)
+            visit_begin_array(2, tag, context, ec);
+            visit_begin_array(shape.size(), tag, context, ec);
+            for (auto it = shape.begin(); it != shape.end(); ++it)
             {
-                more = visit_begin_array(shape.size(), tag, context, ec);
-                for (auto it = shape.begin(); more && it != shape.end(); ++it)
-                {
-                    visit_uint64(*it, semantic_tag::none, context, ec);
-                }
-                if (more)
-                {
-                    more = visit_end_array(context, ec);
-                }
+                visit_uint64(*it, semantic_tag::none, context, ec);
             }
-            return more;
+            visit_end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        virtual bool visit_end_multi_dim(const ser_context& context,
-                                      std::error_code& ec) 
+        virtual JSONCONS_VISITOR_RETURN_TYPE visit_end_multi_dim(const ser_context& context,
+            std::error_code& ec) 
         {
-            return visit_end_array(context, ec);
+            visit_end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
     };
 
     template <typename CharT>
     class basic_default_json_visitor : public basic_json_visitor<CharT>
     {
-        bool parse_more_;
-        std::error_code ec_;
     public:
         using typename basic_json_visitor<CharT>::string_view_type;
 
-        basic_default_json_visitor(bool accept_more = true,
-                                           std::error_code ec = std::error_code())
-            : parse_more_(accept_more), ec_(ec)
-        {
-        }
+        basic_default_json_visitor() = default;
     private:
         void visit_flush() override
         {
         }
 
-        bool visit_begin_object(semantic_tag, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_begin_object(semantic_tag, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_end_object(const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_end_object(const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_begin_array(semantic_tag, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_begin_array(semantic_tag, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_end_array(const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_end_array(const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_key(const string_view_type&, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_key(const string_view_type&, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_null(semantic_tag, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_null(semantic_tag, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_string(const string_view_type&, semantic_tag, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_string(const string_view_type&, semantic_tag, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_byte_string(const byte_string_view&, semantic_tag, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_byte_string(const byte_string_view&, semantic_tag, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_uint64(uint64_t, semantic_tag, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_uint64(uint64_t, semantic_tag, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_int64(int64_t, semantic_tag, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_int64(int64_t, semantic_tag, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_half(uint16_t, semantic_tag, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_half(uint16_t, semantic_tag, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_double(double, semantic_tag, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_double(double, semantic_tag, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_bool(bool, semantic_tag, const ser_context&, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_bool(bool, semantic_tag, const ser_context&, std::error_code&) override
         {
-            if (ec_)
-            {
-                ec = ec_;
-            }
-            return parse_more_;
+            JSONCONS_VISITOR_RETURN;
         }
     };
 
@@ -912,7 +846,7 @@ namespace jsoncons {
 
         stream_type& output_;
         string_type indentation_;
-        long level_;
+        long level_{0};
 
     public:
         // If CharT is char, then enable the default constructor which binds to
@@ -937,8 +871,7 @@ namespace jsoncons {
             stream_type& output,
             string_type indentation = string_type())
             : output_(output),
-              indentation_(std::move(indentation)),
-              level_(0)
+              indentation_(std::move(indentation))
         {
         }
 
@@ -949,89 +882,89 @@ namespace jsoncons {
                 output_ << indentation_;
         }
 
-        bool visit_begin_object(semantic_tag, const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_begin_object(semantic_tag, const ser_context&, std::error_code&) override
         {
             indent();
-            output_ << visit_begin_object_name << std::endl;
+            output_ << visit_begin_object_name << '\n';
             ++level_;
-            return true;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_begin_object(std::size_t length, semantic_tag, const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_begin_object(std::size_t length, semantic_tag, const ser_context&, std::error_code&) override
         {
             indent();
-            output_ << visit_begin_object_name << separator_ << length << std::endl;
+            output_ << visit_begin_object_name << separator_ << length << '\n';
             ++level_;
-            return true;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_end_object(const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_end_object(const ser_context&, std::error_code&) override
         {
             --level_;
             indent();
-            output_ << visit_end_object_name << std::endl;
-            return true;
+            output_ << visit_end_object_name << '\n';
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_begin_array(semantic_tag, const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_begin_array(semantic_tag, const ser_context&, std::error_code&) override
         {
             indent();
-            output_ << visit_begin_array_name << std::endl;
+            output_ << visit_begin_array_name << '\n';
             ++level_;
-            return true;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_begin_array(std::size_t length, semantic_tag, const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_begin_array(std::size_t length, semantic_tag, const ser_context&, std::error_code&) override
         {
             indent();
-            output_ << visit_begin_array_name << separator_  << length << std::endl;
+            output_ << visit_begin_array_name << separator_  << length << '\n';
             ++level_;
-            return true;
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_end_array(const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_end_array(const ser_context&, std::error_code&) override
         {
             --level_;
             indent();
-            output_ << visit_end_array_name << std::endl;
-            return true;
+            output_ << visit_end_array_name << '\n';
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_key(const string_view_type& s, const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_key(const string_view_type& s, const ser_context&, std::error_code&) override
         {
             indent();
-            output_ << visit_key_name << separator_  << s << std::endl;
-            return true;
+            output_ << visit_key_name << separator_  << s << '\n';
+            JSONCONS_VISITOR_RETURN;
         }
-        bool visit_string(const string_view_type& s, semantic_tag, const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_string(const string_view_type& s, semantic_tag, const ser_context&, std::error_code&) override
         {
             indent();
-            output_ << visit_string_name << separator_  << s << std::endl;
-            return true;
+            output_ << visit_string_name << separator_  << s << '\n';
+            JSONCONS_VISITOR_RETURN;
         }
-        bool visit_int64(int64_t val, semantic_tag, const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_int64(int64_t val, semantic_tag, const ser_context&, std::error_code&) override
         {
             indent();
-            output_ << visit_int64_name << separator_  << val << std::endl;
-            return true;
+            output_ << visit_int64_name << separator_  << val << '\n';
+            JSONCONS_VISITOR_RETURN;
         }
-        bool visit_uint64(uint64_t val, semantic_tag, const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_uint64(uint64_t val, semantic_tag, const ser_context&, std::error_code&) override
         {
             indent();
-            output_ << visit_uint64_name << separator_ << val << std::endl;
-            return true;
+            output_ << visit_uint64_name << separator_ << val << '\n';
+            JSONCONS_VISITOR_RETURN;
         }
-        bool visit_bool(bool val, semantic_tag, const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_bool(bool val, semantic_tag, const ser_context&, std::error_code&) override
         {
             indent();
-            output_ << visit_bool_name << separator_ << val << std::endl;
-            return true;
+            output_ << visit_bool_name << separator_ << val << '\n';
+            JSONCONS_VISITOR_RETURN;
         }
-        bool visit_null(semantic_tag, const ser_context&, std::error_code&) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_null(semantic_tag, const ser_context&, std::error_code&) override
         {
             indent();
-            output_ << visit_null_name << std::endl;
-            return true;
+            output_ << visit_null_name << '\n';
+            JSONCONS_VISITOR_RETURN;
         }
     };
 
@@ -1064,4 +997,4 @@ namespace jsoncons {
 
 } // namespace jsoncons
 
-#endif
+#endif // JSONCONS_JSON_VISITOR_HPP

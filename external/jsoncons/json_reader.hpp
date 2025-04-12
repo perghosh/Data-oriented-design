@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -7,18 +7,23 @@
 #ifndef JSONCONS_JSON_READER_HPP
 #define JSONCONS_JSON_READER_HPP
 
+#include <cstddef>
+#include <functional>
+#include <ios>
 #include <memory> // std::allocator
 #include <string>
-#include <vector>
-#include <stdexcept>
 #include <system_error>
-#include <ios>
 #include <utility> // std::move
-#include <jsoncons/source.hpp>
+
+#include <jsoncons/config/compiler_support.hpp>
 #include <jsoncons/json_exception.hpp>
-#include <jsoncons/json_visitor.hpp>
 #include <jsoncons/json_parser.hpp>
+#include <jsoncons/json_visitor.hpp>
+#include <jsoncons/ser_context.hpp>
+#include <jsoncons/source.hpp>
 #include <jsoncons/source_adaptor.hpp>
+#include <jsoncons/tag_type.hpp>
+#include <jsoncons/utility/unicode_traits.hpp>
 
 namespace jsoncons {
 
@@ -58,27 +63,31 @@ namespace jsoncons {
             other_visitor_.flush();
         }
 
-        bool visit_begin_object(semantic_tag tag, const ser_context& context, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_begin_object(semantic_tag tag, const ser_context& context, std::error_code& ec) override
         {
-            return other_visitor_.begin_object(tag, context, ec);
+            other_visitor_.begin_object(tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_end_object(const ser_context& context, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_end_object(const ser_context& context, std::error_code& ec) override
         {
-            return other_visitor_.end_object(context, ec);
+            other_visitor_.end_object(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_begin_array(semantic_tag tag, const ser_context& context, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_begin_array(semantic_tag tag, const ser_context& context, std::error_code& ec) override
         {
-            return other_visitor_.begin_array(tag, context, ec);
+            other_visitor_.begin_array(tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_end_array(const ser_context& context, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_end_array(const ser_context& context, std::error_code& ec) override
         {
-            return other_visitor_.end_array(context, ec);
+            other_visitor_.end_array(context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_key(const string_view_type& name, const ser_context& context, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_key(const string_view_type& name, const ser_context& context, std::error_code& ec) override
         {
             std::basic_string<CharT> target;
             auto result = unicode_traits::convert(
@@ -88,10 +97,11 @@ namespace jsoncons {
             {
                 JSONCONS_THROW(ser_error(result.ec,context.line(),context.column()));
             }
-            return other_visitor_.key(target, context, ec);
+            other_visitor_.key(target, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_string(const string_view_type& value, semantic_tag tag, const ser_context& context, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_string(const string_view_type& value, semantic_tag tag, const ser_context& context, std::error_code& ec) override
         {
             std::basic_string<CharT> target;
             auto result = unicode_traits::convert(
@@ -100,51 +110,58 @@ namespace jsoncons {
             if (result.ec != unicode_traits::conv_errc())
             {
                 ec = result.ec;
-                return false;
+                JSONCONS_VISITOR_RETURN;
             }
-            return other_visitor_.string_value(target, tag, context, ec);
+            other_visitor_.string_value(target, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_int64(int64_t value, 
-                            semantic_tag tag, 
-                            const ser_context& context,
-                            std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_int64(int64_t value, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec) override
         {
-            return other_visitor_.int64_value(value, tag, context, ec);
+            other_visitor_.int64_value(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_uint64(uint64_t value, 
-                             semantic_tag tag, 
-                             const ser_context& context,
-                             std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_uint64(uint64_t value, 
+            semantic_tag tag, 
+            const ser_context& context,
+            std::error_code& ec) override
         {
-            return other_visitor_.uint64_value(value, tag, context, ec);
+            other_visitor_.uint64_value(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_half(uint16_t value, 
-                           semantic_tag tag,
-                           const ser_context& context,
-                           std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_half(uint16_t value, 
+            semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec) override
         {
-            return other_visitor_.half_value(value, tag, context, ec);
+            other_visitor_.half_value(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_double(double value, 
-                             semantic_tag tag,
-                             const ser_context& context,
-                             std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_double(double value, 
+            semantic_tag tag,
+            const ser_context& context,
+            std::error_code& ec) override
         {
-            return other_visitor_.double_value(value, tag, context, ec);
+            other_visitor_.double_value(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_bool(bool value, semantic_tag tag, const ser_context& context, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_bool(bool value, semantic_tag tag, const ser_context& context, std::error_code& ec) override
         {
-            return other_visitor_.bool_value(value, tag, context, ec);
+            other_visitor_.bool_value(value, tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
 
-        bool visit_null(semantic_tag tag, const ser_context& context, std::error_code& ec) override
+        JSONCONS_VISITOR_RETURN_TYPE visit_null(semantic_tag tag, const ser_context& context, std::error_code& ec) override
         {
-            return other_visitor_.null_value(tag, context, ec);
+            other_visitor_.null_value(tag, context, ec);
+            JSONCONS_VISITOR_RETURN;
         }
     };
 
@@ -271,7 +288,7 @@ namespace jsoncons {
         {
             std::error_code ec;
             read_next(ec);
-            if (ec)
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec,parser_.line(),parser_.column()));
             }
@@ -290,7 +307,7 @@ namespace jsoncons {
                 if (parser_.source_exhausted())
                 {
                     auto s = source_.read_buffer(ec);
-                    if (ec) return;
+                    if (JSONCONS_UNLIKELY(ec)) return;
                     if (s.size() > 0)
                     {
                         parser_.update(s.data(),s.size());
@@ -298,7 +315,7 @@ namespace jsoncons {
                 }
                 bool eof = parser_.source_exhausted();
                 parser_.parse_some(visitor_, ec);
-                if (ec) return;
+                if (JSONCONS_UNLIKELY(ec)) return;
                 if (eof)
                 {
                     if (parser_.enter())
@@ -313,13 +330,14 @@ namespace jsoncons {
                 }
             }
             
+            parser_.skip_whitespace();
             while (!source_.eof())
             {
                 parser_.skip_whitespace();
                 if (parser_.source_exhausted())
                 {
                     auto s = source_.read_buffer(ec);
-                    if (ec) return;
+                    if (JSONCONS_UNLIKELY(ec)) return;
                     if (s.size() > 0)
                     {
                         parser_.update(s.data(),s.size());
@@ -336,7 +354,7 @@ namespace jsoncons {
         {
             std::error_code ec;
             check_done(ec);
-            if (ec)
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec,parser_.line(),parser_.column()));
             }
@@ -362,7 +380,7 @@ namespace jsoncons {
             if (source_.eof())
             {
                 parser_.check_done(ec);
-                if (ec) return;
+                if (JSONCONS_UNLIKELY(ec)) return;
             }
             else
             {
@@ -371,7 +389,7 @@ namespace jsoncons {
                     if (parser_.source_exhausted())
                     {
                         auto s = source_.read_buffer(ec);
-                        if (ec) return;
+                        if (JSONCONS_UNLIKELY(ec)) return;
                         if (s.size() > 0)
                         {
                             parser_.update(s.data(),s.size());
@@ -380,7 +398,7 @@ namespace jsoncons {
                     if (!parser_.source_exhausted())
                     {
                         parser_.check_done(ec);
-                        if (ec) return;
+                        if (JSONCONS_UNLIKELY(ec)) return;
                     }
                 }
                 while (!eof());
