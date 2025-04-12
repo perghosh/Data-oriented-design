@@ -1,22 +1,24 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_CBOR_CBOR_READER_HPP
-#define JSONCONS_CBOR_CBOR_READER_HPP
+#ifndef JSONCONS_EXT_CBOR_CBOR_EVENT_READER_HPP
+#define JSONCONS_EXT_CBOR_CBOR_EVENT_READER_HPP
 
-#include <string>
-#include <vector>
+#include <cstddef>
 #include <memory>
+#include <system_error>
 #include <utility> // std::move
-#include <jsoncons/json.hpp>
-#include <jsoncons/source.hpp>
+
+#include <jsoncons/config/compiler_support.hpp>
 #include <jsoncons/config/jsoncons_config.hpp>
+#include <jsoncons/source.hpp>
+
+#include <jsoncons_ext/cbor/cbor_detail.hpp>
 #include <jsoncons_ext/cbor/cbor_encoder.hpp>
 #include <jsoncons_ext/cbor/cbor_error.hpp>
-#include <jsoncons_ext/cbor/cbor_detail.hpp>
 #include <jsoncons_ext/cbor/cbor_parser.hpp>
 
 namespace jsoncons { namespace cbor {
@@ -75,7 +77,7 @@ public:
     {
         std::error_code ec;
         read(ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec,line(),column()));
         }
@@ -85,7 +87,7 @@ public:
     {
         parser_.reset();
         parser_.parse(visitor_, ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             return;
         }
@@ -106,6 +108,7 @@ using cbor_stream_reader = basic_cbor_reader<jsoncons::binary_stream_source>;
 
 using cbor_bytes_reader = basic_cbor_reader<jsoncons::bytes_source>;
 
-}}
+} // namespace cbor_reader
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_EXT_CBOR_CBOR_EVENT_READER_HPP

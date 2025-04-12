@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -7,17 +7,22 @@
 #ifndef JSONCONS_STAJ_ITERATOR_HPP
 #define JSONCONS_STAJ_ITERATOR_HPP
 
-#include <new> // placement new
-#include <memory>
-#include <string>
-#include <stdexcept>
-#include <system_error>
+#include <exception>
 #include <ios>
 #include <iterator> // std::input_iterator_tag
-#include <jsoncons/json_exception.hpp>
-#include <jsoncons/staj_cursor.hpp>
+#include <memory>
+#include <new> // placement new
+#include <string>
+#include <system_error>
+#include <type_traits>
+#include <utility>
+
+#include <jsoncons/config/compiler_support.hpp>
 #include <jsoncons/basic_json.hpp>
 #include <jsoncons/decode_traits.hpp>
+#include <jsoncons/json_exception.hpp>
+#include <jsoncons/staj_event.hpp>
+#include <jsoncons/staj_cursor.hpp>
 
 namespace jsoncons {
 
@@ -64,7 +69,7 @@ namespace jsoncons {
             if (view_->cursor_->current().event_type() == staj_event_type::begin_array)
             {
                 next(ec);
-                if (ec) {view_ = nullptr;}
+                if (JSONCONS_UNLIKELY(ec)) {view_ = nullptr;}
             }
             else
             {
@@ -114,7 +119,7 @@ namespace jsoncons {
         staj_array_iterator& increment(std::error_code& ec)
         {
             next(ec);
-            if (ec) {view_ = nullptr;}
+            if (JSONCONS_UNLIKELY(ec)) {view_ = nullptr;}
             return *this;
         }
 
@@ -148,7 +153,7 @@ namespace jsoncons {
         {
             std::error_code ec;
             next(ec);
-            if (ec)
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, view_->cursor_->context().line(), view_->cursor_->context().column()));
             }
@@ -159,7 +164,7 @@ namespace jsoncons {
             if (!done())
             {
                 view_->cursor_->next(ec);
-                if (ec)
+                if (JSONCONS_UNLIKELY(ec))
                 {
                     return;
                 }
@@ -224,7 +229,7 @@ namespace jsoncons {
             if (view_->cursor_->current().event_type() == staj_event_type::begin_object)
             {
                 next(ec);
-                if (ec) {view_ = nullptr;}
+                if (JSONCONS_UNLIKELY(ec)) {view_ = nullptr;}
             }
             else
             {
@@ -274,7 +279,7 @@ namespace jsoncons {
         staj_object_iterator& increment(std::error_code& ec)
         {
             next(ec);
-            if (ec)
+            if (JSONCONS_UNLIKELY(ec))
             {
                 view_ = nullptr;
             }
@@ -311,7 +316,7 @@ namespace jsoncons {
         {
             std::error_code ec;
             next(ec);
-            if (ec)
+            if (JSONCONS_UNLIKELY(ec))
             {
                 JSONCONS_THROW(ser_error(ec, view_->cursor_->context().line(), view_->cursor_->context().column()));
             }
@@ -320,7 +325,7 @@ namespace jsoncons {
         void next(std::error_code& ec)
         {
             view_->cursor_->next(ec);
-            if (ec)
+            if (JSONCONS_UNLIKELY(ec))
             {
                 return;
             }
@@ -329,7 +334,7 @@ namespace jsoncons {
                 JSONCONS_ASSERT(view_->cursor_->current().event_type() == staj_event_type::key);
                 auto key = view_->cursor_->current(). template get<key_type>();
                 view_->cursor_->next(ec);
-                if (ec)
+                if (JSONCONS_UNLIKELY(ec))
                 {
                     return;
                 }
@@ -425,5 +430,5 @@ namespace jsoncons {
 
 } // namespace jsoncons
 
-#endif
+#endif // JSONCONS_STAJ_ITERATOR_HPP
 

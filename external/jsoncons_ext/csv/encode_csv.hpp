@@ -1,15 +1,24 @@
-/// Copyright 2013-2024 Daniel Parker
+/// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_CSV_ENCODE_CSV_HPP
-#define JSONCONS_CSV_ENCODE_CSV_HPP
+#ifndef JSONCONS_EXT_CSV_ENCODE_CSV_HPP
+#define JSONCONS_EXT_CSV_ENCODE_CSV_HPP
 
+#include <ostream>
+
+#include <jsoncons/config/compiler_support.hpp>
+#include <jsoncons/json_exception.hpp>
+
+#include <jsoncons/utility/extension_traits.hpp>
+#include <jsoncons_ext/csv/csv_encoder.hpp>
 #include <jsoncons_ext/csv/csv_options.hpp>
 #include <jsoncons_ext/csv/csv_reader.hpp>
-#include <jsoncons_ext/csv/csv_encoder.hpp>
+#include <jsoncons/basic_json.hpp>
+#include <jsoncons/encode_traits.hpp>
+#include <jsoncons/sink.hpp>
 
 namespace jsoncons { 
 namespace csv {
@@ -33,7 +42,7 @@ namespace csv {
         basic_csv_encoder<char_type,jsoncons::string_sink<std::basic_string<char_type>>> encoder(cont,options);
         std::error_code ec;
         encode_traits<T,char_type>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -56,7 +65,7 @@ namespace csv {
         basic_csv_encoder<char_type,jsoncons::stream_sink<char_type>> encoder(os,options);
         std::error_code ec;
         encode_traits<T,CharT>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -85,7 +94,7 @@ namespace csv {
         basic_csv_encoder<char_type,jsoncons::string_sink<std::basic_string<char_type>>,TempAllocator> encoder(cont, options, alloc_set.get_temp_allocator());
         std::error_code ec;
         encode_traits<T,char_type>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -110,7 +119,7 @@ namespace csv {
         basic_csv_encoder<char_type,jsoncons::stream_sink<char_type>,TempAllocator> encoder(os, options, alloc_set.get_temp_allocator());
         std::error_code ec;
         encode_traits<T,CharT>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -119,4 +128,4 @@ namespace csv {
 } // namespace csv 
 } // namespace jsoncons
 
-#endif
+#endif // JSONCONS_EXT_CSV_ENCODE_CSV_HPP

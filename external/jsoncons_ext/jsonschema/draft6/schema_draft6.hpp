@@ -1,13 +1,11 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_JSONSCHEMA_SCHEMA_DRAFT6_HPP
-#define JSONCONS_JSONSCHEMA_SCHEMA_DRAFT6_HPP
-
-#include <jsoncons/json.hpp>
+#ifndef JSONCONS_EXT_JSONSCHEMA_DRAFT6_SCHEMA_DRAFT6_HPP
+#define JSONCONS_EXT_JSONSCHEMA_DRAFT6_SCHEMA_DRAFT6_HPP
 
 namespace jsoncons {
 namespace jsonschema {
@@ -182,4 +180,4 @@ namespace draft6 {
 } // namespace jsonschema
 } // namespace jsoncons
 
-#endif // JSONCONS_JSONSCHEMA_SCHEMA_DRAFT7_HPP
+#endif // JSONCONS_EXT_JSONSCHEMA_DRAFT6_SCHEMA_DRAFT6_HPP

@@ -1,18 +1,13 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_JSONMERGEPATCH_JSONMERGEPATCH_HPP
-#define JSONCONS_JSONMERGEPATCH_JSONMERGEPATCH_HPP
+#ifndef JSONCONS_EXT_MERGEPATCH_MERGEPATCH_HPP
+#define JSONCONS_EXT_MERGEPATCH_MERGEPATCH_HPP
 
-#include <string>
-#include <vector> 
-#include <memory>
-#include <algorithm> // std::min
-#include <utility> // std::move
-#include <jsoncons/json.hpp>
+#include <jsoncons/tag_type.hpp>
 
 namespace jsoncons { 
 namespace mergepatch {
@@ -31,9 +26,9 @@ namespace mergepatch {
             auto it = target.find(member.key());
             if (it != target.object_range().end())
             {
-                if (member.value() != it->value())
+                if (member.value() != (*it).value())
                 {
-                    result.try_emplace(member.key(), from_diff(member.value(), it->value()));
+                    result.try_emplace(member.key(), from_diff(member.value(), (*it).value()));
                 }
             }
             else
@@ -69,7 +64,7 @@ namespace mergepatch {
                     auto it = target.find(member.key());
                     if (it != target.object_range().end())
                     {
-                        Json item = it->value();
+                        Json item = (*it).value();
                         target.erase(it);
                         if (!member.value().is_null())
                         {
@@ -100,4 +95,4 @@ namespace mergepatch {
 } // namespace mergepatch
 } // namespace jsoncons
 
-#endif
+#endif // JSONCONS_EXT_MERGEPATCH_MERGEPATCH_HPP

@@ -1,21 +1,27 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_MSGPACK_ENCODE_MSGPACK_HPP
-#define JSONCONS_MSGPACK_ENCODE_MSGPACK_HPP
+#ifndef JSONCONS_EXT_MSGPACK_ENCODE_MSGPACK_HPP
+#define JSONCONS_EXT_MSGPACK_ENCODE_MSGPACK_HPP
 
-#include <string>
-#include <vector>
-#include <memory>
-#include <type_traits> // std::enable_if
-#include <istream> // std::basic_istream
-#include <jsoncons/json.hpp>
-#include <jsoncons/config/jsoncons_config.hpp>
+#include <ostream> // std::basic_ostream
+#include <system_error> 
+#include <type_traits> 
+
+#include <jsoncons/config/compiler_support.hpp>
+#include <jsoncons/utility/extension_traits.hpp>
+#include <jsoncons/allocator_set.hpp>
+#include <jsoncons/basic_json.hpp>
+#include <jsoncons/encode_traits.hpp>
+#include <jsoncons/json_exception.hpp>
+#include <jsoncons/json_visitor.hpp>
+#include <jsoncons/sink.hpp>
+
 #include <jsoncons_ext/msgpack/msgpack_encoder.hpp>
-#include <jsoncons_ext/msgpack/msgpack_reader.hpp>
+#include <jsoncons_ext/msgpack/msgpack_options.hpp>
 
 namespace jsoncons { 
 namespace msgpack {
@@ -43,7 +49,7 @@ namespace msgpack {
         basic_msgpack_encoder<jsoncons::bytes_sink<ByteContainer>> encoder(cont, options);
         std::error_code ec;
         encode_traits<T,char>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -70,7 +76,7 @@ namespace msgpack {
         msgpack_stream_encoder encoder(os, options);
         std::error_code ec;
         encode_traits<T,char>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -101,7 +107,7 @@ namespace msgpack {
         basic_msgpack_encoder<jsoncons::bytes_sink<ByteContainer>,TempAllocator> encoder(cont, options, alloc_set.get_temp_allocator());
         std::error_code ec;
         encode_traits<T,char>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -130,13 +136,13 @@ namespace msgpack {
         basic_msgpack_encoder<jsoncons::binary_stream_sink,TempAllocator> encoder(os, options, alloc_set.get_temp_allocator());
         std::error_code ec;
         encode_traits<T,char>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
     }
 
-} // msgpack
-} // jsoncons
+} // namespace msgpack
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_EXT_MSGPACK_ENCODE_MSGPACK_HPP

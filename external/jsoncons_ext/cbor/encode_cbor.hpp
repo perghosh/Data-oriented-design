@@ -1,21 +1,21 @@
-// Copyright 2017-2024 Daniel Parker
+// Copyright 2017-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_CBOR_ENCODE_CBOR_HPP
-#define JSONCONS_CBOR_ENCODE_CBOR_HPP
+#ifndef JSONCONS_EXT_CBOR_ENCODE_CBOR_HPP
+#define JSONCONS_EXT_CBOR_ENCODE_CBOR_HPP
 
-#include <string>
-#include <vector>
-#include <memory>
+#include <ostream> // std::basic_ostream
 #include <type_traits> // std::enable_if
-#include <istream> // std::basic_istream
-#include <jsoncons/json.hpp>
-#include <jsoncons/json_filter.hpp>
+
+#include <jsoncons/config/compiler_support.hpp>
 #include <jsoncons/config/jsoncons_config.hpp>
 #include <jsoncons/encode_traits.hpp>
+#include <jsoncons/json_filter.hpp>
+#include <jsoncons/basic_json.hpp>
+
 #include <jsoncons_ext/cbor/cbor_encoder.hpp>
 
 namespace jsoncons { 
@@ -45,7 +45,7 @@ namespace cbor {
         basic_cbor_encoder<jsoncons::bytes_sink<ByteContainer>> encoder(cont, options);
         std::error_code ec;
         encode_traits<T,char>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -74,7 +74,7 @@ namespace cbor {
         cbor_stream_encoder encoder(os, options);
         std::error_code ec;
         encode_traits<T,char>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -109,7 +109,7 @@ namespace cbor {
         basic_cbor_encoder<jsoncons::bytes_sink<ByteContainer>,TempAllocator> encoder(cont, options, alloc_set.get_temp_allocator());
         std::error_code ec;
         encode_traits<T,char>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }
@@ -140,7 +140,7 @@ namespace cbor {
         basic_cbor_encoder<binary_stream_sink,TempAllocator> encoder(os, options, alloc_set.get_temp_allocator());
         std::error_code ec;
         encode_traits<T,char>::encode(val, encoder, json(), ec);
-        if (ec)
+        if (JSONCONS_UNLIKELY(ec))
         {
             JSONCONS_THROW(ser_error(ec));
         }

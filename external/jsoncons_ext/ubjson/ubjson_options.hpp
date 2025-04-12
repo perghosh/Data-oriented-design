@@ -1,16 +1,13 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_UBJSON_UBJSON_OPTIONS_HPP
-#define JSONCONS_UBJSON_UBJSON_OPTIONS_HPP
+#ifndef JSONCONS_EXT_UBJSON_UBJSON_OPTIONS_HPP
+#define JSONCONS_EXT_UBJSON_UBJSON_OPTIONS_HPP
 
-#include <string>
-#include <limits> // std::numeric_limits
 #include <cwchar>
-#include <jsoncons/json_exception.hpp>
 
 namespace jsoncons { namespace ubjson {
 
@@ -43,12 +40,13 @@ public:
 class ubjson_decode_options : public virtual ubjson_options_common
 {
     friend class ubjson_options;
-    std::size_t max_items_;
+    std::size_t max_items_{1 << 24};
 public:
-    ubjson_decode_options() :
-         max_items_(1 << 24)
+    ubjson_decode_options()
     {
     }
+    
+    ~ubjson_decode_options() = default;
 
     std::size_t max_items() const
     {
@@ -83,5 +81,7 @@ public:
     }
 };
 
-}}
-#endif
+} // namespace ubjson
+} // namespace jsoncons
+
+#endif // JSONCONS_EXT_UBJSON_UBJSON_OPTIONS_HPP

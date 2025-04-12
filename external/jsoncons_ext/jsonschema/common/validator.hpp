@@ -1,19 +1,24 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_JSONSCHEMA_COMMON_VALIDATOR_HPP
-#define JSONCONS_JSONSCHEMA_COMMON_VALIDATOR_HPP
+#ifndef JSONCONS_EXT_JSONSCHEMA_COMMON_VALIDATOR_HPP
+#define JSONCONS_EXT_JSONSCHEMA_COMMON_VALIDATOR_HPP
+
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <unordered_set>
+#include <vector>
 
 #include <jsoncons/config/jsoncons_config.hpp>
-#include <jsoncons/uri.hpp>
-#include <jsoncons/json.hpp>
-#include <jsoncons_ext/jsonschema/common/evaluation_context.hpp>
+#include <jsoncons/utility/uri.hpp>
+#include <jsoncons_ext/jsonschema/common/eval_context.hpp>
 #include <jsoncons_ext/jsonschema/jsonschema_error.hpp>
 #include <jsoncons_ext/jsonschema/validation_message.hpp>
-#include <unordered_set>
+#include <jsoncons_ext/jsonpointer/jsonpointer.hpp>
 
 namespace jsoncons {
 namespace jsonschema {
@@ -31,10 +36,9 @@ namespace jsonschema {
     // Interface for validation error handlers
     class error_reporter
     {
-        std::size_t error_count_;
+        std::size_t error_count_{0};
     public:
         error_reporter()
-            : error_count_(0)
         {
         }
 
@@ -69,11 +73,10 @@ namespace jsonschema {
 
     class range
     {
-        std::size_t start_;
-        std::size_t end_;
+        std::size_t start_{0};
+        std::size_t end_{0};
     public:
         range()
-            : start_(0), end_(0)
         {
         }
     
@@ -172,9 +175,10 @@ namespace jsonschema {
         }
         void merge(std::unordered_set<std::string>&& properties)
         {
-            for (auto&& name : properties)
+            auto end = std::make_move_iterator(properties.end());
+            for (auto it = std::make_move_iterator(properties.begin()); it != end; ++it)
             {
-                evaluated_properties.insert(std::move(name));
+                evaluated_properties.insert(*it);
             }
         }
         void merge(const range_collection& ranges)
@@ -187,17 +191,6 @@ namespace jsonschema {
     };
 
     template <typename Json>
-    class schema_validator;
-
-    template <typename Json>
-    class ref
-    {
-    public:
-        virtual ~ref() = default;
-        virtual void set_referred_schema(const schema_validator<Json>* target) = 0;
-    };
-
-    template <typename Json>
     class validator_base 
     {
     public:
@@ -207,7 +200,7 @@ namespace jsonschema {
 
         virtual const uri& schema_location() const = 0;
 
-        walk_result validate(const evaluation_context<Json>& context,
+        walk_result validate(const eval_context<Json>& context,
             const Json& instance, 
             const jsonpointer::json_pointer& instance_location,
             evaluation_results& results, 
@@ -217,222 +210,44 @@ namespace jsonschema {
             return do_validate(context, instance, instance_location, results, reporter, patch);
         }
 
-        walk_result walk(const evaluation_context<Json>& context, const Json& instance, 
+        walk_result walk(const eval_context<Json>& context, const Json& instance, 
             const jsonpointer::json_pointer& instance_location, const walk_reporter_type& reporter) const 
         {
             return do_walk(context, instance, instance_location, reporter);
         }
+        
+        virtual bool always_fails() const = 0;
+
+        virtual bool always_succeeds() const = 0;
+
 
     private:
-        virtual walk_result do_validate(const evaluation_context<Json>& context, const Json& instance, 
+        virtual walk_result do_validate(const eval_context<Json>& context, const Json& instance, 
             const jsonpointer::json_pointer& instance_location,
             evaluation_results& results, 
             error_reporter& reporter, 
             Json& patch) const = 0;
 
-        virtual walk_result do_walk(const evaluation_context<Json>& /*context*/, const Json& /*instance*/, 
-            const jsonpointer::json_pointer& /*instance_location*/, const walk_reporter_type& /*reporter*/) const = 0;
+        virtual walk_result do_walk(const eval_context<Json>& /*context*/, const Json& instance, 
+            const jsonpointer::json_pointer& instance_location, const walk_reporter_type& reporter) const = 0;
    };
 
-    template <typename Json>
-    class keyword_validator : public validator_base<Json> 
+    class validation_message_factory
     {
     public:
-        using keyword_validator_type = std::unique_ptr<keyword_validator<Json>>;
-
-        virtual const std::string& keyword_name() const = 0;
-
-        virtual bool always_fails() const 
-        {
-            return false;
-        }          
-
-        virtual bool always_succeeds() const
-        {
-            return false;
-        }
-    };
-
-    template <typename Json>
-    class keyword_validator_base : public keyword_validator<Json>
-    {
-        using walk_reporter_type = typename json_schema_traits<Json>::walk_reporter_type;
-
-        std::string keyword_name_;
-        const Json* schema_ptr_;
-        uri schema_location_;
-    public:
-        using keyword_validator_type = std::unique_ptr<keyword_validator<Json>>;
-
-        keyword_validator_base(const std::string& keyword_name, const Json& schema, const uri& schema_location)
-            : keyword_name_(keyword_name), schema_ptr_(std::addressof(schema)), schema_location_(schema_location)
-        {
-        }
-
-        keyword_validator_base(const keyword_validator_base&) = delete;
-        keyword_validator_base(keyword_validator_base&&) = default;
-        keyword_validator_base& operator=(const keyword_validator_base&) = delete;
-        keyword_validator_base& operator=(keyword_validator_base&&) = default;
-
-        const std::string& keyword_name() const final
-        {
-            return keyword_name_;
-        }
+        virtual ~validation_message_factory() = default;
         
-        const Json& schema() const
-        {
-            JSONCONS_ASSERT(schema_ptr_ != nullptr);
-            return *schema_ptr_;
-        }           
-
-        const uri& schema_location() const final
-        {
-            return schema_location_;
-        }
-    };
-
-    template <typename Json>
-    class ref_validator : public keyword_validator_base<Json>, public virtual ref<Json>
-    {
-        using keyword_validator_type = std::unique_ptr<keyword_validator<Json>>;
-        using schema_validator_type = std::unique_ptr<schema_validator<Json>>;
-        using walk_reporter_type = typename json_schema_traits<Json>::walk_reporter_type;
-
-        const schema_validator<Json>* referred_schema_;
-
-    public:
-        ref_validator(const Json& schema, const ref_validator& other)
-            : keyword_validator_base<Json>(other.keyword_name(), schema, other.schema_location()),
-                  referred_schema_{other.referred_schema_}
-        {
-        }
-        
-        ref_validator(const Json& schema, const uri& schema_location) 
-            : keyword_validator_base<Json>("$ref", schema, schema_location), referred_schema_{nullptr}
-        {
-            //std::cout << "ref_validator: " << this->schema_location().string() << "\n";
-        }
-
-        ref_validator(const Json& schema, const uri& schema_location, const schema_validator<Json>* referred_schema)
-            : keyword_validator_base<Json>("$ref", schema, schema_location), referred_schema_(referred_schema)
-        {
-            //std::cout << "ref_validator2: " << this->schema_location().string() << "\n";
-        }
-
-        const schema_validator<Json>* referred_schema() const {return referred_schema_;}
-        
-        void set_referred_schema(const schema_validator<Json>* target) final { referred_schema_ = target; }
-
-        uri get_base_uri() const
-        {
-            return this->schema_location();
-        }
-
-    private:
-
-        walk_result do_validate(const evaluation_context<Json>& context, const Json& instance, 
+        virtual validation_message make_validation_message(const jsonpointer::json_pointer& eval_path,
             const jsonpointer::json_pointer& instance_location,
-            evaluation_results& results, 
-            error_reporter& reporter, 
-            Json& patch) const final
-        {
-            evaluation_context<Json> this_context(context, this->keyword_name());
+            const std::string& message) const = 0;
 
-            if (!referred_schema_)
-            {
-                return reporter.error(validation_message(this->keyword_name(), 
-                    this_context.eval_path(),
-                    this->schema_location(), 
-                    instance_location, 
-                    "Unresolved schema reference " + this->schema_location().string()));
-            }
-
-            return referred_schema_->validate(this_context, instance, instance_location, results, reporter, patch);
-        }
-
-        walk_result do_walk(const evaluation_context<Json>& context, const Json& instance, 
-            const jsonpointer::json_pointer& instance_location, const walk_reporter_type& reporter) const final 
-        {
-            if (!referred_schema_)
-            {
-                return walk_result::advance;
-            }
-            evaluation_context<Json> this_context(context, this->keyword_name());
-            return referred_schema_->walk(this_context, instance, instance_location, reporter);           
-        }
-    };
-
-    template <typename Json>
-    class keyword_base 
-    {
-        using walk_reporter_type = typename json_schema_traits<Json>::walk_reporter_type;
-
-        std::string keyword_name_;
-        const Json* schema_ptr_;
-        uri schema_location_;
-    public:
-
-        keyword_base(const std::string& keyword_name, const Json& schema, const uri& schema_location)
-            : keyword_name_(keyword_name), schema_ptr_(std::addressof(schema)), schema_location_(schema_location)
-        {
-        }
-
-        virtual ~keyword_base() = default;
-
-        keyword_base(const keyword_base&) = delete;
-        keyword_base(keyword_base&&) = default;
-        keyword_base& operator=(const keyword_base&) = delete;
-        keyword_base& operator=(keyword_base&&) = default;
-
-        const std::string& keyword_name() const 
-        {
-            return keyword_name_;
-        }
-
-        const Json& schema() const
-        {
-            return *schema_ptr_;
-        }
-
-        const uri& schema_location() const 
-        {
-            return schema_location_;
-        }
-
-        walk_result walk(const evaluation_context<Json>& /*context*/, const Json& instance,
-            const jsonpointer::json_pointer& instance_location, const walk_reporter_type& reporter) const
-        {
-            return reporter(this->keyword_name(), this->schema(), this->schema_location(), instance, instance_location);
-        }
-    };
-
-    template <typename Json>
-    class schema_validator : public validator_base<Json>
-    {
-    public:
-        using schema_validator_type = typename std::unique_ptr<schema_validator<Json>>;
-        using keyword_validator_type = typename std::unique_ptr<keyword_validator<Json>>;
-
-    public:
-        schema_validator()
-        {}
-
-        virtual bool always_fails() const = 0;
-
-        virtual bool always_succeeds() const = 0;
-        
-        virtual jsoncons::optional<Json> get_default_value() const = 0;
-
-        virtual bool recursive_anchor() const = 0;
-
-        virtual const jsoncons::optional<jsoncons::uri>& id() const = 0;
-
-        virtual const schema_validator<Json>* get_schema_for_dynamic_anchor(const std::string& anchor) const = 0;
-
-        virtual const jsoncons::optional<jsoncons::uri>& dynamic_anchor() const = 0;
+        virtual validation_message make_validation_message(const jsonpointer::json_pointer& eval_path,
+            const jsonpointer::json_pointer& instance_location,
+            const std::string& message,
+            const std::vector<validation_message>& details) const = 0;
     };
 
 } // namespace jsonschema
 } // namespace jsoncons
 
-#endif // JSONCONS_JSONSCHEMA_KEYWORD_VALIDATOR_HPP
+#endif // JSONCONS_EXT_JSONSCHEMA_KEYWORD_VALIDATOR_HPP

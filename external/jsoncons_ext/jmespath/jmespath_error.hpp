@@ -1,33 +1,38 @@
-/// Copyright 2013-2024 Daniel Parker
+/// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // See https://github.com/danielaparker/jsoncons for latest version
 
-#ifndef JSONCONS_JMESPATH_JMESPATH_ERROR_HPP
-#define JSONCONS_JMESPATH_JMESPATH_ERROR_HPP
+#ifndef JSONCONS_EXT_JMESPATH_JMESPATH_ERROR_HPP
+#define JSONCONS_EXT_JMESPATH_JMESPATH_ERROR_HPP
 
-#include <jsoncons/json_exception.hpp>
+#include <cstddef>
+#include <string>
 #include <system_error>
+#include <type_traits>
+
+#include <jsoncons/config/compiler_support.hpp>
+#include <jsoncons/json_exception.hpp>
 
 namespace jsoncons { namespace jmespath {
 
     class jmespath_error : public std::system_error, public virtual json_exception
     {
-        std::size_t line_number_;
-        std::size_t column_number_;
+        std::size_t line_number_{0};
+        std::size_t column_number_{0};
         mutable std::string what_;
     public:
         jmespath_error(std::error_code ec)
-            : std::system_error(ec), line_number_(0), column_number_(0)
+            : std::system_error(ec)
         {
         }
         jmespath_error(std::error_code ec, const std::string& what_arg)
-            : std::system_error(ec, what_arg), line_number_(0), column_number_(0)
+            : std::system_error(ec, what_arg)
         {
         }
         jmespath_error(std::error_code ec, std::size_t position)
-            : std::system_error(ec), line_number_(0), column_number_(position)
+            : std::system_error(ec), column_number_(position)
         {
         }
         jmespath_error(std::error_code ec, std::size_t line, std::size_t column)
@@ -37,6 +42,8 @@ namespace jsoncons { namespace jmespath {
         jmespath_error(const jmespath_error& other) = default;
 
         jmespath_error(jmespath_error&& other) = default;
+        
+        ~jmespath_error() override = default;
 
         const char* what() const noexcept override
         {
@@ -112,6 +119,7 @@ enum class jmespath_errc
     invalid_arity,
     identifier_not_found,
     expected_index_expression,
+    undefined_variable,
     unknown_error 
 };
 
@@ -183,6 +191,8 @@ public:
                 return "Identifier not found";
             case jmespath_errc::expected_index_expression:
                 return "Expected index expression";
+            case jmespath_errc::undefined_variable:
+                return "Undefined variable";
             case jmespath_errc::unknown_error:
             default:
                 return "Unknown jmespath parser error";
@@ -203,13 +213,14 @@ std::error_code make_error_code(jmespath_errc result)
     return std::error_code(static_cast<int>(result),jmespath_error_category());
 }
 
-}}
+} // namespace jmespath
+} // namespace jsoncons
 
 namespace std {
     template<>
     struct is_error_code_enum<jsoncons::jmespath::jmespath_errc> : public true_type
     {
     };
-}
+} // namespace std
 
-#endif
+#endif // JSONCONS_EXT_JMESPATH_JMESPATH_ERROR_HPP

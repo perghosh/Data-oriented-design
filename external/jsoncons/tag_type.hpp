@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -7,7 +7,9 @@
 #ifndef JSONCONS_TAG_TYPE_HPP
 #define JSONCONS_TAG_TYPE_HPP
 
+#include <cstdint>
 #include <ostream>
+
 #include <jsoncons/config/jsoncons_config.hpp>
 
 namespace jsoncons {
@@ -16,6 +18,8 @@ struct null_type
 {
     explicit null_type() = default; 
 };
+
+constexpr null_type null_arg{};
 
 struct temp_allocator_arg_t
 {
@@ -58,6 +62,13 @@ struct json_const_pointer_arg_t
 };
 
 constexpr json_const_pointer_arg_t json_const_pointer_arg{};
+
+struct json_pointer_arg_t
+{
+    explicit json_pointer_arg_t() = default; 
+};
+
+constexpr json_pointer_arg_t json_pointer_arg{};
  
 enum class semantic_tag : uint8_t 
 {
@@ -227,6 +238,6 @@ std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os, semantic_ta
     return os;
 }
 
-}
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_TAG_TYPE_HPP

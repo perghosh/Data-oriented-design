@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -7,7 +7,9 @@
 #ifndef JSONCONS_JSON_TYPE_HPP
 #define JSONCONS_JSON_TYPE_HPP
 
+#include <cstdint>
 #include <ostream>
+
 #include <jsoncons/config/jsoncons_config.hpp>
 
 namespace jsoncons {
@@ -98,19 +100,20 @@ namespace jsoncons {
 
     enum class json_storage_kind : uint8_t 
     {
-        null = 0,                // 0000
-        boolean = 1,             // 0001
-        int64 = 2,               // 0010
-        uint64 = 3,              // 0011
-        empty_object = 4,        // 0100
-        float64 = 5,             // 0101
-        half_float = 6,          // 0110
-        short_str = 7,           // 0111
-        const_json_pointer = 8,  // 1000    
-        byte_str = 12,           // 1100  
-        object = 13,             // 1101
-        array = 14,              // 1110
-        long_str = 15            // 1111
+        null = 0,                 // 0000
+        boolean = 1,              // 0001
+        int64 = 2,                // 0010
+        uint64 = 3,               // 0011
+        empty_object = 4,         // 0100
+        float64 = 5,              // 0101
+        half_float = 6,           // 0110
+        short_str = 7,            // 0111
+        json_const_reference = 8, // 1000    
+        json_reference = 9,       // 1001    
+        byte_str = 12,            // 1100  
+        object = 13,              // 1101
+        array = 14,               // 1110
+        long_str = 15             // 1111
     };
 
     inline bool is_string_storage(json_storage_kind storage_kind) noexcept
@@ -141,7 +144,8 @@ namespace jsoncons {
         static constexpr const CharT* array_value = JSONCONS_CSTRING_CONSTANT(CharT, "array");
         static constexpr const CharT* empty_object_value = JSONCONS_CSTRING_CONSTANT(CharT, "empty_object");
         static constexpr const CharT* object_value = JSONCONS_CSTRING_CONSTANT(CharT, "object");
-        static constexpr const CharT* const_json_pointer = JSONCONS_CSTRING_CONSTANT(CharT, "const_json_pointer");
+        static constexpr const CharT* json_const_reference = JSONCONS_CSTRING_CONSTANT(CharT, "json_const_reference");
+        static constexpr const CharT* json_reference = JSONCONS_CSTRING_CONSTANT(CharT, "json_reference");
 
         switch (storage)
         {
@@ -205,15 +209,20 @@ namespace jsoncons {
                 os << object_value;
                 break;
             }
-            case json_storage_kind::const_json_pointer:
+            case json_storage_kind::json_const_reference:
             {
-                os << const_json_pointer;
+                os << json_const_reference;
+                break;
+            }
+            case json_storage_kind::json_reference:
+            {
+                os << json_reference;
                 break;
             }
         }
         return os;
     }
 
-} // jsoncons
+} // namespace jsoncons
 
-#endif
+#endif // JSONCONS_JSON_TYPE_HPP

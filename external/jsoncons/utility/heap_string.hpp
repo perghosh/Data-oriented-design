@@ -1,4 +1,4 @@
-// Copyright 2013-2024 Daniel Parker
+// Copyright 2013-2025 Daniel Parker
 // Distributed under the Boost license, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -7,13 +7,13 @@
 #ifndef JSONCONS_UTILITY_HEAP_STRING_HPP
 #define JSONCONS_UTILITY_HEAP_STRING_HPP
 
-#include <stdexcept>
-#include <string>
-#include <exception>
-#include <ostream>
+#include <cstdint>
 #include <cstring> // std::memcpy
 #include <memory> // std::allocator
+
 #include <jsoncons/config/compiler_support.hpp>
+#include <jsoncons/config/jsoncons_config.hpp>
+#include <jsoncons/utility/extension_traits.hpp>
 
 namespace jsoncons {
 namespace utility {
@@ -46,7 +46,7 @@ namespace utility {
         {
         }
 
-        ~heap_string_base() noexcept = default;
+        ~heap_string_base() = default;
     };
 
     template <typename CharT,typename Extra,typename Allocator>
@@ -58,24 +58,27 @@ namespace utility {
         using pointer = typename allocator_traits_type::pointer;
 
         pointer p_;
-        std::size_t length_;
-        uint8_t offset_;
-        uint8_t align_pad_;
+        std::size_t length_{0};
+        uint8_t offset_{0};
+        uint8_t align_pad_{0};
 
-        ~heap_string() noexcept = default;
+        heap_string(const heap_string&) = delete;
+        heap_string(heap_string&&) = delete;
+
+        heap_string(Extra extra, const Allocator& alloc)
+            : heap_string_base<Extra,Allocator>(extra, alloc), p_(nullptr)
+        {
+        }
+
+        ~heap_string() = default;
 
         const char_type* c_str() const { return extension_traits::to_plain_pointer(p_); }
         const char_type* data() const { return extension_traits::to_plain_pointer(p_); }
         std::size_t length() const { return length_; }
         Extra extra() const { return this->extra_; }
 
-        heap_string(Extra extra, const Allocator& alloc)
-            : heap_string_base<Extra,Allocator>(extra, alloc), p_(nullptr), length_(0), offset_(0)
-        {
-        }
-
-        heap_string(const heap_string&) = delete;
         heap_string& operator=(const heap_string&) = delete;
+        heap_string& operator=(heap_string&&) = delete;
 
     };
 
@@ -195,4 +198,4 @@ namespace utility {
 } // namespace utility
 } // namespace jsoncons
 
-#endif
+#endif // JSONCONS_UTILITY_HEAP_STRING_HPP
