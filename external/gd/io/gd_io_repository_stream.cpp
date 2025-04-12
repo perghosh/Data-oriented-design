@@ -706,12 +706,14 @@ std::string repository::dump() const
 
    // For hex conversion of magic number
    std::string stringHexMagic;
-   unsigned int iMagic = m_header.m_uMagic;
+   uint64_t uMagic = m_header.m_uMagic;
    const char phex_[] = "0123456789abcdef";
-   do {
-      stringHexMagic = phex_[iMagic & 0xF] + stringHexMagic;
-      iMagic >>= 4;
-   } while (iMagic > 0);
+   do 
+   {
+      stringHexMagic = phex_[uMagic & 0xF] + stringHexMagic;
+      uMagic >>= 4;
+   } 
+   while(uMagic > 0);
 
    stringDump += "Magic Number: 0x" + stringHexMagic + "\n";
    stringDump += "Version: " + std::to_string(m_header.m_uVersion) + "\n";

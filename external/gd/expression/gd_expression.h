@@ -24,9 +24,15 @@ _GD_EXPRESSION_BEGIN
 #ifdef GD_TYPES_VERSION
    using tag_error = gd::types::tag_error;
    using tag_optimize = gd::types::tag_optimize;
+   using tag_single = gd::types::tag_single;
+   using tag_double = gd::types::tag_double;
+   using tag_multiple = gd::types::tag_multiple;
 #else
    struct tag_error {};          ///< error is used in some form
    struct tag_optimize {};       ///< optimize is used in some form;
+   struct tag_single {};         ///< single is used in some form;
+   struct tag_double {};         ///< double is used in some form;
+   struct tag_multiple {};       ///< multiple is used in some form;
 #endif
 
 /// get the precedence of the operator

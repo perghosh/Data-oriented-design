@@ -25,11 +25,25 @@ std::string GetDataFolder()
    return FOLDER_GetRoot_g("target/TOOLS/FileCleaner/tests/data");
 }
 
+/*
+auto valueResult = gd::expression::token::calculate_s("length( text )", { {"text", "0123456789012345"} });
+auto valueResult = gd::expression::token::calculate_s( "10 - -10" );
+auto valueResult = gd::expression::token::calculate_s("min( 100, 200 ) + 999 + max( 10, 30 )");
+auto valueResult = gd::expression::token::calculate_s( "10 >= x", {{"x", 10}} );
+*/
 
 
 TEST_CASE( "[expression] create and read", "[expression]" ) {
    CApplication application;
    application.Initialize();
+
+   {
+      auto valueResult = gd::expression::token::calculate_s( "x = 10; x" );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+      //valueResult = gd::expression::token::calculate_s( "x = 10; x" );
+      //std::cout << "Result: " << valueResult.as_string() << std::endl;
+   }
+
 
    {
       auto valueResult = gd::expression::token::calculate_s("length( text )", { {"text", "0123456789012345"} });

@@ -429,7 +429,8 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       case token::token_type_s("SEPARATOR"):
          {
             auto stringToken = token_.get_name();
-            if( stringToken == "," )
+            char iCharacter = stringToken[0];
+            if( iCharacter == ',' )
             {
                if( stackOperator.empty() == false )
                {
@@ -442,6 +443,17 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
                   }
                }
             }
+            else if( iCharacter == ';' )                                       // found ; and that means end of statement, clear result
+            {
+               // ## pop all operators from stack and put them in vector
+               while( stackOperator.empty() == false )
+               {
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+               vectorOut.push_back(std::move(token_));                         // ; add to out
+            }
+            else { return { false, "[compile_s] - Unsupported separator: " + std::string(stringToken) }; }
          }
       break;
 
@@ -573,6 +585,7 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
 {
    std::vector<value> vectorArguments;
    std::stack<value> stackValue;
+   std::string stringAssignVariable; // special case when we need to assign variable
 
    for( const auto& token_ : vectorToken )
    {
@@ -582,10 +595,26 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
          {
             auto stringOerator = token_.get_name();                            // get operator character
 
+            if( stringOerator == "=" )                                         // special case for assignment
+            {                                                                                      assert( stackValue.empty() == false );
+               value value_ = stackValue.top();                                // get stack value, make sure that there are at last one value
+               stackValue.pop();                                               // pop it
+               if( stringAssignVariable.empty() == false )
+               {
+                  runtime_.set_variable(stringAssignVariable, value_);         // set variable
+               }
+               else
+               {                                                                                   assert(false);
+                  return { false, "[calculate_s] - No variable name for assignment" };
+               }
+               continue;                                                       // continue to next token
+            }
+
             value valueRight = stackValue.top();                               // get right value
             stackValue.pop();                                                  // pop it
             value valueLeft = stackValue.top();                                // get left value
             stackValue.pop();                                                  // pop it
+
             // call operator function
             value result_ = evaluate_operator_g(stringOerator, valueLeft, valueRight, &runtime_ );
             stackValue.push(result_);                                          // push result to stack
@@ -611,6 +640,10 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                if( bFound == true )
                {
                   stackValue.push(value( variantValue ));
+               }
+               else if( stringAssignVariable.empty() == true )
+               {
+                  stringAssignVariable.assign( stringVariable );              // prepare this for assign operator, only one assign value can be active at any given time
                }
                else
                {
@@ -649,10 +682,16 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
       case token::token_type_s("SEPARATOR"):
          {
             auto stringSeparator = token_.get_name();
-            if( stringSeparator == "," )
+            char iCharacter = stringSeparator[0];
+            if( iCharacter == ',' )
             {
                // ## do nothing
             }
+            else if( iCharacter == ';' )
+            {
+               std::stack<value>().swap( stackValue );                         // clear stack value
+            }
+
          }
          break;
       }
