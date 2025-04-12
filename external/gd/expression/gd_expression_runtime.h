@@ -97,10 +97,16 @@ struct runtime
     */
    void add(const std::string& stringError, tag_error ) { m_stringError.push_back(stringError); }
 
+   // ## methods logic
+
    const method* find_method(const std::string_view& stringName) const;
+
+   // ## variables logic
 
    int find_variable(const std::string_view& stringName) const;
    const value::variant_t& get_variable(size_t uIndex) const;
+   void set_variable(size_t uIndex, const value::variant_t& value_) { m_vectorVariable[uIndex].second = value_; }
+   void set_variable(const std::string_view& stringName, const value::variant_t& value_);
 
    /// @brief try to find variable value by name and use callback function to find it
    bool find_value( const std::string_view& stringName, value::variant_t* pvariant_ ) ;
@@ -123,5 +129,14 @@ struct runtime
 // ## free functions ----------------------------------------------------------
 
 };
+
+/// @brief set variable value by name, if not found then add it to the vector
+inline void runtime::set_variable(const std::string_view& stringName, const value::variant_t& value_)
+{
+   int iIndex = find_variable(stringName);
+   if( iIndex >= 0 ) { m_vectorVariable[iIndex].second = value_; }
+   else { add(stringName, value_); }
+}
+
 
 _GD_EXPRESSION_END

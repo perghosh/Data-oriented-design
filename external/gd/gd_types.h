@@ -59,6 +59,14 @@ struct tag_state_success {};  ///< success state
 struct tag_state_failure {};  ///< failure state
 
 // ----------------------------------------------------------------------------
+// ## focus on count
+struct tag_count {};          ///< count is used in some form
+struct tag_single {};         ///< single is used in some form
+struct tag_double {};         ///< double is used in some form
+struct tag_multiple {};       ///< multiple is used in some form
+
+
+// ----------------------------------------------------------------------------
 // ## value related tag dispatchers
 
 struct tag_date {};           ///< date is used in some form
