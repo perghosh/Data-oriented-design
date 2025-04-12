@@ -1,6 +1,10 @@
+#include <filesystem>
 #include <format>
 #include <fstream>
 
+#include "pugixml/pugixml.hpp"
+
+#include "Application.h"
 #include "Document.h"
 
 void CDocument::common_construct(const CDocument& o)
@@ -80,4 +84,244 @@ size_t CDocument::Count(uint8_t uCharacter) const
 {
    auto uCount = std::count(m_vectorData.begin(), m_vectorData.end(), uCharacter);
    return uCount;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Load cache 
+ * @param stringId id for cached table, only one id for cache is able to exist
+ * @return true if cache was loaded, fals and error information on error
+ */
+std::pair<bool, std::string> CDocument::CACHE_Load( const std::string_view& stringId )
+{                                                                                                  assert( m_papplication != nullptr ); assert( CACHE_Exists_d( stringId ) == false );
+   /*
+   gd::argument::arguments argumentsCache = CACHE_GetInformation( stringId );
+   if( argumentsCache.empty() == true )
+   {                                                                                               // LOG_WARNING( "No cache information for " <<  stringId );
+      return { false, "" };
+   }
+
+   auto argumentLanguage = argumentsCache["language"];
+
+   if( argumentLanguage == "sql" )                                             // create cache from sql select query, structure for cached table is generated from executed sql
+   {
+      gd::database::database_i* pdatabase = m_papplication->GetDatabaseMain(); 
+      gd::table::dto::table tableCache;
+      auto stringSelect = argumentsCache["value"].as_string();
+      auto [bOk, stringError] = application::database::SQL_SelectToTable_g( pdatabase, stringSelect, &tableCache );// run query and add result to table
+      if( bOk == false ) return { false, stringError };
+      CACHE_Add( std::move( tableCache ), stringId );                          // add it to internal application cache
+   }
+   else if( argumentLanguage == "table" )
+   {
+      std::string stringColumnDesign = argumentsCache["value"].as_string();
+      gd::table::dto::table tableCache( 10, gd::table::tag_full_meta{} );
+      auto result_ = tableCache.column_add( stringColumnDesign, gd::table::tag_parse{});
+      if( result_.first == false )
+      {                                                                                            assert( false );
+         return { false, fmt::format( "Error in string used to configure table columns - {}", stringColumnDesign ) };
+      }
+      tableCache.prepare();
+      CACHE_Add( std::move( tableCache ), stringId );                          // add it to internal application cache
+   }
+   */
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Add table to document, table may be used as a sort of cache for data stored as table
+ * @param table 
+ * @param stringId 
+ * @return true if added, false if table with id was found 
+ */
+bool CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId )
+{
+   std::string_view stringTableId( stringId );
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );       // locks `m_vectorTableCache`
+
+   if( stringTableId.empty() == true ) { stringTableId = ( const char* )table.property_get( "id" ); }
+
+   // ## There is a tiny chance table was added before this method was called, we need to check with exclusive lock
+   for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
+   {
+      auto argumentId = (*it)->property_get( "id" );
+      if( argumentId.is_string() && stringTableId == (const char *)argumentId ) return false; // found table, exit
+   }
+
+   /// Create unique_ptr with table and move table data to this table
+   std::unique_ptr<gd::table::dto::table> ptable = std::make_unique<gd::table::dto::table>( std::move( table ) );
+
+   if( stringId.empty() == false )
+   {                                                                                               assert( ptable->property_get( "id" ).is_null() );
+      ptable->property_set( { "id", stringTableId } );
+   }
+   m_vectorTableCache.push_back( std::move( ptable ) );                        // insert table to vector
+
+   return true;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get pointer to table with specified id
+ * @param stringId id to table that is returned
+ * @return pointer to table with id
+ */
+gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, bool bLoad )
+{
+   {
+      std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
+
+      for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
+      {
+         auto argumentId = (*it)->property_get( "id" );
+         if( argumentId.is_string() && stringId == ( const char* )argumentId ) return it->get();
+      }
+   }
+
+   if( bLoad == true )
+   {
+      auto [bOk, stringError] = CACHE_Load( stringId );                                            // LOG_WARNING_IF( bOk == false, "Failed to find script: " << stringId );
+
+      if( bOk == true ) return CACHE_Get( stringId, false );
+      else
+      {                                                                        // store internal error
+         ERROR_Add( stringError );
+      }
+   }
+
+   return nullptr;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get information about cache to be able to generate data for it
+ * 
+ * @code
+auto ptableAtoms = pdocument->CACHE_Get( "atoms" );
+if( ptableAtoms == nullptr )
+{
+	gd::table::dto::table table;
+
+   gd::argument::arguments argumentsCache = pdocument->CACHE_GetInformation( "atoms" );
+   std::string stringSelect = argumentsCache["value"].as_string();
+	auto [bOk, stringError] = application::database::SQL_SelectToTable_g( &databaseRead, stringSelect, &table );
+
+	pdocument->CACHE_Add( std::move( table ), "atoms" );
+}
+
+ptableAtoms = pdocument->CACHE_Get( "atoms" );
+ * @endcode
+ * 
+ * xml format with cache information
+ * @verbatim
+<document>
+   <tables>
+      <table id="atoms" language="sql" operation="select"><![CDATA[
+SELECT FName AS "name", FMass AS "mass", FRadius AS "radius" FROM TAtom
+      ]]></table>
+   </tables>
+</document>
+ * @endverbatim
+ * 
+ * @param stringId id to cache information
+ * @param argumentsCache arguments items where cache information is placed
+ * @return true if information was found, false and error information if not found
+ */
+std::pair<bool, std::string> CDocument::CACHE_GetInformation( const std::string_view& stringId, gd::argument::arguments& argumentsCache )
+{                                                                                                  assert( std::filesystem::exists( m_stringCacheConfiguration ) == true );
+   pugi::xml_document xmldocument;           // read cache information from xml
+   pugi::xml_parse_result xmlparseresult = xmldocument.load_file(m_stringCacheConfiguration.c_str()); // loads information about the table structure that is stored in cache, file may be named to `cache.xml`
+   if( true == xmlparseresult )
+   {
+      std::string stringXpathTable = std::format("//table[@id='{}']", stringId );
+      pugi::xml_node xmlnode = xmldocument.select_node( stringXpathTable.c_str() ).node();// find cache in xml
+      
+      if( xmlnode.empty() == false )                                           // found cache in xml
+      {
+         argumentsCache.append( "id", stringId );
+         auto pbszLanguage = xmlnode.attribute("language").value();
+         if( *pbszLanguage != '\0' ) argumentsCache.append( "language", pbszLanguage );
+         auto pbszOperation = xmlnode.attribute("operation").value();
+         if( *pbszOperation != '\0' ) argumentsCache.append( "pbszOperation", pbszOperation );
+         argumentsCache.append( "value", xmlnode.first_child().value() );
+      }
+      else
+      {
+         auto stringError = std::format( "failed to find cache information for \"{}\"", stringId );
+         return {false, stringError };
+      }
+   }
+   else
+   {
+      std::string stringError = xmlparseresult.description();
+      stringError += " [";
+      stringError += m_stringCacheConfiguration;
+      stringError += "]";
+      return { false, stringError };
+   }
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get information about cache to be able to generate data for it
+ * @param stringId id to cache information
+ * @return gd::argument::arguments information about how to generate cache data
+ */
+gd::argument::arguments CDocument::CACHE_GetInformation( const std::string_view& stringId )
+{
+   gd::argument::arguments argumentsCache;   // collect cache information in arguments
+   auto [bOk, stringError] = CACHE_GetInformation( stringId, argumentsCache );
+   if( bOk == false )
+   {
+      ERROR_Add( stringError );
+      // throw std::runtime_error( stringError ); TDOD: error logic
+   }
+
+   return argumentsCache;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Erase table cache
+ * @param stringId id for cache to delete
+ */
+void CDocument::CACHE_Erase( const std::string_view& stringId ) 
+{
+   if(CACHE_Get(stringId, false) != nullptr)
+   {
+      std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
+      for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
+      {
+         auto argumentId = (*it)->property_get( "id" );
+         if( argumentId.is_string() && stringId == ( const char* )argumentId )
+         {
+            m_vectorTableCache.erase( it );
+            break;
+         }
+      }
+   }
+}
+
+
+#ifndef NDEBUG
+/// For debug, check if chache with id exists
+bool CDocument::CACHE_Exists_d( const std::string_view& stringId )
+{
+   for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
+   {
+      auto argumentId = (*it)->property_get( "id" );
+      if( argumentId.is_string() && stringId == ( const char* )argumentId ) return true;
+   }
+   return false;
+}
+#endif // !NDEBUG
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Add error to internal list of errors
+ * @param stringError error information
+ */
+void CDocument::ERROR_Add( const std::string_view& stringError )
+{
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );            // locks `m_vectorError`
+   gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
+   m_vectorError.push_back( std::move(argumentsError) );
 }
