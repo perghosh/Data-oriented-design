@@ -41,6 +41,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       // Parse the command-line arguments
       auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);
       if( bOk == false ) { return { false, stringError }; }
+
+
    }
 
 
@@ -79,15 +81,33 @@ std::pair<bool, std::string> CApplication::Exit()
    // return {false, "Exit failed: <error details>"};
 }
 
+std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& optionsApplication )
+{
+   const gd::cli::options* poptionsActive = optionsApplication.find_active();
+   if( poptionsActive == nullptr ) { return { false, "No active options found" }; }
+
+   /// ## prepare command
+
+   std::string stringCommandName = poptionsActive->name();
+   PROPERTY_Set("command", stringCommandName);
+
+   DOCUMENT_Add(stringCommandName);
+   auto pdocument = DOCUMENT_Get(stringCommandName);
+   
+
+   return { true, "" };
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Adds a new document with the specified name.
  * 
  * @param stringName The name of the document to add.
  */
-void CApplication::DOCUMENT_Add(const std::string_view& stringName) 
+CDocument* CApplication::DOCUMENT_Add(const std::string_view& stringName) 
 {
    auto pdocument = std::make_unique<CDocument>( stringName );
    m_vectorDocument.push_back(std::move(pdocument));
+   return m_vectorDocument.back().get();
 }
 
 /** ---------------------------------------------------------------------------
@@ -95,12 +115,13 @@ void CApplication::DOCUMENT_Add(const std::string_view& stringName)
  * 
  * @param arguments_ The arguments used to create the document.
  */
-void CApplication::DOCUMENT_Add(const gd::argument::shared::arguments& arguments_) 
+CDocument* CApplication::DOCUMENT_Add(const gd::argument::shared::arguments& arguments_) 
 {
    auto pdocument = std::make_unique<CDocument>( arguments_ );
    // Assuming CDocument has a method to initialize from arguments
    // doc->Initialize(arguments_);
    m_vectorDocument.push_back(std::move(pdocument));
+   return m_vectorDocument.back().get();
 }
 
 /** ---------------------------------------------------------------------------
@@ -235,7 +256,14 @@ void CApplication::COMMAND_Count(const std::string& stringArgument)
 
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
-   {  // ## `copy` command
+   {  // ## `copy` command, copies file from source to target
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );
+      optionsCommand.add({"source", 's', "File to count lines in"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
+   {  // ## `count` command, count number of lines in file
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file from source to target" );
       optionsCommand.add({"source", 's', "File to copy"});
       optionsCommand.add({"destination", 'd', "Destination, where file is copied to"});
@@ -244,7 +272,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
-   {  // ## `join` command
+
+   {  // ## `join` command, joins two or more files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "join", "join two or more files" );
       optionsCommand.add({"source", 's', "Files to join"});
       optionsCommand.add({"destination", 'd', "Destination, joined files result"});
