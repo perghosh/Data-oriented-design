@@ -47,6 +47,10 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
          std::cout << "Variable: " << it.first << " = " << gd::expression::value( it.second ).as_string() << std::endl;
       }
 
+      valueResult = gd::expression::token::calculate_s( "max = max( (20 + 40), (10 + 10) ); min = min( (20 + 40), (10 + 10) ); min" );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+
+
       //std::cout << "Result: " << valueResult.as_string() << std::endl;
    }
 
