@@ -16,6 +16,9 @@
 #include <utility>
 #include <vector>
 
+#include "gd/gd_database.h"
+#include "gd/gd_database_odbc.h"
+#include "gd/gd_database_sqlite.h"
 #include "gd/gd_arguments_shared.h"
 
 #include "Document.h"
@@ -52,6 +55,8 @@ private:
 
 // ## operator -----------------------------------------------------------------
 public:
+   /// interface operator to database
+   operator gd::database::database_i*() const { assert( m_pdatabase != nullptr ); return m_pdatabase;  }
 
 
 // ## methods ------------------------------------------------------------------
@@ -109,6 +114,15 @@ public:
 
    std::pair<bool, std::string> DATABASE_Open( const gd::argument::shared::arguments& argumentsOpen );
 
+/** \name DATABASE
+*///@{
+   /// Connect database, string format for connection is database dependent
+   void DATABASE_Append( gd::database::database_i* pdatabase, bool bActivate );
+   std::pair<bool, std::string> DATABASE_Connect( const std::string_view& stringConnect );
+   void DATABASE_CloseActive();
+//@}
+
+
 protected:
 /** \name INTERNAL
 *///@{
@@ -126,6 +140,10 @@ public:
 public:
    /// List of documents
    std::vector<std::unique_ptr<CDocument>> m_vectorDocument;
+
+   std::vector< gd::database::database_i* > m_vectorDatabase; ///< list of connected databases
+   gd::database::database_i* m_pdatabase = nullptr;  ///< active database connection
+
 
 
 

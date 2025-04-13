@@ -1,3 +1,14 @@
+/**
+ * @file Application.cpp
+ * 
+ * ### 0TAG0 File navigation, mark and jump to common parts
+ * - `0TAG0DATABASE.Application` - database operations
+ * 
+ */
+
+#include <filesystem>
+#include <format>
+
 #include "gd/gd_cli_options.h"
 
 #include "Application.h"
@@ -271,15 +282,109 @@ void CApplication::COMMAND_Count(const std::string& stringArgument)
    ifstreamFile.close();
 }
 
+// 0TAG0DATABASE.Application
+
 std::pair<bool, std::string> CApplication::DATABASE_Open(const gd::argument::shared::arguments& argumentsOpen)
 {
    std::string stringPath = argumentsOpen["path"].as_string();
    if( stringPath.empty() == false )
    {
+      if( std::filesystem::exists(stringPath) == false )
+      {
+      }
 
    }
    return { true, "" };
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Connect to database
+ * Connect to database based on string that holds information on how to connect
+ * 
+ * @param stringConnect connection string
+ * @return true if ok, false and error information if failed
+ */
+std::pair<bool, std::string> CApplication::DATABASE_Connect( const std::string_view& stringConnect )
+{
+   std::string stringConnectionName;
+   std::string stringConnectionName2;
+
+   DATABASE_CloseActive();
+
+   if( stringConnect.empty() == true )
+   {
+      stringConnectionName = PROPERTY_Get("database").as_string();             assert( stringConnectionName.empty() == false );
+   }
+   else
+   {
+      stringConnectionName = stringConnect;
+   }
+
+   // ## connect main database
+   bool bOk = false;
+   std::string stringError;
+   gd::database::database_i* pdatabaseMain = nullptr;
+
+   
+   if(true)
+   {
+#ifdef GD_DATABASE_ODBC_USE      
+      gd::database::odbc::database_i* pdatabase = new gd::database::odbc::database_i();  // create database interface
+      pdatabase->add_reference();
+      std::tie(bOk, stringError) = pdatabase->open( stringConnectionName );
+      pdatabaseMain = pdatabase;
+#else
+      bOk = false;
+      stringError = "Only file connection is enabled, make sure to connect to file database (sqlite)";
+#endif      
+   }
+   else
+   {
+      gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i();  // create database interface
+      pdatabase->add_reference();
+      std::tie(bOk, stringError) = pdatabase->open( stringConnectionName );
+      pdatabaseMain = pdatabase;
+   }
+
+   if( bOk == true )
+   {
+      m_pdatabase = pdatabaseMain;
+   }
+   else
+   {
+      if( pdatabaseMain != nullptr ) pdatabaseMain->release();
+      if( stringError.empty() == true ) stringError = "Failed to collect information about database connection";
+      return { false, stringError };
+   }
+
+   return { true, "" };
+}
+
+void CApplication::DATABASE_Append( gd::database::database_i* pdatabase, bool bActivate ) 
+{                                                                                                  assert( pdatabase != nullptr );
+   pdatabase->add_reference();
+   m_vectorDatabase.push_back( pdatabase ); 
+   if( bActivate == true )
+   {
+      if( m_pdatabase != nullptr ) m_pdatabase->release();
+      m_pdatabase = pdatabase;
+      if( m_pdatabase != nullptr ) m_pdatabase->add_reference();
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Close active database
+*/
+void CApplication::DATABASE_CloseActive()
+{
+   if( m_pdatabase != nullptr )
+   {
+      m_pdatabase->release();
+      m_pdatabase = nullptr;
+   }
+}
+
 
 
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
