@@ -1,6 +1,14 @@
+/**
+* \file Document.cpp
+* 
+* ### 0TAG0 File navigation, mark and jump to common parts
+* - `0TAG0CACHE` - cache methods
+*/
+
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <memory>
 
 #include "pugixml/pugixml.hpp"
 
@@ -86,6 +94,48 @@ size_t CDocument::Count(uint8_t uCharacter) const
    return uCount;
 }
 
+std::pair<bool, std::string> CDocument::HarvestFile(const gd::argument::shared::arguments& argumentsPath)
+{
+   return std::pair<bool, std::string>();
+}
+
+
+// 0TAG0CACHE
+
+/** ---------------------------------------------------------------------------
+ * @brief Prepares a cache table for the specified identifier.
+ *
+ * This method initializes and prepares a table for caching data associated with the given `stringId`.
+ * If the `stringId` matches "files", it creates a table with predefined columns ("path", "size", "date", "extension").
+ * The table is then added to the internal application cache.
+ *
+ * @param stringId A string view representing the identifier for the cache table.
+ *                 If the identifier is "files", a table with specific columns is prepared.
+ *
+ * @details
+ * - The method first checks if a cache table with the given `stringId` already exists using `CACHE_Get`.
+ * - If the table does not exist, it creates a new `table` object with predefined columns.
+ * - The table is wrapped in a `std::unique_ptr` and added to the cache using `CACHE_Add`.
+ *
+ * @note This method assumes that the `CACHE_Add` function handles the ownership of the table.
+ */
+void CDocument::CACHE_Prepare(const std::string_view& stringId)
+{
+   using namespace gd::table::dto;
+
+   // ## prepare file list
+   //    columns: "path, size, date, extension
+   if( stringId == "files" )
+   {
+      auto ptable_ = CACHE_Get(stringId, false);
+      if( ptable_ != nullptr )
+      {
+         table* ptable_ = new table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} );
+         std::unique_ptr<table> ptable(ptable_);
+         CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
+      }
+   }
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Load cache 
@@ -128,6 +178,7 @@ std::pair<bool, std::string> CDocument::CACHE_Load( const std::string_view& stri
    return { true, "" };
 }
 
+// 0TAG0CACHE
 /** ---------------------------------------------------------------------------
  * @brief Add table to document, table may be used as a sort of cache for data stored as table
  * @param table 

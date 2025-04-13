@@ -74,16 +74,23 @@ public:
    void SetName(const std::string_view& stringName) { m_arguments.set("name", stringName); }
    std::string_view Getpath() const { return m_arguments["path"].as_string_view(); }
    void SetPath(const std::string_view& stringName) { m_arguments.set("path", stringName); }
+//@}
 
+/** @name HARVEST
+* 
+*///@{
+
+   std::pair<bool, std::string> HarvestFile( const gd::argument::shared::arguments& argumentsPath );
+      
 //@}
 
 /** \name CACHE
  * Document are able to cache information and it can handle different named caches.
  * Each cache is stored in a named table and that table is then stored in 
  * member vector in document called `m_vectorTableCache`.
- * Information about cached information (valid cache tables) are read from file, this file
- * is configurable but check for `cache.xml`, it might be that cache logic is placed there.
  *///@{
+   /// Prepare cache information structure
+   void CACHE_Prepare( const std::string_view& stringId );
    /// Load cache data
    std::pair<bool, std::string> CACHE_Load( const std::string_view& stringId );
    bool CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId );
