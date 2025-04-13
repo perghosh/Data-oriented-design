@@ -286,11 +286,25 @@ void CApplication::COMMAND_Count(const std::string& stringArgument)
 
 std::pair<bool, std::string> CApplication::DATABASE_Open(const gd::argument::shared::arguments& argumentsOpen)
 {
+   DATABASE_CloseActive();
+
+   bool bCreate = argumentsOpen["create"].as_bool();
    std::string stringPath = argumentsOpen["path"].as_string();
    if( stringPath.empty() == false )
    {
-      if( std::filesystem::exists(stringPath) == false )
+      if( std::filesystem::exists(stringPath) == false && bCreate == true )
       {
+         std::filesystem::create_directories(stringPath);
+         gd::argument::arguments argumentsCreate({ {"file", stringPath}, { "create", true} } );
+         gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i();     // create database interface
+         pdatabase->add_reference();
+         auto result_ = pdatabase->open(argumentsCreate);
+         if( result_.first == false )
+         {
+            pdatabase->release();
+            return { false, result_.second };
+         }
+         m_pdatabase = pdatabase;
       }
 
    }
