@@ -41,6 +41,7 @@ class CDocument
 // ## construction -------------------------------------------------------------
 public: // 0TAG0construct.Document
    CDocument() {}
+   CDocument(CApplication* papplication) : m_papplication(papplication) { m_arguments.append("name", "default"); }
    CDocument( CApplication* papplication, const std::string_view& stringName ): m_papplication(papplication) { m_arguments.append( "name", stringName ); }
    CDocument( const gd::argument::shared::arguments& arguments_ ): m_arguments( arguments_ ) {}
 // copy

@@ -28,7 +28,7 @@ if( USE_TARGET_ )
    set(TARGET_NAME_ "cleaner")
 
    add_executable(${TARGET_NAME_}
-      ${external_gd}
+      ${external_gd} ${external_pugixml}
       ${TARGET_FILES_}   
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
       "main.cpp"

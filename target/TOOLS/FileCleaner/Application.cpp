@@ -105,7 +105,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
  */
 CDocument* CApplication::DOCUMENT_Add(const std::string_view& stringName) 
 {
-   auto pdocument = std::make_unique<CDocument>( stringName );
+   auto pdocument = std::make_unique<CDocument>( this, stringName );
    m_vectorDocument.push_back(std::move(pdocument));
    return m_vectorDocument.back().get();
 }
