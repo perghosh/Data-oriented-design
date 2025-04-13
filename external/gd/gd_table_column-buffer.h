@@ -1,4 +1,18 @@
-﻿#pragma once
+﻿/**
+* \file gd_table_column-buffer.h
+* 
+* ### 0TAG0 File navigation, mark and jump to common parts
+* - `0TAG0construct.table_column_buffer` - construct table_column_buffer
+* - `0TAG0add.table_column_buffer` - add columns to table
+* - `0TAG0find_column.table_column_buffer` - find methods
+* - `0TAG0cell.table_column_buffer` - cell methods like get and set cell value
+* - `0TAG0find.table_column_buffer` - find methods like finding information in table
+* - `0TAG0harvest.table_column_buffer` - harvest logic is to "harvest" information from table
+* - `0TAG0plant.table_column_buffer` - plant logic to insert data into table
+* - `0TAG0attributes.table_column_buffer` - class members in table object
+*/
+
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -302,6 +316,7 @@ public:
 
 
 // ## construction -------------------------------------------------------------
+// 0TAG0construct.table_column_buffer
 public:
    /// @name construction
    /// Constructs table_column_buffer objects. 
@@ -427,6 +442,7 @@ public:
    /// - `columnToAdd` has all column properties for column to add
    /// - `stringName` name for column
    /// - `stringAlias` alias name for column (column can have both name and alias)
+   /// 0TAG0add.table_column_buffer
    ///@{
    table_column_buffer& column_add( const column& columnToAdd ) { m_vectorColumn.push_back( columnToAdd ); return *this; }
    table_column_buffer& column_add( unsigned uColumnType, const std::string_view& stringName ) { return column_add( uColumnType, 0, stringName ); }
@@ -471,12 +487,20 @@ public:
    ///@}
 
    // ### access column or find index for column/columns
+   // 0TAG0find_column.table_column_buffer
+   /// @brief find column index for column name
    int column_find_index( const std::string_view& stringName ) const noexcept;
+   /// @brief find column index for column alias
    int column_find_index( const std::string_view& stringAlias, tag_alias ) const noexcept;
+   /// @brief find column index for column name with wildcard, wildcars like ? and * are supported
    int column_find_index( const std::string_view& stringWildcard, tag_wildcard ) const noexcept;
+   /// @brief get column index for column name, asserts if not found
    unsigned column_get_index( const std::string_view& stringName ) const noexcept;
+   /// @brief get column index for column alias, asserts if not found
    unsigned column_get_index( const std::string_view& stringAlias, tag_alias ) const noexcept;
+   /// @brief get column index for column name with wildcard, wildcars like ? and * are supported, asserts if not found
    unsigned column_get_index( const std::string_view& stringName, tag_wildcard ) const noexcept;
+   /// @brief get column indexes for column names
    std::vector<uint32_t> column_get_index( std::initializer_list< std::string_view > listName ) const noexcept;
    std::vector<uint32_t> column_get_index( const std::vector< std::string_view >& vectorName ) const noexcept;
    unsigned column_get_index_for_alias( const std::string_view& stringAlias ) const noexcept { return column_get_index( stringAlias, tag_alias{}); }
@@ -707,7 +731,7 @@ public:
    /// return collection object wrapping rows
    gd::table::rows<table_column_buffer> rows() { return gd::table::rows<gd::table::table_column_buffer>( this ); }
 
-   // ## cell methods, cell related functionality
+   // ## cell methods, cell related functionality  0TAG0cell.table_column_buffer
 
    uint8_t* cell_get( uint64_t uRow, unsigned uColumn ) noexcept;
    const uint8_t* cell_get( uint64_t uRow, unsigned uColumn ) const noexcept;
@@ -760,7 +784,7 @@ public:
    void cell_set( const range& rangeSet, const gd::variant_view& variantviewValue );
    void cell_set( const range& rangeSet, const gd::variant_view& variantviewValue, tag_convert );
 
-   // ## find methods
+   // ## find methods 0TAG0find.table_column_buffer
 
    int64_t find( unsigned uColumn, const gd::variant_view& variantviewFind ) const noexcept { return find( uColumn, 0, get_row_count(), variantviewFind ); }
    int64_t find( const std::string_view& stringName, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( stringName, 0, get_row_count(), variantviewFind ); }
@@ -833,10 +857,8 @@ public:
    bool equal( const table_column_buffer& tableEqualTo ) const noexcept { return equal( tableEqualTo, 0, get_row_count() ); }
    ///@}
 
-   /// harvest, read, copy (what word is best ?)
-
    /// @name harvest values from table into other type of container objects
-   /// 
+   /// 0TAG0harvest.table_column_buffer
    ///@{
 
    template <typename TYPE>
@@ -865,25 +887,10 @@ public:
 
    void harvest( const std::vector< unsigned >& vectorColumn, const std::vector<uint64_t>& vectorRow, table_column_buffer& tableHarvest ) const;
    void harvest( const std::vector< std::string_view >& vectorColumnName, const std::vector<uint64_t>& vectorRow, table_column_buffer& tableHarvest ) const;
-
-
-   /// gd::argument::arguments harvest( uint64_t uRow, tag_arguments ) const;
-   /// void harvest( uint64_t uRow, gd::argument::arguments& arguments ) const;
-   /// void harvest( uint64_t uRow, unsigned* puColumnIndex, unsigned uCount, gd::argument::arguments& arguments ) const;
-   /// gd::argument::arguments harvest( uint64_t uRow, unsigned* puColumnIndex, unsigned uCount, tag_arguments ) const;
-   /// gd::argument::arguments harvest( uint64_t uRow, const std::vector<unsigned>& vectorColumnIndex, tag_arguments ) const;
-   /// std::vector< gd::argument::arguments > harvest( uint64_t uBeginRow, uint64_t uEndRow, tag_arguments ) const;
-   /// void harvest( uint64_t uBeginRow, uint64_t uEndRow, std::vector< gd::argument::arguments >& vectorArguments ) const;
-   /// void harvest( uint64_t uBeginRow, uint64_t uEndRow, const std::vector<unsigned>& vectorColumnIndex, std::vector< gd::argument::arguments >& vectorArguments ) const;
-   /// void harvest( uint64_t uBeginRow, uint64_t uEndRow, unsigned* puColumnIndex, unsigned uCount, std::vector< gd::argument::arguments >& vectorArguments ) const;
-   /// void harvest( unsigned* puColumnIndex, unsigned uCount, std::vector< gd::argument::arguments >& vectorArguments ) const;
-   /// void harvest( const std::vector<unsigned>& vectorColumnIndex, std::vector< gd::argument::arguments >& vectorArguments ) const;
-   /// std::vector< gd::argument::arguments > harvest( uint64_t uBeginRow, uint64_t uEndRow, const std::vector<unsigned>& vectorColumnIndex, tag_arguments ) const;
-   /// std::vector< gd::argument::arguments > harvest( uint64_t uBeginRow, uint64_t uEndRow, unsigned* puColumnIndex, unsigned uCount, tag_arguments ) const;
-   /// std::vector< gd::argument::arguments > harvest( unsigned* puColumnIndex, unsigned uCount, tag_arguments ) const;
-   /// std::vector< gd::argument::arguments > harvest( const std::vector<unsigned>& vectorColumnIndex, tag_arguments ) const;
    ///@}
-   /// 
+   
+   // ## plant methods, insert values into table
+   //    0TAG0plant.table_column_buffer
 
    void plant( const table_column_buffer& table, tag_name );
    void plant( const table_column_buffer& table, tag_name, tag_convert );
@@ -958,6 +965,7 @@ public:
 
 
 // ## attributes ----------------------------------------------------------------
+// 0TAG0attributes.table_column_buffer
 public:
    uint8_t* m_puData = nullptr;        ///< data to hold values in table
    uint8_t* m_puMetaData = nullptr;    ///< data block with row meta information

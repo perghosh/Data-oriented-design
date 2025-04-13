@@ -32,6 +32,11 @@ void CApplication::common_construct(CApplication&& o) noexcept
     m_vectorDocument = std::move(o.m_vectorDocument);
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Prepares the application by setting up command-line options.
+ *
+ * @param optionsApplication The options object to prepare.
+ */
 std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszArgument[], std::function<bool(const std::string_view&, const gd::variant_view&)> process_)
 {
    if( iArgumentCount > 1 )
@@ -40,6 +45,9 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       CApplication::Prepare_s(optionsApplication);
       // Parse the command-line arguments
       auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);
+      if( bOk == false ) { return { false, stringError }; }
+
+      std::tie(bOk, stringError) = Initialize(optionsApplication);
       if( bOk == false ) { return { false, stringError }; }
 
 
@@ -88,12 +96,22 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
    /// ## prepare command
 
+#ifndef NDEBUG
+   auto stringName_d = poptionsActive->name();
+#endif // !NDEBUG
+
    std::string stringCommandName = poptionsActive->name();
    PROPERTY_Set("command", stringCommandName);
 
-   DOCUMENT_Add(stringCommandName);
-   auto pdocument = DOCUMENT_Get(stringCommandName);
-   
+   auto* pdocument = DOCUMENT_Add(stringCommandName);
+   if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
+
+   if( stringCommandName == "count" )
+   {
+      std::string stringSource = (*poptionsActive)["source"].as_string();
+      auto result_ = pdocument->HarvestFile( { {"source", stringSource} } );
+      if( result_.first == false ) return result_;
+   }
 
    return { true, "" };
 }

@@ -37,6 +37,8 @@ constexpr unsigned SPACE_ALIGN = sizeof( uint32_t );
 
 /** ---------------------------------------------------------------------------
  * @brief construct table from one single variant view value
+ * 
+ * table only has one column and one row
 @code
 // create table with one column storing string value, the buffer length is calculated based on string length
 gd::table::table_column_buffer t1( "0123456789", gd::table::tag_prepare{} );
@@ -97,6 +99,12 @@ table_column_buffer::table_column_buffer( unsigned uFlags, const std::vector< st
 
 /** ---------------------------------------------------------------------------
  * @brief Construct table and prepare for adding rows, columns are generated based on type name and column name
+ * 
+ * @code
+// columns: "path, size, date, extension
+table* ptable_ = new table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} );
+std::unique_ptr<table> ptable(ptable_);
+ * @endcode
  * @param uFlags type of state table works under
  * @param vectorColumn vector with typle that has column type as string, value size for types that need it and column name
 */
@@ -105,6 +113,7 @@ table_column_buffer::table_column_buffer( unsigned uFlags, const std::vector<std
 {
    for( const auto& it : vectorColumn )
    {
+      // add column and pass type as string, size and name
       column_add( std::get<0>( it ), std::get<1>( it ), std::get<2>( it ) );
    }
 
@@ -331,12 +340,14 @@ uint64_t table_column_buffer::get_row_count( uint32_t uState ) const noexcept
 
 /** ---------------------------------------------------------------------------
  * @brief add column to table
- * @param uColumnType column type added
- * @param uSize size for column if (0 if primitive type and size for derived types)
+ * @param uColumnType column type added. types are defined in gd::types and samples are 
+ *                    eTypeUInt32, eTypeInt64, eTypeDouble, eTypeString. Primitive types are supported
+ *                    and some common extended types.
+ * @param uSize size for column if (0 if primitive type and size for derived types, primitive types know the size)
  * @return reference to table
 */
 table_column_buffer& table_column_buffer::column_add( unsigned uColumnType, unsigned uSize )
-{ 
+{                                                                                                  assert( gd::types::validate_number_type_g( uColumnType ) ); assert( uSize < 0x1000'0000 );
    if( gd::types::is_primitive_g( uColumnType ) == false ) uSize = gd::types::value_size_g( uColumnType, uSize );
    return column_add( { uColumnType, uSize } ); 
 }

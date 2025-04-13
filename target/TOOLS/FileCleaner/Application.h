@@ -34,7 +34,7 @@ namespace gd { namespace cli { class options; } }
  */
 class CApplication : public application::basic::CApplication
 {
-   // ## construction -------------------------------------------------------------
+// ## construction -------------------------------------------------------------
 public:  // 0TAG0construct.Application
    CApplication() {}
    // copy
