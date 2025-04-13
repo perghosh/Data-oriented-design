@@ -271,6 +271,16 @@ void CApplication::COMMAND_Count(const std::string& stringArgument)
    ifstreamFile.close();
 }
 
+std::pair<bool, std::string> CApplication::DATABASE_Open(const gd::argument::shared::arguments& argumentsOpen)
+{
+   std::string stringPath = argumentsOpen["path"].as_string();
+   if( stringPath.empty() == false )
+   {
+
+   }
+   return { true, "" };
+}
+
 
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
