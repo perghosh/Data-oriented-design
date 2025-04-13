@@ -463,6 +463,7 @@ public:
          }
       }
 
+      bool         as_bool() const { return get_bool(); }
       unsigned int as_uint() const { return get_uint(); }
       int          as_int() const { return get_int(); }
       int64_t      as_int64() const { return get_int64(); }

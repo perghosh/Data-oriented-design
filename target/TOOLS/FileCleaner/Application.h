@@ -112,11 +112,11 @@ public:
 
    void COMMAND_Count(const std::string& stringArgument);
 
-   std::pair<bool, std::string> DATABASE_Open( const gd::argument::shared::arguments& argumentsOpen );
+   
 
 /** \name DATABASE
 *///@{
-   /// Connect database, string format for connection is database dependent
+   std::pair<bool, std::string> DATABASE_Open( const gd::argument::shared::arguments& argumentsOpen );
    void DATABASE_Append( gd::database::database_i* pdatabase, bool bActivate );
    std::pair<bool, std::string> DATABASE_Connect( const std::string_view& stringConnect );
    void DATABASE_CloseActive();
