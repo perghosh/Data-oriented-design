@@ -28,7 +28,7 @@ if( USE_TARGET_ )
    set(TARGET_NAME_ "cleaner")
 
    add_executable(${TARGET_NAME_}
-      ${external_gd} ${external_pugixml}
+      ${external_gd} ${external_pugixml} ${external_sqlite}
       ${TARGET_FILES_}   
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
       "main.cpp"
@@ -38,5 +38,7 @@ if( USE_TARGET_ )
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
    target_compile_definitions(${TARGET_NAME_} PRIVATE GD_LOG_SIMPLE)
+   target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
+   
 
 endif()
