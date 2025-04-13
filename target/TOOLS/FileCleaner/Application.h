@@ -107,6 +107,8 @@ public:
 
    void COMMAND_Count(const std::string& stringArgument);
 
+   std::pair<bool, std::string> DATABASE_Open( const gd::argument::shared::arguments& argumentsOpen );
+
 protected:
 /** \name INTERNAL
 *///@{
