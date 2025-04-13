@@ -12,6 +12,8 @@
 
 #include "pugixml/pugixml.hpp"
 
+#include "gd/gd_table_io.h"
+
 #include "Application.h"
 #include "Document.h"
 
@@ -96,6 +98,35 @@ size_t CDocument::Count(uint8_t uCharacter) const
 
 std::pair<bool, std::string> CDocument::HarvestFile(const gd::argument::shared::arguments& argumentsPath)
 {
+   std::string stringSource = argumentsPath["source"].as_string();
+
+   CACHE_Prepare("files");
+   auto* ptable_ = CACHE_Get("files");                                                             assert( ptable_ != nullptr );
+
+   if( std::filesystem::is_regular_file(stringSource) )
+   {
+      
+   }
+   else if( std::filesystem::is_directory(stringSource) )
+   {
+      for( const auto& it : std::filesystem::directory_iterator(stringSource) )
+      {
+         auto uRow = ptable_->get_row_count();
+         ptable_->row_add();
+         const auto& path_ = it.path();
+         std::string stringFilePath = it.path().string();
+
+         ptable_->cell_set( uRow, "path", stringFilePath );
+      }
+   }
+
+#ifndef NDEBUG
+   //auto stringTable = gd::table::debug::print( *ptable_ );
+   auto stringTable = gd::table::to_string( *ptable_, gd::table::tag_io_cli{});
+   std::cout << "\n" << stringTable << "\n";
+#endif
+
+
    return std::pair<bool, std::string>();
 }
 
@@ -128,7 +159,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId)
    if( stringId == "files" )
    {
       auto ptable_ = CACHE_Get(stringId, false);
-      if( ptable_ != nullptr )
+      if( ptable_ == nullptr )
       {
          table* ptable_ = new table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} );
          std::unique_ptr<table> ptable(ptable_);
