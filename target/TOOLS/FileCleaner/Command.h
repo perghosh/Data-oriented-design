@@ -17,6 +17,7 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+#include <filesystem>
 
  // ## GD
 
@@ -27,3 +28,6 @@
 
 
 #include "Application.h"
+
+int RowCount(const std::string& stringFile);
+
