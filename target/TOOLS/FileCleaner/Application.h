@@ -117,6 +117,8 @@ public:
 /** \name DATABASE
 *///@{
    std::pair<bool, std::string> DATABASE_Open( const gd::argument::shared::arguments& argumentsOpen );
+   std::pair<bool, std::string> DATABASE_Update();
+   std::pair<bool, std::string> DATABASE_Upgrade( uint64_t uVersion );
    void DATABASE_Append( gd::database::database_i* pdatabase, bool bActivate );
    std::pair<bool, std::string> DATABASE_Connect( const std::string_view& stringConnect );
    void DATABASE_CloseActive();

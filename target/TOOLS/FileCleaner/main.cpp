@@ -69,10 +69,12 @@ int main(int iArgumentCount, char** ppbszArgument)
    std::unique_ptr< CApplication > papplication_ = std::make_unique<CApplication>();
    papplication_g = papplication_.get();
 
-   std::cout << "we have a message";
 
-   papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
-   auto result_ = papplication_->Initialize();                                                     assert( result_.first );
+   auto result_ =  papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
+   if( result_.first == false ) {  std::cout << "Error: " << result_.second << "\n"; return -1; }
+
+   result_ = papplication_->Initialize();                                                     assert( result_.first );
+   if( result_.first == false ) {  std::cout << "Error: " << result_.second << "\n"; return -1; }
 
    return 0;
 }
