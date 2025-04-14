@@ -21,7 +21,6 @@
 
  // ## GD
 
-#include "gd/gd_uuid.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
 #include "gd/gd_table_column-buffer.h"
@@ -30,4 +29,7 @@
 #include "Application.h"
 
 int RowCount(const std::string& stringFile);
+
+
+std::pair<bool, std::string> HarvestFile_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_ );
 

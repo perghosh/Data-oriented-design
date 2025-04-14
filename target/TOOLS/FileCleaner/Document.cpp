@@ -12,9 +12,12 @@
 
 #include "pugixml/pugixml.hpp"
 
+#include "gd/gd_file.h"
 #include "gd/gd_table_io.h"
 
+#include "Command.h"
 #include "Application.h"
+
 #include "Document.h"
 
 void CDocument::common_construct(const CDocument& o)
@@ -96,38 +99,24 @@ size_t CDocument::Count(uint8_t uCharacter) const
    return uCount;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Harvests file information based on the provided arguments.
+ *
+ * This method retrieves file information (such as path, size, date, and extension) based on the specified arguments.
+ * It uses a cache table to store the harvested data.
+ *
+ * @param argumentsPath The arguments containing the source path for harvesting files.
+ * @return A pair containing:
+ *         - `bool`: `true` if the harvesting was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */ 
 std::pair<bool, std::string> CDocument::HarvestFile(const gd::argument::shared::arguments& argumentsPath)
 {
-   std::string stringSource = argumentsPath["source"].as_string();
-
    CACHE_Prepare("files");
    auto* ptable_ = CACHE_Get("files");                                                             assert( ptable_ != nullptr );
 
-   if( std::filesystem::is_regular_file(stringSource) )
-   {
-      
-   }
-   else if( std::filesystem::is_directory(stringSource) )
-   {
-      for( const auto& it : std::filesystem::directory_iterator(stringSource) )
-      {
-         auto uRow = ptable_->get_row_count();
-         ptable_->row_add();
-         const auto& path_ = it.path();
-         std::string stringFilePath = it.path().string();
-
-         ptable_->cell_set( uRow, "path", stringFilePath );
-      }
-   }
-
-#ifndef NDEBUG
-   //auto stringTable = gd::table::debug::print( *ptable_ );
-   auto stringTable = gd::table::to_string( *ptable_, gd::table::tag_io_cli{});
-   std::cout << "\n" << stringTable << "\n";
-#endif
-
-
-   return std::pair<bool, std::string>();
+   auto result_ = HarvestFile_g(argumentsPath, ptable_);
+   return result_;
 }
 
 

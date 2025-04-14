@@ -33,6 +33,8 @@ inline constexpr uint8_t uTailetextMarker_d = 0x01;
 #include <vector>
 #include <memory>
 
+#include "gd_types.h"
+
 #if defined( __clang__ )
    #pragma GCC diagnostic push
    #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
@@ -80,19 +82,19 @@ struct tag_type_name {};
 /// types are described with constant (integer value)
 struct tag_type_constant {};
 /// used in copy operations
-struct tag_copy {};
+using tag_copy = gd::types::tag_copy;
 /// for convert methods
-struct tag_convert {};
+using tag_convert = gd::types::tag_convert;
 /// prepare (allocate internal buffers) table to be ready for work
 struct tag_prepare {};
 /// use name in operation
-struct tag_name {};
+using tag_name = gd::types::tag_name;
 /// use alias in operation
-struct tag_alias {};
+using tag_alias = gd::types::tag_alias;
 /// used when wildcard matches are done
 struct tag_wildcard {};
 /// tag dispatcher used for methods working with values (lenght depends on the context of method)
-struct tag_value {};
+using tag_value = gd::types::tag_value;
 /// tag dispatcher used for methods working with length (lenght depends on the context of method)
 struct tag_length {};
 /// tag dispatcher for range logic (range is like an area in table with start cell and end cell).
@@ -109,7 +111,7 @@ struct tag_variant_view {};
 struct tag_arguments {};
 
 /// tag dispatcher direct access to memory data
-struct tag_raw {};
+using tag_raw = gd::types::tag_raw;
 /// tag dispatcher do modify methods to use pointers
 struct tag_pointer {};
 /// tag dispatcher used for operations related to text
