@@ -61,11 +61,13 @@ std::pair<bool, std::string> HarvestFile_g(const gd::argument::shared::arguments
       ifstreamFile.close();
    };
 
-   if( std::filesystem::is_regular_file(stringSource) )
+   // ## check if source is a file or directory
+
+   if( std::filesystem::is_regular_file(stringSource) )                          // single file
    {
       add_(gd::file::path(stringSource));
    }
-   else if( std::filesystem::is_directory(stringSource) )
+   else if( std::filesystem::is_directory(stringSource) )                       // is file directory
    {
       for( const auto& it : std::filesystem::directory_iterator(stringSource) )
       {
@@ -74,7 +76,6 @@ std::pair<bool, std::string> HarvestFile_g(const gd::argument::shared::arguments
    }
 
 #ifndef NDEBUG
-   //auto stringTable = gd::table::debug::print( *ptable_ );
    auto stringTable = gd::table::to_string( *ptable_, gd::table::tag_io_cli{});
    std::cout << "\n" << stringTable << "\n";
 #endif
