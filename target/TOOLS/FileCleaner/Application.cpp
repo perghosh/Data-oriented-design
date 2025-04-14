@@ -120,8 +120,19 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    if( stringCommandName == "count" )
    {
       std::string stringSource = (*poptionsActive)["source"].as_string();
-      auto result_ = pdocument->HarvestFile( { {"source", stringSource} } );
+      auto result_ = pdocument->HarvestFile({ {"source", stringSource} });    // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( result_.first == false ) return result_;
+   }
+   else if( stringCommandName == "db" )
+   {
+      std::string stringDatabaseFile = (*poptionsActive)["file"].as_string();
+      if( stringCommandName.empty() == false )
+      {
+         auto result_ = DATABASE_Open({ {"file", stringDatabaseFile} });        // open or create database (create is default, not creating set "create" to false)
+         if( result_.first == false ) return result_;
+         result_ = DATABASE_Update();                                          // update database to match latest design
+         if( result_.first == false ) return result_;
+      }
    }
 
    return { true, "" };
@@ -284,30 +295,90 @@ void CApplication::COMMAND_Count(const std::string& stringArgument)
 
 // 0TAG0DATABASE.Application
 
+/** ---------------------------------------------------------------------------
+ * @brief Open a database connection
+ *
+ * @param argumentsOpen The arguments used to open the database.
+ * @param argumentsOpen.file The file name of the database.
+ * @param argumentsOpen.create Whether to create the database if it doesn't exist (default: true).
+ * @return std::pair<bool, std::string> True if successful, false and error message if failed
+ */
 std::pair<bool, std::string> CApplication::DATABASE_Open(const gd::argument::shared::arguments& argumentsOpen)
-{
+{                                                                                                  assert( argumentsOpen.empty() == false ); // Ensure the arguments are not empty
    DATABASE_CloseActive();
 
-   bool bCreate = argumentsOpen["create"].as_bool();
-   std::string stringPath = argumentsOpen["path"].as_string();
+   bool bConnected = false;
+   bool bCreate = true;
+   if( argumentsOpen.exists("create") == true ) { bCreate = argumentsOpen["create"].as_bool(); }
+
+   std::string stringPath = argumentsOpen["file"].as_string();
    if( stringPath.empty() == false )
    {
-      if( std::filesystem::exists(stringPath) == false && bCreate == true )
+      gd::argument::arguments argumentsCreate({ {"file", stringPath}, { "create", bCreate} } );
+         
+      gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i();     // create database interface
+      pdatabase->add_reference();
+      auto result_ = pdatabase->open(argumentsCreate);
+      if( result_.first == false )
       {
-         std::filesystem::create_directories(stringPath);
-         gd::argument::arguments argumentsCreate({ {"file", stringPath}, { "create", true} } );
-         gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i();     // create database interface
-         pdatabase->add_reference();
-         auto result_ = pdatabase->open(argumentsCreate);
-         if( result_.first == false )
-         {
-            pdatabase->release();
-            return { false, result_.second };
-         }
-         m_pdatabase = pdatabase;
+         pdatabase->release();
+         return { false, result_.second };
       }
+      m_pdatabase = pdatabase;
+      bConnected = true;
 
    }
+   return { bConnected, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Check if database needs to be updated and needed then update the database to the latest version
+ *
+ * @return std::pair<bool, std::string> True if successful, false and error message if failed
+ */
+std::pair<bool, std::string> CApplication::DATABASE_Update()
+{                                                                                                  assert(m_pdatabase != nullptr); // Ensure the active database connection is valid
+   // Check if the table "TVersion" exists
+   uint64_t uVersion;
+   gd::variant value_;
+   auto result_ = m_pdatabase->ask("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='TVersion';", &value_ );
+   if( result_.first == false ) { return { false, result_.second }; }
+   uVersion = value_.as_uint64();
+
+   if( uVersion < 1u )
+   {
+      result_ = DATABASE_Upgrade( uVersion );
+      if( result_.first == false ) { return { false, result_.second }; }
+   }
+
+   return { true, "version" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Upgrade the database to the latest version
+ *
+ * @param uVersion The current version of the database
+ * @return std::pair<bool, std::string> True if successful, false and error message if failed
+ */ 
+std::pair<bool, std::string> CApplication::DATABASE_Upgrade(uint64_t uVersion)
+{
+   std::string_view stringSql;
+   
+   if( uVersion == 0 )
+   {
+      stringSql = R"sql(
+CREATE TABLE TVersion( VersionK INTEGER PRIMARY KEY, FVersion INTEGER, FMajor INTEGER, FMinor INTEGER, FBuild INTEGER, FRevision INTEGER );
+CREATE TABLE TProject( ProjectK INTEGER PRIMARY KEY, FName TEXT, FDescription TEXT, FVersion INTEGER ); 
+CREATE TABLE TFile( FileK INTEGER PRIMARY KEY, ProjectK INTEGER, FName TEXT, FSize INTEGER, FDescription TEXT );
+CREATE TABLE TFileProperty( FilePropertyK INTEGER PRIMARY KEY, FileK INTEGER, ValueType INTEGER, FName TEXT, FValue TEXT, FDate REAL );
+
+INSERT INTO TVersion( FVersion, FMajor, FMinor, FBuild, FRevision ) VALUES ( 1, 0, 0, 0, 0 );
+INSERT INTO TProject( ProjectK, FName, FDescription, FVersion ) VALUES ( 1, 'demo', 'demo project', 1 );
+)sql"; 
+      auto result_ = m_pdatabase->execute(stringSql);
+      if( result_.first == false ) { return { false, result_.second }; }
+   }
+
    return { true, "" };
 }
 
@@ -403,6 +474,10 @@ void CApplication::DATABASE_CloseActive()
 
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
+   optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
+   optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
+   optionsApplication.add({"database", "Set folder where logger places log files"});
+
    {  // ## `copy` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );
       optionsCommand.add({"source", 's', "File to count lines in"});
@@ -418,6 +493,15 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+
+   {  // ## `db` command, use database and configure settings for that
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "db", "Configure database" );
+      optionsCommand.add({"file", 'f', "Where to place database file (used for sqlite databases)"});
+      optionsCommand.add({"settings", "Where to write configuration file"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
 
 
    {  // ## `join` command, joins two or more files
