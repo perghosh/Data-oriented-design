@@ -46,7 +46,12 @@ void CApplication::common_construct(CApplication&& o) noexcept
 /** ---------------------------------------------------------------------------
  * @brief Prepares the application by setting up command-line options.
  *
- * @param optionsApplication The options object to prepare.
+ * Main in application is similar to main in application, but it is used to prepare
+ * based on command line arguments. Here tha actual work is done.
+ * 
+ * @param iArgumentCount The number of command-line arguments.
+ * @param ppbszArgument The command-line arguments.
+ * @param process_ A function to process the command-line arguments.
  */
 std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszArgument[], std::function<bool(const std::string_view&, const gd::variant_view&)> process_)
 {
@@ -60,8 +65,6 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       std::tie(bOk, stringError) = Initialize(optionsApplication);
       if( bOk == false ) { return { false, stringError }; }
-
-
    }
 
 
