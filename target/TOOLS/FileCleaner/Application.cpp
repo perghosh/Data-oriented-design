@@ -249,50 +249,6 @@ void CApplication::DOCUMENT_Clear()
 }
 
 
-void CApplication::COMMAND_Read(char** ppbszArgument)
-{
-   std::string stringCommand = ppbszArgument[1];
-   if( stringCommand == "print" )
-   {
-      COMMAND_Print(ppbszArgument[2]);
-   }
-   else if( stringCommand == "count" )
-   {
-      COMMAND_Count(ppbszArgument[2]);
-   }
-   else
-   {
-      std::cout << "Invalid command\n";
-   }
-}
-
-void CApplication::COMMAND_Print(const std::string& stringArgument)
-{
-   std::ifstream ifstreamFile(stringArgument);
-   std::string stringText;
-   while( std::getline(ifstreamFile, stringText) )
-   {
-      std::cout << stringText << std::endl;
-   }
-
-   ifstreamFile.close();
-}
-
-void CApplication::COMMAND_Count(const std::string& stringArgument)
-{
-   std::ifstream ifstreamFile(stringArgument);
-   std::string stringText;
-   int iCount = 0;
-   while( std::getline(ifstreamFile, stringText) )
-   {
-      iCount++;
-   }
-
-   std::cout << iCount << " Rows" << std::endl;
-
-   ifstreamFile.close();
-}
-
 // 0TAG0DATABASE.Application
 
 /** ---------------------------------------------------------------------------
