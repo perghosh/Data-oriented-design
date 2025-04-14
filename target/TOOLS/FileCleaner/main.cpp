@@ -48,8 +48,6 @@ int main(int iArgumentCount, char** ppbszArgument)
 
    CApplication application;
 
-   application.COMMAND_Read(ppbszArgument);
-
    /*std::string stringCommand = ppbszArgument[1];
    if( stringCommand == "print" )
    {
