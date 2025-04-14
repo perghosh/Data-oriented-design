@@ -21,6 +21,7 @@
 #include "gd/gd_database_sqlite.h"
 #include "gd/gd_arguments_shared.h"
 
+#include "application/database/Metadata_Statements.h"
 #include "Document.h"
 
 #include "application/ApplicationBasic.h"
@@ -77,6 +78,7 @@ public:
 /** \name OPERATION
 *///@{
    std::pair<bool, std::string> Initialize( gd::cli::options& optionsApplication );
+   std::pair<bool, std::string> STATEMENTS_Load(const std::string_view& stringFileName);
 
 //@}
 
@@ -139,6 +141,7 @@ public:
    std::vector< gd::database::database_i* > m_vectorDatabase; ///< list of connected databases
    gd::database::database_i* m_pdatabase = nullptr;  ///< active database connection
 
+   std::unique_ptr<application::database::metadata::CStatements> m_pstatements;   ///< pointer to statement object
 
 
 
