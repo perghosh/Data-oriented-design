@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+   <statements>
+      <statement name="files" type="select">SELECT * FROM TFile</statement>
+      <statement name="projects" type="select">SELECT * FROM TProject</statement>
+      <statement name="version" type="select">SELECT * FROM TVersion</statement>
+
+      <statement name="file" type="insert">
+INSERT INTO TFile(ProjectK, FName, FSize, FDescription)
+VALUES ({project}, {name}, {size}, {description});
+      </statement>
+      <statement name="file" type="update">
+UPDATE TFile
+SET ProjectK = {project}, FName = {name}, FSize = {size}, FDescription = {description}
+WHERE FileK = {key};
+      </statement>
+   </statements>
+</document>

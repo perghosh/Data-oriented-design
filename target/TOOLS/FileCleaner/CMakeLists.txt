@@ -31,6 +31,9 @@ if( USE_TARGET_ )
       ${external_gd} ${external_pugixml} ${external_sqlite}
       ${TARGET_FILES_}   
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
+      ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
+
+
       "main.cpp"
    )
 

@@ -9,6 +9,9 @@
 #include <filesystem>
 #include <format>
 
+#include "pugixml/pugixml.hpp"
+
+#include "gd/gd_arguments.h"
 #include "gd/gd_cli_options.h"
 
 #include "Command.h"
@@ -119,6 +122,14 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    std::string stringCommandName = poptionsActive->name();
    PROPERTY_Set("command", stringCommandName);
 
+   // ## check for sql statements
+   if( poptionsActive->exists("statements") == true )
+   {
+      std::string stringFileName = ( *poptionsActive )["statements"].as_string();
+      auto result_ = STATEMENTS_Load(stringFileName);
+      if( result_.first == false ) return result_;
+   }
+
    auto* pdocument = DOCUMENT_Add(stringCommandName);
    if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
 
@@ -141,6 +152,50 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          if( result_.first == false ) return result_;
       }
    }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_view& stringFileName)
+{
+   using namespace pugi;
+   xml_document xmldocument;   // xml document used to load xml from file
+
+   if( std::filesystem::exists( stringFileName ) == false ) return { true, std::string("statements file not found ") + stringFileName.data() };
+
+   m_pstatements = std::make_unique<application::database::metadata::CStatements>();
+
+   // ## Load xml data
+   xml_parse_result xmlparseresult = xmldocument.load_file(stringFileName.data()); // load xml file
+   if( (bool)xmlparseresult == false ) return { false, xmlparseresult.description() };
+
+   {
+      // ## get all statements
+      auto xmlnodeStatements = xmldocument.document_element().child( "statements" );
+      while( xmlnodeStatements.empty() == false )
+      {
+         // ## get statement
+         pugi::xml_node xmlnode = xmlnodeStatements.first_child();
+         while( xmlnode.empty() == false )                                     // if child
+         {
+            if( std::string_view(xmlnode.name()) == std::string_view{ "statement" } )
+            {
+               std::string_view stringName = xmlnode.attribute("name").value();
+               std::string_view stringType = xmlnode.attribute("type").value();
+               std::string_view stringStatement = xmlnode.child_value();
+               if( stringName.empty() == false && stringStatement.empty() == false )
+               {
+                  if( stringType.empty() == true ) { stringType = "select"; }
+                  m_pstatements->Append( gd::argument::arguments( { { "name", stringName }, { "type", stringType }, { "sql", stringStatement } }, gd::types::tag_view{}) ); // add statement to list
+               }
+            }
+            xmlnode = xmlnode.next_sibling();                                  // get next statement
+         }
+         
+         xmlnodeStatements = xmlnodeStatements.next_sibling("statements");     // get next statements
+      }
+   }
+
 
    return { true, "" };
 }
@@ -440,6 +495,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
    optionsApplication.add({"database", "Set folder where logger places log files"});
+   optionsApplication.add({"statements", "file containing sql statements"});
 
    {  // ## `copy` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );

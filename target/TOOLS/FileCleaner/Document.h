@@ -109,14 +109,6 @@ public:
 
 /** \name OPERATION
 *///@{
-   /// Load document from file
-   std::pair<bool, std::string> Load(const std::string_view& stringPath);
-
-   /// Save document to file
-   std::pair<bool, std::string> Save(const std::string_view& stringPath);
-
-   /// Count characters in file data
-   size_t Count( uint8_t uCharacter ) const;
 //@}
 
 /** \name ERROR
@@ -144,7 +136,6 @@ public:
    CApplication* m_papplication = nullptr;      ///< pointer to application object
 
    gd::argument::shared::arguments m_arguments; ///< document information (members)
-   std::vector<uint8_t> m_vectorData;///< document data (file content)
 
    // ## cache information is stored in dto tables (dto = data transfer object)
    std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document
