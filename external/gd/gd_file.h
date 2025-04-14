@@ -132,6 +132,7 @@ struct path
    explicit path( const std::filesystem::path& path_ ): m_stringPath( path_.string() ) { normalize_path_s( m_stringPath ); }
    path( const std::string& stringPath, gd::types::tag_raw ): m_stringPath( stringPath ) {}
    path( std::string&& stringPath, gd::types::tag_raw ): m_stringPath( std::move(stringPath) ) {}
+   path(const std::filesystem::path& path_, gd::types::tag_raw) : m_stringPath(path_.string()) {}
    // copy
    path(const path& o) { common_construct(o); }
    path(path&& o) noexcept { common_construct(std::move(o)); }

@@ -77,6 +77,7 @@ struct tag_error {};          ///< error is used in some form
 struct tag_id {};             ///< id is used in some form
 struct tag_key {};            ///< key is used in some form
 struct tag_name {};           ///< name is used in some form
+struct tag_alias {};          ///< alias is used in some form
 struct tag_table {};          ///< table is used in some form
 struct tag_tag {};            ///< tag value
 struct tag_value {};          ///< value used in some form
@@ -132,6 +133,12 @@ struct tag_ask_compiler {};
 
 /// tag dispatcher used to avoid default implicit construction
 struct tag_construct {};
+
+/// tag dispatcher used to convert data from one type to another
+struct tag_convert {}; 
+
+/// tag dispatcher used to copy data from one type to another 
+struct tag_copy {}; 
 
 /// methods used for some sort of debug related logic
 struct tag_debug {};
