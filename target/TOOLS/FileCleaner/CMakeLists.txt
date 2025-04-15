@@ -17,7 +17,8 @@ message( STATUS )
 
 file(GLOB TARGET_FILES_ "*.cpp" )
 
-add_subdirectory("tests") # tests to check logic in web server
+add_subdirectory("playground") # playground cleaner logic
+add_subdirectory("tests") # tests cleaner logic
 
 set( SOURCE_DIRECTORY_ ${CMAKE_SOURCE_DIR}/source )
 set( APPLICATION_DIRECTORY_ ${SOURCE_DIRECTORY_}/application )

@@ -2,6 +2,7 @@
 <document>
    <statements>
       <statement name="files" type="select">SELECT * FROM TFile</statement>
+      <statement name="files" type="select">SELECT TFile.FName Name,FSize Size,FDescription Description;WHERE TFile.FSize &gt; 1000  </statement>
       <statement name="projects" type="select">SELECT * FROM TProject</statement>
       <statement name="version" type="select">SELECT * FROM TVersion</statement>
 
