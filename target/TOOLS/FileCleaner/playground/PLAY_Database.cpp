@@ -15,5 +15,13 @@ TEST_CASE( "[database] test database in cleaner", "[database]" ) {
    arguments_.append("test-folder", stringFolder);
    arguments_.append("database-file", "test.db");
    std::cout << arguments_.print( "Folder where database are places is {} and database file is: {}\n" );
-   //std::cout << "test database in cleaner" << std::endl;
+}
+
+
+TEST_CASE( "[database] test database in cleane r", "[database]" ) {
+   std::string stringFolder = FOLDER_GetRoot_g( "test__" );
+   gd::argument::shared::arguments arguments_;
+   arguments_.append("test-folder", stringFolder);
+   arguments_.append("database-file", "test.db");
+   std::cout << arguments_.print( "Folder where database are places is {} and database file is: {}\n" );
 }
