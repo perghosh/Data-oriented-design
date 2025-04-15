@@ -4,6 +4,8 @@
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
+#include "gd/gd_table_column-buffer.h"
+#include "gd/gd_table_io.h"
 #include "gd/gd_sql_value.h"
 
 #include "../Application.h"
@@ -38,12 +40,27 @@ TEST_CASE( "[database] test database in cleaner", "[database]" ) {
       auto result_ = pdatabase_->execute(string_);                                                 REQUIRE(result_.first == true);
    }
 
-   pstatement = pstatements_->Find("select", "project");                                           REQUIRE(pstatement != nullptr);
+   pstatement = pstatements_->Find("select", "projects");                                          REQUIRE(pstatement != nullptr);
    gd::database::cursor_i* pcursor_;
    pdatabase_->get_cursor( &pcursor_ );
-   result_ = pcursor_->open(pstatement->GetSql());                                                 REQUIRE(result_.first == true);
+   auto sql_ = pstatement->GetSql();
+   result_ = pcursor_->open( sql_ );                                                               REQUIRE(result_.first == true);
 
+   gd::table::dto::table table_;
 
+   CApplication::Read_s(pcursor_, &table_);
+   for( const auto& itRow : table_ )
+   {
+      if( itRow.m_uRow % 10 == 0 ) std::cout << "\n";
+      auto value_ = itRow.cell_get_variant_view( "FName" );
+      std::cout << value_.as_string_view();
+   }
+
+   pcursor_->close();
+   pcursor_->release();
+
+   auto string_ = gd::table::to_string( table_, gd::table::tag_io_cli{} );
+   std::cout << "\n" << string_ << std::endl;
 /*
    gd::argument::arguments arguments_;
    arguments_.append("test-folder", stringFolder);

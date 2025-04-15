@@ -843,6 +843,8 @@ public:
    void append( const table_column_buffer& tableFrom, uint64_t uFrom, uint64_t uCount, std::vector< unsigned > vectorColumn );
    ///@}
 
+   /// @brief size is same as `get_row_count and returns number of rows
+   size_t size() const { return (size_t)get_row_count(); }
    /// clears all internal data in table, like a reset (columns are also deleted) 
    void clear();
    /// check if table is empty, don't have and data in table rows
