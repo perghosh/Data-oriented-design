@@ -104,7 +104,7 @@ public:
    bool IsRepeatParse() const { return (m_uFlags & eFlagRepeatParse) == eFlagRepeatParse; }
 
    gd::uuid GetKey() const { return m_uuidKey; }
-   const gd::variant_view GetType() const { return m_arguments["type"].as_variant_view(); }
+   unsigned GetType() const { return m_uType; }
    const gd::variant_view GetName() const { return m_arguments["name"].as_variant_view(); }
    void SetName( const std::string_view& stringName ) { m_arguments.set("name", stringName ); }
    const gd::variant_view GetSql() const { return m_arguments["sql"].as_variant_view(); }

@@ -58,6 +58,8 @@ private:
 public:
    /// interface operator to database
    operator gd::database::database_i*() const { assert( m_pdatabase != nullptr ); return m_pdatabase;  }
+   /// pointer to statements object
+   operator application::database::metadata::CStatements*() const { assert(m_pstatements != nullptr); return m_pstatements.get(); }
 
 
 // ## methods ------------------------------------------------------------------
@@ -148,6 +150,9 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
    static void Prepare_s( gd::cli::options& optionsApplication );
+
+   static void Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer );
+   static void Read_s( gd::database::cursor_i* pcursorSelect, gd::table::table_column_buffer* ptablecolumnbuffer );
 
 
 };

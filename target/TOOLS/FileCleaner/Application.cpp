@@ -369,7 +369,7 @@ std::pair<bool, std::string> CApplication::DATABASE_Update()
       if( result_.first == false ) { return { false, result_.second }; }
    }
 
-   return { true, "version" };
+   return { true, "" };
 }
 
 /** ---------------------------------------------------------------------------
@@ -537,7 +537,79 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( "help", "Print command line help" );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
-
-
 }
- 
+
+void CApplication::Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer )
+{
+   for( unsigned u = 0, uMax = precord->size(); u < uMax; u++ )
+   {
+      auto pcolumn = precord->get_column( u );
+      std::string_view stringName = precord->name_get( u );
+      unsigned uType = pcolumn->type();
+#ifndef NDEBUG
+      auto pbszTypeName_d = gd::types::type_name_g( uType );
+#endif // !NDEBUG
+
+      unsigned uSize = 0;
+      if( pcolumn->is_fixed() == false ) { uType |= gd::types::eTypeDetailReference; }
+      else                               { uSize = pcolumn->size_buffer(); }
+
+      ptablecolumnbuffer->column_add( uType, uSize, stringName );
+   }
+}
+
+void CApplication::Read_s( gd::database::cursor_i* pcursorSelect, gd::table::table_column_buffer* ptablecolumnbuffer )
+{
+   const auto* precord = pcursorSelect->get_record();
+
+   if( ptablecolumnbuffer->empty() == true )
+   {
+      if( ptablecolumnbuffer->get_reserved_row_count() == 0 ) ptablecolumnbuffer->set_reserved_row_count( 10 ); //pre allocate data to hold 10 rows 
+      ptablecolumnbuffer->set_flags( gd::table::tag_full_meta{});
+      Read_s( precord, ptablecolumnbuffer );
+      ptablecolumnbuffer->prepare();
+
+      while( pcursorSelect->is_valid_row() == true )
+      {
+         auto vectorValue = precord->get_variant_view();
+         ptablecolumnbuffer->row_add( vectorValue );
+         pcursorSelect->next();
+      }
+   }
+   else
+   {
+      // ## table contains columns, match against tables in result to know what to add
+      auto vectorTableName = ptablecolumnbuffer->column_get_name();
+      auto vectorResultName = precord->name_get();
+      // Match column names, only fill in columns with matching name in table and result
+      auto vectorMatch = gd::table::table_column_buffer::column_match_s( vectorTableName, vectorResultName );
+
+      if( vectorMatch.empty() == false )
+      {
+         std::vector<unsigned> vectorWriteTable;
+         std::vector<unsigned> vectorReadResult;
+
+         for( const auto& it : vectorMatch )
+         {
+            vectorWriteTable.push_back( it.first );
+            vectorReadResult.push_back( it.second );
+         }
+
+         while( pcursorSelect->is_valid_row() == true )
+         {
+            auto vectorValue = precord->get_variant_view( vectorReadResult );
+            ptablecolumnbuffer->row_add( vectorValue, vectorWriteTable, gd::table::tag_convert{} );
+            pcursorSelect->next();
+         }
+      }
+      else
+      {
+         while( pcursorSelect->is_valid_row() == true )
+         {
+            auto vectorValue = precord->get_variant_view();
+            ptablecolumnbuffer->row_add( vectorValue, gd::table::tag_convert{} );
+            pcursorSelect->next();
+         }
+      }
+   }
+}

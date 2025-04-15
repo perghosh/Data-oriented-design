@@ -2,6 +2,9 @@
  * \file gd_sql_value.h
  * 
  * \brief Sql functions working on sql values in sql expressions
+ *
+ * ### 0TAG0 File navigation, mark and jump to common parts
+ * - `0TAG0replace.sql` - replace arguments in string like std::format but with sql style
  * 
  */
 
@@ -52,6 +55,8 @@ inline void append_g( const gd::variant& variantValue, std::string& stringSql, t
 
 /// Make bulk text suitable for parameterized sql insert or updates
 std::tuple<uint64_t,std::string,std::string> make_bulk_g( const std::string_view& stringFixed, const std::string_view& stringParameter, uint64_t uCount, uint64_t uBulkCount );
+
+// 0TAG0replace.sql
 
 std::pair<bool,std::string> replace_g( const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, std::string& stringNew, tag_brace );
 /// Replace values in string with values from arguments object, arguments replaced are in braces

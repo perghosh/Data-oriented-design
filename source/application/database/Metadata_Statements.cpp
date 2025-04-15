@@ -55,13 +55,17 @@ const CStatement* CStatements::Find( const std::string_view& stringName ) const 
 }
 
 const CStatement* CStatements::Find( const std::string_view& stringType, const std::string_view& stringName ) const noexcept
-{
+{                                                                                                  assert(stringType.empty() == false);
+   auto uType = GetStatementType_g(stringType); // check if type is valid
    std::lock_guard<std::shared_mutex> lockguard(m_sharedmutex);
 
    for( auto it = std::begin(m_vectorStatement), itEnd = std::end(m_vectorStatement); it != itEnd; it++ )
    {
-      if( it->GetName().compare(stringName, gd::variant_type::tag_explicit{}) == true && 
-          it->GetType().compare(stringType, gd::variant_type::tag_explicit{}) == true ) return &( *it );
+#ifndef NDEBUG
+      std::string stringName_d = it->GetName().as_string();
+#endif
+
+      if( it->GetName().compare(stringName, gd::variant_type::tag_explicit{}) == true && it->GetType() == uType) return &( *it );
    }
    return nullptr;
 }

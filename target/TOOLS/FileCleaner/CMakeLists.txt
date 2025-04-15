@@ -15,13 +15,18 @@ message( STATUS "# ----- ------------------------------------------------------"
 message( STATUS "# ----- file targets" )
 message( STATUS )
 
+set( SOURCE_DIRECTORY_ ${CMAKE_SOURCE_DIR}/source )
+set( APPLICATION_DIRECTORY_ ${SOURCE_DIRECTORY_}/application )
+
 file(GLOB TARGET_FILES_ "*.cpp" )
+set( TARGET_SOURCE_FILES_
+   ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
+   ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
+)
 
 add_subdirectory("playground") # playground cleaner logic
 add_subdirectory("tests") # tests cleaner logic
 
-set( SOURCE_DIRECTORY_ ${CMAKE_SOURCE_DIR}/source )
-set( APPLICATION_DIRECTORY_ ${SOURCE_DIRECTORY_}/application )
 
 set( USE_TARGET_ ON ) # ========================================================= ${cleaner}
 if( USE_TARGET_ )
@@ -31,9 +36,7 @@ if( USE_TARGET_ )
    add_executable(${TARGET_NAME_}
       ${external_gd} ${external_pugixml} ${external_sqlite}
       ${TARGET_FILES_}   
-      ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
-      ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
-
+      ${TARGET_SOURCE_FILES_}
 
       "main.cpp"
    )
