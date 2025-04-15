@@ -41,8 +41,6 @@ set( APPLICATION_DIRECTORY_ ${SOURCE_DIRECTORY_}/application )
 # -- playground source code
 set(SOURCE_TEST_ "main.h" "main.cpp")
 
-message( STATUS "TARGET_FILES_: ${TARGET_FILES_}" )
-
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_Expression")

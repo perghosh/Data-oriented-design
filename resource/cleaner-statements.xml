@@ -15,5 +15,10 @@ UPDATE TFile
 SET ProjectK = {project}, FName = {name}, FSize = {size}, FDescription = {description}
 WHERE FileK = {key};
       </statement>
+      <statement name="project" type="insert">
+INSERT INTO TProject( FName, FDescription, FVersion )
+VALUES({name}, {description}, {version} );
+      </statement>
+
    </statements>
 </document>

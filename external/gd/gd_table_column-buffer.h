@@ -1,16 +1,16 @@
 ﻿/**
-* \file gd_table_column-buffer.h
-* 
-* ### 0TAG0 File navigation, mark and jump to common parts
-* - `0TAG0construct.table_column_buffer` - construct table_column_buffer
-* - `0TAG0add.table_column_buffer` - add columns to table
-* - `0TAG0find_column.table_column_buffer` - find methods
-* - `0TAG0cell.table_column_buffer` - cell methods like get and set cell value
-* - `0TAG0find.table_column_buffer` - find methods like finding information in table
-* - `0TAG0harvest.table_column_buffer` - harvest logic is to "harvest" information from table
-* - `0TAG0plant.table_column_buffer` - plant logic to insert data into table
-* - `0TAG0attributes.table_column_buffer` - class members in table object
-*/
+ * \file gd_table_column-buffer.h
+ * 
+ * ### 0TAG0 File navigation, mark and jump to common parts
+ * - `0TAG0construct.table_column_buffer` - construct table_column_buffer
+ * - `0TAG0add.table_column_buffer` - add columns to table
+ * - `0TAG0find_column.table_column_buffer` - find methods
+ * - `0TAG0cell.table_column_buffer` - cell methods like get and set cell value
+ * - `0TAG0find.table_column_buffer` - find methods like finding information in table
+ * - `0TAG0harvest.table_column_buffer` - harvest logic is to "harvest" information from table
+ * - `0TAG0plant.table_column_buffer` - plant logic to insert data into table
+ * - `0TAG0attributes.table_column_buffer` - class members in table object
+ */
 
 #pragma once
 
