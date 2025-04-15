@@ -12,15 +12,30 @@
 
 int CountRowsInFile(const gd::table::dto::table& table_)
 {
+
    int iCount = 0;
 
-   for( int i = 0; i < table_.get_row_count(); i++ )
-   {
-      auto argument_ = table_.cell_get(i, "path");
+   gd::table::dto::table tableTemp = table_;
 
+   for( const auto& itRow : tableTemp )
+   {
+      auto value_ = itRow.cell_get_variant_view( "path" );
+      std::string stringFile = value_.as_string();
+      if( std::filesystem::is_regular_file(stringFile) == true )
+      {
+         std::ifstream ifstreamFile(stringFile);
+         std::string stringText;
+
+         while( std::getline(ifstreamFile, stringText) )
+         {
+            iCount++;
+         }
+
+         ifstreamFile.close();
+      }
    }
 
-   return 0;
+   return iCount;
 }
 
 int RowCount( const std::string& stringFile )
@@ -82,10 +97,20 @@ std::pair<bool, std::string> HarvestFile_g(const gd::argument::shared::arguments
    }
    else if( std::filesystem::is_directory(stringSource) )                       // is file directory
    {
-      for( const auto& it : std::filesystem::directory_iterator(stringSource) )
+      try
       {
-         add_(gd::file::path(it.path()));
+         stringSource = std::filesystem::absolute(stringSource).string();
+         for( const auto& it : std::filesystem::directory_iterator(stringSource) )
+         {
+            add_(gd::file::path(it.path()));
+         }
       }
+      catch( const std::filesystem::filesystem_error& e )
+      {
+         std::string stringError = e.what();
+         return { false, stringError };
+      }
+
    }
 
 #ifndef NDEBUG
