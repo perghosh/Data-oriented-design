@@ -10,6 +10,19 @@
 
 #include "Command.h"
 
+int CountRowsInFile(const gd::table::dto::table& table_)
+{
+   int iCount = 0;
+
+   for( int i = 0; i < table_.get_row_count(); i++ )
+   {
+      auto argument_ = table_.cell_get(i, "path");
+
+   }
+
+   return 0;
+}
+
 int RowCount( const std::string& stringFile )
 {
    if( std::filesystem::is_regular_file(stringFile) == true )
