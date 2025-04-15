@@ -386,9 +386,20 @@ std::pair<bool, std::string> CApplication::DATABASE_Upgrade(uint64_t uVersion)
    {
       stringSql = R"sql(
 CREATE TABLE TVersion( VersionK INTEGER PRIMARY KEY, FVersion INTEGER, FMajor INTEGER, FMinor INTEGER, FBuild INTEGER, FRevision INTEGER );
-CREATE TABLE TProject( ProjectK INTEGER PRIMARY KEY, FName TEXT, FDescription TEXT, FVersion INTEGER ); 
-CREATE TABLE TFile( FileK INTEGER PRIMARY KEY, ProjectK INTEGER, FName TEXT, FSize INTEGER, FDescription TEXT );
-CREATE TABLE TFileProperty( FilePropertyK INTEGER PRIMARY KEY, FileK INTEGER, ValueType INTEGER, FName TEXT, FValue TEXT, FDate REAL );
+
+CREATE TABLE TProject( ProjectK INTEGER PRIMARY KEY, FName TEXT, FFolder VARCHAR(260), FDescription TEXT, FVersion INTEGER ); 
+
+CREATE TABLE TFile( FileK INTEGER PRIMARY KEY, ProjectK INTEGER, TypeC INTEGER, FName TEXT, FSize INTEGER, FDescription TEXT );
+CREATE TABLE TFileProperty( 
+   FilePropertyK INTEGER PRIMARY KEY, FileK INTEGER, ValueType INTEGER, FName TEXT, FValue TEXT, FDate REAL,
+   FOREIGN KEY( FileK ) REFERENCES TFile( FileK ) ON DELETE CASCADE
+);
+
+CREATE TABLE TCodeGroup( CodeGroupK INTEGER PRIMARY KEY, FName TEXT, FDescription TEXT );
+CREATE TABLE TCode( 
+   CodeK INTEGER PRIMARY KEY, CodeGroupK INTEGER, FName VARCHAR(100), FDescription TEXT, 
+   FOREIGN KEY( CodeGroupK ) REFERENCES TCodeGroup( CodeGroupK ) 
+);
 
 INSERT INTO TVersion( FVersion, FMajor, FMinor, FBuild, FRevision ) VALUES ( 1, 0, 0, 0, 0 );
 INSERT INTO TProject( ProjectK, FName, FDescription, FVersion ) VALUES ( 1, 'demo', 'demo project', 1 );
