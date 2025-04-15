@@ -137,8 +137,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    {
       std::string stringSource = (*poptionsActive)["source"].as_string();
       auto result_ = pdocument->HarvestFile({ {"source", stringSource} });    // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
-      std::string stringH = "h";
-      int iCount = RowCount(stringH);
+      //std::string stringH = "h";
+      //int iCount = RowCount(stringH);
       if( result_.first == false ) return result_;
    }
    else if( stringCommandName == "db" )

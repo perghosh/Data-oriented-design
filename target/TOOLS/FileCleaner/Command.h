@@ -28,6 +28,8 @@
 
 #include "Application.h"
 
+int CountRowsInFile(const gd::table::dto::table& table_);
+
 int RowCount(const std::string& stringFile);
 
 
