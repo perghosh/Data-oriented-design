@@ -1,3 +1,20 @@
+/**
+ * \file gd_arguments_shared.cpp
+ * 
+ * \brief Pack primitive and common derived values into a byte buffer for efficient storage and access.
+ *
+ * 
+ * ### 0TAG0 File navigation, mark and jump to common parts
+ * - `0TAG0construct.arguments` - Insert operations
+ * - `0TAG0append.arguments` - Append operations
+ * - `0TAG0set.arguments` - Set operations
+ * - `0TAG0insert.arguments` - Insert operations
+ * - `0TAG0merge.arguments` - Merge operations
+ * - `0TAG0find.arguments` - Find operations
+ * - `0TAG0print.arguments` - Find operations
+ */
+
+
 #include <iterator>
 #include <cwchar>
 
@@ -582,7 +599,7 @@ std::string arguments::argument::get_string() const
    std::string s;
    if( ctype_s( m_eType ) == (arguments::eTypeNumberString | eValueLength) || ctype_s( m_eType ) == (arguments::eTypeNumberUtf8String | eValueLength) )
    {
-      s = std::string_view(m_unionValue.pbsz, length() - 1); // try for string before converting other possible values (remember to not include last zero ending as text)
+      s = std::string_view(m_unionValue.pbsz, length() );                     // try for string before converting other possible values (remember to not include last zero ending as text)
    }
    else
    {
@@ -866,7 +883,7 @@ void arguments::set(pointer pposition, const argument& argumentSet, tag_argument
    set(pposition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
 }
 
-
+// 0TAG0construct.arguments
 
 /*----------------------------------------------------------------------------- arguments */ /**
  * construct arguments with pair object having name and value
@@ -1052,6 +1069,8 @@ arguments::argument_edit arguments::operator[](const index_edit& index_edit_)
 
    return argument_edit();
 }
+
+// 0TAG0append.arguments
 
 /// append argument value to arguments
 /// tagged with tag_arguments to avoid conflicting with other append methods
@@ -1423,8 +1442,28 @@ arguments& arguments::append_argument( const std::vector< std::pair<std::string_
    return *this;
 }
 
+// 0TAG0set.arguments
 
-
+/** ---------------------------------------------------------------------------
+ * @brief Sets or updates a named value in the arguments buffer.
+ * 
+ * This method searches for a value with the specified name in the arguments buffer. 
+ * If the value exists, it updates the value in place if the type and size match. 
+ * Otherwise, it replaces the existing value, resizing the buffer if necessary. 
+ * If the value does not exist, it appends the new value to the buffer.
+ * 
+ * @param pbszName Pointer to the name of the value to set.
+ * @param uNameLength Length of the name in bytes.
+ * @param uType Type of the value to set.
+ * @param pBuffer Pointer to the data buffer containing the value.
+ * @param uLength Length of the value in bytes.
+ * @return arguments& Reference to the current arguments object for chaining.
+ * 
+ * @note If the value type is fixed-size and matches the existing type, the value is updated in place.
+ *       Otherwise, the buffer is resized to accommodate the new value.
+ * 
+ * @warning Ensure that the provided pointers and lengths are valid and within bounds.
+ */
 arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength)
 {
    pointer pPosition = find(std::string_view(pbszName, uNameLength));
@@ -1605,7 +1644,7 @@ arguments& arguments::set(pointer pPosition , param_type uType, const_pointer pB
 
 
 /** ---------------------------------------------------------------------------
-* @brief set value at position that pointer is at, make sure that pPosition is on a valid position
+ * @brief set value at position that pointer is at, make sure that pPosition is on a valid position
  * @param pPosition pointer to position where value is set
  * @param uType type of value, its a byte value (uint8_t)
  * @param pBuffer pointer to buffer with data that is copied into arguments buffer
@@ -1651,6 +1690,8 @@ arguments::pointer arguments::set(pointer pPosition, param_type uType, const_poi
 
    return pPosition;
 }
+
+// 0TAG0insert.arguments
 
 /** ---------------------------------------------------------------------------
  * @brief Insert named value at position in arguments buffer
@@ -1776,6 +1817,8 @@ arguments::pointer arguments::insert(pointer pPosition, const std::string_view& 
    return pPosition;
 }
 
+// 0TAG0merge.arguments
+
 /** ---------------------------------------------------------------------------
  * @brief Merge two arguments objects
  @code
@@ -1828,6 +1871,8 @@ unsigned int arguments::count(std::string_view stringName) const
 
    return uCount;
 }
+
+// 0TAG0find.arguments
 
 /*----------------------------------------------------------------------------- find */ /**
  * Get position to parameter for index
@@ -2103,7 +2148,7 @@ void arguments::set_argument_section(const std::string_view& stringName, const s
    }
 }
 
-
+// 0TAG0print.arguments
 
 /*----------------------------------------------------------------------------- print */ /**
  * Print all values into string
@@ -2132,49 +2177,84 @@ std::string arguments::print() const
    return stringPrint;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Formats and prints arguments based on a specified format string.
+ * 
+ * This method processes a format string containing placeholders enclosed in `{}`. 
+ * Each placeholder is replaced with the string representation of the corresponding 
+ * argument value from the `arguments` object. Text outside of placeholders is copied 
+ * directly to the output string.
+ * 
+ * @param stringFormat The format string containing placeholders (e.g., "Hello, {name}!").
+ * @return std::string A formatted string with placeholders replaced by argument values.
+ * 
+ * @note Placeholders must match the names of arguments stored in the `arguments` object.
+ *       If a placeholder does not match any argument, it will be left empty in the output.
+ * 
+ * @code
+gd::argument::arguments args;
+args.append("name", "World");
+std::string result = args.print("Hello, {name}!");
+// result: "Hello, World!"
+ * @endcode
+ * 
+ * @code
+std::string stringFolder = "test-folder";
+gd::argument::arguments arguments_;
+arguments_.append("test-folder", stringFolder);
+arguments_.append("database-file", "test.db");
+std::cout << arguments_.print( "Folder where database are places is {} and database file is: {}\n" );
+ * @endcode
+ * 
+ * @warning Ensure that the format string is well-formed, with properly matched `{}`.
+ */
 std::string arguments::print(std::string_view stringFormat) const
 {
-   char pbszBuffer[256];
+   unsigned uArgumentCount = 0; // number of arguments found
    std::string stringPrint;
-   auto uLength = stringFormat.length();
+   const char* piPosition = stringFormat.data();
+   const char* piEnd = piPosition + stringFormat.length();
 
-   auto next = [](auto it, auto itEnd) -> auto {
-      while( it != itEnd )
-      {
-         it++;
-         if( *it == '{' )
-         {
-            it++;
-            return it;
-         }
-      }
-      return it;
-   };
-
-   auto itPosition = std::begin(stringFormat);
-   auto itEnd = std::end(stringFormat);
-   while( itPosition != itEnd )
+   while(piPosition < piEnd)
    {
-      auto itTo = next( itPosition, itEnd );
-      std::copy(itPosition, itTo, std::back_inserter(stringPrint));
-      if( *itTo != '{' )
+      const char* piTo = piPosition;
+      // Find next '{'
+      while(piTo < piEnd && *piTo != '{') { piTo++; }
+
+      // Copy characters up to pTo
+      stringPrint.append(piPosition, piTo - piPosition);
+
+      if( piTo < piEnd && *piTo == '{' )
       {
-         *pbszBuffer = '\0';
-         auto pbszPosition = pbszBuffer;
-         while( *itTo != '}' && itTo != itEnd )
+         piTo++; // Skip '{'
+         const char* pbszPosition = piTo;
+         const char* pbszBegin = piTo;
+
+         // Copy characters until '}' or end
+         while( piTo < piEnd && *piTo != '}' )
          {
-            *pbszPosition += *itTo;
             pbszPosition++;
-            itTo++;
+            piTo++;
          }
 
-         *pbszPosition += '\0';
+#ifndef NDEBUG
+         std::string string_d = std::string(pbszBegin, pbszPosition - pbszBegin);
+#endif // NDEBUG
 
-         stringPrint += get_argument(pbszBuffer).get_string();
+         if( pbszPosition - pbszBegin > 0 ) stringPrint += get_argument(std::string_view(pbszBegin, pbszPosition - pbszBegin)).get_string();
+         else
+         {
+            stringPrint += get_argument(uArgumentCount).get_string();
+         }
+         uArgumentCount++;
 
+         if(piTo < piEnd && *piTo == '}')
+         {
+            piTo++; // Skip '}'
+         }
       }
 
-      itPosition = itTo;
+      piPosition = piTo;
    }
 
    return stringPrint;

@@ -1973,18 +1973,25 @@ std::string arguments::print( const std::string_view& stringSplit, gd::types::ta
  *       If a placeholder does not match any argument, it will be left empty in the output.
  * 
  * @code
- * gd::argument::arguments args;
- * args.append("name", "World");
- * std::string result = args.print("Hello, {name}!");
- * // result: "Hello, World!"
+gd::argument::arguments args;
+args.append("name", "World");
+std::string result = args.print("Hello, {name}!");
+// result: "Hello, World!"
+ * @endcode
+ * 
+ * @code
+std::string stringFolder = "test-folder";
+gd::argument::arguments arguments_;
+arguments_.append("test-folder", stringFolder);
+arguments_.append("database-file", "test.db");
+std::cout << arguments_.print( "Folder where database are places is {} and database file is: {}\n" );
  * @endcode
  * 
  * @warning Ensure that the format string is well-formed, with properly matched `{}`.
  */
 std::string arguments::print(std::string_view stringFormat) const
 {
-   unsigned uArgumentCount = 0;
-   char pbszBuffer[256];
+   unsigned uArgumentCount = 0; // number of arguments found
    std::string stringPrint;
    const char* piPosition = stringFormat.data();
    const char* piEnd = piPosition + stringFormat.length();
@@ -1993,10 +2000,7 @@ std::string arguments::print(std::string_view stringFormat) const
    {
       const char* piTo = piPosition;
       // Find next '{'
-      while(piTo < piEnd && *piTo != '{')
-      {
-         piTo++;
-      }
+      while(piTo < piEnd && *piTo != '{') { piTo++; }
 
       // Copy characters up to pTo
       stringPrint.append(piPosition, piTo - piPosition);
@@ -2004,22 +2008,21 @@ std::string arguments::print(std::string_view stringFormat) const
       if( piTo < piEnd && *piTo == '{' )
       {
          piTo++; // Skip '{'
-         char* pbszPosition = pbszBuffer;
+         const char* pbszPosition = piTo;
+         const char* pbszBegin = piTo;
 
          // Copy characters until '}' or end
          while( piTo < piEnd && *piTo != '}' )
-         {
-            *pbszPosition = *piTo;
+         {                                                                                         assert( (pbszPosition - pbszBegin) < 256 );
             pbszPosition++;
             piTo++;
          }
 
-         *pbszPosition = '\0';
 #ifndef NDEBUG
-         std::string string_d = std::string(pbszBuffer);
+         std::string string_d = std::string(pbszBegin, pbszPosition - pbszBegin);
 #endif // NDEBUG
 
-         if( *pbszBuffer != '\0' ) stringPrint += get_argument(pbszBuffer).get_string();
+         if( pbszPosition - pbszBegin > 0 ) stringPrint += get_argument(std::string_view(pbszBegin, pbszPosition - pbszBegin)).get_string();
          else
          {
             stringPrint += get_argument(uArgumentCount).get_string();
