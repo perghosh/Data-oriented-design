@@ -387,7 +387,7 @@ std::pair<bool, std::string> CApplication::DATABASE_Upgrade(uint64_t uVersion)
       stringSql = R"sql(
 CREATE TABLE TVersion( VersionK INTEGER PRIMARY KEY, FVersion INTEGER, FMajor INTEGER, FMinor INTEGER, FBuild INTEGER, FRevision INTEGER );
 
-CREATE TABLE TProject( ProjectK INTEGER PRIMARY KEY, FName TEXT, FFolder VARCHAR(260), FDescription TEXT, FVersion INTEGER ); 
+CREATE TABLE TProject( ProjectK INTEGER PRIMARY KEY, TypeC INTEGER, StateC INTEGER, FName TEXT, FFolder VARCHAR(260), FDescription TEXT, FVersion INTEGER ); 
 
 CREATE TABLE TFile( FileK INTEGER PRIMARY KEY, ProjectK INTEGER, TypeC INTEGER, FName TEXT, FSize INTEGER, FDescription TEXT );
 CREATE TABLE TFileProperty( 
