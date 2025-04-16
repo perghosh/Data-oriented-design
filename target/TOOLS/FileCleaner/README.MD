@@ -8,6 +8,7 @@ What it can do
 - Join files
 - Macro expansion
 - Count lines
+- Test simulate files affeted
 
 ## Count lines
 Count lines in files and beeing able to count different types of lines in one session. Like counting

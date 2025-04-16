@@ -38,6 +38,8 @@ int CountRowsInFile(const gd::table::dto::table& table_)
    return iCount;
 }
 
+
+
 int RowCount( const std::string& stringFile )
 {
    if( std::filesystem::is_regular_file(stringFile) == true )
