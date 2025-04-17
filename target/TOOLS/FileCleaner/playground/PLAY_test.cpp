@@ -49,29 +49,26 @@ std::vector<std::string> Split(const std::string& stringPath)
    return vectorPath;
 }
 
-std::vector<std::pair<bool, std::string>> CheckPath(const std::vector<std::string>& vectorPath)
+/** ---------------------------------------------------------------------------
+ * @brief Checks a list of paths and returns those that are neither regular files nor directories.
+ *
+ * This method iterates through a vector of file paths, checks each path to determine if it is 
+ * either a regular file or a directory, and collects paths that do not satisfy either condition.
+ *
+ * @param vectorPath A vector of strings representing file or directory paths to be checked.
+ * @return A vector of strings containing paths that are neither regular files nor directories.
+ */
+std::vector<std::string> CheckPath(const std::vector<std::string>& vectorPath)
 {
-   std::vector<std::pair<bool, std::string>> vectorCheck;
+   std::vector<std::string> vectorCheck;
 
    for( const auto& it : vectorPath )
    {
-      std::pair<bool, std::string> pairCheck;
-
       std::filesystem::path pathCheck(it);
 
-      pairCheck.second = pathCheck.string();
-
-      if( !std::filesystem::is_regular_file(pathCheck) || !std::filesystem::is_directory(pathCheck) )
+      if( std::filesystem::is_regular_file(pathCheck) == false || std::filesystem::is_directory(pathCheck) == false )
       {
-         pairCheck.first = false;
-
-         vectorCheck.push_back(pairCheck);
-      }
-      else
-      {
-         pairCheck.first = true;
-
-         vectorCheck.push_back(pairCheck);
+         vectorCheck.push_back( pathCheck.string() );
       }
    }
 
@@ -86,7 +83,8 @@ std::vector<std::string> Test(const std::vector<std::string>& vectorPath)
 
    for( int i = 0; i < vectorPath.size(); i++ )
    {
-      for( const auto& it : std::filesystem::directory_iterator(vectorPath[i]) )
+      const std::string& stringPath = vectorPath[i];
+      for( const auto& it : std::filesystem::directory_iterator( stringPath ) )
       {
          if( it.is_regular_file() )
          {
