@@ -21,10 +21,48 @@
 //   - for every string read files
 //       - place in table
 
-std::vector<std::string> Test(const std::string& stringPath)
+std::string Test(const std::string& stringPath)
 {
-   std::vector<std::string> vectorFiles;
-   std::string stringSource = stringPath;
+   std::vector<std::string> vectorPath;
+   std::string stringTemp;
+   std::string stringFiles;
+   int iCount = 0;
 
-   for( )
+   for( int i = 0; i <= stringPath.size(); i++ )
+   {
+      if( stringPath[i] == ';' || i == stringPath.size() )
+      {
+         for( int i2 = iCount; i2 < i; i2++ )
+         {
+            stringTemp += stringPath[i2];
+         }
+         vectorPath.push_back(stringTemp);
+         stringTemp.clear();
+         iCount = i + 1;
+      }
+   }
+
+   for( int i = 0; i < vectorPath.size(); i++ )
+   {
+      for( const auto& it : std::filesystem::directory_iterator(vectorPath[i]) )     // i get error here
+      {
+         if( it.is_regular_file() )
+         {
+            std::string stringFilePath = it.path().string();
+            stringFiles += stringFilePath + ";";
+         }
+      }
+   }
+
+
+   return stringFiles;
+}
+
+TEST_CASE("[file] test", "[file]")
+{
+   std::string stringPath = "D://dev//testfiles";
+   std::string stringFiles = Test(stringPath);
+
+   std::cout << stringFiles << "\n";
+
 }
