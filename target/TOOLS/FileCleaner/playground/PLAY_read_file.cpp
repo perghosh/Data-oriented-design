@@ -10,7 +10,7 @@
 #include "gd/gd_table_io.h"
 #include "gd/gd_sql_value.h"
 
-#include "gd/parse/gd_window_line.h"
+#include "gd/parse/gd_parse_window_line.h"
 
 
 
