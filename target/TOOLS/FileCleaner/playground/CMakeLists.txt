@@ -69,6 +69,23 @@ endif()
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
+   set(TEST_NAME_ "PLAY_read_file")
+   add_executable(${TEST_NAME_}
+      ${external_gd} 
+      ${SOURCE_PLAYGROUND_}
+   
+   
+   "main.cpp" ${external_gd_core} ${external_catch2} 
+      "${TEST_NAME_}.cpp"
+   )
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+endif()
+
+
+set( USE_TEST_ ON )
+if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_test")
    add_executable(${TEST_NAME_}
       ${external_gd} ${external_pugixml} ${external_sqlite}

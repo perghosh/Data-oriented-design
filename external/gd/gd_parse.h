@@ -263,22 +263,6 @@ struct tag_avx256 {};
  */
 struct ascii
 {
-   enum enumType
-   {
-/*
-      e1          = 0b0000'0001,
-      e2          = 0b0000'0010,
-      e3          = 0b0000'0100,
-      e4          = 0b0000'1000,
-      e5          = 0b0001'0000,
-      e6          = 0b0010'0000,
-      e7          = 0b0100'0000,
-      e8          = 0b1000'0000,
-      eBegin      = e1,
-      eEnd        = e2,
-      */
-   };
-
    typedef uint8_t            value_type;
    typedef value_type*        iterator;
    typedef const value_type*  const_iterator;
@@ -482,7 +466,7 @@ struct state
       ~match() {}
 
       // ## attributes
-      ascii::enumType m_uType;           ///< state type
+      //ascii::enumType m_uType;           ///< state type
       std::string m_stringMatch;				   ///< match string to change state
    };
 
