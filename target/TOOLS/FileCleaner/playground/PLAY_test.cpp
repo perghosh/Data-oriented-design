@@ -25,6 +25,16 @@
 
 //   -return vector
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Splits a semicolon-separated string into individual paths.
+ *
+ * This function takes a single string containing multiple paths separated by semicolons (`;`),
+ * splits it into individual paths, and returns them as a vector of strings.
+ *
+ * @param stringPath A semicolon-separated string containing multiple paths.
+ * @return A vector of strings, where each string is an individual path.
+ */
 std::vector<std::string> Split(const std::string& stringPath)
 {
    std::vector<std::string> vectorPath;
@@ -66,7 +76,7 @@ std::vector<std::string> CheckPath(const std::vector<std::string>& vectorPath)
    {
       std::filesystem::path pathCheck(it);
 
-      if( std::filesystem::is_regular_file(pathCheck) == false || std::filesystem::is_directory(pathCheck) == false )
+      if( std::filesystem::is_regular_file(pathCheck) == false && std::filesystem::is_directory(pathCheck) == false )
       {
          vectorCheck.push_back( pathCheck.string() );
       }
@@ -76,6 +86,17 @@ std::vector<std::string> CheckPath(const std::vector<std::string>& vectorPath)
 
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Recursively collects all regular files from the given directories and their subdirectories.
+ *
+ * This function takes a vector of directory paths, iterates through each directory, and collects
+ * all regular files. If a subdirectory is encountered, it recursively processes the subdirectory
+ * to collect files from it as well.
+ *
+ * @param vectorPath A vector of strings representing directory paths to process.
+ * @return A vector of strings containing the paths of all regular files found.
+ */
 std::vector<std::string> Test(const std::vector<std::string>& vectorPath)
 {
    std::vector<std::string> vectorFiles;
@@ -110,16 +131,16 @@ std::vector<std::string> Test(const std::vector<std::string>& vectorPath)
 
 TEST_CASE("[file] test", "[file]")
 {
-   //std::string stringPath = "D://dev//testfiles";
-   std::string stringPath = "C://temp//kevin";
+   std::string stringPath = "D://dev//testfiles";
+   //std::string stringPath = "C://temp//kevin";
    
    std::vector<std::string> vectorPath = Split(stringPath);
 
-   std::vector<std::pair<bool, std::string>> vectorCheck = CheckPath(vectorPath);
+   std::vector<std::string> vectorCheck = CheckPath(vectorPath);
 
    for( auto& it : vectorCheck )
    {
-      std::cout << it.first << " " << it.second << "\n";
+      std::cout << it << "\n";
    }
 
    std::cout << std::endl;
