@@ -18,12 +18,39 @@
 _GD_PARSE_WINDOW_BEGIN
 
 /**
- * \brief
+ * \brief A flexible buffer class for managing linear data with look-ahead capabilities.
  *
+ * The line class provides a buffer implementation that supports efficient reading,
+ * writing, and processing of linear data. It maintains a main buffer of specified size
+ * and capacity, along with a look-ahead buffer positioned after the main buffer.
  *
+ * Key features include:
+ * - Automatic buffer rotation to efficiently handle continuous data streams
+ * - Capacity management to prevent buffer overflows
+ * - Look-ahead buffer support for parsers or processors that need to peek ahead
+ * - STL-compatible iterators for standard algorithm compatibility
+ * - Automatic conversion to string_view for string operations
  *
- \code
- \endcode
+ * This class is designed for scenarios requiring efficient buffer management with
+ * potential look-ahead needs, such as parsers, stream processors, or network buffers.
+ *
+ * \code
+ * // Create a line with 1024 bytes size
+ * line buffer(1024);
+ * buffer.create();
+ * 
+ * // Write data to the buffer
+ * const uint8_t* sourceData = ...;
+ * uint64_t bytesWritten = buffer.write(sourceData, dataSize);
+ * 
+ * // Process data using iterators
+ * for(auto it = buffer.begin(); it != buffer.end(); ++it) {
+ *     // Process each byte
+ * }
+ * 
+ * // When processing exceeds buffer size, rotate to reuse space
+ * buffer.rotate();
+ * \endcode
  */
 class line
 {
