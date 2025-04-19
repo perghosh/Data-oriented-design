@@ -23,6 +23,7 @@
 _GD_PARSE_WINDOW_BEGIN
 
 /**
+ * \class line
  * \brief A flexible buffer class for managing linear data with look-ahead capabilities.
  *
  * The line class provides a buffer implementation that supports efficient reading,
@@ -114,6 +115,7 @@ private:
 
 // ## operator -----------------------------------------------------------------
 public:
+   uint8_t& operator[](uint64_t uIndex) { assert(m_uCapacity > m_uSize); assert(m_puBuffer != nullptr); return m_puBuffer[uIndex]; } ///< access buffer data
    operator std::string_view() const { return std::string_view((const char*)m_puBuffer, size()); } ///< convert to string view
 
 
@@ -123,6 +125,8 @@ public:
 *///@{
    /// set last position in buffer, last position is the position where data is written to, marks end of valid information not processed
    void set_last(uint64_t uLast) { assert( uLast <= m_uCapacity ); m_uLast = uLast; }
+   /// add to last position in buffer, this will add to the last position and update the size of the buffer
+   /// When writing data to the buffer, call this to update internal data size or call `update` method
    void add( uint64_t uAdd ) { m_uLast += uAdd; m_uSizeSummary += uAdd; assert( m_uLast <= m_uCapacity ); }
 //@}
 
@@ -162,7 +166,7 @@ public:
    int64_t find(const uint8_t* puData, uint64_t uSize, uint64_t uOffset = 0) const; ///< find data in buffer
    int64_t find(const std::string_view& stringData, uint64_t uOffset = 0) const { return find((const uint8_t*)stringData.data(), stringData.length(), uOffset); } ///< find data in buffer
    int64_t find(char iCharacter, uint64_t uOffset = 0) const;
-   int64_t find(const std::span<const uint8_t> span256_, uint64_t uOffset = 0) const;
+   int64_t find(const std::span<const uint8_t>& span256_, uint64_t uOffset = 0) const;
 
    // ## iterator methods
 
@@ -226,9 +230,70 @@ inline void line::update(uint64_t uAddSize) { assert(m_uCapacity > m_uSize); ass
    }
 }
 
-
+/// return start and end of occupied data in buffer
 inline std::pair<const uint8_t*, const uint8_t*> line::range(gd::types::tag_pair) { assert( m_puBuffer != nullptr );
    return std::make_pair(m_puBuffer, m_puBuffer + occupied());
 }
+
+/*
+ * \class line
+ * 
+ * Advanced usage:
+ * \code
+   // Define the file to read
+   std::string stringFile = R"(D:\temp\sqlite3.c)";
+   std::ifstream file_(stringFile, std::ios::binary);
+
+   // Characters to count
+   std::array<uint8_t, 256> arrayToCount = { 0 };
+   arrayToCount['a'] = 1; arrayToCount['b'] = 2; arrayToCount['c'] = 3; arrayToCount['d'] = 4;
+   
+   unsigned puCount[4] = {0}; // Initialize counts for each character
+
+   // Create and initialize the line buffer
+   gd::parse::window::line windowLine_(256, gd::types::tag_create{});
+
+   // Read the file into the buffer
+   auto uAvailable = windowLine_.available();
+   file_.read((char*)windowLine_.buffer(), uAvailable);  
+   auto uSize = file_.gcount();
+   windowLine_.update(uSize);
+
+   std::span<const uint8_t> span256_(arrayToCount.data(), 256);
+
+   // Process the file
+   while(windowLine_.eof() == false)
+   {
+      uint64_t uOffset = 0;
+      int64_t iFind = windowLine_.find( { arrayToCount.data(), 256 }, uOffset );
+      for( ; iFind != -1; iFind = windowLine_.find( { arrayToCount.data(), 256 }, uOffset ) )
+      {
+         // Increment the count for the found character
+         char found_ = windowLine_[iFind];
+         unsigned uCharacter = arrayToCount[found_];
+         puCount[(uCharacter-1)]++;
+         iFind++;
+         uOffset = iFind;
+      }
+
+      // Rotate the buffer and read more data
+      windowLine_.rotate();
+      file_.read((char*)windowLine_.buffer(), windowLine_.available());
+      uSize = file_.gcount();
+      windowLine_.update(uSize);
+   }
+
+   // Output the counts for each character
+   for(size_t u = 0; u < 4; ++u)
+   {
+      std::cout << "Character '" << char('a' + u) << "' count: " << puCount[u] << "\n";
+   }
+
+   file_.close();
+ * 
+ * \endcode
+ * 
+ */
+
 
 _GD_PARSE_WINDOW_END

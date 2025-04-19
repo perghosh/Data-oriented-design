@@ -1,3 +1,4 @@
+#include <array>
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -60,6 +61,61 @@ TEST_CASE("[read-file] test", "[read-file]")
 
 }
 */
+
+TEST_CASE("[read-file] count characters", "[read-file]")
+{
+   // Define the file to read
+   std::string stringFile = R"(D:\temp\sqlite3.c)";
+   std::ifstream file_(stringFile, std::ios::binary);                                              REQUIRE(file_.is_open() == true);
+
+   // Characters to count
+   std::array<uint8_t, 256> arrayToCount = { 0 };
+   arrayToCount['a'] = 1; arrayToCount['b'] = 2; arrayToCount['c'] = 3; arrayToCount['d'] = 4;
+   
+   unsigned puCount[4] = {0}; // Initialize counts for each character
+
+   // Create and initialize the line buffer
+   gd::parse::window::line windowLine_(256, gd::types::tag_create{});
+
+   // Read the file into the buffer
+   auto uAvailable = windowLine_.available();
+   file_.read((char*)windowLine_.buffer(), uAvailable);  
+   auto uSize = file_.gcount();                                                                    REQUIRE(uSize > 0);
+   windowLine_.update(uSize);
+
+   std::span<const uint8_t> span256_(arrayToCount.data(), 256);
+
+   // Process the file
+   while(windowLine_.eof() == false)
+   {
+      uint64_t uOffset = 0;
+      int64_t iFind = windowLine_.find( { arrayToCount.data(), 256 }, uOffset );
+      for( ; iFind != -1; iFind = windowLine_.find( { arrayToCount.data(), 256 }, uOffset ) )
+      {
+         // Increment the count for the found character
+         char found_ = windowLine_[iFind];
+         unsigned uCharacter = arrayToCount[found_];
+         puCount[(uCharacter-1)]++;
+         iFind++;
+         uOffset = iFind;
+      }
+
+      // Rotate the buffer and read more data
+      windowLine_.rotate();
+      file_.read((char*)windowLine_.buffer(), windowLine_.available());
+      uSize = file_.gcount();
+      windowLine_.update(uSize);
+   }
+
+   // Output the counts for each character
+   for(size_t u = 0; u < 4; ++u)
+   {
+      std::cout << "Character '" << char('a' + u) << "' count: " << puCount[u] << "\n";
+   }
+
+   file_.close();
+}
+
 
 TEST_CASE("[read-file] find name", "[read-file]")
 {
