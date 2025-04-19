@@ -176,7 +176,7 @@ void line::rotate()
 int64_t line::find(const uint8_t* puData, uint64_t uSize, uint64_t uOffset) const
 {                                                                                                  assert(m_puBuffer != nullptr); assert(m_uLast > 0); assert(m_uLast >= uOffset);
    const uint8_t* puPosition = m_puBuffer + uOffset; // Pointer to start of search
-   const uint8_t* puEnd = puPosition + m_uLast; // Pointer to end of search
+   const uint8_t* puEnd = puPosition + (occupied() - uOffset); // Pointer to end of search
 
    while( puPosition < puEnd )
    {
@@ -206,7 +206,7 @@ int64_t line::find(const uint8_t* puData, uint64_t uSize, uint64_t uOffset) cons
 int64_t line::find(char iCharacter, uint64_t uOffset) const
 {                                                                                                  assert(m_puBuffer != nullptr); assert(m_uLast > 0); assert(m_uLast >= uOffset);
    const uint8_t* puPosition = m_puBuffer + uOffset; // Pointer to start of search
-   const uint8_t* puEnd = puPosition + m_uLast; // Pointer to end of search
+   const uint8_t* puEnd = puPosition + (occupied() - uOffset); // Pointer to end of search
    while( puPosition < puEnd )
    {
       // Check if the current position matches the character to find
@@ -219,11 +219,26 @@ int64_t line::find(char iCharacter, uint64_t uOffset) const
    return -1;                                                                  // Character not found
 }
 
-int64_t line::find(const std::span<const uint8_t> span256_, uint64_t uOffset) const
-{                                                                                                  assert(m_puBuffer != nullptr); assert( span256_.size() == 256 ); // Ensure span size is 256
-   assert(m_puBuffer != nullptr); assert(m_uLast > 0); assert(m_uLast >= uOffset);
+/** --------------------------------------------------------------------------- 
+ * Searches for the first occurrence of any character marked as present in the
+ * provided span, starting from the specified offset.
+ *
+ * @param span256_ A 256-element span where non-zero values mark characters to find.
+ *                 Each index represents an ASCII/byte value, and non-zero values
+ *                 at that index indicate the character should be matched.
+ * @param uOffset Starting position in the buffer to begin the search.
+ * @return The index position of the first matching character, or -1 if not found.
+ *
+ * This method uses a lookup table approach where span256_ acts as a presence map
+ * for characters to be found. For each byte in the buffer, its value is used as
+ * an index into span256_ - if the value at that index is non-zero, the character
+ * is considered a match.
+ */
+int64_t line::find(const std::span<const uint8_t>& span256_, uint64_t uOffset) const
+{                                                                                                  assert(m_puBuffer != nullptr); assert( span256_.size() == 256 ); assert(m_uLast > 0); assert(m_uLast >= uOffset); // Ensure span size is 256
    const uint8_t* puPosition = m_puBuffer + uOffset; // Pointer to start of search
-   const uint8_t* puEnd = puPosition + m_uLast; // Pointer to end of search
+   const uint8_t* puEnd = puPosition + (occupied() - uOffset); // Pointer to end of search
+                                                                                                   assert( puPosition <= puEnd );
    while( puPosition < puEnd )
    {
       // Check if the current position is any of the characters in the span
@@ -235,7 +250,6 @@ int64_t line::find(const std::span<const uint8_t> span256_, uint64_t uOffset) co
    }
    return -1;                                                                  // Character not found
 }
-
 
 
 _GD_PARSE_WINDOW_END
