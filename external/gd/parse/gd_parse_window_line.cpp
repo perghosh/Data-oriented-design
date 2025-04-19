@@ -1,6 +1,57 @@
+/**
+ * @file gd_parse_window_line.cpp
+ */
+
+
 #include "gd_parse_window_line.h"
 
 _GD_PARSE_WINDOW_BEGIN
+
+
+/// \brief Copy constructor for line class.
+void line::common_construct(const line& o) 
+{
+   // Copy size and capacity
+   m_uSize = o.m_uSize;
+   m_uCapacity = o.m_uCapacity;
+   m_uFirst = o.m_uFirst;
+   m_uLast = o.m_uLast;
+   m_uSizeSummary = o.m_uSizeSummary;
+
+   // ## Allocate new memory for the buffer and copy the data
+   if(o.m_puBuffer != nullptr) 
+   { 
+      m_puBuffer = new uint8_t[m_uCapacity];  
+      std::memcpy(m_puBuffer, o.m_puBuffer, m_uLast);
+   } 
+   else 
+   {
+      m_puBuffer = nullptr;
+   }
+}
+
+/// \brief Move constructor for line class.
+void line::common_construct(line&& o) noexcept 
+{
+   // Transfer ownership of attributes
+   m_uSize = o.m_uSize;
+   m_uCapacity = o.m_uCapacity;
+   m_uFirst = o.m_uFirst;
+   m_uLast = o.m_uLast;
+   m_uSizeSummary = o.m_uSizeSummary;
+
+   // Transfer ownership of the buffer
+   m_puBuffer = o.m_puBuffer;
+
+   // Leave the source object in a valid but empty state
+   o.m_uSize = 0;
+   o.m_uCapacity = 0;
+   o.m_uFirst = 0;
+   o.m_uLast = 0;
+   o.m_uSizeSummary = 0;
+   o.m_puBuffer = nullptr;
+}
+
 
 
 /** ---------------------------------------------------------------------------
@@ -51,7 +102,6 @@ void line::create()
  */
 uint64_t line::write(const uint8_t* puData, uint64_t uSize)
 {                                                                                                  assert( uSize != 0 );
-
    uint8_t* puBuffer = m_puBuffer;
 
    // ## swap ending into start of buffer if needed
@@ -109,6 +159,83 @@ void line::rotate()
       m_uLast = 0;                                                             // nothing to rotate
    }
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Finds the first occurrence of a sequence of bytes in the buffer.
+ *
+ * This method searches for the specified sequence of bytes within the buffer,
+ * starting from the given offset. If the sequence is found, the index of its
+ * first occurrence is returned. If the sequence is not found, -1 is returned.
+ *
+ * @param puData Pointer to the sequence of bytes to search for.
+ * @param uSize The size of the sequence to search for, in bytes.
+ * @param uOffset The offset in the buffer to start the search from (default is 0).
+ *
+ * @return The index of the first occurrence of the sequence in the buffer, or -1 if not found.
+ */
+int64_t line::find(const uint8_t* puData, uint64_t uSize, uint64_t uOffset) const
+{                                                                                                  assert(m_puBuffer != nullptr); assert(m_uLast > 0); assert(m_uLast >= uOffset);
+   const uint8_t* puPosition = m_puBuffer + uOffset; // Pointer to start of search
+   const uint8_t* puEnd = puPosition + m_uLast; // Pointer to end of search
+
+   while( puPosition < puEnd )
+   {
+      // Check if the current position matches the data to find
+      if( std::memcmp(puPosition, puData, uSize) == 0 )
+      {
+         return puPosition - m_puBuffer;                                       // Return the index of the found data
+      }
+      puPosition++;                                                            // Move to the next position
+   }
+
+   return -1;                                                                  // Data not found
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Finds the first occurrence of a character in the buffer.
+ *
+ * This method searches for the specified character within the buffer,
+ * starting from the given offset. If the character is found, the index of its
+ * first occurrence is returned. If the character is not found, -1 is returned.
+ *
+ * @param iCharacter The character to search for.
+ * @param uOffset The offset in the buffer to start the search from (default is 0).
+ *
+ * @return The index of the first occurrence of the character in the buffer, or -1 if not found.
+ */
+int64_t line::find(char iCharacter, uint64_t uOffset) const
+{                                                                                                  assert(m_puBuffer != nullptr); assert(m_uLast > 0); assert(m_uLast >= uOffset);
+   const uint8_t* puPosition = m_puBuffer + uOffset; // Pointer to start of search
+   const uint8_t* puEnd = puPosition + m_uLast; // Pointer to end of search
+   while( puPosition < puEnd )
+   {
+      // Check if the current position matches the character to find
+      if( *puPosition == iCharacter )
+      {
+         return puPosition - m_puBuffer;                                       // Return the index of the found character
+      }
+      puPosition++;                                                            // Move to the next position
+   }
+   return -1;                                                                  // Character not found
+}
+
+int64_t line::find(const std::span<const uint8_t> span256_, uint64_t uOffset) const
+{                                                                                                  assert(m_puBuffer != nullptr); assert( span256_.size() == 256 ); // Ensure span size is 256
+   assert(m_puBuffer != nullptr); assert(m_uLast > 0); assert(m_uLast >= uOffset);
+   const uint8_t* puPosition = m_puBuffer + uOffset; // Pointer to start of search
+   const uint8_t* puEnd = puPosition + m_uLast; // Pointer to end of search
+   while( puPosition < puEnd )
+   {
+      // Check if the current position is any of the characters in the span
+      if( span256_[*puPosition] != 0 )
+      {
+         return puPosition - m_puBuffer;                                       // Return the index of the found character
+      }
+      puPosition++;                                                            // Move to the next position
+   }
+   return -1;                                                                  // Character not found
+}
+
 
 
 _GD_PARSE_WINDOW_END
