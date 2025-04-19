@@ -1,9 +1,14 @@
+/**
+ * @file gd_parse_window_line.h
+ */
+
+
 #pragma once
 
 #include <cassert>
+#include <span>
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include "gd/gd_types.h"
 
@@ -33,6 +38,25 @@ _GD_PARSE_WINDOW_BEGIN
  *
  * This class is designed for scenarios requiring efficient buffer management with
  * potential look-ahead needs, such as parsers, stream processors, or network buffers.
+ *
+ * Example usage:
+ * @code
+ *   // Create a buffer with an initial size of 1024 bytes
+ *   line buffer(1024, gd::types::tag_create{});
+ *   
+ *   // Write data to the buffer
+ *   const char* data = "Hello, world!";
+ *   buffer.write((const uint8_t*)data, strlen(data));
+ *   
+ *   // Process the buffer
+ *   int64_t pos = buffer.find(',');
+ *   if(pos != -1) {
+ *     // Found a comma at position 'pos'
+ *   }
+ *   
+ *   // Convert to string_view for text operations
+ *   std::string_view sv = buffer;
+ * @endcode
  *
  * \code
  * // Create a line with 1024 bytes size
@@ -70,7 +94,11 @@ public:
 public:
    line() { memset( this, 0, sizeof( line ) ); }
    line(uint64_t uSize) : m_uSize(uSize), m_uCapacity(uSize + (uSize >> 1)) {}
+   /// construct without need to call create method, called in constructor
+   line(uint64_t uSize, gd::types::tag_create) : m_uSize(uSize), m_uCapacity(uSize + (uSize >> 1)) { create(); }
    line(uint64_t uSize, uint64_t uCapacity) : m_uSize(uSize), m_uCapacity(uCapacity) { assert(m_uCapacity > m_uSize); }
+   /// construct without need to call create method, called in constructor
+   line(uint64_t uSize, uint64_t uCapacity, gd::types::tag_create) : m_uSize(uSize), m_uCapacity(uCapacity) { assert(m_uCapacity > m_uSize); create(); }
    // copy
    line(const line& o) { common_construct(o); }
    line(line&& o) noexcept { common_construct(std::move(o)); }
@@ -81,8 +109,8 @@ public:
    ~line() { delete [] m_puBuffer; }
 private:
    // common copy
-   void common_construct(const line& o) {}
-   void common_construct(line&& o) noexcept {}
+   void common_construct(const line& o);
+   void common_construct(line&& o) noexcept;
 
 // ## operator -----------------------------------------------------------------
 public:
@@ -100,9 +128,14 @@ public:
 
 /** \name OPERATION
 *///@{
+/// create buffer, this will allocate memory for the buffer and set the size of the buffer
    void create();
+   /// write data to buffer, this will write data to the end of the buffer and return the number of bytes written
    uint64_t write(const uint8_t* puData, uint64_t uSize); 
+   /// rotate buffer, move data from end of buffer to start of buffer
    void rotate();
+   /// close buffer, free memory and reset attributes
+   void close() { delete[] m_puBuffer; m_puBuffer = nullptr; m_uLast = 0; m_uSizeSummary = 0; } ///< close buffer, free memory and reset attributes
 
    /// available free space in buffer, this informs how much data can be written to the buffer
    uint64_t available() const { return m_uCapacity - m_uLast; } 
@@ -119,8 +152,17 @@ public:
    uint64_t capacity() const { assert( m_uCapacity > m_uSize ); return m_uCapacity; } ///< capacity of buffer
 
    bool eof() const { return m_uLast == 0; } ///< end of file, no more data in buffer
+   bool empty() const { return m_uLast == 0; } ///< buffer is empty
 
+   /// get start and end of occupied data in buffer
    std::pair<const uint8_t*, const uint8_t*> range( gd::types::tag_pair );
+
+   // ## find methods
+
+   int64_t find(const uint8_t* puData, uint64_t uSize, uint64_t uOffset = 0) const; ///< find data in buffer
+   int64_t find(const std::string_view& stringData, uint64_t uOffset = 0) const { return find((const uint8_t*)stringData.data(), stringData.length(), uOffset); } ///< find data in buffer
+   int64_t find(char iCharacter, uint64_t uOffset = 0) const;
+   int64_t find(const std::span<const uint8_t> span256_, uint64_t uOffset = 0) const;
 
    // ## iterator methods
 
@@ -148,7 +190,6 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    uint8_t* m_puBuffer = nullptr;              ///< Main buffer data
-   uint8_t* m_puLookAheadBuffer = nullptr;     ///< Additional look-ahead buffer
    uint64_t m_uCapacity;                       ///< Buffer capacity
    uint64_t m_uSize;                           ///< Buffer size
    uint64_t m_uFirst = 0;                      ///< First valid character in buffer

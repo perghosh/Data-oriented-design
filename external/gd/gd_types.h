@@ -134,6 +134,9 @@ struct tag_ask_compiler {};
 /// tag dispatcher used to avoid default implicit construction
 struct tag_construct {};
 
+/// tag dispatcher used to create objects, like creating a new object, allocate etc
+struct tag_create {}; 
+
 /// tag dispatcher used to convert data from one type to another
 struct tag_convert {}; 
 
