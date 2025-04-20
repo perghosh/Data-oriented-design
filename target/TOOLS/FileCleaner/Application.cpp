@@ -142,6 +142,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       if( result_.first == false ) return result_;
       result_ = pdocument->FILE_UpdateCount();
       if( result_.first == false ) return result_;
+      if( ( *poptionsActive )["print"].is_true() == true )
+      {
+         std::string stringPrint = pdocument->CACHE_Dump("file-count");
+         std::cout << "\n\n" << stringPrint << "\n\n";
+      }
    }
    else if( stringCommandName == "db" )
    {
@@ -507,6 +512,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
+   optionsApplication.add_flag({ "print", "Reults from command should be printed" });
    optionsApplication.add({"database", "Set folder where logger places log files"});
    optionsApplication.add({"statements", "file containing sql statements"});
 
