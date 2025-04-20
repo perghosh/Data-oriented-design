@@ -48,7 +48,26 @@ std::pair<bool, std::string> CDocument::HarvestFile(const gd::argument::shared::
    CACHE_Prepare("files");
    auto* ptable_ = CACHE_Get("files");                                                             assert( ptable_ != nullptr );
 
+   gd::table::dto::table* ptableCount = new gd::table::dto::table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "count"}, {"uint64", 0, "comment"}, {"uint64", 0, "space"} }, gd::table::tag_prepare{} );
+
    auto result_ = FILES_Harvest_g(argumentsPath, ptable_);
+
+   for( const auto& itRow : *ptable_ )
+   {
+      auto value_ = itRow.cell_get_variant_view( "path" );
+      std::string stringFile = value_.as_string();
+      
+      auto uRow = ptableCount->get_row_count();
+      ptableCount->row_add();
+
+      uint64_t uCount = RowCount(stringFile);
+
+      ptableCount->cell_set(uRow, "path", stringFile);
+      ptableCount->cell_set(uRow, "count", uCount);
+   }
+   auto stringTable = gd::table::to_string( *ptableCount, gd::table::tag_io_cli{});
+   std::cout << "\n" << stringTable << "\n";
+
    CountRowsInFile(*ptable_); // TODO: remove this line, it is only for debug
    return result_;
 }
