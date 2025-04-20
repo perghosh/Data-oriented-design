@@ -102,6 +102,8 @@ public:
    std::pair<bool, std::string> CACHE_GetInformation( const std::string_view& stringId, gd::argument::arguments& argumentsCache );
    gd::argument::arguments CACHE_GetInformation( const std::string_view& stringId );
    void CACHE_Erase( const std::string_view& stringId );
+   /// Dump cache data to string
+   std::string CACHE_Dump(const std::string_view& stringId);
 #ifndef NDEBUG
    bool CACHE_Exists_d( const std::string_view& stringId );
 #endif // !NDEBUG

@@ -305,6 +305,17 @@ void CDocument::CACHE_Erase( const std::string_view& stringId )
    }
 }
 
+/// @brief Dump cache data to string
+std::string CDocument::CACHE_Dump(const std::string_view& stringId) 
+{  
+   const auto* ptable_ = CACHE_Get(stringId, false);
+   if( ptable_ == nullptr ) { return "Cache not found for ID: " + std::string(stringId); }
+
+   std::string stringCliTable = gd::table::to_string(*ptable_, gd::table::tag_io_cli{});
+
+   return stringCliTable;
+}
+
 
 #ifndef NDEBUG
 /// For debug, check if chache with id exists
