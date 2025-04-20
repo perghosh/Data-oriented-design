@@ -2562,8 +2562,6 @@ namespace gd {
       */
       void split( const std::string_view& stringText, char chSplitWith, std::vector<std::string_view>& vectorPart )
       {
-         std::string stringPart;                // Store string parts added to vector
-
          const char* pbszStart = stringText.data();
          for( const char* pbszPosition = stringText.data(), *pbszEnd = stringText.data() + stringText.length(); pbszPosition != pbszEnd; pbszPosition++ )
          {
@@ -2575,7 +2573,7 @@ namespace gd {
          }
 
          // if part contains text or last position in string is same as split character, then add one more to vector
-         if( pbszStart <= &stringText.back() || stringText.back() == chSplitWith ) vectorPart.emplace_back( std::string_view( pbszStart, (stringText.data() + stringText.length()) - pbszStart));
+         if( pbszStart <= &stringText.back() || stringText.back() == chSplitWith ) vectorPart.emplace_back( std::string_view( pbszStart, (stringText.data() + (stringText.length() - 1)) - pbszStart));
       }
 
       /** -------------------------------------------------------------------
