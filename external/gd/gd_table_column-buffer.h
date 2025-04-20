@@ -245,6 +245,8 @@ public:
 
       auto operator*() const { return gd::table::row<table_column_buffer>( m_ptablecolumnbuffer, m_uRow ); }
       operator uint64_t() const noexcept { return m_uRow; }
+      uint64_t get_row() const noexcept { return m_uRow; }
+      int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
 
       bool operator==( const iterator_row& o ) const { assert( o.m_ptablecolumnbuffer == m_ptablecolumnbuffer ); return o.m_uRow == m_uRow; }
       bool operator!=( const iterator_row& o ) const { assert( o.m_ptablecolumnbuffer == m_ptablecolumnbuffer ); return o.m_uRow != m_uRow; }
@@ -282,6 +284,8 @@ public:
       bool operator==( const const_iterator_row& o ) const { assert( o.m_ptablecolumnbuffer == m_ptablecolumnbuffer ); return o.m_uRow == m_uRow; }
       bool operator!=( const const_iterator_row& o ) const { assert( o.m_ptablecolumnbuffer == m_ptablecolumnbuffer ); return o.m_uRow != m_uRow; }
       operator uint64_t() const { return m_uRow; }
+      uint64_t get_row() const noexcept { return m_uRow; }
+      int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
 
       const_iterator_row& operator++() { m_uRow++; return *this; }
       const_iterator_row operator++(int) { const_iterator_row it_ = *this; ++(*this); return it_; }

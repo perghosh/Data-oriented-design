@@ -73,13 +73,14 @@ int RowCount( const std::string& stringFile )
 std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_)
 {                                                                                                  assert( ptable_ != nullptr );
 
-
+   // ## add file to table
    auto add_ = [ptable_](const gd::file::path& pathFile)
    {
       auto uRow = ptable_->get_row_count();
       ptable_->row_add();
 
       std::string stringFilePath = pathFile.string();
+      ptable_->cell_set(uRow, "key", uRow + 1);
       ptable_->cell_set(uRow, "path", stringFilePath);
       ptable_->cell_set(uRow, "extension", pathFile.extension().string());
       // get file size

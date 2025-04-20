@@ -140,6 +140,7 @@ public:
 
       auto operator*() const { return gd::table::row<table>( m_ptable, m_uRow ); }
       uint64_t get_row() const noexcept { return m_uRow; }
+      int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
 
       bool operator==( const iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow == m_uRow; }
       bool operator!=( const iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow != m_uRow; }
@@ -172,6 +173,7 @@ public:
       const_iterator_row( int64_t iRow, table* ptable ): m_uRow((uint64_t)iRow), m_ptable(ptable) {}
 
       uint64_t get_row() const noexcept { return m_uRow; }
+      int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
 
       bool operator==( const const_iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow == m_uRow; }
       bool operator!=( const const_iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow != m_uRow; }
