@@ -21,6 +21,11 @@
 #include "gd/gd_database_sqlite.h"
 #include "gd/gd_arguments_shared.h"
 
+#include "gd/gd_log_logger.h"
+#include "gd/gd_log_logger_printer.h"
+#include "gd/gd_log_logger_define.h"
+
+
 #include "application/database/Metadata_Statements.h"
 #include "Document.h"
 
@@ -150,6 +155,7 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
    static void Prepare_s( gd::cli::options& optionsApplication );
+   static void PrepareLogging_s();
 
    static void Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer );
    static void Read_s( gd::database::cursor_i* pcursorSelect, gd::table::table_column_buffer* ptablecolumnbuffer );

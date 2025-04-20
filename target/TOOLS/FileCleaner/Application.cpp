@@ -60,6 +60,8 @@ void CApplication::common_construct(CApplication&& o) noexcept
  */
 std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszArgument[], std::function<bool(const std::string_view&, const gd::variant_view&)> process_)
 {
+   PrepareLogging_s();
+
    if( iArgumentCount > 1 )
    {
       gd::cli::options optionsApplication;
@@ -120,7 +122,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 #endif // !NDEBUG
 
    std::string stringCommandName = poptionsActive->name();
-   PROPERTY_Set("command", stringCommandName);
+   PROPERTY_Set("command", stringCommandName);                                                     LOG_INFORMATION_RAW("== Command: " & stringCommandName);
 
    // ## check for sql statements
    if( poptionsActive->exists("statements") == true )
@@ -550,6 +552,26 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( "help", "Print command line help" );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+}
+
+void CApplication::PrepareLogging_s()
+{
+#ifdef GD_LOG_SIMPLE
+   using namespace gd::log;
+   gd::log::logger<0>* plogger = gd::log::get_s();                          // get pointer to logger 0
+
+   plogger->append( std::make_unique<gd::log::printer_console>() );         // append printer to logger, this prints to console
+
+   // ## set margin for log messages, this to make it easier to read. a bit hacky 
+   auto* pprinter_console = (gd::log::printer_console*)plogger->get( 0 );
+   // ## color console messages in debug mode
+   pprinter_console->set_margin( 8 );                                       // set log margin
+   pprinter_console->set_margin_color( eColorBrightBlack );
+
+   unsigned uSeverity = unsigned(eSeverityNumberVerbose) | unsigned(eSeverityGroupDebug);
+   plogger->set_severity( uSeverity ); 
+
+#endif // GD_LOG_SIMPLE
 }
 
 void CApplication::Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer )
