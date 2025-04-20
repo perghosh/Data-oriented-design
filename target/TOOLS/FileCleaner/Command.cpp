@@ -7,6 +7,7 @@
 
 #include "gd/gd_file.h"
 #include "gd/gd_table_io.h"
+#include "gd/gd_utf8.h"
 
 #include "Command.h"
 
@@ -71,7 +72,7 @@ int RowCount( const std::string& stringFile )
  */
 std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_)
 {                                                                                                  assert( ptable_ != nullptr );
-   std::string stringSource = argumentsPath["source"].as_string();
+
 
    auto add_ = [ptable_](const gd::file::path& pathFile)
    {
@@ -91,29 +92,36 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
       ifstreamFile.close();
    };
 
+   std::string stringSource = argumentsPath["source"].as_string();
+   auto vectorPath = gd::utf8::split(stringSource, ';');
+
    // ## check if source is a file or directory
 
-   if( std::filesystem::is_regular_file(stringSource) )                          // single file
+   for( auto itPath : vectorPath )
    {
-      add_(gd::file::path(stringSource));
-   }
-   else if( std::filesystem::is_directory(stringSource) )                       // is file directory
-   {
-      try
+      if( std::filesystem::is_regular_file(itPath) )                          // single file
       {
-         stringSource = std::filesystem::absolute(stringSource).string();
-         for( const auto& it : std::filesystem::directory_iterator(stringSource) )
+         add_(gd::file::path(itPath));
+      }
+      else if( std::filesystem::is_directory(itPath) )                       // is file directory
+      {
+         try
          {
-            add_(gd::file::path(it.path()));
+            //itPath = std::filesystem::absolute(itPath).string();
+            for( const auto& it : std::filesystem::directory_iterator(itPath) )
+            {
+               add_(gd::file::path(it.path()));
+            }
          }
-      }
-      catch( const std::filesystem::filesystem_error& e )
-      {
-         std::string stringError = e.what();
-         return { false, stringError };
-      }
+         catch( const std::filesystem::filesystem_error& e )
+         {
+            std::string stringError = e.what();
+            return { false, stringError };
+         }
 
+      }
    }
+
 
 #ifndef NDEBUG
    auto stringTable = gd::table::to_string( *ptable_, gd::table::tag_io_cli{});
