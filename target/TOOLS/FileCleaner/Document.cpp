@@ -43,14 +43,18 @@ void CDocument::common_construct(CDocument&& o) noexcept
  *         - `bool`: `true` if the harvesting was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */ 
-std::pair<bool, std::string> CDocument::HarvestFile(const gd::argument::shared::arguments& argumentsPath)
+std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared::arguments& argumentsPath)
 {
-   CACHE_Prepare("files");
-   auto* ptable_ = CACHE_Get("files");                                                             assert( ptable_ != nullptr );
+   CACHE_Prepare("file");
+   CACHE_Prepare("file-count");
+   auto* ptable_ = CACHE_Get("file");                                                              assert( ptable_ != nullptr );
 
-   gd::table::dto::table* ptableCount = new gd::table::dto::table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "count"}, {"uint64", 0, "comment"}, {"uint64", 0, "space"} }, gd::table::tag_prepare{} );
 
    auto result_ = FILES_Harvest_g(argumentsPath, ptable_);
+   if( result_.first == false ) return result_;
+
+   auto ptableCount =  std::make_unique<gd::table::dto::table>( gd::table::dto::table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "count"}, {"uint64", 0, "comment"}, {"uint64", 0, "space"} }, gd::table::tag_prepare{} ) );
+
 
    for( const auto& itRow : *ptable_ )
    {
@@ -70,6 +74,40 @@ std::pair<bool, std::string> CDocument::HarvestFile(const gd::argument::shared::
 
    CountRowsInFile(*ptable_); // TODO: remove this line, it is only for debug
    return result_;
+}
+
+std::pair<bool, std::string> CDocument::FILE_UpdateCount()
+{
+   auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
+   auto* ptableFileCount = CACHE_Get("file-count");                                                assert( ptableFileCount != nullptr );
+
+   for( const auto& itRowFile : *ptableFile )
+   {
+      int iRowIndexCount = -1;
+      uint64_t uFileKey = itRowFile.cell_get_variant_view("key");
+      //for( const auto& itRowCount : *ptableFileCount )
+      for( auto itRowCount = ptableFileCount->begin(); itRowCount != ptableFileCount->end(); ++itRowCount )
+      {
+         uint64_t key_ = itRowCount.cell_get_variant_view("file-key");
+         if( key_ != uFileKey ) break;
+         iRowIndexCount = (int64_t)itRowCount.get_row();
+      }
+
+      if( iRowIndexCount == -1 )
+      {
+         iRowIndexCount = ptableFileCount->get_row_count();
+         ptableFileCount->row_add();
+         ptableFileCount->cell_set( iRowIndexCount, "key", uint64_t(iRowIndexCount + 1));
+         ptableFileCount->cell_set( iRowIndexCount, "file-key", itRowFile.cell_get_variant_view("key") );
+         ptableFileCount->cell_set( iRowIndexCount, "path", itRowFile.cell_get_variant_view("path") );
+      }
+
+      auto stringFile = itRowFile.cell_get_variant_view("path").as_string();
+      uint64_t uCount = RowCount(stringFile);
+      ptableFileCount->cell_set(iRowIndexCount, "count", uCount);
+   }
+
+   return { true, "" };
 }
 
 
@@ -96,15 +134,26 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId)
 {
    using namespace gd::table::dto;
 
+   auto ptableFind = CACHE_Get(stringId, false);
+   if( ptableFind != nullptr ) return;                                        // table already exists, exit
+
    // ## prepare file list
    //    columns: "path, size, date, extension
-   if( stringId == "files" )
+   if( stringId == "file" )
    {
       auto ptable_ = CACHE_Get(stringId, false);
       if( ptable_ == nullptr )
       {
-         table* ptable_ = new table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} );
-         std::unique_ptr<table> ptable(ptable_);
+         auto ptable_ = std::make_unique<table>( table( 0u, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} ) );
+         CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
+      }
+   }
+   else if( stringId == "file-count" )
+   {
+      auto ptable_ = CACHE_Get(stringId, false);
+      if( ptable_ == nullptr )
+      {
+         auto ptable_ = std::make_unique<table>( table( 0u, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "path"}, {"uint64", 0, "count"} }, gd::table::tag_prepare{} ) );
          CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
       }
    }

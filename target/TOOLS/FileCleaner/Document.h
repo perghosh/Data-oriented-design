@@ -76,11 +76,12 @@ public:
    void SetPath(const std::string_view& stringName) { m_arguments.set("path", stringName); }
 //@}
 
-/** @name HARVEST
+/** @name FILE
 * 
 *///@{
 
-   std::pair<bool, std::string> HarvestFile( const gd::argument::shared::arguments& argumentsPath );
+   std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath );
+   std::pair<bool, std::string> FILE_UpdateCount();
       
 //@}
 
