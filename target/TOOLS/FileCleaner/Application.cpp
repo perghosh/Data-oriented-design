@@ -511,6 +511,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    {  // ## `copy` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );
       optionsCommand.add({"source", 's', "File to count lines in"});
+      optionsCommand.add({"comment", "Pair of characters marking start and end for comments"});
+      optionsCommand.add({"string", "Pair of characters marking start and end for strings"});
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
@@ -552,7 +554,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
 void CApplication::Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer )
 {
-   for( unsigned u = 0, uMax = precord->size(); u < uMax; u++ )
+   for( unsigned u = 0, uMax = (unsigned)precord->size(); u < uMax; u++ )
    {
       auto pcolumn = precord->get_column( u );
       std::string_view stringName = precord->name_get( u );

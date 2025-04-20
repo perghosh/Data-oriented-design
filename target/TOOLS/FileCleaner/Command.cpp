@@ -69,7 +69,7 @@ int RowCount( const std::string& stringFile )
  *         - `bool`: `true` if the harvesting was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
-std::pair<bool, std::string> HarvestFile_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_)
+std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_)
 {                                                                                                  assert( ptable_ != nullptr );
    std::string stringSource = argumentsPath["source"].as_string();
 

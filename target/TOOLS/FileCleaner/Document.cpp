@@ -48,7 +48,7 @@ std::pair<bool, std::string> CDocument::HarvestFile(const gd::argument::shared::
    CACHE_Prepare("files");
    auto* ptable_ = CACHE_Get("files");                                                             assert( ptable_ != nullptr );
 
-   auto result_ = HarvestFile_g(argumentsPath, ptable_);
+   auto result_ = FILES_Harvest_g(argumentsPath, ptable_);
    CountRowsInFile(*ptable_); // TODO: remove this line, it is only for debug
    return result_;
 }
