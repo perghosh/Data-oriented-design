@@ -30,36 +30,97 @@ namespace gd {
          return (pbszText[uPosition] - pbszWildcard[uPosition]);
       }
 
+      /*----------------------------------------------------------------------------- strcmp
+       * @brief   Compare strings with support for wildcard characters
+       * 
+       * This function compares two strings where the pattern string can contain wildcard
+       * characters:
+       * - '?' matches any single character
+       * - '*' matches zero or more characters of any type
+       * 
+       * The algorithm uses a backtracking approach to handle the '*' wildcard, which allows
+       * it to correctly match complex patterns like "a*b*c" against various inputs.
+       * 
+       * Example usage:
+       * @code
+       *   // Simple file pattern matching
+       *   const char* piFilename = "document.pdf";
+       *   const char* piPattern = "*.pdf";
+       *   bool bMatches = strcmp(piFilename, strlen(piFilename), 
+       *                         piPattern, strlen(piPattern), 
+       *                         utf8::tag_wildcard());
+       *   // bMatches will be true
+       *   
+       *   // More complex pattern matching
+       *   bool bMatches2 = strcmp("abcxyz", 6, "a?c*z", 5, utf8::tag_wildcard());
+       *   // bMatches2 will be true
+       *   
+       *   // Pattern that doesn't match
+       *   bool bMatches3 = strcmp("sample.txt", 10, "*.doc", 5, utf8::tag_wildcard());
+       *   // bMatches3 will be false
+       * @endcode
+       * 
+       * @param piText         Pointer to the text to be compared
+       * @param uTextLength    Length of the text in characters
+       * @param piPattern      Pointer to the pattern with possible wildcards
+       * @param uPatternLength Length of the pattern in characters
+       * @param tag_wildcard   Tag dispatch parameter to select wildcard comparison
+       * 
+       * @return bool          true if the text matches the pattern, false otherwise
+       */
       bool strcmp(const char* piText, size_t uTextLength, const char* piPattern, size_t uPatternLength, utf8::tag_wildcard)
       {
          size_t uTextPosition = 0;
          size_t uPatternPosition = 0;
 
-         while( uTextPosition < uTextLength && uPatternPosition < uPatternLength )
+         // Variables for backtracking when '*' is found
+         size_t uStarPatternPosition = std::string::npos;
+         size_t uStarTextPosition = std::string::npos;
+
+         while(uTextPosition < uTextLength)                                    // Compare characters until end of text
          {
-            if( piText[uTextPosition] == piPattern[uPatternPosition] || piPattern[uPatternPosition] == '?' )
+            // ## If current characters match or pattern has '?'
+            if(uPatternPosition < uPatternLength && (piText[uTextPosition] == piPattern[uPatternPosition] || piPattern[uPatternPosition] == '?'))
             {
                ++uTextPosition;
                ++uPatternPosition;
             }
-            else if( piPattern[uPatternPosition] == '*' )
+            // ## If pattern has '*'
+            else if(uPatternPosition < uPatternLength && piPattern[uPatternPosition] == '*')
             {
-               // Skip the '*' character in the pattern
-               ++uPatternPosition;
-               // If the next character in the pattern is also '*', skip it
-               while( piPattern[uPatternPosition] == '*' ) ++uPatternPosition;
-               // If we reach the end of the pattern, we have a match
-               if( uPatternPosition == uPatternLength ) return true;
+               // Save positions for backtracking
+               uStarPatternPosition = uPatternPosition;
+               uStarTextPosition = uTextPosition;
 
-               // Try to match the remaining characters in the text with the rest of the pattern
-               while( uTextPosition < uTextLength && piText[uTextPosition] != piPattern[uPatternPosition] ) ++uTextPosition;
+               // Skip consecutive '*' characters
+               while(uPatternPosition < uPatternLength && piPattern[uPatternPosition] == '*')
+               {
+                  ++uPatternPosition;
+               }
             }
+            // No match but we have a '*' to backtrack to
+            else if(uStarPatternPosition != std::string::npos)
+            {
+               // Try next position in text, but keep the pattern just after '*'
+               uPatternPosition = uStarPatternPosition + 1;
+               ++uStarTextPosition;
+               uTextPosition = uStarTextPosition;
+            }
+            // No match and no '*' to backtrack to
             else
             {
-
-               return false; // No match
+               return false;
             }
          }
+
+         // Skip any remaining '*' characters in pattern
+         while(uPatternPosition < uPatternLength && piPattern[uPatternPosition] == '*')
+         {
+            ++uPatternPosition;
+         }
+
+         // If we've consumed the entire pattern, it's a match
+         return (uPatternPosition == uPatternLength);      
       }
 
 
