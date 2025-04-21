@@ -14,6 +14,7 @@
 
 #include "gd/gd_file.h"
 #include "gd/gd_table_io.h"
+#include "gd/gd_utf8.h"
 
 #include "Command.h"
 #include "Application.h"
@@ -78,8 +79,30 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
 
 std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stringFilter)
 {                                                                                                  assert( stringFilter.empty() == false );
+   std::vector<uint64_t> vectorRemoveRow;
    auto vectorPath = gd::utf8::split(stringFilter, ';');
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
+
+   for( uint64_t uRow = 0, uRowCount = ptableFile->size(); uRow < uRowCount; uRow++ )
+   {
+      bool bMatched = false;
+      auto stringFile = ptableFile->cell_get_variant_view( uRow, "path" ).as_string_view();
+
+      // ## match file against wildcards
+
+      gd::file::path path_( stringFile );
+      std::string stringName = path_.filename().string();
+
+      // ### go through filters to check for a match
+      for( const auto& filter_ : vectorPath )
+      {
+         bool bMatch = gd::ascii::strcmp( stringName, filter_, gd::utf8::tag_wildcard{} );
+         if( bMatch == true ) { bMatched = true; break; }
+      }
+
+      // ### if no match then add to list for delete
+      if( bMatched == false )  { vectorRemoveRow.push_back( uRow ); }
+   }
 
    return { true, "" };
 }
@@ -95,9 +118,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdateCount()
 
    for( const auto& itRowFile : *ptableFile )
    {
-      int iRowIndexCount = -1;
+      int64_t iRowIndexCount = -1;
       uint64_t uFileKey = itRowFile.cell_get_variant_view("key");
-      //for( const auto& itRowCount : *ptableFileCount )
       for( auto itRowCount = ptableFileCount->begin(); itRowCount != ptableFileCount->end(); ++itRowCount )
       {
          uint64_t key_ = itRowCount.cell_get_variant_view("file-key");
@@ -145,6 +167,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateCount()
 void CDocument::CACHE_Prepare(const std::string_view& stringId)
 {
    using namespace gd::table::dto;
+   constexpr unsigned uTableStyle = (table::eSpaceNull32Columns|table::eSpaceRowState);
 
    auto ptableFind = CACHE_Get(stringId, false);
    if( ptableFind != nullptr ) return;                                        // table already exists, exit
@@ -157,7 +180,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId)
       if( ptable_ == nullptr )
       {
          // file table: key | path | size | date | extension
-         auto ptable_ = std::make_unique<table>( table( 0u, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} ) );
+         auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} ) );
          CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
       }
    }
@@ -167,7 +190,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId)
       if( ptable_ == nullptr )
       {
          // file-count table: key | file-key | path | count
-         auto ptable_ = std::make_unique<table>( table( 0u, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "path"}, {"uint64", 0, "count"} }, gd::table::tag_prepare{} ) );
+         auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "path"}, {"uint64", 0, "count"} }, gd::table::tag_prepare{} ) );
          CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
       }
    }
