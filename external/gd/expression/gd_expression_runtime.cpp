@@ -17,12 +17,25 @@ const method* runtime::find_method(const std::string_view& stringName) const
    const method* pmethodBegin = std::get<1>(tupleMethod_);
    const method* pmethodEnd = pmethodBegin + std::get<0>(tupleMethod_);
    const method* pmethodFind = std::lower_bound(pmethodBegin, pmethodEnd, stringName );
-   if( pmethodFind != pmethodEnd ) return pmethodFind;
+   if( pmethodFind != pmethodEnd )
+   {                                                                                               assert( pmethodFind->name() == stringName );
+      return pmethodFind;
+   }
 
    return nullptr; // Return nullptr if no match is found
 }
 
-/// @brief find method by name, returns pointer to method or nullptr if not found
+/** ---------------------------------------------------------------------------
+ * @brief Finds a method by name within a specified namespace
+ *
+ * @param stringName The fully qualified method name, expected format "namespace::method"
+ * @param tag_namespace Namespace tag parameter (unused in function body)
+ * @return const method* Pointer to the found method, or nullptr if no match is found
+ * 
+ * @note The function searches through m_vectorMethod (starting from the second element).
+ * When match against namespace it tries to find the method within that namespace. It 
+ * uses std::lower_bound with a custom comparator for lookup. 
+*/
 const method* runtime::find_method(const std::string_view& stringName, tag_namespace) const 
 {
    // Define a lambda for comparing the method name with the search string
@@ -38,11 +51,15 @@ const method* runtime::find_method(const std::string_view& stringName, tag_names
 
       if( std::memcmp(stringNamespace.data(), stringName.data(), stringNamespace.length()) != 0 ) continue; // skip if namespace does not match
 
+      // Get the method name after the namespace, name is in format "namespace::method"
       std::string_view stringMethod = stringName.substr(stringNamespace.length() + 2); // get method name after namespace
       const method* pmethodBegin = std::get<1>(*it);
       const method* pmethodEnd = pmethodBegin + std::get<0>(*it);
       const method* pmethodFind = std::lower_bound(pmethodBegin, pmethodEnd, stringMethod );
-      if( pmethodFind != pmethodEnd ) return pmethodFind;
+      if( pmethodFind != pmethodEnd )
+      {                                                                                            assert( pmethodFind->name() == stringName );
+         return pmethodFind;
+      }
    }
 
    return nullptr; // Return nullptr if no match is found
