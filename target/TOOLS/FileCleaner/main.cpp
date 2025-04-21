@@ -6,9 +6,6 @@
 
 #include <fstream>
 
-/// Global pointer to application object
-CApplication* papplication_g = nullptr;
-
 
 int main(int iArgumentCount, char** ppbszArgument)
 {

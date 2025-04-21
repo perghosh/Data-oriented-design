@@ -36,7 +36,8 @@ endif()
 set( SOURCE_DIRECTORY_ ${CMAKE_SOURCE_DIR}/source )
 set( APPLICATION_DIRECTORY_ ${SOURCE_DIRECTORY_}/application )
 
-
+set(TARGET_TEST_ ${TARGET_FILES_})
+list(FILTER TARGET_TEST_ EXCLUDE REGEX ".*main.*")
 
 # -- playground source code
 set(SOURCE_TEST_ "main.h" "main.cpp")
@@ -44,38 +45,40 @@ set(SOURCE_TEST_ "main.h" "main.cpp")
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_Expression")
-   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_catch2} 
-      ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
-      "${TARGET_FILES_}"
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_pugixml} ${external_sqlite} ${external_catch2} 
+      "${TARGET_SOURCE_FILES_}"
+      "${TARGET_TEST_}"
       "${TEST_NAME_}.cpp"
       "main.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+   target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 endif()
 
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_File")
-   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_catch2} 
-      ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
-      "${TARGET_FILES_}"
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_pugixml} ${external_sqlite} ${external_catch2} 
+      "${TARGET_SOURCE_FILES_}"
+      "${TARGET_TEST_}"
       "${TEST_NAME_}.cpp"
       "main.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+   target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 endif()
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_File2")
    add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_catch2} 
-      ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
-      "${TARGET_FILES_}"
+      "${TARGET_SOURCE_FILES_}"
+      "${TARGET_TEST_}"
       "${TEST_NAME_}.cpp"
       "main.cpp"
       "History.cpp"
@@ -85,20 +88,22 @@ if( USE_TEST_ )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+   target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 endif()
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_Repository")
    add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_catch2} 
-      ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
-      "${TARGET_FILES_}"
+      "${TARGET_SOURCE_FILES_}"
+      "${TARGET_TEST_}"
       "${TEST_NAME_}.cpp"
       "main.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+   target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 endif()
 
 set( USE_TEST_ ON )

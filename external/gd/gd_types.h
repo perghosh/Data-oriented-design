@@ -161,6 +161,9 @@ struct tag_view {};
 /// argument related operations, could be things like passing arguments or something else
 struct tag_argument {};
 
+/// namespace used in some form
+struct tag_namespace {}; 
+
 /// declare pointer to character main type as global 
 extern const uint8_t puCharType_g[0x100];
 

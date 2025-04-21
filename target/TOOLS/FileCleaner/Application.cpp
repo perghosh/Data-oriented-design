@@ -19,6 +19,8 @@
 #include "Application.h"
 
 
+/// Global pointer to application object
+CApplication* papplication_g = nullptr;
 
 
 
@@ -140,6 +142,14 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       std::string stringSource = (*poptionsActive)["source"].as_string();
       auto result_ = pdocument->FILE_Harvest({ {"source", stringSource} });    // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( result_.first == false ) return result_;
+
+      if( (*poptionsActive)["filter"].is_true() == true )
+      {
+         std::string stringFilter = ( *poptionsActive )["filter"].as_string();
+         auto result_ = pdocument->FILE_Filter(stringFilter);
+         if( result_.first == false ) return result_;
+      }
+
       result_ = pdocument->FILE_UpdateCount();
       if( result_.first == false ) return result_;
       if( ( *poptionsActive )["print"].is_true() == true )
@@ -513,6 +523,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
+   optionsApplication.add_flag({ "recursive", "Operation should be recursive" });
    optionsApplication.add({"database", "Set folder where logger places log files"});
    optionsApplication.add({"statements", "file containing sql statements"});
 
@@ -521,6 +532,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({"source", 's', "File to count lines in"});
       optionsCommand.add({"comment", "Pair of characters marking start and end for comments"});
       optionsCommand.add({"string", "Pair of characters marking start and end for strings"});
+      optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }

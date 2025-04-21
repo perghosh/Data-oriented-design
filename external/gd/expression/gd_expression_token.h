@@ -76,6 +76,11 @@ enum enumKeyword
    eKeywordEnd       = 0x0011,
 };
 
+enum enumFunction
+{
+   eFunctionNamespace = 0x0100,
+};
+
 enum enumValueType
 {
    eValueTypeNone    = 0,
@@ -125,6 +130,7 @@ struct token
 // ## get/set -----------------------------------------------------------------
    uint32_t get_token_type() const { return m_uType & 0xFF; }
    uint32_t get_value_type() const { return ( m_uType >> 8 ) & 0xFF; }
+   uint32_t get_function_type() const { return ( m_uType & 0xFF00 ); }
    uint32_t get_token_part() const { return ( m_uType >> 16 ) & 0xFF; }
    uint32_t get_token_group() const { return ( m_uType >> 24 ) & 0xFF; }
 
@@ -160,7 +166,7 @@ struct token
 
    static uint32_t read_number_s(const char* piszBegin, const char* piszEnd, std::string_view& string_); 
    static uint32_t read_string_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo );
-   static std::pair<uint32_t, enumTokenType> read_variable_and_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo); 
+   static std::pair<uint32_t, uint32_t> read_variable_and_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo); 
 
    static uint32_t type_s( uint32_t uType, enumTokenPart eTokenPart );
    static uint32_t to_type_s( uint32_t uType, enumTokenPart eTokenPart );

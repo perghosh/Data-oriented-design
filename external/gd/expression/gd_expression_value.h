@@ -46,6 +46,7 @@ struct value
    value(const value& o) { common_construct(o); }
    value(value&& o) noexcept { common_construct(std::move(o)); }
    // assign
+   value& operator=(const std::string& stringValue) { m_value = stringValue; return *this; }
    value& operator=(const value& o) { common_construct(o); return *this; }
    value& operator=(value&& o) noexcept { common_construct(std::move(o)); return *this; }
 

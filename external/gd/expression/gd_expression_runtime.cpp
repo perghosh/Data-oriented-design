@@ -13,16 +13,41 @@ const method* runtime::find_method(const std::string_view& stringName) const
       return std::string_view(pmethod->name()) < stringName;
    };
 
-   for( auto it = m_vectorMethod.cbegin(); it != m_vectorMethod.cend(); ++it )
+   const auto& tupleMethod_ = m_vectorMethod[0];
+   const method* pmethodBegin = std::get<1>(tupleMethod_);
+   const method* pmethodEnd = pmethodBegin + std::get<0>(tupleMethod_);
+   const method* pmethodFind = std::lower_bound(pmethodBegin, pmethodEnd, stringName );
+   if( pmethodFind != pmethodEnd ) return pmethodFind;
+
+   return nullptr; // Return nullptr if no match is found
+}
+
+/// @brief find method by name, returns pointer to method or nullptr if not found
+const method* runtime::find_method(const std::string_view& stringName, tag_namespace) const 
+{
+   // Define a lambda for comparing the method name with the search string
+   auto compare_ = [](const method* pmethod, const std::string_view& stringName) -> bool {
+      bool bCompare = pmethod->name()[0] == stringName[0]; // compare first character
+      if( bCompare == false ) return false; // if first character is not equal, return false
+      return std::string_view(pmethod->name()) < stringName;
+      };
+
+   for( auto it = m_vectorMethod.cbegin() + 1; it != m_vectorMethod.cend(); ++it )
    {
-      const method* pmethodBegin = it->second;
-      const method* pmethodEnd = pmethodBegin + it->first;
-      const method* pmethodFind = std::lower_bound(pmethodBegin, pmethodEnd, stringName );
+      const auto& stringNamespace = std::get<2>(*it);
+
+      if( std::memcmp(stringNamespace.data(), stringName.data(), stringNamespace.length()) != 0 ) continue; // skip if namespace does not match
+
+      std::string_view stringMethod = stringName.substr(stringNamespace.length() + 2); // get method name after namespace
+      const method* pmethodBegin = std::get<1>(*it);
+      const method* pmethodEnd = pmethodBegin + std::get<0>(*it);
+      const method* pmethodFind = std::lower_bound(pmethodBegin, pmethodEnd, stringMethod );
       if( pmethodFind != pmethodEnd ) return pmethodFind;
    }
 
    return nullptr; // Return nullptr if no match is found
 }
+
 
 /// @brief find variable by name, returns index or -1 if not found
 int runtime::find_variable(const std::string_view& stringName) const

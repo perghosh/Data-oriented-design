@@ -182,3 +182,5 @@ inline std::vector<std::unique_ptr<CDocument>>::const_iterator CApplication::DOC
 inline std::vector<std::unique_ptr<CDocument>>::const_iterator CApplication::DOCUMENT_End() const {
    return m_vectorDocument.cend();
 }
+
+extern CApplication* papplication_g; ///< global pointer to application object

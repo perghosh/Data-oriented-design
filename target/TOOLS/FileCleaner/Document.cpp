@@ -76,6 +76,18 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    return result_;
 }
 
+std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stringFilter)
+{                                                                                                  assert( stringFilter.empty() == false );
+   auto vectorPath = gd::utf8::split(stringFilter, ';');
+   auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Update the file count in the cache.
+ * @return    
+ */
 std::pair<bool, std::string> CDocument::FILE_UpdateCount()
 {
    auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
@@ -144,6 +156,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId)
       auto ptable_ = CACHE_Get(stringId, false);
       if( ptable_ == nullptr )
       {
+         // file table: key | path | size | date | extension
          auto ptable_ = std::make_unique<table>( table( 0u, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} ) );
          CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
       }
@@ -153,6 +166,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId)
       auto ptable_ = CACHE_Get(stringId, false);
       if( ptable_ == nullptr )
       {
+         // file-count table: key | file-key | path | count
          auto ptable_ = std::make_unique<table>( table( 0u, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "path"}, {"uint64", 0, "count"} }, gd::table::tag_prepare{} ) );
          CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
       }

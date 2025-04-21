@@ -1,6 +1,13 @@
+#include <algorithm>
+
 #include "gd_expression_method_01.h"
 
 _GD_EXPRESSION_BEGIN 
+
+//============================================================================
+//============================================================ default methods
+//============================================================================
+
 
 std::pair<bool, std::string> average_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 2);
@@ -95,5 +102,36 @@ std::pair<bool, std::string> sum_g(const std::vector<value>& vectorArgument, val
 
    return { true, "" };
 }
+
+//============================================================================
+//============================================================= string methods
+//============================================================================
+
+std::pair<bool, std::string> tolower_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);                       
+   const auto& v_ = vectorArgument[0];
+   if( v_.is_string() == false ) { return {false, "tolower_g - Invalid argument type"}; }
+
+   std::string stringResult = v_.as_string();
+   std::transform(stringResult.begin(), stringResult.end(), stringResult.begin(), [](unsigned char i) { return std::tolower(i); });
+
+   *pvalueResult = stringResult;
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> toupper_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);                       
+   const auto& v_ = vectorArgument[0];
+   if( v_.is_string() == false ) { return {false, "tolower_g - Invalid argument type"}; }
+
+   std::string stringResult = v_.as_string();
+   std::transform(stringResult.begin(), stringResult.end(), stringResult.begin(), [](unsigned char i) { return std::toupper(i); });
+
+   *pvalueResult = stringResult;
+
+   return { true, "" };
+}
+
 
 _GD_EXPRESSION_END

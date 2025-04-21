@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -39,10 +40,11 @@ struct method
    unsigned in_count() const { return m_uInCount; } ///< get number of input arguments
    unsigned out_count() const { return m_uOutCount; } ///< get number of output arguments
 
-   void* m_pmethod;        ///< Pointer to the method
-   const char* m_piName;   ///< Name of the method
-   unsigned m_uInCount;    ///< Number of arguments
-   unsigned m_uOutCount;   ///< Number of returned arguments
+   void* m_pmethod;           ///< Pointer to the method
+   //const char* m_piNamespace; ///< Namespace of the method
+   const char* m_piName;      ///< Name of the method
+   unsigned m_uInCount;       ///< Number of arguments
+   unsigned m_uOutCount;      ///< Number of returned arguments
 };
 
 
@@ -87,7 +89,7 @@ struct runtime
     * Methods need to be sorted because runtime uses binary search to find them.
     * @param pair_ A pair containing the method count and pointer to first method
     */
-   void add(const std::pair<unsigned, const method*>& pair_) { m_vectorMethod.push_back(pair_); }
+   void add(const std::tuple<unsigned, const method*, std::string>& methods_) { m_vectorMethod.push_back(methods_); }
 
    /**
     * @brief Adds an error message to the runtime.
@@ -100,6 +102,7 @@ struct runtime
    // ## methods logic
 
    const method* find_method(const std::string_view& stringName) const;
+   const method* find_method(const std::string_view& stringName, tag_namespace) const;
 
    // ## variables logic
 
@@ -127,7 +130,7 @@ struct runtime
    /// @brief callback function used to find variable from external source
    std::function<bool (const std::string_view&, value::variant_t* )> m_functionFind; ///< function to find variable
    /// @brief vector of methods
-   std::vector<std::pair<unsigned,const method*>> m_vectorMethod; ///< vector of methods
+   std::vector<std::tuple<unsigned,const method*,std::string>> m_vectorMethod; ///< vector of methods
    /// @brief error strings, colleting error messsages
    std::vector<std::string> m_stringError;
 
