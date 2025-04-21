@@ -3680,35 +3680,35 @@ void table_column_buffer::erase( uint64_t uFrom, uint64_t uCount )
    m_uRowCount -= uCount;
 }
 
+/** ---------------------------------------------------------------------------
+ * Erases multiple rows from the table column buffer by their indices.
+ * 
+ * This method handles duplicate indices and ensures rows are erased in descending order
+ * to prevent index invalidation problems that would occur with ascending order deletion.
+ * 
+ * @param puRowIndex Pointer to an array of row indices to be erased
+ * @param uCount Number of indices in the puRowIndex array
+ * @return The actual number of rows removed (may be less than uCount if there are duplicates or out-of-bounds indices)
+ */
 uint64_t table_column_buffer::erase(const uint64_t* puRowIndex, uint64_t uCount)
 {                                                                                                  assert( uCount > 0 ); assert( m_puData );
    std::vector<uint64_t> vectorSorted(puRowIndex, puRowIndex + uCount);
 
-   // Remove duplicates
-   std::sort(vectorSorted.begin(), vectorSorted.end(), 
-      [](uint64_t uLeft, uint64_t uRight){ return uLeft > uRight; });
+   // ## Remove duplicates
+
+   std::sort(vectorSorted.begin(), vectorSorted.end(), [](uint64_t uLeft, uint64_t uRight){ return uLeft > uRight; });
 
    vectorSorted.erase( std::unique(vectorSorted.begin(), vectorSorted.end()), vectorSorted.end());
 
    size_t uSize = size();
    size_t uRemoved = 0;
 
-   // Process from highest to lowest index (prevents invalidation problems)
+   // ## Process from highest to lowest index (prevents invalidation problems)
    for(const uint64_t uIndex : vectorSorted)
    {
       if(uIndex < uSize)
       {
-         erase(uIndex, 1); // Remove the row
-
-         /*
-         // Fast removal by swapping with last element and popping back
-         // when order doesn't matter
-         if(uIndex < uSize - 1)
-         {
-            vectorItems[uIndex] = std::move(vectorItems.back());
-         }
-         vectorItems.pop_back();
-         */
+         erase(uIndex, 1);                                                     // Remove the row
          uRemoved++;
       }
    }
