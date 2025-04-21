@@ -1,10 +1,12 @@
-/*
-| name | description |
-| ---- | ----------- |
-| `` |  |
-| `` |  |
-| `` |  |
-*/
+/**
+ * \file gd_cli_options.h
+ * 
+ * ### 0TAG0 File navigation, mark and jump to common parts * 
+ * - `0TAG0option.options` - option object, manage each option value
+ * - `0TAG0construct.options` - construct options
+ * - `0TAG0sub.options` - methods to access sub options
+ * 
+ */
 
 #pragma once
 
@@ -102,6 +104,7 @@ public:
       eOptionFlagSingle    = 0b0000'0000'0000'0010,   ///< option is only allowed if alone
    };
 
+   // 0TAG0option.options
 
    /**
     * \brief Manage data for valid options
@@ -166,7 +169,7 @@ public:
 
 
 
-
+// 0TAG0construct.options
 // ## construction -------------------------------------------------------------
 public:
    options() {}
@@ -303,6 +306,7 @@ public:
    bool iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > callback_ ) const;
    void iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > true_, std::function< void( const gd::variant_view& ) > false_ ) const;
 
+   /// print all options and their values to get information about options
    void print_documentation( std::string& stringDocumentation ) const;
 
    /// get option at specified index
@@ -327,6 +331,9 @@ public:
 
    /// number of valid options for options command
    size_t size() const { return m_vectorOption.size(); }
+
+   // 0TAG0sub.options
+   // ## sub options
 
    bool sub_exists( const std::string_view& stringName );
    bool sub_is_active( const std::string_view& stringName ) const;

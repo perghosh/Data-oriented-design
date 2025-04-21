@@ -163,11 +163,21 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       std::string stringDatabaseFile = (*poptionsActive)["file"].as_string();
       if( stringCommandName.empty() == false )
       {
-         auto result_ = DATABASE_Open({ {"file", stringDatabaseFile} });        // open or create database (create is default, not creating set "create" to false)
+         auto result_ = DATABASE_Open({ {"file", stringDatabaseFile} });       // open or create database (create is default, not creating set "create" to false)
          if( result_.first == false ) return result_;
          result_ = DATABASE_Update();                                          // update database to match latest design
          if( result_.first == false ) return result_;
       }
+   }
+   else if( stringCommandName == "help" )                                      // command = "help"
+   {
+      std::string stringDocumentation;
+      optionsApplication.print_documentation( stringDocumentation );
+      std::cout << stringDocumentation << "\n";
+   }
+   else
+   {
+      return { false, "Unknown command: " + stringCommandName };
    }
 
    return { true, "" };

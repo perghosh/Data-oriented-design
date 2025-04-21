@@ -714,6 +714,8 @@ public:
    void append( const gd::table::dto::table& tableFrom, uint64_t uFrom, uint64_t uCount );
    ///@}
 
+   /// @brief size is same as `get_row_count and returns number of rows
+   size_t size() const { return (size_t)get_row_count(); }
    /// clears all internal data in table, like a reset (columns are also deleted) 
    void clear();
    /// check if table is empty, don't have and data in table rows
@@ -728,7 +730,6 @@ public:
    bool equal( const table& tableEqualTo ) const noexcept { return equal( tableEqualTo, 0, get_row_count() ); }
    ///@}
 
-   /// harvest, read, copy (what word is best ?)
 
    /// @name harvest values from table into other type of container objects
    /// 
