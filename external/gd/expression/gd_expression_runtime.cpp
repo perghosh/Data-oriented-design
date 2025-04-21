@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "gd_expression_runtime.h"
 
 _GD_EXPRESSION_BEGIN

@@ -4,6 +4,7 @@
 #include <fstream>
 #include <functional>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <variant>
