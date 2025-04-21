@@ -139,13 +139,13 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
    if( stringCommandName == "count" )                                          // command = "count"
    {
-      std::string stringSource = (*poptionsActive)["source"].as_string();
+      std::string stringSource = (*poptionsActive)["source"].as_string();                          LOG_INFORMATION_RAW("== --source: " & stringSource);
       auto result_ = pdocument->FILE_Harvest({ {"source", stringSource} });    // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( result_.first == false ) return result_;
 
       if( (*poptionsActive)["filter"].is_true() == true )
       {
-         std::string stringFilter = ( *poptionsActive )["filter"].as_string();
+         std::string stringFilter = ( *poptionsActive )["filter"].as_string();                     LOG_INFORMATION_RAW("== --filter: " & stringFilter);
          auto result_ = pdocument->FILE_Filter(stringFilter);
          if( result_.first == false ) return result_;
       }

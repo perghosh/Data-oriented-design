@@ -9,6 +9,7 @@
 
 int main(int iArgumentCount, char** ppbszArgument)
 {
+#ifndef NDEBUG
    if( iArgumentCount > 1 )
    {
       for( auto i = 0; i < iArgumentCount; i++ )
@@ -16,6 +17,7 @@ int main(int iArgumentCount, char** ppbszArgument)
          std::cout << "Argument: " <<  ppbszArgument[i] << "\n";
       }
    }
+#endif // NDEBUG
 
    CApplication application;
 

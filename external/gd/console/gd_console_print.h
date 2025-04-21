@@ -33,10 +33,10 @@
    _GD_CONSOLE_BEGIN
 #endif
 
-#ifndef NDEBUG
-      #  define ASSIGN_D( add_to_, from_ ) (add_to_ = from_)
+#ifdef NDEBUG
+#  define ASSIGN_D ((void)0, (void)0)
 #else
-#  define ASSIGN_D ((void)0)
+#  define ASSIGN_D( add_to_, from_ ) (add_to_ = from_)
 #endif
 
 // ## tag dispatchers
@@ -143,10 +143,10 @@ public:
 
       // ## position operators for double index operator like `[][] = ?`
       position operator[]( unsigned uColumn ) {                                                    assert( uColumn < m_uLength ); assert( m_pdevice_d->validate_position_d( m_puRow + uColumn ) );
-         position position_(m_puRow + uColumn);  ASSIGN_D( position_, m_pdevice_d ); return position_;
+         position position_(m_puRow + uColumn); return position_;
       }
       const position operator[]( unsigned uColumn ) const {                                        assert( uColumn < m_uLength ); 
-         position position_(m_puRow + uColumn);  ASSIGN_D( position_, m_pdevice_d ); return position_;
+         position position_(m_puRow + uColumn); return position_;
       }
 
    // ## attributes
