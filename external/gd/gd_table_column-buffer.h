@@ -954,6 +954,8 @@ public:
 
    void erase( uint64_t uFrom, uint64_t uCount );
    void erase( uint64_t uRow ) { erase( uRow, 1 ); }
+   uint64_t erase(const uint64_t* puRowIndex, uint64_t uCount);
+   uint64_t erase(const std::vector<uint64_t>& vectorRowIndex) { return erase(vectorRowIndex.data(), (uint64_t)vectorRowIndex.size()); }
 
 //@}
 

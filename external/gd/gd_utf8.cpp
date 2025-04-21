@@ -2559,7 +2559,7 @@ namespace gd {
        * @param stringText text to split into multiple parts (remember to not destroy string as long as work with string_view items are used)
        * @param chSplitWith character used to mark where to split text
        * @param vectorPart vector where strings are stored
-      */
+       */
       void split( const std::string_view& stringText, char chSplitWith, std::vector<std::string_view>& vectorPart )
       {
          const char* pbszStart = stringText.data();
@@ -2573,7 +2573,11 @@ namespace gd {
          }
 
          // if part contains text or last position in string is same as split character, then add one more to vector
-         if( pbszStart <= &stringText.back() || stringText.back() == chSplitWith ) vectorPart.emplace_back( std::string_view( pbszStart, (stringText.data() + (stringText.length() - 1)) - pbszStart));
+         if( pbszStart <= &stringText.back() || stringText.back() == chSplitWith )
+         {
+            unsigned uSplitWith = stringText.back() == chSplitWith ? 1 : 0;    // if last character is split character then decrease length by one
+            vectorPart.emplace_back( std::string_view( pbszStart, (stringText.data() + (stringText.length() - uSplitWith)) - pbszStart));
+         }
       }
 
       /** -------------------------------------------------------------------
@@ -2582,7 +2586,7 @@ namespace gd {
        * @param pbEnd end of string
        * @param chSplit split character
        * @param vectorPart vector where strings are stored 
-      */
+       */
       void split( const char* pbBegin, const char* pbEnd, char chSplitWith, std::vector<std::string_view>& vectorPart )
       {                                                                                                  assert( pbBegin <= pbEnd );
          const char* pbTo;

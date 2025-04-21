@@ -82,20 +82,19 @@ namespace gd {
             // ## If current characters match or pattern has '?'
             if(uPatternPosition < uPatternLength && (piText[uTextPosition] == piPattern[uPatternPosition] || piPattern[uPatternPosition] == '?'))
             {
-               ++uTextPosition;
-               ++uPatternPosition;
+               uTextPosition++;
+               uPatternPosition++;
             }
             // ## If pattern has '*'
             else if(uPatternPosition < uPatternLength && piPattern[uPatternPosition] == '*')
             {
-               // Save positions for backtracking
-               uStarPatternPosition = uPatternPosition;
-               uStarTextPosition = uTextPosition;
+               uStarPatternPosition = uPatternPosition;                        // Save positions for backtracking
+               uStarTextPosition = uTextPosition;                              // Save positions for backtracking
 
                // Skip consecutive '*' characters
                while(uPatternPosition < uPatternLength && piPattern[uPatternPosition] == '*')
                {
-                  ++uPatternPosition;
+                  uPatternPosition++;
                }
             }
             // No match but we have a '*' to backtrack to
@@ -103,7 +102,7 @@ namespace gd {
             {
                // Try next position in text, but keep the pattern just after '*'
                uPatternPosition = uStarPatternPosition + 1;
-               ++uStarTextPosition;
+               uStarTextPosition++;
                uTextPosition = uStarTextPosition;
             }
             // No match and no '*' to backtrack to
@@ -116,7 +115,7 @@ namespace gd {
          // Skip any remaining '*' characters in pattern
          while(uPatternPosition < uPatternLength && piPattern[uPatternPosition] == '*')
          {
-            ++uPatternPosition;
+            uPatternPosition++;
          }
 
          // If we've consumed the entire pattern, it's a match
