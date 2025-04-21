@@ -6,7 +6,7 @@
 namespace gd {
    namespace ascii {
       /** ---------------------------------------------------------------------
-       * @brief compare two ascii stings using wild card
+       * @brief compare two ascii stings using wildcard
        * @param pbszText string to compare with
        * @param pbszWildcard string to compare with
        * @return 0 if string is equal, negative if first string is less than second string, positive if first string is greater than second string
@@ -28,6 +28,38 @@ namespace gd {
          }
 
          return (pbszText[uPosition] - pbszWildcard[uPosition]);
+      }
+
+      bool strcmp(const char* piText, size_t uTextLength, const char* piPattern, size_t uPatternLength, utf8::tag_wildcard)
+      {
+         size_t uTextPosition = 0;
+         size_t uPatternPosition = 0;
+
+         while( uTextPosition < uTextLength && uPatternPosition < uPatternLength )
+         {
+            if( piText[uTextPosition] == piPattern[uPatternPosition] || piPattern[uPatternPosition] == '?' )
+            {
+               ++uTextPosition;
+               ++uPatternPosition;
+            }
+            else if( piPattern[uPatternPosition] == '*' )
+            {
+               // Skip the '*' character in the pattern
+               ++uPatternPosition;
+               // If the next character in the pattern is also '*', skip it
+               while( piPattern[uPatternPosition] == '*' ) ++uPatternPosition;
+               // If we reach the end of the pattern, we have a match
+               if( uPatternPosition == uPatternLength ) return true;
+
+               // Try to match the remaining characters in the text with the rest of the pattern
+               while( uTextPosition < uTextLength && piText[uTextPosition] != piPattern[uPatternPosition] ) ++uTextPosition;
+            }
+            else
+            {
+
+               return false; // No match
+            }
+         }
       }
 
 
