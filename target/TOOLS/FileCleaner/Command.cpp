@@ -100,17 +100,17 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
 
    for( auto itPath : vectorPath )
    {
-      if( std::filesystem::is_regular_file(itPath) )                          // single file
+      if( std::filesystem::is_regular_file(itPath) )                           // single file
       {
          add_(gd::file::path(itPath));
       }
-      else if( std::filesystem::is_directory(itPath) )                       // is file directory
+      else if( std::filesystem::is_directory(itPath) )                         // is file directory
       {
          try
          {
-            //itPath = std::filesystem::absolute(itPath).string();
             for( const auto& it : std::filesystem::directory_iterator(itPath) )
             {
+               if( it.is_regular_file() == false ) continue;                   // skip directories
                add_(gd::file::path(it.path()));
             }
          }
