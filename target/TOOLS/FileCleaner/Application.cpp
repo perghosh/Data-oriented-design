@@ -137,7 +137,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    auto* pdocument = DOCUMENT_Add(stringCommandName);
    if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
 
-   if( stringCommandName == "count" )
+   if( stringCommandName == "count" )                                          // command = "count"
    {
       std::string stringSource = (*poptionsActive)["source"].as_string();
       auto result_ = pdocument->FILE_Harvest({ {"source", stringSource} });    // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
