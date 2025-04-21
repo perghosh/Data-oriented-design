@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstring>
 #include <span>
 #include <string>
 #include <string_view>
