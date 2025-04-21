@@ -700,8 +700,16 @@ namespace gd {
        */
       ///@{ 
       int strcmp( const char* pbsz1, const char* pbsz2, utf8::tag_wildcard );
+      bool strcmp( const char* piText, size_t uTextLength, const char* piMatch, size_t uMatchLength, utf8::tag_wildcard );
+      inline bool strcmp(const std::string_view& stringText, const char* piPattern, size_t uPatternLength, utf8::tag_wildcard) {
+         return strcmp(stringText.data(), stringText.length(), piPattern, uPatternLength, utf8::tag_wildcard{});
+      }
+      inline bool strcmp(const std::string_view& stringText, const std::string_view& stringPattern, utf8::tag_wildcard) {
+         return strcmp(stringText.data(), stringText.length(), stringPattern.data(), stringPattern.length(), utf8::tag_wildcard{} );
+      }
 
       int stricmp(std::string_view string1, std::string_view string2);
+
       ///@}
    }
 } // gd
