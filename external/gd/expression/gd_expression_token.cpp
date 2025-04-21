@@ -22,7 +22,7 @@ constexpr uint8_t puCharacterGroup_g[0x100] =
    /* 0 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x01,0x01,0x01,0x01, 0x01,0x01,0x00,0x00,  /* 0   - 15  */
    /* 1 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 16  - 31  */
    /* 2 */ 0x01,0x48,0x20,0x40, 0x40,0x48,0x40,0x20, 0x40,0x40,0x48,0x48, 0x10,0x48,0x12,0x48,  /* 32  - 47   ' ',!,",#,$,%,&,',(,),*,+,,,-,.,/ */
-   /* 3 */ 0x02,0x02,0x02,0x02, 0x02,0x02,0x02,0x02, 0x02,0x02,0x40,0x10, 0x48,0x48,0x48,0x40,  /* 48  - 63  0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */  
+   /* 3 */ 0x02,0x02,0x02,0x02, 0x02,0x02,0x02,0x02, 0x02,0x02,0x44,0x10, 0x48,0x48,0x48,0x40,  /* 48  - 63  0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */  
 
    /* 4 */ 0x40,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04,  /* 64  - 79  @,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O */
    /* 5 */ 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x40, 0x40,0x40,0x48,0x40,  /* 80  - 95  P,Q,R,S,T,U,V,W,X,Y,Z,[,\,],^,_ */
@@ -211,15 +211,16 @@ uint32_t token::read_string_s(const char* piszBegin, const char* piszEnd, std::s
   * @param ppiszReadTo Pointer to a pointer to store the position after the read name.
   * @return A pair containing the type of the token and its token type.
   */
-std::pair<uint32_t, enumTokenType> token::read_variable_and_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char** ppiszReadTo)
+std::pair<uint32_t, uint32_t> token::read_variable_and_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char** ppiszReadTo)
 {
    enumTokenType eTokenPartType = eTokenTypeVariable; // default is variable
    uint32_t uType = 0;
    const char* pisz_ = piszBegin;
 
-   // ## read all characters, characters can be a-z, A-Z, 0-9, _, @
+   // ## read all characters, characters can be a-z, A-Z, 0-9, _, @, :
    while( pisz_ < piszEnd && ( puCharacterGroup_g[static_cast<uint8_t>(*pisz_)] & ALPHABETIC_BIT ) )
    {
+      uType |= puCharacterGroup_g[static_cast<uint8_t>(*pisz_)] & (ALPHABETIC_BIT|SPECIAL_CHAR_BIT);               // Set the type
       ++pisz_;
    }
 
@@ -233,7 +234,7 @@ std::pair<uint32_t, enumTokenType> token::read_variable_and_s(const char* piszBe
 
    if( ppiszReadTo != nullptr ) { *ppiszReadTo = pisz_; }
 
-   return { ALPHABETIC_BIT, eTokenPartType };
+   return { uType, eTokenPartType };
 }
 
 /** ---------------------------------------------------------------------------
@@ -291,7 +292,15 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
             }
             else if( uTokenType == token::token_type_s("FUNCTION") )
             {
-               vectorToken.emplace_back(token(uTokenType, string_));
+               if( uType & SPECIAL_CHAR_BIT )                                  // If special char this has to have a ':' character
+               {
+                  uTokenType |= uint32_t(eFunctionNamespace);                  // add namespace flag to find method amoung namespaced methods
+                  vectorToken.emplace_back(token(uTokenType, string_));
+               }
+               else
+               {
+                  vectorToken.emplace_back(token(uTokenType, string_));
+               }
                // TODO: manage how to handle function calls
             }
             
@@ -657,7 +666,16 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
          {
             vectorArguments.clear();
             auto stringMethod = token_.get_name();
-            const method* pmethod_ = runtime_.find_method( stringMethod );
+            const method* pmethod_ = nullptr;
+            if( token_.get_function_type() == 0 ) 
+            { 
+               pmethod_ = runtime_.find_method(stringMethod); 
+            }
+            else if( token_.get_function_type() & eFunctionNamespace )
+            {
+               pmethod_ = runtime_.find_method(stringMethod, tag_namespace{} );
+            }
+
             if( pmethod_ != nullptr )
             {
                unsigned uCount = pmethod_->in_count();
@@ -733,7 +751,8 @@ value token::calculate_s( const std::string_view& stringExpression, const std::v
 
    // ## calculate the result
    runtime runtime_(vectorVariable);
-   runtime_.add( { 5, pmethodDefault_g } );
+   runtime_.add( { 4, pmethodDefault_g, ""});
+   runtime_.add( { 3, pmethodString_g, std::string("str")});
    value valueResult;
    result = calculate_s(vectorPostfix, &valueResult, runtime_);
    if( result.first == false ) { throw std::invalid_argument(result.second); }
@@ -782,7 +801,8 @@ value token::calculate_s(const std::string_view& stringExpression, std::unique_p
    if( pruntime == nullptr ) 
    { 
       pruntime = std::make_unique<runtime>();
-      pruntime->add({ 5, pmethodDefault_g });
+      pruntime->add({ 4, pmethodDefault_g, ""});
+      pruntime->add({ 3, pmethodString_g, "str"});
    }
 
    return calculate_s(stringExpression, *pruntime.get() );

@@ -81,6 +81,7 @@ public:
 *///@{
 
    std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath );
+   std::pair<bool, std::string> FILE_Filter( const std::string_view& stringFilter );
    std::pair<bool, std::string> FILE_UpdateCount();
       
 //@}
