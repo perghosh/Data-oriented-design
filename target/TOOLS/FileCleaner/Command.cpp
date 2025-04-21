@@ -126,7 +126,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
 
 #ifndef NDEBUG
    auto stringTable = gd::table::to_string( *ptable_, gd::table::tag_io_cli{});
-   std::cout << "\n" << stringTable << "\n";
+   //std::cout << "\n" << stringTable << "\n";
 #endif
 
    return { true, "" };
