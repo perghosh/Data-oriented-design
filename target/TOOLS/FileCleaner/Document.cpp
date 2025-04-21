@@ -70,10 +70,10 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
       ptableCount->cell_set(uRow, "path", stringFile);
       ptableCount->cell_set(uRow, "count", uCount);
    }
-   auto stringTable = gd::table::to_string( *ptableCount, gd::table::tag_io_cli{});
-   std::cout << "\n" << stringTable << "\n";
+   //auto stringTable = gd::table::to_string( *ptableCount, gd::table::tag_io_cli{});
+   //std::cout << "\n" << stringTable << "\n";
 
-   CountRowsInFile(*ptable_); // TODO: remove this line, it is only for debug
+   //CountRowsInFile(*ptable_); // TODO: remove this line, it is only for debug
    return result_;
 }
 
@@ -172,7 +172,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateCount()
 void CDocument::CACHE_Prepare(const std::string_view& stringId)
 {
    using namespace gd::table::dto;
-   constexpr unsigned uTableStyle = (table::eSpaceNull32Columns|table::eSpaceRowState);
+   constexpr unsigned uTableStyle = (table::eTableFlagNull32|table::eTableFlagRowStatus);
 
    auto ptableFind = CACHE_Get(stringId, false);
    if( ptableFind != nullptr ) return;                                        // table already exists, exit
