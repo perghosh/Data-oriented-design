@@ -15,3 +15,18 @@
 #include "../Command.h"
 
 #include "catch2/catch_amalgamated.hpp"
+
+// - command History
+//    - save command arguments and date
+//       - save to file
+//       - save all commands that excecuted or failed
+//       - save command same format as input
+//    - history size
+//       - clear history
+//       - limit size of history
+//    - print out history
+//       - print out history with date
+//       - print out history with command
+//       - print out history with command and date
+//    - return history
+
