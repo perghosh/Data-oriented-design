@@ -104,6 +104,11 @@ std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stri
       if( bMatched == false )  { vectorRemoveRow.push_back( uRow ); }
    }
 
+   if( vectorRemoveRow.empty() == false )
+   {
+      ptableFile->erase(vectorRemoveRow);
+   }
+
    return { true, "" };
 }
 
