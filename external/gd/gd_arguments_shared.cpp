@@ -234,7 +234,7 @@ unsigned int arguments::argument::length() const
          return uSize;
       }
 
-      return (unsigned int)strlen(m_unionValue.pbsz) + 1;
+      return (unsigned int)strlen(m_unionValue.pbsz);                          // don't add zero terminator, shared::arguments do not store the extra 0 ending for characters
    }
                                                                                                    assert( false );
    return 0;
