@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Table Example</title>
+   <style>
+      body {
+         font-family: Arial, sans-serif;
+         margin: 20px;
+      }
+
+      div.table {
+         margin-bottom: 20px;
+      }
+   </style>
+   <script type="module">
+      import { table } from './js/gd_table_table.js';
+      import { column } from './js/gd_table_column.js';
+
+      document.addEventListener('DOMContentLoaded', () => {
+         // Create the first table instance
+         CreateTable1();
+
+         // Create the second table instance
+         CreateTable2();
+
+         // Create the third table instance
+         CreateTable3();
+      });
+
+      /**
+       * Creates the first table instance and renders it to HTML.
+       */
+      function CreateTable1() {
+         // Create a table instance with sample data
+         const data = [
+            ["1", "John Doe", "30"],
+            ["2", "Jane Smith", "25"],
+            ["3", "Alice Johnson", "22"]
+         ];
+         const columns = [
+            new column("ID", "integer"),
+            new column("Name", "string"),
+            new column("Age", "integer")
+         ];
+
+         // Create a table instance
+         const myTable = new table(data, columns);
+
+         // Render the table to HTML
+         const eTable1 = document.getElementById('table-1');
+         eTable1.innerHTML = RenderTable(myTable);
+      }
+
+      function CreateTable2() {
+         // Create a second table instance with different data
+         const data2 = [
+            ["4", "Bob Brown", "28"],
+            ["5", "Charlie Green", "35"],
+            ["6", "Diana Prince", "29"],
+            ["7", "Eve Adams", "32"],
+            ["8", "Frank Castle", "40"],
+            ["9", "Grace Hopper", "45"],
+            ["10", "Hank Pym", "50"],
+            ["11", "Ivy Carter", "27"],
+            ["12", "Jack Ryan", "38"],
+            ["13", "Karen Page", "33"],
+            ["14", "Leo Fitz", "29"],
+            ["15", "Maria Hill", "36"],
+            ["16", "Ned Stark", "41"],
+            ["17", "Olivia Pope", "37"]
+         ];
+         const columns2 = [
+            { name: "ID", type: "integer" },
+            { name: "Name", type: "string" },
+            { name: "Age", type: "integer" }
+         ];
+
+         // Create a second table instance
+         const myTable2 = new table(data2, columns2);
+
+         // Render the second table to HTML
+         const eTable2 = document.getElementById('table-2');
+         eTable2.innerHTML = RenderTable(myTable2);
+      }
+
+      /**
+       * Creates the third table instance and renders it to HTML.
+       */
+      function CreateTable3() {
+         // Create a third table instance with different data
+         const data3 = [
+            ["7", "Eve Adams", "32"],
+            ["8", "Frank Castle", "40"],
+            ["9", "Grace Hopper", "45"]
+         ];
+         const columns3 = [
+            new column("ID", "integer", "Key"),
+            new column("Name", "string"),
+            new column("Age", "integer")
+         ];
+
+         // Create a third table instance
+         const myTable3 = new table(data3, columns3);
+
+         // Render the third table to HTML
+         const eTable3 = document.getElementById('table-3');
+         eTable3.innerHTML = RenderTable(myTable3);
+      }
+
+      /**
+       * Renders a table instance as an HTML table.
+       * @param {table} oTable - The table instance to render.
+       * @returns {string} The HTML string for the table.
+       */
+      function RenderTable(oTable) {
+         const aNames = oTable.columns.get_column_display_names();
+         const aAlignments = oTable.columns.get_column_aligns();
+         const rows = oTable.data;
+
+         let sHtml = '<table border="1" style="width: 100%; border-collapse: collapse;">';
+         sHtml += '<thead><tr>';
+         aNames.forEach(name => {
+            sHtml += `<th>${name}</th>`;
+         });
+         sHtml += '</tr></thead>';
+         sHtml += '<tbody>';
+         rows.forEach(row => {
+            sHtml += '<tr>';
+            row.forEach((cell, index) => {
+               const alignment = aAlignments[index] || 'left'; // Default to 'left' if alignment is not specified
+               sHtml += `<td style="text-align: ${alignment};">${cell}</td>`;
+            });
+            sHtml += '</tr>';
+         });
+         sHtml += '</tbody></table>';
+         return sHtml;
+      }
+   </script>
+</head>
+<body>
+   <h1>Table Example</h1>
+   <div id="table-1" class="table"></div>
+   <div id="table-2" class="table"></div>
+   <div id="table-3" class="table"></div>
+</body>
+</html>
