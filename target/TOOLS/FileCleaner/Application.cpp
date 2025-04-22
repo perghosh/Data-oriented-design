@@ -140,6 +140,13 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    if( stringCommandName == "count" )                                          // command = "count"
    {
       std::string stringSource = (*poptionsActive)["source"].as_string();                          LOG_INFORMATION_RAW("== --source: " & stringSource);
+     
+      if( stringSource.empty() )
+      {
+         std::filesystem::path pathFile = std::filesystem::current_path();
+         stringSource = pathFile.string();
+      }
+
       auto result_ = pdocument->FILE_Harvest({ {"source", stringSource} });    // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( result_.first == false ) return result_;
 
