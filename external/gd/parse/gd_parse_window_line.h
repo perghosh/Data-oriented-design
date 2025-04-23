@@ -155,6 +155,7 @@ public:
    uint64_t size() const { assert( m_uCapacity > m_uSize ); return m_uSize; } ///< size of buffer
    uint64_t size_summary() const { return m_uSizeSummary; } ///< size of buffer
    uint64_t capacity() const { assert( m_uCapacity > m_uSize ); return m_uCapacity; } ///< capacity of buffer
+   uint64_t size_margin() const { return m_uCapacity - m_uSize; }              ///< size of the extra space after buffer used to process data
 
    bool eof() const { return m_uLast == 0; } ///< end of file, no more data in buffer
    bool empty() const { return m_uLast == 0; } ///< buffer is empty
@@ -168,6 +169,12 @@ public:
    int64_t find(const std::string_view& stringData, uint64_t uOffset = 0) const { return find((const uint8_t*)stringData.data(), stringData.length(), uOffset); } ///< find data in buffer
    int64_t find(char iCharacter, uint64_t uOffset = 0) const;
    int64_t find(const std::span<const uint8_t>& span256_, uint64_t uOffset = 0) const;
+
+   // ## count methods
+
+   uint64_t count(const uint8_t* puData, uint64_t uSize, uint64_t uOffset = 0) const; ///< count data in buffer
+   uint64_t count(const std::string_view& stringData, uint64_t uOffset = 0) const { return count((const uint8_t*)stringData.data(), stringData.length(), uOffset); } ///< count data in buffer
+   uint64_t count(char iCharacter, uint64_t uOffset = 0) const;
 
    // ## iterator methods
 
