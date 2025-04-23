@@ -1,19 +1,4 @@
 
-/*
-Write a table table class that stores data as arrayys in a array like [[row values][row values][row values]]
-and use columns class from the pasted code below to store information about columns.apply
-
-If data is passed to table in object format table should be about to convert it to array format, also if
-table gets arrays in array but the first column holds the column name, it should be able to match name with
-name in columns class and set the column name in columns class to the name in the array
-
-It should also be able to return sorted columns or parts of rows in table, like paging
-
-here comes information how table store internal information about columns in table
-
-Use same code style when generate the table class as in columns class below
-*/
-
 export class column {
   // Define default values as static properties
    static DEFAULT_TYPE = "string";
@@ -208,6 +193,81 @@ export class columns {
    }
    
    // ## Filter and map methods
+
+   // Filter columns by type, like name, alias, type, align, sorted, width, hide
+   // and return an array of member values
+
+
+   /**
+    * @brief Get attributes of columns based on the specified type.
+    * 
+    * This method retrieves the attributes of columns based on the specified type.
+    * It can return the values of specific attributes or all attributes of the columns.
+    * And values are returned as an array with the same order as the columns and type as member values.
+    * 
+    * @param {string} sType type to filter by (e.g., "name", "alias", "type", "align", "sorted", "width", "hide", "all").
+    * @param {any} bAll - If true, return all attributes of the columns. Default is false and then only visible columns are returned.
+    * @returns {Array} An array of values corresponding to the specified type.
+    */
+   attributes( sType, bAll = false ) {
+      let aColumns = this.m_aColumns;
+      sType = sType.toLowerCase();
+      if(bAll !== true) {
+         /// take only visible columns
+         aColumns = aColumns.filter(col => !col.m_bHide);
+      }
+
+      // ## Filter by type, like name, alias, type, align, sorted, width, hide
+      if(sType === "name") { return aColumns.map(col => col.m_sName); } 
+      else if(sType === "alias") { return aColumns.map(col => col.m_sAlias); } 
+      else if(sType === "type") { return aColumns.map(col => col.m_sType); } 
+      else if(sType === "align") { return aColumns.map(col => col.m_sAlign); } 
+      else if(sType === "sorted") { return aColumns.map(col => col.m_sSorted);  } 
+      else if(sType === "width") { return aColumns.map(col => col.m_iWidth); } 
+      else if(sType === "hide") { return aColumns.map(col => col.m_bHide); }
+      else if(sType === "all") {
+         return aColumns.map(col => {
+            return { name: col.m_sName, alias: col.m_sAlias, type: col.m_sType, align: col.m_sAlign, sorted: col.m_sSorted, width: col.m_iWidth, hide: col.m_bHide };
+         });
+      } else {
+         console.error(`Invalid type "${sType}" for attributes() method`);
+         return [];
+      }
+   }
+
+   // setter for all attributes based on the specified type
+   attributes_set( sType, v_ ) {
+      if( Array.isArray(v_) === true ) {
+         let aValues = v_;
+         sType = sType.toLowerCase();
+         if(sType === "name") { this.m_aColumns.forEach((c_, iIndex) => c_.m_sName = aValues[iIndex]); }
+         else if(sType === "alias") { this.m_aColumns.forEach((c_, iIndex) => c_.m_sAlias = aValues[iIndex]); }
+         else if(sType === "type") { this.m_aColumns.forEach((c_, iIndex) => c_.m_sType = aValues[iIndex]); }
+         else if(sType === "align") { this.m_aColumns.forEach((c_, iIndex) => c_.m_sAlign = aValues[iIndex]); }
+         else if(sType === "sorted") { this.m_aColumns.forEach((c_, iIndex) => c_.m_sSorted = aValues[iIndex]); }
+         else if(sType === "width") { this.m_aColumns.forEach((c_, iIndex) => c_.m_iWidth = aValues[iIndex]); }
+         else if(sType === "hide") { this.m_aColumns.forEach((c_, iIndex) => c_.m_bHide = aValues[iIndex]); }
+         else {
+            console.error(`Invalid type "${sType}" for attributes() method`);
+            return [];
+         }
+      }
+      else {
+         // ## Set all values to same single value
+         sType = sType.toLowerCase();
+         if(sType === "name") { this.m_aColumns.forEach(c_ => c_.m_sName = v_); }
+         else if(sType === "alias") { this.m_aColumns.forEach(c_ => c_.m_sAlias = v_); }
+         else if(sType === "type") { this.m_aColumns.forEach(c_ => c_.m_sType = v_); }
+         else if(sType === "align") { this.m_aColumns.forEach(c_ => c_.m_sAlign = v_); }
+         else if(sType === "sorted") { this.m_aColumns.forEach(c_ => c_.m_sSorted = v_); }
+         else if(sType === "width") { this.m_aColumns.forEach(c_ => c_.m_iWidth = v_); }
+         else if(sType === "hide") { this.m_aColumns.forEach(c_ => c_.m_bHide = v_); }
+         else {
+            console.error(`Invalid type "${sType}" for attributes() method`);
+            return [];
+         }
+      }
+   }
 
    // Get visible columns (column objects) (not hidden)
    get_visible_columns() { return new columns(this.m_aColumns.filter(col => !col.m_bHide)); }
