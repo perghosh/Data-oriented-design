@@ -97,12 +97,14 @@ std::vector<std::string> CheckPath(const std::vector<std::string>& vectorPath)
  * @param vectorPath A vector of strings representing directory paths to process.
  * @return A vector of strings containing the paths of all regular files found.
  */
-std::vector<std::string> Test(const std::vector<std::string>& vectorPath)
+void Test( const gd::table::dto::table& table_ )
 {
    std::vector<std::string> vectorFiles;
    std::vector<std::string> vectorTemp;
 
-   for( int i = 0; i < vectorPath.size(); i++ )
+   
+
+   for( int i = 0; i < table_.get_row_count(); i++ )
    {
       const std::string& stringPath = vectorPath[i];
       for( const auto& it : std::filesystem::directory_iterator( stringPath ) )
@@ -125,14 +127,14 @@ std::vector<std::string> Test(const std::vector<std::string>& vectorPath)
          }
       }
    }
-
-   return vectorFiles;
 }
 
 TEST_CASE("[file] test", "[file]")
 {
-   std::string stringPath = "D://dev//testfiles";
-   //std::string stringPath = "C://temp//kevin";
+   //std::string stringPath = "D://dev//testfiles";
+   std::string stringPath = "C://temp//kevin";
+
+   auto ptable = std::make_unique<gd::table::dto::table>( gd::table::dto::table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "count"}, {"uint64", 0, "comment"}, {"uint64", 0, "space"} }, gd::table::tag_prepare{} ) );
    
    std::vector<std::string> vectorPath = Split(stringPath);
 
@@ -145,14 +147,14 @@ TEST_CASE("[file] test", "[file]")
 
    std::cout << std::endl;
 
-   std::vector<std::string> vectorFile = Test(vectorPath);
+   //std::vector<std::string> vectorFile = Test(vectorPath);
    int iCount = 0;
 
-   for( auto& it : vectorFile )
+   /*for( auto& it : vectorFile )
    {
       std::cout << "Rows: " << RowCount(it) << " " << it << "\n";
       iCount += RowCount(it);
-   }
+   }*/
 
    std::cout << std::endl;
 

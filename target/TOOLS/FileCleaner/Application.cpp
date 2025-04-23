@@ -182,6 +182,10 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       optionsApplication.print_documentation( stringDocumentation );
       std::cout << stringDocumentation << "\n";
    }
+   else if( stringCommandName == "version" )
+   {
+      std::cout << "version 0.9.0" << "\n";
+   }
    else
    {
       return { false, "Unknown command: " + stringCommandName };
@@ -585,6 +589,12 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    {  // ## `help` print help about champion
       gd::cli::options optionsCommand( "help", "Print command line help" );
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
+
+   {  // ## `version` print current version
+      gd::cli::options optionsCommand( "version", "Print version" );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 }
