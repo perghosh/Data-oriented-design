@@ -142,7 +142,11 @@ std::pair<bool, std::string> CDocument::FILE_UpdateCount()
       }
 
       auto stringFile = itRowFile.cell_get_variant_view("path").as_string();
-      uint64_t uCount = RowCount(stringFile);
+      // uint64_t uCount = RowCount(stringFile);
+      //uint64_t uCount = 
+      gd::argument::shared::arguments argumentsResult;
+      auto result_ = COUNT_Row( {{"source", stringFile} }, argumentsResult);
+      uint64_t uCount = argumentsResult["count"].as_uint64();
       ptableFileCount->cell_set(iRowIndexCount, "count", uCount);
    }
 

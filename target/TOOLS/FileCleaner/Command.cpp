@@ -8,6 +8,7 @@
 #include "gd/gd_file.h"
 #include "gd/gd_table_io.h"
 #include "gd/gd_utf8.h"
+#include "gd/parse/gd_parse_window_line.h"
 
 #include "Command.h"
 
@@ -129,6 +130,42 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
    //std::cout << "\n" << stringTable << "\n";
 #endif
 
+   return { true, "" };
+}
+
+std::pair<bool, std::string> COUNT_Row(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult )
+{
+   std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
+
+   // ## Open file
+   std::ifstream file_(stringFile, std::ios::binary);
+   if( file_.is_open() == false ) return { false, "Failed to open file: " + stringFile };
+
+   gd::parse::window::line line_(64 * 64, gd::types::tag_create{});           // 64 * 64 = 4096 bytes = 64 cache lines
+
+   // Read the file into the buffer
+   auto uAvailable = line_.available();
+   file_.read((char*)line_.buffer(), uAvailable);  
+   auto uSize = file_.gcount();
+   line_.update(uSize);
+
+   uint64_t uCountNewLine = 0;
+
+   // ## Process the file
+   while(line_.eof() == false)
+   {
+      uCountNewLine += line_.count('\n');                                      // count new lines in buffer
+
+      // ## Rotate the buffer and read more data
+      line_.rotate();                                                          // "rotate" data, move data from end of buffer to start of buffer
+      file_.read((char*)line_.buffer(), line_.available());                    // fill buffer with data from file
+      uSize = file_.gcount();
+      line_.update(uSize);                                                     // update used size of internal buffer
+   }
+
+   argumentsResult.set("count", uCountNewLine);                                // set count of new lines in result
+
+   
    return { true, "" };
 }
 

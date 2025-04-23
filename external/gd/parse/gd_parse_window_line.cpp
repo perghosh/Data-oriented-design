@@ -252,4 +252,60 @@ int64_t line::find(const std::span<const uint8_t>& span256_, uint64_t uOffset) c
 }
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Counts the occurrences of a specific byte sequence in the buffer.
+ *
+ * This method counts how many times a specified sequence of bytes appears in
+ * the buffer, starting from a given offset. It uses the find method to locate
+ * each occurrence and increments the count accordingly.
+ *
+ * @param puData Pointer to the byte sequence to count.
+ * @param uSize Size of the byte sequence to count, in bytes.
+ * @param uOffset The offset in the buffer to start counting from (default is 0).
+ *
+ * @return The number of occurrences of the specified byte sequence in the buffer.
+ */
+uint64_t line::count(const uint8_t* puData, uint64_t uSize, uint64_t uOffset) const
+{                                                                                                  assert(puData != nullptr); assert(uSize > 0); assert(uOffset < m_uLast);assert( uSize < size_margin());
+   uint64_t uCount = 0;       // Counter for occurrences
+   int64_t iPosition = (int64_t)uOffset;
+
+   // ## Start counting and use the find method to locate occurrences of the data sequence
+   while( (iPosition = find(puData, uSize, iPosition) ) != -1 )
+   {
+      uCount++;                                                               // Increment the count for each occurrence
+      iPosition += uSize;                                                     // Move the search position forward to avoid overlapping matches
+   }
+
+   return uCount;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Counts the occurrences of a specific character in the buffer.
+ *
+ * This method counts how many times a specified character appears in the
+ * buffer, starting from a given offset. It uses the find method to locate
+ * each occurrence and increments the count accordingly.
+ *
+ * @param iCharacter The character to count.
+ * @param uOffset The offset in the buffer to start counting from (default is 0).
+ *
+ * @return The number of occurrences of the specified character in the buffer.
+ */
+uint64_t line::count(char iCharacter, uint64_t uOffset) const
+{                                                                                                  assert(m_puBuffer != nullptr); assert(uOffset < m_uLast);
+   uint64_t uCount = 0;           // Counter for occurrences
+   int64_t iPosition = (int64_t)uOffset;
+
+   // ## Use the find method to locate occurrences of the character
+   while( (iPosition = find(iCharacter, iPosition) ) != -1 )
+   {
+      uCount++;                  // Increment the count for each occurrence
+      iPosition++;               // Move to the next position to avoid counting the same character
+   }
+
+   return uCount;
+}
+
+
 _GD_PARSE_WINDOW_END
