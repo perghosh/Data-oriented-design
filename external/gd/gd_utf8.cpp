@@ -1266,6 +1266,130 @@ namespace gd {
    } // utf8 
 } // gd
 
+namespace gd {
+   namespace utf8 {
+
+      /*----------------------------------------------------------------------------- is_text
+       * @brief Determines if a buffer contains ASCII or UTF-8 text
+       * 
+       * Analyzes a memory buffer to detect if it contains ASCII, UTF-8, or binary data
+       * using fast heuristics. Optionally sets a type string to indicate the detected
+       * format ("ascii", "utf8", or "binary"). The method prioritizes speed over
+       * perfect accuracy by checking for UTF-8 BOM, null bytes, control characters,
+       * and UTF-8 sequences.
+       * 
+       * @param puText pointer to the text buffer to analyze
+       * @param uLength length of the buffer in bytes
+       * @param ppiType optional pointer to a string that will be set to the detected type
+       * @return bool true if the buffer is likely text (ASCII or UTF-8), false if likely binary
+       * 
+       * @code
+       * // Example usage
+       * const char* pType = nullptr;
+       * const char* puSampleText = "Hello, world!";
+       * bool bIsText = is_text(reinterpret_cast<const uint8_t*>(puSampleText), strlen(puSampleText), &pType);
+       * if(bIsText == true)
+       * {
+       *    std::cout << "Text detected, type: " << (pType != nullptr ? pType : "unknown") << std::endl;
+       * }
+       * else
+       * {
+       *    std::cout << "Binary data detected" << std::endl;
+       * }
+       * 
+       * // Example with UTF-8 BOM
+       * uint8_t puUtf8Text[] = {0xEF, 0xBB, 0xBF, 'H', 'i'};
+       * bIsText = is_text(puUtf8Text, 5, &pType);
+       * if(bIsText == true)
+       * {
+       *    std::cout << "UTF-8 text detected" << std::endl;
+       * }
+       * @endcode
+       */
+      bool is_text(const uint8_t* puText, size_t uLength, const char** ppiType)
+      {                                                                                            assert(  uLength > 0 );
+
+         // Check for UTF-8 BOM
+         if( uLength >= 3 && puText[0] == 0xEF && puText[1] == 0xBB && puText[2] == 0xBF )
+         {
+            if( ppiType != nullptr ) *ppiType = "uft8";
+            return true;
+         }
+
+         // Check for null bytes (common in binary files)
+         const uint64_t uNullCheckLimit = std::min(uLength, static_cast<size_t>(256));
+         for(uint64_t u = 0; u < uNullCheckLimit; ++u)
+         {
+            if(puText[u] == 0)
+            {
+               if( ppiType != nullptr ) *ppiType = "binary";
+               return false;
+            }
+         }
+
+         // Scan for UTF-8 sequences and control characters
+         bool bHasExtendedAscii = false;
+         uint64_t uControlChars = 0;
+
+         for(uint64_t u = 0; u < uLength; ++u)
+         {
+            uint8_t uByte = puText[u];
+
+            // Count control characters (except common whitespace)
+            if((uByte < 32 && uByte != 9 && uByte != 10 && uByte != 13) || uByte == 127)
+            {
+               uControlChars++;
+               if(uControlChars > uLength / 20)                                // 5% threshold
+               {
+                  if( ppiType != nullptr ) *ppiType = "binary";
+                  return false;
+               }
+            }
+
+            // ## Check for extended ASCII or UTF-8 sequences
+            if(uByte > 127)
+            {
+               bHasExtendedAscii = true;
+
+               // Skip forward for UTF-8 multi-byte sequences
+               if((uByte & 0xE0) == 0xC0) { u++; }                            // 2-byte
+               else if((uByte & 0xF0) == 0xE0) { u += 2; }                    // 3-byte
+               else if((uByte & 0xF8) == 0xF0) { u += 3; }                    // 4-byte
+               else
+               {
+                  if( ppiType != nullptr ) *ppiType = "binary";
+                  return false;
+               }
+
+               if(u >= uLength)                                                // Check for buffer overrun
+               {
+                  if( bHasExtendedAscii == true )
+                  {
+                     if( ppiType != nullptr ) *ppiType = "binary";
+                     return false;
+                  }
+                  else
+                  {
+                     if( ppiType != nullptr ) *ppiType = "ascii";
+                     return true;
+                  }
+               }
+            }
+         }
+
+         if( bHasExtendedAscii == true )
+         {
+            if( ppiType != nullptr ) *ppiType = "utf8";
+            return true;
+         }
+
+         if( ppiType != nullptr ) *ppiType = "ascii";
+         return true;
+      }
+   }
+}
+
+
 
 namespace gd {
    namespace utf8 {

@@ -13,7 +13,7 @@
 | size | size needed in bytes to store characters |
 | split | split text into multiple text parts |
 | trim | remove space characters from start and end |
-
+| is | is methods checks if text is something or not |
 
 */
 
@@ -45,6 +45,8 @@ namespace gd {
       struct tag_wildcard{};
       /// tag dispatcher when there is a find operations
       struct tag_find{};
+      /// tag dispatcher for analyze operations
+      struct tag_analyze {};
 
       /// tag dispatcher for stl string
       struct tag_string{};
@@ -967,6 +969,22 @@ namespace gd {
       }
    }
 }
+
+namespace gd {
+   namespace utf8 {
+      /// check if text is text and also inform if ascii or utf8 encoded
+      bool is_text(const uint8_t* puText, size_t uLength, const char** ppiType = nullptr );
+      /// check if text is text and also inform if ascii or utf8 encoded
+      inline bool is_text(const char* pbszText, size_t uLength, const char** ppiType = nullptr) {
+         return is_text(reinterpret_cast<const uint8_t*>( pbszText ), uLength, ppiType);
+      }
+      /// check if text is text and also inform if ascii or utf8 encoded
+      inline bool is_text(const std::string_view& stringText, const char** ppiType = nullptr) {
+         return is_text(reinterpret_cast<const uint8_t*>( stringText.data() ), stringText.length(), ppiType);
+      }
+   }
+}
+
 
 
 
