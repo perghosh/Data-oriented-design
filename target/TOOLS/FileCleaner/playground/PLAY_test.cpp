@@ -97,36 +97,21 @@ std::vector<std::string> CheckPath(const std::vector<std::string>& vectorPath)
  * @param vectorPath A vector of strings representing directory paths to process.
  * @return A vector of strings containing the paths of all regular files found.
  */
-void Test( gd::table::dto::table& table_ )
+void Test( gd::table::dto::table& table_, const std::string& stringPath )
 {
-   /*
-   std::vector<std::string> vectorFiles;
-   std::vector<std::string> vectorTemp;
-   */
-   int iRowCount = table_.get_row_count();
-
-   for( int i = 0; i < iRowCount; i++ )
+   for( const auto& it : std::filesystem::directory_iterator(stringPath) )
    {
-      //const std::string& stringPath = vectorPath[i];
-
-      const auto& stringPath = table_.cell_get_variant_view(i, "path").as_string();
-
-      for( const auto& it : std::filesystem::directory_iterator( stringPath ) )
+      if( it.is_regular_file() )
       {
-         if( it.is_regular_file() )
-         {
-            std::string stringFilePath = it.path().string();
+         std::string stringFilePath = it.path().string();
 
-            table_.row_add();
-            table_.cell_set(table_.get_row_count() - 1, "path", stringFilePath);
-         }
-         else if( it.is_directory() )
-         {
-            std::string stringFilePath = it.path().string();
-            table_.row_add();
-            table_.cell_set(table_.get_row_count(), "path", stringFilePath);
-            Test(table_);
-         }
+         table_.row_add();
+         table_.cell_set(table_.get_row_count() - 1, "path", stringFilePath);
+      }
+      else if( it.is_directory() )
+      {
+         std::string stringFilePath = it.path().string();
+         Test(table_, stringFilePath);
       }
    }
 }
@@ -139,10 +124,10 @@ TEST_CASE("[file] test", "[file]")
    auto ptable = std::make_unique<gd::table::dto::table>( gd::table::dto::table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "count"}, {"uint64", 0, "comment"}, {"uint64", 0, "space"} }, gd::table::tag_prepare{} ) );
    
 
-   ptable->row_add();
-   ptable->cell_set(0, "path", stringPath);
+   /*ptable->row_add();
+   ptable->cell_set(0, "path", stringPath);*/
 
-   Test(*ptable);
+   Test(*ptable, stringPath);
 
    auto stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
 
