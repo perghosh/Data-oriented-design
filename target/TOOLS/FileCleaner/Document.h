@@ -82,7 +82,7 @@ public:
 
    std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath );
    std::pair<bool, std::string> FILE_Filter( const std::string_view& stringFilter );
-   std::pair<bool, std::string> FILE_UpdateCount();
+   std::pair<bool, std::string> FILE_UpdateRowCounters();
       
 //@}
 
@@ -109,6 +109,13 @@ public:
 #ifndef NDEBUG
    bool CACHE_Exists_d( const std::string_view& stringId );
 #endif // !NDEBUG
+//@}
+
+/** \name RESULT
+ * Methods used to generate results data based on what the document is storing
+*///@{
+   /// @brief Generate result to present row counting in files
+   gd::table::dto::table RESULT_RowCount();
 //@}
 
 /** \name OPERATION

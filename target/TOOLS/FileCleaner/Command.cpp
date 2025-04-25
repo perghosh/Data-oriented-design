@@ -12,6 +12,7 @@
 
 #include "Command.h"
 
+/*
 int CountRowsInFile(const gd::table::dto::table& table_)
 {
 
@@ -62,6 +63,7 @@ int RowCount( const std::string& stringFile )
 
    return 0;
 }
+*/
 
 std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::table::dto::table* ptable_, unsigned uDepth )
 {                                                                                                  assert( ptable_ != nullptr );
@@ -71,11 +73,15 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::
       auto uRow = ptable_->get_row_count();
       ptable_->row_add();
 
-      std::string stringFilePath = pathFile.string();
       ptable_->cell_set(uRow, "key", uRow + 1);
-      ptable_->cell_set(uRow, "path", stringFilePath);
+      auto folder_ = pathFile.parent_path().string();
+      ptable_->cell_set(uRow, "folder", folder_);
+      auto filename_ = pathFile.filename().string();
+      ptable_->cell_set(uRow, "filename", filename_);
       ptable_->cell_set(uRow, "extension", pathFile.extension().string());
+
       // get file size
+      std::string stringFilePath = pathFile.string();
       std::ifstream ifstreamFile(stringFilePath.data(), std::ios::binary | std::ios::ate);
       if( ifstreamFile.is_open() == true )
       {
@@ -130,7 +136,6 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
    unsigned uRecursive = argumentsPath["recursive"].as_uint();
    std::string stringSource = argumentsPath["source"].as_string();
    auto vectorPath = gd::utf8::split(stringSource, ';');
-
 
    for( auto itPath : vectorPath )
    {
