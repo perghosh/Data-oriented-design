@@ -63,17 +63,8 @@ int RowCount( const std::string& stringFile )
    return 0;
 }
 
-/** ---------------------------------------------------------------------------
- * @brief Harvests files from the specified path and populates a table with their details.
- * @param argumentsPath The arguments containing the source path for harvesting files.
- * @param ptable_ A pointer to the table where the harvested file details will be stored.
- * @return A pair containing:
- *         - `bool`: `true` if the harvesting was successful, `false` otherwise.
- *         - `std::string`: An empty string on success, or an error message on failure.
- */
-std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_)
+std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::table::dto::table* ptable_, unsigned uDepth )
 {                                                                                                  assert( ptable_ != nullptr );
-
    // ## add file to table
    auto add_ = [ptable_](const gd::file::path& pathFile)
    {
@@ -94,40 +85,62 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
       ifstreamFile.close();
    };
 
-   std::string stringSource = argumentsPath["source"].as_string();
-   auto vectorPath = gd::utf8::split(stringSource, ';');
-
-   // ## check if source is a file or directory
-
-   for( auto itPath : vectorPath )
+   try
    {
-      if( std::filesystem::is_regular_file(itPath) )                           // single file
+      for( const auto& it : std::filesystem::directory_iterator(stringPath) )
       {
-         add_(gd::file::path(itPath));
-      }
-      else if( std::filesystem::is_directory(itPath) )                         // is file directory
-      {
-         try
+         if( it.is_directory() == true )                                       // is file directory
          {
-            for( const auto& it : std::filesystem::directory_iterator(itPath) )
+            if( uDepth > 0 )
             {
-               if( it.is_regular_file() == false ) continue;                   // skip directories
+               auto stringChildPath = it.path().string();
+               auto [bOk, stringError] = FILES_Harvest_g(stringChildPath, ptable_, (uDepth - 1) );// recursive call to harvest files in subdirectories
+               if( bOk == false ) return { false, stringError };               // error in recursive call
+            }
+         }
+         else
+         {
+            if( it.is_regular_file() == true )                
+            {
                add_(gd::file::path(it.path()));
             }
          }
-         catch( const std::filesystem::filesystem_error& e )
-         {
-            std::string stringError = e.what();
-            return { false, stringError };
-         }
-
       }
+   }
+   catch( const std::filesystem::filesystem_error& e )
+   {
+      std::string stringError = e.what();
+      return { false, stringError };
+   }
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Harvests files from the specified path and populates a table with their details.
+ * @param argumentsPath The arguments containing the source path for harvesting files.
+ * @param ptable_ A pointer to the table where the harvested file details will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the harvesting was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_)
+{                                                                                                  assert( ptable_ != nullptr );
+
+   unsigned uRecursive = argumentsPath["recursive"].as_uint();
+   std::string stringSource = argumentsPath["source"].as_string();
+   auto vectorPath = gd::utf8::split(stringSource, ';');
+
+
+   for( auto itPath : vectorPath )
+   {
+      auto [bOk, stringError] = FILES_Harvest_g(std::string(itPath), ptable_, uRecursive); // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+      if( bOk == false ) return { false, stringError };
    }
 
 
 #ifndef NDEBUG
    auto stringTable = gd::table::to_string( *ptable_, gd::table::tag_io_cli{});
-   //std::cout << "\n" << stringTable << "\n";
 #endif
 
    return { true, "" };

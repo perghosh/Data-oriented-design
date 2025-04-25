@@ -54,9 +54,10 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    auto result_ = FILES_Harvest_g(argumentsPath, ptable_);
    if( result_.first == false ) return result_;
 
-   auto ptableCount =  std::make_unique<gd::table::dto::table>( gd::table::dto::table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "count"}, {"uint64", 0, "comment"}, {"uint64", 0, "space"} }, gd::table::tag_prepare{} ) );
+   //auto ptableCount =  std::make_unique<gd::table::dto::table>( gd::table::dto::table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "count"}, {"uint64", 0, "comment"}, {"uint64", 0, "space"} }, gd::table::tag_prepare{} ) );
 
 
+   /*
    for( const auto& itRow : *ptable_ )
    {
       auto value_ = itRow.cell_get_variant_view( "path" );
@@ -74,6 +75,7 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    //std::cout << "\n" << stringTable << "\n";
 
    //CountRowsInFile(*ptable_); // TODO: remove this line, it is only for debug
+   */
    return result_;
 }
 

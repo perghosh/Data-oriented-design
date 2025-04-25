@@ -147,8 +147,12 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          stringSource = pathFile.string();
       }                                                                                            LOG_INFORMATION_RAW("== --source: " & stringSource);
 
-      auto result_ = pdocument->FILE_Harvest({ {"source", stringSource} });    // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+      int iRecursive = ( *poptionsActive )["recursive"].as_int();                                  LOG_INFORMATION_RAW("== --recursive: " & iRecursive);
+      gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
+
+      auto result_ = pdocument->FILE_Harvest(argumentsPath);                   // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( result_.first == false ) return result_;
+
 
       if( (*poptionsActive)["filter"].is_true() == true )
       {
@@ -544,7 +548,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
-   optionsApplication.add_flag({ "recursive", "Operation should be recursive" });
+   optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({"database", "Set folder where logger places log files"});
    optionsApplication.add({"statements", "file containing sql statements"});
 
