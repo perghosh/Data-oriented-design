@@ -88,17 +88,14 @@ std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stri
    for( uint64_t uRow = 0, uRowCount = ptableFile->size(); uRow < uRowCount; uRow++ )
    {
       bool bMatched = false;
-      auto stringFile = ptableFile->cell_get_variant_view( uRow, "path" ).as_string_view();
+      auto stringFilename = ptableFile->cell_get_variant_view( uRow, "filename" ).as_string_view();
 
       // ## match file against wildcards
-
-      gd::file::path path_( stringFile );
-      std::string stringName = path_.filename().string();
 
       // ### go through filters to check for a match
       for( const auto& filter_ : vectorPath )
       {
-         bool bMatch = gd::ascii::strcmp( stringName, filter_, gd::utf8::tag_wildcard{} );
+         bool bMatch = gd::ascii::strcmp( stringFilename, filter_, gd::utf8::tag_wildcard{} );
          if( bMatch == true ) { bMatched = true; break; }
       }
 
@@ -115,10 +112,36 @@ std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stri
 }
 
 /** ---------------------------------------------------------------------------
- * @brief Update the file count in the cache.
- * @return    
+ * @brief Updates row counters for files in the cache.
+ *
+ * This method synchronizes and updates the `file-count` cache table with row counters
+ * for each file listed in the `file` cache table. It ensures that each file in the
+ * `file` table has a corresponding entry in the `file-count` table, and calculates
+ * the number of rows (lines) in each file.
+ *
+ * @details
+ * - The method iterates through all rows in the `file` cache table.
+ * - For each file, it checks if a corresponding entry exists in the `file-count` table
+ *   by matching the `key` column in the `file` table with the `file-key` column in the
+ *   `file-count` table.
+ * - If no matching entry is found, a new row is added to the `file-count` table with
+ *   the file's key, filename, and an initial count.
+ * - The method constructs the full file path using the `folder` and `filename` columns
+ *   from the `file` table.
+ * - It calculates the number of rows (lines) in the file using the `COUNT_Row` function
+ *   and updates the `count` column in the `file-count` table.
+ *
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @pre The `file` and `file-count` cache tables must be prepared and available in the cache.
+ * @post The `file-count` table is updated with row counters for all files in the `file` table.
+ *
+ * @note This method assumes that the `COUNT_Row` function is responsible for counting
+ *       the rows (lines) in a file and returning the result in the `argumentsResult` object.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdateCount()
+std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
 {
    auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
    auto* ptableFileCount = CACHE_Get("file-count");                                                assert( ptableFileCount != nullptr );
@@ -140,12 +163,18 @@ std::pair<bool, std::string> CDocument::FILE_UpdateCount()
          ptableFileCount->row_add();
          ptableFileCount->cell_set( iRowIndexCount, "key", uint64_t(iRowIndexCount + 1));
          ptableFileCount->cell_set( iRowIndexCount, "file-key", itRowFile.cell_get_variant_view("key") );
-         ptableFileCount->cell_set( iRowIndexCount, "path", itRowFile.cell_get_variant_view("path") );
+         ptableFileCount->cell_set( iRowIndexCount, "filename", itRowFile.cell_get_variant_view("filename") );
       }
 
-      auto stringFile = itRowFile.cell_get_variant_view("path").as_string();
-      // uint64_t uCount = RowCount(stringFile);
-      //uint64_t uCount = 
+      // ## build full file path from table
+
+      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
+      gd::file::path pathFile(string_);
+      string_ = itRowFile.cell_get_variant_view("filename").as_string();
+      pathFile += string_;
+      std::string stringFile = pathFile.string();
+      
+
       gd::argument::shared::arguments argumentsResult;
       auto result_ = COUNT_Row( {{"source", stringFile} }, argumentsResult);
       uint64_t uCount = argumentsResult["count"].as_uint64();
@@ -181,17 +210,17 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId)
    constexpr unsigned uTableStyle = (table::eTableFlagNull32|table::eTableFlagRowStatus);
 
    auto ptableFind = CACHE_Get(stringId, false);
-   if( ptableFind != nullptr ) return;                                        // table already exists, exit
+   if( ptableFind != nullptr ) return;                                         // table already exists, exit
 
    // ## prepare file list
    //    columns: "path, size, date, extension
-   if( stringId == "file" )
+   if( stringId == "file" )                                                    // file cache, used to store file information
    {
       auto ptable_ = CACHE_Get(stringId, false);
       if( ptable_ == nullptr )
       {
          // file table: key | path | size | date | extension
-         auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} ) );
+         auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} ) );
          CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
       }
    }
@@ -201,7 +230,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId)
       if( ptable_ == nullptr )
       {
          // file-count table: key | file-key | path | count
-         auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "path"}, {"uint64", 0, "count"} }, gd::table::tag_prepare{} ) );
+         auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"}, {"uint64", 0, "count"} }, gd::table::tag_prepare{} ) );
          CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
       }
    }
@@ -445,6 +474,50 @@ bool CDocument::CACHE_Exists_d( const std::string_view& stringId )
    return false;
 }
 #endif // !NDEBUG
+
+/// generate result from file counting, table has the folder taken from file table and filename from file-count table in cache
+/// Result columns: "folder, filename, count
+gd::table::dto::table CDocument::RESULT_RowCount()
+{
+   using namespace gd::table::dto;
+   // Define the result table structure
+   constexpr unsigned uTableStyle = (table::eTableFlagNull32 | table::eTableFlagRowStatus);
+   table tableResult(uTableStyle, {{"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "count"}}, gd::table::tag_prepare{});
+
+   // Retrieve the file and file-count cache tables
+   auto* ptableFile = CACHE_Get("file", false);                                                    assert( ptableFile != nullptr );
+   auto* ptableFileCount = CACHE_Get("file-count", false);                                         assert( ptableFileCount != nullptr );
+
+   // Iterate through the rows in the file-count table
+   for (const auto& itRowCount : *ptableFileCount)
+   {
+      uint64_t iFileKey = itRowCount.cell_get_variant_view("file-key").as_uint64();
+      uint64_t iCount = itRowCount.cell_get_variant_view("count").as_uint64();
+      auto stringFilename = itRowCount.cell_get_variant_view("filename").as_string();
+
+      // Find the corresponding row in the file table using the file key
+      for (const auto& itRowFile : *ptableFile)
+      {
+         if (itRowFile.cell_get_variant_view("key").as_uint64() == iFileKey)
+         {
+            auto stringFolder = itRowFile.cell_get_variant_view("folder").as_string();
+
+            // Add a new row to the result table
+            auto uRow = tableResult.get_row_count();
+            tableResult.row_add();
+            tableResult.cell_set(uRow, "folder", stringFolder );
+            tableResult.cell_set(uRow, "filename", stringFilename);
+            tableResult.cell_set(uRow, "count", iCount);
+
+            break; // Exit the loop once the matching row is found
+         }
+      }
+   }
+
+   return tableResult;
+}
+
+
 
 
 /** ---------------------------------------------------------------------------
