@@ -183,6 +183,8 @@ struct path
    path filename() const { return path(std::filesystem::path(m_stringPath).filename().string()); }
    /// Get file extension from path if any
    path extension() const { return path(std::filesystem::path(m_stringPath).extension().string()); }
+   /// Get parent path from path (this returns the folder name if path conatains a file, no file then the parent folder is returned)
+   path parent_path() const { return path(std::filesystem::path(m_stringPath).parent_path().string()); }
    /// With stem get filename without extension
    path stem() const { return path(std::filesystem::path(m_stringPath).stem().string()); }
 

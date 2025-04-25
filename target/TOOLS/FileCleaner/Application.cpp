@@ -13,6 +13,7 @@
 
 #include "gd/gd_arguments.h"
 #include "gd/gd_cli_options.h"
+#include "gd/gd_table_io.h"
 
 #include "Command.h"
 
@@ -161,12 +162,13 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          if( result_.first == false ) return result_;
       }
 
-      result_ = pdocument->FILE_UpdateCount();
+      result_ = pdocument->FILE_UpdateRowCounters();
       if( result_.first == false ) return result_;
       if( ( *poptionsActive )["print"].is_true() == true )
       {
-         std::string stringPrint = pdocument->CACHE_Dump("file-count");
-         std::cout << "\n\n" << stringPrint << "\n\n";
+         auto tableResult = pdocument->RESULT_RowCount();
+         std::string stringCliTable = gd::table::to_string(tableResult, gd::table::tag_io_cli{});
+         std::cout << "\n\n" << stringCliTable << "\n\n";
       }
    }
    else if( stringCommandName == "db" )
