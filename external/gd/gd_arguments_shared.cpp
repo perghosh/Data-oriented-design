@@ -1363,7 +1363,7 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
          unsigned uZeroEnd = 0;
          if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
 
-         uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+         uLength = variantValue.length();
 
          return append(stringName, uType, pData, uLength);
       }
@@ -1380,7 +1380,7 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
       unsigned uZeroEnd = 0;
       if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
 
-      uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+      uLength = variantValue.length();
 
       return append(uType, pData, uLength);
    }
@@ -2092,10 +2092,8 @@ arguments::pointer arguments::set( pointer pPosition, const gd::variant_view& va
    unsigned uLength;
    if( uType > ARGUMENTS_NO_LENGTH ) 
    { 
-      unsigned uZeroEnd = 0;
-      if( uType == eTypeNumberWString )
-         uType |= eValueLength; 
-      uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
+      uType |= eValueLength;
+      uLength = variantValue.length();
    }
    else
    {
