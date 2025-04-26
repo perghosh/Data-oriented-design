@@ -161,10 +161,21 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          auto result_ = pdocument->FILE_Filter(stringFilter);
          if( result_.first == false ) return result_;
       }
+      else
+      {                                                                        // filter not set, then we need to investigate that harvested files contains text, those that dont will be removed
+         auto result_ = pdocument->FILE_FilterBinaries();                      // remove files that are not text
+         if( result_.first == false ) return result_;
+      }
 
-      result_ = pdocument->FILE_UpdateRowCounters();
+      result_ = pdocument->FILE_UpdateRowCounters();                           // count rows in harvested files
       if( result_.first == false ) return result_;
-      if( ( *poptionsActive )["print"].is_true() == true )
+
+      bool bSaved = false;                                                     // variable to store if result was saved
+
+
+      // if option "print" was specified, then print the result or not if, ignore the bSaved
+      if( bSaved == false && poptionsActive->exists("print") == true ) bSaved = true;
+      if( bSaved == false || ( *poptionsActive )["print"].is_true() == true )
       {
          auto tableResult = pdocument->RESULT_RowCount();
 

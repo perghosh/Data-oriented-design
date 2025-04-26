@@ -111,6 +111,62 @@ std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stri
    return { true, "" };
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Filters out binary files from the cache table.
+ *
+ * This method checks each file in the cache table and removes those that are
+ * determined to be binary files. It uses a buffer to read the file content and
+ * checks if it is text or binary.
+ *
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @pre The `file` cache table must be prepared and available in the cache.
+ * @post The `file` table is updated to remove binary files.
+ */
+std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
+{
+   char piBuffer[1024]; // buffer used to check if file is binary or not
+   std::vector<uint64_t> vectorRemoveRow;
+   auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
+   for( uint64_t uRow = 0, uRowCount = ptableFile->size(); uRow < uRowCount; uRow++ )
+   {
+      // ## generate full file path
+
+      auto stringFilename = ptableFile->cell_get_variant_view(uRow, "filename").as_string_view();
+      auto stringFolder = ptableFile->cell_get_variant_view(uRow, "folder").as_string_view();
+      gd::file::path pathFile(stringFolder);
+      pathFile += stringFilename;
+    
+      std::string stringFile = pathFile.string();
+      if( std::filesystem::is_regular_file(stringFile) == false ) { vectorRemoveRow.push_back(uRow); }
+      else
+      {
+         // ## open file and check if it is a text file
+
+         // Open filenn and read 1024 bytes into buffer
+         std::ifstream file_(stringFile, std::ios::binary);
+         if( file_.is_open() == false ) { vectorRemoveRow.push_back(uRow); continue; }
+         file_.read(piBuffer, sizeof(piBuffer));
+         auto uSize = file_.gcount();
+         file_.close();
+         if( uSize == 0 ) { vectorRemoveRow.push_back(uRow); continue; }
+         // Check if file is binary
+         bool bIsText = gd::utf8::is_text( piBuffer, uSize );
+         if( bIsText == false ) { vectorRemoveRow.push_back(uRow); continue; }
+      }
+   }
+
+   if( vectorRemoveRow.empty() == false )
+   {
+      ptableFile->erase(vectorRemoveRow);
+   }
+
+   return { true, "" };
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Updates row counters for files in the cache.
  *
