@@ -35,12 +35,16 @@ int RowCount(const std::string& stringFile);
 */
 
 
+
+
 /// @brief Harvests files from the specified path and populates a table with their details.
 std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::table::dto::table* ptable_, unsigned uDepth );
 /// @brief Harvests files from the specified path and populates a table with their details.
 std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_ );
 
 /// @brief Counts the number of rows in a file. 
-std::pair<bool, std::string> COUNT_Row(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
+std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
+
+std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);
 
 

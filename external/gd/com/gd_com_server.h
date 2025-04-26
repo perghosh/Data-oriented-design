@@ -366,7 +366,7 @@ struct command : public gd::com::server::command_i
    // ## attributes ----------------------------------------------------------------
       unsigned m_uPriority = ePriorityGlobal; ///< priority, this is used to order values and in what order values are looked for
       int m_iCommandIndex = -1;     ///<
-      std::string m_stringKey;      ///< command key to access command, this is also used to connect return values
+      std::string m_stringKey;      ///< command key to access command or command, this is also used to connect return values
       gd::strings32 m_strings32Command; ///< command name sequence, like command/sub-command/sub-sub-command
       gd::argument::arguments m_arguments; ///< parameters for command
    };

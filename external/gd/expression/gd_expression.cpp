@@ -48,7 +48,7 @@ int to_precedence_g(const char iOperator)
     }
 }
 
-/*----------------------------------------------------------------------------- to_precedence
+/** --------------------------------------------------------------------------- to_precedence
  * Returns precedence level for an operator using lookup table for maximum speed
  * Higher values indicate higher precedence
  * @param cOperator the operator character to check
@@ -76,16 +76,42 @@ int to_precedence_g(const char iOperator, tag_optimize )
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   // 240-255
     };
     
-    // Maps: ^ -> 4, *, /, % -> 3, +, - -> 2, <, >, = -> 1, & | -> 0
-    // Special case for logical operators that could be double characters
-    /*
-    if( iOperator == '&' || iOperator == '|')                                     // handle logical operators
-    {
-        return 0;
-    }
-    */
-    
     return puPrecedenceLookup[static_cast<uint8_t>(iOperator)];                // direct lookup - O(1) time complexity
+}
+
+
+/** --------------------------------------------------------------------------- is_code
+ * Check if a character is a valid code character (not whitespace or non-code)
+ * @param iCharacter the character to check
+ * @return int 1 if valid code character, 0 if whitespace or non-code
+ */
+int is_code_g(const char iCharacter, tag_optimize)
+{
+   // Static lookup table initialized once
+   // 1 = valid code character, 0 = whitespace or non-code character
+   static const uint8_t puCodeLookup[256] = {
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0-15 (control chars)
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 16-31 (control chars)
+      0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 32-47 (space, !"#$%&'()*+,-./)
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 48-63 (0-9:;<=>?)
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 64-79 (@A-O)
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 80-95 (P-Z[\]^_)
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 96-111 (`a-o)
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,  // 112-127 (p-z{|}~DEL)
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 128-143
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 144-159
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 160-175
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 176-191
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 192-207
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 208-223
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 224-239
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   // 240-255
+   };
+
+   // Space character (ASCII 32) is specifically marked as 0 (not a code character)
+   // All printable ASCII characters (33-126) are marked as 1 (valid code characters)
+
+   return puCodeLookup[static_cast<uint8_t>(iCharacter)];  // direct lookup - O(1) time complexity
 }
 
 _GD_EXPRESSION_END
