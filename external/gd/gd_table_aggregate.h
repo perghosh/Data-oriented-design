@@ -155,8 +155,12 @@ unsigned aggregate<TABLE>::max( unsigned uColumn, uint64_t uBeginRow, uint64_t u
    uint64_t uEndRow = uBeginRow + uCount; // last row where value is checked
 
    // ## iterate rows to check max length for values found in column
+
+   bool bHasNull = m_ptable->is_null(); // get if table has null values
    if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
    for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
+      if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue; // skip null values
+
       unsigned uValueLength = m_ptable->cell_get_length( uRow, uColumn );
       if( uValueLength <= uLength ) continue;
       uLength = uValueLength;
@@ -172,9 +176,12 @@ void aggregate<TABLE>::max( std::vector<unsigned>& vectorLength, uint64_t uBegin
    // ## iterate rows to check max length for values found in column
    if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
 
+   bool bHasNull = m_ptable->is_null(); // get if table has null values
    unsigned uColumnCount = (unsigned)vectorLength.size() < m_ptable->get_column_count() ? (unsigned)vectorLength.size() : m_ptable->get_column_count(); // number of columns to check
    for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
       for( unsigned uColumn = 0; uColumn < uColumnCount; uColumn++ ) {
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue; // skip null values
+
          unsigned uValueLength = m_ptable->cell_get_length( uRow, uColumn );
          unsigned uLength = vectorLength[uColumn];
          if( uLength < uValueLength ) vectorLength[uColumn] = uValueLength;

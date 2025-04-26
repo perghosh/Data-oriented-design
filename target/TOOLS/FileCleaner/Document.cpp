@@ -176,7 +176,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
       
 
       gd::argument::shared::arguments argumentsResult;
-      auto result_ = COUNT_Row( {{"source", stringFile} }, argumentsResult);
+      auto result_ = COMMAND_CountRows( {{"source", stringFile} }, argumentsResult);
       uint64_t uCount = argumentsResult["count"].as_uint64();
       ptableFileCount->cell_set(iRowIndexCount, "count", uCount);
    }

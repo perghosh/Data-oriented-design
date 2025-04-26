@@ -160,6 +160,8 @@ public:
    static void Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer );
    static void Read_s( gd::database::cursor_i* pcursorSelect, gd::table::table_column_buffer* ptablecolumnbuffer );
 
+   static std::pair<bool, std::string> COMMAND_CountRows( CDocument* pdocument );
+
 
 };
 
