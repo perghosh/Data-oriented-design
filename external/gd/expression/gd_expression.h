@@ -1,8 +1,20 @@
 /**
  * @file gd_expression.h
  * 
- * @brief 
+ * @brief Provides utilities for handling expressions, including operator precedence, 
+ *        character code checks, and a general variant type for expression values.
  * 
+ * This header defines several utility functions and types used in the context of 
+ * expression parsing and evaluation. It includes support for operator precedence 
+ * determination, character code validation, and a flexible variant type for storing 
+ * expression values. Additionally, it defines tags for categorizing operations or 
+ * states, which can be conditionally included based on the presence of `GD_TYPES_VERSION`.
+ * 
+ * @note If `GD_TYPES_VERSION` is defined, the tag types are imported from `gd::types`. 
+ *       Otherwise, they are defined locally within this file.
+ * 
+ * @namespace gd::expression
+ * Encapsulates all types and functions related to expression handling.
  */
 
 #pragma once
@@ -41,6 +53,8 @@ _GD_EXPRESSION_BEGIN
 int to_precedence_g(const char iOperator);
 /// get the precedence of the operator
 int to_precedence_g(const char iOperator, tag_optimize );
+/// check if the character is a code
+int is_code_g(const char iCharacter, tag_optimize);
 
 /// @brief general variant type with the basic types used in the expressions
 using variant_t = std::variant<int64_t, double, std::string_view, bool>; ///< value type

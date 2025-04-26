@@ -7,6 +7,7 @@
 
 #include "gd/gd_file.h"
 #include "gd/gd_table_io.h"
+#include "gd/gd_table_aggregate.h"
 #include "gd/gd_utf8.h"
 #include "gd/parse/gd_parse_window_line.h"
 
@@ -151,7 +152,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
    return { true, "" };
 }
 
-std::pair<bool, std::string> COUNT_Row(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult )
+std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult )
 {
    std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
 
@@ -187,3 +188,33 @@ std::pair<bool, std::string> COUNT_Row(const gd::argument::shared::arguments& ar
    return { true, "" };
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Adds a summary row to the specified table by calculating the sum of specified columns.
+ * @param ptable_ A pointer to the table where the summary row will be added.
+ * @param vectorColumnIndex A vector of column indices for which the sum will be calculated.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ * 
+ * @code
+ * // Example usage:
+ * gd::table::dto::table table_;
+ * ... populate the table with data ...
+ * std::vector<unsigned> vectorColumnIndex = { 1, 2, 3 };
+ * auto result_ = TABLE_AddSumRow(&table_, vectorColumnIndex); // add sum row and values for columns 1, 2, and 3
+ * if (result_.first) { .. ommitted .. }
+ * @endcode
+ */
+std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex)
+{                                                                                                  assert(ptable_ != nullptr);
+   auto uRow = ptable_->get_row_count(); 
+   ptable_->row_add( gd::table::tag_null{} );
+   for( unsigned uColumnIndex : vectorColumnIndex )
+   {                                                                                               assert( uColumnIndex < ptable_->get_column_count() );
+      auto uSum = gd::table::sum<uint64_t>(*ptable_, uColumnIndex, 0, uRow);
+      ptable_->cell_set(uRow, uColumnIndex, uSum, gd::table::tag_convert{});
+   }
+
+   return { true, "" };
+}
