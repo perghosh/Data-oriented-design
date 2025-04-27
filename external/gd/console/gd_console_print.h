@@ -182,7 +182,7 @@ private:
 
 // ## operator -----------------------------------------------------------------
 public:
-   row operator[]( unsigned uRow ) { row row_( offset( uRow ), m_uColumnCount ); ASSIGN_D( row_, this ); return row_; }
+   row operator[]( unsigned uRow ) { row row_( offset( uRow ), m_uColumnCount ); return row_; }
 
 
 // ## methods ------------------------------------------------------------------
