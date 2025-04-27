@@ -179,7 +179,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       {
          auto tableResult = pdocument->RESULT_RowCount();
 
-         auto result_ = TABLE_AddSumRow( &tableResult, {2});
+         auto result_ = TABLE_AddSumRow( &tableResult, {2, 3, 4, 5, 6});
          if( result_.first == false ) return result_;
 
          tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
@@ -717,7 +717,3 @@ void CApplication::Read_s( gd::database::cursor_i* pcursorSelect, gd::table::tab
    }
 }
 
-std::pair<bool, std::string> CApplication::COMMAND_CountRows( CDocument* pdocument )
-{
-   return std::pair<bool, std::string>();
-}
