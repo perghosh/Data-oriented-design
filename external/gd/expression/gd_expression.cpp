@@ -5,8 +5,6 @@
  * 
  */
 
-#include <cstdint>
-
 #include "gd_expression.h"
 
 _GD_EXPRESSION_BEGIN
@@ -54,7 +52,7 @@ int to_precedence_g(const char iOperator)
  * @param cOperator the operator character to check
  * @return int precedence level (0 for non-operators)
  */
-int to_precedence_g(const char iOperator, tag_optimize )
+int to_precedence_g(char iOperator, tag_optimize )
 { 
     // Static lookup table initialized once
     static const uint8_t puPrecedenceLookup[256] = {
@@ -85,7 +83,7 @@ int to_precedence_g(const char iOperator, tag_optimize )
  * @param iCharacter the character to check
  * @return int 1 if valid code character, 0 if whitespace or non-code
  */
-int is_code_g(const char iCharacter, tag_optimize)
+int is_code_g( char iCharacter )
 {
    // Static lookup table initialized once
    // 1 = valid code character, 0 = whitespace or non-code character

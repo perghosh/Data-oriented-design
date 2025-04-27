@@ -21,7 +21,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <string>
 #include <string_view>
 #include <variant>
 
@@ -52,9 +51,10 @@ _GD_EXPRESSION_BEGIN
 /// get the precedence of the operator
 int to_precedence_g(const char iOperator);
 /// get the precedence of the operator
-int to_precedence_g(const char iOperator, tag_optimize );
+int to_precedence_g(char iOperator, tag_optimize );
 /// check if the character is a code
-int is_code_g(const char iCharacter, tag_optimize);
+int is_code_g( char iCharacter );
+inline int is_code_g(const uint8_t iCharacter) { return is_code_g(char(iCharacter)); } ///< check if the character is a code
 
 /// @brief general variant type with the basic types used in the expressions
 using variant_t = std::variant<int64_t, double, std::string_view, bool>; ///< value type
