@@ -321,6 +321,7 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
 
+   /// convert string to state, this will convert the string to the enumState value
    static constexpr enumState to_state_s(const std::string_view stringName)
    {
        if(stringName == "NONE")          return eStateNone;
@@ -335,6 +336,26 @@ public:
        if(stringName == "RAWSTRING" )    return eStateRawString;
        if(stringName == "SCRIPTCODE")    return eStateScriptCode;
        return eStateNone; // Default case for invalid input
+   }
+
+   /// convert state to string, this will convert the enumState value to a string
+   static consteval std::string_view to_string_s(enumState eState)
+   {
+      switch( eState )
+      {
+      case eStateNone:          return "NONE";
+      case eStateLineComment:   return "LINECOMMENT";
+      case eStateWhitespace:    return "WHITESPACE";
+      case eStateString:        return "STRING";
+      case eStateNumber:        return "NUMBER";
+      case eStateIdentifier:    return "IDENTIFIER";
+      case eStateOperator:      return "OPERATOR";
+      case eStateEnd:           return "END";
+      case eStateBlockComment:  return "BLOCKCOMMENT";
+      case eStateRawString:     return "RAWSTRING";
+      case eStateScriptCode:    return "SCRIPTCODE";
+      }
+      return "NONE"; // Default case for invalid input
    }
 
 };
