@@ -177,7 +177,7 @@ namespace gd {
       // converted to utf8.
       // There are also some methods that convert between two different formats
       // that is not utf8. Then both format names are in the method name.
-      // Same when text is converted from utf8 to another format, then 
+      // Same when text is converted from utf8 to ano format, then 
       // both names are in method name.
       // sample: 
       // - `convert_ascii` converts from ascii to utf8
@@ -877,7 +877,7 @@ namespace gd {
       const char* split( const char* pbBegin, const char* pbEnd, char chSplit, char chStop, std::vector<std::string_view>& vectorPart );
       std::string_view split( const std::string_view& stringText, char chSplit, char chStop, std::vector<std::string_view>& vectorPart );
 
-      /// Splits string into pair of strings, one character is used to split the pair and another to split pairs
+      /// Splits string into pair of strings, one character is used to split the pair and ano to split pairs
       void split_pair( const char* pbBegin, const char* pbEnd, char chSplit, char chSplitPair, std::vector< std::pair<std::string_view,std::string_view>>& vectorPair );
       inline void split_pair( const std::string_view& stringText, char chSplit, char chSplitPair, std::vector< std::pair<std::string_view,std::string_view> >& vectorPair ) {
          split_pair( stringText.data(), stringText.data() + stringText.length(), chSplit, chSplitPair, vectorPair );
