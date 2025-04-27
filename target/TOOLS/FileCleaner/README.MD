@@ -1,5 +1,12 @@
 # Cleaner.exe User Guide
 
+## Getting Started (simple)
+
+**Windows**
+- Place cleaner in `system32` or `windows` folder, or add the path to the system PATH variable.
+- Open a command prompt and go to folder with source code and type `cleaner count`.
+- Default settings will scan files in current folder and print result to console.
+
 ## Overview
 
 Cleaner.exe is a powerful utility for analyzing source code files. It counts lines, measures code sections (comments and strings), and presents detailed statistics in a tabular format with summary information.
