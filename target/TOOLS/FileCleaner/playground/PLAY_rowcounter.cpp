@@ -194,7 +194,7 @@ TEST_CASE("[rowcouner] use states", "[rowcouner]") {
    std::ifstream file_(stringFile, std::ios::binary);                                              REQUIRE(file_.is_open() == true);
 
 
-   gd::parse::window::line windowLine_(1024, gd::types::tag_create{});         // create line buffer
+   gd::parse::window::line lineBuffer(1024, gd::types::tag_create{});         // create line buffer
 
    gd::expression::parse::state state_;
    state_.add(std::string_view("COMMENT"), "//", "\n");
@@ -207,14 +207,14 @@ TEST_CASE("[rowcouner] use states", "[rowcouner]") {
    unsigned uCommentCount = 0;
    unsigned uCodeCount = 0; // number of characters of code in current line
 
-   auto uAvailable = windowLine_.available();
-   file_.read((char*)windowLine_.buffer(), uAvailable);
+   auto uAvailable = lineBuffer.available();
+   file_.read((char*)lineBuffer.buffer(), uAvailable);
    auto uReadSize = file_.gcount();                                            // get number of valid bytes read
-   windowLine_.update(uReadSize);                                              // Update valid size in line buffer
-   while( windowLine_.eof() == false )
+   lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
+   while( lineBuffer.eof() == false )
    {
       // ## count number of comments, comments start with '//' or '/*' and end with '*/'
-      auto [first_, last_] = windowLine_.range(gd::types::tag_pair{});
+      auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});
       for(auto it = first_; it != last_; it++ ) 
       {
          if( state_.in_state() == false )
@@ -241,14 +241,14 @@ TEST_CASE("[rowcouner] use states", "[rowcouner]") {
          }
       }
 
-      windowLine_.rotate();                                                    // rotate buffer
+      lineBuffer.rotate();                                                    // rotate buffer
 
       if( uReadSize > 0 )                                                      // was it possible to read data last read, then more data is available
       {
-         auto uAvailable = windowLine_.available();                            // get available space in buffer to be filled
-         file_.read((char*)windowLine_.buffer(), windowLine_.available());     // read more data into available space in buffer
+         auto uAvailable = lineBuffer.available();                            // get available space in buffer to be filled
+         file_.read((char*)lineBuffer.buffer(), lineBuffer.available());     // read more data into available space in buffer
          uReadSize = file_.gcount();
-         windowLine_.update(uReadSize);                                        // update valid size in line buffer
+         lineBuffer.update(uReadSize);                                        // update valid size in line buffer
       }
    }
 

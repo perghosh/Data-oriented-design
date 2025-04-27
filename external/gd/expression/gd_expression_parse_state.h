@@ -261,17 +261,28 @@ public:
    const std::vector<rule>& get_rule() const { return m_vectorRule; } ///< get vector of rules
    const std::array<uint8_t, 256>& get_marker_hint() const { return m_arrayMarkerHint; } ///< get marker hint
    const rule& get_rule(size_t uIndex) const { assert(uIndex < m_vectorRule.size()); return m_vectorRule[uIndex]; } ///< get rule at index
+
+   bool is_string() const { return get_state() == eStateString || get_state() == eStateRawString; } ///< check if rule is string
+   bool is_comment() const { return get_state() == eStateLineComment || get_state() == eStateBlockComment; } ///< check if rule is comment
+
 //@}
 
 /** \name OPERATION
 *///@{
+
+   // ## add rules
+
    void add(const rule& o) { m_vectorRule.push_back(o); add_marker_hint( o ); } ///< add rule to vector
-   /// add rule to vector, this will add the rule to the vector and add the first character of the start string to the marker hint
 
    void add(const std::string_view& stringState, const std::string_view& stringStart, const std::string_view& stringEnd) {
       m_vectorRule.emplace_back(rule( to_state_s(stringState), stringStart, stringEnd));
       add_marker_hint(stringStart[0]);
    } 
+   void add(const std::string_view& stringState, const std::string_view& stringStart, const std::string_view& stringEnd, const std::string_view& stringEscape) {
+      m_vectorRule.emplace_back(rule(to_state_s(stringState), stringStart, stringEnd, stringEscape));
+      add_marker_hint(stringStart[0]);
+   }
+
    void clear() { m_vectorRule.clear(); m_arrayMarkerHint = { 0 }; } ///< clear vector of rules
    bool empty() const { return m_vectorRule.empty(); } ///< check if vector of rules is empty
    size_t size() const { return m_vectorRule.size(); } ///< get size of vector of rules
@@ -358,10 +369,31 @@ public:
       return "NONE"; // Default case for invalid input
    }
 
+   /// convert state to string, this will convert the enumState value to a string
+   static std::string_view get_string_s(enumState eState)
+   {
+      switch( eState )
+      {
+      case eStateNone:          return "NONE";
+      case eStateLineComment:   return "LINECOMMENT";
+      case eStateWhitespace:    return "WHITESPACE";
+      case eStateString:        return "STRING";
+      case eStateNumber:        return "NUMBER";
+      case eStateIdentifier:    return "IDENTIFIER";
+      case eStateOperator:      return "OPERATOR";
+      case eStateEnd:           return "END";
+      case eStateBlockComment:  return "BLOCKCOMMENT";
+      case eStateRawString:     return "RAWSTRING";
+      case eStateScriptCode:    return "SCRIPTCODE";
+      }
+      return "NONE"; // Default case for invalid input
+   }
+
+
 };
 
 /// check if text exists in vector of rules
-bool state::exists(const char* piText) const {
+inline bool state::exists(const char* piText) const {
    if( piText == nullptr ) return false;
    for( auto it : m_vectorRule )
    {
@@ -372,7 +404,7 @@ bool state::exists(const char* piText) const {
 }
 
 /// activate state, this will set the state to the state of the rule that matches the text
-size_t state::activate(const char* piText) {
+inline size_t state::activate(const char* piText) {
    for( auto it = std::begin( m_vectorRule ), itEnd = std::end( m_vectorRule ); it != itEnd; it++ )
    {
       // Compare with specified lentgth
@@ -382,7 +414,7 @@ size_t state::activate(const char* piText) {
 }
 
 /// check if state is deactivated based on text passed, this matches the end of the rule for active state
-bool state::deactivate(const char* piText, unsigned* puLength) {                                                       assert( m_iActive != -1);
+inline bool state::deactivate(const char* piText, unsigned* puLength) {                                                       assert( m_iActive != -1);
    auto it = m_vectorRule.begin() + m_iActive;
    if( it->compare_end(piText) == true && it->is_escaped( piText) == false ) { 
       m_iActive = -1; 

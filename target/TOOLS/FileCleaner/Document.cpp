@@ -216,7 +216,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
       if( iRowIndexCount == -1 )
       {
          iRowIndexCount = ptableFileCount->get_row_count();
-         ptableFileCount->row_add();
+         ptableFileCount->row_add( gd::table::tag_null{} );
          ptableFileCount->cell_set( iRowIndexCount, "key", uint64_t(iRowIndexCount + 1));
          ptableFileCount->cell_set( iRowIndexCount, "file-key", itRowFile.cell_get_variant_view("key") );
          ptableFileCount->cell_set( iRowIndexCount, "filename", itRowFile.cell_get_variant_view("filename") );
@@ -232,9 +232,18 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
       
 
       gd::argument::shared::arguments argumentsResult;
-      auto result_ = COMMAND_CountRows( {{"source", stringFile} }, argumentsResult);
+      //auto result_ = COMMAND_CountRows( {{"source", stringFile} }, argumentsResult);
+      auto result_ = COMMAND_CollectFileStatistics( {{"source", stringFile} }, argumentsResult);
+      
       uint64_t uCount = argumentsResult["count"].as_uint64();
       ptableFileCount->cell_set(iRowIndexCount, "count", uCount);
+      if( argumentsResult["code"].is_null() == false )
+      {
+         ptableFileCount->cell_set(iRowIndexCount, "code", argumentsResult["code"].as_uint64());
+         ptableFileCount->cell_set(iRowIndexCount, "characters", argumentsResult["characters"].as_uint64());
+         ptableFileCount->cell_set(iRowIndexCount, "comment", argumentsResult["comment"].as_uint64());
+         ptableFileCount->cell_set(iRowIndexCount, "string", argumentsResult["string"].as_uint64());
+      }
    }
 
    return { true, "" };
@@ -286,7 +295,10 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId)
       if( ptable_ == nullptr )
       {
          // file-count table: key | file-key | path | count
-         auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"}, {"uint64", 0, "count"} }, gd::table::tag_prepare{} ) );
+         auto ptable_ = std::make_unique<table>( table( uTableStyle, 
+            { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"}, 
+              {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"} }, gd::table::tag_prepare{} )
+         );
          CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
       }
    }
@@ -538,7 +550,7 @@ gd::table::dto::table CDocument::RESULT_RowCount()
    using namespace gd::table::dto;
    // Define the result table structure
    constexpr unsigned uTableStyle = (table::eTableFlagNull32 | table::eTableFlagRowStatus);
-   table tableResult(uTableStyle, {{"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "count"}}, gd::table::tag_prepare{});
+   table tableResult(uTableStyle, {{"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"}}, gd::table::tag_prepare{});
 
    // Retrieve the file and file-count cache tables
    auto* ptableFile = CACHE_Get("file", false);                                                    assert( ptableFile != nullptr );
@@ -548,7 +560,7 @@ gd::table::dto::table CDocument::RESULT_RowCount()
    for (const auto& itRowCount : *ptableFileCount)
    {
       uint64_t iFileKey = itRowCount.cell_get_variant_view("file-key").as_uint64();
-      uint64_t iCount = itRowCount.cell_get_variant_view("count").as_uint64();
+      uint64_t uCount = itRowCount.cell_get_variant_view("count").as_uint64();
       auto stringFilename = itRowCount.cell_get_variant_view("filename").as_string();
 
       // Find the corresponding row in the file table using the file key
@@ -560,10 +572,17 @@ gd::table::dto::table CDocument::RESULT_RowCount()
 
             // Add a new row to the result table
             auto uRow = tableResult.get_row_count();
-            tableResult.row_add();
+            tableResult.row_add( gd::table::tag_null{} );
             tableResult.cell_set(uRow, "folder", stringFolder );
             tableResult.cell_set(uRow, "filename", stringFilename);
-            tableResult.cell_set(uRow, "count", iCount);
+            tableResult.cell_set(uRow, "count", uCount);
+            if( itRowCount.cell_get_variant_view("code").is_null() == false )
+            {
+               tableResult.cell_set(uRow, "code", itRowCount.cell_get_variant_view("code").as_uint64());
+               tableResult.cell_set(uRow, "characters", itRowCount.cell_get_variant_view("characters").as_uint64());
+               tableResult.cell_set(uRow, "comment", itRowCount.cell_get_variant_view("comment").as_uint64());
+               tableResult.cell_set(uRow, "string", itRowCount.cell_get_variant_view("string").as_uint64());
+            }
 
             break; // Exit the loop once the matching row is found
          }

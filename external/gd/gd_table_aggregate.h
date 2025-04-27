@@ -196,11 +196,13 @@ void aggregate<TABLE>::max( std::vector<unsigned>& vectorLength, uint64_t uBegin
    uint64_t uEndRow = uBeginRow + uCount; // last row where value is checked
    // ## iterate rows to check max length for values found in column
    if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
+   bool bHasNull = m_ptable->is_null(); // get if table has null values
 
    //unsigned uColumnCount = vectorLength.size() < m_ptable->get_column_count() ?  vectorLength.size() : m_ptable->get_column_count(); // number of columns to check
    for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
       for( auto itColumn = std::begin( vectorColumn ), itEnd = std::end( vectorColumn ); itColumn != itEnd; itColumn++ ) {
          unsigned uColumn = *itColumn;
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue; // skip null values
          unsigned uValueLength = m_ptable->cell_get_length( uRow, uColumn );
          unsigned uLength = vectorLength[std::distance( vectorColumn.begin(), itColumn )];
          if( uLength < uValueLength ) vectorLength[ std::distance( vectorColumn.begin(), itColumn )] = uValueLength;
@@ -217,16 +219,18 @@ TYPE aggregate<TABLE>::sum( unsigned uColumn, uint64_t uBeginRow, uint64_t uCoun
 
    auto eType = gd::types::type_g<TYPE>( gd::types::tag_ask_compiler{});
    auto uColumnType = m_ptable->column_get_ctype( uColumn );
-
+   bool bHasNull = m_ptable->is_null(); // get if table has null values
    TYPE sum_{};
 
    if( (( unsigned )eType & 0xff) == (uColumnType & 0xff) ) {
       for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue; // skip null values
          sum_ += (TYPE)m_ptable->cell_get_variant_view( uRow, uColumn );
       }
    }
    else {
       for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue; // skip null values
          gd::variant variantConvertTo;
          auto variantviewValue = m_ptable->cell_get_variant_view( uRow, uColumn );
          bool bOk = variantviewValue.convert_to( eType,  variantConvertTo );
