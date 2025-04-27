@@ -179,8 +179,8 @@ public:
 
    size_t activate(const char* piText); ///< activate state, this will set the state to the state of the rule that matches the text
    size_t activate(const uint8_t* puText) { return activate(reinterpret_cast<const char*>( puText )); } ///< activate state, this will set the state to the state of the rule that matches the text
-   bool deactivate(const char* piText);
-   bool deactivate(const uint8_t* puText) { return deactivate(reinterpret_cast<const char*>( puText )); } ///< check if state is deactivated based on text passed, this matches the end of the rule for active state
+   bool deactivate(const char* piText, unsigned* puLength = nullptr);
+   bool deactivate(const uint8_t* puText, unsigned* puLength = nullptr ) { return deactivate(reinterpret_cast<const char*>( puText ), puLength ); } ///< check if state is deactivated based on text passed, this matches the end of the rule for active state
 
    // ## iterator methods
 
@@ -260,10 +260,11 @@ size_t state::activate(const char* piText) {
 }
 
 /// check if state is deactivated based on text passed, this matches the end of the rule for active state
-bool state::deactivate(const char* piText) {                                                       assert( m_iActive != -1);
+bool state::deactivate(const char* piText, unsigned* puLength) {                                                       assert( m_iActive != -1);
    auto it = m_vectorRule.begin() + m_iActive;
    if( it->compare_end(piText) == true && it->is_escaped( piText) == false ) { 
       m_iActive = -1; 
+      if( puLength != nullptr ) { *puLength = (unsigned)it->m_stringEnd.length(); } // set next position to the end of the string
       return true; 
    }
    return false;
