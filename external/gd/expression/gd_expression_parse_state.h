@@ -1,5 +1,59 @@
-
-
+/**
+ * @file gd_expression_parse_state.h
+ * @brief Defines the `state` class and its associated `rule` struct for managing parsing states in expressions.
+ *
+ * This file provides the implementation of a state machine for parsing expressions. It includes:
+ * - The `state` class, which manages a collection of parsing rules and provides methods to activate, deactivate, and query states.
+ * - The `rule` struct, which defines individual parsing rules with start, end, and escape sequences.
+ *
+ * ### Key Features:
+ * - Supports multiple parsing states such as comments, strings, numbers, and operators.
+ * - Allows adding custom rules for parsing expressions.
+ * - Provides efficient state transitions using marker hints.
+ * - Includes utility methods for comparing input text with parsing rules.
+ *
+ * ### Example Usage:
+ * @code
+ * #include "gd_expression_parse_state.h"
+ * 
+ * using namespace gd::expression::parse;
+ * 
+ * int main() {
+ *     state stateParse;
+ * 
+ *     // Add rules for parsing
+ *     stateParse.add("STRING", "\"", "\""); // Rule for string literals
+ *     stateParse.add("LINECOMMENT", "//", "\n"); // Rule for line comments
+ * 
+ *     // Activate a state based on input text
+ *     const char* input = "\"Hello, World!\"";
+ *     size_t length = stateParse.activate(input);
+ * 
+ *     // Check if the parser is in a state
+ *     if (stateParse.in_state()) {
+ *         std::cout << "Parser is in state: " << stateParse.get_state() << std::endl;
+ *     }
+ * 
+ *     // Deactivate the state
+ *     unsigned endLength = 0;
+ *     if (parserState.deactivate(input + length, &endLength)) {
+ *         std::cout << "State deactivated successfully." << std::endl;
+ *     }
+ * 
+ *     return 0;
+ * }
+ * @endcode
+ *
+ * ### Dependencies:
+ * - `gd_expression.h`: Provides core expression-related functionality.
+ *
+ * ### Namespace:
+ * All functionality is encapsulated within the `gd::expression::parse` namespace.
+ *
+ * ### Notes:
+ * - This file is part of a larger parsing framework and is designed to work with other components in the `gd` library.
+ * - The file uses C++20 features and assumes a modern compiler.
+ */
 
 #pragma once
 
@@ -23,16 +77,27 @@ _GD_EXPRESSION_PARSE_BEGIN
 
 
 /**
- * \brief
+ * @class state
+ * @brief Represents a parsing state machine for managing and transitioning between different parsing states.
  *
+ * The `state` class is designed to handle parsing logic by maintaining a collection of rules, 
+ * each defining a specific parsing state and its associated start, end, and escape sequences. 
+ * It provides methods to activate, deactivate, and query states based on input text.
  *
- *
- \code
- \endcode
+ * ### Features:
+ * - Supports multiple parsing states such as comments, strings, numbers, and operators.
+ * - Allows adding custom rules for parsing.
+ * - Provides methods to activate and deactivate states based on input text.
+ * - Maintains a marker hint array for efficient state transitions.
  */
 class state
 {
 public:
+   /**
+    * @brief Enumeration of parsing states.
+    * 
+    * @note The order of the states is important for determining multiline states.
+    */
    enum enumState
    {
       eStateNone = 0,		///< no state
@@ -43,25 +108,61 @@ public:
       eStateIdentifier,		///< identifier state
       eStateOperator,	   ///< operator state
       eStateEnd,			   ///< end of expression
+      // multiline states
       eStateBlockComment,	///< block comment state
       eStateRawString,		///< raw string state
       eStateScriptCode     ///< script that differs from the rest
    };
 
    /**
-    * \brief
+    * @struct rule
+    * @brief Represents a parsing rule for managing specific parsing states.
     *
+    * The `rule` struct defines the characteristics of a parsing state, including its start, 
+    * end, and escape sequences. It provides utility methods to compare input text with 
+    * the rule's start and end sequences and to check if the text is escaped.
     *
+    * ### Features:
+    * - Defines a parsing state with start, end, and optional escape sequences.
+    * - Provides comparison methods for matching input text with the rule's sequences.
+    * - Supports equality comparison between rules and strings.
+    *
+    * ### Example Usage:
+    * @code
+    * #include "gd_expression_parse_state.h"
+    * 
+    * using namespace gd::expression::parse;
+    * 
+    * int main() {
+    *     // Create a rule for string literals
+    *     state::rule rule_(state::eStateString, "\"", "\"", "\\");
+    * 
+    *     const char* input = "\"Hello, World!\"";
+    * 
+    *     // Check if the input matches the start of the rule
+    *     if (rule_.compare(input)) {
+    *         std::cout << "Input matches the start of the rule." << std::endl;
+    *     }
+    * 
+    *     // Check if the input matches the end of the rule
+    *     if (rule_.compare_end(input + 13)) {
+    *         std::cout << "Input matches the end of the rule." << std::endl;
+    *     }
+    * 
+    *     return 0;
+    * }
+    * @endcode
     */
    struct rule
    {
       // ## construction -------------------------------------------------------------
-
       rule() : m_eState(eStateNone) {}
       rule(enumState state, const std::string_view& stringStart, const std::string_view& stringEnd)
          : m_eState(state), m_stringStart(stringStart), m_stringEnd(stringEnd) {}
       rule(enumState state, const std::string& stringStart, const std::string& stringEnd)
          : m_eState(state), m_stringStart(stringStart), m_stringEnd(stringEnd) {}
+      rule(enumState state, const std::string_view& stringStart, const std::string_view& stringEnd, const std::string_view& stringEscape) :
+         m_eState(state), m_stringStart(stringStart), m_stringEnd(stringEnd), m_stringEscape(stringEscape) {}
       rule(const rule& o): m_eState(o.m_eState), m_stringStart(o.m_stringStart), m_stringEnd(o.m_stringEnd) {}
       rule(rule&& o) noexcept : m_eState(o.m_eState), m_stringStart(std::move(o.m_stringStart)), m_stringEnd(std::move(o.m_stringEnd)) {}
       rule& operator=(const rule& o) {
