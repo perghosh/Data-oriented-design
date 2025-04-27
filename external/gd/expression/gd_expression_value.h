@@ -98,9 +98,9 @@ struct value
       if( is_integer() ) return static_cast<double>(std::get<int64_t>(m_value));
       return 0.0;
    }
-   /// @brief get string value, converts other types to string if needed
+   /// @brief get string value, converts integer and double to string if needed
    const std::string& get_string() const { assert( is_string() ); return std::get<std::string>(m_value); }
-   /// @brief get boolean value, converts other types if possible
+   /// @brief get boolean value, converts integer and double to boolean if needed 
    bool get_bool() const;
 //@}
 
