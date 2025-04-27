@@ -184,8 +184,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
          tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
 
-         std::string stringCliTable = gd::table::to_string(tableResult, gd::table::tag_io_cli{});
-         std::cout << "\n\n" << stringCliTable << "\n\n";
+         std::string stringCliTable = gd::table::to_string(tableResult, gd::table::tag_io_cli{});  LOG_INFORMATION_RAW("count = total number of lines\ncode = number of code lines\ncharacters = number of code characters\ncomment = number of comments in code\nstring = number of strings in code");
+         std::cout << "\n" << stringCliTable << "\n\n";
       }
    }
    else if( stringCommandName == "db" )
