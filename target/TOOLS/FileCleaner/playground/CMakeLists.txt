@@ -88,13 +88,13 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_test")
    add_executable(${TEST_NAME_}
-      ${external_gd} ${external_pugixml} ${external_sqlite}
+      ${external_gd} ${external_pugixml} ${external_sqlite} ${external_catch2}
       ${TARGET_PLAYGROUND_}   
       ${TARGET_SOURCE_FILES_}
       ${SOURCE_PLAYGROUND_}
    
    
-   "main.cpp" ${external_gd_core} ${external_catch2} 
+   "main.cpp"  
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -113,7 +113,7 @@ if( USE_TEST_ )
       ${SOURCE_PLAYGROUND_}
    
    
-   "main.cpp" ${external_gd_core} ${external_catch2} 
+   "main.cpp" ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -122,4 +122,19 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 endif()
 
+
+set( USE_TEST_ ON )
+if( USE_TEST_ )
+   set(TEST_NAME_ "PLAY_rowcounter")
+   add_executable(${TEST_NAME_}
+      ${external_gd} ${external_catch2}
+      ${SOURCE_PLAYGROUND_}
+   
+   
+      "main.cpp"  
+      "${TEST_NAME_}.cpp"
+   )
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+endif()
 
