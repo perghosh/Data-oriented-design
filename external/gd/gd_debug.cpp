@@ -1,3 +1,5 @@
+#include <cstdint>
+
 #include "gd_debug.h"
 
 _GDD_BEGIN
