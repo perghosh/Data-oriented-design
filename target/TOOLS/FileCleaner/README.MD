@@ -1,9 +1,14 @@
-# Cleaner.exe User Guide
+# Cleaner.exe User Guide (BETA!!!)
 
 ## Getting Started (simple)
 
 **Windows**
 - Place cleaner in `system32` or `windows` folder, or add the path to the system PATH variable.
+- Open a command prompt and go to folder with source code and type `cleaner count`.
+- Default settings will scan files in current folder and print result to console.
+
+**Linux**
+- Place cleaner in `/usr/local/bin/` or `/usr/bin/`
 - Open a command prompt and go to folder with source code and type `cleaner count`.
 - Default settings will scan files in current folder and print result to console.
 
