@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <stdlib.h>
 
 #include <fstream>

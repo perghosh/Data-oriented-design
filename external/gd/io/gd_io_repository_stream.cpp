@@ -431,7 +431,8 @@ std::pair<bool, std::string> repository::read_to_file(const std::string_view& st
 
    // ### read data from repository
    fseek_64_(m_pFile, uBeginPosition, SEEK_SET);
-   fread(vectorBuffer.data(), 1, it->m_uSize, m_pFile);
+   size_t uBytesRead = fread(vectorBuffer.data(), 1, it->m_uSize, m_pFile);                        assert( uBytesRead == it->m_uSize ); // check if all bytes are read
+   if( uBytesRead != it->m_uSize ) { return {false, std::string("Failed to read data from repository")}; }
 
    // ### write data to file
    ofstreamFile.write((const char*)vectorBuffer.data(), it->size());
