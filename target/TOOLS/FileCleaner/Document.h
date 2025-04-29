@@ -87,6 +87,12 @@ public:
       
 //@}
 
+/** \name RESULT
+ * Document are able to generate result data based on what the document is storing
+ *///@{
+   std::pair<bool, std::string> RESULT_Save(const gd::argument::shared::arguments& argumentsResult, const gd::table::dto::table* ptableResult );
+//@}
+
 /** \name CACHE
  * Document are able to cache information and it can handle different named caches.
  * Each cache is stored in a named table and that table is then stored in 

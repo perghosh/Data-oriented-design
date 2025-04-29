@@ -105,6 +105,21 @@ inline void to_string(const dto::table& table, std::string& stringOut, tag_io_he
    return to_string( table, 0ull, table.get_row_count(), gd::argument::arguments(), nullptr, stringOut, tag_io_header{}, tag_io_csv{});
 }
 
+/// Write complete table to string body in csv format
+inline std::string to_string(const dto::table& table_, tag_io_csv ) {
+   std::string stringOut;
+   to_string(table_, 0, table_.get_row_count(), nullptr, stringOut, tag_io_csv{});
+   return stringOut;
+}
+
+/// Write complete table to string with header and body in csv format
+inline std::string to_string(const dto::table& table_, tag_io_header, tag_io_csv ) {
+   std::string stringOut;
+   to_string(table_, 0, table_.get_row_count(), nullptr, stringOut, tag_io_header{}, tag_io_csv{});
+   return stringOut;
+}
+
+
 
 void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, bool (*format_text_)(unsigned uColumn, unsigned uType, const gd::variant_view&, std::string& stringNew), std::string& stringOut, tag_io_csv );
 
@@ -359,6 +374,13 @@ inline void write_insert_g(const std::string_view& stringTableName, const dto::t
 }
 inline void write_insert_g(const std::string_view& stringTableName, const dto::table& table, const std::vector<unsigned>& vectorColumn, std::string& stringInsert, const gd::argument::arguments& argumentsOption, tag_io_sql) {
    write_insert_g( stringTableName, table, 0, table.get_row_count(), vectorColumn, stringInsert, argumentsOption, tag_io_sql{});
+}
+
+/// write table to string using sql insert query
+inline std::string write_insert_g(const std::string_view& stringTableName, const dto::table& table_, tag_io_sql) {
+   std::string stringInsert;
+   write_insert_g(stringTableName, table_, 0, table_.get_row_count(), stringInsert, gd::argument::arguments(), tag_io_sql{});
+   return stringInsert;
 }
 
 void write_insert_g( const std::string_view& stringTableName, const dto::table& table, const std::vector<uint64_t>& vectorRow, const std::vector<unsigned>& vectorColumn, std::string& stringInsert, const gd::argument::arguments& argumentsOption, tag_io_sql );

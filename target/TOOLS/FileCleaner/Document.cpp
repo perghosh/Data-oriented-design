@@ -250,6 +250,63 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
 }
 
 
+
+std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::arguments& argumentsResult, const gd::table::dto::table* ptableResult)
+{
+   std::string stringType = argumentsResult["type"].as_string();               // type of result
+   std::string stringOutput = argumentsResult["output"].as_string();           // output file name, could be a database
+
+   if( stringOutput.empty() == true ) { return { false, "No output file specified" }; }
+
+   gd::file::path pathFile(stringOutput);
+   std::string stringExtension = pathFile.extension().string();
+
+   // convert string to lowercase
+   std::transform(stringExtension.begin(), stringExtension.end(), stringExtension.begin(), ::tolower);
+
+   std::string stringResult;
+
+   if( stringType == "COUNT" )
+   {
+      if( stringExtension == ".csv" )
+      {
+         stringResult = gd::table::to_string(*ptableResult, gd::table::tag_io_header{}, gd::table::tag_io_csv{}); // save table to string
+      }
+      else if( stringExtension == ".sql" )
+      {
+         std::string stringTableName = argumentsResult["table"].as_string();
+         if( stringTableName.empty() == true ) stringTableName = pathFile.stem().string();
+         stringResult = gd::table::write_insert_g( stringTableName, *ptableResult, gd::table::tag_io_sql{}); // save table to string
+      }
+   }
+
+   if( stringOutput.empty() == false && stringResult.empty() == false )
+   {
+      std::ofstream file_(stringOutput, std::ios::binary);
+      if( file_.is_open() == false ) return { false, "Failed to open file: " + stringOutput };
+      file_.write(stringResult.data(), stringResult.size());
+      file_.close();
+   }
+
+
+
+   /*
+   else if( stringType == "XML" )
+   {
+      auto result_ = gd::table::to_file(*ptableResult, stringOutput, gd::table::tag_io_xml{});
+      if( result_.first == false ) return { false, result_.second };
+   }
+   else if( stringType == "SQL" )
+   {
+      auto result_ = gd::table::to_file(*ptableResult, stringOutput, gd::table::tag_io_sql{});
+      if( result_.first == false ) return { false, result_.second };
+   }
+   */
+   
+   return { true, "" };
+}
+
+
 // 0TAG0CACHE
 
 /** ---------------------------------------------------------------------------
