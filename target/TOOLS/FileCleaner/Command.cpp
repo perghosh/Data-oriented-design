@@ -337,6 +337,14 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Prepares the state for parsing based on the file extension.
+ * @param argumentsPath The arguments containing the source path for harvesting files.
+ * @param state_ The state object to be prepared.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state_)
 {
    std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);

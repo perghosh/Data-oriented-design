@@ -1262,7 +1262,7 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
    /// ### [name type and nanme lenghth][name value]{value type and value buffer length]{native value length}[value data] = total byte count needed to store value
    uReserveLength += uNameLength + sizeof( uint32_t );                         // name if any and length value for name
    uReserveLength += uLength + sizeof(uint32_t);                               // value length (and prefix value length for strings)
-   uReserveLength += sizeof(uint32_t) * 2;                                     // padding space to enable space for 32 bit alignment (name and value is aligned)
+   uReserveLength += sizeof(uint32_t) * 3;                                     // padding space to enable space for 32 bit alignment (name and value is aligned) and four bytes extra
    uReserveLength = align32_g( uReserveLength );                               // align
       
    // reserve data for name, length for name, name type, data type and data value
@@ -2396,6 +2396,11 @@ std::string arguments::print( const std::string_view& stringSplit, gd::types::ta
  */
 bool arguments::reserve(uint64_t uCount)
 {                                                                                                  assert( (uCount % 4) == 0 );
+#ifndef NDEBUG
+   auto uTotalBufferSize_d = buffer_buffer_size();                                                 
+   assert( uTotalBufferSize_d == 0 || (uTotalBufferSize_d + sizeof( buffer )) % 64 == 0);
+#endif
+
    if( uCount > buffer_buffer_size() )
    {
       uint64_t uBufferSize = (sizeof( buffer ) + uCount + ( uCount >> 1 ) + 63) & ~63;             // calculate new size and align to 64 byte
