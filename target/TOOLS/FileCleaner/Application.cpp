@@ -172,12 +172,19 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
       bool bSaved = false;                                                     // variable to store if result was saved
 
+      std::string stringOutput = ( *poptionsActive )["output"].as_string();                        LOG_INFORMATION_RAW("== --output: " & stringOutput);
+      bool bOutput = ( *poptionsActive )["output"].is_true();
 
       // if option "print" was specified, then print the result or not if, ignore the bSaved
       if( bSaved == false && poptionsActive->exists("print") == true ) bSaved = true;
-      if( bSaved == false || ( *poptionsActive )["print"].is_true() == true )
+      if( bSaved == false || bOutput == true || stringOutput.empty() == false )
       {
          auto tableResult = pdocument->RESULT_RowCount();
+         if( stringOutput.empty() == false )
+         {
+            auto result_ = pdocument->RESULT_Save( { {"type", "COUNT"}, {"output", stringOutput} }, &tableResult );
+            if( result_.first == false ) return result_;
+         }
 
          auto result_ = TABLE_AddSumRow( &tableResult, {2, 3, 4, 5, 6});
          if( result_.first == false ) return result_;
@@ -568,6 +575,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
+   optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
    optionsApplication.add({"database", "Set folder where logger places log files"});
    optionsApplication.add({"statements", "file containing sql statements"});
 

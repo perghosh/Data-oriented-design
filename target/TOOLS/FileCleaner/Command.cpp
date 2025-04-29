@@ -354,6 +354,19 @@ std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::ar
       state_.add(std::string_view("STRING"), "\"", "\"", "\\");
       state_.add(std::string_view("RAWSTRING"), "R\"(", ")\"");
    }
+   else if( stringExtension == ".cs" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("RAWSTRING"), "\"\"\"", "\"\"\"");
+   }
+   else if( stringExtension == ".java" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+   }
    else if( stringExtension == ".js" )
    {
       state_.add(std::string_view("LINECOMMENT"), "//", "\n");
