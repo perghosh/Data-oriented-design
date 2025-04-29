@@ -182,7 +182,12 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          auto tableResult = pdocument->RESULT_RowCount();
          if( stringOutput.empty() == false )
          {
-            auto result_ = pdocument->RESULT_Save( { {"type", "COUNT"}, {"output", stringOutput} }, &tableResult );
+            // ## save result to file
+            
+            // Prepare the arguments for saving the result
+            gd::argument::shared::arguments argumentsResult({ {"type", "COUNT"}, {"output", stringOutput}, 
+                                                              {"table", ( *poptionsActive )["table"].as_string() } });
+            auto result_ = pdocument->RESULT_Save( argumentsResult, &tableResult );
             if( result_.first == false ) return result_;
          }
 
@@ -585,6 +590,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({"comment", "Pair of characters marking start and end for comments"});
       optionsCommand.add({"string", "Pair of characters marking start and end for strings"});
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted" });
+      optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
