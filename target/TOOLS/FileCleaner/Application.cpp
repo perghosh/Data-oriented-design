@@ -67,6 +67,9 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
    if( iArgumentCount > 1 )
    {
+      std::string stringArgument = gd::cli::options::to_string_s(iArgumentCount, ppbszArgument, 1);
+      PROPERTY_Add("arguments", stringArgument);                                                   LOG_INFORMATION_RAW("== Arguments: " & stringArgument);
+
       gd::cli::options optionsApplication;
       CApplication::Prepare_s(optionsApplication);
       // Parse the command-line arguments

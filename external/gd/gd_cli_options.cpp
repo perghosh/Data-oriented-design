@@ -571,6 +571,60 @@ options options::sub_get( const std::string_view& stringName ) const
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief convert argument values to string
+ * 
+ * Convrt all arguments to string and add to stringArguments that is returned.
+ * Useful for printing command line arguments to application
+ * 
+ * @param iCount number of arguments
+ * @param ppbszArgumentValue pointer to charpointers (array of pointers)
+ * @param iOffset offset for first argument to convert
+ * @return std::string with all arguments converted to string
+ */
+std::string options::to_string_s(int iCount, const char* const* ppbszArgumentValue, int iOffset)
+{                                                                                                  assert( iCount >= 0 );
+   std::string stringArguments; // generated string with arguments
+
+
+   // ## Go through all arguments and add to string
+   for( int iPosition = iOffset; iPosition < iCount; iPosition++ )
+   {
+      bool bQuote = false; // if space or special characters are found then add quotes
+      auto uLength = (int)strlen(ppbszArgumentValue[iPosition]);
+      const auto* pbszArgument = ppbszArgumentValue[iPosition];
+      for( int i = 0; i != uLength; i++ )
+      {
+         char iCharacter = pbszArgument[i];
+         if( isspace(iCharacter) || iCharacter == '"' || iCharacter == '\'' || iCharacter == '\\' || iCharacter == '(' || iCharacter == ')' ) { bQuote = true; break; }
+      }
+
+      if( stringArguments.empty() == false ) stringArguments += " ";
+
+      if( bQuote == true )                                                     // if space or special characters are found then add quotes
+      {
+         stringArguments += "\"";                                              // add quote
+         for( decltype( uLength) u = 0; u != uLength; u++ )
+         {
+            char iCharacter = ppbszArgumentValue[iPosition][u];
+            if(iCharacter == '"' || iCharacter == '\\') 
+            {
+               stringArguments += '\\';                                        // escape special characters
+            }
+            
+            stringArguments += iCharacter;
+         }
+         stringArguments += "\"";                                              // add quote
+      }
+      else
+      {
+         stringArguments += ppbszArgumentValue[iPosition];                     // no special characters, just add
+      }
+   }
+
+   return stringArguments;
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Generate error message and return a pair that works for other methods
  * @param listPrint list of values converted to generated text
  * @return std::pair<bool, std::string> false and generated text
