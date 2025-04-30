@@ -381,7 +381,9 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
-
+   /// convert argument values to string
+   static std::string to_string_s(int iCount, const char* const* ppbszArgumentValue, int iOffset = 0);
+   /// print error message and return it
    static std::pair<bool, std::string> error_s( std::initializer_list<gd::variant_view> listPrint );
 
    /// return flag
@@ -464,3 +466,56 @@ inline void options::clear_all() {
 
 
 _GD_CLI_END
+
+
+/*
+
+#include <iostream>
+#include <string>
+
+std::string quoteArgIfNeeded(const std::string& arg) {
+    // Check if argument needs quoting (contains spaces or special chars)
+    bool needsQuoting = false;
+    for (char c : arg) {
+        if (isspace(c) || c == '"' || c == '\'' || c == '\\' || c == '(' || c == ')') {
+            needsQuoting = true;
+            break;
+        }
+    }
+    
+    if (!needsQuoting) {
+        return arg;
+    }
+    
+    // Quote and escape the argument
+    std::string quoted = "\"";
+    for (char c : arg) {
+        if (c == '"' || c == '\\') {
+            quoted += '\\';  // Escape special characters
+        }
+        quoted += c;
+    }
+    quoted += "\"";
+    
+    return quoted;
+}
+
+int main(int argc, char* argv[]) {
+    std::string commandLine;
+    
+    // Start from index 1 to skip the program name
+    for (int i = 1; i < argc; i++) {
+        commandLine += quoteArgIfNeeded(argv[i]);
+        
+        // Add a space between arguments, except after the last one
+        if (i < argc - 1) {
+            commandLine += " ";
+        }
+    }
+    
+    std::cout << "Regenerated command line: " << commandLine << std::endl;
+    
+    return 0;
+}
+
+*/
