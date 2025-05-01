@@ -14,59 +14,39 @@
 
 #include "Command.h"
 
-/*
-int CountRowsInFile(const gd::table::dto::table& table_)
-{
 
-   int iCount = 0;
-
-   gd::table::dto::table tableTemp = table_;
-
-   for( const auto& itRow : tableTemp )
-   {
-      auto value_ = itRow.cell_get_variant_view( "path" );
-      std::string stringFile = value_.as_string();
-      if( std::filesystem::is_regular_file(stringFile) == true )
-      {
-         std::ifstream ifstreamFile(stringFile);
-         std::string stringText;
-
-         while( std::getline(ifstreamFile, stringText) )
-         {
-            iCount++;
-         }
-
-         ifstreamFile.close();
-      }
-   }
-
-   return iCount;
-}
-
-
-
-int RowCount( const std::string& stringFile )
-{
-   if( std::filesystem::is_regular_file(stringFile) == true )
-   {
-      std::ifstream ifstreamFile(stringFile);
-      std::string stringText;
-      int iCount = 0;
-
-      while( std::getline(ifstreamFile, stringText) )
-      {
-         iCount++;
-      }
-
-      ifstreamFile.close();
-
-      return iCount;
-   }
-
-   return 0;
-}
-*/
-
+ /** --------------------------------------------------------------------------
+ * @brief Harvests files from a specified directory path and populates a table with their details.
+ *
+ * This method recursively traverses the directory structure starting from the given path, 
+ * collecting information about each file and storing it in the provided table. The information 
+ * includes the file's folder, filename, extension, and size.
+ *
+ * @param stringPath The root directory path to start harvesting files from.
+ * @param ptable_ A pointer to the table where the harvested file details will be stored.
+ *                The table must be pre-initialized and not null.
+ * @param uDepth The maximum depth for recursive traversal. A value of 0 means no recursion.
+ * @return A pair containing:
+ *         - `bool`: `true` if the harvesting was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @note The method uses `std::filesystem` for directory traversal and file operations.
+ *       If an error occurs during traversal (e.g., permission issues), the method will 
+ *       return `false` along with the error message.
+ *
+ * @example
+ * @code
+ * gd::table::dto::table table;
+ * std::string path = "/example/directory";
+ * unsigned depth = 2;
+ * auto result = FILES_Harvest_g(path, &table, depth);
+ * if (result.first) {
+ *     std::cout << "Files harvested successfully." << std::endl;
+ * } else {
+ *     std::cerr << "Error: " << result.second << std::endl;
+ * }
+ * @endcode
+ */
 std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::table::dto::table* ptable_, unsigned uDepth )
 {                                                                                                  assert( ptable_ != nullptr );
    // ## add file to table
@@ -362,6 +342,20 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Collects pattern statistics from the specified source file.
+ *
+ * This method reads the specified file and counts occurrences of each pattern
+ * in the source code. The patterns are provided in the `vectorPattern` parameter.
+ *
+ * @param argumentsPath The arguments container containing the input parameters:
+ *        - `source` (string): The source file path to collect statistics from.
+ * @param vectorPattern A vector of strings representing the patterns to count.
+ * @param vectorCount A reference to a vector where the counts of each pattern will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector<std::string>& vectorPattern, std::vector<uint64_t>& vectorCount)
 {
    enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
