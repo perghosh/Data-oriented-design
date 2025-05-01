@@ -182,14 +182,19 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          if( result_.first == false ) return result_;
       }
 
-      bool bSaved = false;                                                     // variable to store if result was saved
       bool bPrint = poptionsActive->exists("print");
 
       std::string stringOutput = ( *poptionsActive )["output"].as_string();                        LOG_INFORMATION_RAW("== --output: " & stringOutput);
       bool bOutput = ( *poptionsActive )["output"].is_true();
 
+      // ## if no other setting to produce result then set print to true, this is the default
+      if( bPrint == false && bOutput == false && stringOutput.empty() == true )
+      {
+         bPrint = true;                                                        // if no output or print is set, then set print to true
+      }
+
       // if option "print" was specified, then print the result or not if, ignore the bSaved
-      if( bPrint == true || bSaved == false || bOutput == true || stringOutput.empty() == false )
+      if( bPrint == true || bOutput == true || stringOutput.empty() == false )
       {
          auto tableResult = pdocument->RESULT_RowCount();
          if( stringOutput.empty() == false )
