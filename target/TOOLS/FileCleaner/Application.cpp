@@ -11,6 +11,7 @@
 
 #include "pugixml/pugixml.hpp"
 
+#include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
@@ -71,17 +72,17 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       PROPERTY_Add("arguments", stringArgument);                                                   LOG_INFORMATION_RAW("== Arguments: " & stringArgument);
 
       gd::cli::options optionsApplication;
-      CApplication::Prepare_s(optionsApplication);
-      // Parse the command-line arguments
+      CApplication::Prepare_s(optionsApplication);                             // prepare command-line options
+
+      // ## Parse the command-line arguments
       auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);
       if( bOk == false ) { return { false, stringError }; }
 
+      // ## Process the command-line arguments
       std::tie(bOk, stringError) = Initialize(optionsApplication);
       if( bOk == false ) { return { false, stringError }; }
    }
 
-
-   // Process the command-line arguments
    return { true, "" };
 }
 
@@ -172,6 +173,14 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
       result_ = pdocument->FILE_UpdateRowCounters();                           // count rows in harvested files
       if( result_.first == false ) return result_;
+
+      if( ( *poptionsActive )["pattern"].is_true() )
+      {
+         std::string stringPattern = ( *poptionsActive )["pattern"].as_string();                   LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
+         auto vectorPattern = Split_s(stringPattern);                          // split pattern string into vector
+         auto result_ = pdocument->FILE_UpdatePatternCounters(vectorPattern);
+         if( result_.first == false ) return result_;
+      }
 
       bool bSaved = false;                                                     // variable to store if result was saved
 
@@ -584,15 +593,16 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
-   optionsApplication.add({"database", "Set folder where logger places log files"});
-   optionsApplication.add({"statements", "file containing sql statements"});
+   optionsApplication.add({ "database", "Set folder where logger places log files"});
+   optionsApplication.add({ "statements", "file containing sql statements"});
 
    {  // ## `copy` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );
-      optionsCommand.add({"source", 's', "File to count lines in"});
-      optionsCommand.add({"comment", "Pair of characters marking start and end for comments"});
-      optionsCommand.add({"string", "Pair of characters marking start and end for strings"});
-      optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted" });
+      optionsCommand.add({ "source", 's', "File to count lines in"});
+      optionsCommand.add({ "comment", "Pair of characters marking start and end for comments"});
+      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
+      optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
+      optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
@@ -732,5 +742,44 @@ void CApplication::Read_s( gd::database::cursor_i* pcursorSelect, gd::table::tab
          }
       }
    }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Splits a string into a vector of strings based on the specified delimiter.
+ * 
+ * *Sample code*
+ * ```cpp
+ * std::string stringText = "apple;banana;cherry";
+ * char iDelimiter = ';';
+ * std::vector<std::string> result = Split_s(stringText, iDelimiter);
+ * // result will contain {"apple", "banana", "cherry"}
+ * ```
+ *
+ * @param stringText The string to split.
+ * @param iDelimiter The delimiter character to use for splitting. If 0, it will try to determine the delimiter.
+ * @return std::vector<std::string> A vector of strings obtained by splitting the input string.
+ */
+std::vector<std::string> CApplication::Split_s(const std::string& stringText, char iDelimiter) 
+{
+   std::vector<std::string> vectorResult; // vector to hold the split strings
+
+   char iEffectiveDelimiter = iDelimiter;
+   if( iEffectiveDelimiter == 0 )
+   {
+      if( stringText.find(";") != std::string::npos )
+      {
+         iEffectiveDelimiter = ';';
+      }
+      else if( stringText.find(",") != std::string::npos )
+      {
+         iEffectiveDelimiter = ',';
+      }
+   }
+
+   // ## Split the string using the effective delimiter
+
+   vectorResult = gd::utf8::split( stringText, iEffectiveDelimiter, gd::utf8::tag_string{});
+
+   return vectorResult;
 }
 

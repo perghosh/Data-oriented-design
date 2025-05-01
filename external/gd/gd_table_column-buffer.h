@@ -339,6 +339,8 @@ public:
    table_column_buffer( unsigned uRowCount, tag_null ): m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount) { assert( m_uFlags < eTableStateMAX );  }
    table_column_buffer( unsigned uRowCount, tag_full_meta ): m_uFlags(eTableFlagNull64|eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount) { assert( m_uFlags < eTableStateMAX );  }
 
+   table_column_buffer( unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue );
+
    table_column_buffer( const gd::variant_view& variantviewValue, tag_prepare );
    table_column_buffer( const std::vector< std::string_view >& vectorValue, tag_prepare );
    table_column_buffer( unsigned uFlags, const std::vector< std::tuple< std::string_view, std::string_view > >& vectorValue, tag_prepare );

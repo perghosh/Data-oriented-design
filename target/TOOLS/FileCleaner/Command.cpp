@@ -218,6 +218,30 @@ std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::argum
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Collects file statistics from the specified source file.
+ *
+ * This method reads the specified file and collects various statistics, including:
+ * - Total number of lines
+ * - Number of code lines
+ * - Number of code characters
+ * - Number of comment sections
+ * - Number of string sections
+ *
+ * The input and output are passed through the `argumentsPath` and `argumentsResult` containers.
+ *
+ * @param argumentsPath The arguments container containing the input parameters:
+ *        - `source` (string): The source file path to collect statistics from.
+ * @param argumentsResult The arguments container to store the result:
+ *        - `count` (uint64_t): The number of lines counted in the file.
+ *        - `code` (uint64_t): The number of code lines counted in the file.
+ *        - `characters` (uint64_t): The number of code characters counted in the file.
+ *        - `comment` (uint64_t): The number of comment sections counted in the file.
+ *        - `string` (uint64_t): The number of string sections counted in the file.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult)
 {
    // ## prepare source file
@@ -333,6 +357,114 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
    argumentsResult.set("characters", uCountCodeCharacters);                   // set count of code characters in result
    argumentsResult.set("comment", uCountComment);                             // set count of comment sections in result
    argumentsResult.set("string", uCountString);                               // set count of string sections in result
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector<std::string>& vectorPattern, std::vector<uint64_t>& vectorCount)
+{
+   // ## Prepare source file
+   std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
+
+   // ### Open file
+   std::ifstream file_(stringFile, std::ios::binary);
+   if (file_.is_open() == false) return { false, "Failed to open file: " + stringFile };
+
+   gd::parse::window::line lineBuffer(4096, gd::types::tag_create{});         // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
+
+   gd::expression::parse::state state_; // state is used to check what type of code part we are in
+   auto result_ = COMMAND_PrepareState( {{"source",stringFile}}, state_);
+   if( result_.first == false ) return result_;                                // error in state preparation
+
+   // ## count occurrences of each pattern in the source code
+   auto count_ = [&vectorPattern, &vectorCount](const std::string& stringSourceCode) // count method that counts occurrences of each pattern in the source code
+      {
+         // ## Count occurrences of each pattern in the source code
+         for(size_t u = 0; u < vectorPattern.size(); ++u)
+         {
+            size_t uPosition = 0;
+            while((uPosition = stringSourceCode.find(vectorPattern[u], uPosition)) != std::string::npos)
+            {
+               vectorCount[u]++;
+               uPosition += vectorPattern[u].length();                         // Move past the current match
+            }
+         }
+      };
+
+
+   // ## Initialize pattern counts
+   vectorCount.resize(vectorPattern.size(), 0);
+
+   std::string stringSourceCode;    // gets source code for analysis
+   uint64_t uRowCharacterCodeCount = 0; // number of characters of code in current row (helper variable)
+
+   // ## Read the file into the buffer
+   auto uAvailable = lineBuffer.available();
+   file_.read((char*)lineBuffer.buffer(), uAvailable);
+   auto uReadSize = file_.gcount();                                           // get number of valid bytes read
+   lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
+
+   // ## Process the file
+   while (lineBuffer.eof() == false)
+   {
+      auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});
+
+      for(auto it = first_; it < last_; it++ ) 
+      {
+         if( state_.in_state() == false )                                     // not in a state? that means we are reading source code
+         {
+            // ## check if we have found state
+            if( state_[*it] != 0 && state_.exists( it ) == true )
+            {
+               if( uRowCharacterCodeCount > 0 ) count_(stringSourceCode);     // count patterns in source code
+               stringSourceCode.clear();                                      // clear source code
+               state_.activate(it);                                           // activate state
+
+               // If multiline and `uRowCharacterCodeCount` is not 0 that means that there are characters in the code section before multiline
+               if( uRowCharacterCodeCount > 0 && state_.is_multiline() == false ) 
+               { 
+                  if( uRowCharacterCodeCount > 0 ) count_(stringSourceCode);  // count patterns in source code
+                  stringSourceCode.clear();
+                  uRowCharacterCodeCount = 0;
+               }
+
+               continue;
+            }
+
+            stringSourceCode += *it;                                          // add character to source code
+            if( *it == '\n' ) 
+            { 
+               if( uRowCharacterCodeCount > 0 ) count_(stringSourceCode);     // count patterns in source code
+               stringSourceCode.clear();
+               uRowCharacterCodeCount = 0;                                    // reset code character count for next line
+            }
+            else if( gd::expression::is_code_g( *it ) != 0 ) 
+            { 
+               uRowCharacterCodeCount++;                                      // count all code characters in line
+            }
+         }
+         else
+         {
+            // ## check if we have found end of state
+            unsigned uLength;
+            if( state_.deactivate( it, &uLength ) == true ) 
+            {
+               if( uLength > 1 ) it++;
+               continue;
+            }
+         }
+      }
+
+      lineBuffer.rotate();                                                    // rotate buffer
+
+      if( uReadSize > 0 )                                                     // was it possible to read data last read, then more data is available
+      {
+         auto uAvailable = lineBuffer.available();                            // get available space in buffer to be filled
+         file_.read((char*)lineBuffer.buffer(), lineBuffer.available());      // read more data into available space in buffer
+         uReadSize = file_.gcount();
+         lineBuffer.update(uReadSize);                                        // update valid size in line buffer
+      }
+   }
 
    return { true, "" };
 }

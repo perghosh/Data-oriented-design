@@ -154,13 +154,20 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
+   // ## Prepare Application 
+
    static void Prepare_s( gd::cli::options& optionsApplication );
    static void PrepareLogging_s();
+
+   // ## Read data from database
 
    static void Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer );
    static void Read_s( gd::database::cursor_i* pcursorSelect, gd::table::table_column_buffer* ptablecolumnbuffer );
 
-   static std::pair<bool, std::string> COMMAND_CountRows( CDocument* pdocument );
+   // ## Utility functions
+
+   // Split string into vector of strings, delimitier is ; or ,. It first tries to find ;, if not found then it tries to find ,
+   static std::vector<std::string> Split_s(const std::string& stringText, char iCharacter = 0);
 
 
 };
