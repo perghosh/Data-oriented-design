@@ -460,9 +460,4 @@ inline void options::clear_all() {
    clear();
 }
 
-
-
-
-
-
 _GD_CLI_END
