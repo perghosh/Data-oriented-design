@@ -34,6 +34,17 @@ _GD_TABLE_BEGIN
 constexpr unsigned SPACE_VALUE_SIZE = sizeof( uint32_t );
 constexpr unsigned SPACE_ALIGN = sizeof( uint32_t );
 
+/// @brief constructor adding columns with type, size and name to table
+table_column_buffer::table_column_buffer( unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue ) :
+   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0),  m_uReservedRowCount( eSpaceFirstAllocate )
+{
+   for( const auto& it : vectorValue )
+   {
+      column_add( std::get<0>( it ), std::get<1>( it ), std::get<2>( it ) );
+   }
+}
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief construct table from one single variant view value
@@ -168,7 +179,7 @@ assert( t2.cell_get_variant_view( 2, "FInteger" ) == gd::variant_view((int64_t)2
  * @param vectorValue.[3] value inserted to table at first row
 */
 table_column_buffer::table_column_buffer( const std::vector<std::tuple<std::string_view, unsigned, std::string_view, gd::variant_view>>& vectorValue, tag_prepare ) :
-   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0),  m_uReservedRowCount( 1 )
+   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0),  m_uReservedRowCount( eSpaceFirstAllocate )
 {
    for( const auto& it : vectorValue )
    {

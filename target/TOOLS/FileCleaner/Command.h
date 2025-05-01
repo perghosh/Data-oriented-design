@@ -48,6 +48,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
 /// @brief Counts the number of rows in a file. 
 std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
 std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
+std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector<std::string>& vectorPattern, std::vector<uint64_t>& vectorCount );
 std::pair<bool, std::string> COMMAND_PrepareState( const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state );
 
 std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);

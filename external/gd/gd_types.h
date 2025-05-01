@@ -100,6 +100,7 @@ struct tag_queue {};          ///< stl std::queue object is used in some form
 struct tag_set {};            ///< stl std::set object is used in some form
 struct tag_stack {};          ///< stl std::stack object is used in some form
 struct tag_string {};         ///< stl std::string object is used in some form
+struct tag_string_view {};    ///< stl std::string_view object is used in some form
 struct tag_tuple {};          ///< stl std::tuple object is used in some form
 struct tag_vector {};         ///< stl std::vector object is used in some form
 struct tag_variant {};        ///< stl std::variant object is used in some form

@@ -232,8 +232,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
       
 
       gd::argument::shared::arguments argumentsResult;
-      //auto result_ = COMMAND_CountRows( {{"source", stringFile} }, argumentsResult);
+
       auto result_ = COMMAND_CollectFileStatistics( {{"source", stringFile} }, argumentsResult);
+      if( result_.first == false ) { ERROR_Add( result_.second ); }
       
       uint64_t uCount = argumentsResult["count"].as_uint64();
       ptableFileCount->cell_set(iRowIndexCount, "count", uCount);
@@ -244,6 +245,50 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
          ptableFileCount->cell_set(iRowIndexCount, "comment", argumentsResult["comment"].as_uint64());
          ptableFileCount->cell_set(iRowIndexCount, "string", argumentsResult["string"].as_uint64());
       }
+   }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::vector<std::string>& vectorPattern)
+{                                                                                                  assert( vectorPattern.empty() == false ); assert( vectorPattern.size() < 64 ); // max 64 patterns
+   using namespace gd::table::dto;
+   constexpr unsigned uTableStyle = (table::eTableFlagNull64|table::eTableFlagRowStatus);
+   // file-count table: key | file-key | path | count
+   auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"} } ) );
+
+   std::vector<uint64_t> vectorCount; // vector storing results from COMMAND_CollectPatternStatistics
+
+   for( const auto& itPattern : vectorPattern )
+   {
+      std::string stringPattern = itPattern;
+      // ## shorten pattern to 15 characters
+      std::string stringName = stringPattern.substr(0, 15);
+      
+      ptable_->column_add("uint64", 0, stringName, stringPattern);
+   }
+
+   ptable_->prepare();
+
+   CACHE_Add(std::move(*ptable_), "file-pattern");                            // add it to internal application cache
+
+   auto* ptableFilePattern = CACHE_Get("file-pattern", false);                // get it to make sure it is in cache
+
+   auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
+
+   for( const auto& itRowFile : *ptableFile )
+   {
+      std::string stringFile = itRowFile.cell_get_variant_view("filename").as_string();
+      auto uRow = ptableFilePattern->get_row_count();
+      ptableFilePattern->row_add( gd::table::tag_null{} );
+      ptableFilePattern->cell_set( uRow, "key", uint64_t(uRow + 1));
+      ptableFilePattern->cell_set( uRow, "file-key", itRowFile.cell_get_variant_view("key") );
+      ptableFilePattern->cell_set( uRow, "filename", itRowFile.cell_get_variant_view("filename") );
+
+      auto result_ = COMMAND_CollectPatternStatistics( {{"source", stringFile} }, vectorPattern, vectorCount );
+
+      
+      vectorCount.resize(vectorPattern.size(), 0);                             // set counters to 0 in vector
    }
 
    return { true, "" };
