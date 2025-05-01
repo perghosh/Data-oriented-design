@@ -93,26 +93,61 @@ _GD_EXPRESSION_PARSE_BEGIN
 class state
 {
 public:
+   
+   /**
+    * @brief Enumeration for parsing state numbers.
+    * 
+    * This enumeration defines various parsing state numbers used to identify different states
+    */
+   enum enumStateNumber
+   {
+      eStateNumberNone = 0,		///< no state
+      eStateNumberLineComment,	///< comment state
+      eStateNumberWhitespace,	   ///< whitespace state
+      eStateNumberString,		   ///< string state
+      eStateNumberNumber,		   ///< number state
+      eStateNumberIdentifier,	   ///< identifier state
+      eStateNumberOperator,	   ///< operator state
+      eStateNumberEnd,			   ///< end of expression
+      // multiline states        
+      eStateNumberBlockComment,  ///< block comment state
+      eStateNumberRawString,	   ///< raw string state
+      eStateNumberScriptCode     ///< script that differs from the rest
+   };
+
+
+   /// @brief Enumeration for group parsing state.
+   enum enumGroup
+   {
+      eGroupNone = 0x0000,       ///< no group
+      eGroupComment = 0x0100,    ///< comment group
+      eGroupString = 0x0200,	   ///< string group
+      eGroupOutside = 0x0400,	   ///< outside group, this is used for code that is not in a state at all. Like external code
+   };
+
    /**
     * @brief Enumeration of parsing states.
+    * 
+    * State is a combination of state number and group.
     * 
     * @note The order of the states is important for determining multiline states.
     */
    enum enumState
    {
-      eStateNone = 0,		///< no state
-      eStateLineComment,	///< comment state
-      eStateWhitespace,	   ///< whitespace state
-      eStateString,			///< string state
-      eStateNumber,			///< number state
-      eStateIdentifier,		///< identifier state
-      eStateOperator,	   ///< operator state
-      eStateEnd,			   ///< end of expression
+      eStateNone          = eStateNumberNone          | eGroupNone,       ///< no state
+      eStateLineComment   = eStateNumberLineComment   | eGroupComment,    ///< comment state
+      eStateWhitespace    = eStateNumberWhitespace    | eGroupNone,       ///< whitespace state
+      eStateString        = eStateNumberString        | eGroupString,     ///< string state
+      eStateNumber        = eStateNumberNumber        | eGroupNone,       ///< number state
+      eStateIdentifier    = eStateNumberIdentifier    | eGroupNone,       ///< identifier state
+      eStateOperator      = eStateNumberOperator      | eGroupNone,       ///< operator state
+      eStateEnd           = eStateNumberEnd           | eGroupNone,       ///< end of expression
       // multiline states
-      eStateBlockComment,	///< block comment state
-      eStateRawString,		///< raw string state
-      eStateScriptCode     ///< script that differs from the rest
+      eStateBlockComment  = eStateNumberBlockComment  | eGroupComment,    ///< block comment state
+      eStateRawString     = eStateNumberRawString     | eGroupString,     ///< raw string state
+      eStateScriptCode    = eStateNumberScriptCode    | eGroupOutside,    ///< script that differs from the rest
    };
+
 
    /**
     * @struct rule
@@ -257,13 +292,15 @@ public:
    bool in_state() const { return m_iActive != -1; } ///< check if in state
    bool is_multiline() const { return (decltype(m_uFirstMultiline_s))get_state() >= m_uFirstMultiline_s; } ///< check if state is multiline
    enumState get_state() const { return m_vectorRule[m_iActive].get_state(); } ///< get current state
+   enumGroup get_group() const { return enumGroup(get_state() & 0xFF00); } ///< get current group
+   enumStateNumber get_state_number() const { return enumStateNumber(get_state() & 0x00FF); } ///< get current state number
    void set_state(int64_t iActive) { m_iActive = iActive; } ///< set current state rule
    const std::vector<rule>& get_rule() const { return m_vectorRule; } ///< get vector of rules
    const std::array<uint8_t, 256>& get_marker_hint() const { return m_arrayMarkerHint; } ///< get marker hint
    const rule& get_rule(size_t uIndex) const { assert(uIndex < m_vectorRule.size()); return m_vectorRule[uIndex]; } ///< get rule at index
 
-   bool is_string() const { return get_state() == eStateString || get_state() == eStateRawString; } ///< check if rule is string
-   bool is_comment() const { return get_state() == eStateLineComment || get_state() == eStateBlockComment; } ///< check if rule is comment
+   bool is_string() const { return get_state() & eGroupString; } ///< check if rule is string
+   bool is_comment() const { return get_state() & eGroupComment; } ///< check if rule is comment
 
 //@}
 
@@ -367,6 +404,16 @@ public:
       case eStateScriptCode:    return "SCRIPTCODE";
       }
       return "NONE"; // Default case for invalid input
+   }
+
+   /// convert string to group, this will convert the string to the enumGroup value
+   static constexpr enumGroup to_group_s(const std::string_view stringName)
+   {
+      if( stringName == "NONE" )    return eGroupNone;
+      if( stringName == "COMMENT" ) return eGroupComment;
+      if( stringName == "STRING" )  return eGroupString;
+      if( stringName == "OUTSIDE" ) return eGroupOutside;
+      return eGroupNone; // Default case for invalid input
    }
 
    /// convert state to string, this will convert the enumState value to a string

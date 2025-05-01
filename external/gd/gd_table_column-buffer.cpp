@@ -36,7 +36,7 @@ constexpr unsigned SPACE_ALIGN = sizeof( uint32_t );
 
 /// @brief constructor adding columns with type, size and name to table
 table_column_buffer::table_column_buffer( unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue ) :
-   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0),  m_uReservedRowCount( eSpaceFirstAllocate )
+   m_uFlags(uFlags), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0),  m_uReservedRowCount( eSpaceFirstAllocate )
 {
    for( const auto& it : vectorValue )
    {
@@ -347,6 +347,42 @@ uint64_t table_column_buffer::get_row_count( uint32_t uState ) const noexcept
    }
 
    return uCount;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Add column to table
+ *
+ * Copy column from another table, this is used when table is created from another table
+ * Internally the column do now store memory, only offset to data so we need to manually set those values
+ * 
+ * @param columnToAdd column to add
+ * @param tableFrom table to copy column from from
+ * @return reference to table
+ */
+table_column_buffer& table_column_buffer::column_add( const column& columnToAdd, const table_column_buffer& tableFrom )
+{                                                                                                  assert(m_puData == nullptr);
+   column columnAdd( columnToAdd );
+
+   // ## column do not store memory, only offset to data so we need to manually set those values
+
+   std::string_view stringName = columnToAdd.name() > 0 ? tableFrom.get_names().get(columnToAdd.name()) : std::string_view{}; 
+   if( stringName.empty() == false )
+   {
+      auto uNameIndex = m_namesColumn.add( stringName );
+      columnAdd.name( uNameIndex );
+   }
+
+   std::string_view stringAlias = columnToAdd.alias() > 0 ? tableFrom.get_names().get(columnToAdd.alias()) : std::string_view{};
+   if( stringAlias.empty() == false )
+   {
+      auto uAliasIndex = m_namesColumn.add( stringAlias );
+      columnAdd.alias( uAliasIndex );
+   }
+
+   m_vectorColumn.push_back( columnAdd );
+
+   return *this;
 }
 
 /** ---------------------------------------------------------------------------
@@ -1421,6 +1457,23 @@ void table_column_buffer::row_set( uint64_t uRow, const std::vector<gd::variant_
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Set row values and if column values do not match type it tries to convert to proper type
+ * @param uRow row where values are set
+ * @param uOffset row where values are set
+ * @param vectorValue vector of values inserted to specified row
+ */
+void table_column_buffer::row_set( uint64_t uRow, unsigned uOffset, const std::vector<gd::variant_view>& vectorValue )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( vectorValue.size() <= get_column_count() );   
+   unsigned uIndex = uOffset;
+   for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it != itEnd; ++it )
+   {
+      cell_set( uRow, uIndex, *it );
+      uIndex++;
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief Set row values, if value type differ it tries to convert to type in column
  * @param uRow row where values are set
  * @param vectorValue vector of values inserted to specified row
@@ -2330,10 +2383,21 @@ int64_t table_column_buffer::row_get_variant_view( unsigned uColumn, const gd::v
  * @brief Harvest row values in vector with variant view items
  * @param uRow index to row values are returned from
  * @param vectorValue row values are placed in vector
-*/
+ */
 void table_column_buffer::row_get_variant_view( uint64_t uRow, std::vector<gd::variant_view>& vectorValue ) const
 {                                                                                                  assert( uRow < 0x0100'0000 ); assert( uRow < m_uReservedRowCount );
-   for( auto u = 0u, uMax = (unsigned)m_vectorColumn.size(); u < uMax; u++ )
+   row_get_variant_view(uRow, 0, vectorValue);
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Harvest row values in vector with variant view items
+ * @param uRow index to row values are returned from
+ * @param uOffset start column to read values from
+ * @param vectorValue row values are placed in vector
+ */
+void table_column_buffer::row_get_variant_view( uint64_t uRow, unsigned uOffset, std::vector<gd::variant_view>& vectorValue ) const
+{                                                                                                  assert( uRow < 0x0100'0000 ); assert( uRow < m_uReservedRowCount );
+   for( auto u = uOffset, uMax = (unsigned)m_vectorColumn.size(); u < uMax; u++ )
    {
       vectorValue.push_back( cell_get_variant_view( uRow, u ) );
    }

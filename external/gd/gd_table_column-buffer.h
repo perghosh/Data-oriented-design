@@ -451,6 +451,7 @@ public:
    /// 0TAG0add.table_column_buffer
    ///@{
    table_column_buffer& column_add( const column& columnToAdd ) { m_vectorColumn.push_back( columnToAdd ); return *this; }
+   table_column_buffer& column_add( const column& columnToAdd, const table_column_buffer& tableFrom );
    table_column_buffer& column_add( unsigned uColumnType, const std::string_view& stringName ) { return column_add( uColumnType, 0, stringName ); }
    table_column_buffer& column_add( unsigned uColumnType, unsigned uSize );
    table_column_buffer& column_add( unsigned uColumnType, unsigned uSize, const std::string_view& stringName, const std::string_view& stringAlias );
@@ -642,6 +643,7 @@ public:
    void row_set( uint64_t uRow, const std::initializer_list<gd::variant_view>& listValue, tag_convert );
    void row_set( uint64_t uRow, unsigned uSart, const std::initializer_list<gd::variant_view>& listValue, tag_convert );
    void row_set( uint64_t uRow, const std::vector<gd::variant_view>& listValue );
+   void row_set( uint64_t uRow, unsigned uOffset, const std::vector<gd::variant_view>& listValue);
    void row_set( uint64_t uRow, const std::vector<gd::variant_view>& listValue, tag_convert );
    void row_set( uint64_t uRow, unsigned uSart, const std::vector<gd::variant_view>& listValue, tag_convert );
    void row_set( uint64_t uRow, const std::vector<gd::variant_view>& listValue, const std::vector<unsigned>& vectorColumn );
@@ -696,6 +698,7 @@ public:
    std::vector<gd::variant_view> row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const;
    std::vector<gd::variant_view> row_get_variant_view( uint64_t uRow, const std::vector<unsigned>& vectorIndex ) const { return row_get_variant_view( uRow, vectorIndex.data(), (unsigned)vectorIndex.size() ); }
    void row_get_variant_view( uint64_t uRow, std::vector<gd::variant_view>& vectorValue ) const;
+   void row_get_variant_view( uint64_t uRow, unsigned uOffset, std::vector<gd::variant_view>& vectorValue ) const;
    void row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize, std::vector<gd::variant_view>& vectorValue ) const;
    void row_get_variant_view( uint64_t uRow, const std::vector<unsigned>& vectorIndex, std::vector<gd::variant_view>& vectorValue ) const { row_get_variant_view( uRow, vectorIndex.data(), (unsigned)vectorIndex.size(), vectorValue ); }
 
