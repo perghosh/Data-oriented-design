@@ -235,6 +235,8 @@ public:
    table( unsigned uRowCount, tag_null ) : m_uFlags( eTableFlagNull64 ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
    table( unsigned uRowCount, tag_full_meta ) : m_uFlags( eTableFlagNull64 | eTableFlagRowStatus ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
 
+   table( unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue );
+
    table( const gd::variant_view& variantviewValue, tag_prepare );
    table( const std::vector< std::string_view >& vectorValue, tag_prepare );
    table( unsigned uFlags, const std::vector< std::tuple< std::string_view, std::string_view > >& vectorValue, tag_prepare );
@@ -540,6 +542,7 @@ public:
    std::vector<gd::variant_view> row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const;
    std::vector<gd::variant_view> row_get_variant_view( uint64_t uRow, const std::vector<unsigned>& vectorIndex ) const { return row_get_variant_view( uRow, vectorIndex.data(), (unsigned)vectorIndex.size() ); }
    void row_get_variant_view( uint64_t uRow, std::vector<gd::variant_view>& vectorValue ) const;
+   void row_get_variant_view( uint64_t uRow, unsigned uOffset, std::vector<gd::variant_view>& vectorValue ) const;
    void row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize, std::vector<gd::variant_view>& vectorValue ) const;
    void row_get_variant_view( uint64_t uRow, const std::vector<unsigned>& vectorIndex, std::vector<gd::variant_view>& vectorValue ) const { row_get_variant_view( uRow, vectorIndex.data(), (unsigned)vectorIndex.size(), vectorValue ); }
 
