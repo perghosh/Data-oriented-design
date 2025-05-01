@@ -255,7 +255,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
    using namespace gd::table::dto;
    constexpr unsigned uTableStyle = (table::eTableFlagNull64|table::eTableFlagRowStatus);
    // file-count table: key | file-key | path | count
-   auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"} } ) );
+   auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"} } ) );
 
    std::vector<uint64_t> vectorCount; // vector storing results from COMMAND_CollectPatternStatistics
 
@@ -268,9 +268,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
       ptable_->column_add("uint64", 0, stringName, stringPattern);
    }
 
-   ptable_->prepare();
+   auto result_ = ptable_->prepare();                                                              assert( result_.first == true );
 
-   CACHE_Add(std::move(*ptable_), "file-pattern");                            // add it to internal application cache
+   CACHE_Add(std::move(*ptable_), "file-pattern");                            // add it to internal application cache, table is called "file-pattern"
 
    auto* ptableFilePattern = CACHE_Get("file-pattern", false);                // get it to make sure it is in cache
 
@@ -278,16 +278,26 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
 
    for( const auto& itRowFile : *ptableFile )
    {
-      std::string stringFile = itRowFile.cell_get_variant_view("filename").as_string();
+      // ## generate full file path (folder + filename)
+      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
+      gd::file::path pathFile(string_);
+      string_ = itRowFile.cell_get_variant_view("filename").as_string();
+      pathFile += string_;
+      std::string stringFile = pathFile.string();
+
       auto uRow = ptableFilePattern->get_row_count();
       ptableFilePattern->row_add( gd::table::tag_null{} );
       ptableFilePattern->cell_set( uRow, "key", uint64_t(uRow + 1));
       ptableFilePattern->cell_set( uRow, "file-key", itRowFile.cell_get_variant_view("key") );
+      ptableFilePattern->cell_set( uRow, "folder", itRowFile.cell_get_variant_view("folder") );
       ptableFilePattern->cell_set( uRow, "filename", itRowFile.cell_get_variant_view("filename") );
 
       auto result_ = COMMAND_CollectPatternStatistics( {{"source", stringFile} }, vectorPattern, vectorCount );
+      for( unsigned u = 0; u < vectorCount.size(); u++ )
+      {
+         ptableFilePattern->cell_set(uRow, u + 4, vectorCount[u]);             // set pattern count in table
+      }
 
-      
       vectorCount.resize(vectorPattern.size(), 0);                             // set counters to 0 in vector
    }
 
@@ -658,7 +668,7 @@ gd::table::dto::table CDocument::RESULT_RowCount()
    auto* ptableFile = CACHE_Get("file", false);                                                    assert( ptableFile != nullptr );
    auto* ptableFileCount = CACHE_Get("file-count", false);                                         assert( ptableFileCount != nullptr );
 
-   // Iterate through the rows in the file-count table
+   // ## Iterate through the rows in the file-count table
    for (const auto& itRowCount : *ptableFileCount)
    {
       uint64_t iFileKey = itRowCount.cell_get_variant_view("file-key").as_uint64();
@@ -691,6 +701,45 @@ gd::table::dto::table CDocument::RESULT_RowCount()
       }
    }
 
+   return tableResult;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Generate a result table with pattern counts.
+ * @return A table containing the pattern counts for each file.
+ */
+gd::table::dto::table CDocument::RESULT_PatternCount()
+{
+   using namespace gd::table::dto;
+   constexpr unsigned FIXED_COLUMN_COUNT = 2; // Number of fixed columns (folder and filename)
+   // Define the result table structure
+   constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );
+   table tableResult(uTableStyle, { {"rstring", 0, "folder"}, {"rstring", 0, "filename"} });
+   // Retrieve the file-pattern cache table
+   auto* ptableFilePattern = CACHE_Get("file-pattern", false);                                     assert(ptableFilePattern != nullptr);
+   unsigned uColumnFileName = ptableFilePattern->column_get_index("filename") + 1; // get index for filename column
+   for( auto it = ptableFilePattern->column_begin() + uColumnFileName; it != ptableFilePattern->column_end(); ++it ) { tableResult.column_add( *it, *ptableFilePattern ); }
+   tableResult.prepare();                                                        // prepare table, this will allocate internal memory for the table                  
+
+
+   std::vector<gd::variant_view> vectorPatternCount;
+   // ## Iterate through the rows in the file-pattern table
+   for( const auto& itRowCount : *ptableFilePattern )
+   {
+      auto stringFilename = itRowCount.cell_get_variant_view("filename").as_string();
+      auto stringFolder = itRowCount.cell_get_variant_view("folder").as_string();
+      auto uRowSource = itRowCount.get_row();
+      ptableFilePattern->row_get_variant_view(uRowSource, uColumnFileName, vectorPatternCount); // get row data from table
+      // Add a new row to the result table
+      auto uRow = tableResult.get_row_count();
+      tableResult.row_add(gd::table::tag_null{});
+      tableResult.cell_set(uRow, "folder", stringFolder);
+      tableResult.cell_set(uRow, "filename", stringFilename);
+
+      tableResult.row_set(uRow, FIXED_COLUMN_COUNT,  vectorPatternCount);      // set row data to table from column 2, after filename
+
+      vectorPatternCount.clear(); // clear vector for next row
+   }
    return tableResult;
 }
 

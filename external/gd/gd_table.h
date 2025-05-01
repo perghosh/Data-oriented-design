@@ -259,6 +259,8 @@ struct row
    cell<TABLE> operator[]( uint32_t uIndex ) { return cell<TABLE>( m_ptable, m_uRow, uIndex ); }
    cell<TABLE> operator[]( const std::string_view& stringName ) const { return cell<TABLE>( m_ptable, m_uRow, m_ptable->column_get_index(stringName) ); }
 
+   uint64_t get_row() const { return m_uRow; }
+
    gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex ); }
    gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName ); }
    std::vector< gd::variant_view > cell_get_variant_view() const { return m_ptable->cell_get_variant_view( m_uRow ); }

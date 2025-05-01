@@ -124,6 +124,8 @@ public:
 *///@{
    /// @brief Generate result to present row counting in files
    gd::table::dto::table RESULT_RowCount();
+   /// @brief Generate result to present pattern count in files
+   gd::table::dto::table RESULT_PatternCount();
 //@}
 
 /** \name OPERATION

@@ -183,13 +183,13 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       }
 
       bool bSaved = false;                                                     // variable to store if result was saved
+      bool bPrint = poptionsActive->exists("print");
 
       std::string stringOutput = ( *poptionsActive )["output"].as_string();                        LOG_INFORMATION_RAW("== --output: " & stringOutput);
       bool bOutput = ( *poptionsActive )["output"].is_true();
 
       // if option "print" was specified, then print the result or not if, ignore the bSaved
-      if( bSaved == false && poptionsActive->exists("print") == true ) bSaved = true;
-      if( bSaved == false || bOutput == true || stringOutput.empty() == false )
+      if( bPrint == true || bSaved == false || bOutput == true || stringOutput.empty() == false )
       {
          auto tableResult = pdocument->RESULT_RowCount();
          if( stringOutput.empty() == false )
@@ -208,9 +208,20 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
          tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
 
-         std::string stringCliTable = gd::table::to_string(tableResult, gd::table::tag_io_cli{});  LOG_INFORMATION_RAW("count = total number of lines\ncode = number of code lines\ncharacters = number of code characters\ncomment = number of comments in code\nstring = number of strings in code");
-         std::cout << "\n" << stringCliTable << "\n\n";
+         if( bPrint == true  )
+         {
+            std::string stringCliTable = gd::table::to_string(tableResult, gd::table::tag_io_cli{});  LOG_INFORMATION_RAW("count = total number of lines\ncode = number of code lines\ncharacters = number of code characters\ncomment = number of comments in code\nstring = number of strings in code");
+            std::cout << "\n" << stringCliTable << "\n\n";
+         }
+
+         if( ( *poptionsActive )["pattern"].is_true() == true && bPrint == true )
+         {
+            auto tableResultPattern = pdocument->RESULT_PatternCount();
+            std::string stringCliTable = gd::table::to_string(tableResultPattern, gd::table::tag_io_cli{});
+            std::cout << "\n" << stringCliTable << "\n\n";
+         }
       }
+
    }
    else if( stringCommandName == "db" )
    {
