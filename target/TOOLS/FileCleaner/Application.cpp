@@ -109,7 +109,10 @@ std::pair<bool, std::string> CApplication::Exit()
 
    // Example: Clear documents
    DOCUMENT_Clear();
+   
+   std::string stringArguments = PROPERTY_Get("arguments").as_string();
 
+   HistorySaveArguments_s(stringArguments);
    // If cleanup is successful
    return {true, ""};
 
@@ -758,6 +761,52 @@ void CApplication::Read_s( gd::database::cursor_i* pcursorSelect, gd::table::tab
          }
       }
    }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Save command line arguments to history file
+ *
+ * @param stringArguments The command line arguments to save.
+ * @return std::pair<bool, std::string> True if successful, false and error message if failed
+ */
+std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::string_view& stringArguments)
+{
+   // Create file
+   wchar_t cProgramDataPath[MAX_PATH];
+
+   if( !GetEnvironmentVariableW(L"ProgramData", cProgramDataPath, MAX_PATH) )
+   {
+      return { false, "" };
+   }
+
+   std::wstring stringDirectory = std::wstring(cProgramDataPath) + L"\\history";
+   if( !std::filesystem::exists(stringDirectory) )
+   {
+      if( !std::filesystem::create_directory(stringDirectory) )
+      {
+         return { false, "" };
+      }
+   }
+
+   std::wstring stringFilePath = stringDirectory + L"\\history.xml";
+
+   pugi::xml_document xmldocument;
+   pugi::xml_node commands_nodeAppend = xmldocument.append_child("commands");
+
+   if( !xmldocument.save_file(stringFilePath.c_str()) )
+   {
+      return { false, "" };
+   }
+
+   // Append command
+   pugi::xml_node commands_nodeChild = xmldocument.child("commands");
+   if( !commands_nodeChild )
+   {
+      commands_nodeChild = xmldocument.append_child("commands");
+   }
+
+   commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
+   xmldocument.save_file(stringFilePath.c_str());
 }
 
 /** ---------------------------------------------------------------------------

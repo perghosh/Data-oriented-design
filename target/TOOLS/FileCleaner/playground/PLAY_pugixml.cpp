@@ -18,6 +18,48 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+static std::pair<bool, std::string> HistorySaveArguments_s(const std::string_view& stringArguments)
+{
+   // Create file
+   wchar_t cProgramDataPath[MAX_PATH];
+
+   if( !GetEnvironmentVariableW(L"ProgramData", cProgramDataPath, MAX_PATH) )
+   {
+      return { false, "" };
+   }
+
+   std::wstring stringDirectory = std::wstring(cProgramDataPath) + L"\\history";
+   if( !std::filesystem::exists(stringDirectory) )
+   {
+      if( !std::filesystem::create_directory(stringDirectory) )
+      {
+         return { false, "" };
+      }
+   }
+
+   std::wstring stringFilePath = stringDirectory + L"\\history.xml";
+
+   pugi::xml_document xmldocument;
+   pugi::xml_node commands_nodeAppend = xmldocument.append_child("commands");
+
+   if( !xmldocument.save_file(stringFilePath.c_str()) )
+   {
+      return { false, "" };
+   }
+
+   // Append command
+   pugi::xml_node commands_nodeChild = xmldocument.child("commands");
+   if( !commands_nodeChild )
+   {
+      commands_nodeChild = xmldocument.append_child("commands");
+   }
+
+   commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
+   xmldocument.save_file(stringFilePath.c_str());
+}
+
+//------------------------------------------------------------
+
 std::wstring CreateXMLFile(const std::wstring& stringName)
 {
    wchar_t cProgramDataPath[MAX_PATH];
