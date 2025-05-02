@@ -778,7 +778,6 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
    {
       return { false, "" };
    }
-
    std::wstring stringDirectory = std::wstring(cProgramDataPath) + L"\\history";
    if( !std::filesystem::exists(stringDirectory) )
    {
@@ -807,6 +806,8 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
 
    commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
    xmldocument.save_file(stringFilePath.c_str());
+
+   return { true, "" };
 }
 
 /** ---------------------------------------------------------------------------
