@@ -113,6 +113,7 @@ std::pair<bool, std::string> CApplication::Exit()
    std::string stringArguments = PROPERTY_Get("arguments").as_string();
 
    HistorySaveArguments_s(stringArguments);
+
    // If cleanup is successful
    return {true, ""};
 
@@ -241,6 +242,10 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          result_ = DATABASE_Update();                                          // update database to match latest design
          if( result_.first == false ) return result_;
       }
+   }
+   else if( stringCommandName == "history" )
+   {
+      HistoryPrint_s();
    }
    else if( stringCommandName == "help" )                                      // command = "help"
    {
@@ -647,6 +652,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    // ## 'history'
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "store command history" );
+      optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
    }
 
@@ -795,9 +801,16 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
    std::wstring stringFilePath = stringDirectory + L"\\history.xml";
 
    pugi::xml_document xmldocument;
-   pugi::xml_node commands_nodeAppend = xmldocument.append_child("commands");
 
-   if( !xmldocument.save_file(stringFilePath.c_str()) )
+   pugi::xml_parse_result _result = xmldocument.load_file(stringFilePath.c_str());
+   if( !_result )
+   {
+      return { false, "" };
+   }
+
+   //pugi::xml_node commands_nodeAppend = xmldocument.append_child("commands");
+
+   if( !xmldocument.save_file(stringFilePath.c_str()) )    // clears all here
    {
       return { false, "" };
    }
@@ -815,8 +828,49 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
    return { true, "" };
 }
 
-void CApplication::HistoryPrint_s()
-{ 
+std::pair<bool, std::string> CApplication::HistoryPrint_s()
+{
+   // Create file
+   wchar_t cProgramDataPath[MAX_PATH];
+
+   if( !GetEnvironmentVariableW(L"ProgramData", cProgramDataPath, MAX_PATH) )
+   {
+      return { false, "" };
+   }
+
+   std::wstring stringDirectory = std::wstring(cProgramDataPath) + L"\\history";
+   /*if( !std::filesystem::exists(stringDirectory) )
+   {
+      if( !std::filesystem::create_directory(stringDirectory) )
+      {
+         return { false, "" };
+      }
+   }*/
+
+   std::wstring stringFilePath = stringDirectory + L"\\history.xml";
+
+   pugi::xml_document xmldocument;
+
+   pugi::xml_parse_result _result = xmldocument.load_file(stringFilePath.c_str());
+   if( !_result )
+   {
+      return { false, "" };
+   }
+
+   auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "command"} }, gd::table::tag_prepare{}));
+   pugi::xml_node commands_node = xmldocument.child("commands");
+
+   for( auto command : commands_node.children("command") )
+   {
+      std::string stringCommand = command.child_value();
+      ptable->row_add();
+      ptable->cell_set(ptable->get_row_count() - 1, "command", stringCommand);
+   }
+
+   auto stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
+
+   std::cout << "\n" << stringTable << "\n";
+   return { true, "" };
 }
 
 
