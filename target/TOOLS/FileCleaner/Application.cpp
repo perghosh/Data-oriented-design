@@ -644,6 +644,11 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
+   // ## 'history'
+   {
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "store command history" );
+      //optionsCommand.add({});
+   }
 
 
    {  // ## `join` command, joins two or more files
@@ -809,6 +814,11 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
 
    return { true, "" };
 }
+
+void CApplication::HistoryPrint_s()
+{ 
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Splits a string into a vector of strings based on the specified delimiter.
