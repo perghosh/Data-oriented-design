@@ -167,7 +167,11 @@ public:
    // ## Utility functions
 
    // ## History functions
+
+   /// Save last command to history
    static std::pair<bool, std::string> HistorySaveArguments_s(const std::string_view& stringArguments);
+   /// Print history to console
+   static void HistoryPrint_s();
 
    // Split string into vector of strings, delimitier is ; or ,. It first tries to find ;, if not found then it tries to find ,
    static std::vector<std::string> Split_s(const std::string& stringText, char iCharacter = 0);
