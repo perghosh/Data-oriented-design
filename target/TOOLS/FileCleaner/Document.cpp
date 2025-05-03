@@ -304,6 +304,15 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
    return { true, "" };
 }
 
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern)
+{                                                                                                  assert(vectorPattern.empty() == false); assert(vectorPattern.size() < 64); // max 64 patterns
+   auto* ptableFileLineList = CACHE_Get("file-linelist", true);               // make sure it is in cache
+
+   // auto result_ = COMMAND_ListLinesWithPattern( {{"source", stringFile} }, vectorPattern, vectorCount );
+
+   return { true, "" };
+}
+
 
 
 std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::arguments& argumentsResult, const gd::table::dto::table* ptableResult)
@@ -401,15 +410,31 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId)
          CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
       }
    }
-   else if( stringId == "file-count" )
+   else if( stringId == "file-count" )                                         // row counter table
    {
       auto ptable_ = CACHE_Get(stringId, false);
       if( ptable_ == nullptr )
       {
-         // file-count table: key | file-key | path | count
+         // file-linelist table: key | file-key | filename
+         //           count | code | characters | comment | string
          auto ptable_ = std::make_unique<table>( table( uTableStyle, 
             { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"}, 
               {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"} }, gd::table::tag_prepare{} )
+         );
+         CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
+      }
+   }
+   else if( stringId == "file-linelist" )                                      // lists line where pattern was found
+   {
+      auto ptable_ = CACHE_Get(stringId, false);
+      if( ptable_ == nullptr )
+      {
+         // file-linelist table: key | file-key | filename
+         //                      line | row | column
+         //                      line = the row in text where pattern was found
+         auto ptable_ = std::make_unique<table>( table( uTableStyle, 
+            { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"}, 
+              {"rstring", 0, "line"}, {"uint64", 0, "row"}, {"uint64", 0, "column"} }, gd::table::tag_prepare{} )
          );
          CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
       }

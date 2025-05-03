@@ -253,15 +253,15 @@ public:
       std::string m_stringEscape; ///< escape character
    };
 
-public:
 // ## types ------------------------------------------------------------------
-   using value_type = rule; ///< type of value stored in vector
-   using iterator = std::vector<rule>::iterator; ///< iterator type
-   using const_iterator = std::vector<rule>::const_iterator; ///< const iterator type
-   using reverse_iterator = std::vector<rule>::reverse_iterator; ///< reverse iterator type
-   using const_reverse_iterator = std::vector<rule>::const_reverse_iterator; ///< const reverse iterator type
-   using size_type = std::vector<rule>::size_type; ///< size type
-   using difference_type = std::vector<rule>::difference_type; ///< difference type
+public:
+   using value_type              = rule;                        ///< type of value stored in vector
+   using iterator                = std::vector<rule>::iterator; ///< iterator type
+   using const_iterator          = std::vector<rule>::const_iterator; ///< const iterator type
+   using reverse_iterator        = std::vector<rule>::reverse_iterator; ///< reverse iterator type
+   using const_reverse_iterator  = std::vector<rule>::const_reverse_iterator; ///< const reverse iterator type
+   using size_type               = std::vector<rule>::size_type; ///< size type
+   using difference_type         = std::vector<rule>::difference_type; ///< difference type
 
 
 
