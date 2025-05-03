@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <span>
@@ -17,11 +18,9 @@
 #ifndef _GD_PARSE_BEGIN
 #  define _GD_PARSE_BEGIN namespace gd { namespace parse {
 #  define _GD_PARSE_END } }
-#  define _GD_PARSE_WINDOW_BEGIN namespace gd { namespace parse { namespace window {
-#  define _GD_PARSE_WINDOW_END } } }
 #endif
 
-_GD_PARSE_WINDOW_BEGIN
+_GD_PARSE_BEGIN
 
 
 
@@ -39,7 +38,7 @@ _GD_PARSE_WINDOW_BEGIN
  * - Support for escaped sequences
  * - Methods to check if text matches any stored pattern
  */
-class pattern
+class patterns
 {
 public:
    /**
@@ -61,19 +60,17 @@ public:
     * const char* input = "\"Hello, World!\"";
     *
     * // Check if the input matches the pattern
-    * if (pattern.compare(input)) {
+    * if(pattern.compare(input)) {
     *     std::cout << "Input matches the pattern." << std::endl;
     * }
     * @endcode
     */
    struct pattern
    {
-      // ## construction -------------------------------------------------------------
+   // ## construction -------------------------------------------------------------
       pattern() {}
-      pattern(const std::string_view& stringPattern)
-         : m_stringPattern(stringPattern) {}
-      pattern(const std::string& stringPattern)
-         : m_stringPattern(stringPattern) {}
+      pattern(const std::string_view& stringPattern) : m_stringPattern(stringPattern) {}
+      pattern(const std::string& stringPattern) : m_stringPattern(stringPattern) {}
       pattern(const std::string_view& stringPattern, const std::string_view& stringEscape)
          : m_stringPattern(stringPattern), m_stringEscape(stringEscape) {}
       pattern(const pattern& o): m_stringPattern(o.m_stringPattern), m_stringEscape(o.m_stringEscape) {}
@@ -87,18 +84,23 @@ public:
          return *this;
       }
       ~pattern() {}
+
+   // ## operator -----------------------------------------------------------------
       bool operator==(const pattern& o) const { return m_stringPattern == o.m_stringPattern; }
       bool operator==(const std::string_view& stringPattern) const { return m_stringPattern == stringPattern; }
       
       /// convert to uint8_t, this will return the first character in the pattern string and is used to identify markers
       operator uint8_t() const { return static_cast<uint8_t>(m_stringPattern[0]); } 
+      operator std::string_view() const { return m_stringPattern; } ///< convert to string_view
 
       const std::string& get_pattern() const { return m_stringPattern; } ///< get pattern string
       const std::string& get_escape() const { return m_stringEscape; } ///< get escape string
 
+      size_t length() const { return m_stringPattern.length(); } ///< get length of pattern string
+
       /// compares if equal to pattern string and only the sequence of characters in the pattern string
       bool compare(const char* piText) const {
-         if (std::strncmp(piText, m_stringPattern.c_str(), m_stringPattern.length()) == 0) {
+         if(std::strncmp(piText, m_stringPattern.c_str(), m_stringPattern.length()) == 0) {
             return true;
          }
          return false;
@@ -106,8 +108,8 @@ public:
 
       /// check if text is escaped, this will check if the text is escaped with the escape character
       bool is_escaped(const char* piText) const {
-         if (m_stringEscape.empty()) return false; // no escape character
-         if (std::strncmp(piText - m_stringEscape.length(), m_stringEscape.c_str(), m_stringEscape.length()) == 0) {
+         if(m_stringEscape.empty()) return false; // no escape character
+         if(std::strncmp(piText - m_stringEscape.length(), m_stringEscape.c_str(), m_stringEscape.length()) == 0) {
             return true;
          }
          return false;
@@ -120,32 +122,33 @@ public:
 
 // ## types ------------------------------------------------------------------
 public:
-   using value_type = pattern; ///< type of value stored in vector
-   using iterator = std::vector<pattern>::iterator; ///< iterator type
-   using const_iterator = std::vector<pattern>::const_iterator; ///< const iterator type
-   using reverse_iterator = std::vector<pattern>::reverse_iterator; ///< reverse iterator type
-   using const_reverse_iterator = std::vector<pattern>::const_reverse_iterator; ///< const reverse iterator type
-   using size_type = std::vector<pattern>::size_type; ///< size type
-   using difference_type = std::vector<pattern>::difference_type; ///< difference type
+   using value_type              = pattern;                        ///< type of value stored in vector
+   using iterator                = std::vector<pattern>::iterator; ///< iterator type
+   using const_iterator          = std::vector<pattern>::const_iterator; ///< const iterator type
+   using reverse_iterator        = std::vector<pattern>::reverse_iterator; ///< reverse iterator type
+   using const_reverse_iterator  = std::vector<pattern>::const_reverse_iterator; ///< const reverse iterator type
+   using size_type               = std::vector<pattern>::size_type; ///< size type
+   using difference_type         = std::vector<pattern>::difference_type; ///< difference type
+
 
 // ## construction -------------------------------------------------------------
 public:
-   pattern() { m_arrayMarkerHint = { 0 }; }
+   patterns() { m_arrayMarkerHint = { 0 }; }
    // copy
-   pattern(const pattern& o) { common_construct(o); }
-   pattern(pattern&& o) noexcept { common_construct(std::move(o)); }
+   patterns(const patterns& o) { common_construct(o); }
+   patterns(patterns&& o) noexcept { common_construct(std::move(o)); }
    // assign
-   pattern& operator=(const pattern& o) { common_construct(o); return *this; }
-   pattern& operator=(pattern&& o) noexcept { common_construct(std::move(o)); return *this; }
+   patterns& operator=(const patterns& o) { common_construct(o); return *this; }
+   patterns& operator=(patterns&& o) noexcept { common_construct(std::move(o)); return *this; }
 
-   ~pattern() {}
+   ~patterns() {}
 private:
    // common copy
-   void common_construct(const pattern& o) {
+   void common_construct(const patterns& o) {
        m_vectorPattern = o.m_vectorPattern;
        m_arrayMarkerHint = o.m_arrayMarkerHint;
    }
-   void common_construct(pattern&& o) noexcept {
+   void common_construct(patterns&& o) noexcept {
        m_vectorPattern = std::move(o.m_vectorPattern);
        m_arrayMarkerHint = std::move(o.m_arrayMarkerHint);
    }
@@ -178,23 +181,18 @@ public:
       add_marker_hint(stringPattern[0]);
    }
 
+   void sort(); ///< sort vector of patterns based on length
+
    void clear() { m_vectorPattern.clear(); m_arrayMarkerHint = { 0 }; } ///< clear vector of patterns
    bool empty() const { return m_vectorPattern.empty(); } ///< check if vector of patterns is empty
    size_t size() const { return m_vectorPattern.size(); } ///< get size of vector of patterns
 
-   /**
-    * @brief Check if text matches any pattern in the vector
-    * @param piText Pointer to the text to check
-    * @return True if the text matches any pattern, false otherwise
-    */
+   /// check if text matches any pattern in the vector
    bool exists(const char* piText) const;
-   
-   /**
-    * @brief Check if text matches any pattern in the vector
-    * @param puText Pointer to the text as unsigned char to check
-    * @return True if the text matches any pattern, false otherwise
-    */
    bool exists(const uint8_t* puText) const { return exists(reinterpret_cast<const char*>(puText)); }
+
+   /// Try to find the pattern in the text
+   int find_pattern(const char* piText, size_t uLength) const;
 
    /**
     * @brief Find the matching pattern for the given text
@@ -245,6 +243,8 @@ private:
    /// add marker hint, this will add a character to the list of characters that are used to identify pattern changing markers
    void add_marker_hint(uint8_t uCharacter) { m_arrayMarkerHint[uCharacter] = 1; }
    void add_marker_hint(char iCharacter) { add_marker_hint(uint8_t(iCharacter)); }
+   int find_(const uint8_t* puBegin, const uint8_t* puEnd ) const;            ///< find pattern in text, not optimized
+   int find_(const char* piBegin, const char* piEnd) const { return find_(reinterpret_cast<const uint8_t*>( piBegin ), reinterpret_cast<const uint8_t*>( piEnd ) ); } ///< find pattern in text, not optimized  
 
 // ## attributes ----------------------------------------------------------------
 public:
@@ -253,20 +253,24 @@ public:
    std::vector<pattern> m_vectorPattern; ///< vector of patterns to use when matching strings
 };
 
-/// check if text matches any pattern in the vector
-inline bool pattern::exists(const char* piText) const {
-   if (piText == nullptr) return false;
+/**
+ * @brief Check if text matches any pattern in the vector
+ * @param piText Pointer to the text to check
+ * @return True if the text matches any pattern, false otherwise
+ */
+inline bool patterns::exists(const char* piText) const {                                           assert(piText != nullptr);
+if( m_arrayMarkerHint[static_cast<uint8_t>( *piText )] == 0 ) return false;   // no match found
    for (const auto& it : m_vectorPattern) {
       // Compare with specified length
-      if (it.compare(piText) == true) { return true; }
+      if(it.compare(piText) == true) { return true; }
    }
    return false;
 }
 
 /// find the matching pattern for the given text
-inline size_t pattern::find_match(const char* piText) const {                                      asset(piText != nullptr);
+inline size_t patterns::find_match(const char* piText) const {                                      assert(piText != nullptr);
    for (size_t i = 0; i < m_vectorPattern.size(); ++i) {
-      if (m_vectorPattern[i].compare(piText) == true) {
+      if(m_vectorPattern[i].compare(piText) == true) {
          return i;
       }
    }
@@ -274,15 +278,15 @@ inline size_t pattern::find_match(const char* piText) const {                   
 }
 
 /// get the length of the matching pattern
-inline size_t pattern::match_length(const char* piText) const {
+inline size_t patterns::match_length(const char* piText) const {
    size_t index = find_match(piText);
-   if (index == SIZE_MAX) return 0;
+   if(index == SIZE_MAX) return 0;
    return m_vectorPattern[index].m_stringPattern.length();
 }
 
 /// check if text is escaped
-inline bool pattern::is_escaped(const char* piText, size_t uIndex) const {
-   if (uIndex >= m_vectorPattern.size()) return false;
+inline bool patterns::is_escaped(const char* piText, size_t uIndex) const {
+   if(uIndex >= m_vectorPattern.size()) return false;
    return m_vectorPattern[uIndex].is_escaped(piText);
 }
 

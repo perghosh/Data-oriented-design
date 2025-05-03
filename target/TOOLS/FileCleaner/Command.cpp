@@ -40,7 +40,7 @@
  * std::string path = "/example/directory";
  * unsigned depth = 2;
  * auto result = FILES_Harvest_g(path, &table, depth);
- * if (result.first) {
+ * if(result.first) {
  *     std::cout << "Files harvested successfully." << std::endl;
  * } else {
  *     std::cerr << "Error: " << result.second << std::endl;
@@ -155,7 +155,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
  * gd::argument::shared::arguments argsResult;
  * 
  * auto result = COMMAND_CountRows(argsPath, argsResult);
- * if (result.first) {
+ * if(result.first) {
  *     std::cout << "Row count: " << argsResult["count"].as_uint64() << std::endl;
  * } else {
  *     std::cerr << "Error: " << result.second << std::endl;
@@ -368,7 +368,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
    // ### Open file
    if( std::filesystem::is_regular_file(stringFile) == false ) return { false, "File not found: " + stringFile };
    std::ifstream file_(stringFile, std::ios::binary);
-   if (file_.is_open() == false) return { false, "Failed to open file: " + stringFile };
+   if(file_.is_open() == false) return { false, "Failed to open file: " + stringFile };
 
    gd::parse::window::line lineBuffer(4096, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
 
@@ -598,7 +598,7 @@ std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::ar
  * ... populate the table with data ...
  * std::vector<unsigned> vectorColumnIndex = { 1, 2, 3 };
  * auto result_ = TABLE_AddSumRow(&table_, vectorColumnIndex); // add sum row and values for columns 1, 2, and 3
- * if (result_.first) { .. ommitted .. }
+ * if(result_.first) { .. ommitted .. }
  * @endcode
  */
 std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex)

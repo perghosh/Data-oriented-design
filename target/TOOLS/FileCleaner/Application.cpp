@@ -832,11 +832,20 @@ std::vector<std::string> CApplication::Split_s(const std::string& stringText, ch
    char iEffectiveDelimiter = iDelimiter;
    if( iEffectiveDelimiter == 0 )
    {
-      if( stringText.find(";") != std::string::npos )
+      // ## Determine the effective delimiter
+
+      auto uSemicolon = stringText.find(";");
+      auto uComma = stringText.find(",");
+
+      if( uSemicolon != std::string::npos && uComma != std::string::npos )
+      {
+         iEffectiveDelimiter = ( uSemicolon < uComma ) ? ';' : ',';           // select the first found
+      }
+      else if( uSemicolon != std::string::npos )
       {
          iEffectiveDelimiter = ';';
       }
-      else if( stringText.find(",") != std::string::npos )
+      else if( uComma != std::string::npos )
       {
          iEffectiveDelimiter = ',';
       }
