@@ -877,6 +877,87 @@ gd::table::dto::table CDocument::RESULT_PatternCount()
    return tableResult;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Generate a result table with pattern line list.  
+ *  
+ * This method generates a result table containing all lines in files where patterns were found.  
+ * The result includes the file path, line number, column number, matched pattern, and a snippet of the line.  
+ *   
+ * @details  
+ * - The method retrieves the "file" and "file-linelist" cache tables.  
+ * - For each row in the "file-linelist" table, it finds the corresponding file in the "file" table using the file key.  
+ * - It constructs the full file path and formats the result string based on the editor type (e.g., Visual Studio or VSCode).  
+ * - The result string includes the file path, line and column numbers, matched pattern, and a snippet of the line.  
+ * - The snippet is truncated to 120 characters if it exceeds this length.  
+ *  
+ * @return A table containing the pattern line list for each file.  
+ *  
+ * @pre The "file" and "file-linelist" cache tables must be prepared and available in the cache.  
+ * @post The result table is generated with the pattern line list.  
+ *  
+ * @note The editor type (e.g., Visual Studio or VSCode) is currently hardcoded but can be retrieved from application settings in the future.  
+ */  
+gd::table::dto::table CDocument::RESULT_PatternLineList()  
+{  
+  enum enumEditor { eVisualStudio, eVSCode };  
+  using namespace gd::table::dto;  
+  enumEditor eEditor = eVisualStudio; // TODO: get editor from application settings  
+
+  // Define the result table structure  
+  constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );  
+  table tableResult(uTableStyle, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});  
+
+  // Retrieve the file-pattern cache table  
+  auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);  
+  auto* ptableLineList = CACHE_Get("file-linelist", false);                                       assert(ptableLineList != nullptr);  
+
+  unsigned uKeyColumnInFile = ptableFile->column_get_index("key"); // get index for key column  
+
+  for( uint64_t uRow = 0, uRowCount = ptableLineList->size(); uRow < uRowCount; uRow++ )  
+  {  
+     auto uFileKey = ptableLineList->cell_get_variant_view(uRow, "file-key").as_uint64();  
+
+     int64_t iFileRow = ptableFile->find(uKeyColumnInFile, true, gd::variant_view(uFileKey)); // find row in file table with file-key  
+     if( iFileRow == -1 ) { assert( iFileRow != -1 ); continue; }  
+
+     auto stringFolder = ptableFile->cell_get_variant_view(iFileRow, "folder").as_string();  
+     auto stringFilename = ptableFile->cell_get_variant_view(iFileRow, "filename").as_string();  
+     gd::file::path pathFile(stringFolder);  
+     pathFile += stringFilename;  
+     std::string stringFile = pathFile.string();  
+
+     // ## Build the result string for the file where pattern was found  
+     if( eEditor == eVisualStudio )  
+     {  
+        stringFile += "(";  
+        stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();  
+        stringFile += ",";  
+        stringFile += ptableLineList->cell_get_variant_view(uRow, "column").as_string();  
+        stringFile += ") - [";  
+     }  
+     else if( eEditor == eVSCode )  
+     {  
+        stringFile += ":";  
+        stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();  
+        stringFile += ":";  
+        stringFile += ptableLineList->cell_get_variant_view(uRow, "column").as_string();  
+        stringFile += " - [";  
+     }  
+
+     stringFile += ptableLineList->cell_get_variant_view(uRow, "pattern").as_string();  
+     stringFile += "] - ";  
+
+     std::string stringLine = ptableLineList->cell_get_variant_view(uRow, "line").as_string();  
+     if( stringLine.length() > 120 ) stringLine = stringLine.substr(0, 120) + "..."; // limit line length to 120 characters  
+
+     stringFile += stringLine;  
+
+     auto uNewRow = tableResult.row_add_one();  
+     tableResult.cell_set( uNewRow, 0, stringFile );  
+  }  
+
+  return tableResult;  
+}
 
 
 

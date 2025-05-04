@@ -263,10 +263,10 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
       auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
 
-      std::string stringPrint = gd::table::to_string(*ptableLineList, gd::table::tag_io_cli{}); // print table to console
-      std::cout << "\n" << stringPrint << "\n\n";
+      auto tableResultLineList = pdocument->RESULT_PatternLineList();
 
-      
+      std::string stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
+      std::cout << "\n" << stringCliTable << "\n\n";
    }
    else if( stringCommandName == "help" )                                      // command = "help"
    {

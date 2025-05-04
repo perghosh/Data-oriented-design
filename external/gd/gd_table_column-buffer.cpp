@@ -2762,25 +2762,45 @@ int64_t table_column_buffer::find_variant_view( unsigned uColumn, uint64_t uStar
    return -1;
 }
 
-
 /** ---------------------------------------------------------------------------
- * @brief Find row for sorted column
- * @param uColumn index to column value is searched for
- * @param bAscending if column is sorted in ascending or descending order
- * @param uStartRow row to begin search
- * @param uCount number of rows to search in
- * @param variantviewFind value seached for
- * @return index to row if found, -1 if not found
-*/
+ * @brief Finds a value in a sorted column within a specified range of rows.  
+ *  
+ * This method performs a binary search to locate the row containing the specified value in a sorted column.  
+ * The search can be performed in ascending or descending order.  
+ *  
+ * @param uColumn The index of the column to search in.  
+ * @param bAscending Indicates whether the column is sorted in ascending (true) or descending (false) order.  
+ * @param uStartRow The starting row index for the search.  
+ * @param uCount The number of rows to search.  
+ * @param variantviewFind The value to search for, encapsulated in a `gd::variant_view`.  
+ * @return int64_t The index of the row containing the value if found, or -1 if the value is not found.  
+ *  
+ * @code  
+ * gd::table::table_column_buffer table(10);  
+ * table.column_add({{"int32", 0, "id"}, {"string", 50, "name"}}, gd::table::tag_type_name{});  
+ * table.prepare();  
+ * table.row_add({1, "Alice"}, gd::table::tag_convert{});  
+ * table.row_add({2, "Bob"}, gd::table::tag_convert{});  
+ * table.row_add({3, "Charlie"}, gd::table::tag_convert{});  
+ *  
+ * // Sort the table by the "id" column in ascending order.  
+ * table.sort(0, true, 0, table.get_row_count(), gd::table::tag_sort_selection{});  
+ *  
+ * // Find the row with id = 2.  
+ * gd::variant_view valueToFind(2);  
+ * int64_t rowIndex = table.find_variant_view(0, true, 0, table.get_row_count(), valueToFind);  
+ * assert(rowIndex == 1);  
+ * @endcode  
+ */  
 int64_t table_column_buffer::find_variant_view( unsigned uColumn, bool bAscending, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept
 {
-   uint64_t uLow = uStartRow;
-   uint64_t uHigh = uStartRow + uCount;
+   uint64_t uLow = uStartRow; // start row that begins the search
+   uint64_t uHigh = uStartRow + uCount; // end row that ends the search
    
 
    if( bAscending == true )
    {
-      while( uHigh > uLow )
+      while( uHigh >= uLow )
       {
          uint64_t uMid = (uLow + uHigh) / 2;
          auto value_ = cell_get_variant_view( uMid, uColumn );
@@ -2799,7 +2819,7 @@ int64_t table_column_buffer::find_variant_view( unsigned uColumn, bool bAscendin
    }
    else
    {
-      while( uHigh > uLow )
+      while( uHigh >= uLow )
       {
          uint64_t uMid = (uLow + uHigh) / 2;
          auto value_ = cell_get_variant_view( uMid, uColumn );
