@@ -542,24 +542,45 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
 
 
 /** ---------------------------------------------------------------------------
- * @brief Lists lines in a file that match a specified pattern.
+ * @brief Lists lines in a file that match specified patterns.
  *
- * This method reads the specified file and lists lines that match the given pattern.
- * The input and output are passed through the `argumentsPath` and `patternsFind` parameters.
- * 
+ * This method reads the specified file and identifies lines that match any of the given patterns.
+ * The matching lines, along with their details (e.g., line number, column, and file information),
+ * are stored in the provided table.
+ *
  * ### Steps:
  * 1. **Prepare the source file**:
- *    - Validate the file path and ensure it exists.
+ *    - Retrieve the file path from the `argumentsPath` container.
+ *    - Validate that the file exists and is a regular file.
  *    - Open the file in binary mode for reading.
- * 2. **Initialize the state**:
- *    - Prepare the parsing state based on the file extension.
- *    - Set up patterns to count occurrences in the source code.
- * 
- * 
+ * 2. **Initialize the parsing state**:
+ *    - Determine the file type based on its extension.
+ *    - Configure the parsing state to handle comments, strings, and other relevant constructs.
+ * 3. **Read and process the file**:
+ *    - Read the file into a buffer in chunks.
+ *    - Iterate through the buffer to analyze each line and character.
+ *    - Identify and handle different states (e.g., code, comments, strings).
+ * 4. **Match patterns**:
+ *    - For each line, check if it matches any of the specified patterns.
+ *    - If a match is found, record the line, its row, column, and other details in the table.
+ * 5. **Store results**:
+ *    - Populate the `ptable_` with details of all matching lines.
+ * 6. **Return the result**:
+ *    - Return a success flag (`true`) and an empty error message on success.
+ *    - If an error occurs (e.g., file not found or failed to open), return `false` and an appropriate error message.
+ *
  * @param argumentsPath The arguments container containing the input parameters:
  *        - `source` (string): The source file path to search for patterns.
+ *        - `file-key` (uint64_t): A unique key identifying the file in the main table.
  * @param patternsFind The patterns to search for in the file.
  * @param ptable_ A pointer to the table where the matching lines will be stored.
+ *        Each row in the table contains:
+ *        - `key`: A unique identifier for the row.
+ *        - `file-key`: The unique key identifying the file.
+ *        - `filename`: The name of the file being processed.
+ *        - `line`: The content of the matching line.
+ *        - `row`: The line number of the match.
+ *        - `column`: The column number where the match starts.
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
