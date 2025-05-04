@@ -149,12 +149,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    if( stringCommandName == "count" )                                          // command = "count"
    {
       std::string stringSource = (*poptionsActive)["source"].as_string();                          
-     
-      if( stringSource.empty() == true )
-      {
-         std::filesystem::path pathFile = std::filesystem::current_path();
-         stringSource = pathFile.string();
-      }                                                                                            LOG_INFORMATION_RAW("== --source: " & stringSource);
+      PathGetCurrentIfEmpty_s(stringSource);                                  // if source is empty then set it to current path
+
 
       int iRecursive = ( *poptionsActive )["recursive"].as_int();                                  LOG_INFORMATION_RAW("== --recursive: " & iRecursive);
       gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
@@ -246,6 +242,31 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    else if( stringCommandName == "history" )
    {
       HistoryPrint_s();
+   }
+   else if( stringCommandName == "list" )
+   {
+      std::string stringSource = (*poptionsActive)["source"].as_string();                          
+      PathGetCurrentIfEmpty_s(stringSource);                                   // if source is empty then set it to current path
+
+      int iRecursive = ( *poptionsActive )["recursive"].as_int();                                  LOG_INFORMATION_RAW("== --recursive: " & iRecursive);
+      gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
+      std::string stringFilter = ( *poptionsActive )["filter"].as_string();
+
+      auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);     // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+      if( result_.first == false ) return result_;
+
+      std::string stringPattern = ( *poptionsActive )["pattern"].as_string();                      LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
+      auto vectorPattern = Split_s(stringPattern);                             // split pattern string into vector
+
+      result_ = pdocument->FILE_UpdatePatternList( vectorPattern );            // count rows in harvested files
+      if( result_.first == false ) return result_;
+
+      auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
+
+      std::string stringPrint = gd::table::to_string(*ptableLineList, gd::table::tag_io_cli{}); // print table to console
+      std::cout << "\n" << stringPrint << "\n\n";
+
+      
    }
    else if( stringCommandName == "help" )                                      // command = "help"
    {
@@ -622,7 +643,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    {  // ## `copy` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );
-      optionsCommand.add({ "source", 's', "File to count lines in"});
+      optionsCommand.add({ "source", 's', "File/folders to count lines in"});
       optionsCommand.add({ "comment", "Pair of characters marking start and end for comments"});
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
@@ -649,13 +670,21 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
-   // ## 'history'
+   // ## 'history' handle history 
    {
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "store command history" );
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "Handle command history" );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
    }
 
+   // ## 'list' list rows with specified patterns
+   {
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "list rows with specified patterns" );
+      optionsCommand.add({ "source", 's', "File/folders where to search for patterns in"});
+      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
+      optionsApplication.sub_add(std::move(optionsCommand));
+      //optionsCommand.add({});
+   }
 
    {  // ## `join` command, joins two or more files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "join", "join two or more files" );
@@ -679,24 +708,37 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 }
 
+// ----------------------------------------------------------------------------
+/// @brief Prepare logging
 void CApplication::PrepareLogging_s()
 {
 #ifdef GD_LOG_SIMPLE
    using namespace gd::log;
-   gd::log::logger<0>* plogger = gd::log::get_s();                          // get pointer to logger 0
+   gd::log::logger<0>* plogger = gd::log::get_s();                            // get pointer to logger 0
 
-   plogger->append( std::make_unique<gd::log::printer_console>() );         // append printer to logger, this prints to console
+   plogger->append( std::make_unique<gd::log::printer_console>() );           // append printer to logger, this prints to console
 
    // ## set margin for log messages, this to make it easier to read. a bit hacky 
    auto* pprinter_console = (gd::log::printer_console*)plogger->get( 0 );
    // ## color console messages in debug mode
-   pprinter_console->set_margin( 8 );                                       // set log margin
+   pprinter_console->set_margin( 8 );                                         // set log margin
    pprinter_console->set_margin_color( eColorBrightBlack );
 
    unsigned uSeverity = unsigned(eSeverityNumberVerbose) | unsigned(eSeverityGroupDebug);
    plogger->set_severity( uSeverity ); 
 
 #endif // GD_LOG_SIMPLE
+}
+
+// ----------------------------------------------------------------------------
+/// @brief Get current path if string is empty
+void CApplication::PathGetCurrentIfEmpty_s( std::string& stringPath )
+{
+   if( stringPath.empty() == true )
+   {
+      std::filesystem::path pathFile = std::filesystem::current_path();
+      stringPath = pathFile.string();
+   }
 }
 
 void CApplication::Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer )

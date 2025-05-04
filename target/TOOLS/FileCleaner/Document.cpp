@@ -79,6 +79,39 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    return result_;
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Harvests file information and filters based on the provided arguments.
+ *
+ * This method combines the functionality of harvesting file information and filtering
+ * it based on a specified string filter. It first calls FILE_Harvest to gather file
+ * information, and then applies the filter if provided.
+ *
+ * @param argumentsPath The arguments containing the source path for harvesting files.
+ * @param stringFilter The filter string to apply to the harvested files.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared::arguments& argumentsPath, std::string stringFilter)
+{
+   auto result_ = FILE_Harvest(argumentsPath);
+   if( result_.first == false ) return result_;
+
+   if( stringFilter.empty() == false )
+   {
+      auto result_ = FILE_Filter(stringFilter);
+      if( result_.first == false ) return result_;
+   }
+   else
+   {
+      auto result_ = FILE_FilterBinaries();
+      if( result_.first == false ) return result_;
+   }
+   
+   return { true, "" };
+}
+
 std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stringFilter)
 {                                                                                                  assert( stringFilter.empty() == false );
    std::vector<uint64_t> vectorRemoveRow;
@@ -308,12 +341,10 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
 
 std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern)
 {                                                                                                  assert(vectorPattern.empty() == false); assert(vectorPattern.size() < 64); // max 64 patterns
-   auto* ptableFileLineList = CACHE_Get("file-linelist", true);                // make sure it is in cache
-
    gd::parse::patterns patternsFind( vectorPattern );
    patternsFind.sort();                                                        // sort patterns by length, longest first
 
-   auto* ptableLineList = CACHE_Get("file-linelist", false);                   // get table to make sure it is in cache
+   auto* ptableLineList = CACHE_Get("file-linelist", true);                    // get table to make sure it is in cache
 
    auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
    for( const auto& itRowFile : *ptableFile )
@@ -541,7 +572,7 @@ bool CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view
  * @param stringId id to table that is returned
  * @return pointer to table with id
  */
-gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, bool bLoad )
+gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, bool bPrepare )
 {
    {
       std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
@@ -553,15 +584,11 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
       }
    }
 
-   if( bLoad == true )
+   if( bPrepare == true )
    {
-      auto [bOk, stringError] = CACHE_Load( stringId );                                            // LOG_WARNING_IF( bOk == false, "Failed to find script: " << stringId );
-
-      if( bOk == true ) return CACHE_Get( stringId, false );
-      else
-      {                                                                        // store internal error
-         ERROR_Add( stringError );
-      }
+      CACHE_Prepare( stringId );
+      auto* ptable_ = CACHE_Get( stringId, false );                                                assert( ptable_ != nullptr );
+      return ptable_;
    }
 
    return nullptr;
