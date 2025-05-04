@@ -482,27 +482,27 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
 // 0TAG0CACHE
 
 /** ---------------------------------------------------------------------------  
-* @brief Prepares a cache table for the specified identifier.  
-*  
-* This method initializes and prepares a table for caching data associated with the given `stringId`.  
-* If the `stringId` matches specific identifiers like "file", "file-count", or "file-linelist",  
-* it creates tables with predefined columns tailored for their respective purposes:  
-*  
-* - **file**: Stores file information such as folder, filename, size, date, and extension.  
-* - **file-count**: Tracks row counters for files, including counts for code, characters, comments, and strings.  
-* - **file-linelist**: Lists lines where patterns are found, including details like row, column, and matched pattern.  
-*  
-* The table is then added to the internal application cache.  
-*  
-* @param stringId A string view representing the identifier for the cache table.  
-*  
-* @details  
-* - The method first checks if a cache table with the given `stringId` already exists using `CACHE_Get`.  
-* - If the table does not exist, it creates a new `table` object with predefined columns.  
-* - The table is wrapped in a `std::unique_ptr` and added to the cache using `CACHE_Add`.  
-*  
-* @note This method assumes that the `CACHE_Add` function handles the ownership of the table.  
-*/  
+ * @brief Prepares a cache table for the specified identifier.  
+ *  
+ * This method initializes and prepares a table for caching data associated with the given `stringId`.  
+ * If the `stringId` matches specific identifiers like "file", "file-count", or "file-linelist",  
+ * it creates tables with predefined columns tailored for their respective purposes:  
+ *  
+ * - **file**: Stores file information such as folder, filename, size, date, and extension.  
+ * - **file-count**: Tracks row counters for files, including counts for code, characters, comments, and strings.  
+ * - **file-linelist**: Lists lines where patterns are found, including details like row, column, and matched pattern.  
+ *  
+ * The table is then added to the internal application cache.  
+ *  
+ * @param stringId A string view representing the identifier for the cache table.  
+ *  
+ * @details  
+ * - The method first checks if a cache table with the given `stringId` already exists using `CACHE_Get`.  
+ * - If the table does not exist, it creates a new `table` object with predefined columns.  
+ * - The table is wrapped in a `std::unique_ptr` and added to the cache using `CACHE_Add`.  
+ *  
+ * @note This method assumes that the `CACHE_Add` function handles the ownership of the table.  
+ */  
 void CDocument::CACHE_Prepare(const std::string_view& stringId)  
 {  
   using namespace gd::table::dto;  
