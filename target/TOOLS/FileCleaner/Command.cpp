@@ -208,7 +208,31 @@ std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::argum
  * - Number of comment sections
  * - Number of string sections
  *
- * The input and output are passed through the `argumentsPath` and `argumentsResult` containers.
+ *
+ * ### Steps:
+ * 1. **Prepare the source file**:
+ *    - Retrieve the file path from the `argumentsPath` container.
+ *    - Validate that the file exists and is a regular file.
+ *    - Open the file in binary mode for reading.
+ * 2. **Initialize the parsing state**:
+ *    - Determine the file type based on its extension.
+ *    - Configure the parsing state to handle comments, strings, and other relevant constructs.
+ * 3. **Read the file into a buffer**:
+ *    - Allocate a buffer for reading the file in chunks.
+ *    - Read the file data into the buffer and update the buffer state.
+ * 4. **Process the file content**:
+ *    - Iterate through the buffer to analyze each character.
+ *    - Identify and count lines, code characters, comment sections, and string sections.
+ *    - Handle transitions between different states (e.g., entering or exiting a comment or string).
+ * 5. **Update counters**:
+ *    - Increment counters for lines, code lines, code characters, comments, and strings as appropriate.
+ * 6. **Store the results**:
+ *    - Populate the `argumentsResult` container with the collected statistics.
+ *    - Include the total counts for lines, code lines, code characters, comments, and strings.
+ * 7. **Return the result**:
+ *    - Return a success flag (`true`) and an empty error message on success.
+ *    - If an error occurs (e.g., file not found or failed to open), return `false` and an appropriate error message.
+ *
  *
  * @param argumentsPath The arguments container containing the input parameters:
  *        - `source` (string): The source file path to collect statistics from.
@@ -347,6 +371,23 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
  *
  * This method reads the specified file and counts occurrences of each pattern
  * in the source code. The patterns are provided in the `vectorPattern` parameter.
+ * 
+  * ### Steps:
+ * 1. **Prepare the source file**:
+ *    - Validate the file path and ensure it exists.
+ *    - Open the file in binary mode for reading.
+ * 2. **Initialize the state**:
+ *    - Prepare the parsing state based on the file extension.
+ *    - Set up patterns to count occurrences in the source code.
+ * 3. **Read and process the file**:
+ *    - Read the file into a buffer.
+ *    - Iterate through the buffer to identify and count patterns.
+ *    - Handle different states (e.g., code, comments, strings) appropriately.
+ * 4. **Count occurrences**:
+ *    - For each pattern, count its occurrences in the relevant sections of the file.
+ *    - Store the counts in the `vectorCount` parameter.
+ * 5. **Return the result**:
+ *    - Return a success flag and an error message (if any).
  *
  * @param argumentsPath The arguments container containing the input parameters:
  *        - `source` (string): The source file path to collect statistics from.
@@ -370,7 +411,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
    std::ifstream file_(stringFile, std::ios::binary);
    if(file_.is_open() == false) return { false, "Failed to open file: " + stringFile };
 
-   gd::parse::window::line lineBuffer(4096, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
+   gd::parse::window::line lineBuffer(48 * 64, 16 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
 
    gd::expression::parse::state state_; // state is used to check what type of code part we are in
    auto result_ = COMMAND_PrepareState( {{"source",stringFile}}, state_);
@@ -482,6 +523,193 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
          lineBuffer.update(uReadSize);                                        // update valid size in line buffer
       }
    }
+
+   return { true, "" };
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Lists lines in a file that match a specified pattern.
+ *
+ * This method reads the specified file and lists lines that match the given pattern.
+ * The input and output are passed through the `argumentsPath` and `patternsFind` parameters.
+ * 
+ * ### Steps:
+ * 1. **Prepare the source file**:
+ *    - Validate the file path and ensure it exists.
+ *    - Open the file in binary mode for reading.
+ * 2. **Initialize the state**:
+ *    - Prepare the parsing state based on the file extension.
+ *    - Set up patterns to count occurrences in the source code.
+ * 
+ * 
+ * @param argumentsPath The arguments container containing the input parameters:
+ *        - `source` (string): The source file path to search for patterns.
+ * @param patternsFind The patterns to search for in the file.
+ * @param ptable_ A pointer to the table where the matching lines will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::dto::table* ptable_)
+{
+   enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
+
+   unsigned uFindInState = eStateCode; // state of the parser
+
+   uint64_t uFileKey = argumentsPath["file-key"]; // key to file for main table holding activ files
+
+   // ## prepare source file
+
+   std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
+   if( std::filesystem::is_regular_file(stringFile) == false ) return { false, "File not found: " + stringFile };
+   gd::file::path pathFile(stringFile);
+   std::string stringExtension = pathFile.extension().string();
+
+   // ### Open file
+
+   std::ifstream file_(stringFile, std::ios::binary);
+   if(file_.is_open() == false) return { false, "Failed to open file: " + stringFile };
+
+   gd::parse::window::line lineBuffer(48 * 64, 16 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
+
+   gd::expression::parse::state state_; // state is used to check what type of code part we are in
+   auto result_ = COMMAND_PrepareState( {{"source",stringFile}}, state_);
+   if( result_.first == false ) return result_;                               // error in state preparation
+
+   uint64_t uCountNewLine = 0;                                                // counts all new lines in file (all '\n' characters)
+
+   // ## find pattern in code, returns index to found pattern within patternsFind if match, otherwise -1
+   auto add_line_to_table_ = [uFileKey,ptable_,&patternsFind](int iPatternIndex, const std::string& stringText, uint64_t uRow, uint64_t uColumn = 0u) 
+      {
+         auto uRow = ptable_->get_row_count();
+         ptable_->row_add();
+         ptable_->cell_set(uRow, "key", uRow + 1);
+         ptable_->cell_set(uRow, "file-key", uFileKey);
+         ptable_->cell_set(uRow, "line", stringText);
+         ptable_->cell_set(uRow, "row", uRow);
+         ptable_->cell_set(uRow, "column", uColumn);
+
+      };
+
+
+   std::string stringSourceCode; // gets source code for analysis
+   std::string stringText;       // gets text for analysis
+   uint64_t uRowCharacterCodeCount = 0; // number of characters of code in current row (helper variable)
+
+
+   // ## Read the file into the buffer
+   auto uAvailable = lineBuffer.available();
+   file_.read((char*)lineBuffer.buffer(), uAvailable);
+   auto uReadSize = file_.gcount();                                           // get number of valid bytes read
+   lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
+
+   // ## Process the file
+   while (lineBuffer.eof() == false)
+   {
+      uCountNewLine += lineBuffer.count('\n');                                // count all new lines in buffer
+
+      auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});         // get first and last position of buffer
+
+      for(auto it = first_; it < last_; it++ ) 
+      {
+         if( state_.in_state() == false )                                     // not in a state? that means we are reading source code
+         {
+            // ## check if we have found state
+            if( state_[*it] != 0 && state_.exists( it ) == true )
+            {
+               if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) )
+               {
+                  uint64_t uColumn;
+                  int iPattern = patternsFind.find_pattern(stringSourceCode, &uColumn); // try to find pattern in source code
+                  if( iPattern != -1 )                                        // did we find a pattern?
+                  {
+                     // ## figure ot row and column
+                     auto uRow = uCountNewLine; // row number for current buffer
+                     auto uPosition = last_ - it;
+                     uRow -= lineBuffer.count('\n', uPosition);               // subtract number of new lines in buffer from current position to get the right row
+
+                     add_line_to_table_(iPattern, stringSourceCode, uCountNewLine, uColumn); // add line to table
+                  }
+               }
+               stringSourceCode.clear();                                      // clear source code
+               state_.activate(it);                                           // activate state
+
+               // If multiline and `uRowCharacterCodeCount` is not 0 that means that there are characters in the code section before multiline
+               if( uRowCharacterCodeCount > 0 && state_.is_multiline() == false ) 
+               { 
+                  stringSourceCode.clear();
+                  uRowCharacterCodeCount = 0;
+               }
+
+               continue;
+            }
+
+            
+            if( *it == '\n' ) 
+            { 
+               uint64_t uColumn;
+               int iPattern = patternsFind.find_pattern(stringSourceCode, &uColumn); // try to find pattern in source code
+               if( iPattern != -1 )                                           // did we find a pattern?
+               {
+                  // ## figure ot row and column
+                  auto uRow = uCountNewLine; // row number for current buffer
+                  auto uPosition = last_ - it;
+                  uRow -= lineBuffer.count('\n', uPosition);                  // subtract number of new lines in buffer from current position to get the right row
+
+                  add_line_to_table_(iPattern, stringSourceCode, uCountNewLine, uColumn); // add line to table
+               }
+
+               stringSourceCode.clear();
+               uRowCharacterCodeCount = 0;                                    // reset code character count for next line
+               continue;
+            }
+            else if( gd::expression::is_code_g( *it ) != 0 ) 
+            { 
+               uRowCharacterCodeCount++;                                      // count all code characters in line
+            }
+
+            stringSourceCode += *it;                                          // add character to source code
+         }
+         else
+         {
+            stringText += *it;                                                // add character to text for analysis
+            // ## check if we have found end of state
+            unsigned uLength;
+            if( state_.deactivate( it, &uLength ) == true ) 
+            {
+               if( uFindInState & (eStateComment|eStateString) )
+               {
+                  if( state_.is_comment() == true && (uFindInState & eStateComment) )
+                  {
+                     //count_(stringText);
+                  }
+                  else if( state_.is_string() == true && ( uFindInState & eStateString ) )
+                  {
+                     //count_(stringText);
+                  }
+               }
+               stringText.clear();                                             // clear text for analysis
+
+
+               if( uLength > 1 ) it += ( uLength - 1 );                       // skip to end of state marker and if it is more than 1 character, skip to end of state
+               continue;
+            }
+         }
+      }
+
+      lineBuffer.rotate();                                                    // rotate buffer
+
+      if( uReadSize > 0 )                                                     // was it possible to read data last read, then more data is available
+      {
+         auto uAvailable = lineBuffer.available();                            // get available space in buffer to be filled
+         file_.read((char*)lineBuffer.buffer(), lineBuffer.available());      // read more data into available space in buffer
+         uReadSize = file_.gcount();
+         lineBuffer.update(uReadSize);                                        // update valid size in line buffer
+      }
+   }
+
+
 
    return { true, "" };
 }
