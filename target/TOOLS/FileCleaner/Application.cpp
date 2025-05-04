@@ -2,6 +2,7 @@
  * @file Application.cpp
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
+ * - `0TAG0OPTIONS.Application` - database operations
  * - `0TAG0DATABASE.Application` - database operations
  * 
  */
@@ -682,6 +683,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "list rows with specified patterns" );
       optionsCommand.add({ "source", 's', "File/folders where to search for patterns in"});
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
+      optionsCommand.add({ "max", "Max list count to avoid too many hits"});
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
    }
