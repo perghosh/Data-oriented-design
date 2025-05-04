@@ -339,17 +339,46 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
    return { true, "" };
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Updates the pattern list for files in the cache.
+ *
+ * This method processes a list of patterns and applies them to the files stored in the cache.
+ * It generates a list of lines in each file where the patterns are found and stores the results
+ * in the "file-linelist" cache table.
+ *
+ * @param vectorPattern A vector of strings representing the patterns to search for.
+ *                      The vector must not be empty and can contain a maximum of 64 patterns.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @pre The `vectorPattern` must not be empty and must contain fewer than 64 patterns.
+ * @post The "file-linelist" cache table is updated with the lines where the patterns are found.
+ *
+ * @details
+ * - The method first initializes a `gd::parse::patterns` object with the provided patterns
+ *   and sorts them by length (longest first).
+ * - It ensures that the "file-linelist" cache table is prepared and available.
+ * - For each file in the "file" cache table, it generates the full file path by combining
+ *   the "folder" and "filename" columns.
+ * - It then calls the `COMMAND_ListLinesWithPattern` function to find the lines in the file
+ *   that match the patterns and updates the "file-linelist" table with the results.
+ * - If an error occurs during the process, it is added to the internal error list.
+ */
 std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern)
-{                                                                                                  assert(vectorPattern.empty() == false); assert(vectorPattern.size() < 64); // max 64 patterns
-   gd::parse::patterns patternsFind( vectorPattern );
-   patternsFind.sort();                                                        // sort patterns by length, longest first
+{                                                                                                  assert(vectorPattern.empty() == false); // Ensure the pattern list is not empty
+                                                                                                   assert(vectorPattern.size() < 64);      // Ensure the pattern list contains fewer than 64 patterns
+   gd::parse::patterns patternsFind(vectorPattern);
+   patternsFind.sort();                                                       // Sort patterns by length, longest first
 
-   auto* ptableLineList = CACHE_Get("file-linelist", true);                    // get table to make sure it is in cache
+   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
+   auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
+   assert(ptableFile != nullptr);
 
-   auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
-   for( const auto& itRowFile : *ptableFile )
+   for (const auto& itRowFile : *ptableFile)
    {
-      // ## generate full file path (folder + filename)
+      // ## Generate the full file path (folder + filename)
       auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
       gd::file::path pathFile(string_);
       string_ = itRowFile.cell_get_variant_view("filename").as_string();
@@ -358,11 +387,15 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 
       auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
 
-      auto result_ = COMMAND_ListLinesWithPattern( {{"source", stringFile}, {"file-key", uKey }}, patternsFind, ptableLineList );
-      if( result_.first == false ) { ERROR_Add(result_.second); }
+      // Find lines with patterns and update the "file-linelist" table
+      auto result_ = COMMAND_ListLinesWithPattern({{"source", stringFile}, {"file-key", uKey}}, patternsFind, ptableLineList);
+      if (result_.first == false)
+      {
+         ERROR_Add(result_.second); // Add error to the internal error list
+      }
    }
 
-   return { true, "" };
+   return {true, ""};
 }
 
 
@@ -425,72 +458,77 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
 
 // 0TAG0CACHE
 
-/** ---------------------------------------------------------------------------
- * @brief Prepares a cache table for the specified identifier.
- *
- * This method initializes and prepares a table for caching data associated with the given `stringId`.
- * If the `stringId` matches "files", it creates a table with predefined columns ("path", "size", "date", "extension").
- * The table is then added to the internal application cache.
- *
- * @param stringId A string view representing the identifier for the cache table.
- *                 If the identifier is "files", a table with specific columns is prepared.
- *
- * @details
- * - The method first checks if a cache table with the given `stringId` already exists using `CACHE_Get`.
- * - If the table does not exist, it creates a new `table` object with predefined columns.
- * - The table is wrapped in a `std::unique_ptr` and added to the cache using `CACHE_Add`.
- *
- * @note This method assumes that the `CACHE_Add` function handles the ownership of the table.
- */
-void CDocument::CACHE_Prepare(const std::string_view& stringId)
-{
-   using namespace gd::table::dto;
-   constexpr unsigned uTableStyle = (table::eTableFlagNull32|table::eTableFlagRowStatus);
+/** ---------------------------------------------------------------------------  
+* @brief Prepares a cache table for the specified identifier.  
+*  
+* This method initializes and prepares a table for caching data associated with the given `stringId`.  
+* If the `stringId` matches specific identifiers like "file", "file-count", or "file-linelist",  
+* it creates tables with predefined columns tailored for their respective purposes:  
+*  
+* - **file**: Stores file information such as folder, filename, size, date, and extension.  
+* - **file-count**: Tracks row counters for files, including counts for code, characters, comments, and strings.  
+* - **file-linelist**: Lists lines where patterns are found, including details like row, column, and matched pattern.  
+*  
+* The table is then added to the internal application cache.  
+*  
+* @param stringId A string view representing the identifier for the cache table.  
+*  
+* @details  
+* - The method first checks if a cache table with the given `stringId` already exists using `CACHE_Get`.  
+* - If the table does not exist, it creates a new `table` object with predefined columns.  
+* - The table is wrapped in a `std::unique_ptr` and added to the cache using `CACHE_Add`.  
+*  
+* @note This method assumes that the `CACHE_Add` function handles the ownership of the table.  
+*/  
+void CDocument::CACHE_Prepare(const std::string_view& stringId)  
+{  
+  using namespace gd::table::dto;  
+  constexpr unsigned uTableStyle = (table::eTableFlagNull32|table::eTableFlagRowStatus);  
 
-   auto ptableFind = CACHE_Get(stringId, false);
-   if( ptableFind != nullptr ) return;                                         // table already exists, exit
+  auto ptableFind = CACHE_Get(stringId, false);  
+  if( ptableFind != nullptr ) return;                                         // table already exists, exit  
 
-   // ## prepare file list
-   //    columns: "path, size, date, extension
-   if( stringId == "file" )                                                    // file cache, used to store file information
-   {
-      auto ptable_ = CACHE_Get(stringId, false);
-      if( ptable_ == nullptr )
-      {
-         // file table: key | path | size | date | extension
-         auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} ) );
-         CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
-      }
-   }
-   else if( stringId == "file-count" )                                         // row counter table
-   {
-      auto ptable_ = CACHE_Get(stringId, false);
-      if( ptable_ == nullptr )
-      {
-         // file-linelist table: key | file-key | filename
-         //           count | code | characters | comment | string
-         auto ptable_ = std::make_unique<table>( table( uTableStyle, 
-            { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"}, 
-              {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"} }, gd::table::tag_prepare{} )
-         );
-         CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
-      }
-   }
-   else if( stringId == "file-linelist" )                                      // lists line where pattern was found
-   {
-      auto ptable_ = CACHE_Get(stringId, false);
-      if( ptable_ == nullptr )
-      {
-         // file-linelist table: key | file-key | filename
-         //                      line | row | column
-         //                      line = the row in text where pattern was found
-         auto ptable_ = std::make_unique<table>( table( uTableStyle, 
-            { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"}, 
-              {"rstring", 0, "line"}, {"uint64", 0, "row"}, {"uint64", 0, "column"} }, gd::table::tag_prepare{} )
-         );
-         CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache
-      }
-   }
+  // ## prepare file list  
+  //    columns: "path, size, date, extension  
+  if( stringId == "file" )                                                    // file cache, used to store file information  
+  {  
+     auto ptable_ = CACHE_Get(stringId, false);  
+     if( ptable_ == nullptr )  
+     {  
+        // file table: key | path | size | date | extension  
+        auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} ) );  
+        CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache  
+     }  
+  }  
+  else if( stringId == "file-count" )                                         // row counter table  
+  {  
+     auto ptable_ = CACHE_Get(stringId, false);  
+     if( ptable_ == nullptr )  
+     {  
+        // file-count table: key | file-key | filename  
+        //           count | code | characters | comment | string  
+        auto ptable_ = std::make_unique<table>( table( uTableStyle,   
+           { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},   
+             {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"} }, gd::table::tag_prepare{} )  
+        );  
+        CACHE_Add(std::move(*ptable_), stringId);                             // add it to internal application cache  
+     }  
+  }  
+  else if( stringId == "file-linelist" )                                      // lists line where pattern was found  
+  {  
+     auto ptable_ = CACHE_Get(stringId, false);  
+     if( ptable_ == nullptr )  
+     {  
+        // file-linelist table: key | file-key | filename  
+        //                      line | row | column | pattern  
+        //                      line = the row in text where pattern was found  
+        auto ptable_ = std::make_unique<table>( table( uTableStyle,   
+           { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},   
+             {"rstring", 0, "line"}, {"uint64", 0, "row"}, {"uint64", 0, "column"}, {"string", 32, "pattern"} }, gd::table::tag_prepare{} )  
+        );  
+        CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache  
+     }  
+  }  
 }
 
 /** ---------------------------------------------------------------------------
