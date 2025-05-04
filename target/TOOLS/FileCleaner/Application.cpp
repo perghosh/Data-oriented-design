@@ -133,6 +133,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    auto stringName_d = poptionsActive->name();
 #endif // !NDEBUG
 
+   // ## set editor
+   std::string stringEditor = ( *poptionsActive )["editor"].as_string();
+   PROPERTY_Set("editor", stringEditor);
+
+   // ## set command name
    std::string stringCommandName = poptionsActive->name();
    PROPERTY_Set("command", stringCommandName);                                                     LOG_INFORMATION_RAW("== Command: " & stringCommandName);
 
@@ -643,6 +648,7 @@ void CApplication::DATABASE_CloseActive()
  *                           where the options and subcommands will be added.
  *
  * ### Global Options
+ * - `editor`        : For editor specific configuration. vs, vscode or sublime is currently supported.
  * - `logging`       : Enables logging.
  * - `logging-csv`   : Adds a CSV logger for log messages.
  * - `print`         : Prints results from commands.
