@@ -159,6 +159,9 @@ public:
    static void Prepare_s( gd::cli::options& optionsApplication );
    static void PrepareLogging_s();
 
+   // ## Path operations
+   static void PathGetCurrentIfEmpty_s( std::string& stringPath );
+
    // ## Read data from database
 
    static void Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer );

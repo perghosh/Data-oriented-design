@@ -75,6 +75,19 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::
 
    try
    {
+      if( std::filesystem::is_directory(stringPath) == false )                 // not a directory
+      {
+         if( std::filesystem::is_regular_file(stringPath) == true )            // is file
+         {
+            add_(gd::file::path(stringPath));
+            return { true, "" };
+         }
+         else
+         {
+            return { false, "Path is not a directory or file: " + stringPath };
+         }
+      }
+
       for( const auto& it : std::filesystem::directory_iterator(stringPath) )
       {
          if( it.is_directory() == true )                                       // is file directory
@@ -411,7 +424,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
    std::ifstream file_(stringFile, std::ios::binary);
    if(file_.is_open() == false) return { false, "Failed to open file: " + stringFile };
 
-   gd::parse::window::line lineBuffer(48 * 64, 16 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
+   gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
 
    gd::expression::parse::state state_; // state is used to check what type of code part we are in
    auto result_ = COMMAND_PrepareState( {{"source",stringFile}}, state_);
@@ -571,7 +584,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    std::ifstream file_(stringFile, std::ios::binary);
    if(file_.is_open() == false) return { false, "Failed to open file: " + stringFile };
 
-   gd::parse::window::line lineBuffer(48 * 64, 16 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
+   gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
 
    gd::expression::parse::state state_; // state is used to check what type of code part we are in
    auto result_ = COMMAND_PrepareState( {{"source",stringFile}}, state_);
@@ -580,14 +593,15 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    uint64_t uCountNewLine = 0;                                                // counts all new lines in file (all '\n' characters)
 
    // ## find pattern in code, returns index to found pattern within patternsFind if match, otherwise -1
-   auto add_line_to_table_ = [uFileKey,ptable_,&patternsFind](int iPatternIndex, const std::string& stringText, uint64_t uRow, uint64_t uColumn = 0u) 
+   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, const std::string& stringText, uint64_t uLineRow, uint64_t uColumn = 0u) 
       {
          auto uRow = ptable_->get_row_count();
          ptable_->row_add();
          ptable_->cell_set(uRow, "key", uRow + 1);
          ptable_->cell_set(uRow, "file-key", uFileKey);
+         ptable_->cell_set(uRow, "filename", stringFile);
          ptable_->cell_set(uRow, "line", stringText);
-         ptable_->cell_set(uRow, "row", uRow);
+         ptable_->cell_set(uRow, "row", uLineRow);
          ptable_->cell_set(uRow, "column", uColumn);
 
       };
@@ -626,9 +640,10 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                   {
                      // ## figure ot row and column
                      auto uRow = uCountNewLine; // row number for current buffer
-                     auto uPosition = last_ - it;
+                     auto uPosition = it - first_;
                      uRow -= lineBuffer.count('\n', uPosition);               // subtract number of new lines in buffer from current position to get the right row
 
+                     stringSourceCode = gd::utf8::trim_to_string(stringSourceCode); // trim source code
                      add_line_to_table_(iPattern, stringSourceCode, uCountNewLine, uColumn); // add line to table
                   }
                }
@@ -654,10 +669,11 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                {
                   // ## figure ot row and column
                   auto uRow = uCountNewLine; // row number for current buffer
-                  auto uPosition = last_ - it;
+                  auto uPosition = it - first_;
                   uRow -= lineBuffer.count('\n', uPosition);                  // subtract number of new lines in buffer from current position to get the right row
 
-                  add_line_to_table_(iPattern, stringSourceCode, uCountNewLine, uColumn); // add line to table
+                  stringSourceCode = gd::utf8::trim_to_string(stringSourceCode); // trim source code
+                  add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn); // add line to table
                }
 
                stringSourceCode.clear();

@@ -736,15 +736,16 @@ namespace gd {
          auto puFirst = puText;
          while( puFirst != puEnd )
          {
-            puFirst++;
             if( *puFirst > ' ' ) break;
+            puFirst++;
          }
+
 
          auto* puLast = puEnd;
          while( puLast != puFirst )
          {
-            puLast--;
             if( *puLast > ' ' ) break;
+            puLast--;
          }
 
          return { puFirst, puLast + 1 };
