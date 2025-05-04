@@ -578,7 +578,38 @@ bool variant_view::is_true() const
    return false;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief adjust size of string or binary
+ * @param uMemorySize new size of string or binary
+ */
+void variant_view::adjust(unsigned uMemorySize)
+{
+   if( is_string() == true || is_binary() == true )
+   {
+      switch( type_number() )
+      {
+      case eTypeNumberGuid: 
+      case eTypeNumberBinary: 
+         m_uSize = uMemorySize;
+         break;
+      case eTypeNumberString:
+      case eTypeNumberUtf8String:
+         m_uSize = uMemorySize - 1;                                            // decrease zero terminator
+         break;
+      case eTypeNumberWString:                                                                     assert( uMemorySize % 2 == 0 );
+         m_uSize = ( uMemorySize >> 1 ) - 1;                                   // decrease zero terminator
+         break;
+      case eTypeNumberUtf32String:                                                                 assert( uMemorySize % 4 == 0 );
+         m_uSize = ( uMemorySize >> 2 );
+         break;
+      }
+   }
+}
 
+/** ---------------------------------------------------------------------------
+ * @brief convert internal value to new type
+ * @param eType new type to convert to
+*/
 void variant_view::convert( variant_type::enumType eType )
 {
    if( (unsigned int)eType & variant_type::eGroupInteger )

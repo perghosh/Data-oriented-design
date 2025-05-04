@@ -356,7 +356,8 @@ public:
 
    bool is_char_string() const { return (type_number() == variant_type::eTypeNumberUtf8String || type_number() == variant_type::eTypeNumberString ? true : false); }
 
-
+   /// Adjust internal size to match the size spefied (this needs internal knowledge of the memory used)
+   void adjust( unsigned uMemorySize );
    /// change internal value, remember to not change to types that need to allocate data
    void convert( variant_type::enumType eType );
    /// convert internal value to new variant value with specified type

@@ -462,6 +462,8 @@ public:
    void row_add() { row_add( 1 ); }
    void row_add( uint64_t uCount, tag_null );
    void row_add(tag_null) { row_add( 1, tag_null{} ); }
+   /// Simple add one row to table that is safe (if table have null values these are automatically set to null)
+   uint64_t row_add_one();
 
    /// @name row_add
    /// add row/rows to table and insert values to added row
@@ -994,6 +996,22 @@ inline void table::row_add( uint64_t uCount, tag_null ) {                       
    row_add( uCount );
    row_set_null( uBegin, m_uRowCount - uBegin );
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Adds a single row to the table.
+ * 
+ * This method is a simplified version of adding rows to the table, specifically designed for the common operation of adding one row at a time.
+ * It increases the row count by one and ensures that the table has enough memory allocated to accommodate the new row.
+ * If the table supports null values, the newly added row will have all its columns set to null.
+ * 
+ * @return uint64_t The index of the newly added row.
+ */
+inline uint64_t table::row_add_one() {
+   row_add(1);
+   if( is_null() == true ) { row_set_null(m_uRowCount - 1); }                 // set all new rows to null
+   return m_uRowCount - 1;
+}
+
 
 
 /** ---------------------------------------------------------------------------

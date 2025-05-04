@@ -1166,6 +1166,20 @@ bool variant::convert_to_s( const gd::variant* pvariantFrom, gd::variant* pvaria
          pvariantTo->assign( bTrue );
          }
          break;        
+      case eTypeNumberString: {                                                                    assert( pvariantFrom->type_number() == eTypeNumberWString );
+         pvariantTo->clear();
+         
+         // ## convert unicode text to ascii text
+         uint32_t uLength = (uint32_t)pvariantFrom->length();
+         char* pbszText = (char*)pvariantTo->allocate( uLength + 1 );          // allocate buffer
+         gd::utf8::convert_unicode_to_ascii(pvariantFrom->c_wstr(), pbszText, pbszText + ( uLength + 1 ));// copy ascii to buffer as utf8
+         
+         pbszText[uLength] = '\0';                                             // set end
+         pvariantTo->m_V.p = pbszText;
+         pvariantTo->m_uSize = uLength;                                        // set memory size needed to store ascii text
+         pvariantTo->m_uType = (variant_type::eTypeString|variant_type::eFlagAllocate);// set internal value type
+         }
+         break;
       default:
          bOk = false;
       }

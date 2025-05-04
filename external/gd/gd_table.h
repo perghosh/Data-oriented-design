@@ -85,6 +85,8 @@ struct tag_type_constant {};
 using tag_copy = gd::types::tag_copy;
 /// for convert methods
 using tag_convert = gd::types::tag_convert;
+/// for adjusting methods
+using tag_adjust = gd::types::tag_adjust;
 /// prepare (allocate internal buffers) table to be ready for work
 struct tag_prepare {};
 /// use name in operation
