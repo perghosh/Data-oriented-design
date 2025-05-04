@@ -864,12 +864,26 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
       commands_nodeChild = xmldocument.append_child("commands");
    }
 
+   // Check if command already exists
+   for( auto command : commands_nodeChild.children("command") )
+   {
+      if( command.child_value() == stringArguments )
+      {
+         commands_nodeChild.remove_child(command); // remove command if it exists
+      }
+   }
+
    commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
    xmldocument.save_file(stringFilePath.c_str());
 
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Print command history
+ *
+ * @return std::pair<bool, std::string> True if successful, false and error message if failed
+ */
 std::pair<bool, std::string> CApplication::HistoryPrint_s()
 {
    // Create file
