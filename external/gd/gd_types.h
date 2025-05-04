@@ -129,6 +129,9 @@ struct tag_raw {};            ///< do not perform any smart operations, just raw
 // ----------------------------------------------------------------------------
 // ## C++ related tag dispatchers, type of c++ development logic
 
+/// tag dispatcher used to adjust data for the specific situation, data may be changed
+struct tag_adjust {};
+
 /// methods used to ask compiler for information
 struct tag_ask_compiler {};
 

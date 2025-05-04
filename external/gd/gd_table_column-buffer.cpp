@@ -2018,7 +2018,7 @@ unsigned table_column_buffer::cell_get_length( uint64_t uRow, unsigned uColumnIn
 
    auto v_ = cell_get_variant_view( uRow, uColumnIndex );
    uLength = variant::compute_ascii_size_s( (const gd::variant*)&v_ );
-                                                                                                   assert( uLength < 0x0100'0000 );
+                                                                                                   assert( uLength < 0x0100'0000 ); // check that you have added row without setting cells to null for table that store null values
    return uLength;
 }
 
@@ -2169,6 +2169,57 @@ void table_column_buffer::cell_set( uint64_t uRow, unsigned uColumn, const gd::v
    }
 }
 
+void table_column_buffer::cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_adjust )
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( uColumn < m_vectorColumn.size() );
+   auto& columnSet = m_vectorColumn[uColumn];                                                      assert( columnSet.position() < m_uRowSize );
+   auto uValueType = variantviewValue.type_number();
+   auto uColumnType = columnSet.ctype_number();
+
+   if( uValueType == uColumnType ) 
+   {  
+      if( columnSet.is_fixed() ) { cell_set(uRow, uColumn, variantviewValue); }
+      else
+      {
+         if( columnSet.is_length() == true )
+         {
+            unsigned uMaxSize = columnSet.size();
+            unsigned uLength = gd::types::value_size_g(variantviewValue.type(), variantviewValue.length()); // value size in bytes (remember that non fixed value types starts with length information before actual value)
+            if( uLength >= uMaxSize )
+            {
+               auto variantAdjust = variantviewValue;
+               variantAdjust.adjust(uMaxSize);                                // adjust size to max size for column
+               cell_set(uRow, uColumn, variantAdjust);
+            }
+            else
+            {
+               cell_set(uRow, uColumn, variantviewValue);
+            }
+         }
+         else if( columnSet.is_reference() == true )
+         {
+            cell_set(uRow, uColumn, variantviewValue);
+         }
+      }
+   }
+   else
+   {
+      gd::variant variantConvertTo;
+      bool bOk = variantviewValue.convert_to( uColumnType,  variantConvertTo );
+      if( bOk == true )
+      {
+         cell_set( uRow, uColumn, *(gd::variant_view*)&variantConvertTo, tag_adjust{}); // just cast to variant view, internal data is same just that varaiant view have different logic
+      }
+      else
+      {
+         if( variantviewValue.is_null() == true && is_null() == true )
+         {
+            cell_set_null( uRow, uColumn );
+         }
+      }
+   }
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Set cell value
  * If value type do not match the type used in column then value is converted to proper type
@@ -2181,6 +2232,20 @@ void table_column_buffer::cell_set( uint64_t uRow, const std::string_view& strin
    unsigned uColumnIndex = column_get_index( stringName );                                         assert( uColumnIndex != (unsigned)-1 );
    cell_set( uRow, uColumnIndex, variantviewValue, tag_convert{});
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value
+ * If value type do not match the type used in column then value is converted to proper type
+ * @param uRow row index for cell
+ * @param stringName column name (column has to have a name)
+ * @param variantviewValue value set to cell and cell type need to match
+*/
+void table_column_buffer::cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_adjust )
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( m_namesColumn.empty() == false );
+   unsigned uColumnIndex = column_get_index( stringName );                                         assert( uColumnIndex != (unsigned)-1 );
+   cell_set( uRow, uColumnIndex, variantviewValue, tag_adjust{});
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Set cell value

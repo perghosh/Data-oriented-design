@@ -614,17 +614,16 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    uint64_t uCountNewLine = 0;                                                // counts all new lines in file (all '\n' characters)
 
    // ## find pattern in code, returns index to found pattern within patternsFind if match, otherwise -1
-   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, const std::string& stringText, uint64_t uLineRow, uint64_t uColumn = 0u) 
+   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, const std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
       {
-         auto uRow = ptable_->get_row_count();
-         ptable_->row_add();
+         auto uRow = ptable_->row_add_one();
          ptable_->cell_set(uRow, "key", uRow + 1);
          ptable_->cell_set(uRow, "file-key", uFileKey);
          ptable_->cell_set(uRow, "filename", stringFile);
          ptable_->cell_set(uRow, "line", stringText);
          ptable_->cell_set(uRow, "row", uLineRow);
          ptable_->cell_set(uRow, "column", uColumn);
-
+         ptable_->cell_set(uRow, "pattern", stringPattern, gd::types::tag_adjust{});
       };
 
 
@@ -665,7 +664,8 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                      uRow -= lineBuffer.count('\n', uPosition);               // subtract number of new lines in buffer from current position to get the right row
 
                      stringSourceCode = gd::utf8::trim_to_string(stringSourceCode); // trim source code
-                     add_line_to_table_(iPattern, stringSourceCode, uCountNewLine, uColumn); // add line to table
+                     std::string_view stringPattern = patternsFind.get_pattern(iPattern);
+                     add_line_to_table_(iPattern, stringSourceCode, uCountNewLine, uColumn, stringPattern); // add line to table
                   }
                }
                stringSourceCode.clear();                                      // clear source code
@@ -694,7 +694,8 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                   uRow -= lineBuffer.count('\n', uPosition);                  // subtract number of new lines in buffer from current position to get the right row
 
                   stringSourceCode = gd::utf8::trim_to_string(stringSourceCode); // trim source code
-                  add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn); // add line to table
+                  std::string_view stringPattern = patternsFind.get_pattern(iPattern);
+                  add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
                }
 
                stringSourceCode.clear();
