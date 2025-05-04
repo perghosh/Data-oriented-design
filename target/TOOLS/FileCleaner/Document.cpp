@@ -283,6 +283,29 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Updates pattern counters for files in the cache.
+ *
+ * This method processes a list of patterns and updates the "file-pattern" cache table
+ * with the count of occurrences of each pattern in the files listed in the "file" cache table.
+ *
+ * @param vectorPattern A vector of strings representing the patterns to search for.
+ *                      The vector must not be empty and can contain a maximum of 64 patterns.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @pre The `vectorPattern` must not be empty and must contain fewer than 64 patterns.
+ * @post The "file-pattern" cache table is updated with the pattern counts for each file.
+ *
+ * @details
+ * - The method first creates a new "file-pattern" cache table with columns for each pattern.
+ * - It iterates through the rows in the "file" cache table to generate the full file path
+ *   by combining the "folder" and "filename" columns.
+ * - For each file, it calls the `COMMAND_CollectPatternStatistics` function to count the
+ *   occurrences of each pattern and updates the "file-pattern" table with the results.
+ * - If an error occurs during the process, it is added to the internal error list.
+ */
 std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::vector<std::string>& vectorPattern)
 {                                                                                                  assert( vectorPattern.empty() == false ); assert( vectorPattern.size() < 64 ); // max 64 patterns
    using namespace gd::table::dto;
