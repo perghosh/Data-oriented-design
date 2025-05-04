@@ -128,6 +128,8 @@ public:
    gd::table::dto::table RESULT_RowCount();
    /// @brief Generate result to present pattern count in files
    gd::table::dto::table RESULT_PatternCount();
+   /// @brief Generate result to present pattern line list, i.e. all lines in files where pattern was found
+   gd::table::dto::table RESULT_PatternLineList();
 //@}
 
 /** \name OPERATION
