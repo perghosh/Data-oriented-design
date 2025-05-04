@@ -631,11 +631,41 @@ void CApplication::DATABASE_CloseActive()
 
 
 
+/**
+ * @brief Prepares the application options for command-line usage.
+ *
+ * This method sets up the available command-line options for the application,
+ * including global options and subcommands. Each subcommand is configured
+ * with its specific options and descriptions.
+ *
+ * @param optionsApplication A reference to the `gd::cli::options` object
+ *                           where the options and subcommands will be added.
+ *
+ * ### Global Options
+ * - `logging`       : Enables logging.
+ * - `logging-csv`   : Adds a CSV logger for log messages.
+ * - `print`         : Prints results from commands.
+ * - `recursive`     : Specifies recursive operations with a depth value.
+ * - `output`        : Saves output to a specified file.
+ * - `database`      : Sets the folder for log files.
+ * - `statements`    : Specifies a file containing SQL statements.
+ *
+ * ### Subcommands
+ * - `count`    : Counts lines in files or directories.
+ * - `copy`     : Copies files from source to destination.
+ * - `db`       : Configures database settings.
+ * - `history`  : Handles command history.
+ * - `list`     : Lists rows matching specified patterns.
+ * - `join`     : Joins two or more files.
+ * - `help`     : Displays help information.
+ * - `version`  : Displays the application version.
+ */
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
+   optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
    optionsApplication.add({ "database", "Set folder where logger places log files"});
