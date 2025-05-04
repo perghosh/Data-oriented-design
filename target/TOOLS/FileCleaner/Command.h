@@ -26,7 +26,7 @@
 #include "gd/gd_table_column-buffer.h"
 #include "gd/expression/gd_expression.h"
 #include "gd/expression/gd_expression_parse_state.h"
-
+#include "gd/parse/gd_parse_match_pattern.h"
 
 
 #include "Application.h"
@@ -49,6 +49,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
 std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
 std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
 std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector<std::string>& vectorPattern, std::vector<uint64_t>& vectorCount );
+std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::dto::table* ptable_ );
 std::pair<bool, std::string> COMMAND_PrepareState( const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state );
 
 std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);

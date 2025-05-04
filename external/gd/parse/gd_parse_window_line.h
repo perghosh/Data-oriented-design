@@ -87,9 +87,8 @@ public:
    using reference       = uint8_t&;              ///< reference type
    using const_reference = const uint8_t&;        ///< const reference type
    using size_type       = size_t;                ///< size type
-   using iterator        = uint8_t*;               ///< iterator type
-   using const_iterator  = const uint8_t*;         ///< const iterator type
-
+   using iterator        = uint8_t*;              ///< iterator type
+   using const_iterator  = const uint8_t*;        ///< const iterator type
 
 
 // ## construction -------------------------------------------------------------

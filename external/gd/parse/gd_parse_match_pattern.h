@@ -11,6 +11,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "gd/gd_types.h"
 
@@ -134,6 +135,7 @@ public:
 // ## construction -------------------------------------------------------------
 public:
    patterns() { m_arrayMarkerHint = { 0 }; }
+   patterns( const std::vector<std::string>& vectorPattern); ///< construct with vector of strings
    // copy
    patterns(const patterns& o) { common_construct(o); }
    patterns(patterns&& o) noexcept { common_construct(std::move(o)); }
@@ -192,35 +194,9 @@ public:
    bool exists(const uint8_t* puText) const { return exists(reinterpret_cast<const char*>(puText)); }
 
    /// Try to find the pattern in the text
-   int find_pattern(const char* piText, size_t uLength) const;
-
-   /**
-    * @brief Find the matching pattern for the given text
-    * @param piText Pointer to the text to check
-    * @return Index of the matching pattern, or SIZE_MAX if no match found
-    */
-   size_t find_match(const char* piText) const;
-   
-   /**
-    * @brief Find the matching pattern for the given text
-    * @param puText Pointer to the text as unsigned char to check
-    * @return Index of the matching pattern, or SIZE_MAX if no match found
-    */
-   size_t find_match(const uint8_t* puText) const { return find_match(reinterpret_cast<const char*>(puText)); }
-
-   /**
-    * @brief Get the length of the matching pattern
-    * @param piText Pointer to the text to check
-    * @return Length of the matching pattern, or 0 if no match found
-    */
-   size_t match_length(const char* piText) const;
-
-   /**
-    * @brief Get the length of the matching pattern
-    * @param puText Pointer to the text as unsigned char to check
-    * @return Length of the matching pattern, or 0 if no match found
-    */
-   size_t match_length(const uint8_t* puText) const { return match_length(reinterpret_cast<const char*>(puText)); }
+   int find_pattern(const char* piText, size_t uLength, uint64_t* puOffset = nullptr ) const;
+   /// Overloaded function to find pattern in std::string_view
+   int find_pattern(const std::string_view& stringText, uint64_t* puOffset = nullptr) const { return find_pattern(stringText.data(), stringText.length(), puOffset); } ///< find pattern in text
 
    /**
     * @brief Check if text is escaped
@@ -265,23 +241,6 @@ if( m_arrayMarkerHint[static_cast<uint8_t>( *piText )] == 0 ) return false;   //
       if(it.compare(piText) == true) { return true; }
    }
    return false;
-}
-
-/// find the matching pattern for the given text
-inline size_t patterns::find_match(const char* piText) const {                                      assert(piText != nullptr);
-   for (size_t i = 0; i < m_vectorPattern.size(); ++i) {
-      if(m_vectorPattern[i].compare(piText) == true) {
-         return i;
-      }
-   }
-   return SIZE_MAX; // No match found
-}
-
-/// get the length of the matching pattern
-inline size_t patterns::match_length(const char* piText) const {
-   size_t index = find_match(piText);
-   if(index == SIZE_MAX) return 0;
-   return m_vectorPattern[index].m_stringPattern.length();
 }
 
 /// check if text is escaped

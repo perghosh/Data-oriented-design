@@ -293,6 +293,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
       ptableFilePattern->cell_set( uRow, "filename", itRowFile.cell_get_variant_view("filename") );
 
       auto result_ = COMMAND_CollectPatternStatistics( {{"source", stringFile} }, vectorPattern, vectorCount );
+      if( result_.first == false ) { ERROR_Add(result_.second); }
+
       for( unsigned u = 0; u < vectorCount.size(); u++ )
       {
          ptableFilePattern->cell_set(uRow, u + 4, vectorCount[u]);             // set pattern count in table
@@ -306,9 +308,28 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
 
 std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern)
 {                                                                                                  assert(vectorPattern.empty() == false); assert(vectorPattern.size() < 64); // max 64 patterns
-   auto* ptableFileLineList = CACHE_Get("file-linelist", true);               // make sure it is in cache
+   auto* ptableFileLineList = CACHE_Get("file-linelist", true);                // make sure it is in cache
 
-   // auto result_ = COMMAND_ListLinesWithPattern( {{"source", stringFile} }, vectorPattern, vectorCount );
+   gd::parse::patterns patternsFind( vectorPattern );
+   patternsFind.sort();                                                        // sort patterns by length, longest first
+
+   auto* ptableLineList = CACHE_Get("file-linelist", false);                   // get table to make sure it is in cache
+
+   auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
+   for( const auto& itRowFile : *ptableFile )
+   {
+      // ## generate full file path (folder + filename)
+      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
+      gd::file::path pathFile(string_);
+      string_ = itRowFile.cell_get_variant_view("filename").as_string();
+      pathFile += string_;
+      std::string stringFile = pathFile.string();
+
+      auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
+
+      auto result_ = COMMAND_ListLinesWithPattern( {{"source", stringFile}, {"file-key", uKey }}, patternsFind, ptableLineList );
+      if( result_.first == false ) { ERROR_Add(result_.second); }
+   }
 
    return { true, "" };
 }
