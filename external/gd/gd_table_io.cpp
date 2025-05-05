@@ -791,6 +791,7 @@ void to_string_s(const TABLE& table, const gd::argument::arguments& argumentOpti
  * @param argumentOption.count max row count converted to string
  * @param argumentOption.nr if true value then print row numbers
  * @param argumentOption.max_column_width if set value then prite elipsis if size is above
+ * @param argumentOption.verbose if true then try to fit as much as possible
  * @param stringOut string getting generated string with database data
 */
 template <typename TABLE>
@@ -807,6 +808,7 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
    std::vector<gd::variant_view> vectorValue;   // used to fetch values from table
 
    bool bNr = argumentOption["nr"].is_true();   // should rows be numbered?
+   bool bVerbose = argumentOption["verbose"].is_true(); // try to fit as much as possible
    bool bRaw = true; // argumentOption["raw"].is_true(); // dont add quotes around text?
 
    if( argumentOption.exists("max_column_width") == true )                     // check for max column width and shrink if above
@@ -853,15 +855,51 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
          stringHeader += '#';
          stringHeader.insert( stringHeader.begin() + 1, 2 + vectorWidth.at( 0 ), ' '); 
       };
+
+      // ## iterate over witdh vector and add column names
+      //    abbreviate or wrap if needed
+
       for( auto itEnd = std::end(vectorWidth); it != itEnd; it++, uColumn++ )
       {
-         std::string stringName( table.column_get_name(uColumn) );
-         if( (*it + 3) < stringName.length() ) stringName = stringName.substr( 0, *it + 2 );
+         if( bVerbose == false )
+         {
+            std::string stringName( table.column_get_name(uColumn) );
+            if( (*it + 3) < stringName.length() ) stringName = stringName.substr( 0, *it + 2 );
 
-         unsigned uTotal = *it + 3;
-         if( uTotal >= stringName.length() ) stringName.insert( stringName.end(), uTotal - stringName.length(), ' ' );
+            unsigned uTotal = *it + 3;
+            if( uTotal >= stringName.length() ) stringName.insert( stringName.end(), uTotal - stringName.length(), ' ' );
 
-         stringHeader += stringName;
+            stringHeader += stringName;
+         }
+         else
+         {
+            std::string stringName( table.column_get_name(uColumn) );
+
+            // ## if name do not fit in column and it is not the last column then we need to wrap (3 is spaces for ` | `)
+
+            if( *it < (stringName.length() + 2) && uColumn < table.get_column_count() )
+            {
+               stringHeader += stringName;
+               if( uColumn >= (table.get_column_count() - 1) ) break;          // break if last column
+
+               // column name is too long and we need to wrap row to continue with next colun on next row.
+               // To do this fill row with spaces based on where we are in vectorWidth
+
+               stringHeader += '\n';
+               for( auto itWidth = std::begin(vectorWidth); itWidth != (it + 1); itWidth++ )
+               {
+                  unsigned uOffset = ( *itWidth + 3 );                                // add width of the column separator
+                  stringHeader.insert(stringHeader.end(), uOffset, ' ');
+                  uOffset += 2;
+               }
+            }
+            else
+            {
+               unsigned uTotal = *it + 3;
+               if( uTotal >= stringName.length() ) stringName.insert( stringName.end(), uTotal - stringName.length(), ' ' );
+               stringHeader += stringName;
+            }
+         }
       }
 
       stringHeader += '\n';

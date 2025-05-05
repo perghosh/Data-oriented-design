@@ -3,6 +3,7 @@
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0DATABASE.Application` - database operations
+ * - `0TAG0OPTIONS.Application` - prepare command line options
  * 
  */
 
@@ -31,14 +32,14 @@ CApplication* papplication_g = nullptr;
  * 
  * @param o The source object to copy from.
  */
-void CApplication::common_construct(const CApplication& o) 
+void CApplication::common_construct(const CApplication& o)
 {
-    // Copy the document vector
-    m_vectorDocument.clear();
-    for(const auto& document_ : o.m_vectorDocument) 
-    {
-        m_vectorDocument.push_back(std::make_unique<CDocument>(*document_));
-    }
+   // Copy the document vector
+   m_vectorDocument.clear();
+   for( const auto& document_ : o.m_vectorDocument )
+   {
+      m_vectorDocument.push_back(std::make_unique<CDocument>(*document_));
+   }
 }
 
 /** ---------------------------------------------------------------------------
@@ -48,8 +49,8 @@ void CApplication::common_construct(const CApplication& o)
  */
 void CApplication::common_construct(CApplication&& o) noexcept 
 {
-    // Move the document vector
-    m_vectorDocument = std::move(o.m_vectorDocument);
+   // Move the document vector
+   m_vectorDocument = std::move(o.m_vectorDocument);
 }
 
 /** ---------------------------------------------------------------------------
@@ -215,7 +216,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
          if( bPrint == true  )
          {
-            std::string stringCliTable = gd::table::to_string(tableResult, gd::table::tag_io_cli{});  LOG_INFORMATION_RAW("count = total number of lines\ncode = number of code lines\ncharacters = number of code characters\ncomment = number of comments in code\nstring = number of strings in code");
+            std::string stringCliTable = gd::table::to_string(tableResult, {{ "verbose", true }}, gd::table::tag_io_cli{});  LOG_INFORMATION_RAW("count = total number of lines\ncode = number of code lines\ncharacters = number of code characters\ncomment = number of comments in code\nstring = number of strings in code");
             std::cout << "\n" << stringCliTable << "\n\n";
          }
 
@@ -629,7 +630,7 @@ void CApplication::DATABASE_CloseActive()
    }
 }
 
-
+// 0TAG0OPTIONS.Application
 
 /**
  * @brief Prepares the application options for command-line usage.
