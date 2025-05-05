@@ -897,66 +897,75 @@ gd::table::dto::table CDocument::RESULT_PatternCount()
  *  
  * @note The editor type (e.g., Visual Studio or VSCode) is currently hardcoded but can be retrieved from application settings in the future.  
  */  
-gd::table::dto::table CDocument::RESULT_PatternLineList()  
-{  
-  enum enumEditor { eVisualStudio, eVSCode };  
-  using namespace gd::table::dto;  
-  enumEditor eEditor = eVisualStudio; // TODO: get editor from application settings  
+gd::table::dto::table CDocument::RESULT_PatternLineList()
+{
+   enum enumEditor { eVisualStudio, eVSCode, eSublime };
+   using namespace gd::table::dto;
+   enumEditor eEditor = eVisualStudio; // TODO: get editor from application settings  
+   auto stringEditor = m_papplication->PROPERTY_Get("editor").as_string();
+   if( stringEditor == "vscode" ) eEditor = eVSCode;
+   else if( stringEditor == "sublime" ) eEditor = eSublime;
 
-  // Define the result table structure  
-  constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );  
-  table tableResult(uTableStyle, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});  
+   // Define the result table structure  
+   constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );
+   table tableResult(uTableStyle, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
 
-  // Retrieve the file-pattern cache table  
-  auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);  
-  auto* ptableLineList = CACHE_Get("file-linelist", false);                                       assert(ptableLineList != nullptr);  
+   // Retrieve the file-pattern cache table  
+   auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
+   auto* ptableLineList = CACHE_Get("file-linelist", false);                                       assert(ptableLineList != nullptr);
 
-  unsigned uKeyColumnInFile = ptableFile->column_get_index("key"); // get index for key column  
+   unsigned uKeyColumnInFile = ptableFile->column_get_index("key"); // get index for key column  
 
-  for( uint64_t uRow = 0, uRowCount = ptableLineList->size(); uRow < uRowCount; uRow++ )  
-  {  
-     auto uFileKey = ptableLineList->cell_get_variant_view(uRow, "file-key").as_uint64();  
+   for( uint64_t uRow = 0, uRowCount = ptableLineList->size(); uRow < uRowCount; uRow++ )
+   {
+      auto uFileKey = ptableLineList->cell_get_variant_view(uRow, "file-key").as_uint64();
 
-     int64_t iFileRow = ptableFile->find(uKeyColumnInFile, true, gd::variant_view(uFileKey)); // find row in file table with file-key  
-     if( iFileRow == -1 ) { assert( iFileRow != -1 ); continue; }  
+      int64_t iFileRow = ptableFile->find(uKeyColumnInFile, true, gd::variant_view(uFileKey)); // find row in file table with file-key  
+      if( iFileRow == -1 ) { assert(iFileRow != -1); continue; }
 
-     auto stringFolder = ptableFile->cell_get_variant_view(iFileRow, "folder").as_string();  
-     auto stringFilename = ptableFile->cell_get_variant_view(iFileRow, "filename").as_string();  
-     gd::file::path pathFile(stringFolder);  
-     pathFile += stringFilename;  
-     std::string stringFile = pathFile.string();  
+      auto stringFolder = ptableFile->cell_get_variant_view(iFileRow, "folder").as_string();
+      auto stringFilename = ptableFile->cell_get_variant_view(iFileRow, "filename").as_string();
+      gd::file::path pathFile(stringFolder);
+      pathFile += stringFilename;
+      std::string stringFile = pathFile.string();
 
-     // ## Build the result string for the file where pattern was found  
-     if( eEditor == eVisualStudio )  
-     {  
-        stringFile += "(";  
-        stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();  
-        stringFile += ",";  
-        stringFile += ptableLineList->cell_get_variant_view(uRow, "column").as_string();  
-        stringFile += ") - [";  
-     }  
-     else if( eEditor == eVSCode )  
-     {  
-        stringFile += ":";  
-        stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();  
-        stringFile += ":";  
-        stringFile += ptableLineList->cell_get_variant_view(uRow, "column").as_string();  
-        stringFile += " - [";  
-     }  
+      // ## Build the result string for the file where pattern was found  
+      if( eEditor == eVisualStudio )
+      {
+         stringFile += "(";
+         stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();
+         stringFile += ",";
+         stringFile += ptableLineList->cell_get_variant_view(uRow, "column").as_string();
+         stringFile += ") - [";
+      }
+      else if( eEditor == eVSCode )
+      {
+         stringFile += ":";
+         stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();
+         stringFile += ":";
+         stringFile += ptableLineList->cell_get_variant_view(uRow, "column").as_string();
+         stringFile += " - [";
+      }
+      else if( eEditor == eSublime )
+      {
+         stringFile += ":";
+         stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();
+         stringFile += " - [";
+      }
 
-     stringFile += ptableLineList->cell_get_variant_view(uRow, "pattern").as_string();  
-     stringFile += "] - ";  
+      stringFile += ptableLineList->cell_get_variant_view(uRow, "pattern").as_string();
+      stringFile += "] - ";
 
-     std::string stringLine = ptableLineList->cell_get_variant_view(uRow, "line").as_string();  
-     if( stringLine.length() > 120 ) stringLine = stringLine.substr(0, 120) + "..."; // limit line length to 120 characters  
+      std::string stringLine = ptableLineList->cell_get_variant_view(uRow, "line").as_string();
+      if( stringLine.length() > 120 ) stringLine = stringLine.substr(0, 120) + "..."; // limit line length to 120 characters  
 
-     stringFile += stringLine;  
+      stringFile += stringLine;
 
-     auto uNewRow = tableResult.row_add_one();  
-     tableResult.cell_set( uNewRow, 0, stringFile );  
-  }  
+      auto uNewRow = tableResult.row_add_one();
+      tableResult.cell_set(uNewRow, 0, stringFile);
+   }
 
-  return tableResult;  
+   return tableResult;
 }
 
 

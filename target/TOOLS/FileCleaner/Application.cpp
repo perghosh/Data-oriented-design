@@ -2,6 +2,7 @@
  * @file Application.cpp
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
+ * - `0TAG0OPTIONS.Application` - database operations
  * - `0TAG0DATABASE.Application` - database operations
  * - `0TAG0OPTIONS.Application` - prepare command line options
  * 
@@ -133,6 +134,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    auto stringName_d = poptionsActive->name();
 #endif // !NDEBUG
 
+   // ## set editor
+   std::string stringEditor = ( *poptionsActive )["editor"].as_string();
+   PROPERTY_Set("editor", stringEditor);
+
+   // ## set command name
    std::string stringCommandName = poptionsActive->name();
    PROPERTY_Set("command", stringCommandName);                                                     LOG_INFORMATION_RAW("== Command: " & stringCommandName);
 
@@ -643,6 +649,7 @@ void CApplication::DATABASE_CloseActive()
  *                           where the options and subcommands will be added.
  *
  * ### Global Options
+ * - `editor`        : For editor specific configuration. vs, vscode or sublime is currently supported.
  * - `logging`       : Enables logging.
  * - `logging-csv`   : Adds a CSV logger for log messages.
  * - `print`         : Prints results from commands.
@@ -713,6 +720,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "list rows with specified patterns" );
       optionsCommand.add({ "source", 's', "File/folders where to search for patterns in"});
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
+      optionsCommand.add({ "max", "Max list count to avoid too many hits"});
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
    }
