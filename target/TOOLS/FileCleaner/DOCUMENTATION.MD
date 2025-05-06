@@ -63,8 +63,7 @@ Displays the version of the application.
 ## Examples
 
 ### Count lines in files found in active folder
-Go to folder and write
-`cleaner.exe count`
+Go to folder and write (windows) `cleaner.exe count` and linux `cleaner count`
 
 ### Count lines in a folder recursively
 `cleaner.exe count --source "C:\dev\project" --recursive 3 --filter ".cpp;.h" --output "result.txt"`
