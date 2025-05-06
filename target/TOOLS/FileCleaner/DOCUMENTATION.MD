@@ -9,9 +9,6 @@
 - [Commands](#commands)
   - [count](#count)
   - [list](#list)
-  - [db](#db)
-  - [copy](#copy)
-  - [join](#join)
   - [help](#help)
   - [version](#version)
 - [Examples](#examples)
@@ -53,35 +50,6 @@ Lists rows matching specified patterns in files or folders.
 
 ---
 
-### db
-Configures the database.
-
-**Options:**
-- `--file <path>`: Path to the database file (e.g., SQLite).
-- `--settings <path>`: Path to the configuration file.
-
----
-
-### copy
-Copies a file from source to destination.
-
-**Options:**
-- `--source <path>`: File to copy.
-- `--destination <path>`: Destination path.
-- `--backup`: Create a backup if the destination file exists.
-
----
-
-### join
-Joins two or more files into one.
-
-**Options:**
-- `--source <files>`: Files to join.
-- `--destination <path>`: Destination file.
-- `--backup`: Create a backup if the destination file exists.
-
----
-
 ### help
 Displays help information for the application.
 
@@ -94,9 +62,11 @@ Displays the version of the application.
 
 ## Examples
 
+### Count lines in files found in active folder
+Go to folder and write (windows) `cleaner.exe count` and linux `cleaner count`
+
 ### Count lines in a folder recursively
 `cleaner.exe count --source "C:\dev\project" --recursive 3 --filter ".cpp;.h" --output "result.txt"`
-
 
 ### List patterns in files
 `cleaner.exe list --source "D:\tests" --recursive 2 --pattern "TEST_CASE,EXPECT,static_assert"`
@@ -114,5 +84,41 @@ Displays the version of the application.
 ---
 
 For further details, refer to the source code or contact the development team.
+
+
+
+
+## Supported File Extensions and Languages
+
+| Extension | Language | Comment Styles | String Formats |
+|-----------|----------|---------------|---------------|
+| `.cpp`, `.c`, `.h`, `.hpp` | C/C++ | Line: `//`<br>Block: `/* */` | Standard strings with escape chars<br>Raw strings: `R"()"` |
+| `.cs` | C# | Line: `//`<br>Block: `/* */` | Standard strings with escape chars<br>Verbatim strings: `"""..."""` |
+| `.fs` | F# | Line: `//`<br>Block: `/* */` | Standard strings with escape chars<br>Verbatim strings: `"""..."""` |
+| `.kt` | Kotlin | Line: `//`<br>Block: `/* */` | Standard strings with escape chars<br>Multiline strings: `"""..."""` |
+| `.swift` | Swift | Line: `//`<br>Block: `/* */` | Standard strings with escape chars<br>Multiline strings: `"""..."""` |
+| `.java` | Java | Line: `//`<br>Block: `/* */` | Standard strings with escape chars |
+| `.js` | JavaScript | Line: `//`<br>Block: `/* */` | Double and single quotes with escape chars<br>Template literals: `` ` ` `` |
+| `.ts` | TypeScript | Line: `//`<br>Block: `/* */` | Double and single quotes with escape chars<br>Template literals: `` ` ` `` |
+| `.jsx` | React JSX | Line: `//`<br>Block: `/* */` and `{/* */}` | Double and single quotes with escape chars<br>Template literals: `` ` ` `` |
+| `.tsx` | React TSX | Line: `//`<br>Block: `/* */` and `{/* */}` | Double and single quotes with escape chars<br>Template literals: `` ` ` `` |
+| `.go` | Go | Line: `//`<br>Block: `/* */` | Double quotes with escape chars<br>Raw string literals: `` ` ` `` |
+| `.rs` | Rust | Line: `//`<br>Block: `/* */` | Standard strings with escape chars |
+| `.html`, `.xml` | HTML/XML | Block: `<!-- -->` | Double quoted attributes |
+| `.css` | CSS | Block: `/* */` | Double quoted values |
+| `.py` | Python | Line: `#` | Double quoted strings |
+| `.sql` | SQL | Line: `--`<br>Block: `/* */` | Double quoted strings |
+| `.php` | PHP | Line: `//` and `#`<br>Block: `/* */` | Double and single quotes with escape chars |
+| `.lua` | Lua | Line: `--`<br>Block: `--[[` `]]` | Double and single quotes with escape chars<br>Raw strings: `[[` `]]` |
+| `.rb` | Ruby | Line: `#`<br>Block: `=begin` `=end` | Double and single quotes with escape chars |
+| `.json` | JSON | None | Double quoted strings |
+| `.pl`, `.pm` | Perl | Line: `#` | Double and single quotes with escape chars |
+| `.sh`, `.bash` | Shell/Bash | Line: `#` | Double quotes with escape chars<br>Single quotes without escape chars |
+| `.yaml`, `.yml` | YAML | Line: `#` | Double and single quoted strings |
+| `.toml` | TOML | Line: `#` | Double and single quoted strings |
+| `.dart` | Dart | Line: `//`<br>Block: `/* */` | Double quotes with escape chars<br>Raw strings: `r"..."` |
+| `.clj` | Clojure | Line: `;` | Double quotes with escape chars |
+| `.vim` | Vim Script | Line: `"` | Double quotes with escape chars<br>Single quotes with escape chars |
+| `.txt`, `.md` | Plain text/Markdown | None | None defined |
 
 
