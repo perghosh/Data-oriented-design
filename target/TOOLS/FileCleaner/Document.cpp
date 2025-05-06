@@ -440,7 +440,7 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
 
    std::string stringResult;
 
-   if( stringType == "COUNT" )
+   if( stringType == "COUNT" || stringType == "LIST" )
    {
       if( stringExtension == ".csv" )
       {
@@ -451,6 +451,10 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
          std::string stringTableName = argumentsResult["table"].as_string();
          if( stringTableName.empty() == true ) stringTableName = pathFile.stem().string();
          stringResult = gd::table::write_insert_g( stringTableName, *ptableResult, gd::table::tag_io_sql{}); // save table to string
+      }
+      else
+      {
+         stringResult = gd::table::to_string(*ptableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
       }
    }
 
