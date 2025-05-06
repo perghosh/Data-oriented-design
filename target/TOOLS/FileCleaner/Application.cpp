@@ -936,6 +936,8 @@ void CApplication::Read_s( gd::database::cursor_i* pcursorSelect, gd::table::tab
  */
 std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::string_view& stringArguments)
 {
+#ifdef WIN32
+
    // Create file
    wchar_t cProgramDataPath[MAX_PATH];
 
@@ -987,6 +989,8 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
 
    commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
    xmldocument.save_file(stringFilePath.c_str());
+#else
+#endif
 
    return { true, "" };
 }
@@ -998,6 +1002,8 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
  */
 std::pair<bool, std::string> CApplication::HistoryPrint_s()
 {
+#ifdef WIN32
+
    // Create file
    wchar_t cProgramDataPath[MAX_PATH];
 
@@ -1038,6 +1044,10 @@ std::pair<bool, std::string> CApplication::HistoryPrint_s()
    auto stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
 
    std::cout << "\n" << stringTable << "\n";
+
+#else
+#endif
+
    return { true, "" };
 }
 
