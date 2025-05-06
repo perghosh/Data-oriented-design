@@ -195,6 +195,8 @@ public:
 
    /// Try to find the pattern in the text
    int find_pattern(const char* piText, size_t uLength, uint64_t* puOffset = nullptr ) const;
+   /// Overloaded function to find pattern
+   int find_pattern(const char* piBegin, const char* piEnd, uint64_t* puOffset = nullptr) const { return find_pattern(piBegin, size_t(piEnd - piBegin), puOffset); } ///< find pattern in text
    /// Overloaded function to find pattern in std::string_view
    int find_pattern(const std::string_view& stringText, uint64_t* puOffset = nullptr) const { return find_pattern(stringText.data(), stringText.length(), puOffset); } ///< find pattern in text
 

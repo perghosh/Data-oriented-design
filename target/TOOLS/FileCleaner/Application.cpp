@@ -2,8 +2,8 @@
  * @file Application.cpp
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
- * - `0TAG0OPTIONS.Application` - database operations
- * - `0TAG0DATABASE.Application` - database operations
+ * - `0TAG0Initialize.Application` - Initialize the application from command line 
+ * - `0TAG0Database.Application` - database operations
  * - `0TAG0OPTIONS.Application` - prepare command line options
  * 
  */
@@ -123,6 +123,29 @@ std::pair<bool, std::string> CApplication::Exit()
    // return {false, "Exit failed: <error details>"};
 }
 
+// 0TAG0Initialize.Application
+
+/** ---------------------------------------------------------------------------
+ * @brief Initializes the application based on the provided command-line options.
+ *
+ * This method processes the command-line options and performs initialization tasks
+ * based on the active subcommand. It supports various commands such as `count`, `db`,
+ * `history`, `list`, `help`, and `version`.
+ *
+ * ### Steps:
+ * 1. Retrieve the active subcommand from the provided options.
+ * 2. Perform initialization tasks based on the subcommand:
+ *    - **count**: Harvest files, apply filters, count rows, and optionally save or print results.
+ *    - **db**: Open or create a database and update its schema.
+ *    - **history**: Print the command history.
+ *    - **list**: Harvest files, apply patterns, and list matching rows.
+ *    - **help**: Display help information for the application.
+ *    - **version**: Display the application version.
+ * 3. Handle errors and return appropriate success or failure messages.
+ *
+ * @param optionsApplication The parsed command-line options.
+ * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
+ */
 std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& optionsApplication )
 {
    const gd::cli::options* poptionsActive = optionsApplication.find_active();
@@ -155,85 +178,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
    if( stringCommandName == "count" )                                          // command = "count"
    {
-      std::string stringSource = (*poptionsActive)["source"].as_string();                          
-      PathGetCurrentIfEmpty_s(stringSource);                                  // if source is empty then set it to current path
-
-
-      int iRecursive = ( *poptionsActive )["recursive"].as_int();                                  LOG_INFORMATION_RAW("== --recursive: " & iRecursive);
-      gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
-
-      auto result_ = pdocument->FILE_Harvest(argumentsPath);                   // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
-      if( result_.first == false ) return result_;
-
-
-      if( (*poptionsActive)["filter"].is_true() == true )
-      {
-         std::string stringFilter = ( *poptionsActive )["filter"].as_string();                     LOG_INFORMATION_RAW("== --filter: " & stringFilter);
-         auto result_ = pdocument->FILE_Filter(stringFilter);
-         if( result_.first == false ) return result_;
-      }
-      else
-      {                                                                        // filter not set, then we need to investigate that harvested files contains text, those that dont will be removed
-         auto result_ = pdocument->FILE_FilterBinaries();                      // remove files that are not text
-         if( result_.first == false ) return result_;
-      }
-
-      result_ = pdocument->FILE_UpdateRowCounters();                           // count rows in harvested files
-      if( result_.first == false ) return result_;
-
-      if( ( *poptionsActive )["pattern"].is_true() )
-      {
-         std::string stringPattern = ( *poptionsActive )["pattern"].as_string();                   LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
-         auto vectorPattern = Split_s(stringPattern);                          // split pattern string into vector
-         auto result_ = pdocument->FILE_UpdatePatternCounters(vectorPattern);
-         if( result_.first == false ) return result_;
-      }
-
-      bool bPrint = poptionsActive->exists("print");
-
-      std::string stringOutput = ( *poptionsActive )["output"].as_string();                        LOG_INFORMATION_RAW("== --output: " & stringOutput);
-      bool bOutput = ( *poptionsActive )["output"].is_true();
-
-      // ## if no other setting to produce result then set print to true, this is the default
-      if( bPrint == false && bOutput == false && stringOutput.empty() == true )
-      {
-         bPrint = true;                                                        // if no output or print is set, then set print to true
-      }
-
-      // if option "print" was specified, then print the result or not if, ignore the bSaved
-      if( bPrint == true || bOutput == true || stringOutput.empty() == false )
-      {
-         auto tableResult = pdocument->RESULT_RowCount();
-         if( stringOutput.empty() == false )
-         {
-            // ## save result to file
-            
-            // Prepare the arguments for saving the result
-            gd::argument::shared::arguments argumentsResult({ {"type", "COUNT"}, {"output", stringOutput}, 
-                                                              {"table", ( *poptionsActive )["table"].as_string() } });
-            auto result_ = pdocument->RESULT_Save( argumentsResult, &tableResult );
-            if( result_.first == false ) return result_;
-         }
-
-         auto result_ = TABLE_AddSumRow( &tableResult, {2, 3, 4, 5, 6});
-         if( result_.first == false ) return result_;
-
-         tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
-
-         if( bPrint == true  )
-         {
-            std::string stringCliTable = gd::table::to_string(tableResult, {{ "verbose", true }}, gd::table::tag_io_cli{});  LOG_INFORMATION_RAW("count = total number of lines\ncode = number of code lines\ncharacters = number of code characters\ncomment = number of comments in code\nstring = number of strings in code");
-            std::cout << "\n" << stringCliTable << "\n\n";
-         }
-
-         if( ( *poptionsActive )["pattern"].is_true() == true && bPrint == true )
-         {
-            auto tableResultPattern = pdocument->RESULT_PatternCount();
-            std::string stringCliTable = gd::table::to_string(tableResultPattern, gd::table::tag_io_cli{});
-            std::cout << "\n" << stringCliTable << "\n\n";
-         }
-      }
-
+      return RUN_Count( poptionsActive );
    }
    else if( stringCommandName == "db" )
    {
@@ -336,6 +281,120 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
 
    return { true, "" };
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Executes the "count" command based on the provided options.
+ *
+ * This method processes the "count" command, which involves harvesting files,
+ * applying filters, counting rows, and optionally saving or printing results.
+ *
+ * ### Arguments in optionsApplication:
+ * - `source` (string, required): Specifies the file or folder to count lines in.
+ * - `recursive` (integer, optional): Specifies the depth for recursive operations.
+ * - `filter` (string, optional): A filter to apply to the files. If empty, all files are counted.
+ * - `pattern` (string, optional): Patterns to search for, separated by `,` or `;`.
+ * - `print` (flag, optional): Indicates whether to print the results to the console.
+ * - `output` (string, optional): Specifies the file to save the output. Defaults to stdout if not set.
+ * - `table` (string, optional): Specifies the table name for generating SQL insert queries.
+ *
+ * @param poptionsActive The active command-line options that should be on 'count'.
+ * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
+ */
+std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* poptionsActive )
+{                                                                                                  assert( poptionsActive != nullptr );
+   enum { linecount_report_, patterncount_report_ };
+   int iReportType = linecount_report_; // default to line report
+
+   // Add a document for the "count" command
+   auto* pdocument = DOCUMENT_Add("count");
+   if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
+
+   // Harvest files based on the "source" option
+   std::string stringSource = ( *poptionsActive )["source"].as_string();
+   PathGetCurrentIfEmpty_s(stringSource);
+   gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", ( *poptionsActive )["recursive"].as_int()} });
+   auto result_ = pdocument->FILE_Harvest(argumentsPath);                                          if( !result_.first ) { return result_; }
+
+   // Apply file filters if specified
+   if( ( *poptionsActive )["filter"].is_true() ) 
+   {
+      std::string stringFilter = ( *poptionsActive )["filter"].as_string();
+      result_ = pdocument->FILE_Filter(stringFilter);                                              if( !result_.first ) { return result_; }
+   }
+   else 
+   {
+      result_ = pdocument->FILE_FilterBinaries();                                                  if( !result_.first ) { return result_; }
+   }
+
+   // Count rows in the harvested files
+   result_ = pdocument->FILE_UpdateRowCounters();                                                  if( !result_.first ) { return result_; }
+
+   if( ( *poptionsActive )["pattern"].is_true() )                              // Handle pattern matching if specified
+   {
+      iReportType = patterncount_report_;                                           // set report type to pattern report
+      std::string stringPattern = ( *poptionsActive )["pattern"].as_string();
+      auto vectorPattern = Split_s(stringPattern);
+      result_ = pdocument->FILE_UpdatePatternCounters(vectorPattern);                              if( !result_.first ) { return result_; }
+   }
+
+   // Determine output options
+   bool bPrint = poptionsActive->exists("print");
+   std::string stringOutput = ( *poptionsActive )["output"].as_string();
+   bool bOutput = ( *poptionsActive )["output"].is_true();
+
+   if( !bPrint && !bOutput && stringOutput.empty() ) { bPrint = true; }        // Default to printing if no output options are specified
+   
+   if( bPrint || bOutput || !stringOutput.empty() )                            // Generate and handle results
+   {
+      gd::table::dto::table tableResult;
+      if( iReportType == linecount_report_ )
+      {
+         tableResult = pdocument->RESULT_RowCount();
+      }
+      else
+      {
+         tableResult = pdocument->RESULT_PatternCount();
+      }
+
+      // ## Save result if output is specified 
+
+      if( stringOutput.empty() == false ) 
+      {
+         gd::argument::shared::arguments argumentsResult({ {"type", "COUNT"}, {"output", stringOutput}, {"table", ( *poptionsActive )["table"].as_string()} });
+         result_ = pdocument->RESULT_Save(argumentsResult, &tableResult);                          if( !result_.first ) { return result_; }
+      }
+
+      // ## Print result if specified
+
+      if( bPrint == true )
+      {
+         if( iReportType == linecount_report_ )
+         {
+            result_ = TABLE_AddSumRow(&tableResult, { 2, 3, 4, 5, 6 });                            if( !result_.first ) { return result_; }
+            tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
+            if( bPrint == true ) 
+            {
+               std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
+               std::cout << "\n" << stringCliTable << "\n\n";
+            }
+         }
+         else if( iReportType == patterncount_report_ )
+         {                                                                                         assert( ( *poptionsActive )["pattern"].is_true() );
+            auto tableResultPattern = pdocument->RESULT_PatternCount();
+            std::vector<unsigned> vectorColumn;
+            for( auto u = 2u; u < tableResultPattern.get_column_count(); u++ ) vectorColumn.push_back(u);// add sum columns
+
+            result_ = TABLE_AddSumRow(&tableResultPattern, vectorColumn);                          if( !result_.first ) { return result_; }
+            std::string stringCliTable = gd::table::to_string(tableResultPattern, { {"verbose", true} }, gd::table::tag_io_cli{});
+            std::cout << "\n" << stringCliTable << "\n\n";
+         }
+      }
+
+   }
+
+   return { true, "" };
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Adds a new document with the specified name.
@@ -448,7 +507,7 @@ void CApplication::DOCUMENT_Clear()
 }
 
 
-// 0TAG0DATABASE.Application
+// 0TAG0Database.Application
 
 /** ---------------------------------------------------------------------------
  * @brief Open a database connection
@@ -1016,4 +1075,5 @@ std::vector<std::string> CApplication::Split_s(const std::string& stringText, ch
 
    return vectorResult;
 }
+
 

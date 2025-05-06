@@ -5,6 +5,8 @@
  * 
  */
 
+#include <iterator>
+
 #include "gd/gd_file.h"
 #include "gd/gd_table_io.h"
 #include "gd/gd_table_aggregate.h"
@@ -416,6 +418,9 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
 
    unsigned uFindInState = eStateCode; // state of the parser
 
+   gd::parse::patterns patternsFind(vectorPattern); // patterns to find in source code
+   patternsFind.sort();                                                       // Sort patterns by length, longest first
+
    // ## Prepare source file
    std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
 
@@ -431,16 +436,28 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
    if( result_.first == false ) return result_;                                // error in state preparation
 
    // ## count occurrences of each pattern in the source code
-   auto count_ = [&vectorPattern, &vectorCount](const std::string& stringText) // count method that counts occurrences of each pattern in the source code
+   auto count_ = [&patternsFind, &vectorPattern, &vectorCount](const std::string& stringText) // count method that counts occurrences of each pattern in the source code
       {
          // ## Count occurrences of each pattern in text
-         for(size_t u = 0; u < vectorPattern.size(); ++u)
+
+         const char* piPosition = stringText.c_str();
+         const char* piEnd = piPosition + stringText.length();
+         uint64_t uOffset = 0;
+         int64_t iPattern = 0;
+         while( (iPattern = patternsFind.find_pattern(piPosition, piEnd, &uOffset)) != -1 ) // find pattern in text
          {
-            size_t uPosition = 0;
-            while((uPosition = stringText.find(vectorPattern[u], uPosition)) != std::string::npos)
+            piPosition += uOffset;                                             // Move to position
+            const std::string_view stringPattern = patternsFind.get_pattern(iPattern);  // get pattern from patternsFind
+
+            ///## find pattern in vector
+            for( auto it = vectorPattern.begin(); it != vectorPattern.end(); it++ ) // find pattern in vector
             {
-               vectorCount[u]++;
-               uPosition += vectorPattern[u].length();                         // Move past the current match
+               if( *it == stringPattern )
+               {
+                  vectorCount[std::distance( vectorPattern.begin(), it )]++;
+                  piPosition += stringPattern.length();                        // Move past the current match
+                  break;
+               }
             }
          }
       };
