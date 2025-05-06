@@ -89,6 +89,8 @@ public:
 
 //@}
 
+   std::pair<bool, std::string> RUN_Count( const gd::cli::options* poptionsActive );
+
 /** \name DOCUMENT operations
 * Documents are used to store information for each file that is beeing processed
 *///@{

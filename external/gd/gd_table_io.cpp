@@ -877,7 +877,7 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
 
             // ## if name do not fit in column and it is not the last column then we need to wrap (3 is spaces for ` | `)
 
-            if( *it < (stringName.length() + 2) && uColumn < table.get_column_count() )
+            if( *it < stringName.length() && uColumn < table.get_column_count() )
             {
                stringHeader += stringName;
                if( uColumn >= (table.get_column_count() - 1) ) break;          // break if last column
