@@ -65,7 +65,8 @@ Displays the version of the application.
 
 ## Examples
 
-### Count files in active folder
+### Count lines in files found in active folder
+Go to folder and write
 `cleaner.exe count`
 
 ### Count lines in a folder recursively
