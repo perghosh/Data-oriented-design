@@ -210,7 +210,10 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       std::string stringPattern = ( *poptionsActive )["pattern"].as_string();                      LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
       auto vectorPattern = Split_s(stringPattern);                             // split pattern string into vector
 
-      result_ = pdocument->FILE_UpdatePatternList( vectorPattern );            // count rows in harvested files
+      uint64_t uMax = ( *poptionsActive )["max"].as_uint64();                  // max number of lines to be printed
+      if( uMax == 0 ) uMax = 512;                                              // default to 512 lines
+
+      result_ = pdocument->FILE_UpdatePatternList( vectorPattern, uMax );      // count rows in harvested files
       if( result_.first == false ) return result_;
 
       auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
@@ -770,6 +773,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    // ## 'history' handle history 
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "Handle command history" );
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
    }
@@ -780,6 +784,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "source", 's', "File/folders where to search for patterns in"});
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "max", "Max list count to avoid too many hits"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
    }

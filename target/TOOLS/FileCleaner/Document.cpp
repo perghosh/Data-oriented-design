@@ -389,7 +389,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
  *   that match the patterns and updates the "file-linelist" table with the results.
  * - If an error occurs during the process, it is added to the internal error list.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern)
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern, uint64_t uMax )
 {                                                                                                  assert(vectorPattern.empty() == false); // Ensure the pattern list is not empty
                                                                                                    assert(vectorPattern.size() < 64);      // Ensure the pattern list contains fewer than 64 patterns
    gd::parse::patterns patternsFind(vectorPattern);
@@ -416,6 +416,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
       {
          ERROR_Add(result_.second); // Add error to the internal error list
       }
+
+      if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
    }
 
    return {true, ""};
