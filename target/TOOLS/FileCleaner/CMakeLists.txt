@@ -33,6 +33,8 @@ set( USE_TARGET_ ON ) # ========================================================
 if(MSVC)
    # Use static runtime for MSVC
    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+else()
+   add_compile_options(-gdwarf-4) # Use DWARF 4 for compatibility with older gdb versions
 endif()
 
 if( USE_TARGET_ )

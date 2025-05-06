@@ -3688,8 +3688,8 @@ uint64_t table::erase(const uint64_t* puRowIndex, uint64_t uCount)
          uRemoved++;
       }
    }
-
-   return uRemoved;                                                                                assert(uRemoved <= uCount);
+                                                                                                   assert(uRemoved <= uCount);
+   return uRemoved;                                                                                
 }
 
 
