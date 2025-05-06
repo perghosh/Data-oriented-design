@@ -943,11 +943,11 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
       // ## Build the result string for the file where pattern was found  
       if( eEditor == eVisualStudio )
       {
-         stringFile += "(";
+         stringFile += ":";
          stringFile += std::to_string(uLineinSource);
-         stringFile += ",";
+         stringFile += ":";
          stringFile += std::to_string(uColumninSource);
-         stringFile += ") - [";
+         stringFile += " - [";
       }
       else if( eEditor == eVSCode )
       {
