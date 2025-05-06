@@ -935,27 +935,32 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
       pathFile += stringFilename;
       std::string stringFile = pathFile.string();
 
+      uint64_t uLineinSource = ptableLineList->cell_get_variant_view(uRow, "row");// get row data from table
+      uLineinSource++;                                                        // line number in source file is 1-based, in table it is 0-based
+      uint64_t uColumninSource = ptableLineList->cell_get_variant_view(uRow, "column");// get row data from table
+
+
       // ## Build the result string for the file where pattern was found  
       if( eEditor == eVisualStudio )
       {
          stringFile += "(";
-         stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();
+         stringFile += std::to_string(uLineinSource);
          stringFile += ",";
-         stringFile += ptableLineList->cell_get_variant_view(uRow, "column").as_string();
+         stringFile += std::to_string(uColumninSource);
          stringFile += ") - [";
       }
       else if( eEditor == eVSCode )
       {
          stringFile += ":";
-         stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();
+         stringFile += std::to_string(uLineinSource);
          stringFile += ":";
-         stringFile += ptableLineList->cell_get_variant_view(uRow, "column").as_string();
+         stringFile += std::to_string(uColumninSource);
          stringFile += " - [";
       }
       else if( eEditor == eSublime )
       {
          stringFile += ":";
-         stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();
+         stringFile += std::to_string(uLineinSource);
          stringFile += " - [";
       }
 
