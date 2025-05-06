@@ -53,35 +53,6 @@ Lists rows matching specified patterns in files or folders.
 
 ---
 
-### db
-Configures the database.
-
-**Options:**
-- `--file <path>`: Path to the database file (e.g., SQLite).
-- `--settings <path>`: Path to the configuration file.
-
----
-
-### copy
-Copies a file from source to destination.
-
-**Options:**
-- `--source <path>`: File to copy.
-- `--destination <path>`: Destination path.
-- `--backup`: Create a backup if the destination file exists.
-
----
-
-### join
-Joins two or more files into one.
-
-**Options:**
-- `--source <files>`: Files to join.
-- `--destination <path>`: Destination file.
-- `--backup`: Create a backup if the destination file exists.
-
----
-
 ### help
 Displays help information for the application.
 
@@ -94,9 +65,11 @@ Displays the version of the application.
 
 ## Examples
 
+### Count files in active folder
+`cleaner.exe count`
+
 ### Count lines in a folder recursively
 `cleaner.exe count --source "C:\dev\project" --recursive 3 --filter ".cpp;.h" --output "result.txt"`
-
 
 ### List patterns in files
 `cleaner.exe list --source "D:\tests" --recursive 2 --pattern "TEST_CASE,EXPECT,static_assert"`
