@@ -85,6 +85,8 @@ struct tag_type_constant {};
 using tag_copy = gd::types::tag_copy;
 /// for convert methods
 using tag_convert = gd::types::tag_convert;
+/// for adjusting methods
+using tag_adjust = gd::types::tag_adjust;
 /// prepare (allocate internal buffers) table to be ready for work
 struct tag_prepare {};
 /// use name in operation
@@ -258,6 +260,8 @@ struct row
 
    cell<TABLE> operator[]( uint32_t uIndex ) { return cell<TABLE>( m_ptable, m_uRow, uIndex ); }
    cell<TABLE> operator[]( const std::string_view& stringName ) const { return cell<TABLE>( m_ptable, m_uRow, m_ptable->column_get_index(stringName) ); }
+
+   uint64_t get_row() const { return m_uRow; }
 
    gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex ); }
    gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName ); }

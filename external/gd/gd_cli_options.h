@@ -381,7 +381,9 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
-
+   /// convert argument values to string
+   static std::string to_string_s(int iCount, const char* const* ppbszArgumentValue, int iOffset = 0);
+   /// print error message and return it
    static std::pair<bool, std::string> error_s( std::initializer_list<gd::variant_view> listPrint );
 
    /// return flag
@@ -457,10 +459,5 @@ inline void options::clear_all() {
    }
    clear();
 }
-
-
-
-
-
 
 _GD_CLI_END

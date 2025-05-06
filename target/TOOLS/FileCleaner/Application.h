@@ -89,6 +89,8 @@ public:
 
 //@}
 
+   std::pair<bool, std::string> RUN_Count( const gd::cli::options* poptionsActive );
+
 /** \name DOCUMENT operations
 * Documents are used to store information for each file that is beeing processed
 *///@{
@@ -154,13 +156,30 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
+   // ## Prepare Application 
+
    static void Prepare_s( gd::cli::options& optionsApplication );
    static void PrepareLogging_s();
+
+   // ## Path operations
+   static void PathGetCurrentIfEmpty_s( std::string& stringPath );
+
+   // ## Read data from database
 
    static void Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer );
    static void Read_s( gd::database::cursor_i* pcursorSelect, gd::table::table_column_buffer* ptablecolumnbuffer );
 
-   static std::pair<bool, std::string> COMMAND_CountRows( CDocument* pdocument );
+   // ## Utility functions
+
+   // ## History functions
+
+   /// Save last command to history
+   static std::pair<bool, std::string> HistorySaveArguments_s(const std::string_view& stringArguments);
+   /// Print history to console
+   static std::pair<bool, std::string> HistoryPrint_s();
+
+   // Split string into vector of strings, delimitier is ; or ,. It first tries to find ;, if not found then it tries to find ,
+   static std::vector<std::string> Split_s(const std::string& stringText, char iCharacter = 0);
 
 
 };

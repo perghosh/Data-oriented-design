@@ -235,6 +235,8 @@ public:
    table( unsigned uRowCount, tag_null ) : m_uFlags( eTableFlagNull64 ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
    table( unsigned uRowCount, tag_full_meta ) : m_uFlags( eTableFlagNull64 | eTableFlagRowStatus ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
 
+   table( unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue );
+
    table( const gd::variant_view& variantviewValue, tag_prepare );
    table( const std::vector< std::string_view >& vectorValue, tag_prepare );
    table( unsigned uFlags, const std::vector< std::tuple< std::string_view, std::string_view > >& vectorValue, tag_prepare );
@@ -460,6 +462,8 @@ public:
    void row_add() { row_add( 1 ); }
    void row_add( uint64_t uCount, tag_null );
    void row_add(tag_null) { row_add( 1, tag_null{} ); }
+   /// Simple add one row to table that is safe (if table have null values these are automatically set to null)
+   uint64_t row_add_one();
 
    /// @name row_add
    /// add row/rows to table and insert values to added row
@@ -540,6 +544,7 @@ public:
    std::vector<gd::variant_view> row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const;
    std::vector<gd::variant_view> row_get_variant_view( uint64_t uRow, const std::vector<unsigned>& vectorIndex ) const { return row_get_variant_view( uRow, vectorIndex.data(), (unsigned)vectorIndex.size() ); }
    void row_get_variant_view( uint64_t uRow, std::vector<gd::variant_view>& vectorValue ) const;
+   void row_get_variant_view( uint64_t uRow, unsigned uOffset, std::vector<gd::variant_view>& vectorValue ) const;
    void row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize, std::vector<gd::variant_view>& vectorValue ) const;
    void row_get_variant_view( uint64_t uRow, const std::vector<unsigned>& vectorIndex, std::vector<gd::variant_view>& vectorValue ) const { row_get_variant_view( uRow, vectorIndex.data(), (unsigned)vectorIndex.size(), vectorValue ); }
 
@@ -991,6 +996,22 @@ inline void table::row_add( uint64_t uCount, tag_null ) {                       
    row_add( uCount );
    row_set_null( uBegin, m_uRowCount - uBegin );
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Adds a single row to the table.
+ * 
+ * This method is a simplified version of adding rows to the table, specifically designed for the common operation of adding one row at a time.
+ * It increases the row count by one and ensures that the table has enough memory allocated to accommodate the new row.
+ * If the table supports null values, the newly added row will have all its columns set to null.
+ * 
+ * @return uint64_t The index of the newly added row.
+ */
+inline uint64_t table::row_add_one() {
+   row_add(1);
+   if( is_null() == true ) { row_set_null(m_uRowCount - 1); }                 // set all new rows to null
+   return m_uRowCount - 1;
+}
+
 
 
 /** ---------------------------------------------------------------------------

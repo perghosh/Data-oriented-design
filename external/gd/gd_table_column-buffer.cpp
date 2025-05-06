@@ -34,6 +34,17 @@ _GD_TABLE_BEGIN
 constexpr unsigned SPACE_VALUE_SIZE = sizeof( uint32_t );
 constexpr unsigned SPACE_ALIGN = sizeof( uint32_t );
 
+/// @brief constructor adding columns with type, size and name to table
+table_column_buffer::table_column_buffer( unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue ) :
+   m_uFlags(uFlags), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0),  m_uReservedRowCount( eSpaceFirstAllocate )
+{
+   for( const auto& it : vectorValue )
+   {
+      column_add( std::get<0>( it ), std::get<1>( it ), std::get<2>( it ) );
+   }
+}
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief construct table from one single variant view value
@@ -168,7 +179,7 @@ assert( t2.cell_get_variant_view( 2, "FInteger" ) == gd::variant_view((int64_t)2
  * @param vectorValue.[3] value inserted to table at first row
 */
 table_column_buffer::table_column_buffer( const std::vector<std::tuple<std::string_view, unsigned, std::string_view, gd::variant_view>>& vectorValue, tag_prepare ) :
-   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0),  m_uReservedRowCount( 1 )
+   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0),  m_uReservedRowCount( eSpaceFirstAllocate )
 {
    for( const auto& it : vectorValue )
    {
@@ -336,6 +347,42 @@ uint64_t table_column_buffer::get_row_count( uint32_t uState ) const noexcept
    }
 
    return uCount;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Add column to table
+ *
+ * Copy column from another table, this is used when table is created from another table
+ * Internally the column do now store memory, only offset to data so we need to manually set those values
+ * 
+ * @param columnToAdd column to add
+ * @param tableFrom table to copy column from from
+ * @return reference to table
+ */
+table_column_buffer& table_column_buffer::column_add( const column& columnToAdd, const table_column_buffer& tableFrom )
+{                                                                                                  assert(m_puData == nullptr);
+   column columnAdd( columnToAdd );
+
+   // ## column do not store memory, only offset to data so we need to manually set those values
+
+   std::string_view stringName = columnToAdd.name() > 0 ? tableFrom.get_names().get(columnToAdd.name()) : std::string_view{}; 
+   if( stringName.empty() == false )
+   {
+      auto uNameIndex = m_namesColumn.add( stringName );
+      columnAdd.name( uNameIndex );
+   }
+
+   std::string_view stringAlias = columnToAdd.alias() > 0 ? tableFrom.get_names().get(columnToAdd.alias()) : std::string_view{};
+   if( stringAlias.empty() == false )
+   {
+      auto uAliasIndex = m_namesColumn.add( stringAlias );
+      columnAdd.alias( uAliasIndex );
+   }
+
+   m_vectorColumn.push_back( columnAdd );
+
+   return *this;
 }
 
 /** ---------------------------------------------------------------------------
@@ -1410,6 +1457,23 @@ void table_column_buffer::row_set( uint64_t uRow, const std::vector<gd::variant_
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Set row values and if column values do not match type it tries to convert to proper type
+ * @param uRow row where values are set
+ * @param uOffset row where values are set
+ * @param vectorValue vector of values inserted to specified row
+ */
+void table_column_buffer::row_set( uint64_t uRow, unsigned uOffset, const std::vector<gd::variant_view>& vectorValue )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( vectorValue.size() <= get_column_count() );   
+   unsigned uIndex = uOffset;
+   for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it != itEnd; ++it )
+   {
+      cell_set( uRow, uIndex, *it );
+      uIndex++;
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief Set row values, if value type differ it tries to convert to type in column
  * @param uRow row where values are set
  * @param vectorValue vector of values inserted to specified row
@@ -1954,7 +2018,7 @@ unsigned table_column_buffer::cell_get_length( uint64_t uRow, unsigned uColumnIn
 
    auto v_ = cell_get_variant_view( uRow, uColumnIndex );
    uLength = variant::compute_ascii_size_s( (const gd::variant*)&v_ );
-                                                                                                   assert( uLength < 0x0100'0000 );
+                                                                                                   assert( uLength < 0x0100'0000 ); // check that you have added row without setting cells to null for table that store null values
    return uLength;
 }
 
@@ -2105,6 +2169,57 @@ void table_column_buffer::cell_set( uint64_t uRow, unsigned uColumn, const gd::v
    }
 }
 
+void table_column_buffer::cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_adjust )
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( uColumn < m_vectorColumn.size() );
+   auto& columnSet = m_vectorColumn[uColumn];                                                      assert( columnSet.position() < m_uRowSize );
+   auto uValueType = variantviewValue.type_number();
+   auto uColumnType = columnSet.ctype_number();
+
+   if( uValueType == uColumnType ) 
+   {  
+      if( columnSet.is_fixed() ) { cell_set(uRow, uColumn, variantviewValue); }
+      else
+      {
+         if( columnSet.is_length() == true )
+         {
+            unsigned uMaxSize = columnSet.size();
+            unsigned uLength = gd::types::value_size_g(variantviewValue.type(), variantviewValue.length()); // value size in bytes (remember that non fixed value types starts with length information before actual value)
+            if( uLength >= uMaxSize )
+            {
+               auto variantAdjust = variantviewValue;
+               variantAdjust.adjust(uMaxSize);                                // adjust size to max size for column
+               cell_set(uRow, uColumn, variantAdjust);
+            }
+            else
+            {
+               cell_set(uRow, uColumn, variantviewValue);
+            }
+         }
+         else if( columnSet.is_reference() == true )
+         {
+            cell_set(uRow, uColumn, variantviewValue);
+         }
+      }
+   }
+   else
+   {
+      gd::variant variantConvertTo;
+      bool bOk = variantviewValue.convert_to( uColumnType,  variantConvertTo );
+      if( bOk == true )
+      {
+         cell_set( uRow, uColumn, *(gd::variant_view*)&variantConvertTo, tag_adjust{}); // just cast to variant view, internal data is same just that varaiant view have different logic
+      }
+      else
+      {
+         if( variantviewValue.is_null() == true && is_null() == true )
+         {
+            cell_set_null( uRow, uColumn );
+         }
+      }
+   }
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Set cell value
  * If value type do not match the type used in column then value is converted to proper type
@@ -2117,6 +2232,20 @@ void table_column_buffer::cell_set( uint64_t uRow, const std::string_view& strin
    unsigned uColumnIndex = column_get_index( stringName );                                         assert( uColumnIndex != (unsigned)-1 );
    cell_set( uRow, uColumnIndex, variantviewValue, tag_convert{});
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value
+ * If value type do not match the type used in column then value is converted to proper type
+ * @param uRow row index for cell
+ * @param stringName column name (column has to have a name)
+ * @param variantviewValue value set to cell and cell type need to match
+*/
+void table_column_buffer::cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_adjust )
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( m_namesColumn.empty() == false );
+   unsigned uColumnIndex = column_get_index( stringName );                                         assert( uColumnIndex != (unsigned)-1 );
+   cell_set( uRow, uColumnIndex, variantviewValue, tag_adjust{});
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Set cell value
@@ -2319,10 +2448,21 @@ int64_t table_column_buffer::row_get_variant_view( unsigned uColumn, const gd::v
  * @brief Harvest row values in vector with variant view items
  * @param uRow index to row values are returned from
  * @param vectorValue row values are placed in vector
-*/
+ */
 void table_column_buffer::row_get_variant_view( uint64_t uRow, std::vector<gd::variant_view>& vectorValue ) const
 {                                                                                                  assert( uRow < 0x0100'0000 ); assert( uRow < m_uReservedRowCount );
-   for( auto u = 0u, uMax = (unsigned)m_vectorColumn.size(); u < uMax; u++ )
+   row_get_variant_view(uRow, 0, vectorValue);
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Harvest row values in vector with variant view items
+ * @param uRow index to row values are returned from
+ * @param uOffset start column to read values from
+ * @param vectorValue row values are placed in vector
+ */
+void table_column_buffer::row_get_variant_view( uint64_t uRow, unsigned uOffset, std::vector<gd::variant_view>& vectorValue ) const
+{                                                                                                  assert( uRow < 0x0100'0000 ); assert( uRow < m_uReservedRowCount );
+   for( auto u = uOffset, uMax = (unsigned)m_vectorColumn.size(); u < uMax; u++ )
    {
       vectorValue.push_back( cell_get_variant_view( uRow, u ) );
    }
@@ -2622,25 +2762,45 @@ int64_t table_column_buffer::find_variant_view( unsigned uColumn, uint64_t uStar
    return -1;
 }
 
-
 /** ---------------------------------------------------------------------------
- * @brief Find row for sorted column
- * @param uColumn index to column value is searched for
- * @param bAscending if column is sorted in ascending or descending order
- * @param uStartRow row to begin search
- * @param uCount number of rows to search in
- * @param variantviewFind value seached for
- * @return index to row if found, -1 if not found
-*/
+ * @brief Finds a value in a sorted column within a specified range of rows.  
+ *  
+ * This method performs a binary search to locate the row containing the specified value in a sorted column.  
+ * The search can be performed in ascending or descending order.  
+ *  
+ * @param uColumn The index of the column to search in.  
+ * @param bAscending Indicates whether the column is sorted in ascending (true) or descending (false) order.  
+ * @param uStartRow The starting row index for the search.  
+ * @param uCount The number of rows to search.  
+ * @param variantviewFind The value to search for, encapsulated in a `gd::variant_view`.  
+ * @return int64_t The index of the row containing the value if found, or -1 if the value is not found.  
+ *  
+ * @code  
+ * gd::table::table_column_buffer table(10);  
+ * table.column_add({{"int32", 0, "id"}, {"string", 50, "name"}}, gd::table::tag_type_name{});  
+ * table.prepare();  
+ * table.row_add({1, "Alice"}, gd::table::tag_convert{});  
+ * table.row_add({2, "Bob"}, gd::table::tag_convert{});  
+ * table.row_add({3, "Charlie"}, gd::table::tag_convert{});  
+ *  
+ * // Sort the table by the "id" column in ascending order.  
+ * table.sort(0, true, 0, table.get_row_count(), gd::table::tag_sort_selection{});  
+ *  
+ * // Find the row with id = 2.  
+ * gd::variant_view valueToFind(2);  
+ * int64_t rowIndex = table.find_variant_view(0, true, 0, table.get_row_count(), valueToFind);  
+ * assert(rowIndex == 1);  
+ * @endcode  
+ */  
 int64_t table_column_buffer::find_variant_view( unsigned uColumn, bool bAscending, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept
 {
-   uint64_t uLow = uStartRow;
-   uint64_t uHigh = uStartRow + uCount;
+   uint64_t uLow = uStartRow; // start row that begins the search
+   uint64_t uHigh = uStartRow + uCount; // end row that ends the search
    
 
    if( bAscending == true )
    {
-      while( uHigh > uLow )
+      while( uHigh >= uLow )
       {
          uint64_t uMid = (uLow + uHigh) / 2;
          auto value_ = cell_get_variant_view( uMid, uColumn );
@@ -2659,7 +2819,7 @@ int64_t table_column_buffer::find_variant_view( unsigned uColumn, bool bAscendin
    }
    else
    {
-      while( uHigh > uLow )
+      while( uHigh >= uLow )
       {
          uint64_t uMid = (uLow + uHigh) / 2;
          auto value_ = cell_get_variant_view( uMid, uColumn );

@@ -339,6 +339,8 @@ public:
    table_column_buffer( unsigned uRowCount, tag_null ): m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount) { assert( m_uFlags < eTableStateMAX );  }
    table_column_buffer( unsigned uRowCount, tag_full_meta ): m_uFlags(eTableFlagNull64|eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount) { assert( m_uFlags < eTableStateMAX );  }
 
+   table_column_buffer( unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue );
+
    table_column_buffer( const gd::variant_view& variantviewValue, tag_prepare );
    table_column_buffer( const std::vector< std::string_view >& vectorValue, tag_prepare );
    table_column_buffer( unsigned uFlags, const std::vector< std::tuple< std::string_view, std::string_view > >& vectorValue, tag_prepare );
@@ -449,6 +451,7 @@ public:
    /// 0TAG0add.table_column_buffer
    ///@{
    table_column_buffer& column_add( const column& columnToAdd ) { m_vectorColumn.push_back( columnToAdd ); return *this; }
+   table_column_buffer& column_add( const column& columnToAdd, const table_column_buffer& tableFrom );
    table_column_buffer& column_add( unsigned uColumnType, const std::string_view& stringName ) { return column_add( uColumnType, 0, stringName ); }
    table_column_buffer& column_add( unsigned uColumnType, unsigned uSize );
    table_column_buffer& column_add( unsigned uColumnType, unsigned uSize, const std::string_view& stringName, const std::string_view& stringAlias );
@@ -603,6 +606,8 @@ public:
    void row_add() { row_add( 1 ); }
    void row_add( uint64_t uCount, tag_null );
    void row_add(tag_null) { row_add( 1, tag_null{} ); }
+   /// Simple add one row to table that is safe (if table have null values these are automatically set to null)
+   uint64_t row_add_one();
 
    /// @name row_add
    /// add row/rows to table and insert values to added row
@@ -640,6 +645,7 @@ public:
    void row_set( uint64_t uRow, const std::initializer_list<gd::variant_view>& listValue, tag_convert );
    void row_set( uint64_t uRow, unsigned uSart, const std::initializer_list<gd::variant_view>& listValue, tag_convert );
    void row_set( uint64_t uRow, const std::vector<gd::variant_view>& listValue );
+   void row_set( uint64_t uRow, unsigned uOffset, const std::vector<gd::variant_view>& listValue);
    void row_set( uint64_t uRow, const std::vector<gd::variant_view>& listValue, tag_convert );
    void row_set( uint64_t uRow, unsigned uSart, const std::vector<gd::variant_view>& listValue, tag_convert );
    void row_set( uint64_t uRow, const std::vector<gd::variant_view>& listValue, const std::vector<unsigned>& vectorColumn );
@@ -694,6 +700,7 @@ public:
    std::vector<gd::variant_view> row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const;
    std::vector<gd::variant_view> row_get_variant_view( uint64_t uRow, const std::vector<unsigned>& vectorIndex ) const { return row_get_variant_view( uRow, vectorIndex.data(), (unsigned)vectorIndex.size() ); }
    void row_get_variant_view( uint64_t uRow, std::vector<gd::variant_view>& vectorValue ) const;
+   void row_get_variant_view( uint64_t uRow, unsigned uOffset, std::vector<gd::variant_view>& vectorValue ) const;
    void row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize, std::vector<gd::variant_view>& vectorValue ) const;
    void row_get_variant_view( uint64_t uRow, const std::vector<unsigned>& vectorIndex, std::vector<gd::variant_view>& vectorValue ) const { row_get_variant_view( uRow, vectorIndex.data(), (unsigned)vectorIndex.size(), vectorValue ); }
 
@@ -774,7 +781,9 @@ public:
    void cell_set_null( uint64_t uRow, const std::string_view& stringName );
    void cell_set_not_null( uint64_t uRow, unsigned uColumn );
    void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert );
+   void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_adjust );
    void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_convert );
+   void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_adjust );
    void cell_set( uint64_t uRow, const std::string_view& stringAlias, const gd::variant_view& variantviewValue, tag_convert, tag_alias );
    void cell_set( uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue );
    void cell_set( uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue, tag_convert );
@@ -1083,15 +1092,17 @@ inline unsigned table_column_buffer::size_row_meta() const noexcept {
    return uMetaDataSize;
 }
 
-/** ---------------------------------------------------------------------------
- * @brief Add row to table (note that table has "taken" rows and reserved or allocated rows)
- * 
- * Add row/rows to table, if number of total rows need larger memory block table will grow
- * with "grow by" member or if "grow by" member is 0 it will grow by adding 50% to
- * total amount of rows.
- * 
- * @param uCount number of rows to add
-*/
+/** ---------------------------------------------------------------------------  
+ * @brief Add row to table (note that table has "taken" rows and reserved or allocated rows)  
+ *  
+ * Add row/rows to table, if number of total rows need larger memory block table will grow  
+ * with "grow by" member or if "grow by" member is 0 it will grow by adding 50% to  
+ * total amount of rows.  
+ *  
+ * @note If the table is generated to store null values, this method does not set cells in the new row to null.  
+ *  
+ * @param uCount number of rows to add  
+ */
 inline void table_column_buffer::row_add( uint64_t uCount ) { 
    m_uRowCount += uCount; 
    if( m_uRowCount > m_uReservedRowCount ) {
@@ -1103,13 +1114,37 @@ inline void table_column_buffer::row_add( uint64_t uCount ) {
 }
 
 /** ---------------------------------------------------------------------------
- * @brief Add row to table and set columns in added row to null
- * @param uCount number of rows to add
-*/
+ * @brief Adds rows to the table and sets their values to null if the table supports null values.
+ * 
+ * This method increases the row count of the table by the specified number of rows. If the table
+ * is configured to support null values, the newly added rows will have all their columns set to null.
+ * If the table's current row count exceeds the reserved row count, the table's memory block will grow
+ * to accommodate the additional rows.
+ * 
+ * @param uCount The number of rows to add to the table.
+ * @param tag_null A tag indicating that the added rows should have their values set to null.
+ * 
+ * @note This method asserts that the table supports null values.
+ */
 inline void table_column_buffer::row_add( uint64_t uCount, tag_null ) {                            assert( is_null() == true );
-   auto uBegin = m_uRowCount;
-   row_add( uCount );
-   row_set_null( uBegin, m_uRowCount - uBegin );
+    auto uBegin = m_uRowCount;
+    row_add( uCount );
+    row_set_null(uBegin, m_uRowCount - uBegin);                               // set all new rows to null
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Adds a single row to the table.
+ * 
+ * This method is a simplified version of adding rows to the table, specifically designed for the common operation of adding one row at a time.
+ * It increases the row count by one and ensures that the table has enough memory allocated to accommodate the new row.
+ * If the table supports null values, the newly added row will have all its columns set to null.
+ * 
+ * @return uint64_t The index of the newly added row.
+ */
+inline uint64_t table_column_buffer::row_add_one() {
+   row_add(1);
+   if( is_null() == true ) { row_set_null(m_uRowCount - 1); }                 // set all new rows to null
+   return m_uRowCount - 1;
 }
 
 

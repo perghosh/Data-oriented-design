@@ -9,6 +9,7 @@ What it can do
 - Macro expansion
 - Count lines
 - Test simulate files affeted
+- Reporting
 
 ## Count lines
 Count lines in files and beeing able to count different types of lines in one session. Like counting

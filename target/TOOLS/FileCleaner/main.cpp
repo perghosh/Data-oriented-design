@@ -32,5 +32,7 @@ int main(int iArgumentCount, char** ppbszArgument)
    result_ = papplication_->Initialize();                                                     assert( result_.first );
    if( result_.first == false ) { assert( false ); std::cout << "Error: " << result_.second << "\n"; assert( false ); return -1; }
 
+   papplication_->Exit();
+
    return 0;
 }

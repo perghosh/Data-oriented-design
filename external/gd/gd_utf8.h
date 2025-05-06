@@ -29,6 +29,8 @@
 #include <vector>
 #include <type_traits>
 
+#include "gd_types.h"
+
 
 #ifndef _GD_UTF8_BEGIN
 #  define _GD_UTF8_BEGIN namespace gd { namespace utf8 {
@@ -49,9 +51,9 @@ namespace gd {
       struct tag_analyze {};
 
       /// tag dispatcher for stl string
-      struct tag_string{};
+      using tag_string = gd::types::tag_string;
       /// tag dispatcher for stl string_view
-      struct tag_string_view{};
+      using tag_string_view = gd::types::tag_string_view;
 
       constexpr uint8_t UTF8_MAX_ASCII = 0x7F;
       constexpr uint8_t UTF8_MIN_ENCODE = 0x80;
@@ -734,15 +736,16 @@ namespace gd {
          auto puFirst = puText;
          while( puFirst != puEnd )
          {
-            puFirst++;
             if( *puFirst > ' ' ) break;
+            puFirst++;
          }
+
 
          auto* puLast = puEnd;
          while( puLast != puFirst )
          {
-            puLast--;
             if( *puLast > ' ' ) break;
+            puLast--;
          }
 
          return { puFirst, puLast + 1 };
