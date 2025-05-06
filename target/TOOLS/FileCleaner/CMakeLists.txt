@@ -29,6 +29,12 @@ add_subdirectory("tests") # tests cleaner logic
 
 
 set( USE_TARGET_ ON ) # ========================================================= ${cleaner}
+
+if(MSVC)
+   # Use static runtime for MSVC
+   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+endif()
+
 if( USE_TARGET_ )
 
    set(TARGET_NAME_ "cleaner")
@@ -46,6 +52,11 @@ if( USE_TARGET_ )
    target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
    target_compile_definitions(${TARGET_NAME_} PRIVATE GD_LOG_SIMPLE)
    target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
-   
 
+   if(MSVC)
+   else()
+      # Link GLIBCXX statically
+      target_link_options(${TARGET_NAME_} PRIVATE -static-libstdc++)
+   endif()
+   
 endif()
