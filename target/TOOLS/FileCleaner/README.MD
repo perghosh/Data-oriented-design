@@ -1,9 +1,14 @@
-# Cleaner.exe User Guide
+# Cleaner.exe User Guide (BETA!!!)
 
 ## Getting Started (simple)
 
 **Windows**
 - Place cleaner in `system32` or `windows` folder, or add the path to the system PATH variable.
+- Open a command prompt and go to folder with source code and type `cleaner count`.
+- Default settings will scan files in current folder and print result to console.
+
+**Linux**
+- Place cleaner in `/usr/local/bin/` or `/usr/bin/`
 - Open a command prompt and go to folder with source code and type `cleaner count`.
 - Default settings will scan files in current folder and print result to console.
 
@@ -36,8 +41,6 @@ cleaner.exe [global options] command [command options]
 | `--logging-csv` | Add CSV logger for log information |
 | `--print` | Print results from command |
 | `--recursive [depth]` | Process directories recursively (specify depth) |
-| `--database [folder]` | Set folder where logger places log files |
-| `--statements [file]` | Specify file containing SQL statements |
 
 ### Count Command
 
@@ -118,7 +121,7 @@ folder                            filename       count    code     characters co
 For complex source code analysis, combine multiple options:
 
 ```
-cleaner.exe count --source C:\projects --recursive 3 --filter "*.cpp;*.h" --comment "/**/" --string "\"\"" --logging
+cleaner.exe count --source C:\projects --recursive 3 --filter "*.cpp;*.h" --comment "/**/" --string "\"\""
 ```
 
 This command will analyze C++ source files up to 3 directories deep, with appropriate comment and string delimiters, while logging the process.

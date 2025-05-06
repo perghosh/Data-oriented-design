@@ -81,10 +81,19 @@ public:
 *///@{
 
    std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath );
+   std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath, std::string stringFilter );
    std::pair<bool, std::string> FILE_Filter( const std::string_view& stringFilter );
    std::pair<bool, std::string> FILE_FilterBinaries();
    std::pair<bool, std::string> FILE_UpdateRowCounters();
+   std::pair<bool, std::string> FILE_UpdatePatternCounters( const std::vector<std::string>& vectorPattern );
+   std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector<std::string>& vectorPattern, uint64_t uMax );
       
+//@}
+
+/** \name RESULT
+ * Document are able to generate result data based on what the document is storing
+ *///@{
+   std::pair<bool, std::string> RESULT_Save(const gd::argument::shared::arguments& argumentsResult, const gd::table::dto::table* ptableResult );
 //@}
 
 /** \name CACHE
@@ -117,6 +126,10 @@ public:
 *///@{
    /// @brief Generate result to present row counting in files
    gd::table::dto::table RESULT_RowCount();
+   /// @brief Generate result to present pattern count in files
+   gd::table::dto::table RESULT_PatternCount();
+   /// @brief Generate result to present pattern line list, i.e. all lines in files where pattern was found
+   gd::table::dto::table RESULT_PatternLineList();
 //@}
 
 /** \name OPERATION

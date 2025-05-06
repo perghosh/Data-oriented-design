@@ -206,7 +206,7 @@ int64_t line::find(const uint8_t* puData, uint64_t uSize, uint64_t uOffset) cons
 int64_t line::find(char iCharacter, uint64_t uOffset) const
 {                                                                                                  assert(m_puBuffer != nullptr); assert(m_uLast > 0); assert(m_uLast >= uOffset);
    const uint8_t* puPosition = m_puBuffer + uOffset; // Pointer to start of search
-   const uint8_t* puEnd = puPosition + (occupied() - uOffset); // Pointer to end of search
+   const uint8_t* puEnd = m_puBuffer + occupied(); // Pointer to end of search
    while( puPosition < puEnd )
    {
       // Check if the current position matches the character to find

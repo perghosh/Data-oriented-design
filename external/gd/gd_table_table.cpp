@@ -35,6 +35,17 @@ constexpr unsigned SPACE_ALIGN = sizeof( uint32_t );
 // Check memory layout between `table` and `table_column_buffer`
 static_assert( offsetof( table, m_argumentsProperty ) == offsetof( table_column_buffer, m_argumentsProperty ), "top members in table and table_column_buffer need to match" );
 
+/// @brief constructor adding columns with type, size and name to table
+table::table(unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue) :
+   m_uFlags(uFlags), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0), m_uReservedRowCount(eSpaceFirstAllocate)
+{
+   m_pcolumns = new_columns_s();
+   for( const auto& it : vectorValue )
+   {
+      column_add(std::get<0>(it), std::get<1>(it), std::get<2>(it));
+   }
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief construct table from one single variant view value
@@ -2171,6 +2182,21 @@ void table::row_get_variant_view( uint64_t uRow, std::vector<gd::variant_view>& 
       vectorValue.push_back( cell_get_variant_view( uRow, u ) );
    }
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Harvest row values in vector with variant view items
+ * @param uRow index to row values are returned from
+ * @param uOffset start column to read values from
+ * @param vectorValue row values are placed in vector
+ */
+void table::row_get_variant_view( uint64_t uRow, unsigned uOffset, std::vector<gd::variant_view>& vectorValue ) const
+{                                                                                                  assert( uRow < 0x0100'0000 ); assert( uRow < m_uReservedRowCount );
+   for( auto u = uOffset, uMax = (unsigned)m_pcolumns->size(); u < uMax; u++ )
+   {
+      vectorValue.push_back( cell_get_variant_view( uRow, u ) );
+   }
+}
+
 
 /// add row values for column indexes sent
 void table::row_get_variant_view(uint64_t uRow, const unsigned* puIndex, unsigned uSize, std::vector<gd::variant_view>& vectorValue) const

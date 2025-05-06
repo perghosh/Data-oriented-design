@@ -12,11 +12,37 @@
 #include "gd/expression/gd_expression.h"
 #include "gd/expression/gd_expression_parse_state.h"
 #include "gd/parse/gd_parse_window_line.h"
+#include "gd/parse/gd_parse_match_pattern.h"
 
 #include "main.h"
 
 #include "catch2/catch_amalgamated.hpp"
 
+
+TEST_CASE("[rowcouner] match", "[rowcouner]") {
+   gd::parse::patterns patterns_;
+
+   patterns_.add("CCCCCCC");
+   patterns_.add("CCCCC");
+   patterns_.add("bbbb");
+   patterns_.add("bbbbb");
+   patterns_.add("aaa");
+
+   patterns_.sort();
+
+   for( auto it = patterns_.begin(); it != patterns_.end(); it++ )
+   {
+      std::cout << "Pattern: " << it->get_pattern() << "\n";
+   }
+
+   std::string stringText = "CCCCCCCCC";
+   auto iFind = patterns_.find_pattern(stringText.data(), stringText.length());
+   std::cout << "Pattern found: " << iFind << "\n";
+
+   stringText = "1234567890bbbb";
+   iFind = patterns_.find_pattern(stringText.data(), stringText.length());
+   std::cout << "Pattern found: " << iFind << "\n";
+}
 
 TEST_CASE("[rowcouner] count characters", "[rowcouner]") {
    std::string stringFile = FOLDER_GetRoot_g("temp__/sqlite3.c");                                  REQUIRE(std::filesystem::exists(stringFile) == true);
