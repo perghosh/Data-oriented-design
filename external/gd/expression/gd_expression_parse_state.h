@@ -68,6 +68,16 @@
 
 #include "gd_expression.h"
 
+#if defined( __clang__ )
+   #pragma clang diagnostic push
+   #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#elif defined( __GNUC__ )
+   #pragma GCC diagnostic push
+   #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#elif defined( _MSC_VER )
+   #pragma warning(push)
+#endif
+
 #ifndef _GD_EXPRESSION_PARSE_BEGIN
 #define _GD_EXPRESSION_PARSE_BEGIN namespace gd { namespace expression { namespace parse {
 #define _GD_EXPRESSION_PARSE_END } } }
@@ -474,3 +484,11 @@ inline bool state::deactivate(const char* piText, unsigned* puLength) {         
 
 
 _GD_EXPRESSION_PARSE_END
+
+#if defined(__clang__)
+   #pragma clang diagnostic pop
+#elif defined(__GNUC__)
+   #pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+   #pragma warning(pop)
+#endif
