@@ -1,3 +1,25 @@
+# Cleaner.exe Documentation
+
+`cleaner.exe` is a console application designed to perform various file and folder operations, such as counting lines, listing patterns, and managing databases. It supports recursive operations, pattern matching, and output customization.
+
+---
+
+## Table of Contents
+- [Usage](#usage)
+- [Commands](#commands)
+  - [count](#count)
+  - [list](#list)
+  - [db](#db)
+  - [copy](#copy)
+  - [join](#join)
+  - [help](#help)
+  - [version](#version)
+- [Examples](#examples)
+- [Notes](#notes)
+
+---
+
+## Usage
 
 - **command**: The operation to perform (e.g., `count`, `list`, `db`, etc.).
 - **options**: Additional parameters specific to the command.
