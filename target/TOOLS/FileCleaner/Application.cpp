@@ -218,10 +218,19 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
       auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
 
-      auto tableResultLineList = pdocument->RESULT_PatternLineList();
+      auto tableResultLineList = pdocument->RESULT_PatternLineList();                              LOG_INFORMATION_RAW("== Lines in result: " & tableResultLineList.get_row_count() & " breaks if above: " & uMax );
 
-      std::string stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
-      std::cout << "\n" << stringCliTable << "\n\n";
+      std::string stringOutput = ( *poptionsActive )["output"].as_string();
+      if( stringOutput.empty() == true )
+      {
+         std::string stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
+         std::cout << "\n" << stringCliTable << "\n\n";
+      }
+      else
+      {
+         auto result_ = pdocument->RESULT_Save({ {"type", "LIST"}, {"output", stringOutput}}, &tableResultLineList);
+         if( result_.first == false ) return result_;
+      }
    }
    else if( stringCommandName == "help" )                                      // command = "help"
    {
