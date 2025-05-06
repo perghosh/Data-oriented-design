@@ -2,6 +2,7 @@
  * @file Command.cpp
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
+ * - `0TAG0FileExtensions.PrepareState` - Prepares the state for file extensions used to parse.
  * 
  */
 
@@ -48,6 +49,10 @@
  *     std::cerr << "Error: " << result.second << std::endl;
  * }
  * @endcode
+ * 
+ * @verbatim
+ * 
+ * @endverbatim
  */
 std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::table::dto::table* ptable_, unsigned uDepth )
 {                                                                                                  assert( ptable_ != nullptr );
@@ -769,6 +774,8 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    return { true, "" };
 }
 
+// 0TAG0FileExtensions.PrepareState
+
 /** ---------------------------------------------------------------------------
  * @brief Prepares the state for parsing based on the file extension.
  * @param argumentsPath The arguments containing the source path for harvesting files.
@@ -794,7 +801,7 @@ std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::ar
       state_.add(std::string_view("STRING"), "\"", "\"", "\\");
       state_.add(std::string_view("RAWSTRING"), "R\"(", ")\"");
    }
-   else if( stringExtension == ".cs" )
+   else if( stringExtension == ".cs" || stringExtension == ".fs" || stringExtension == ".kt" || stringExtension == ".swift" )
    {
       state_.add(std::string_view("LINECOMMENT"), "//", "\n");
       state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
@@ -807,19 +814,22 @@ std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::ar
       state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
       state_.add(std::string_view("STRING"), "\"", "\"", "\\");
    }
-   else if( stringExtension == ".js" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("COMMENTBLOCK"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("RAWSTRING"), "`", "`");
-   }
-   else if( stringExtension == ".json" )
+   else if( stringExtension == ".js" || stringExtension == ".ts" || stringExtension == ".tsx" || stringExtension == ".jsx" )
    {
       state_.add(std::string_view("LINECOMMENT"), "//", "\n");
       state_.add(std::string_view("COMMENTBLOCK"), "/*", "*/");
       state_.add(std::string_view("STRING"), "\"", "\"", "\\");
       state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+      state_.add(std::string_view("RAWSTRING"), "`", "`");
+
+      if( stringExtension == ".jsx" || stringExtension == ".tsx" ) { state_.add(std::string_view("COMMENTBLOCK"), "{/*", "*/}"); }
+   }
+   else if( stringExtension == ".go" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("COMMENTBLOCK"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\"); // Double-quoted
+      state_.add(std::string_view("RAWSTRING"), "`", "`");      // Raw string (no escaping)
    }
    else if( stringExtension == ".rs" )
    {
@@ -848,9 +858,74 @@ std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::ar
       state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
       state_.add(std::string_view("STRING"), "\"", "\"");
    }
+   else if( stringExtension == ".php" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+   }
+   else if( stringExtension == ".lua" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "--", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "--[[", "]]");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+      state_.add(std::string_view("RAWSTRING"), "[[", "]]");
+   }
+   else if( stringExtension == ".rb" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "=begin", "=end");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+   }
    else if( stringExtension == ".json" )
    {
       state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".pl" || stringExtension == ".pm" ) 
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+   }
+   else if( stringExtension == ".sh" || stringExtension == ".bash" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+   }
+   else if( stringExtension == ".yaml" || stringExtension == ".yml" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+   }
+   else if( stringExtension == ".toml" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+   }
+   else if( stringExtension == ".dart" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("RAWSTRING"), "r\"", "\"");
+   }
+   else if( stringExtension == ".clj" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), ";", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+   }
+   else if( stringExtension == ".vim" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "\"", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\'");
    }
    else if( stringExtension == ".txt" || stringExtension == ".md" )
    {
