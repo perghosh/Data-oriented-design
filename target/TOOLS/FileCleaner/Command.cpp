@@ -637,7 +637,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 
    // ## find pattern in code, returns index to found pattern within patternsFind if match, otherwise -1
    auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, const std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
-      {
+      {  // ## adds line with information about found pattern to table holding matches
          auto uRow = ptable_->row_add_one();
          ptable_->cell_set(uRow, "key", uRow + 1);
          ptable_->cell_set(uRow, "file-key", uFileKey);
