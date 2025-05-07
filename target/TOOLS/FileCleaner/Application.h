@@ -162,7 +162,7 @@ public:
    static void PrepareLogging_s();
 
    // ## Path operations
-   static void PathGetCurrentIfEmpty_s( std::string& stringPath );
+   static void PathPrepare_s( std::string& stringPath );
 
    // ## Read data from database
 
