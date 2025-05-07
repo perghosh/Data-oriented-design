@@ -687,7 +687,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 
                      stringSourceCode = gd::utf8::trim_to_string(stringSourceCode); // trim source code
                      std::string_view stringPattern = patternsFind.get_pattern(iPattern);
-                     add_line_to_table_(iPattern, stringSourceCode, uCountNewLine, uColumn, stringPattern); // add line to table
+                     add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
                   }
                }
                stringSourceCode.clear();                                      // clear source code
