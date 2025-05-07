@@ -3,6 +3,7 @@
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0Initialize.Application` - Initialize the application from command line 
+ * - `0TAG0RUN.Application` - run commands, there are a number of commands that can be run
  * - `0TAG0Database.Application` - database operations
  * - `0TAG0OPTIONS.Application` - prepare command line options
  * 
@@ -17,6 +18,7 @@
 #include "gd/gd_arguments.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
+#include "gd/gd_file.h"
 
 #include "Command.h"
 
@@ -198,7 +200,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    else if( stringCommandName == "list" )
    {
       std::string stringSource = (*poptionsActive)["source"].as_string();                          
-      PathGetCurrentIfEmpty_s(stringSource);                                   // if source is empty then set it to current path
+      PathPrepare_s(stringSource);                                   // if source is empty then set it to current path
 
       int iRecursive = ( *poptionsActive )["recursive"].as_int();                                  LOG_INFORMATION_RAW("== --recursive: " & iRecursive);
       gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
@@ -294,6 +296,8 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
    return { true, "" };
 }
 
+// 0TAG0RUN.Application
+
 /** ---------------------------------------------------------------------------
  * @brief Executes the "count" command based on the provided options.
  *
@@ -323,7 +327,7 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
 
    // Harvest files based on the "source" option
    std::string stringSource = ( *poptionsActive )["source"].as_string();
-   PathGetCurrentIfEmpty_s(stringSource);
+   PathPrepare_s(stringSource);
    gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", ( *poptionsActive )["recursive"].as_int()} });
    auto result_ = pdocument->FILE_Harvest(argumentsPath);                                          if( !result_.first ) { return result_; }
 
@@ -842,15 +846,77 @@ void CApplication::PrepareLogging_s()
 #endif // GD_LOG_SIMPLE
 }
 
-// ----------------------------------------------------------------------------
-/// @brief Get current path if string is empty
-void CApplication::PathGetCurrentIfEmpty_s( std::string& stringPath )
+/** ---------------------------------------------------------------------------
+ * @brief Ensures the provided path is absolute. If the path is empty, it sets it to the current working directory.
+ *
+ * This method processes a given path string and ensures it is in an absolute format. If the path is empty, it assigns
+ * the current working directory to the path. If the path contains multiple entries separated by `;` or `,`, it processes
+ * each entry individually to ensure they are absolute paths.
+ *
+ * ### Behavior:
+ * - If the path is empty, it assigns the current working directory.
+ * - If the path is relative, it converts it to an absolute path.
+ * - If the path contains multiple entries separated by `;` or `,`, it processes each entry individually.
+ *
+ * @param stringPath A reference to the path string to process. The string is modified in place.
+ *
+ * ### Example Usage:
+ * ```cpp
+ * std::string path = "relative/path";
+ * CApplication::PathPrepare_s(path);
+ * // path is now absolute
+ * ```
+ **/
+void CApplication::PathPrepare_s(std::string& stringPath)
 {
-   if( stringPath.empty() == true )
+   auto uPosition = stringPath.find_first_of(";,");                            // Find the first occurrence of `;` or `,` if multiple path
+
+   if( uPosition != std::string::npos )
    {
-      std::filesystem::path pathFile = std::filesystem::current_path();
-      stringPath = pathFile.string();
+      char iSplitCharacter = stringPath[uPosition]; // split character
+      std::string stringNewPath; // new generated path
+
+      // Split string by `;` or `,` and check files to make them absolute
+      auto vectorPath = Split_s(stringPath);
+      for( const auto& it : vectorPath )
+      {
+         if( it.empty() == false )
+         {
+            if( stringNewPath.empty() == false )  stringNewPath += iSplitCharacter;
+
+            std::string stringCheck = it;
+            PathPrepare_s(stringCheck);
+            stringNewPath += stringCheck;
+         }
+      }
+      stringPath = stringNewPath;                                             // Update to the fixed path
    }
+   else
+   {
+      if( stringPath.empty() )                                                // no path ?
+      {
+         std::filesystem::path pathFile = std::filesystem::current_path();    // take current working directory
+         stringPath = pathFile.string();
+      }
+      else
+      {
+         // ## fix path to make it absolute
+
+         std::filesystem::path pathFile(stringPath);
+
+         if( pathFile.is_absolute() == false )
+         {
+            if( pathFile.is_relative() == true )                              // Check if path is relative
+            {
+               // ## make path absolute
+
+               std::filesystem::path pathAbsolute = std::filesystem::absolute(pathFile);
+               gd::file::path path_(pathAbsolute);
+               stringPath = path_.string();
+            }
+         } // if( pathFile.is_absolute() == false )
+      } // if( stringPath.empty() ) else
+   } // if( uPosition != std::string::npos ) else
 }
 
 void CApplication::Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer )
