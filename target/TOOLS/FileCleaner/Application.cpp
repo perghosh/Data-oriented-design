@@ -202,14 +202,14 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       std::string stringSource = (*poptionsActive)["source"].as_string();                          
       PathPrepare_s(stringSource);                                   // if source is empty then set it to current path
 
-      int iRecursive = ( *poptionsActive )["recursive"].as_int();                                  LOG_INFORMATION_RAW("== --recursive: " & iRecursive);
+      int iRecursive = ( *poptionsActive )["recursive"].as_int();                                  //LOG_INFORMATION_RAW("== --recursive: " & iRecursive);
       gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
       std::string stringFilter = ( *poptionsActive )["filter"].as_string();
 
       auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);     // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( result_.first == false ) return result_;
 
-      std::string stringPattern = ( *poptionsActive )["pattern"].as_string();                      LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
+      std::string stringPattern = ( *poptionsActive )["pattern"].as_string();                      //LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
       auto vectorPattern = Split_s(stringPattern);                             // split pattern string into vector
 
       uint64_t uMax = ( *poptionsActive )["max"].as_uint64();                  // max number of lines to be printed
@@ -869,15 +869,14 @@ void CApplication::PrepareLogging_s()
  **/
 void CApplication::PathPrepare_s(std::string& stringPath)
 {
-   auto uPosition = stringPath.find_first_of(";,");                            // Find the first occurrence of `;` or `,` if multiple path
+   auto uPosition = stringPath.find_first_of(";,");                           // Find the first occurrence of `;` or `,` if multiple path
 
    if( uPosition != std::string::npos )
    {
       char iSplitCharacter = stringPath[uPosition]; // split character
       std::string stringNewPath; // new generated path
 
-      // Split string by `;` or `,` and check files to make them absolute
-      auto vectorPath = Split_s(stringPath);
+      auto vectorPath = Split_s(stringPath);                                  // Split string by `;` or `,` and check files to make them absolute
       for( const auto& it : vectorPath )
       {
          if( it.empty() == false )
