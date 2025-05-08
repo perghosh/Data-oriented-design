@@ -1043,16 +1043,27 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
       commands_nodeChild = xmldocument.append_child("commands");
    }
 
+   int iCount = 1;
    // Check if command already exists
    for( auto command : commands_nodeChild.children("command") )
    {
       if( command.child_value() == stringArguments )
       {
          commands_nodeChild.remove_child(command); // remove command if it exists
+         pugi::xml_node count_node = command.child("count");
+
+         if( count_node )
+         {
+            iCount = std::stoi(count_node.child_value()) + 1;
+         }
       }
    }
 
-   commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
+   //commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
+   pugi::xml_node command_node = commands_nodeChild.append_child("command");
+   command_node.append_child(pugi::node_pcdata).set_value(stringArguments);
+   command_node.append_child("count").append_child(pugi::node_pcdata).set_value(std::to_string(iCount).c_str());
+
    xmldocument.save_file(stringFilePath.c_str());
 #else
 #endif
