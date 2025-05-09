@@ -80,7 +80,19 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       // ## Parse the command-line arguments
       auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);
-      if( bOk == false ) { return { false, stringError }; }
+      if( bOk == false ) 
+      { 
+         std::string stringHelp;
+         const gd::cli::options* poptionsActive = optionsApplication.find_active();
+         if( poptionsActive != nullptr )
+         {
+            poptionsActive->print_documentation(stringHelp, gd::cli::options::tag_documentation_dense{});// print help for active command
+
+            stringError += "\n\n" + stringHelp;
+         }
+         
+         return { false, stringError }; 
+      }
 
       // ## Process the command-line arguments
       std::tie(bOk, stringError) = Initialize(optionsApplication);
@@ -244,7 +256,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    else if( stringCommandName == "help" )                                      // command = "help"
    {
       std::string stringDocumentation;
-      optionsApplication.print_documentation( stringDocumentation );
+      optionsApplication.print_documentation( stringDocumentation, gd::cli::options::tag_documentation_verbose{});
       std::cout << stringDocumentation << "\n";
    }
    else if( stringCommandName == "version" )
@@ -761,8 +773,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
-   optionsApplication.add({ "database", "Set folder where logger places log files"});
-   optionsApplication.add({ "statements", "file containing sql statements"});
+   //optionsApplication.add({ "database", "Set folder where logger places log files"});
+   //optionsApplication.add({ "statements", "file containing sql statements"});
 
    {  // ## `copy` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );
@@ -771,6 +783,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
+      optionsCommand.add({ "sort", "Sorts result on selected column name" });
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );

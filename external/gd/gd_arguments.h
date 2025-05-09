@@ -20,7 +20,7 @@
  * Iterate and print values in `arguments`:
  * \code
  * void print(const gd::argument::arguments& args) {
- *    for (auto pos = args.next(); pos != nullptr; pos = args.next(pos)) {
+ *    for(auto pos = args.next(); pos != nullptr; pos = args.next(pos)) {
  *       auto name = gd::argument::arguments::get_name_s(pos);
  *       auto value = gd::argument::arguments::get_argument_s(pos).as_variant_view();
  *       std::cout << "Name: " << name << ", Value: " << value.as_string() << "\n";

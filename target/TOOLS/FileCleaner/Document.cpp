@@ -405,7 +405,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 
    uint64_t uMax = argumentsList["max"].as_uint64(); // Get the maximum number of lines to be printed
 
-   for (const auto& itRowFile : *ptableFile)
+   for(const auto& itRowFile : *ptableFile)
    {
       // ## Generate the full file path (folder + filename)
       auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
@@ -420,7 +420,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
       gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
       if( stringState.empty() == false ) arguments_.set("state", stringState.data()); // Set the state (code, comment, string) to search in
       auto result_ = COMMAND_ListLinesWithPattern( arguments_ , patternsFind, ptableLineList );
-      if (result_.first == false)
+      if(result_.first == false)
       {
          ERROR_Add(result_.second); // Add error to the internal error list
       }
@@ -817,16 +817,16 @@ gd::table::dto::table CDocument::RESULT_RowCount()
    auto* ptableFileCount = CACHE_Get("file-count", false);                                         assert( ptableFileCount != nullptr );
 
    // ## Iterate through the rows in the file-count table
-   for (const auto& itRowCount : *ptableFileCount)
+   for(const auto& itRowCount : *ptableFileCount)
    {
       uint64_t iFileKey = itRowCount.cell_get_variant_view("file-key").as_uint64();
       uint64_t uCount = itRowCount.cell_get_variant_view("count").as_uint64();
       auto stringFilename = itRowCount.cell_get_variant_view("filename").as_string();
 
       // Find the corresponding row in the file table using the file key
-      for (const auto& itRowFile : *ptableFile)
+      for(const auto& itRowFile : *ptableFile)
       {
-         if (itRowFile.cell_get_variant_view("key").as_uint64() == iFileKey)
+         if(itRowFile.cell_get_variant_view("key").as_uint64() == iFileKey)
          {
             auto stringFolder = itRowFile.cell_get_variant_view("folder").as_string();
 
