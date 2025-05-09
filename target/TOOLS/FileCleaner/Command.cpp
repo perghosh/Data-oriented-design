@@ -613,6 +613,16 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 
    unsigned uFindInState = eStateCode; // state of the parser
 
+   // ## if state is sent than try to figure out from what state to find patterns
+   if( argumentsPath.exists("state") == true )
+   {
+      std::string stringState = argumentsPath["state"].as_string();
+      if( stringState == "comment" ) uFindInState = eStateComment;
+      else if( stringState == "string" ) uFindInState = eStateString;
+      else if( stringState == "code" ) uFindInState = eStateCode;
+      else if( stringState == "all" ) uFindInState = ( eStateComment | eStateString | eStateCode );
+   }
+
    uint64_t uFileKey = argumentsPath["file-key"]; // key to file for main table holding activ files
 
    // ## prepare source file
@@ -633,11 +643,15 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    auto result_ = COMMAND_PrepareState( {{"source",stringFile}}, state_);
    if( result_.first == false ) return result_;                               // error in state preparation
 
+
    uint64_t uCountNewLine = 0;                                                // counts all new lines in file (all '\n' characters)
 
    // ## find pattern in code, returns index to found pattern within patternsFind if match, otherwise -1
-   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, const std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
-      {  // ## adds line with information about found pattern to table holding matches
+   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
+      {  
+         stringText = gd::utf8::trim_to_string(stringText);                   // trim
+
+         // ## adds line with information about found pattern to table holding matches
          auto uRow = ptable_->row_add_one();
          ptable_->cell_set(uRow, "key", uRow + 1);
          ptable_->cell_set(uRow, "file-key", uFileKey);
@@ -661,7 +675,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
 
    // ## Process the file
-   while (lineBuffer.eof() == false)
+   while(lineBuffer.eof() == false)
    {
       uCountNewLine += lineBuffer.count('\n');                                // count all new lines in buffer
 
@@ -685,7 +699,6 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                      auto uPosition = it - first_;
                      uRow -= lineBuffer.count('\n', uPosition);               // subtract number of new lines in buffer from current position to get the right row
 
-                     stringSourceCode = gd::utf8::trim_to_string(stringSourceCode); // trim source code
                      std::string_view stringPattern = patternsFind.get_pattern(iPattern);
                      add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
                   }
@@ -715,7 +728,6 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                   auto uPosition = it - first_;
                   uRow -= lineBuffer.count('\n', uPosition);                  // subtract number of new lines in buffer from current position to get the right row
 
-                  stringSourceCode = gd::utf8::trim_to_string(stringSourceCode); // trim source code
                   std::string_view stringPattern = patternsFind.get_pattern(iPattern);
                   add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
                }
@@ -736,24 +748,62 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
             stringText += *it;                                                // add character to text for analysis
             // ## check if we have found end of state
             unsigned uLength;
-            if( state_.deactivate( it, &uLength ) == true ) 
+            if( state_.deactivate(it, &uLength, gd::expression::parse::state::tag_manual{}) == true ) // NOTE: this needs manual reset of internal state
             {
-               if( uFindInState & (eStateComment|eStateString) )
+               if( uFindInState != eStateCode && stringText.empty() == false )
                {
-                  if( state_.is_comment() == true && (uFindInState & eStateComment) )
+                  if( uFindInState & ( eStateComment | eStateString ) )        // if find text in comment or string
                   {
-                     //count_(stringText);
-                  }
-                  else if( state_.is_string() == true && ( uFindInState & eStateString ) )
-                  {
-                     //count_(stringText);
-                  }
-               }
+                     if( ( state_.is_comment() == true && ( uFindInState & eStateComment ) ) ||
+                         ( state_.is_string() == true && ( uFindInState & eStateString ) ) )
+                     {
+                        uint64_t uColumn;
+                        int iPattern = patternsFind.find_pattern(stringText, &uColumn); // try to find pattern in string
+                        if( iPattern != -1 )                                           // did we find a pattern?
+                        {
+                           // ## figure ot row and column
+                           auto uRow = uCountNewLine; // row number for current buffer
+                           auto uPosition = it - first_;
+                           uRow -= lineBuffer.count('\n', uPosition);         // subtract number of new lines in buffer from current position to get the right row
+
+                           std::string_view stringPattern = patternsFind.get_pattern(iPattern);
+                           add_line_to_table_(iPattern, stringText, uRow, uColumn, stringPattern); // add line to table
+                        }
+                     }
+                  } // if( uFindInState & ( eStateComment | eStateString ) )
+               } // if( stringText.empty() == false )
+
+               state_.clear_state();                                           // clear state
                stringText.clear();                                             // clear text for analysis
 
 
-               if( uLength > 1 ) it += ( uLength - 1 );                       // skip to end of state marker and if it is more than 1 character, skip to end of state
+               if( uLength > 1 ) it += ( uLength - 1 );                        // skip to end of state marker and if it is more than 1 character, skip to end of state
                continue;
+            }
+
+            if( *it == '\n' )
+            {
+               if( (uFindInState & ( eStateComment | eStateString )) && stringText.empty() == false )
+               {
+                  if( ( state_.is_comment() == true && ( uFindInState & eStateComment ) ) ||
+                      ( state_.is_string() == true && ( uFindInState & eStateString ) ) )
+                  {
+                     uint64_t uColumn;
+                     int iPattern = patternsFind.find_pattern(stringText, &uColumn); // try to find pattern in string
+                     if( iPattern != -1 )                                      // did we find a pattern?
+                     {
+                        // ## figure ot row and column
+                        auto uRow = uCountNewLine;                             // row number for current buffer
+                        auto uPosition = it - first_;
+                        uRow -= lineBuffer.count('\n', uPosition);             // subtract number of new lines in buffer from current position to get the right row
+
+                        std::string_view stringPattern = patternsFind.get_pattern(iPattern);
+                        add_line_to_table_(iPattern, stringText, uRow, uColumn, stringPattern); // add line to table
+                     }
+                  }
+               }
+
+               stringText.clear();                                             // clear text for analysis
             }
          }
       }

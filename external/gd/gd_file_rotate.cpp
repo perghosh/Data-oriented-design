@@ -1,3 +1,12 @@
+/**
+ * \file gd_file_rotate.cpp
+ * \file gd_file_rotate.cpp
+ * \file gd_file_rotate.cpp
+ * \file gd_file_rotate.cpp
+ * \file gd_file_rotate.cpp
+ * 
+ */ 
+
 #include <stdlib.h>
 #include <algorithm>
 #include <fstream>
@@ -460,10 +469,10 @@ std::string backup_history::time_now_s( tag_filename )
  */
 std::string backup_history::year_now_s()
 {
-   time_t uCurrentTime;                                                          // has current time
-   time(&uCurrentTime);                                                          // get current time
-   char pbszTime[sizeof "2000"];                                                 // buffer storing year value as text
-   strftime(pbszTime, sizeof(pbszTime), "%Y", localtime(&uCurrentTime));         // format year as text
+   time_t uCurrentTime;                                                        // has current time
+   time(&uCurrentTime);                                                        // get current time
+   char pbszTime[sizeof "2000"];                                               // buffer storing year value as text
+   strftime(pbszTime, sizeof(pbszTime), "%Y", localtime(&uCurrentTime));       // format year as text
 
    return pbszTime;
 }
@@ -486,13 +495,13 @@ std::pair<bool, std::string> backup_history::file_stash_log_s(const std::string_
    std::string stringBackupHistory; // keep backup name for history file if there is one
 
    // ## read history file containing date and backed up log files
-   auto vectorHistory = file_read_date_name_s(stringHistoryFileName);            // read history information
+   auto vectorHistory = file_read_date_name_s(stringHistoryFileName);          // read history information
    if( vectorHistory.empty() == false )
    {
       iMaxIndex = gd::file::rotate::backup_history::find_max_index(vectorHistory); // find max index
-      iMaxIndex += 1;                                                            // add one to new backup name for log file
+      iMaxIndex += 1;                                                          // add one to new backup name for log file
 
-      stringBackupHistory = file_backup_as_temporary_s(stringHistoryFileName);   // backup history file
+      stringBackupHistory = file_backup_as_temporary_s(stringHistoryFileName); // backup history file
    }
 
    // backup log file to file with generated name based on parameters sent to `file_backup_log_s`
@@ -501,7 +510,7 @@ std::pair<bool, std::string> backup_history::file_stash_log_s(const std::string_
    if( bOk == true )
    {
       std::string stringDateTime = gd::file::rotate::backup_history::datetime_now_s(); // get current time
-      vectorHistory.push_back({ stringDateTime, stringBackupTo });               // adds date and filename to vector
+      vectorHistory.push_back({ stringDateTime, stringBackupTo });             // adds date and filename to vector
    }
 
    // ## sort on time, latest time is placed first and oldest last
@@ -509,9 +518,9 @@ std::pair<bool, std::string> backup_history::file_stash_log_s(const std::string_
       return v1.first > v2.first;
    });
 
-   file_delete_backup_s(vectorHistory, uCount);                                  // delete entries from vector (and files)
+   file_delete_backup_s(vectorHistory, uCount);                                // delete entries from vector (and files)
 
-   file_write_date_name_s(stringHistoryFileName, vectorHistory, false);          // update history file
+   file_write_date_name_s(stringHistoryFileName, vectorHistory, false);        // update history file
 
    if( stringBackupHistory.empty() == false ) file_delete_backup_s(stringBackupHistory); // delete backup
 
