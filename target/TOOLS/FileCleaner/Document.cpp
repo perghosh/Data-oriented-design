@@ -389,7 +389,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
  *   that match the patterns and updates the "file-linelist" table with the results.
  * - If an error occurs during the process, it is added to the internal error list.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern, uint64_t uMax )
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList )
 {                                                                                                  assert(vectorPattern.empty() == false); // Ensure the pattern list is not empty
                                                                                                    assert(vectorPattern.size() < 64);      // Ensure the pattern list contains fewer than 64 patterns
    gd::parse::patterns patternsFind(vectorPattern);
@@ -398,6 +398,11 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
    assert(ptableFile != nullptr);
+
+   std::string_view stringState;
+   if( argumentsList.exists("state") == true ) { stringState = argumentsList["state"].as_string_view(); } // Get the state (code, comment, string) to search in
+
+   uint64_t uMax = argumentsList["max"].as_uint64(); // Get the maximum number of lines to be printed
 
    for (const auto& itRowFile : *ptableFile)
    {
@@ -411,7 +416,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
       auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
 
       // Find lines with patterns and update the "file-linelist" table
-      auto result_ = COMMAND_ListLinesWithPattern({{"source", stringFile}, {"file-key", uKey}}, patternsFind, ptableLineList);
+      gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+      if( stringState.empty() == false ) arguments_.set("state", stringState.data()); // Set the state (code, comment, string) to search in
+      auto result_ = COMMAND_ListLinesWithPattern( arguments_ , patternsFind, ptableLineList );
       if (result_.first == false)
       {
          ERROR_Add(result_.second); // Add error to the internal error list

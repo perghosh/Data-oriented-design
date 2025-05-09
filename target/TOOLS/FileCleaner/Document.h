@@ -86,7 +86,7 @@ public:
    std::pair<bool, std::string> FILE_FilterBinaries();
    std::pair<bool, std::string> FILE_UpdateRowCounters();
    std::pair<bool, std::string> FILE_UpdatePatternCounters( const std::vector<std::string>& vectorPattern );
-   std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector<std::string>& vectorPattern, uint64_t uMax );
+   std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList );
       
 //@}
 
