@@ -44,7 +44,7 @@ void backup_history::common_construct(const backup_history& o)
 - `HH` : 24-digit hour (0 to 23)
 - `mm` : Minutes (0 to 59)
 - `ss` : Seconds (0 to 59) 
-- `Z`: If Z is present, date will be set to UTC. If Z is not present, it�ll be Local Time. (This only applies if time is provided.)
+- `Z`: If Z is present, date will be set to UTC. If Z is not present, it will be Local Time. (This only applies if time is provided.)
 
 *DATETIME FILENAME*
  ```
@@ -509,9 +509,9 @@ std::pair<bool, std::string> backup_history::file_stash_log_s(const std::string_
       return v1.first > v2.first;
    });
 
-   file_delete_backup_s(vectorHistory, uCount);                                  // delete entries from vector (and files)
+   file_delete_backup_s(vectorHistory, uCount);                                // delete entries from vector (and files)
 
-   file_write_date_name_s(stringHistoryFileName, vectorHistory, false);          // update history file
+   file_write_date_name_s(stringHistoryFileName, vectorHistory, false);        // update history file
 
    if( stringBackupHistory.empty() == false ) file_delete_backup_s(stringBackupHistory); // delete backup
 
