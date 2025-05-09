@@ -483,7 +483,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
    lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
 
    // ## Process the file
-   while (lineBuffer.eof() == false)
+   while(lineBuffer.eof() == false)
    {
       auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});
 

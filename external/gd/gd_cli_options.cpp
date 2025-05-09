@@ -451,7 +451,7 @@ void options::iif( const std::string_view& stringName, std::function< void( cons
  * Prints information about commands and arguments for each command
  * @param stringDocumentation reference to string getting documentation text
 */
-void options::print_documentation( std::string& stringDocumentation ) const
+void options::print_documentation( std::string& stringDocumentation, tag_documentation_table ) const
 {
    std::string stringLine;
    std::string stringPrint;   /// 
@@ -479,10 +479,117 @@ void options::print_documentation( std::string& stringDocumentation ) const
       stringLine += it.description();
       stringLine += "*\n";
       stringDocumentation += stringLine;
-      it.print_documentation( stringDocumentation );
+      it.print_documentation( stringDocumentation, tag_documentation_table{});
    }
 
 }
+
+void options::print_documentation( std::string& stringDocumentation, tag_documentation_dense ) const
+{
+   constexpr size_t uNameColumnWidth = 30; // Adjust column width for option names
+   constexpr char chSeparator = '-';      // Separator for sections
+
+   std::ostringstream ossDocumentation;
+
+   // Header for options
+   ossDocumentation << "Available Options:\n";
+   ossDocumentation << std::string(uNameColumnWidth + 50, chSeparator) << "\n"; // Dynamic separator line
+
+   // Format and print each option
+   for(const auto& option : m_vectorOption)
+   {
+      std::string stringName = "[" + std::string(option.name()) + "]";
+      if(stringName.size() < uNameColumnWidth)
+      {
+         stringName.append(uNameColumnWidth - stringName.size(), ' '); // Align names to column width
+      }
+
+      ossDocumentation << stringName << "  " << option.description() << "\n";
+   }
+
+   // Add a blank line after options
+   ossDocumentation << "\n";
+
+   // Process sub-options
+   for(const auto& subOption : m_vectorSubOption)
+   {
+      ossDocumentation << "## " << subOption.name() << "\n";
+      ossDocumentation << subOption.description() << "\n";
+      ossDocumentation << std::string(uNameColumnWidth + 50, chSeparator) << "\n"; // Separator for sub-options
+
+      // Recursively print sub-option documentation
+      subOption.print_documentation(stringDocumentation, tag_documentation_dense{});
+   }
+
+   // Append the formatted string to the provided documentation
+   stringDocumentation += ossDocumentation.str();
+
+}
+
+void options::print_documentation(std::string& stringDocumentation, tag_documentation_verbose) const
+{
+   // ## Header
+   stringDocumentation += "\n";
+   stringDocumentation += "HELP - Command Line Documentation\n";
+   stringDocumentation += "=================================\n";
+
+   stringDocumentation += "\nGlobal options:\n------------------------------\n";
+
+   // ## Global options (e.g., logging, print)
+   for(const auto& option : m_vectorOption)
+   {
+      stringDocumentation += option.name().data() + std::string("\n");
+
+      // Description (indented)
+      stringDocumentation += std::string( "   " ) + option.description().data() + std::string( "\n" );
+   }
+
+   stringDocumentation += "\n\nCommands:\n------------------------------\n";
+
+   // Sub-options (e.g., count, copy)
+   for(const auto& option_ : m_vectorSubOption)
+   {
+      stringDocumentation += "## " + option_.name() + "\n";                    // Sub-option (global option value) name as a section header
+      stringDocumentation += "    " + option_.description() + "\n";            // Description (indented)
+
+      print_suboption_options(option_, stringDocumentation);
+
+      stringDocumentation += "\n";
+   }
+
+   stringDocumentation += "=================================\n";               // footer
+}
+
+// Helper function to print options for a sub-option (e.g., count’s source, pattern)
+void options::print_suboption_options(const options& optionsSub, std::string& stringDocumentation) const
+{
+   bool bHasOptions = false;
+   size_t uMaxOptionNameLength = 15; // For aligning option names
+
+   // Calculate max length for alignment (optional, for better formatting)
+   for(const auto& option : optionsSub)                                           // Adjust based on actual method
+   {
+      uMaxOptionNameLength = std::max(uMaxOptionNameLength, option.name().size());
+   }
+
+   for(const auto& option : optionsSub)                                           // Adjust based on actual method
+   {
+      if(bHasOptions == false)
+      {
+         stringDocumentation += "  Options:\n";
+         bHasOptions = true;
+      }
+
+      std::string stringName( option.name() );
+      std::string stringDescription( option.description() );
+
+      // Format option
+      stringDocumentation += "    - " + stringName;
+      stringDocumentation += std::string(uMaxOptionNameLength - stringName.size() + 2, ' ');
+      stringDocumentation += stringDescription + "\n";
+   }
+}
+
 
 bool options::sub_exists(const std::string_view& stringName)
 {
