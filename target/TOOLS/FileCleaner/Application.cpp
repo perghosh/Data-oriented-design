@@ -202,9 +202,12 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       std::string stringSource = (*poptionsActive)["source"].as_string();                          
       PathPrepare_s(stringSource);                                   // if source is empty then set it to current path
 
-      int iRecursive = ( *poptionsActive )["recursive"].as_int();                                  //LOG_INFORMATION_RAW("== --recursive: " & iRecursive);
+      int iRecursive = ( *poptionsActive )["recursive"].as_int();
+      if( poptionsActive->exists("D") == true ) iRecursive = 16;               // set to 16 if D is set, find all files
       gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
       std::string stringFilter = ( *poptionsActive )["filter"].as_string();
+
+      
 
       auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);     // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( result_.first == false ) return result_;
@@ -215,7 +218,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       uint64_t uMax = ( *poptionsActive )["max"].as_uint64();                  // max number of lines to be printed
       if( uMax == 0 ) uMax = 512;                                              // default to 512 lines
 
-      result_ = pdocument->FILE_UpdatePatternList( vectorPattern, uMax );      // count rows in harvested files
+      gd::argument::shared::arguments argumentsList({  {"max", uMax} });
+      std::string stringSegment = ( *poptionsActive )["segment"].as_string();  // type of segment to search in, code, comment or string, maybe all
+      if( stringSegment.empty() == false ) argumentsList.set("state", stringSegment.c_str());
+
+      result_ = pdocument->FILE_UpdatePatternList( vectorPattern, argumentsList );      // count rows in harvested files
       if( result_.first == false ) return result_;
 
       auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
@@ -797,6 +804,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "source", 's', "File/folders where to search for patterns in"});
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "max", "Max list count to avoid too many hits"});
+      optionsCommand.add({ "segment", "type of segment in code to searh in"});
+      optionsApplication.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
@@ -1043,16 +1052,27 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
       commands_nodeChild = xmldocument.append_child("commands");
    }
 
+   int iCount = 1;
    // Check if command already exists
    for( auto command : commands_nodeChild.children("command") )
    {
       if( command.child_value() == stringArguments )
       {
          commands_nodeChild.remove_child(command); // remove command if it exists
+         pugi::xml_node count_node = command.child("count");
+
+         if( count_node )
+         {
+            iCount = std::stoi(count_node.child_value()) + 1;
+         }
       }
    }
 
-   commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
+   //commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
+   pugi::xml_node command_node = commands_nodeChild.append_child("command");
+   command_node.append_child(pugi::node_pcdata).set_value(stringArguments);
+   command_node.append_child("count").append_child(pugi::node_pcdata).set_value(std::to_string(iCount).c_str());
+
    xmldocument.save_file(stringFilePath.c_str());
 #else
 #endif
