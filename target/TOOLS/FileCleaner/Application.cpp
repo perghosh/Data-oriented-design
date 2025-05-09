@@ -314,6 +314,7 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
  * ### Arguments in optionsApplication:
  * - `source` (string, required): Specifies the file or folder to count lines in.
  * - `recursive` (integer, optional): Specifies the depth for recursive operations.
+ * - `R` hardcoded recursive and sets depth to 16 (all).
  * - `filter` (string, optional): A filter to apply to the files. If empty, all files are counted.
  * - `pattern` (string, optional): Patterns to search for, separated by `,` or `;`.
  * - `print` (flag, optional): Indicates whether to print the results to the console.
