@@ -1,9 +1,4 @@
 /**
- * \file gd_file_rotate.cpp
- * \file gd_file_rotate.cpp
- * \file gd_file_rotate.cpp
- * \file gd_file_rotate.cpp
- * \file gd_file_rotate.cpp
  * 
  */ 
 
