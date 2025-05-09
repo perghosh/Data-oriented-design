@@ -2,7 +2,8 @@
 * \file Document.cpp
 * 
 * ### 0TAG0 File navigation, mark and jump to common parts
-* - `0TAG0CACHE` - cache methods
+* - `0TAG0CACHE.Document` - cache methods
+
 */
 
 #include <filesystem>
@@ -492,7 +493,7 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
 }
 
 
-// 0TAG0CACHE
+// 0TAG0CACHE.Document
 
 /** ---------------------------------------------------------------------------  
  * @brief Prepares a cache table for the specified identifier.  

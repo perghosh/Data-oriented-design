@@ -64,6 +64,12 @@ void options::add_flag( const option& optionSource )
 {
    option optionAdd( optionSource );
    optionAdd.set_type( gd::types::eTypeBool );
+
+   // ## if option name is only one character and letter is not set then set letter to first character
+   if( optionAdd.name().length() == 1 && optionAdd.letter() == '\0' )
+   {
+      optionAdd.set_letter(optionAdd.name()[0]);                              // set letter to first character
+   }
    m_vectorOption.push_back( std::move( optionAdd ) );
 }
 
