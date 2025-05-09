@@ -448,6 +448,9 @@ void options::iif( const std::string_view& stringName, std::function< void( cons
 
 /** ---------------------------------------------------------------------------
  * @brief Generate documentation 
+ * 
+ * Documentation is generated in a in columns or almost as columns
+ * 
  * Prints information about commands and arguments for each command
  * @param stringDocumentation reference to string getting documentation text
 */
@@ -484,6 +487,14 @@ void options::print_documentation( std::string& stringDocumentation, tag_documen
 
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Generate documentation
+ * 
+ * Prints information not using to many lines, a bit denser
+ * 
+ * Prints information about commands and arguments for each command
+ * @param stringDocumentation reference to string getting documentation text
+ */
 void options::print_documentation( std::string& stringDocumentation, tag_documentation_dense ) const
 {
    constexpr size_t uNameColumnWidth = 30; // Adjust column width for option names
