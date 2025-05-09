@@ -150,6 +150,7 @@ public:
 
       std::string_view name() const { return m_stringName; }
       char letter() const { return m_chLetter; }
+      void set_letter(char chLetter) { m_chLetter = chLetter; }
       void set_name( const std::string_view& stringName );
       void set_type( unsigned uType ) { m_uType = uType; }
       option& type( unsigned uType ) { m_uType = uType; return *this; }

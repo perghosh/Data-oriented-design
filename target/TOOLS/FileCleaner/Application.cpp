@@ -203,7 +203,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       PathPrepare_s(stringSource);                                   // if source is empty then set it to current path
 
       int iRecursive = ( *poptionsActive )["recursive"].as_int();
-      if( poptionsActive->exists("D") == true ) iRecursive = 16;               // set to 16 if D is set, find all files
+      if( iRecursive == 0 && poptionsActive->exists("R") == true ) iRecursive = 16;// set to 16 if D is set, find all files
       gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
       std::string stringFilter = ( *poptionsActive )["filter"].as_string();
 
@@ -335,7 +335,9 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
    // Harvest files based on the "source" option
    std::string stringSource = ( *poptionsActive )["source"].as_string();
    PathPrepare_s(stringSource);
-   gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", ( *poptionsActive )["recursive"].as_int()} });
+   int iRecursive = ( *poptionsActive )["recursive"].as_int();
+   if( iRecursive == 0 && poptionsActive->exists("R") == true ) iRecursive = 16;// set to 16 if D is set, find all files
+   gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
    auto result_ = pdocument->FILE_Harvest(argumentsPath);                                          if( !result_.first ) { return result_; }
 
    // Apply file filters if specified
@@ -769,6 +771,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
+      optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
@@ -805,7 +808,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "max", "Max list count to avoid too many hits"});
       optionsCommand.add({ "segment", "type of segment in code to searh in"});
-      optionsApplication.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
+      optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});

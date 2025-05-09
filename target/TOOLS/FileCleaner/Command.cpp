@@ -594,6 +594,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
  * @param argumentsPath The arguments container containing the input parameters:
  *        - `source` (string): The source file path to search for patterns.
  *        - `file-key` (uint64_t): A unique key identifying the file in the main table.
+ *        - `state` (string): The state to search for patterns in (e.g., "comment", "string", "code", "all").
  * @param patternsFind The patterns to search for in the file.
  * @param ptable_ A pointer to the table where the matching lines will be stored.
  *        Each row in the table contains:
@@ -818,8 +819,6 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
          lineBuffer.update(uReadSize);                                        // update valid size in line buffer
       }
    }
-
-
 
    return { true, "" };
 }
