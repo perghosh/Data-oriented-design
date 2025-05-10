@@ -34,6 +34,12 @@ int main(int iArgumentCount, char** ppbszArgument)
       result_ = papplication_->Initialize();                                                     assert( result_.first );
       if( result_.first == false ) { assert( false ); std::cout << "Error: " << result_.second << "\n"; assert( false ); return -1; }
 
+      std::string stringError = papplication_g->ERROR_Report();
+      if( stringError.empty() == false )
+      {
+         std::cout << "\n\nFound internal errors: " << stringError << "\n";
+      }
+
       papplication_->Exit();
    }
    catch( const std::exception& e_ )
@@ -52,7 +58,6 @@ int main(int iArgumentCount, char** ppbszArgument)
    {
       std::cout << "\n\nError: Unknown exception\n";                                               assert(false);
    }
-
 
    return 0;
 }

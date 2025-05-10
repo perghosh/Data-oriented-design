@@ -110,7 +110,15 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::
          {
             if( it.is_regular_file() == true )                
             {
-               add_(gd::file::path(it.path()));
+               try
+               {
+                  std::string string_ = it.path().string();
+                  add_(gd::file::path(string_));
+               }
+               catch( const std::exception& e )
+               {
+                  papplication_g->ERROR_Add("Error reading file: " + std::string(e.what()));
+               }
             }
          }
       }
