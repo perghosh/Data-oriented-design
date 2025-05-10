@@ -32,10 +32,10 @@ Counts lines in files or folders.
 - `--source <path>`: File or folder to count lines in.
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--filter <pattern>`: Filter files using wildcard patterns (e.g., `*.h;*.cpp`).
-- `--comment <start,end>`: Specify comment delimiters (e.g., `//,/* */`).
-- `--string <start,end>`: Specify string delimiters (e.g., `"`, `'`).
 - `--output <file>`: Save the output to a file.
+- `--sort`: Sort the output by column name, this is when result is printed to console.
 - `--table <name>`: Specify a table name for SQL output.
+- `-R` Search recursively in current or selected folder as deep as possible (max 16 levels).
 
 ---
 
@@ -43,10 +43,12 @@ Counts lines in files or folders.
 Lists rows matching specified patterns in files or folders.
 
 **Options:**
-- `--source <path>`: File or folder to search for patterns.
+- `--max <count>`: Limit the number of results.
 - `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
-- `--max <count>`: Limit the number of results.
+- `--segment`: Segment in code to find patterns. Valid segments now are code, **comment**, **string**, and **all** (all = all code).
+- `--source <path>`: File or folder to search for patterns.
+- `-R` Search recursively in current or selected folder as deep as possible (max 16 levels).
 
 ---
 
@@ -64,14 +66,16 @@ Displays the version of the application.
 
 ### Count lines in files found in active folder
 Go to folder and write (windows) `cleaner.exe count` and linux `cleaner count`  
+Sort by column name "filename" and print to console: `cleaner count -R --sort filename`
+Sort on code lines and only count lines in cpp files: `cleaner count -R --sort code --filter *.cpp `
 
 List rows matching specified patterns in files or folders.
 `cleaner list /home/username/dev/project/src/ --pattern text-to-find --recursive 3`
 
-### Count lines in a folder recursively
+Count lines in a folder recursively
 `cleaner.exe count --source "C:\dev\project" --recursive 3 --filter ".cpp;.h" --output "result.txt"`
 
-### List patterns in files
+List patterns in files
 `cleaner.exe list --source "D:\tests" --recursive 2 --pattern "TEST_CASE,EXPECT,static_assert"`
 
 
