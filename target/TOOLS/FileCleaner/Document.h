@@ -110,6 +110,9 @@ public:
    /// Return table with cache data
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId, bool bLoad );
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId ) { return CACHE_Get( stringId, true ); }
+   /// Sort cached table for specified column
+   std::pair<bool, std::string> CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_ );
+
    /// Return information to generate cache data
    std::pair<bool, std::string> CACHE_GetInformation( const std::string_view& stringId, gd::argument::arguments& argumentsCache );
    gd::argument::arguments CACHE_GetInformation( const std::string_view& stringId );
