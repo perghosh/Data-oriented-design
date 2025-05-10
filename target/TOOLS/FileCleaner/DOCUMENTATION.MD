@@ -33,6 +33,7 @@ Counts lines in files or folders.
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--filter <pattern>`: Filter files using wildcard patterns (e.g., `*.h;*.cpp`).
 - `--output <file>`: Save the output to a file.
+- `--pattern <patterns>`: Patterns to count, separated by `,` or `;`. Note that adding pattern to count switches to count number of times pattern is found instead of counting lines and segments
 - `--sort`: Sort the output by column name, this is when result is printed to console.
 - `--table <name>`: Specify a table name for SQL output.
 - `-R` Search recursively in current or selected folder as deep as possible (max 16 levels).
