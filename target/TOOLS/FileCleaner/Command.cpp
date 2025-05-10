@@ -989,8 +989,6 @@ std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::ar
       return { false, "Unknown file type: " + stringFile };
    }
    
-
-
    return { true, "" };
 }
 
