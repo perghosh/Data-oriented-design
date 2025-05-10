@@ -869,17 +869,17 @@ std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::ar
    else if( stringExtension == ".js" || stringExtension == ".ts" || stringExtension == ".tsx" || stringExtension == ".jsx" )
    {
       state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("COMMENTBLOCK"), "/*", "*/");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
       state_.add(std::string_view("STRING"), "\"", "\"", "\\");
       state_.add(std::string_view("STRING"), "\'", "\'", "\\");
       state_.add(std::string_view("RAWSTRING"), "`", "`");
 
-      if( stringExtension == ".jsx" || stringExtension == ".tsx" ) { state_.add(std::string_view("COMMENTBLOCK"), "{/*", "*/}"); }
+      if( stringExtension == ".jsx" || stringExtension == ".tsx" ) { state_.add(std::string_view("BLOCKCOMMENT"), "{/*", "*/}"); }
    }
    else if( stringExtension == ".go" )
    {
       state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("COMMENTBLOCK"), "/*", "*/");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
       state_.add(std::string_view("STRING"), "\"", "\"", "\\"); // Double-quoted
       state_.add(std::string_view("RAWSTRING"), "`", "`");      // Raw string (no escaping)
    }
@@ -902,6 +902,7 @@ std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::ar
    else if( stringExtension == ".py" )
    {
       state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "\"\"\"", "\"\"\"");
       state_.add(std::string_view("STRING"), "\"", "\"");
    }
    else if( stringExtension == ".sql" )
