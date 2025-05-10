@@ -375,6 +375,12 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
       result_ = pdocument->FILE_UpdatePatternCounters(vectorPattern);                              if( !result_.first ) { return result_; }
    }
 
+   if( ( *poptionsActive )["sort"].is_true() == true )
+   {
+      std::string stringSortColumn = ( *poptionsActive )["sort"].as_string();
+      result_ = pdocument->CACHE_Sort( "file-count", stringSortColumn );                           if( !result_.first ) { return result_; }
+   }
+
    // Determine output options
    bool bPrint = poptionsActive->exists("print");
    std::string stringOutput = ( *poptionsActive )["output"].as_string();

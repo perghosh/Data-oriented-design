@@ -720,17 +720,20 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
             
             if( *it == '\n' ) 
             { 
-               uint64_t uColumn;
-               int iPattern = patternsFind.find_pattern(stringSourceCode, &uColumn); // try to find pattern in source code
-               if( iPattern != -1 )                                           // did we find a pattern?
+               if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) )
                {
-                  // ## figure ot row and column
-                  auto uRow = uCountNewLine; // row number for current buffer
-                  auto uPosition = it - first_;
-                  uRow -= lineBuffer.count('\n', uPosition);                  // subtract number of new lines in buffer from current position to get the right row
+                  uint64_t uColumn;
+                  int iPattern = patternsFind.find_pattern(stringSourceCode, &uColumn); // try to find pattern in source code
+                  if( iPattern != -1 )                                         // did we find a pattern?
+                  {
+                     // ## figure ot row and column
+                     auto uRow = uCountNewLine; // row number for current buffer
+                     auto uPosition = it - first_;
+                     uRow -= lineBuffer.count('\n', uPosition);                // subtract number of new lines in buffer from current position to get the right row
 
-                  std::string_view stringPattern = patternsFind.get_pattern(iPattern);
-                  add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
+                     std::string_view stringPattern = patternsFind.get_pattern(iPattern);
+                     add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
+                  }
                }
 
                stringSourceCode.clear();
@@ -745,7 +748,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
             stringSourceCode += *it;                                          // add character to source code
          }
          else
-         {
+         {  // Handle state that is outside code
             stringText += *it;                                                // add character to text for analysis
             // ## check if we have found end of state
             unsigned uLength;

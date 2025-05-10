@@ -670,6 +670,66 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
 }
 
 /** ---------------------------------------------------------------------------
+* @brief Sorts a cache table by a specified column.
+*
+* This method sorts the rows of a cache table identified by `stringId` based on the values
+* in the specified column. The column can be identified either by its name (string) or
+* by its index (integer). Sorting can be performed in ascending or descending order.
+*
+* @param stringId The identifier of the cache table to be sorted.
+* @param column_ The column to sort by. This can be:
+*                - A string (e.g., "columnName") to specify the column by name.
+*                  If the string starts with a '-', the sort order will be descending.
+*                - An integer to specify the column by index. A negative value indicates
+*                  descending order.
+*
+* @return A pair containing:
+*         - `bool`: `true` if the sorting was successful, `false` otherwise.
+*         - `std::string`: An empty string on success, or an error message on failure.
+*
+* @details
+* - If the column is specified as a string, the method checks if the column exists in the
+*   table. If the column name starts with a '-', it is treated as a descending sort.
+* - If the column is specified as an integer, the method validates the column index.
+*   A negative index indicates descending order.
+* - The method uses the `sort_null` function of the `gd::table::dto::table` class to
+*   perform the sorting.
+*
+* @pre The cache table identified by `stringId` must exist.
+* @post The rows in the cache table are sorted based on the specified column.
+*
+*/
+std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_)
+{
+   bool bAscending = true;
+   unsigned iColumn = -1;
+   auto* ptable_ = CACHE_Get(stringId, false);                                                     assert(ptable_ != nullptr);
+
+   if( column_.is_string() )
+   {
+      std::string stringColumn = column_.as_string();
+      if( stringColumn[0] == '-' ) { bAscending = false; stringColumn.erase(0, 1); }
+      iColumn = ptable_->column_find_index(stringColumn);
+      if( iColumn == -1 ) { return { false, "Column not found: " + stringColumn }; }
+   }
+   else if( column_.is_integer() )
+   {
+      iColumn = column_.as_int();
+      if( iColumn < 0 )
+      {
+         bAscending = false;
+         iColumn = -iColumn;
+      }
+
+      if( iColumn >= ptable_->get_column_count() ) { return { false, "Column not found: " + std::to_string(iColumn) }; }
+   }
+
+   ptable_->sort_null(iColumn, bAscending);
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Get information about cache to be able to generate data for it
  * 
  * @code

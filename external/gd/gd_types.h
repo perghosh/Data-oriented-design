@@ -376,6 +376,16 @@ namespace detail {
 
 }
 
+// ## helper methods used to check if type is of specific type
+
+constexpr bool is_boolean_g(unsigned uType) { return detail::is_boolean(uType); }
+constexpr bool is_number_g(unsigned uType) { return detail::is_number(uType); }
+constexpr bool is_integer_g(unsigned uType) { return detail::is_integer(uType); }
+constexpr bool is_decimal_g(unsigned uType) { return detail::is_decimal(uType); }
+constexpr bool is_date_g(unsigned uType) { return detail::is_date(uType); }
+constexpr bool is_string_g(unsigned uType) { return detail::is_string(uType); }
+constexpr bool is_binary_g(unsigned uType) { return detail::is_binary(uType); }
+
 
 /** ---------------------------------------------------------------------------
  * @brief Is type number a c primitive value
