@@ -739,6 +739,35 @@ void CApplication::DATABASE_CloseActive()
    }
 }
 
+
+/** ---------------------------------------------------------------------------
+* @brief Add error to internal list of errors
+* @param stringError error information
+*/
+void CApplication::ERROR_Add( const std::string_view& stringError )
+{
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );            // locks `m_vectorError`
+   gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
+   m_vectorError.push_back( std::move(argumentsError) );
+}
+
+std::string CApplication::ERROR_Report() const
+{
+   if( m_vectorError.empty() == false )
+   {
+      std::string stringError;
+      for( const auto& error_ : m_vectorError )
+      {
+         stringError += error_.print();
+         stringError += "\n";
+      }
+      return stringError;
+   }
+
+   return std::string();
+}
+
+
 // 0TAG0OPTIONS.Application
 
 /**

@@ -128,6 +128,15 @@ public:
    void DATABASE_CloseActive();
 //@}
 
+/** \name ERROR
+*///@{
+/// Add error to internal list of errors
+   void ERROR_Add( const std::string_view& stringError );
+   std::string ERROR_Report() const;
+
+//@}
+
+
 
 protected:
 /** \name INTERNAL
@@ -152,7 +161,8 @@ public:
 
    std::unique_ptr<application::database::metadata::CStatements> m_pstatements;   ///< pointer to statement object
 
-
+   std::shared_mutex m_sharedmutexError;        ///< mutex used to manage errors in threaded environment
+   std::vector< gd::argument::arguments > m_vectorError; ///< vector storing internal errors
 
 // ## free functions ------------------------------------------------------------
 public:

@@ -144,7 +144,7 @@ public:
 /// Add error to internal list of errors
    void ERROR_Add( const std::string_view& stringError );
 
-   //@}
+//@}
 
 protected:
 /** \name INTERNAL
