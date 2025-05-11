@@ -25,6 +25,7 @@
 #include <string_view>
 #include <vector>
 #include <memory>
+#include <unordered_set>
 
 #include "gd/gd_table.h"
 
@@ -270,7 +271,7 @@ template <typename TABLE>
 std::vector<gd::variant_view> aggregate<TABLE>::unique(unsigned uColumn, uint64_t uBeginRow, uint64_t uCount) const {  assert(m_ptable != nullptr); assert( uColumn < m_ptable->get_column_count() );
 
    std::vector<gd::variant_view> vectorUnique; // To store unique values
-   std::unordered_set<std::string> seenValues; // To track already seen values
+   std::unordered_set<std::string> setSeen; // To track already seen values
 
    uint64_t uEndRow = uBeginRow + uCount; // Calculate the end row
    if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count();  }

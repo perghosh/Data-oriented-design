@@ -702,7 +702,7 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
 std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_)
 {
    bool bAscending = true;
-   unsigned iColumn = -1;
+   int iColumn = -1;
    auto* ptable_ = CACHE_Get(stringId, false);                                                     assert(ptable_ != nullptr);
 
    if( column_.is_string() )
@@ -721,9 +721,9 @@ std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& strin
          iColumn = -iColumn;
       }
 
-      if( iColumn >= ptable_->get_column_count() ) { return { false, "Column not found: " + std::to_string(iColumn) }; }
+      if( (unsigned)iColumn >= ptable_->get_column_count() ) { return { false, "Column not found: " + std::to_string(iColumn) }; }
    }
-
+                                                                                                   assert( iColumn >= 0 && (unsigned)iColumn < ptable_->get_column_count() );
    ptable_->sort_null(iColumn, bAscending);
 
    return { true, "" };
