@@ -94,6 +94,10 @@ public:
    template<typename TYPE>
    TYPE sum( unsigned uColumn ) const { return sum<TYPE>( uColumn, 0, m_ptable->get_row_count() ); }
 
+   
+   std::vector<gd::variant_view> unique( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+
+
    // ## fix operations performs specific task to handle edge cases
 
    void fix( std::vector<unsigned>& vectorLength, tag_text );
@@ -244,6 +248,67 @@ TYPE aggregate<TABLE>::sum( unsigned uColumn, uint64_t uBeginRow, uint64_t uCoun
    return sum_;
 }
 
+
+
+/**
+ * @brief Retrieves unique values from a specified column within a range of rows.
+ * 
+ * This method iterates over the specified range of rows in the given column
+ * and collects unique values, skipping null values. The uniqueness is determined
+ * by comparing the string representation of the values.
+ * 
+ * @tparam TABLE The table type being aggregated.
+ * @param uColumn The index of the column to retrieve unique values from.
+ * @param uBeginRow The starting row index for the range.
+ * @param uCount The number of rows to include in the range.
+ * @return A vector of unique values as `gd::variant_view` objects.
+ * 
+ * @note If the range exceeds the number of rows in the table, it is truncated
+ *       to the valid range. Null values are ignored during the uniqueness check.
+ */
+template <typename TABLE>
+std::vector<gd::variant_view> aggregate<TABLE>::unique(unsigned uColumn, uint64_t uBeginRow, uint64_t uCount) const {  assert(m_ptable != nullptr); assert( uColumn < m_ptable->get_column_count() );
+
+   std::vector<gd::variant_view> vectorUnique; // To store unique values
+   std::unordered_set<std::string> seenValues; // To track already seen values
+
+   uint64_t uEndRow = uBeginRow + uCount; // Calculate the end row
+   if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count();  }
+
+   bool bHasNull = m_ptable->is_null(); // Check if the table has null values
+
+   for(uint64_t uRow = uBeginRow; uRow < uEndRow; ++uRow)
+   {
+      if(bHasNull && m_ptable->cell_is_null(uRow, uColumn)) continue;          // Skip null values
+
+      
+      gd::variant_view value_ = m_ptable->cell_get_variant_view(uRow, uColumn); // Get the value as a variant_view
+
+      
+      std::string stringValue = value_.as_string();                            // Convert the value to a string for comparison
+
+      // ## Check if the value is already seen
+      if(setSeen.find(stringValue) == setSeen.end()) 
+      {
+         setSeen.insert(stringValue);                                          // Mark as seen
+         vectorUnique.push_back(value_);                                       // Add to unique values
+      }
+   }
+
+   return vectorUnique;
+}
+
+/**
+ * @brief Adjusts the length of binary columns in the vectorLength vector.
+ *
+ * This method iterates through the vectorLength vector and doubles the length
+ * for binary columns. It is used to ensure that the length of binary data is
+ * correctly represented.
+ *
+ * @tparam TABLE The table type being aggregated.
+ * @param vectorLength A reference to a vector of unsigned integers representing lengths.
+ * @param tag_text A tag indicating that this is a text operation.
+ */
 template <typename TABLE>
 void aggregate<TABLE>::fix( std::vector<unsigned>& vectorLength, tag_text ) { assert( m_ptable != nullptr ); assert( vectorLength.empty() == false );
    unsigned uColumnCount = (unsigned)vectorLength.size() < m_ptable->get_column_count() ? (unsigned)vectorLength.size() : m_ptable->get_column_count(); // number of columns to check
