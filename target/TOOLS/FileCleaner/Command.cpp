@@ -854,14 +854,21 @@ std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::ar
    // convert string to lowercase
    std::transform(stringExtension.begin(), stringExtension.end(), stringExtension.begin(), ::tolower);
 
-   if( stringExtension == ".cpp" || stringExtension == ".c" || stringExtension == ".h" || stringExtension == ".hpp" )
+   if( stringExtension.length() < 2 ) return { false, "File extension is too short: " + stringExtension };
+
+   if( stringExtension[1] == 'c' || stringExtension[1] == 'h' )
    {
-      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("RAWSTRING"), "R\"(", ")\"");
+      if( stringExtension == ".cpp" || stringExtension == ".c" || stringExtension == ".cc" || stringExtension == ".cxx" || stringExtension == ".h" || stringExtension == ".hpp" || stringExtension == ".hxx" )
+      {
+         state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+         state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+         state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+         state_.add(std::string_view("RAWSTRING"), "R\"(", ")\"");
+         return { true, "" };
+      }
    }
-   else if( stringExtension == ".cs" || stringExtension == ".fs" || stringExtension == ".kt" || stringExtension == ".swift" )
+   
+   if( stringExtension == ".cs" || stringExtension == ".fs" || stringExtension == ".kt" || stringExtension == ".swift" )
    {
       state_.add(std::string_view("LINECOMMENT"), "//", "\n");
       state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
