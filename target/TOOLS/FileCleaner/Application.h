@@ -20,6 +20,8 @@
 #include "gd/gd_database_odbc.h"
 #include "gd/gd_database_sqlite.h"
 #include "gd/gd_arguments_shared.h"
+#include "gd/expression/gd_expression_parse_state.h"
+#include "gd/parse/gd_parse_match_pattern.h"
 
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_printer.h"
@@ -168,8 +170,12 @@ public:
 public:
    // ## Prepare Application 
 
+   /// Prepare options for application, options are used to parse command-line arguments
    static void Prepare_s( gd::cli::options& optionsApplication );
+   /// Prepare logging for application.
    static void PrepareLogging_s();
+   /// Prepare state used to investigate source files
+   static std::pair<bool, std::string> PrepareState_s(const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state_);
 
    // ## Path operations
    static void PathPrepare_s( std::string& stringPath );

@@ -139,7 +139,7 @@ std::pair<bool, std::string> CApplication::Exit()
 
 // 0TAG0Initialize.Application
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @TAG #option
  * @brief Initializes the application based on the provided command-line options.
  *
  * This method processes the command-line options and performs initialization tasks
@@ -245,7 +245,19 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       if( stringOutput.empty() == true )
       {
          std::string stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
+
+#ifdef _WIN32
+         if( poptionsActive->exists("win") == false )
+         {
+            std::cout << "\n" << stringCliTable << "\n\n";
+         }
+         else
+         {
+            ::OutputDebugStringA(stringCliTable.c_str()); // send to debug output
+         }
+#else
          std::cout << "\n" << stringCliTable << "\n\n";
+#endif // _WIN32
       }
       else
       {
@@ -317,7 +329,7 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
 
 // 0TAG0RUN.Application
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @TAG #run
  * @brief Executes the "count" command based on the provided options.
  *
  * This method processes the "count" command, which involves harvesting files,
@@ -435,7 +447,18 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
       if( bPrint == true ) 
       {
          std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
+#ifdef _WIN32
+         if( poptionsActive->exists("win") == false )
+         {
+            std::cout << "\n" << stringCliTable << "\n\n";
+         }
+         else
+         {
+            ::OutputDebugStringA(stringCliTable.c_str()); // send to debug output
+         }
+#else
          std::cout << "\n" << stringCliTable << "\n\n";
+#endif // _WIN32
       }
 
       // ## Save result if output is specified 
@@ -787,7 +810,7 @@ std::string CApplication::ERROR_Report() const
 
 // 0TAG0OPTIONS.Application
 
-/**
+/** --------------------------------------------------------------------------- @TAG #option
  * @brief Prepares the application options for command-line usage.
  *
  * This method sets up the available command-line options for the application,
@@ -839,6 +862,9 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "stats", "Add statistics to generated output" });
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
+#ifdef _WIN32
+      optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
+#endif
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
@@ -876,6 +902,9 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "max", "Max list count to avoid too many hits"});
       optionsCommand.add({ "segment", "type of segment in code to searh in"});
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
+#ifdef _WIN32
+      optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
+#endif
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
@@ -924,6 +953,182 @@ void CApplication::PrepareLogging_s()
 
 #endif // GD_LOG_SIMPLE
 }
+
+
+
+/** --------------------------------------------------------------------------- @TAG #state
+ * @brief Prepares the state for parsing based on the file extension.
+ * @param argumentsPath The arguments containing the source path for harvesting files.
+ * @param state_ The state object to be prepared.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state_)
+{
+   std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
+   
+   gd::file::path pathFile(stringFile);
+   std::string stringExtension = pathFile.extension().string();
+
+   // convert string to lowercase
+   std::transform(stringExtension.begin(), stringExtension.end(), stringExtension.begin(), ::tolower);
+
+   if( stringExtension.length() < 2 ) return { false, "File extension is too short: " + stringExtension };
+
+   if( stringExtension[1] == 'c' || stringExtension[1] == 'h' )
+   {
+      if( stringExtension == ".cpp" || stringExtension == ".c" || stringExtension == ".cc" || stringExtension == ".cxx" || stringExtension == ".h" || stringExtension == ".hpp" || stringExtension == ".hxx" )
+      {
+         state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+         state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+         state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+         state_.add(std::string_view("RAWSTRING"), "R\"(", ")\"");
+         return { true, "" };
+      }
+   }
+   
+   if( stringExtension == ".cs" || stringExtension == ".fs" || stringExtension == ".kt" || stringExtension == ".swift" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("RAWSTRING"), "\"\"\"", "\"\"\"");
+   }
+   else if( stringExtension == ".java" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+   }
+   else if( stringExtension == ".js" || stringExtension == ".ts" || stringExtension == ".tsx" || stringExtension == ".jsx" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+      state_.add(std::string_view("RAWSTRING"), "`", "`");
+
+      if( stringExtension == ".jsx" || stringExtension == ".tsx" ) { state_.add(std::string_view("BLOCKCOMMENT"), "{/*", "*/}"); }
+   }
+   else if( stringExtension == ".go" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\"); // Double-quoted
+      state_.add(std::string_view("RAWSTRING"), "`", "`");      // Raw string (no escaping)
+   }
+   else if( stringExtension == ".rs" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+   }
+   else if( stringExtension == ".html" || stringExtension == ".xml" )
+   {
+      state_.add(std::string_view("BLOCKCOMMENT"), "<!--", "-->");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".css" )
+   {
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".py" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "\"\"\"", "\"\"\"");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".sql" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "--", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".php" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+   }
+   else if( stringExtension == ".lua" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "--", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "--[[", "]]");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+      state_.add(std::string_view("RAWSTRING"), "[[", "]]");
+   }
+   else if( stringExtension == ".rb" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "=begin", "=end");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+   }
+   else if( stringExtension == ".json" )
+   {
+      state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".pl" || stringExtension == ".pm" ) 
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+   }
+   else if( stringExtension == ".sh" || stringExtension == ".bash" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+   }
+   else if( stringExtension == ".yaml" || stringExtension == ".yml" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+   }
+   else if( stringExtension == ".toml" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+   }
+   else if( stringExtension == ".dart" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("RAWSTRING"), "r\"", "\"");
+   }
+   else if( stringExtension == ".clj" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), ";", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+   }
+   else if( stringExtension == ".vim" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "\"", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\'");
+   }
+   else if( stringExtension == ".txt" || stringExtension == ".md" )
+   {
+      // No special states for text files
+   }
+   else
+   {
+      return { false, "Unknown file type: " + stringFile };
+   }
+   
+   return { true, "" };
+}
+
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief Ensures the provided path is absolute. If the path is empty, it sets it to the current working directory.
