@@ -35,6 +35,7 @@ Counts lines in files or folders.
 - `--output <file>`: Save the output to a file.
 - `--pattern <patterns>`: Patterns to count, separated by `,` or `;`. Note that adding pattern to count switches to count number of times pattern is found instead of counting lines and segments
 - `--sort`: Sort the output by column name, this is when result is printed to console.
+- `--stats`: Show statistics for the specified pattern. For now "sum" is the only statistic available.
 - `--table <name>`: Specify a table name for SQL output.
 - `-R` Search recursively in current or selected folder as deep as possible (max 16 levels).
 
