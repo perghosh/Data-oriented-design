@@ -339,7 +339,9 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
 std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* poptionsActive )
 {                                                                                                  assert( poptionsActive != nullptr );
    enum { linecount_report_, patterncount_report_ };
+   enum stats { stats_none_ = 0, stats_sum_ = 0x01, stats_count_ = 0x02, stats_relation_ = 0x04 };
    int iReportType = linecount_report_; // default to line report
+   unsigned uStatistics = stats_none_; // default to no statistics
 
    // Add a document for the "count" command
    auto* pdocument = DOCUMENT_Add("count");
@@ -375,11 +377,23 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
       result_ = pdocument->FILE_UpdatePatternCounters(vectorPattern);                              if( !result_.first ) { return result_; }
    }
 
+   // ## Determine sorting options
    if( ( *poptionsActive )["sort"].is_true() == true )
    {
       std::string stringSortColumn = ( *poptionsActive )["sort"].as_string();
       result_ = pdocument->CACHE_Sort( "file-count", stringSortColumn );                           if( !result_.first ) { return result_; }
    }
+
+   // ## Determine statistics options
+   if( ( *poptionsActive )["stats"].is_true() == true )
+   {
+      std::string stringStats = ( *poptionsActive )["stats"].as_string();
+      if( stringStats.find("sum") != std::string::npos ) uStatistics |= stats_sum_;
+      if( stringStats.find("count") != std::string::npos ) uStatistics |= stats_count_;
+      if( stringStats.find("relation") != std::string::npos ) uStatistics |= stats_relation_;
+      if( uStatistics == 0 ) uStatistics = stats_sum_;                         // default if no other is sum
+   }
+
 
    // Determine output options
    bool bPrint = poptionsActive->exists("print");
@@ -387,17 +401,41 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
    bool bOutput = ( *poptionsActive )["output"].is_true();
 
    if( !bPrint && !bOutput && stringOutput.empty() ) { bPrint = true; }        // Default to printing if no output options are specified
+   if( bPrint == true && uStatistics == 0 ) { uStatistics = stats_sum_; }      // set output to stdout if print is set
    
-   if( bPrint || bOutput || !stringOutput.empty() )                            // Generate and handle results
+   if( bPrint || bOutput || !stringOutput.empty() )                            // Generate and handle results ?
    {
       gd::table::dto::table tableResult;
-      if( iReportType == linecount_report_ )
+      if( iReportType == linecount_report_ ) { tableResult = pdocument->RESULT_RowCount(); }
+      else                                   { tableResult = pdocument->RESULT_PatternCount(); }
+
+
+      // ## prepare statistics
+
+      if( uStatistics != 0 )
       {
-         tableResult = pdocument->RESULT_RowCount();
+         if( uStatistics & stats_sum_ )
+         {
+            if( iReportType == linecount_report_ )
+            {
+               result_ = TABLE_AddSumRow(&tableResult, { 2, 3, 4, 5, 6 });                         if( !result_.first ) { return result_; }
+               tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
+            }
+            else if( iReportType == patterncount_report_ )
+            {                                                                                      assert( ( *poptionsActive )["pattern"].is_true() );
+               auto tableResultPattern = pdocument->RESULT_PatternCount();
+               std::vector<unsigned> vectorColumn;
+               for( auto u = 2u; u < tableResultPattern.get_column_count(); u++ ) vectorColumn.push_back(u);// add sum columns
+
+               result_ = TABLE_AddSumRow(&tableResultPattern, vectorColumn);                       if( !result_.first ) { return result_; }
+            }
+         }
       }
-      else
+
+      if( bPrint == true ) 
       {
-         tableResult = pdocument->RESULT_PatternCount();
+         std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
+         std::cout << "\n" << stringCliTable << "\n\n";
       }
 
       // ## Save result if output is specified 
@@ -407,33 +445,6 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
          gd::argument::shared::arguments argumentsResult({ {"type", "COUNT"}, {"output", stringOutput}, {"table", ( *poptionsActive )["table"].as_string()} });
          result_ = pdocument->RESULT_Save(argumentsResult, &tableResult);                          if( !result_.first ) { return result_; }
       }
-
-      // ## Print result if specified
-
-      if( bPrint == true )
-      {
-         if( iReportType == linecount_report_ )
-         {
-            result_ = TABLE_AddSumRow(&tableResult, { 2, 3, 4, 5, 6 });                            if( !result_.first ) { return result_; }
-            tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
-            if( bPrint == true ) 
-            {
-               std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
-               std::cout << "\n" << stringCliTable << "\n\n";
-            }
-         }
-         else if( iReportType == patterncount_report_ )
-         {                                                                                         assert( ( *poptionsActive )["pattern"].is_true() );
-            auto tableResultPattern = pdocument->RESULT_PatternCount();
-            std::vector<unsigned> vectorColumn;
-            for( auto u = 2u; u < tableResultPattern.get_column_count(); u++ ) vectorColumn.push_back(u);// add sum columns
-
-            result_ = TABLE_AddSumRow(&tableResultPattern, vectorColumn);                          if( !result_.first ) { return result_; }
-            std::string stringCliTable = gd::table::to_string(tableResultPattern, { {"verbose", true} }, gd::table::tag_io_cli{});
-            std::cout << "\n" << stringCliTable << "\n\n";
-         }
-      }
-
    }
 
    return { true, "" };
@@ -751,6 +762,12 @@ void CApplication::ERROR_Add( const std::string_view& stringError )
    m_vectorError.push_back( std::move(argumentsError) );
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Get error information
+ * 
+ * If no errors then empty string is returned
+ * @return std::string error information
+ */
 std::string CApplication::ERROR_Report() const
 {
    if( m_vectorError.empty() == false )
@@ -819,6 +836,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
       optionsCommand.add({ "sort", "Sorts result on selected column name" });
+      optionsCommand.add({ "stats", "Add statistics to generated output" });
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
