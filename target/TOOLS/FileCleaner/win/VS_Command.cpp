@@ -70,7 +70,7 @@ std::pair<bool, std::string> ConnectActiveVisualStudio(CComPtr<EnvDTE::_DTE>& pD
    return { false, "No active Visual Studio instance found." };
 }
 
-/** --------------------------------------------------------------------------- @TAG #print
+/** --------------------------------------------------------------------------- @TAG #print #vs
  * @brief Outputs the specified text to the "General" pane of the Visual Studio Output window.
  *
  * This method connects to the active Visual Studio instance, retrieves the Output window,
