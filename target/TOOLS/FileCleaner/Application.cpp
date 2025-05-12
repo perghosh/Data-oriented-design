@@ -495,6 +495,7 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
             result_ = VS::CVisualStudio::Print_s( stringCliTable, VS::tag_vs_output{});            if( result_.first == false ) { return result_; }
          }
 #else
+         std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
          std::cout << "\n" << stringCliTable << "\n\n";
 #endif // _WIN32
       }
