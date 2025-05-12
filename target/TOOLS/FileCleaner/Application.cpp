@@ -267,29 +267,27 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       if( stringOutput.empty() == true )
       {
          std::string stringCliTable;
-         bool bVS = poptionsActive->exists("vs");
-         if( bVS == false )
+
+#ifdef _WIN32
+         if( poptionsActive->exists("vs") == false )
          {
             stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
+            std::cout << "\n" << stringCliTable << "\n\n";
          }
          else
          {
             stringCliTable = "\n-- Result from search  --\n";
             CDocument::RESULT_VisualStudio_s(tableResultLineList, stringCliTable);
-         }
-         
-
-#ifdef _WIN32
-         if( bVS == false && poptionsActive->exists("win") == false )
-         {
-            std::cout << "\n" << stringCliTable << "\n\n";
-         }
-         else
-         {
-            stringCliTable += "\n\n";
-            ::OutputDebugStringA(stringCliTable.c_str()); // send to debug output
+            result_ = VS::CVisualStudio::Print_s( stringCliTable, VS::tag_vs_output{});            
+            if( result_.first == false ) 
+            { 
+               std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
+               std::cerr << stringError << "\n";
+               return result_; 
+            }
          }
 #else
+         stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
          std::cout << "\n" << stringCliTable << "\n\n";
 #endif // _WIN32
       }
@@ -492,7 +490,13 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
             // generate string to prepend to output
             std::string stringPrepend = "\n-- Result from count --\n";
             std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true}, {"prepend", stringPrepend} }, gd::table::tag_io_cli{});
-            result_ = VS::CVisualStudio::Print_s( stringCliTable, VS::tag_vs_output{});            if( result_.first == false ) { return result_; }
+            result_ = VS::CVisualStudio::Print_s( stringCliTable, VS::tag_vs_output{});            
+            if( result_.first == false ) 
+            { 
+               std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
+               std::cerr << stringError << "\n";
+               return result_; 
+            }
          }
 #else
          std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
@@ -1326,22 +1330,23 @@ void CApplication::Read_s( gd::database::cursor_i* pcursorSelect, gd::table::tab
  */
 std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::string_view& stringArguments)
 {
+   return { true, "" };
 #ifdef WIN32
 
    // Create file
-   wchar_t cProgramDataPath[MAX_PATH];
+   wchar_t puProgramDataPath[MAX_PATH];
 
-   if( !GetEnvironmentVariableW(L"ProgramData", cProgramDataPath, MAX_PATH) )
-   {
-      return { false, "" };
-   }
-   std::wstring stringDirectory = std::wstring(cProgramDataPath) + L"\\history";
+   if( !GetEnvironmentVariableW(L"ProgramData", puProgramDataPath, MAX_PATH) ) { return { false, "" }; }
+   std::wstring stringDirectory = std::wstring(puProgramDataPath) + L"\\tools";
    if( !std::filesystem::exists(stringDirectory) )
    {
-      if( !std::filesystem::create_directory(stringDirectory) )
-      {
-         return { false, "" };
-      }
+      if( std::filesystem::create_directory(stringDirectory) == false ) { return { false, "" }; }
+   }
+
+   stringDirectory += L"\\cleaner";
+   if( !std::filesystem::exists(stringDirectory) )
+   {
+      if( std::filesystem::create_directory(stringDirectory) == false ) { return { false, "" }; }
    }
 
    std::wstring stringFilePath = stringDirectory + L"\\history.xml";
@@ -1406,21 +1411,14 @@ std::pair<bool, std::string> CApplication::HistoryPrint_s()
 #ifdef WIN32
 
    // Create file
-   wchar_t cProgramDataPath[MAX_PATH];
+   wchar_t puProgramDataPath[MAX_PATH];
 
-   if( !GetEnvironmentVariableW(L"ProgramData", cProgramDataPath, MAX_PATH) )
+   if( !GetEnvironmentVariableW(L"ProgramData", puProgramDataPath, MAX_PATH) )
    {
       return { false, "" };
    }
 
-   std::wstring stringDirectory = std::wstring(cProgramDataPath) + L"\\history";
-   /*if( !std::filesystem::exists(stringDirectory) )
-   {
-      if( !std::filesystem::create_directory(stringDirectory) )
-      {
-         return { false, "" };
-      }
-   }*/
+   std::wstring stringDirectory = std::wstring(puProgramDataPath) + L"\\tools\\cleaner";
 
    std::wstring stringFilePath = stringDirectory + L"\\history.xml";
 
