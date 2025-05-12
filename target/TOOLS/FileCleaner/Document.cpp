@@ -493,9 +493,9 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
 }
 
 
-// 0TAG0CACHE.Document
+// 0TAG0CACHE.Document 
 
-/** ---------------------------------------------------------------------------  
+/** --------------------------------------------------------------------------- @TAG #cache 
  * @brief Prepares a cache table for the specified identifier.  
  *  
  * This method initializes and prepares a table for caching data associated with the given `stringId`.  

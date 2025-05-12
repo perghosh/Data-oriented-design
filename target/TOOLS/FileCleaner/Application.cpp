@@ -161,7 +161,7 @@ std::pair<bool, std::string> CApplication::Exit()
 
 // 0TAG0Initialize.Application
 
-/** --------------------------------------------------------------------------- @TAG #option
+/** --------------------------------------------------------------------------- @TAG #option #print
  * @brief Initializes the application based on the provided command-line options.
  *
  * This method processes the command-line options and performs initialization tasks
@@ -361,7 +361,7 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
 
 // 0TAG0RUN.Application
 
-/** --------------------------------------------------------------------------- @TAG #run
+/** --------------------------------------------------------------------------- @TAG #print
  * @brief Executes the "count" command based on the provided options.
  *
  * This method processes the "count" command, which involves harvesting files,
@@ -1001,7 +1001,7 @@ void CApplication::PrepareLogging_s()
 
 
 
-/** --------------------------------------------------------------------------- @TAG #state
+/** --------------------------------------------------------------------------- @TAG #state #parse
  * @brief Prepares the state for parsing based on the file extension.
  * @param argumentsPath The arguments containing the source path for harvesting files.
  * @param state_ The state object to be prepared.
