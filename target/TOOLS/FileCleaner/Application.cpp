@@ -244,15 +244,26 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       std::string stringOutput = ( *poptionsActive )["output"].as_string();
       if( stringOutput.empty() == true )
       {
-         std::string stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
+         std::string stringCliTable;
+         bool bVS = poptionsActive->exists("vs");
+         if( bVS == false )
+         {
+            stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
+         }
+         else
+         {
+            stringCliTable = CDocument::RESULT_VisualStudio_s(tableResultLineList);
+         }
+         
 
 #ifdef _WIN32
-         if( poptionsActive->exists("win") == false )
+         if( bVS == false && poptionsActive->exists("win") == false )
          {
             std::cout << "\n" << stringCliTable << "\n\n";
          }
          else
          {
+            stringCliTable += "\n\n";
             ::OutputDebugStringA(stringCliTable.c_str()); // send to debug output
          }
 #else
@@ -863,6 +874,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32
+      optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format, make files clickable"} );
       optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
 #endif
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
@@ -903,6 +915,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "segment", "type of segment in code to searh in"});
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32
+      optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format, make files clickable"} );
       optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
 #endif
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );

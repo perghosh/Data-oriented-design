@@ -179,7 +179,8 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
-
+   /// Generate result from table where rows in table just are listed top to bottom
+   static std::string RESULT_VisualStudio_s( gd::table::dto::table& table_ );
 
 
 };
