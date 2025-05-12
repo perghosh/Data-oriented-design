@@ -20,6 +20,13 @@
 #include "gd/gd_table_io.h"
 #include "gd/gd_file.h"
 
+
+#ifdef _WIN32
+#  include <windows.h>
+#  include "win/VS_Command.h"
+#endif
+
+
 #include "Command.h"
 
 #include "Application.h"
@@ -70,6 +77,10 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 {
    PrepareLogging_s();
 
+   auto result_ = Initialize();
+   if( result_.first == false ) { return result_; }
+
+
    if( iArgumentCount > 1 )
    {
       std::string stringArgument = gd::cli::options::to_string_s(iArgumentCount, ppbszArgument, 1);
@@ -105,6 +116,12 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
 std::pair<bool, std::string> CApplication::Initialize()
 {
+#ifdef _WIN32
+   // Initialize Windows-specific functionality, such as COM
+   auto result_ = PrepareWindows_s();
+   if( result_.first == false ) return result_;
+#endif
+
    // Perform initialization tasks here
    // For example, you might want to initialize documents or other resources
 
@@ -129,6 +146,11 @@ std::pair<bool, std::string> CApplication::Exit()
    std::string stringArguments = PROPERTY_Get("arguments").as_string();
 
    HistorySaveArguments_s(stringArguments);
+
+#ifdef _WIN32
+   ExitWindows_s();
+#endif
+
 
    // If cleanup is successful
    return {true, ""};
@@ -252,7 +274,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          }
          else
          {
-            stringCliTable = CDocument::RESULT_VisualStudio_s(tableResultLineList);
+            stringCliTable = "\n-- Result from search  --\n";
+            CDocument::RESULT_VisualStudio_s(tableResultLineList, stringCliTable);
          }
          
 
@@ -457,15 +480,19 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
 
       if( bPrint == true ) 
       {
-         std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
+         
 #ifdef _WIN32
-         if( poptionsActive->exists("win") == false )
+         if( poptionsActive->exists("vs") == false )
          {
+            std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
             std::cout << "\n" << stringCliTable << "\n\n";
          }
          else
          {
-            ::OutputDebugStringA(stringCliTable.c_str()); // send to debug output
+            // generate string to prepend to output
+            std::string stringPrepend = "\n-- Result from count --\n";
+            std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true}, {"prepend", stringPrepend} }, gd::table::tag_io_cli{});
+            result_ = VS::CVisualStudio::Print_s( stringCliTable, VS::tag_vs_output{});            if( result_.first == false ) { return result_; }
          }
 #else
          std::cout << "\n" << stringCliTable << "\n\n";
@@ -1472,5 +1499,59 @@ std::vector<std::string> CApplication::Split_s(const std::string& stringText, ch
 
    return vectorResult;
 }
+
+
+
+
+#ifdef _WIN32
+
+std::pair<bool, std::string> CApplication::PrepareWindows_s() 
+{
+   // Initialize COM library
+   HRESULT iResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+   if( FAILED(iResult) ) { return {false, "Failed to initialize COM library. HRESULT: " + std::to_string(iResult)}; }
+
+   // Additional Windows-specific preparation can go here
+   // For example, setting up security, initializing other Windows APIs, etc.
+
+   // Example: Set COM security levels
+   /*
+   hr = CoInitializeSecurity(
+      nullptr,                        // Security descriptor
+      -1,                             // COM negotiates authentication services
+      nullptr,                        // Authentication services
+      nullptr,                        // Reserved
+      RPC_C_AUTHN_LEVEL_DEFAULT,      // Default authentication level
+      RPC_C_IMP_LEVEL_IMPERSONATE,    // Default impersonation level
+      nullptr,                        // Authentication info
+      EOAC_NONE,                      // Additional capabilities
+      nullptr                         // Reserved
+   );
+
+   if (FAILED(hr)) 
+   {
+      CoUninitialize(); // Clean up COM if security initialization fails
+      return {false, "Failed to initialize COM security. HRESULT: " + std::to_string(hr)};
+   }
+   */
+
+   papplication_g->PROPERTY_Add("WINDOWS", true );
+
+   // If everything succeeds
+   return {true, ""};
+}
+
+std::pair<bool, std::string> CApplication::ExitWindows_s()
+{
+   // Uninitialize the COM library
+   CoUninitialize();
+
+   papplication_g->PROPERTY_Add("WINDOWS", false );
+
+   return {true, ""};
+}
+
+
+#endif
 
 
