@@ -1011,11 +1011,11 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
       // ## Build the result string for the file where pattern was found  
       if( eEditor == eVisualStudio )
       {
-         stringFile += ":";
+         stringFile += "(";
          stringFile += std::to_string(uLineinSource);
-         stringFile += ":";
+         stringFile += ",";
          stringFile += std::to_string(uColumninSource);
-         stringFile += " - [";
+         stringFile += ") - [";
       }
       else if( eEditor == eVSCode )
       {
@@ -1058,4 +1058,26 @@ void CDocument::ERROR_Add( const std::string_view& stringError )
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );            // locks `m_vectorError`
    gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
    m_vectorError.push_back( std::move(argumentsError) );
+}
+
+std::string CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_ )
+{
+   std::string stringResult; // result string
+   unsigned uColumnCount = table_.get_column_count(); // get number of columns
+
+   for( const auto& itRow : table_ )
+   {
+      // combine all columns into one row
+      std::string stringRow;
+      for( unsigned uColumn = 0; uColumn < uColumnCount; uColumn++ )
+      {
+         if( uColumn != 0 ) stringRow += "\t"; // add tab between columns
+         auto stringColumn = itRow.cell_get_variant_view(uColumn).as_string();
+         if( stringColumn.empty() == false ) stringRow += stringColumn;
+      }
+      stringRow += "\n";
+      stringResult += stringRow;
+   }
+
+   return stringResult;
 }
