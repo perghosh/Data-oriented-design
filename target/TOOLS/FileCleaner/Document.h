@@ -181,6 +181,13 @@ public:
 public:
    /// Generate result from table where rows in table just are listed top to bottom
    static std::string RESULT_VisualStudio_s( gd::table::dto::table& table_ );
+   static void RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult );
 
 
 };
+
+inline std::string CDocument::RESULT_VisualStudio_s(gd::table::dto::table& table_) {
+   std::string stringResult;
+   RESULT_VisualStudio_s( table_, stringResult );
+   return stringResult;
+}

@@ -24,8 +24,19 @@ set( TARGET_SOURCE_FILES_
    ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
 )
 
+if(WIN32)
+   # Add Windows specific code
+   file(GLOB FILES_ "win/*.h" "win/*.cpp" )
+   list(APPEND TARGET_FILES_ ${FILES_})
+   unset(FILES_)
+else()
+endif()
+
+
+
 add_subdirectory("playground") # playground cleaner logic
 add_subdirectory("tests") # tests cleaner logic
+
 
 
 set( USE_TARGET_ ON ) # ========================================================= ${cleaner}

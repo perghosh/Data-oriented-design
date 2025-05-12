@@ -1060,9 +1060,8 @@ void CDocument::ERROR_Add( const std::string_view& stringError )
    m_vectorError.push_back( std::move(argumentsError) );
 }
 
-std::string CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_ )
+void CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult )
 {
-   std::string stringResult; // result string
    unsigned uColumnCount = table_.get_column_count(); // get number of columns
 
    for( const auto& itRow : table_ )
@@ -1078,6 +1077,4 @@ std::string CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_ )
       stringRow += "\n";
       stringResult += stringRow;
    }
-
-   return stringResult;
 }

@@ -196,6 +196,15 @@ public:
 
    // Split string into vector of strings, delimitier is ; or ,. It first tries to find ;, if not found then it tries to find ,
    static std::vector<std::string> Split_s(const std::string& stringText, char iCharacter = 0);
+   
+#ifdef _WIN32
+   // ## windows specific functions
+
+   /// Prepare for windows specific functionality, things like initialize COM
+   static std::pair<bool, std::string> PrepareWindows_s();
+   /// Exit windows specific functionality, things like uninitialize COM
+   static std::pair<bool, std::string> ExitWindows_s();
+#endif
 
 
 };
