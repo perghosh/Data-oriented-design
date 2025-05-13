@@ -87,6 +87,8 @@ public:
 /** \name OPERATION
 *///@{
    std::pair<bool, std::string> Initialize( gd::cli::options& optionsApplication );
+   /// Create application specific directory if it does not exist
+   std::pair<bool, std::string> CreateDirectory();
    std::pair<bool, std::string> STATEMENTS_Load(const std::string_view& stringFileName);
 
 //@}

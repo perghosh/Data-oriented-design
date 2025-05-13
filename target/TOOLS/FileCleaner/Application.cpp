@@ -23,9 +23,20 @@
 
 #ifdef _WIN32
 #  include <windows.h>
+#  include <shlobj_core.h> // For SHGetFolderPathW
+#else
+#  include <unistd.h>
+#  include <sys/stat.h>
+#  include <pwd.h>
+#  include <cstdlib>
+#endif
+
+
+#ifdef _WIN32
 #  include "win/VS_Command.h"
 #endif
 
+#include "cli/CLIHistory.h"
 
 #include "Command.h"
 
@@ -229,7 +240,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "history" )
    {
-      HistoryPrint_s();
+      auto result_ = CLI::History_g( poptionsActive );
+      //HistoryPrint_s();
    }
    else if( stringCommandName == "list" )
    {
@@ -314,6 +326,83 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
    return { true, "" };
 }
+
+/** --------------------------------------------------------------------------- @TAG #directory
+ * @brief Creates application specific directory where files used for cleaner are stored
+ * 
+ * Cleaner can be configured with configuration file and it also handles history
+ * On Windows this is stored in %APPDATA%/tools/cleaner and on Linux in ~/.config/cleaner
+ * 
+ * @return std::pair<bool, std::string> - (success, error message)
+ *         - success: true if directory was created or already exists, false on failure
+ *         - error message: empty string on success, descriptive error on failure
+ */
+std::pair<bool, std::string> CApplication::CreateDirectory()
+{
+   std::filesystem::path pathTarget;
+
+#ifdef _WIN32
+   // ## Get %APPDATA% path using SHGetFolderPathW
+
+   wchar_t puAppdataPath[MAX_PATH];
+   HRESULT iResult = ::SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, puAppdataPath);
+   if (FAILED(iResult)) { return { false, "Failed to retrieve APPDATA path" }; }
+
+   // Convert wide string to UTF-8 string
+   char utf8_path[MAX_PATH * 4]; // Buffer for UTF-8 conversion
+   int iConverted = ::WideCharToMultiByte(CP_UTF8, 0, puAppdataPath, -1, utf8_path, sizeof(utf8_path), NULL, NULL);
+   if(iConverted == 0) { return { false, "Failed to convert APPDATA path to UTF-8" }; }
+
+   // Construct full path: %APPDATA%/tools/cleaner
+   pathTarget = std::filesystem::path(utf8_path) / "tools" / "cleaner";
+
+#else // Linux
+   // ## Check for $XDG_CONFIG_HOME, fallback to ~/.config
+
+   const char* pbszXDG_CONFIG_HOME = std::getenv("XDG_CONFIG_HOME");
+   std::string stringConfigurationBase;
+   if( pbszXDG_CONFIG_HOME != nullptr && *pbszXDG_CONFIG_HOME != '\0' )
+   {
+      stringConfigurationBase = pbszXDG_CONFIG_HOME;
+   } 
+   else 
+   {
+      const char* pbszHome = std::getenv("HOME");                             // Get home directory
+      if( pbszHome != nullptr ) 
+      {
+         struct passwd* pw = getpwuid(getuid());                              // Fallback to getpwuid if $HOME is not set
+         if(!pw || !pw->pw_dir) { return { false, "Failed to retrieve home directory" }; }
+         pbszHome = pw->pw_dir;
+      }
+      stringConfigurationBase = std::string(home) + "/.config";
+   }
+
+   pathTarget = std::filesystem::path(stringConfigurationBase) / "cleaner";    // Construct full path: ~/.config/cleaner
+#endif
+
+   try 
+   {
+      if(!std::filesystem::exists(pathTarget) == false )                       // Create directory if it doesn't exist (recursive creation for 'tools' on Windows)
+      {
+         if( std::filesystem::create_directories(pathTarget) == false )
+         {
+            return { false, "Failed to create directory: " + pathTarget.string() };
+         }
+      }
+   } 
+   catch (const std::filesystem::filesystem_error& e) 
+   {
+      return { false, "Failed to create directory: " + std::string(e.what()) };
+   } 
+   catch (const std::exception& e) 
+   {
+      return { false, "Unexpected error: " + std::string(e.what()) };
+   }
+
+   return { true, "" };
+}
+
+
 
 std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_view& stringFileName)
 {

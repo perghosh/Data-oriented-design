@@ -32,6 +32,11 @@ if(WIN32)
 else()
 endif()
 
+file(GLOB FILES_ "cli/*.h" "cli/*.cpp" )
+list(APPEND TARGET_FILES_ ${FILES_})
+unset(FILES_)
+
+
 
 
 add_subdirectory("playground") # playground cleaner logic
