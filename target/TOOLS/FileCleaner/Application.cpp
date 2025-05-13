@@ -460,6 +460,10 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
  * - `source` (string, required): Specifies the file or folder to count lines in.
  * - `recursive` (integer, optional): Specifies the depth for recursive operations.
  * - `R` hardcoded recursive and sets depth to 16 (all).
+ * - `sort` (string, optional): Specifies the column to sort the results by.
+ * - `stats` (string, optional): Specifies the statistics to calculate (sum, count, relation).
+ * - `max` (integer, optional): Specifies the maximum number of lines to process.
+ * - `segment` (string, optional): Specifies the type of segment to search in (code, comment, string).
  * - `filter` (string, optional): A filter to apply to the files. If empty, all files are counted.
  * - `pattern` (string, optional): Patterns to search for, separated by `,` or `;`.
  * - `print` (flag, optional): Indicates whether to print the results to the console.
@@ -482,6 +486,7 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
 
    // Harvest files based on the "source" option
    std::string stringSource = ( *poptionsActive )["source"].as_string();
+   std::string stringInformation;
    PathPrepare_s(stringSource);
    int iRecursive = ( *poptionsActive )["recursive"].as_int();
    if( iRecursive == 0 && poptionsActive->exists("R") == true ) iRecursive = 16;// set to 16 if D is set, find all files
@@ -977,6 +982,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
+   optionsApplication.add_flag( {"information", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
@@ -1022,6 +1028,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    // ## 'history' handle history 
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "Handle command history" );
+      optionsCommand.add_flag( {"create", "Initialize history logic, creates folders and files needed to manage history, this also enables configuration settings"} );
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
