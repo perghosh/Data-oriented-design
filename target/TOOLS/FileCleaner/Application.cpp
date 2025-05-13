@@ -36,8 +36,9 @@
 #  include "win/VS_Command.h"
 #endif
 
-#include "cli/CLIHistory.h"
+#include "cli/CLICount.h"
 #include "cli/CLIDir.h"
+#include "cli/CLIHistory.h"
 
 #include "Command.h"
 
@@ -294,7 +295,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          }
          else
          {
-            stringCliTable = "\n-- Result from search  --\n";
+            //stringCliTable = "\n-- Result from search  --\n";
+            stringCliTable = "\n";
             CDocument::RESULT_VisualStudio_s(tableResultLineList, stringCliTable);
             result_ = VS::CVisualStudio::Print_s( stringCliTable, VS::tag_vs_output{});            
             if( result_.first == false ) 
@@ -492,7 +494,8 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
 
    // Harvest files based on the "source" option
    std::string stringSource = ( *poptionsActive )["source"].as_string();
-   std::string stringInformation;
+   bool bExplain = ( *poptionsActive )["explain"].is_true();
+   
    PathPrepare_s(stringSource);
    int iRecursive = ( *poptionsActive )["recursive"].as_int();
    if( iRecursive == 0 && poptionsActive->exists("R") == true ) iRecursive = 16;// set to 16 if D is set, find all files
@@ -562,6 +565,7 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
          {
             if( iReportType == linecount_report_ )
             {
+               if( bExplain == true ) { std::cout << CLI::CountGetExplain_g("count-lines"); }
                result_ = TABLE_AddSumRow(&tableResult, { 2, 3, 4, 5, 6 });                         if( !result_.first ) { return result_; }
                tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
             }
@@ -988,7 +992,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
-   optionsApplication.add_flag( {"information", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
+   optionsApplication.add_flag( {"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
