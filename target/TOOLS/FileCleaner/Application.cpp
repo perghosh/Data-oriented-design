@@ -37,6 +37,7 @@
 #endif
 
 #include "cli/CLIHistory.h"
+#include "cli/CLIDir.h"
 
 #include "Command.h"
 
@@ -237,6 +238,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          result_ = DATABASE_Update();                                          // update database to match latest design
          if( result_.first == false ) return result_;
       }
+   }
+   else if( stringCommandName == "dir" )
+   {
+      auto result_ = CLI::Dir_g(poptionsActive);
+      result_;
    }
    else if( stringCommandName == "history" )
    {
@@ -1023,6 +1029,14 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({"settings", "Where to write configuration file"});
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
+
+   { // ## 'dir' command, list files
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in directory" );
+      optionsCommand.add({"source", 's', "Directory to list"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsApplication.sub_add(std::move(optionsCommand));
    }
 
    // ## 'history' handle history 
