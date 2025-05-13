@@ -1015,7 +1015,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
          stringFile += std::to_string(uLineinSource);
          stringFile += ",";
          stringFile += std::to_string(uColumninSource);
-         stringFile += ") - [";
+         stringFile += "):  [";
       }
       else if( eEditor == eVSCode )
       {
