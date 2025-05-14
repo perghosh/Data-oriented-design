@@ -1,5 +1,3 @@
-CMakeSettings.json
-
 .*
 --*
 ignore-
@@ -35,3 +33,5 @@ temp__*
 *.exe
 *.out
 *.app
+
+/CMakeSettings.json
