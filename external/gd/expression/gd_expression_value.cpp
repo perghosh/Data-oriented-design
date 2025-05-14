@@ -5,6 +5,7 @@
  * 
  */
 
+#include "../gd_compiler.h"
 
 #include "gd_expression_value.h"
 
@@ -31,8 +32,21 @@ int64_t value::as_integer() const
    if( is_bool() == true ) return static_cast<int64_t>( std::get<bool>(m_value) );
    if( is_string() == true )
    {
+#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
       try { return std::stoll(std::get<std::string>(m_value)); }
       catch( ... ) { return 0; }
+#else
+      try {
+         long long int iTemp = std::stoll(std::get<std::string>(m_value));
+         if( iTemp > std::numeric_limits<int64_t>::max() || iTemp < std::numeric_limits<int64_t>::min() )
+         {
+            throw std::out_of_range("Value out of range for int64_t");
+         }
+         return static_cast<int64_t>(iTemp);
+      }
+      catch( const std::invalid_argument& e ) { return 0; }                   // Invalid string format
+      catch( const std::out_of_range& e ) { return 0; }                       // Value too large for long long int
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT
    }
    return 0;
 }
@@ -116,8 +130,22 @@ bool value::to_integer()
    if( is_bool() ) { m_value = static_cast<int64_t>(std::get<bool>(m_value)); return true; }
    if( is_string() ) 
    {
+#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
       try { m_value = std::stoll(std::get<std::string>(m_value)); return true; }
       catch( ... ) { return false; }
+#else
+      try {
+         long long int iTemp = std::stoll(std::get<std::string>(m_value));
+         if( iTemp > std::numeric_limits<int64_t>::max() || iTemp < std::numeric_limits<int64_t>::min() )
+         {
+            throw std::out_of_range("Value out of range for int64_t");
+         }
+         m_value = static_cast<int64_t>(iTemp);
+         return true;
+      }
+      catch( const std::invalid_argument& e ) { return 0; }                   // Invalid string format
+      catch( const std::out_of_range& e ) { return 0; }                       // Value too large for long long int
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT
    }
    return false;
 }
