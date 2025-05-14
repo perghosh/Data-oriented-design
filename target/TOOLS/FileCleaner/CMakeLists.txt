@@ -42,6 +42,9 @@ unset(FILES_)
 add_subdirectory("playground") # playground cleaner logic
 add_subdirectory("tests") # tests cleaner logic
 
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 set( USE_TARGET_ ON ) # ========================================================= ${cleaner}
@@ -65,11 +68,17 @@ if( USE_TARGET_ )
       "main.cpp"
    )
 
+   target_compile_features(${TARGET_NAME_} PRIVATE cxx_std_23)
+   set_target_properties(${TARGET_NAME_} PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
    target_compile_definitions(${TARGET_NAME_} PRIVATE GD_LOG_SIMPLE)
    target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
+
+   
+   
 
    if(MSVC)
    else()
