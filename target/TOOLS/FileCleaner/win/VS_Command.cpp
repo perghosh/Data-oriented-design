@@ -1,3 +1,5 @@
+#include <filesystem>
+
 #include "VS_Command.h"
 
 namespace VS {
@@ -134,7 +136,7 @@ std::pair<bool, std::string> CVisualStudio::Print_s( const std::string_view& str
       pOutputPane->OutputString(CComBSTR(stringText.data()));
 
    }
-   catch (_com_error& e) 
+   catch(_com_error& e) 
    {
       std::cerr << "COM Error: " << e.ErrorMessage() << std::endl;
    }
@@ -148,6 +150,78 @@ std::pair<bool, std::string> CVisualStudio::Print_s( const std::string_view& str
    }
 
    return {true, ""};
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Opens multiple files in Visual Studio using their file paths stored in a std::vector of std::string.
+ *
+ * This method connects to the active Visual Studio instance and opens each file specified in the provided
+ * vector of file paths in the Visual Studio editor. The file paths must be valid and accessible on the system.
+ *
+ * @param vectorFile A std::vector containing std::string objects representing the full file paths to be opened.
+ * 
+ * @return A pair containing:
+ *         - `true` and an empty string if all files are successfully opened.
+ *         - `false` and an error message if the operation fails at any point (e.g., no Visual Studio instance or file not found).
+ *
+ * @note This method requires an active Visual Studio instance to function correctly. If no instance is found
+ *       or if any file fails to open, an appropriate error message is returned.
+ */
+std::pair<bool, std::string> CVisualStudio::Open_s(const std::vector<std::string>& vectorFile)
+{
+   HRESULT iResult = S_OK;
+   try 
+   {
+      CComPtr<EnvDTE::_DTE> pDTE;
+      auto result_ = ConnectActiveVisualStudio(pDTE);
+      if(!result_.first) { return result_; }
+
+      // Iterate through the file paths
+      for(const auto& stringFile : vectorFile)
+      {
+         // Verify file exists
+         if( std::filesystem::exists(stringFile) == false ) { return { false, "File not found: " + stringFile }; }
+
+         // Open the file in Visual Studio
+         CComPtr<EnvDTE::Window> pWindow = nullptr;
+         iResult = pDTE->OpenFile(CComBSTR("Text"), CComBSTR(stringFile.c_str()), &pWindow);
+
+         // If you need the document, get it from the window
+         if (SUCCEEDED(iResult) && pWindow) {
+            CComPtr<EnvDTE::Document> pDocument = nullptr;
+            pWindow->get_Document(&pDocument);
+         }
+
+         if(FAILED(iResult)) { return { false, "Failed to open file: " + stringFile + ". HRESULT: " + std::to_string(iResult) }; }
+
+         /*
+         CComPtr<EnvDTE::Document> pDocument;
+         iResult = pDTE->OpenFile(CComBSTR("Text"), CComBSTR(stringFile.c_str()), &pDocument);
+         if(FAILED(iResult) || !pDocument)
+         {
+            return { false, "Failed to open file: " + stringFile + ". HRESULT: " + std::to_string(iResult) };
+         }
+         */
+      }
+   }
+   catch(_com_error& e) 
+   {
+      std::cerr << "COM Error: " << e.ErrorMessage() << std::endl;
+      return { false, "COM Error: " + std::string(e.ErrorMessage()) };
+   }
+   catch(const std::exception& e)
+   {
+      std::cerr << "Exception: " << e.what() << std::endl;
+      return { false, "Exception: " + std::string(e.what()) };
+   }
+   catch(...)
+   {
+      std::cerr << "Unknown error occurred." << std::endl;
+      return { false, "Unknown error occurred." };
+   }
+
+   return { true, "" };
 }
 
 
