@@ -24,8 +24,24 @@ set( TARGET_SOURCE_FILES_
    ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
 )
 
+if(WIN32)
+   # Add Windows specific code
+   file(GLOB FILES_ "win/*.h" "win/*.cpp" )
+   list(APPEND TARGET_FILES_ ${FILES_})
+   unset(FILES_)
+else()
+endif()
+
+file(GLOB FILES_ "cli/*.h" "cli/*.cpp" )
+list(APPEND TARGET_FILES_ ${FILES_})
+unset(FILES_)
+
+
+
+
 add_subdirectory("playground") # playground cleaner logic
 add_subdirectory("tests") # tests cleaner logic
+
 
 
 set( USE_TARGET_ ON ) # ========================================================= ${cleaner}
@@ -33,6 +49,8 @@ set( USE_TARGET_ ON ) # ========================================================
 if(MSVC)
    # Use static runtime for MSVC
    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+else()
+   # add_compile_options(-gdwarf-4) # Use DWARF 4 for compatibility with older gdb versions
 endif()
 
 if( USE_TARGET_ )

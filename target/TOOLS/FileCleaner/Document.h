@@ -86,7 +86,7 @@ public:
    std::pair<bool, std::string> FILE_FilterBinaries();
    std::pair<bool, std::string> FILE_UpdateRowCounters();
    std::pair<bool, std::string> FILE_UpdatePatternCounters( const std::vector<std::string>& vectorPattern );
-   std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector<std::string>& vectorPattern, uint64_t uMax );
+   std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList );
       
 //@}
 
@@ -110,6 +110,9 @@ public:
    /// Return table with cache data
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId, bool bLoad );
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId ) { return CACHE_Get( stringId, true ); }
+   /// Sort cached table for specified column
+   std::pair<bool, std::string> CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_ );
+
    /// Return information to generate cache data
    std::pair<bool, std::string> CACHE_GetInformation( const std::string_view& stringId, gd::argument::arguments& argumentsCache );
    gd::argument::arguments CACHE_GetInformation( const std::string_view& stringId );
@@ -141,7 +144,7 @@ public:
 /// Add error to internal list of errors
    void ERROR_Add( const std::string_view& stringError );
 
-   //@}
+//@}
 
 protected:
 /** \name INTERNAL
@@ -176,7 +179,15 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
-
+   /// Generate result from table where rows in table just are listed top to bottom
+   static std::string RESULT_VisualStudio_s( gd::table::dto::table& table_ );
+   static void RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult );
 
 
 };
+
+inline std::string CDocument::RESULT_VisualStudio_s(gd::table::dto::table& table_) {
+   std::string stringResult;
+   RESULT_VisualStudio_s( table_, stringResult );
+   return stringResult;
+}

@@ -681,7 +681,7 @@ public:
    /// deletes last row in table
    ///@{
    /// Deletes last row in table (by decreasing the row count)
-   void row_delete() { if (m_uRowCount > 0) m_uRowCount--; }
+   void row_delete() { if(m_uRowCount > 0) m_uRowCount--; }
    ///@}
 
    /// @name row_reserve_add
@@ -933,6 +933,9 @@ public:
    void sort( unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_bubble );
 
    void sort( unsigned uColumn, bool bAscending ) { sort( uColumn, bAscending, 0, get_row_count(), tag_sort_selection{} ); }
+
+   void sort_null(unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_bubble);
+   void sort_null( unsigned uColumn, bool bAscending ) { sort_null( uColumn, bAscending, 0, get_row_count(), tag_sort_bubble{} ); }
 
    template<typename TAG_ALGORITHM>
    void sort( unsigned uColumn, bool bAscending, TAG_ALGORITHM tag_ ) { sort( uColumn, bAscending, 0, get_row_count(), tag_ ); }

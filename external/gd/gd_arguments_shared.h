@@ -964,7 +964,7 @@ public:
 
 
    // uuid
-   arguments& set(std::string_view stringName, std::string_view v) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length() + 1); }
+   arguments& set(std::string_view stringName, std::string_view v) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length()); }
 
    /*
    arguments& set(std::string_view stringName, const gd::variant_view& variantValue );

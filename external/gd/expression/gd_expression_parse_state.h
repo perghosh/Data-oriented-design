@@ -103,6 +103,9 @@ _GD_EXPRESSION_PARSE_BEGIN
 class state
 {
 public:
+   /// @brief Tag for manual processing to fix internal state issues. 
+   struct tag_manual {};
+public:
    
    /**
     * @brief Enumeration for parsing state numbers.
@@ -331,6 +334,7 @@ public:
    }
 
    void clear() { m_vectorRule.clear(); m_arrayMarkerHint = { 0 }; } ///< clear vector of rules
+   void clear_state() { m_iActive = -1; } ///< clear state
    bool empty() const { return m_vectorRule.empty(); } ///< check if vector of rules is empty
    size_t size() const { return m_vectorRule.size(); } ///< get size of vector of rules
    bool exists(const char* piText) const; ///< check if text exists in vector of rules
@@ -340,6 +344,9 @@ public:
    size_t activate(const uint8_t* puText) { return activate(reinterpret_cast<const char*>( puText )); } ///< activate state, this will set the state to the state of the rule that matches the text
    bool deactivate(const char* piText, unsigned* puLength = nullptr);
    bool deactivate(const uint8_t* puText, unsigned* puLength = nullptr ) { return deactivate(reinterpret_cast<const char*>( puText ), puLength ); } ///< check if state is deactivated based on text passed, this matches the end of the rule for active state
+   /// deactivate state, this doesn't change the internal state but checks if the text is matches deactivate marker text
+   bool deactivate(const char* piText, unsigned* puLength, tag_manual );
+   bool deactivate(const uint8_t* puText, unsigned* puLength, tag_manual) { return deactivate(reinterpret_cast<const char*>( puText ), puLength, tag_manual()); } ///< check if state is deactivated based on text passed, this matches the end of the rule for active state
 
    // ## iterator methods
 
@@ -471,7 +478,7 @@ inline size_t state::activate(const char* piText) {
 }
 
 /// check if state is deactivated based on text passed, this matches the end of the rule for active state
-inline bool state::deactivate(const char* piText, unsigned* puLength) {                                                       assert( m_iActive != -1);
+inline bool state::deactivate(const char* piText, unsigned* puLength) {                            assert( m_iActive != -1);
    auto it = m_vectorRule.begin() + m_iActive;
    if( it->compare_end(piText) == true && it->is_escaped( piText) == false ) { 
       m_iActive = -1; 
@@ -480,6 +487,17 @@ inline bool state::deactivate(const char* piText, unsigned* puLength) {         
    }
    return false;
 }
+
+/// deactivate state, this doesn't change the internal state but checks if the text is matches deactivate marker text
+inline bool state::deactivate(const char* piText, unsigned* puLength, tag_manual) {                assert( m_iActive != -1);
+   auto it = m_vectorRule.begin() + m_iActive;
+   if( it->compare_end(piText) == true && it->is_escaped( piText) == false ) { 
+      if( puLength != nullptr ) { *puLength = (unsigned)it->m_stringEnd.length(); } // set next position to the end of the string
+      return true; 
+   }
+   return false;
+}
+
 
 
 
