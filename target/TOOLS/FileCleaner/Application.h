@@ -20,6 +20,8 @@
 #include "gd/gd_database_odbc.h"
 #include "gd/gd_database_sqlite.h"
 #include "gd/gd_arguments_shared.h"
+#include "gd/expression/gd_expression_parse_state.h"
+#include "gd/parse/gd_parse_match_pattern.h"
 
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_printer.h"
@@ -85,6 +87,8 @@ public:
 /** \name OPERATION
 *///@{
    std::pair<bool, std::string> Initialize( gd::cli::options& optionsApplication );
+   /// Create application specific directory if it does not exist
+   std::pair<bool, std::string> CreateDirectory();
    std::pair<bool, std::string> STATEMENTS_Load(const std::string_view& stringFileName);
 
 //@}
@@ -128,6 +132,15 @@ public:
    void DATABASE_CloseActive();
 //@}
 
+/** \name ERROR
+*///@{
+/// Add error to internal list of errors
+   void ERROR_Add( const std::string_view& stringError );
+   std::string ERROR_Report() const;
+
+//@}
+
+
 
 protected:
 /** \name INTERNAL
@@ -152,17 +165,22 @@ public:
 
    std::unique_ptr<application::database::metadata::CStatements> m_pstatements;   ///< pointer to statement object
 
-
+   std::shared_mutex m_sharedmutexError;        ///< mutex used to manage errors in threaded environment
+   std::vector< gd::argument::arguments > m_vectorError; ///< vector storing internal errors
 
 // ## free functions ------------------------------------------------------------
 public:
    // ## Prepare Application 
 
+   /// Prepare options for application, options are used to parse command-line arguments
    static void Prepare_s( gd::cli::options& optionsApplication );
+   /// Prepare logging for application.
    static void PrepareLogging_s();
+   /// Prepare state used to investigate source files
+   static std::pair<bool, std::string> PrepareState_s(const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state_);
 
    // ## Path operations
-   static void PathGetCurrentIfEmpty_s( std::string& stringPath );
+   static void PathPrepare_s( std::string& stringPath );
 
    // ## Read data from database
 
@@ -180,6 +198,15 @@ public:
 
    // Split string into vector of strings, delimitier is ; or ,. It first tries to find ;, if not found then it tries to find ,
    static std::vector<std::string> Split_s(const std::string& stringText, char iCharacter = 0);
+   
+#ifdef _WIN32
+   // ## windows specific functions
+
+   /// Prepare for windows specific functionality, things like initialize COM
+   static std::pair<bool, std::string> PrepareWindows_s();
+   /// Exit windows specific functionality, things like uninitialize COM
+   static std::pair<bool, std::string> ExitWindows_s();
+#endif
 
 
 };

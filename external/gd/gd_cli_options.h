@@ -57,28 +57,28 @@ _GD_CLI_BEGIN
  *     
  *     // Parse command-line arguments
  *     auto [success, error_message] = cli_options.parse(argc, argv);
- *     if (!success) {
+ *     if(!success) {
  *         std::cerr << "Error: " << error_message << std::endl;
  *         return 1;
  *     }
  *     
  *     // Check for options
- *     if (cli_options.exists("help")) {
+ *     if(cli_options.exists("help")) {
  *         std::cout << "Help information..." << std::endl;
  *         return 0;
  *     }
  *     
- *     if (cli_options.exists("version")) {
+ *     if(cli_options.exists("version")) {
  *         std::cout << "Version 1.0.0" << std::endl;
  *         return 0;
  *     }
  *     
- *     if (cli_options.exists("input")) {
+ *     if(cli_options.exists("input")) {
  *         std::string input_file = cli_options.get_variant("input").as_string();
  *         std::cout << "Input file: " << input_file << std::endl;
  *     }
  *     
- *     if (cli_options.exists("output")) {
+ *     if(cli_options.exists("output")) {
  *         std::string output_file = cli_options.get_variant("output").as_string();
  *         std::cout << "Output file: " << output_file << std::endl;
  *     }
@@ -89,6 +89,15 @@ _GD_CLI_BEGIN
  */
 class options
 {
+public:
+   /// Format for printing options in a table format
+   struct tag_documentation_table {};
+   /// Format for printing options in a dense format
+   struct tag_documentation_dense {};
+   /// Format for printing options in a verbose format
+   struct tag_documentation_verbose {};
+
+
 public:
    enum enumFlag
    {
@@ -150,6 +159,7 @@ public:
 
       std::string_view name() const { return m_stringName; }
       char letter() const { return m_chLetter; }
+      void set_letter(char chLetter) { m_chLetter = chLetter; }
       void set_name( const std::string_view& stringName );
       void set_type( unsigned uType ) { m_uType = uType; }
       option& type( unsigned uType ) { m_uType = uType; return *this; }
@@ -307,7 +317,10 @@ public:
    void iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > true_, std::function< void( const gd::variant_view& ) > false_ ) const;
 
    /// print all options and their values to get information about options
-   void print_documentation( std::string& stringDocumentation ) const;
+   void print_documentation( std::string& stringDocumentation, tag_documentation_table ) const;
+   void print_documentation( std::string& stringDocumentation, tag_documentation_dense ) const;
+   void print_documentation( std::string& stringDocumentation, tag_documentation_verbose ) const;
+   void print_suboption_options(const options& optionSub, std::string& stringDocumentation) const;
 
    /// get option at specified index
    option* at( size_t uIndex ) { return &m_vectorOption.at( uIndex ); }

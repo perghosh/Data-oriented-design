@@ -3,6 +3,7 @@
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0Initialize.Application` - Initialize the application from command line 
+ * - `0TAG0RUN.Application` - run commands, there are a number of commands that can be run
  * - `0TAG0Database.Application` - database operations
  * - `0TAG0OPTIONS.Application` - prepare command line options
  * 
@@ -17,6 +18,27 @@
 #include "gd/gd_arguments.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
+#include "gd/gd_file.h"
+
+
+#ifdef _WIN32
+#  include <windows.h>
+#  include <shlobj_core.h> // For SHGetFolderPathW
+#else
+#  include <unistd.h>
+#  include <sys/stat.h>
+#  include <pwd.h>
+#  include <cstdlib>
+#endif
+
+
+#ifdef _WIN32
+#  include "win/VS_Command.h"
+#endif
+
+#include "cli/CLICount.h"
+#include "cli/CLIDir.h"
+#include "cli/CLIHistory.h"
 
 #include "Command.h"
 
@@ -68,6 +90,10 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 {
    PrepareLogging_s();
 
+   auto result_ = Initialize();
+   if( result_.first == false ) { return result_; }
+
+
    if( iArgumentCount > 1 )
    {
       std::string stringArgument = gd::cli::options::to_string_s(iArgumentCount, ppbszArgument, 1);
@@ -78,7 +104,19 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       // ## Parse the command-line arguments
       auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);
-      if( bOk == false ) { return { false, stringError }; }
+      if( bOk == false ) 
+      { 
+         std::string stringHelp;
+         const gd::cli::options* poptionsActive = optionsApplication.find_active();
+         if( poptionsActive != nullptr )
+         {
+            poptionsActive->print_documentation(stringHelp, gd::cli::options::tag_documentation_dense{});// print help for active command
+
+            stringError += "\n\n" + stringHelp;
+         }
+         
+         return { false, stringError }; 
+      }
 
       // ## Process the command-line arguments
       std::tie(bOk, stringError) = Initialize(optionsApplication);
@@ -91,6 +129,12 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
 std::pair<bool, std::string> CApplication::Initialize()
 {
+#ifdef _WIN32
+   // Initialize Windows-specific functionality, such as COM
+   auto result_ = PrepareWindows_s();
+   if( result_.first == false ) return result_;
+#endif
+
    // Perform initialization tasks here
    // For example, you might want to initialize documents or other resources
 
@@ -116,6 +160,11 @@ std::pair<bool, std::string> CApplication::Exit()
 
    HistorySaveArguments_s(stringArguments);
 
+#ifdef _WIN32
+   ExitWindows_s();
+#endif
+
+
    // If cleanup is successful
    return {true, ""};
 
@@ -125,7 +174,7 @@ std::pair<bool, std::string> CApplication::Exit()
 
 // 0TAG0Initialize.Application
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @TAG #option #print
  * @brief Initializes the application based on the provided command-line options.
  *
  * This method processes the command-line options and performs initialization tasks
@@ -191,29 +240,42 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          if( result_.first == false ) return result_;
       }
    }
+   else if( stringCommandName == "dir" )
+   {
+      auto result_ = CLI::Dir_g(poptionsActive);
+      result_;
+   }
    else if( stringCommandName == "history" )
    {
-      HistoryPrint_s();
+      auto result_ = CLI::History_g( poptionsActive );
+      //HistoryPrint_s();
    }
    else if( stringCommandName == "list" )
    {
       std::string stringSource = (*poptionsActive)["source"].as_string();                          
-      PathGetCurrentIfEmpty_s(stringSource);                                   // if source is empty then set it to current path
+      PathPrepare_s(stringSource);                                   // if source is empty then set it to current path
 
-      int iRecursive = ( *poptionsActive )["recursive"].as_int();                                  LOG_INFORMATION_RAW("== --recursive: " & iRecursive);
+      int iRecursive = ( *poptionsActive )["recursive"].as_int();
+      if( iRecursive == 0 && poptionsActive->exists("R") == true ) iRecursive = 16;// set to 16 if D is set, find all files
       gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
       std::string stringFilter = ( *poptionsActive )["filter"].as_string();
+
+      
 
       auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);     // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( result_.first == false ) return result_;
 
-      std::string stringPattern = ( *poptionsActive )["pattern"].as_string();                      LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
+      std::string stringPattern = ( *poptionsActive )["pattern"].as_string();                      //LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
       auto vectorPattern = Split_s(stringPattern);                             // split pattern string into vector
 
       uint64_t uMax = ( *poptionsActive )["max"].as_uint64();                  // max number of lines to be printed
       if( uMax == 0 ) uMax = 512;                                              // default to 512 lines
 
-      result_ = pdocument->FILE_UpdatePatternList( vectorPattern, uMax );      // count rows in harvested files
+      gd::argument::shared::arguments argumentsList({  {"max", uMax} });
+      std::string stringSegment = ( *poptionsActive )["segment"].as_string();  // type of segment to search in, code, comment or string, maybe all
+      if( stringSegment.empty() == false ) argumentsList.set("state", stringSegment.c_str());
+
+      result_ = pdocument->FILE_UpdatePatternList( vectorPattern, argumentsList );      // count rows in harvested files
       if( result_.first == false ) return result_;
 
       auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
@@ -223,8 +285,31 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       std::string stringOutput = ( *poptionsActive )["output"].as_string();
       if( stringOutput.empty() == true )
       {
-         std::string stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
+         std::string stringCliTable;
+
+#ifdef _WIN32
+         if( poptionsActive->exists("vs") == false )
+         {
+            stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
+            std::cout << "\n" << stringCliTable << "\n\n";
+         }
+         else
+         {
+            //stringCliTable = "\n-- Result from search  --\n";
+            stringCliTable = "\n";
+            CDocument::RESULT_VisualStudio_s(tableResultLineList, stringCliTable);
+            result_ = VS::CVisualStudio::Print_s( stringCliTable, VS::tag_vs_output{});            
+            if( result_.first == false ) 
+            { 
+               std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
+               std::cerr << stringError << "\n";
+               return result_; 
+            }
+         }
+#else
+         stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
          std::cout << "\n" << stringCliTable << "\n\n";
+#endif // _WIN32
       }
       else
       {
@@ -235,7 +320,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    else if( stringCommandName == "help" )                                      // command = "help"
    {
       std::string stringDocumentation;
-      optionsApplication.print_documentation( stringDocumentation );
+      optionsApplication.print_documentation( stringDocumentation, gd::cli::options::tag_documentation_verbose{});
       std::cout << stringDocumentation << "\n";
    }
    else if( stringCommandName == "version" )
@@ -249,6 +334,83 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
    return { true, "" };
 }
+
+/** --------------------------------------------------------------------------- @TAG #directory
+ * @brief Creates application specific directory where files used for cleaner are stored
+ * 
+ * Cleaner can be configured with configuration file and it also handles history
+ * On Windows this is stored in %APPDATA%/tools/cleaner and on Linux in ~/.config/cleaner
+ * 
+ * @return std::pair<bool, std::string> - (success, error message)
+ *         - success: true if directory was created or already exists, false on failure
+ *         - error message: empty string on success, descriptive error on failure
+ */
+std::pair<bool, std::string> CApplication::CreateDirectory()
+{
+   std::filesystem::path pathTarget;
+
+#ifdef _WIN32
+   // ## Get %APPDATA% path using SHGetFolderPathW
+
+   wchar_t puAppdataPath[MAX_PATH];
+   HRESULT iResult = ::SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, puAppdataPath);
+   if (FAILED(iResult)) { return { false, "Failed to retrieve APPDATA path" }; }
+
+   // Convert wide string to UTF-8 string
+   char utf8_path[MAX_PATH * 4]; // Buffer for UTF-8 conversion
+   int iConverted = ::WideCharToMultiByte(CP_UTF8, 0, puAppdataPath, -1, utf8_path, sizeof(utf8_path), NULL, NULL);
+   if(iConverted == 0) { return { false, "Failed to convert APPDATA path to UTF-8" }; }
+
+   // Construct full path: %APPDATA%/tools/cleaner
+   pathTarget = std::filesystem::path(utf8_path) / "tools" / "cleaner";
+
+#else // Linux
+   // ## Check for $XDG_CONFIG_HOME, fallback to ~/.config
+
+   const char* pbszXDG_CONFIG_HOME = std::getenv("XDG_CONFIG_HOME");
+   std::string stringConfigurationBase;
+   if( pbszXDG_CONFIG_HOME != nullptr && *pbszXDG_CONFIG_HOME != '\0' )
+   {
+      stringConfigurationBase = pbszXDG_CONFIG_HOME;
+   } 
+   else 
+   {
+      const char* pbszHome = std::getenv("HOME");                             // Get home directory
+      if( pbszHome != nullptr ) 
+      {
+         struct passwd* pw = getpwuid(getuid());                              // Fallback to getpwuid if $HOME is not set
+         if(!pw || !pw->pw_dir) { return { false, "Failed to retrieve home directory" }; }
+         pbszHome = pw->pw_dir;
+      }
+      stringConfigurationBase = std::string(home) + "/.config";
+   }
+
+   pathTarget = std::filesystem::path(stringConfigurationBase) / "cleaner";    // Construct full path: ~/.config/cleaner
+#endif
+
+   try 
+   {
+      if(!std::filesystem::exists(pathTarget) == false )                       // Create directory if it doesn't exist (recursive creation for 'tools' on Windows)
+      {
+         if( std::filesystem::create_directories(pathTarget) == false )
+         {
+            return { false, "Failed to create directory: " + pathTarget.string() };
+         }
+      }
+   } 
+   catch (const std::filesystem::filesystem_error& e) 
+   {
+      return { false, "Failed to create directory: " + std::string(e.what()) };
+   } 
+   catch (const std::exception& e) 
+   {
+      return { false, "Unexpected error: " + std::string(e.what()) };
+   }
+
+   return { true, "" };
+}
+
+
 
 std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_view& stringFileName)
 {
@@ -294,7 +456,9 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
    return { true, "" };
 }
 
-/** ---------------------------------------------------------------------------
+// 0TAG0RUN.Application
+
+/** --------------------------------------------------------------------------- @TAG #print
  * @brief Executes the "count" command based on the provided options.
  *
  * This method processes the "count" command, which involves harvesting files,
@@ -303,6 +467,11 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
  * ### Arguments in optionsApplication:
  * - `source` (string, required): Specifies the file or folder to count lines in.
  * - `recursive` (integer, optional): Specifies the depth for recursive operations.
+ * - `R` hardcoded recursive and sets depth to 16 (all).
+ * - `sort` (string, optional): Specifies the column to sort the results by.
+ * - `stats` (string, optional): Specifies the statistics to calculate (sum, count, relation).
+ * - `max` (integer, optional): Specifies the maximum number of lines to process.
+ * - `segment` (string, optional): Specifies the type of segment to search in (code, comment, string).
  * - `filter` (string, optional): A filter to apply to the files. If empty, all files are counted.
  * - `pattern` (string, optional): Patterns to search for, separated by `,` or `;`.
  * - `print` (flag, optional): Indicates whether to print the results to the console.
@@ -315,7 +484,9 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
 std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* poptionsActive )
 {                                                                                                  assert( poptionsActive != nullptr );
    enum { linecount_report_, patterncount_report_ };
+   enum stats { stats_none_ = 0, stats_sum_ = 0x01, stats_count_ = 0x02, stats_relation_ = 0x04 };
    int iReportType = linecount_report_; // default to line report
+   unsigned uStatistics = stats_none_; // default to no statistics
 
    // Add a document for the "count" command
    auto* pdocument = DOCUMENT_Add("count");
@@ -323,8 +494,12 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
 
    // Harvest files based on the "source" option
    std::string stringSource = ( *poptionsActive )["source"].as_string();
-   PathGetCurrentIfEmpty_s(stringSource);
-   gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", ( *poptionsActive )["recursive"].as_int()} });
+   bool bExplain = ( *poptionsActive )["explain"].is_true();
+   
+   PathPrepare_s(stringSource);
+   int iRecursive = ( *poptionsActive )["recursive"].as_int();
+   if( iRecursive == 0 && poptionsActive->exists("R") == true ) iRecursive = 16;// set to 16 if D is set, find all files
+   gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
    auto result_ = pdocument->FILE_Harvest(argumentsPath);                                          if( !result_.first ) { return result_; }
 
    // Apply file filters if specified
@@ -349,23 +524,88 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
       result_ = pdocument->FILE_UpdatePatternCounters(vectorPattern);                              if( !result_.first ) { return result_; }
    }
 
+   // ## Determine sorting options
+   if( ( *poptionsActive )["sort"].is_true() == true )
+   {
+      std::string stringSortColumn = ( *poptionsActive )["sort"].as_string();
+      result_ = pdocument->CACHE_Sort( "file-count", stringSortColumn );                           if( !result_.first ) { return result_; }
+   }
+
+   // ## Determine statistics options
+   if( ( *poptionsActive )["stats"].is_true() == true )
+   {
+      std::string stringStats = ( *poptionsActive )["stats"].as_string();
+      if( stringStats.find("sum") != std::string::npos ) uStatistics |= stats_sum_;
+      if( stringStats.find("count") != std::string::npos ) uStatistics |= stats_count_;
+      if( stringStats.find("relation") != std::string::npos ) uStatistics |= stats_relation_;
+      if( uStatistics == 0 ) uStatistics = stats_sum_;                         // default if no other is sum
+   }
+
+
    // Determine output options
    bool bPrint = poptionsActive->exists("print");
    std::string stringOutput = ( *poptionsActive )["output"].as_string();
    bool bOutput = ( *poptionsActive )["output"].is_true();
 
    if( !bPrint && !bOutput && stringOutput.empty() ) { bPrint = true; }        // Default to printing if no output options are specified
+   if( bPrint == true && uStatistics == 0 ) { uStatistics = stats_sum_; }      // set output to stdout if print is set
    
-   if( bPrint || bOutput || !stringOutput.empty() )                            // Generate and handle results
+   if( bPrint || bOutput || !stringOutput.empty() )                            // Generate and handle results ?
    {
       gd::table::dto::table tableResult;
-      if( iReportType == linecount_report_ )
+      if( iReportType == linecount_report_ ) { tableResult = pdocument->RESULT_RowCount(); }
+      else                                   { tableResult = pdocument->RESULT_PatternCount(); }
+
+
+      // ## prepare statistics
+
+      if( uStatistics != 0 )
       {
-         tableResult = pdocument->RESULT_RowCount();
+         if( uStatistics & stats_sum_ )
+         {
+            if( iReportType == linecount_report_ )
+            {
+               if( bExplain == true ) { std::cout << CLI::CountGetExplain_g("count-lines"); }
+               result_ = TABLE_AddSumRow(&tableResult, { 2, 3, 4, 5, 6 });                         if( !result_.first ) { return result_; }
+               tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
+            }
+            else if( iReportType == patterncount_report_ )
+            {                                                                                      assert( ( *poptionsActive )["pattern"].is_true() );
+               auto tableResultPattern = pdocument->RESULT_PatternCount();
+               std::vector<unsigned> vectorColumn;
+               for( auto u = 2u; u < tableResultPattern.get_column_count(); u++ ) vectorColumn.push_back(u);// add sum columns
+
+               result_ = TABLE_AddSumRow(&tableResultPattern, vectorColumn);                       if( !result_.first ) { return result_; }
+            }
+         }
       }
-      else
+
+      if( bPrint == true ) 
       {
-         tableResult = pdocument->RESULT_PatternCount();
+         
+#ifdef _WIN32
+         if( poptionsActive->exists("vs") == false )
+         {
+            std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
+            std::cout << "\n" << stringCliTable << "\n\n";
+         }
+         else
+         {
+            // generate string to prepend to output
+            std::string stringPrepend = "\n-- Result from count --\n";
+            std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true}, {"prepend", stringPrepend} }, gd::table::tag_io_cli{});
+            result_ = VS::CVisualStudio::Print_s( stringCliTable, VS::tag_vs_output{});            
+            if( result_.first == false ) 
+            { 
+               std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
+               std::cerr << stringError << "\n";
+               return result_; 
+            }
+         }
+#else
+         std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
+         std::cout << "\n" << stringCliTable << "\n\n";
+#endif // _WIN32
       }
 
       // ## Save result if output is specified 
@@ -375,33 +615,6 @@ std::pair<bool, std::string> CApplication::RUN_Count( const gd::cli::options* po
          gd::argument::shared::arguments argumentsResult({ {"type", "COUNT"}, {"output", stringOutput}, {"table", ( *poptionsActive )["table"].as_string()} });
          result_ = pdocument->RESULT_Save(argumentsResult, &tableResult);                          if( !result_.first ) { return result_; }
       }
-
-      // ## Print result if specified
-
-      if( bPrint == true )
-      {
-         if( iReportType == linecount_report_ )
-         {
-            result_ = TABLE_AddSumRow(&tableResult, { 2, 3, 4, 5, 6 });                            if( !result_.first ) { return result_; }
-            tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
-            if( bPrint == true ) 
-            {
-               std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
-               std::cout << "\n" << stringCliTable << "\n\n";
-            }
-         }
-         else if( iReportType == patterncount_report_ )
-         {                                                                                         assert( ( *poptionsActive )["pattern"].is_true() );
-            auto tableResultPattern = pdocument->RESULT_PatternCount();
-            std::vector<unsigned> vectorColumn;
-            for( auto u = 2u; u < tableResultPattern.get_column_count(); u++ ) vectorColumn.push_back(u);// add sum columns
-
-            result_ = TABLE_AddSumRow(&tableResultPattern, vectorColumn);                          if( !result_.first ) { return result_; }
-            std::string stringCliTable = gd::table::to_string(tableResultPattern, { {"verbose", true} }, gd::table::tag_io_cli{});
-            std::cout << "\n" << stringCliTable << "\n\n";
-         }
-      }
-
    }
 
    return { true, "" };
@@ -707,9 +920,44 @@ void CApplication::DATABASE_CloseActive()
    }
 }
 
+
+/** ---------------------------------------------------------------------------
+* @brief Add error to internal list of errors
+* @param stringError error information
+*/
+void CApplication::ERROR_Add( const std::string_view& stringError )
+{
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );            // locks `m_vectorError`
+   gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
+   m_vectorError.push_back( std::move(argumentsError) );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get error information
+ * 
+ * If no errors then empty string is returned
+ * @return std::string error information
+ */
+std::string CApplication::ERROR_Report() const
+{
+   if( m_vectorError.empty() == false )
+   {
+      std::string stringError;
+      for( const auto& error_ : m_vectorError )
+      {
+         stringError += error_.print();
+         stringError += "\n";
+      }
+      return stringError;
+   }
+
+   return std::string();
+}
+
+
 // 0TAG0OPTIONS.Application
 
-/**
+/** --------------------------------------------------------------------------- @TAG #option
  * @brief Prepares the application options for command-line usage.
  *
  * This method sets up the available command-line options for the application,
@@ -744,11 +992,12 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
+   optionsApplication.add_flag( {"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
-   optionsApplication.add({ "database", "Set folder where logger places log files"});
-   optionsApplication.add({ "statements", "file containing sql statements"});
+   //optionsApplication.add({ "database", "Set folder where logger places log files"});
+   //optionsApplication.add({ "statements", "file containing sql statements"});
 
    {  // ## `copy` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );
@@ -757,7 +1006,14 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
+      optionsCommand.add({ "sort", "Sorts result on selected column name" });
+      optionsCommand.add({ "stats", "Add statistics to generated output" });
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
+      optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
+#ifdef _WIN32
+      optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format, make files clickable"} );
+      optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
+#endif
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
@@ -779,9 +1035,18 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
+
+   { // ## 'dir' command, list files
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in directory" );
+      optionsCommand.add({"source", 's', "Directory to list"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsApplication.sub_add(std::move(optionsCommand));
+   }
+
    // ## 'history' handle history 
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "Handle command history" );
+      optionsCommand.add_flag( {"create", "Initialize history logic, creates folders and files needed to manage history, this also enables configuration settings"} );
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
@@ -793,6 +1058,12 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "source", 's', "File/folders where to search for patterns in"});
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "max", "Max list count to avoid too many hits"});
+      optionsCommand.add({ "segment", "type of segment in code to searh in"});
+      optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
+#ifdef _WIN32
+      optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format, make files clickable"} );
+      optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
+#endif
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
@@ -842,15 +1113,252 @@ void CApplication::PrepareLogging_s()
 #endif // GD_LOG_SIMPLE
 }
 
-// ----------------------------------------------------------------------------
-/// @brief Get current path if string is empty
-void CApplication::PathGetCurrentIfEmpty_s( std::string& stringPath )
+
+
+/** --------------------------------------------------------------------------- @TAG #state #parse
+ * @brief Prepares the state for parsing based on the file extension.
+ * @param argumentsPath The arguments containing the source path for harvesting files.
+ * @param state_ The state object to be prepared.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state_)
 {
-   if( stringPath.empty() == true )
+   std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
+   
+   gd::file::path pathFile(stringFile);
+   std::string stringExtension = pathFile.extension().string();
+
+   // convert string to lowercase
+   std::transform(stringExtension.begin(), stringExtension.end(), stringExtension.begin(), ::tolower);
+
+   if( stringExtension.length() < 2 ) return { false, "File extension is too short: " + stringExtension };
+
+   if( stringExtension[1] == 'c' || stringExtension[1] == 'h' )
    {
-      std::filesystem::path pathFile = std::filesystem::current_path();
-      stringPath = pathFile.string();
+      if( stringExtension == ".cpp" || stringExtension == ".c" || stringExtension == ".cc" || stringExtension == ".cxx" || stringExtension == ".h" || stringExtension == ".hpp" || stringExtension == ".hxx" )
+      {
+         state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+         state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+         state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+         state_.add(std::string_view("RAWSTRING"), "R\"(", ")\"");
+         return { true, "" };
+      }
    }
+   
+   if( stringExtension == ".cs" || stringExtension == ".fs" || stringExtension == ".kt" || stringExtension == ".swift" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("RAWSTRING"), "\"\"\"", "\"\"\"");
+   }
+   else if( stringExtension == ".java" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+   }
+   else if( stringExtension == ".js" || stringExtension == ".ts" || stringExtension == ".tsx" || stringExtension == ".jsx" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+      state_.add(std::string_view("RAWSTRING"), "`", "`");
+
+      if( stringExtension == ".jsx" || stringExtension == ".tsx" ) { state_.add(std::string_view("BLOCKCOMMENT"), "{/*", "*/}"); }
+   }
+   else if( stringExtension == ".go" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\"); // Double-quoted
+      state_.add(std::string_view("RAWSTRING"), "`", "`");      // Raw string (no escaping)
+   }
+   else if( stringExtension == ".rs" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+   }
+   else if( stringExtension == ".html" || stringExtension == ".xml" )
+   {
+      state_.add(std::string_view("BLOCKCOMMENT"), "<!--", "-->");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".css" )
+   {
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".py" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "\"\"\"", "\"\"\"");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".sql" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "--", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".php" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+   }
+   else if( stringExtension == ".lua" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "--", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "--[[", "]]");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+      state_.add(std::string_view("RAWSTRING"), "[[", "]]");
+   }
+   else if( stringExtension == ".rb" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "=begin", "=end");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+   }
+   else if( stringExtension == ".json" )
+   {
+      state_.add(std::string_view("STRING"), "\"", "\"");
+   }
+   else if( stringExtension == ".pl" || stringExtension == ".pm" ) 
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
+   }
+   else if( stringExtension == ".sh" || stringExtension == ".bash" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+   }
+   else if( stringExtension == ".yaml" || stringExtension == ".yml" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+   }
+   else if( stringExtension == ".toml" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+   }
+   else if( stringExtension == ".dart" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("RAWSTRING"), "r\"", "\"");
+   }
+   else if( stringExtension == ".clj" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), ";", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+   }
+   else if( stringExtension == ".vim" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "\"", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'", "\'");
+   }
+   else if( stringExtension == ".txt" || stringExtension == ".md" )
+   {
+      // No special states for text files
+   }
+   else
+   {
+      return { false, "Unknown file type: " + stringFile };
+   }
+   
+   return { true, "" };
+}
+
+
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Ensures the provided path is absolute. If the path is empty, it sets it to the current working directory.
+ *
+ * This method processes a given path string and ensures it is in an absolute format. If the path is empty, it assigns
+ * the current working directory to the path. If the path contains multiple entries separated by `;` or `,`, it processes
+ * each entry individually to ensure they are absolute paths.
+ *
+ * ### Behavior:
+ * - If the path is empty, it assigns the current working directory.
+ * - If the path is relative, it converts it to an absolute path.
+ * - If the path contains multiple entries separated by `;` or `,`, it processes each entry individually.
+ *
+ * @param stringPath A reference to the path string to process. The string is modified in place.
+ *
+ * ### Example Usage:
+ * ```cpp
+ * std::string path = "relative/path";
+ * CApplication::PathPrepare_s(path);
+ * // path is now absolute
+ * ```
+ **/
+void CApplication::PathPrepare_s(std::string& stringPath)
+{
+   auto uPosition = stringPath.find_first_of(";,");                           // Find the first occurrence of `;` or `,` if multiple path
+
+   if( uPosition != std::string::npos )
+   {
+      char iSplitCharacter = stringPath[uPosition]; // split character
+      std::string stringNewPath; // new generated path
+
+      auto vectorPath = Split_s(stringPath);                                  // Split string by `;` or `,` and check files to make them absolute
+      for( const auto& it : vectorPath )
+      {
+         if( it.empty() == false )
+         {
+            if( stringNewPath.empty() == false )  stringNewPath += iSplitCharacter;
+
+            std::string stringCheck = it;
+            PathPrepare_s(stringCheck);
+            stringNewPath += stringCheck;
+         }
+      }
+      stringPath = stringNewPath;                                             // Update to the fixed path
+   }
+   else
+   {
+      if( stringPath.empty() )                                                // no path ?
+      {
+         std::filesystem::path pathFile = std::filesystem::current_path();    // take current working directory
+         stringPath = pathFile.string();
+      }
+      else
+      {
+         // ## fix path to make it absolute
+
+         std::filesystem::path pathFile(stringPath);
+
+         if( pathFile.is_absolute() == false )
+         {
+            if( pathFile.is_relative() == true )                              // Check if path is relative
+            {
+               // ## make path absolute
+
+               std::filesystem::path pathAbsolute = std::filesystem::absolute(pathFile);
+               gd::file::path path_(pathAbsolute);
+               stringPath = path_.string();
+            }
+         } // if( pathFile.is_absolute() == false )
+      } // if( stringPath.empty() ) else
+   } // if( uPosition != std::string::npos ) else
 }
 
 void CApplication::Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer )
@@ -936,22 +1444,23 @@ void CApplication::Read_s( gd::database::cursor_i* pcursorSelect, gd::table::tab
  */
 std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::string_view& stringArguments)
 {
+   return { true, "" };
 #ifdef WIN32
 
    // Create file
-   wchar_t cProgramDataPath[MAX_PATH];
+   wchar_t puProgramDataPath[MAX_PATH];
 
-   if( !GetEnvironmentVariableW(L"ProgramData", cProgramDataPath, MAX_PATH) )
-   {
-      return { false, "" };
-   }
-   std::wstring stringDirectory = std::wstring(cProgramDataPath) + L"\\history";
+   if( !GetEnvironmentVariableW(L"ProgramData", puProgramDataPath, MAX_PATH) ) { return { false, "" }; }
+   std::wstring stringDirectory = std::wstring(puProgramDataPath) + L"\\tools";
    if( !std::filesystem::exists(stringDirectory) )
    {
-      if( !std::filesystem::create_directory(stringDirectory) )
-      {
-         return { false, "" };
-      }
+      if( std::filesystem::create_directory(stringDirectory) == false ) { return { false, "" }; }
+   }
+
+   stringDirectory += L"\\cleaner";
+   if( !std::filesystem::exists(stringDirectory) )
+   {
+      if( std::filesystem::create_directory(stringDirectory) == false ) { return { false, "" }; }
    }
 
    std::wstring stringFilePath = stringDirectory + L"\\history.xml";
@@ -978,16 +1487,27 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
       commands_nodeChild = xmldocument.append_child("commands");
    }
 
+   int iCount = 1;
    // Check if command already exists
    for( auto command : commands_nodeChild.children("command") )
    {
       if( command.child_value() == stringArguments )
       {
          commands_nodeChild.remove_child(command); // remove command if it exists
+         pugi::xml_node count_node = command.child("count");
+
+         if( count_node )
+         {
+            iCount = std::stoi(count_node.child_value()) + 1;
+         }
       }
    }
 
-   commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
+   //commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
+   pugi::xml_node command_node = commands_nodeChild.append_child("command");
+   command_node.append_child(pugi::node_pcdata).set_value(stringArguments);
+   command_node.append_child("count").append_child(pugi::node_pcdata).set_value(std::to_string(iCount).c_str());
+
    xmldocument.save_file(stringFilePath.c_str());
 #else
 #endif
@@ -1005,21 +1525,14 @@ std::pair<bool, std::string> CApplication::HistoryPrint_s()
 #ifdef WIN32
 
    // Create file
-   wchar_t cProgramDataPath[MAX_PATH];
+   wchar_t puProgramDataPath[MAX_PATH];
 
-   if( !GetEnvironmentVariableW(L"ProgramData", cProgramDataPath, MAX_PATH) )
+   if( !GetEnvironmentVariableW(L"ProgramData", puProgramDataPath, MAX_PATH) )
    {
       return { false, "" };
    }
 
-   std::wstring stringDirectory = std::wstring(cProgramDataPath) + L"\\history";
-   /*if( !std::filesystem::exists(stringDirectory) )
-   {
-      if( !std::filesystem::create_directory(stringDirectory) )
-      {
-         return { false, "" };
-      }
-   }*/
+   std::wstring stringDirectory = std::wstring(puProgramDataPath) + L"\\tools\\cleaner";
 
    std::wstring stringFilePath = stringDirectory + L"\\history.xml";
 
@@ -1099,5 +1612,59 @@ std::vector<std::string> CApplication::Split_s(const std::string& stringText, ch
 
    return vectorResult;
 }
+
+
+
+
+#ifdef _WIN32
+
+std::pair<bool, std::string> CApplication::PrepareWindows_s() 
+{
+   // Initialize COM library
+   HRESULT iResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+   if( FAILED(iResult) ) { return {false, "Failed to initialize COM library. HRESULT: " + std::to_string(iResult)}; }
+
+   // Additional Windows-specific preparation can go here
+   // For example, setting up security, initializing other Windows APIs, etc.
+
+   // Example: Set COM security levels
+   /*
+   hr = CoInitializeSecurity(
+      nullptr,                        // Security descriptor
+      -1,                             // COM negotiates authentication services
+      nullptr,                        // Authentication services
+      nullptr,                        // Reserved
+      RPC_C_AUTHN_LEVEL_DEFAULT,      // Default authentication level
+      RPC_C_IMP_LEVEL_IMPERSONATE,    // Default impersonation level
+      nullptr,                        // Authentication info
+      EOAC_NONE,                      // Additional capabilities
+      nullptr                         // Reserved
+   );
+
+   if (FAILED(hr)) 
+   {
+      CoUninitialize(); // Clean up COM if security initialization fails
+      return {false, "Failed to initialize COM security. HRESULT: " + std::to_string(hr)};
+   }
+   */
+
+   papplication_g->PROPERTY_Add("WINDOWS", true );
+
+   // If everything succeeds
+   return {true, ""};
+}
+
+std::pair<bool, std::string> CApplication::ExitWindows_s()
+{
+   // Uninitialize the COM library
+   CoUninitialize();
+
+   papplication_g->PROPERTY_Add("WINDOWS", false );
+
+   return {true, ""};
+}
+
+
+#endif
 
 

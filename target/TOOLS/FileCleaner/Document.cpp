@@ -2,7 +2,8 @@
 * \file Document.cpp
 * 
 * ### 0TAG0 File navigation, mark and jump to common parts
-* - `0TAG0CACHE` - cache methods
+* - `0TAG0CACHE.Document` - cache methods
+
 */
 
 #include <filesystem>
@@ -389,7 +390,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
  *   that match the patterns and updates the "file-linelist" table with the results.
  * - If an error occurs during the process, it is added to the internal error list.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern, uint64_t uMax )
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList )
 {                                                                                                  assert(vectorPattern.empty() == false); // Ensure the pattern list is not empty
                                                                                                    assert(vectorPattern.size() < 64);      // Ensure the pattern list contains fewer than 64 patterns
    gd::parse::patterns patternsFind(vectorPattern);
@@ -399,7 +400,12 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
    assert(ptableFile != nullptr);
 
-   for (const auto& itRowFile : *ptableFile)
+   std::string_view stringState;
+   if( argumentsList.exists("state") == true ) { stringState = argumentsList["state"].as_string_view(); } // Get the state (code, comment, string) to search in
+
+   uint64_t uMax = argumentsList["max"].as_uint64(); // Get the maximum number of lines to be printed
+
+   for(const auto& itRowFile : *ptableFile)
    {
       // ## Generate the full file path (folder + filename)
       auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
@@ -411,8 +417,10 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
       auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
 
       // Find lines with patterns and update the "file-linelist" table
-      auto result_ = COMMAND_ListLinesWithPattern({{"source", stringFile}, {"file-key", uKey}}, patternsFind, ptableLineList);
-      if (result_.first == false)
+      gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+      if( stringState.empty() == false ) arguments_.set("state", stringState.data()); // Set the state (code, comment, string) to search in
+      auto result_ = COMMAND_ListLinesWithPattern( arguments_ , patternsFind, ptableLineList );
+      if(result_.first == false)
       {
          ERROR_Add(result_.second); // Add error to the internal error list
       }
@@ -485,9 +493,9 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
 }
 
 
-// 0TAG0CACHE
+// 0TAG0CACHE.Document 
 
-/** ---------------------------------------------------------------------------  
+/** --------------------------------------------------------------------------- @TAG #cache 
  * @brief Prepares a cache table for the specified identifier.  
  *  
  * This method initializes and prepares a table for caching data associated with the given `stringId`.  
@@ -662,6 +670,66 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
 }
 
 /** ---------------------------------------------------------------------------
+* @brief Sorts a cache table by a specified column.
+*
+* This method sorts the rows of a cache table identified by `stringId` based on the values
+* in the specified column. The column can be identified either by its name (string) or
+* by its index (integer). Sorting can be performed in ascending or descending order.
+*
+* @param stringId The identifier of the cache table to be sorted.
+* @param column_ The column to sort by. This can be:
+*                - A string (e.g., "columnName") to specify the column by name.
+*                  If the string starts with a '-', the sort order will be descending.
+*                - An integer to specify the column by index. A negative value indicates
+*                  descending order.
+*
+* @return A pair containing:
+*         - `bool`: `true` if the sorting was successful, `false` otherwise.
+*         - `std::string`: An empty string on success, or an error message on failure.
+*
+* @details
+* - If the column is specified as a string, the method checks if the column exists in the
+*   table. If the column name starts with a '-', it is treated as a descending sort.
+* - If the column is specified as an integer, the method validates the column index.
+*   A negative index indicates descending order.
+* - The method uses the `sort_null` function of the `gd::table::dto::table` class to
+*   perform the sorting.
+*
+* @pre The cache table identified by `stringId` must exist.
+* @post The rows in the cache table are sorted based on the specified column.
+*
+*/
+std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_)
+{
+   bool bAscending = true;
+   int iColumn = -1;
+   auto* ptable_ = CACHE_Get(stringId, false);                                                     assert(ptable_ != nullptr);
+
+   if( column_.is_string() )
+   {
+      std::string stringColumn = column_.as_string();
+      if( stringColumn[0] == '-' ) { bAscending = false; stringColumn.erase(0, 1); }
+      iColumn = ptable_->column_find_index(stringColumn);
+      if( iColumn == -1 ) { return { false, "Column not found: " + stringColumn }; }
+   }
+   else if( column_.is_integer() )
+   {
+      iColumn = column_.as_int();
+      if( iColumn < 0 )
+      {
+         bAscending = false;
+         iColumn = -iColumn;
+      }
+
+      if( (unsigned)iColumn >= ptable_->get_column_count() ) { return { false, "Column not found: " + std::to_string(iColumn) }; }
+   }
+                                                                                                   assert( iColumn >= 0 && (unsigned)iColumn < ptable_->get_column_count() );
+   ptable_->sort_null(iColumn, bAscending);
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Get information about cache to be able to generate data for it
  * 
  * @code
@@ -809,16 +877,16 @@ gd::table::dto::table CDocument::RESULT_RowCount()
    auto* ptableFileCount = CACHE_Get("file-count", false);                                         assert( ptableFileCount != nullptr );
 
    // ## Iterate through the rows in the file-count table
-   for (const auto& itRowCount : *ptableFileCount)
+   for(const auto& itRowCount : *ptableFileCount)
    {
       uint64_t iFileKey = itRowCount.cell_get_variant_view("file-key").as_uint64();
       uint64_t uCount = itRowCount.cell_get_variant_view("count").as_uint64();
       auto stringFilename = itRowCount.cell_get_variant_view("filename").as_string();
 
       // Find the corresponding row in the file table using the file key
-      for (const auto& itRowFile : *ptableFile)
+      for(const auto& itRowFile : *ptableFile)
       {
-         if (itRowFile.cell_get_variant_view("key").as_uint64() == iFileKey)
+         if(itRowFile.cell_get_variant_view("key").as_uint64() == iFileKey)
          {
             auto stringFolder = itRowFile.cell_get_variant_view("folder").as_string();
 
@@ -935,27 +1003,32 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
       pathFile += stringFilename;
       std::string stringFile = pathFile.string();
 
+      uint64_t uLineinSource = ptableLineList->cell_get_variant_view(uRow, "row");// get row data from table
+      uLineinSource++;                                                        // line number in source file is 1-based, in table it is 0-based
+      uint64_t uColumninSource = ptableLineList->cell_get_variant_view(uRow, "column");// get row data from table
+
+
       // ## Build the result string for the file where pattern was found  
       if( eEditor == eVisualStudio )
       {
          stringFile += "(";
-         stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();
+         stringFile += std::to_string(uLineinSource);
          stringFile += ",";
-         stringFile += ptableLineList->cell_get_variant_view(uRow, "column").as_string();
-         stringFile += ") - [";
+         stringFile += std::to_string(uColumninSource);
+         stringFile += "):  [";
       }
       else if( eEditor == eVSCode )
       {
          stringFile += ":";
-         stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();
+         stringFile += std::to_string(uLineinSource);
          stringFile += ":";
-         stringFile += ptableLineList->cell_get_variant_view(uRow, "column").as_string();
+         stringFile += std::to_string(uColumninSource);
          stringFile += " - [";
       }
       else if( eEditor == eSublime )
       {
          stringFile += ":";
-         stringFile += ptableLineList->cell_get_variant_view(uRow, "row").as_string();
+         stringFile += std::to_string(uLineinSource);
          stringFile += " - [";
       }
 
@@ -985,4 +1058,23 @@ void CDocument::ERROR_Add( const std::string_view& stringError )
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );            // locks `m_vectorError`
    gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
    m_vectorError.push_back( std::move(argumentsError) );
+}
+
+void CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult )
+{
+   unsigned uColumnCount = table_.get_column_count(); // get number of columns
+
+   for( const auto& itRow : table_ )
+   {
+      // combine all columns into one row
+      std::string stringRow;
+      for( unsigned uColumn = 0; uColumn < uColumnCount; uColumn++ )
+      {
+         if( uColumn != 0 ) stringRow += "\t"; // add tab between columns
+         auto stringColumn = itRow.cell_get_variant_view(uColumn).as_string();
+         if( stringColumn.empty() == false ) stringRow += stringColumn;
+      }
+      stringRow += "\n";
+      stringResult += stringRow;
+   }
 }

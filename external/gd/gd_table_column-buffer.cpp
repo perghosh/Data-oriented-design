@@ -7,7 +7,7 @@
 
 #include "gd_table_column-buffer.h"
 
-#if (defined(_M_X64) || (defined(_M_IX86) && defined(_M_IX86_FP) && _M_IX86_FP >= 2) || defined(__x86_64__))
+#if(defined(_M_X64) || (defined(_M_IX86) && defined(_M_IX86_FP) && _M_IX86_FP >= 2) || defined(__x86_64__))
 
 #  include <emmintrin.h>
 #  include <smmintrin.h>
@@ -390,7 +390,7 @@ table_column_buffer& table_column_buffer::column_add( const column& columnToAdd,
  * @param uColumnType column type added. types are defined in gd::types and samples are 
  *                    eTypeUInt32, eTypeInt64, eTypeDouble, eTypeString. Primitive types are supported
  *                    and some common extended types.
- * @param uSize size for column if (0 if primitive type and size for derived types, primitive types know the size)
+ * @param uSize size for column if(0 if primitive type and size for derived types, primitive types know the size)
  * @return reference to table
 */
 table_column_buffer& table_column_buffer::column_add( unsigned uColumnType, unsigned uSize )
@@ -3716,6 +3716,105 @@ void table_column_buffer::sort( unsigned uColumn, bool bAscending, uint64_t uFro
 
          if( bSwap == false ) return;
       }// for( uint64_t uRow = uFrom, uRowEnd = uFrom + uCount; uRow < (uRowEnd - 1); uRow++ )
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Sorts rows in a table column, treating null values as the smallest or largest.
+ *
+ * This method sorts rows in a table based on the values in a specified column. 
+ * Null values are treated as the smallest or largest depending on the sort order.
+ * The sorting is performed using the bubble sort algorithm.
+ *
+ * @param uColumn The index of the column to sort by.
+ * @param bAscending A boolean indicating the sort order:
+ *                   - `true` for ascending order.
+ *                   - `false` for descending order.
+ * @param uFrom The starting row index for the sort.
+ * @param uCount The number of rows to include in the sort.
+ * @param tag_sort_bubble A tag indicating that the bubble sort algorithm is used.
+ *
+ * @details
+ * - If a cell value is null, it is replaced with a default value for sorting:
+ *   - For boolean columns, the default is `false`.
+ *   - For numeric columns, the default is `0`.
+ *   - For string columns, the default is an empty string `""`.
+ * - The method iterates through the rows and swaps them as needed to achieve the desired order.
+ * - The bubble sort algorithm is used, which is simple but not efficient for large datasets.
+ *
+ * @pre The column index `uColumn` must be valid, and the range `[uFrom, uFrom + uCount)` must be within the table's row bounds.
+ * @post The rows in the specified range are sorted based on the column values, with nulls treated as the smallest or largest.
+ *
+ */
+void table_column_buffer::sort_null(unsigned uColumn, bool bAscending, uint64_t uFrom, uint64_t uCount, tag_sort_bubble)
+{                                                                                                  assert( uColumn < get_column_count() ); assert( uFrom < get_row_count() ); assert( (uFrom + uCount) <= get_row_count() );
+   bool bSwap;
+
+   gd::variant variantNull;
+
+   // ## get column type for the column that is sorted
+
+   unsigned uColumnType = column_get_type(uColumn);
+   if( gd::types::is_boolean_g(uColumnType) == true ) { variantNull = gd::variant(false); }
+   else if( gd::types::is_number_g(uColumnType) == true ) { variantNull = gd::variant(0); variantNull.convert( uColumnType ); }
+   else if( gd::types::is_string_g(uColumnType) == true ) { variantNull = gd::variant(""); variantNull.convert( uColumnType ); }
+
+   if(bAscending == true)
+   {
+      for(uint64_t uRow = uFrom, uRowEnd = uFrom + uCount; uRow < (uRowEnd - 1); uRow++)
+      {
+         bSwap = false;
+         for (auto u = uFrom; u < (uRowEnd - uRow - 1); u++)
+         {
+            auto v1_ = cell_get_variant_view(u, uColumn);
+            auto v2_ = cell_get_variant_view(u + 1, uColumn);
+
+            // check null values
+            if( v1_.is_null() == true ) v1_ = variantNull.as_variant_view();
+            if( v2_.is_null() == true ) v2_ = variantNull.as_variant_view();
+
+            if(v2_ < v1_)
+            {
+               swap(u + 1, u);
+               bSwap = true;
+            }
+         }
+
+         if(bSwap == false)
+            return;
+      }
+   }
+   else
+   {
+      uint64_t uRowEnd = uFrom + uCount;
+      uint64_t uRow = uRowEnd;
+
+      while(uRow > uFrom)
+      {
+         uRow--;
+         bSwap = false;
+
+         auto u = uRowEnd;
+         auto uSortStop = uFrom + (uRowEnd - uRow);
+
+         while(u > uSortStop)
+         {
+            u--;
+            auto v1_ = cell_get_variant_view(u, uColumn);
+            auto v2_ = cell_get_variant_view(u - 1, uColumn);
+
+            if( v1_.is_null() == true ) v1_ = variantNull.as_variant_view();
+            if( v2_.is_null() == true ) v2_ = variantNull.as_variant_view();
+
+            if(v2_ < v1_)
+            {
+               swap(u - 1, u);
+               bSwap = true;
+            }
+         }
+
+         if(bSwap == false) return;
+      }
    }
 }
 

@@ -110,7 +110,15 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::
          {
             if( it.is_regular_file() == true )                
             {
-               add_(gd::file::path(it.path()));
+               try
+               {
+                  std::string string_ = it.path().string();
+                  add_(gd::file::path(string_));
+               }
+               catch( const std::exception& e )
+               {
+                  papplication_g->ERROR_Add("Error reading file: " + std::string(e.what()));
+               }
             }
          }
       }
@@ -293,7 +301,7 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
    std::string stringSourceCode;    // gets source code for analysis
 
    gd::expression::parse::state state_; //
-   auto result_ = COMMAND_PrepareState( {{"source",stringFile}}, state_);
+   auto result_ = CApplication::PrepareState_s( {{"source",stringFile}}, state_);
    if( result_.first == false ) return result_;                                // error in state preparation
 
    // if no states are defined, count rows in file
@@ -437,7 +445,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
    gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
 
    gd::expression::parse::state state_; // state is used to check what type of code part we are in
-   auto result_ = COMMAND_PrepareState( {{"source",stringFile}}, state_);
+   auto result_ = CApplication::PrepareState_s( {{"source",stringFile}}, state_);
    if( result_.first == false ) return result_;                                // error in state preparation
 
    // ## count occurrences of each pattern in the source code
@@ -483,7 +491,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
    lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
 
    // ## Process the file
-   while (lineBuffer.eof() == false)
+   while(lineBuffer.eof() == false)
    {
       auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});
 
@@ -594,6 +602,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
  * @param argumentsPath The arguments container containing the input parameters:
  *        - `source` (string): The source file path to search for patterns.
  *        - `file-key` (uint64_t): A unique key identifying the file in the main table.
+ *        - `state` (string): The state to search for patterns in (e.g., "comment", "string", "code", "all").
  * @param patternsFind The patterns to search for in the file.
  * @param ptable_ A pointer to the table where the matching lines will be stored.
  *        Each row in the table contains:
@@ -613,6 +622,16 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 
    unsigned uFindInState = eStateCode; // state of the parser
 
+   // ## if state is sent than try to figure out from what state to find patterns
+   if( argumentsPath.exists("state") == true )
+   {
+      std::string stringState = argumentsPath["state"].as_string();
+      if( stringState == "comment" ) uFindInState = eStateComment;
+      else if( stringState == "string" ) uFindInState = eStateString;
+      else if( stringState == "code" ) uFindInState = eStateCode;
+      else if( stringState == "all" ) uFindInState = ( eStateComment | eStateString | eStateCode );
+   }
+
    uint64_t uFileKey = argumentsPath["file-key"]; // key to file for main table holding activ files
 
    // ## prepare source file
@@ -630,14 +649,18 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
 
    gd::expression::parse::state state_; // state is used to check what type of code part we are in
-   auto result_ = COMMAND_PrepareState( {{"source",stringFile}}, state_);
+   auto result_ = CApplication::PrepareState_s( {{"source",stringFile}}, state_);
    if( result_.first == false ) return result_;                               // error in state preparation
+
 
    uint64_t uCountNewLine = 0;                                                // counts all new lines in file (all '\n' characters)
 
    // ## find pattern in code, returns index to found pattern within patternsFind if match, otherwise -1
-   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, const std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
-      {
+   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
+      {  
+         stringText = gd::utf8::trim_to_string(stringText);                   // trim
+
+         // ## adds line with information about found pattern to table holding matches
          auto uRow = ptable_->row_add_one();
          ptable_->cell_set(uRow, "key", uRow + 1);
          ptable_->cell_set(uRow, "file-key", uFileKey);
@@ -661,7 +684,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
 
    // ## Process the file
-   while (lineBuffer.eof() == false)
+   while(lineBuffer.eof() == false)
    {
       uCountNewLine += lineBuffer.count('\n');                                // count all new lines in buffer
 
@@ -685,9 +708,8 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                      auto uPosition = it - first_;
                      uRow -= lineBuffer.count('\n', uPosition);               // subtract number of new lines in buffer from current position to get the right row
 
-                     stringSourceCode = gd::utf8::trim_to_string(stringSourceCode); // trim source code
                      std::string_view stringPattern = patternsFind.get_pattern(iPattern);
-                     add_line_to_table_(iPattern, stringSourceCode, uCountNewLine, uColumn, stringPattern); // add line to table
+                     add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
                   }
                }
                stringSourceCode.clear();                                      // clear source code
@@ -706,18 +728,20 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
             
             if( *it == '\n' ) 
             { 
-               uint64_t uColumn;
-               int iPattern = patternsFind.find_pattern(stringSourceCode, &uColumn); // try to find pattern in source code
-               if( iPattern != -1 )                                           // did we find a pattern?
+               if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) )
                {
-                  // ## figure ot row and column
-                  auto uRow = uCountNewLine; // row number for current buffer
-                  auto uPosition = it - first_;
-                  uRow -= lineBuffer.count('\n', uPosition);                  // subtract number of new lines in buffer from current position to get the right row
+                  uint64_t uColumn;
+                  int iPattern = patternsFind.find_pattern(stringSourceCode, &uColumn); // try to find pattern in source code
+                  if( iPattern != -1 )                                         // did we find a pattern?
+                  {
+                     // ## figure ot row and column
+                     auto uRow = uCountNewLine; // row number for current buffer
+                     auto uPosition = it - first_;
+                     uRow -= lineBuffer.count('\n', uPosition);                // subtract number of new lines in buffer from current position to get the right row
 
-                  stringSourceCode = gd::utf8::trim_to_string(stringSourceCode); // trim source code
-                  std::string_view stringPattern = patternsFind.get_pattern(iPattern);
-                  add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
+                     std::string_view stringPattern = patternsFind.get_pattern(iPattern);
+                     add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, stringPattern); // add line to table
+                  }
                }
 
                stringSourceCode.clear();
@@ -732,28 +756,66 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
             stringSourceCode += *it;                                          // add character to source code
          }
          else
-         {
+         {  // Handle state that is outside code
             stringText += *it;                                                // add character to text for analysis
             // ## check if we have found end of state
             unsigned uLength;
-            if( state_.deactivate( it, &uLength ) == true ) 
+            if( state_.deactivate(it, &uLength, gd::expression::parse::state::tag_manual{}) == true ) // NOTE: this needs manual reset of internal state
             {
-               if( uFindInState & (eStateComment|eStateString) )
+               if( uFindInState != eStateCode && stringText.empty() == false )
                {
-                  if( state_.is_comment() == true && (uFindInState & eStateComment) )
+                  if( uFindInState & ( eStateComment | eStateString ) )        // if find text in comment or string
                   {
-                     //count_(stringText);
-                  }
-                  else if( state_.is_string() == true && ( uFindInState & eStateString ) )
-                  {
-                     //count_(stringText);
-                  }
-               }
+                     if( ( state_.is_comment() == true && ( uFindInState & eStateComment ) ) ||
+                         ( state_.is_string() == true && ( uFindInState & eStateString ) ) )
+                     {
+                        uint64_t uColumn;
+                        int iPattern = patternsFind.find_pattern(stringText, &uColumn); // try to find pattern in string
+                        if( iPattern != -1 )                                           // did we find a pattern?
+                        {
+                           // ## figure ot row and column
+                           auto uRow = uCountNewLine; // row number for current buffer
+                           auto uPosition = it - first_;
+                           uRow -= lineBuffer.count('\n', uPosition);         // subtract number of new lines in buffer from current position to get the right row
+
+                           std::string_view stringPattern = patternsFind.get_pattern(iPattern);
+                           add_line_to_table_(iPattern, stringText, uRow, uColumn, stringPattern); // add line to table
+                        }
+                     }
+                  } // if( uFindInState & ( eStateComment | eStateString ) )
+               } // if( stringText.empty() == false )
+
+               state_.clear_state();                                           // clear state
                stringText.clear();                                             // clear text for analysis
 
 
-               if( uLength > 1 ) it += ( uLength - 1 );                       // skip to end of state marker and if it is more than 1 character, skip to end of state
+               if( uLength > 1 ) it += ( uLength - 1 );                        // skip to end of state marker and if it is more than 1 character, skip to end of state
                continue;
+            }
+
+            if( *it == '\n' )
+            {
+               if( (uFindInState & ( eStateComment | eStateString )) && stringText.empty() == false )
+               {
+                  if( ( state_.is_comment() == true && ( uFindInState & eStateComment ) ) ||
+                      ( state_.is_string() == true && ( uFindInState & eStateString ) ) )
+                  {
+                     uint64_t uColumn;
+                     int iPattern = patternsFind.find_pattern(stringText, &uColumn); // try to find pattern in string
+                     if( iPattern != -1 )                                      // did we find a pattern?
+                     {
+                        // ## figure ot row and column
+                        auto uRow = uCountNewLine;                             // row number for current buffer
+                        auto uPosition = it - first_;
+                        uRow -= lineBuffer.count('\n', uPosition);             // subtract number of new lines in buffer from current position to get the right row
+
+                        std::string_view stringPattern = patternsFind.get_pattern(iPattern);
+                        add_line_to_table_(iPattern, stringText, uRow, uColumn, stringPattern); // add line to table
+                     }
+                  }
+               }
+
+               stringText.clear();                                             // clear text for analysis
             }
          }
       }
@@ -769,177 +831,11 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
       }
    }
 
-
-
    return { true, "" };
 }
 
 // 0TAG0FileExtensions.PrepareState
 
-/** ---------------------------------------------------------------------------
- * @brief Prepares the state for parsing based on the file extension.
- * @param argumentsPath The arguments containing the source path for harvesting files.
- * @param state_ The state object to be prepared.
- * @return A pair containing:
- *         - `bool`: `true` if the operation was successful, `false` otherwise.
- *         - `std::string`: An empty string on success, or an error message on failure.
- */
-std::pair<bool, std::string> COMMAND_PrepareState(const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state_)
-{
-   std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
-   
-   gd::file::path pathFile(stringFile);
-   std::string stringExtension = pathFile.extension().string();
-
-   // convert string to lowercase
-   std::transform(stringExtension.begin(), stringExtension.end(), stringExtension.begin(), ::tolower);
-
-   if( stringExtension == ".cpp" || stringExtension == ".c" || stringExtension == ".h" || stringExtension == ".hpp" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("RAWSTRING"), "R\"(", ")\"");
-   }
-   else if( stringExtension == ".cs" || stringExtension == ".fs" || stringExtension == ".kt" || stringExtension == ".swift" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("RAWSTRING"), "\"\"\"", "\"\"\"");
-   }
-   else if( stringExtension == ".java" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-   }
-   else if( stringExtension == ".js" || stringExtension == ".ts" || stringExtension == ".tsx" || stringExtension == ".jsx" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("COMMENTBLOCK"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
-      state_.add(std::string_view("RAWSTRING"), "`", "`");
-
-      if( stringExtension == ".jsx" || stringExtension == ".tsx" ) { state_.add(std::string_view("COMMENTBLOCK"), "{/*", "*/}"); }
-   }
-   else if( stringExtension == ".go" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("COMMENTBLOCK"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\"); // Double-quoted
-      state_.add(std::string_view("RAWSTRING"), "`", "`");      // Raw string (no escaping)
-   }
-   else if( stringExtension == ".rs" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-   }
-   else if( stringExtension == ".html" || stringExtension == ".xml" )
-   {
-      state_.add(std::string_view("BLOCKCOMMENT"), "<!--", "-->");
-      state_.add(std::string_view("STRING"), "\"", "\"");
-   }
-   else if( stringExtension == ".css" )
-   {
-      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"");
-   }
-   else if( stringExtension == ".py" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
-      state_.add(std::string_view("STRING"), "\"", "\"");
-   }
-   else if( stringExtension == ".sql" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "--", "\n");
-      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"");
-   }
-   else if( stringExtension == ".php" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
-      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
-   }
-   else if( stringExtension == ".lua" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "--", "\n");
-      state_.add(std::string_view("BLOCKCOMMENT"), "--[[", "]]");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
-      state_.add(std::string_view("RAWSTRING"), "[[", "]]");
-   }
-   else if( stringExtension == ".rb" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
-      state_.add(std::string_view("BLOCKCOMMENT"), "=begin", "=end");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
-   }
-   else if( stringExtension == ".json" )
-   {
-      state_.add(std::string_view("STRING"), "\"", "\"");
-   }
-   else if( stringExtension == ".pl" || stringExtension == ".pm" ) 
-   {
-      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("STRING"), "\'", "\'", "\\");
-   }
-   else if( stringExtension == ".sh" || stringExtension == ".bash" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("STRING"), "\'", "\'");
-   }
-   else if( stringExtension == ".yaml" || stringExtension == ".yml" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
-      state_.add(std::string_view("STRING"), "\"", "\"");
-      state_.add(std::string_view("STRING"), "\'", "\'");
-   }
-   else if( stringExtension == ".toml" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
-      state_.add(std::string_view("STRING"), "\"", "\"");
-      state_.add(std::string_view("STRING"), "\'", "\'");
-   }
-   else if( stringExtension == ".dart" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("RAWSTRING"), "r\"", "\"");
-   }
-   else if( stringExtension == ".clj" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), ";", "\n");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-   }
-   else if( stringExtension == ".vim" )
-   {
-      state_.add(std::string_view("LINECOMMENT"), "\"", "\n");
-      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
-      state_.add(std::string_view("STRING"), "\'", "\'", "\'");
-   }
-   else if( stringExtension == ".txt" || stringExtension == ".md" )
-   {
-      // No special states for text files
-   }
-   else
-   {
-      return { false, "Unknown file type: " + stringFile };
-   }
-   
-
-
-   return { true, "" };
-}
 
 
 /** ---------------------------------------------------------------------------

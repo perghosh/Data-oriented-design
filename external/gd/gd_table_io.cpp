@@ -845,6 +845,9 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
       uOffset += 2;                                                            // move offset to next column
    }
 
+   // ## Check for prepend string
+   if( argumentOption.exists("prepend") == true ) stringResult += argumentOption["prepend"].as_string();
+
    // ## Print column names
    {
       unsigned uColumn = 0;
