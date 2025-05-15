@@ -423,7 +423,7 @@ std::pair<bool, std::string> CApplication::CreateDirectory()
          if(!pw || !pw->pw_dir) { return { false, "Failed to retrieve home directory" }; }
          pbszHome = pw->pw_dir;
       }
-      stringConfigurationBase = std::string(home) + "/.config";
+      stringConfigurationBase = std::string(pbszHome) + "/.config";
    }
 
    pathTarget = std::filesystem::path(stringConfigurationBase) / "cleaner";    // Construct full path: ~/.config/cleaner
