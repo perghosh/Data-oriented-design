@@ -33,3 +33,5 @@ temp__*
 *.exe
 *.out
 *.app
+
+/CMakeSettings.json

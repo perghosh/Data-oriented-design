@@ -234,6 +234,7 @@ int64_t line::find(char iCharacter, uint64_t uOffset) const
  * an index into span256_ - if the value at that index is non-zero, the character
  * is considered a match.
  */
+#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
 int64_t line::find(const std::span<const uint8_t>& span256_, uint64_t uOffset) const
 {                                                                                                  assert(m_puBuffer != nullptr); assert( span256_.size() == 256 ); assert(m_uLast > 0); assert(m_uLast >= uOffset); // Ensure span size is 256
    const uint8_t* puPosition = m_puBuffer + uOffset; // Pointer to start of search
@@ -250,6 +251,7 @@ int64_t line::find(const std::span<const uint8_t>& span256_, uint64_t uOffset) c
    }
    return -1;                                                                  // Character not found
 }
+#endif
 
 
 /** ---------------------------------------------------------------------------

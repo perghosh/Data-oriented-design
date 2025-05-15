@@ -13,8 +13,6 @@ int main(int iArgumentCount, char** ppbszArgument)
    std::unique_ptr< CApplication > papplication_ = std::make_unique<CApplication>();
    papplication_g = papplication_.get();
 
-   std::cout << "we have a message";
-
    papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
    auto result_ = papplication_->Initialize();                                                     assert( result_.first );
 
