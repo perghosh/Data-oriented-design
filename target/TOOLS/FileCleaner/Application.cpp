@@ -223,6 +223,14 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    const gd::cli::options* poptionsActive = optionsApplication.find_active();
    if( poptionsActive == nullptr ) { return { false, "No active options found" }; }
 
+   if( poptionsActive->exists("help") == true ) 
+   {
+      std::string stringDocumentation;
+      optionsApplication.print_documentation( stringDocumentation, gd::cli::options::tag_documentation_dense{});
+      PrintMessage( stringDocumentation, gd::argument::arguments() );
+      return { true, "" };
+   }
+
    /// ## prepare command
 
 #ifndef NDEBUG
@@ -925,6 +933,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
    optionsApplication.add_flag( {"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
+   optionsApplication.add_flag({ "help", "Prints help information about command" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});

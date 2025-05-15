@@ -22,16 +22,10 @@ std::pair<bool, std::string> Count_g( const gd::cli::options* poptionsCount, CDo
    std::string stringCommandName = options_.name();
    if( stringCommandName == "count" )
    {
-      if( options_.exists("help") == true )
-      {
-         std::string stringDocumentation;
-         options_.print_documentation(stringDocumentation, gd::cli::options::tag_documentation_verbose{});
-         //std::cout << stringDocumentation << "\n";
-      }
-      else if( options_.exists("explain") == true )
+      if( options_.exists("explain") == true )
       {
          std::string stringExplain = CountGetExplain_g(( *poptionsCount )["explain"].as_string());
-         //std::cout << stringExplain << "\n";
+         pdocument->MESSAGE_Display(stringExplain);
       }
       else
       {
