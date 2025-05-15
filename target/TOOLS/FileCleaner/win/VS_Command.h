@@ -7,6 +7,13 @@
 
 #pragma once
 
+#include <cassert>
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <vector>
+
+
 #if defined( __clang__ )
 #elif defined( __GNUC__ )
 #elif defined( _MSC_VER )
@@ -94,6 +101,7 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
    static std::pair<bool, std::string> Print_s( const std::string_view& stringText, tag_vs_output );
+   static std::pair<bool, std::string> Open_s(const std::vector<std::string>& vectorFile);
 
 
 };
