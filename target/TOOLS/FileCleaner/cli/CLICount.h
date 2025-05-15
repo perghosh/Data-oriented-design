@@ -16,6 +16,8 @@
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
 
+#include "../Document.h"
+#include "../Application.h"
 
 
 #ifndef NAMESPACE_CLI_BEGIN
@@ -29,7 +31,9 @@ NAMESPACE_CLI_BEGIN
 
 // ## Count operations
 
-std::pair<bool, std::string> Count_g( const gd::cli::options* poptionsCount );
+std::pair<bool, std::string> Count_g( const gd::cli::options* poptionsCount, CDocument* pdocument );
+
+std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, CDocument* pdocument);
 
 /// \brief Get explain for selected count result
 std::string CountGetExplain_g( const std::string_view& stringType );
