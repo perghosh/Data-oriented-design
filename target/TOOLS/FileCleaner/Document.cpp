@@ -1049,6 +1049,17 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
 
 
 
+void CDocument::MESSAGE_Display(const std::string_view& stringMessage)
+{
+   m_papplication->PrintMessage(stringMessage, {{}} );                         // display message in application window
+}
+
+void CDocument::MESSAGE_Display(const std::string_view& stringMessage, const gd::argument::arguments& argumentsMessage )
+{
+   m_papplication->PrintMessage(stringMessage, argumentsMessage );             // display message in application window
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Add error to internal list of errors
  * @param stringError error information

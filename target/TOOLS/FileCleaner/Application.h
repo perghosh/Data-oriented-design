@@ -45,6 +45,32 @@ namespace gd { namespace cli { class options; } }
  */
 class CApplication : public application::basic::CApplication
 {
+public:
+   /**
+    * \enum enumUIType
+    * \brief Represents the type of user interface for the application.
+    *
+    * - eUITypeUnknown:   Unknown or unspecified UI type.
+    * - eUITypeConsole:  Console-based UI.
+    * - eUITypeWeb:      Web-based UI.
+    * - eUITypeWIMP:     WIMP (Windows, Icons, Menus, Pointer) desktop UI.
+    * - eUITypeVSCode:   Visual Studio Code extension UI.
+    * - eUITypeVS:       Visual Studio extension UI.
+    * - eUITypeSublime:  Sublime Text extension UI.
+    */
+   enum enumUIType
+   {
+      eUITypeUnknown = 0, ///< Unknown or unspecified UI type
+      eUITypeConsole,     ///< Console-based UI
+      eUITypeWeb,         ///< Web-based UI
+      eUITypeWIMP,        ///< WIMP (Windows, Icons, Menus, Pointer) desktop UI
+      eUITypeVSCode,      ///< Visual Studio Code extension UI
+      eUITypeVS,          ///< Visual Studio extension UI
+      eUITypeSublime,     ///< Sublime Text extension UI
+
+      eUIFile,            ///< Output to file
+   };
+
 // ## construction -------------------------------------------------------------
 public:  // 0TAG0construct.Application
    CApplication() {}
@@ -73,7 +99,9 @@ public:
 public:
 /** \name GET/SET
 *///@{
-
+   enumUIType GetUIType() const { return m_eUIType; }
+   void SetUIType(enumUIType eUIType) { m_eUIType = eUIType; }
+   std::string GetUITypeAsString() const;
 //@}
 
 /** \name INTERFACE
@@ -89,9 +117,13 @@ public:
    std::pair<bool, std::string> Initialize( gd::cli::options& optionsApplication );
    /// Create application specific directory if it does not exist
    std::pair<bool, std::string> CreateDirectory();
-   std::pair<bool, std::string> STATEMENTS_Load(const std::string_view& stringFileName);
+   /// Print message to user
+   std::pair<bool, std::string> PrintMessage(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat);
 
 //@}
+
+   std::pair<bool, std::string> STATEMENTS_Load(const std::string_view& stringFileName);
+
 
    std::pair<bool, std::string> RUN_Count( const gd::cli::options* poptionsActive );
 
@@ -157,6 +189,8 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   enumUIType m_eUIType = eUITypeUnknown; ///< Type of user interface
+
    /// List of documents
    std::vector<std::unique_ptr<CDocument>> m_vectorDocument;
 
@@ -170,6 +204,10 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
+   // ## Constants
+
+   static enumUIType GetUITypeFromString_s(const std::string_view& stringUIType);
+
    // ## Prepare Application 
 
    /// Prepare options for application, options are used to parse command-line arguments
