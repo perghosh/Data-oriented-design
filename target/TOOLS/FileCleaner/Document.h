@@ -139,6 +139,15 @@ public:
 *///@{
 //@}
 
+/** \name MESSAGE
+*///@{
+   /// Display message to user
+   void MESSAGE_Display( const std::string_view& stringMessage );
+   void MESSAGE_Display( const std::string_view& stringMessage, const gd::argument::arguments& arguments_ );
+
+//@}
+
+
 /** \name ERROR
 *///@{
 /// Add error to internal list of errors
