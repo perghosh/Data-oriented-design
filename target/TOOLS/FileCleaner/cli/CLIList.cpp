@@ -136,8 +136,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       if (result_.first == false) return result_;
    }
 
-
-    return { true, "" };
+   return { true, "" };
 }
 
 
