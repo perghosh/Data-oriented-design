@@ -1,6 +1,9 @@
 /**
-* @file CLIHistory.cpp
-*/
+ * @file CLIHistory.cpp
+ * @brief Command line interface for counting lines in files.
+ */
+
+ // @TAG #cli
 
 
 #include "../Command.h"
