@@ -1,6 +1,8 @@
 #include <filesystem>
 
 #include "gd/expression/gd_expression_value.h"
+#include "gd/expression/gd_expression_token.h"
+#include "gd/expression/gd_expression_method_01.h"
 #include "gd/expression/gd_expression_runtime.h"
 
 #include "VS_Command.h"
@@ -77,6 +79,24 @@ std::pair<bool, std::string> ConnectActiveVisualStudio(CComPtr<EnvDTE::_DTE>& pD
    return { false, "No active Visual Studio instance found." };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Connects to the active Visual Studio instance and retrieves its automation interface.
+ *
+ * This method connects to the active Visual Studio instance and retrieves its `EnvDTE::_DTE` interface.
+ * It is a wrapper around the `ConnectActiveVisualStudio` function, which performs the actual connection logic.
+ *
+ * @return A pair containing:
+ *         - `true` and a success message if the active Visual Studio instance is successfully retrieved.
+ *         - `false` and an error message if no active instance is found or an error occurs.
+ *
+ * @note This method requires that at least one instance of Visual Studio is running. If no instance
+ *       is found in the ROT, the method will return an appropriate error message.
+ */
+std::pair<bool, std::string> CVisualStudio::Connect()
+{                                                                                                  assert( !m_pDTE );
+   return ConnectActiveVisualStudio( m_pDTE );
+}
+
 
 /** --------------------------------------------------------------------------- @TAG #print #vs
  * @brief Outputs the specified text to the "General" pane of the Visual Studio Output window.
@@ -96,19 +116,15 @@ std::pair<bool, std::string> ConnectActiveVisualStudio(CComPtr<EnvDTE::_DTE>& pD
  *       If no instance is found or an error occurs during the operation, an appropriate
  *       error message is returned.
  */
-std::pair<bool, std::string> CVisualStudio::Print_s( const std::string_view& stringText, tag_vs_output)
+std::pair<bool, std::string> CVisualStudio::Print( const std::string_view& stringText, tag_vs_output)
 {
    HRESULT iResult = S_OK;
    try 
    {
-      CComPtr<EnvDTE::_DTE> pDTE;
-      auto result_ = ConnectActiveVisualStudio( pDTE );                             
-      if( result_.first == false ) { return result_; }
-
       // ## Get the Output window
       
       CComPtr<EnvDTE::Windows> pWindows;                                       // Get the Windows collection
-      iResult = pDTE->get_Windows(&pWindows);
+      iResult = m_pDTE->get_Windows(&pWindows);
       if(FAILED(iResult) || !pWindows) { return { false, "Failed to get Windows collection. HRESULT: " + std::to_string(iResult) }; }
 
       CComPtr<EnvDTE::Window> pOutputWindow;                                   // Get the Output window
@@ -174,15 +190,11 @@ std::pair<bool, std::string> CVisualStudio::Print_s( const std::string_view& str
  * @note This method requires an active Visual Studio instance to function correctly. If no instance is found
  *       or if any file fails to open, an appropriate error message is returned.
  */
-std::pair<bool, std::string> CVisualStudio::Open_s(const std::vector<std::string>& vectorFile)
+std::pair<bool, std::string> CVisualStudio::Open(const std::vector<std::string>& vectorFile)
 {
    HRESULT iResult = S_OK;
    try 
    {
-      CComPtr<EnvDTE::_DTE> pDTE;
-      auto result_ = ConnectActiveVisualStudio(pDTE);
-      if(!result_.first) { return result_; }
-
       // Iterate through the file paths
       for(const auto& stringFile : vectorFile)
       {
@@ -191,10 +203,10 @@ std::pair<bool, std::string> CVisualStudio::Open_s(const std::vector<std::string
 
          // Open the file in Visual Studio
          CComPtr<EnvDTE::Window> pWindow = nullptr;
-         iResult = pDTE->OpenFile(CComBSTR("Text"), CComBSTR(stringFile.c_str()), &pWindow);
+         iResult = m_pDTE->OpenFile(CComBSTR("Text"), CComBSTR(stringFile.c_str()), &pWindow);
 
          // If you need the document, get it from the window
-         if (SUCCEEDED(iResult) && pWindow) {
+         if(SUCCEEDED(iResult) && pWindow) {
             CComPtr<EnvDTE::Document> pDocument = nullptr;
             pWindow->get_Document(&pDocument);
          }
@@ -261,6 +273,27 @@ const method pmethodVisualStudio_g[] = {
 
 std::pair<bool, std::string> CVisualStudio::ExecuteExpression(const std::string_view& stringExpression)
 {
+   // ## convert string to tokens
+   std::vector<gd::expression::token> vectorToken;
+   std::pair<bool, std::string> result = gd::expression::token::parse_s(stringExpression, vectorToken, gd::expression::tag_formula{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   // ## compile tokens and that means to convert tokens to postfix, place them in correct order to be processed
+   std::vector<gd::expression::token> vectorPostfix;
+   result = gd::expression::token::compile_s(vectorToken, vectorPostfix, gd::expression::tag_postfix{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   // ## calculate the result
+   // NOTE: vectorVariable is not defined in this scope. Assuming member variable or needs to be passed in.
+   //gd::expression::runtime runtime_(vectorVariable);
+   gd::expression::runtime runtime_;
+   runtime_.add( { 4, gd::expression::pmethodDefault_g, ""});
+   runtime_.add( { 3, gd::expression::pmethodString_g, std::string("str")});
+   runtime_.add( { 2, pmethodVisualStudio_g, std::string("vs")});
+
+   gd::expression::value valueResult;
+   result = gd::expression::token::calculate_s(vectorPostfix, &valueResult, runtime_);
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
 
    return { true, "" };
 }

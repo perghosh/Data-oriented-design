@@ -39,6 +39,7 @@
 #include "cli/CLICount.h"
 #include "cli/CLIDir.h"
 #include "cli/CLIHistory.h"
+#include "cli/CLIList.h"
 
 #include "Command.h"
 
@@ -293,6 +294,17 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "list" )
    {
+      // Add a document for the "count" command
+      auto* pdocument = DOCUMENT_Get("list");
+      if( pdocument == nullptr ) 
+      {
+         pdocument = DOCUMENT_Add("list");
+         if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
+      }
+
+      return CLI::List_g(poptionsActive, pdocument);                          // list lines in file or directory with the matched pattern
+/*
+
       std::string stringSource = (*poptionsActive)["source"].as_string();                          
       PathPrepare_s(stringSource);                                   // if source is empty then set it to current path
 
@@ -339,7 +351,9 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
             //stringCliTable = "\n-- Result from search  --\n";
             stringCliTable = "\n";
             CDocument::RESULT_VisualStudio_s(tableResultLineList, stringCliTable);
-            result_ = VS::CVisualStudio::Print_s( stringCliTable, VS::tag_vs_output{});            
+            VS::CVisualStudio visualstudio;
+            result_ = visualstudio.Connect();
+            if( result_.first == true ) result_ = visualstudio.Print( stringCliTable, VS::tag_vs_output{});            
             if( result_.first == false ) 
             { 
                std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
@@ -357,6 +371,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          auto result_ = pdocument->RESULT_Save({ {"type", "LIST"}, {"output", stringOutput}}, &tableResultLineList);
          if( result_.first == false ) return result_;
       }
+      */
    }
    else if( stringCommandName == "help" )                                      // command = "help"
    {
@@ -395,7 +410,7 @@ std::pair<bool, std::string> CApplication::CreateDirectory()
 
    wchar_t puAppdataPath[MAX_PATH];
    HRESULT iResult = ::SHGetFolderPathW(NULL, CSIDL_APPDATA, NULL, 0, puAppdataPath);
-   if (FAILED(iResult)) { return { false, "Failed to retrieve APPDATA path" }; }
+   if(FAILED(iResult)) { return { false, "Failed to retrieve APPDATA path" }; }
 
    // Convert wide string to UTF-8 string
    char utf8_path[MAX_PATH * 4]; // Buffer for UTF-8 conversion
@@ -1001,6 +1016,9 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "list rows with specified patterns" );
       optionsCommand.add({ "source", 's', "File/folders where to search for patterns in"});
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
+      optionsCommand.add({ "rpattern", "regular expression pattern to search for"});
+      optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
+      optionsCommand.add({ "script", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
       optionsCommand.add({ "max", "Max list count to avoid too many hits"});
       optionsCommand.add({ "segment", "type of segment in code to searh in"});
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );

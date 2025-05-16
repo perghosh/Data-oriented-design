@@ -1,6 +1,7 @@
 /**
  * @file gd_expression_parse_state.h
  * @brief Defines the `state` class and its associated `rule` struct for managing parsing states in expressions.
+ * @TAG #gd::expression
  *
  * This file provides the implementation of a state machine for parsing expressions. It includes:
  * - The `state` class, which manages a collection of parsing rules and provides methods to activate, deactivate, and query states.

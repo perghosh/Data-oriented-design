@@ -79,6 +79,11 @@ public:
 
 /** \name OPERATION
 *///@{
+   std::pair<bool, std::string> Connect();
+   std::pair<bool, std::string> Print( const std::string_view& stringText, tag_vs_output );
+   std::pair<bool, std::string> Open(const std::vector<std::string>& vectorFile);
+
+
    std::pair<bool, std::string> ExecuteExpression( const std::string_view& stringExpression );
 
 //@}
@@ -104,10 +109,17 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
    static std::pair<bool, std::string> Print_s( const std::string_view& stringText, tag_vs_output );
-   static std::pair<bool, std::string> Open_s(const std::vector<std::string>& vectorFile);
-
 
 };
+
+/// \brief Print to Visual Studio output window
+inline std::pair<bool, std::string> CVisualStudio::Print_s( const std::string_view& stringText, tag_vs_output )
+{
+   CVisualStudio VS_;
+   auto result = VS_.Connect();
+   if( !result.first ) return result;
+   return VS_.Print(stringText, tag_vs_output{});
+}
 
 
 } // namespace VC

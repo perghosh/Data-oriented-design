@@ -1,5 +1,6 @@
 /**
  * @file gd_expression.h
+ * @TAG #gd::expression
  * 
  * @brief Provides utilities for handling expressions, including operator precedence, 
  *        character code checks, and a general variant type for expression values.
