@@ -52,6 +52,7 @@ class CVisualStudio
 // ## construction -------------------------------------------------------------
 public:
    CVisualStudio() {}
+   CVisualStudio( CComPtr<EnvDTE::_DTE> pDTE ) { m_pDTE = pDTE; }
    // copy
    CVisualStudio(const CVisualStudio& o) { common_construct(o); }
    CVisualStudio(CVisualStudio&& o) noexcept { common_construct(std::move(o)); }
@@ -73,11 +74,12 @@ public:
 public:
 /** \name GET/SET
 *///@{
-
+   CComPtr<EnvDTE::_DTE> GetDTE() const { return m_pDTE; }
 //@}
 
 /** \name OPERATION
 *///@{
+   std::pair<bool, std::string> ExecuteExpression( const std::string_view& stringExpression );
 
 //@}
 
@@ -96,6 +98,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   CComPtr<EnvDTE::_DTE> m_pDTE;
 
 
 // ## free functions ------------------------------------------------------------

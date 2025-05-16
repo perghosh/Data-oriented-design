@@ -23,81 +23,68 @@ _GD_EXPRESSION_BEGIN
 struct tag_formula {}; ///< tag for formula
 struct tag_expression {}; ///< tag for expression
 struct tag_postfix {}; ///< tag for postfix
-/*
-enum enumParseValue
-{
-   eParseValueNone = 0x0000,
-   eParseValueInteger = 0x0001,
-   eParseValueDecimal = 0x0002,
-   eParseValueString = 0x0003,
-   eParseValueBoolean = 0x0004,
-   eParseValueNull = 0x0005,
-   eParseValueFunction = 0x0006,
-   eParseValueVariable = 0x0007,
-};
-*/
 
 enum enumTokenType
 {
-   eTokenTypeNone = 0,
-   eTokenTypeKeyword = 1,
-   eTokenTypeOperator = 2,
-   eTokenTypeSeparator = 3,
+   eTokenTypeNone            = 0,
+   eTokenTypeKeyword         = 1,
+   eTokenTypeOperator        = 2,
+   eTokenTypeSeparator       = 3,
    eTokenTypeStringDelimiter = 4,
-   eTokenTypeSpecialChar = 5,
-   eTokenTypeValue = 6,
-   eTokenTypeIdentifier = 7,
-   eTokenTypeFormula = 8,
-   eTokenTypeFunction = 9,
-   eTokenTypeVariable = 10,
-   eTokenTypeLabel = 11,
-   eTokenTypeMember = 12,
-   eTokenTypeEnd = 13,
+   eTokenTypeSpecialChar     = 5,
+   eTokenTypeValue           = 6,
+   eTokenTypeIdentifier      = 7,
+   eTokenTypeFormula         = 8,
+   eTokenTypeFunction        = 9,
+   eTokenTypeVariable        = 10,
+   eTokenTypeLabel           = 11,
+   eTokenTypeMember          = 12,
+   eTokenTypeEnd             = 13,
 };
 
 
 
 enum enumKeyword
 {
-   eKeywordIf        = 0x0001,
-   eKeywordElse      = 0x0002,
-   eKeywordWhile     = 0x0003,
-   eKeywordFor       = 0x0004,
-   eKeywordSwitch    = 0x0005,
-   eKeywordDo        = 0x0006,
-   eKeywordReturn    = 0x0007,
-   eKeywordBreak     = 0x0008,
-   eKeywordContinue  = 0x0009,
-   eKeywordCase      = 0x000A,
-   eKeywordDefault   = 0x000B,
-   eKeywordGoto      = 0x000C,
-   eKeywordThis      = 0x000D,
+   eKeywordIf                = 0x0001,
+   eKeywordElse              = 0x0002,
+   eKeywordWhile             = 0x0003,
+   eKeywordFor               = 0x0004,
+   eKeywordSwitch            = 0x0005,
+   eKeywordDo                = 0x0006,
+   eKeywordReturn            = 0x0007,
+   eKeywordBreak             = 0x0008,
+   eKeywordContinue          = 0x0009,
+   eKeywordCase              = 0x000A,
+   eKeywordDefault           = 0x000B,
+   eKeywordGoto              = 0x000C,
+   eKeywordThis              = 0x000D,
 
-   eKeywordBegin     = 0x0010,
-   eKeywordEnd       = 0x0011,
+   eKeywordBegin             = 0x0010,
+   eKeywordEnd               = 0x0011,
 };
 
 enum enumFunction
 {
-   eFunctionNamespace = 0x0100,
+   eFunctionNamespace        = 0x0100,
 };
 
 enum enumValueType
 {
-   eValueTypeNone    = 0,
-   eValueTypeBoolean = 1, 
-   eValueTypeInteger = 8,
-   eValueTypeDecimal = 11,
-   eValueTypePointer = 12,
-   eValueTypeString  = 14,
-   eValueTypeUtf8    = 15,
-   eValueTypeBinary  = 18,
+   eValueTypeNone            = 0,
+   eValueTypeBoolean         = 1, 
+   eValueTypeInteger         = 8,
+   eValueTypeDecimal         = 11,
+   eValueTypePointer         = 12,
+   eValueTypeString          = 14,
+   eValueTypeUtf8            = 15,
+   eValueTypeBinary          = 18,
 };
 
 enum enumTokenPart
 {
-   eTokenPartToken = 0,
-   eTokenPartType = 1,
+   eTokenPartToken           = 0,
+   eTokenPartType            = 1,
 };
 
 /**
@@ -161,6 +148,8 @@ struct token
    static std::pair<bool, std::string> calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_);
    /// @brief calculate_s that is simplified for one liner expression that returns single value, make sure that the formula is correct, only compile time checks and twrows
    static value calculate_s( const std::string_view& stringExpression, const std::vector< std::pair<std::string, value::variant_t>>& vectorVariable );
+   /// @brief calculate_s that is simplified for one liner expression and this also take a callback function that will be called when the runtime is created, this is useful for setting up the runtime with variables and other information
+   static value calculate_s( const std::string_view& stringExpression, const std::vector< std::pair<std::string, value::variant_t>>& vectorVariable, std::function< void( runtime& runtime )> callback_ );
    static value calculate_s( const std::string_view& stringExpression, runtime& runtime_ );
    static value calculate_s( const std::string_view& stringExpression, std::unique_ptr<runtime>& pruntime );
    static value calculate_s( const std::string_view& stringExpression );

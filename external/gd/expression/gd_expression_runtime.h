@@ -29,22 +29,57 @@
 
 _GD_EXPRESSION_BEGIN 
 
+struct runtime; ///< forward declaration of runtime struct
+
+/**
+ * @brief Represents a callable method in the expression runtime.
+ *
+ * The method struct encapsulates metadata and function pointers for methods
+ * that can be invoked by the expression runtime. It supports different
+ * function pointer signatures for methods with varying input/output
+ * requirements, and provides flags to describe method properties such as
+ * whether the runtime context is required or if the method returns a value.
+ *
+ * Members include the method name, argument counts, flags, and a pointer to
+ * the actual method implementation. Utility functions are provided for
+ * querying method properties and for use in method lookup and sorting.
+ */
 struct method
 {
+   enum enumFlags : unsigned
+   {
+      eFlagUnknown = 0x00, ///< no flags
+      eFlagRuntime = 0x01, ///< pass runtime as first argument
+      eFlagVoid    = 0x02, ///< no return value
+   };
+
+   /// @brief Function pointer type for a method that processes input values and produces none or single output value. 
    using method_1 = std::pair<bool, std::string>(*)(const std::vector<value>&, value*);
+   /// @brief Function pointer type for a method that processes input values and produces multiple output values.
    using method_2 = std::pair<bool, std::string>(*)(const std::vector<value>&, std::vector<variant_t>& );
+   /// @brief Function pointer type for a method that processes input values with runtime context but no return values
+   using method_runtime_0 = std::pair<bool, std::string>(*)( runtime*, const std::vector<value>& );
+   /// @brief Function pointer type for a method that processes input values with runtime context and produces multiple output values.
+   using method_runtime_1 = std::pair<bool, std::string>(*)( runtime*, const std::vector<value>&, value* );
+   /// @brief Function pointer type for a method that processes input values with runtime context and produces multiple output values.
+   using method_runtime_2 = std::pair<bool, std::string>(*)( runtime*, const std::vector<value>&, std::vector<variant_t>& );
 
    bool operator<(const std::string_view& stringName) const { return std::string_view(m_piName) < stringName; }
+
+   bool is_runtime() const { return ( m_uFlags & eFlagRuntime ) != 0; } ///< check if method has runtime as first argument
+   bool is_void() const { return ( m_uFlags & eFlagVoid ) != 0; } ///< check if method has no return value
 
    const char* name() const { return m_piName; } ///< get name of the method
    unsigned in_count() const { return m_uInCount; } ///< get number of input arguments
    unsigned out_count() const { return m_uOutCount; } ///< get number of output arguments
+   unsigned flags() const { return m_uFlags; } ///< get flags of the method
 
    void* m_pmethod;           ///< Pointer to the method
    //const char* m_piNamespace; ///< Namespace of the method
    const char* m_piName;      ///< Name of the method
    unsigned m_uInCount;       ///< Number of arguments
    unsigned m_uOutCount;      ///< Number of returned arguments
+   unsigned m_uFlags = 0;     ///< Flags for the method
 };
 
 
@@ -119,6 +154,18 @@ struct runtime
    /// @brief try to find variable value by name and use callback function to find it
    bool find_value( const std::string_view& stringName, value::variant_t* pvariant_ ) ;
 
+   /// add global object
+   void add_global(const std::string_view& stringName, void* pObject) { m_vectorGlobal.push_back(std::make_pair(std::string(stringName), pObject)); }
+   /// set global object for name or if not found add it to the vector
+   void set_global(const std::string_view& stringName, void* pObject);
+
+   void get_global(const std::string_view& stringName, void** ppObject) const;
+   void* get_global(const std::string_view& stringName) const;
+   void* find_global(const std::string_view& stringName) const { return get_global(stringName); } ///< get global object by name, if not found then return nullptr
+
+   template<typename TYPE>
+   TYPE* get_global_as(const std::string_view& stringName) const;
+
 /** \name DEBUG
 *///@{
    std::string dump() const;
@@ -131,6 +178,8 @@ struct runtime
    std::function<bool (const std::string_view&, value::variant_t* )> m_functionFind; ///< function to find variable
    /// @brief vector of methods
    std::vector<std::tuple<unsigned,const method*,std::string>> m_vectorMethod; ///< vector of methods
+   /// @brief vector of global objects, its just named void* pointers
+   std::vector<std::pair<std::string, void*>> m_vectorGlobal; ///< vector of global objects
    /// @brief error strings, colleting error messsages
    std::vector<std::string> m_stringError;
 
@@ -157,6 +206,49 @@ inline void runtime::get_all_variables(std::vector<std::pair<std::string, value:
 {
    vectorVariable = std::move(m_vectorVariable);
 }
+
+/// @brief get global object by name and cast it to the type
+template<typename TYPE>
+TYPE* runtime::get_global_as(const std::string_view& stringName) const
+{
+   for (const auto& pair : m_vectorGlobal)
+   {
+      if( pair.first == stringName )  return static_cast<TYPE*>(pair.second);
+   }
+   return nullptr;
+}
+
+
+/// @brief get void * object by name, if not found then set it to nullptr
+inline void runtime::get_global(const std::string_view& stringName, void** ppObject) const
+{                                                                                                  assert( ppObject != nullptr );
+   for( auto& pair : m_vectorGlobal )
+   {
+      if( pair.first == stringName ) { *ppObject = pair.second; return; }
+   }
+   *ppObject = nullptr;
+}
+
+/// @brief get global object by name, if not found then return nullptr
+inline void* runtime::get_global(const std::string_view& stringName) const
+{
+   for (const auto& pair : m_vectorGlobal)
+   {
+      if( pair.first == stringName )  return pair.second;
+   }
+   return nullptr;
+}
+
+/// @brief set global object for name or if not found add it to the vector
+inline void runtime::set_global(const std::string_view& stringName, void* pObject)
+{
+   for( auto& pair : m_vectorGlobal )
+   {
+      if( pair.first == stringName ) { pair.second = pObject; return; }
+   }
+   add_global(stringName, pObject);
+}
+
 
 
 

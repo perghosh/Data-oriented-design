@@ -688,13 +688,38 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                   }
                }
 
-               if( pmethod_->out_count() == 1 )
+               if( pmethod_->flags() == 0 )                                    // default methods, only use arguments and return value
                {
-                  value valueResult;
-                  auto result_ = reinterpret_cast<method::method_1>(pmethod_->m_pmethod)( vectorArguments, &valueResult );
-                  if( result_.first == true ) { stackValue.push(valueResult); }
-                  else { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
+                  if( pmethod_->out_count() == 1 )
+                  {
+                     value valueResult;
+                     auto result_ = reinterpret_cast<method::method_1>(pmethod_->m_pmethod)( vectorArguments, &valueResult );
+                     if( result_.first == true ) { stackValue.push(valueResult); }
+                     else { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
+                  }
                }
+               else
+               {
+                  if( pmethod_->is_runtime() == true )                         // method needs runtime, maybe to find global data
+                  {
+                     if( pmethod_->out_count() == 0 )
+                     {
+                        auto result_ = reinterpret_cast<method::method_runtime_0>(pmethod_->m_pmethod)( &runtime_, vectorArguments );
+                        if( result_.first == false ) return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second };
+                     }
+                     else if( pmethod_->out_count() == 1 )
+                     {
+                        value valueResult;
+                        auto result_ = reinterpret_cast<method::method_runtime_1>(pmethod_->m_pmethod)( &runtime_, vectorArguments, &valueResult );
+                        if( result_.first == true ) { stackValue.push(valueResult); }
+                        else { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
+                     }
+                  }
+               }
+            }
+            else
+            {                                                                                      assert(false);
+               return { false, "[calculate_s] - Method not found: " + std::string(stringMethod) };
             }
          }
          break;
@@ -753,6 +778,31 @@ value token::calculate_s( const std::string_view& stringExpression, const std::v
    runtime runtime_(vectorVariable);
    runtime_.add( { 4, pmethodDefault_g, ""});
    runtime_.add( { 3, pmethodString_g, std::string("str")});
+   value valueResult;
+   result = calculate_s(vectorPostfix, &valueResult, runtime_);
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+   return valueResult;
+}
+
+value token::calculate_s( const std::string_view& stringExpression, const std::vector< std::pair<std::string, value::variant_t>>& vectorVariable, std::function< void( runtime& runtime )> callback_ )
+{
+   // ## convert string to tokens
+   std::vector<token> vectorToken;
+   std::pair<bool, std::string> result = parse_s(stringExpression, vectorToken, tag_formula{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   // ## compile tokens and that menas to convert tokens to postfix, place them in correct order to be processed
+   std::vector<token> vectorPostfix;
+   result = compile_s(vectorToken, vectorPostfix, tag_postfix{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   // ## calculate the result
+   runtime runtime_(vectorVariable);
+   runtime_.add( { 4, pmethodDefault_g, ""});
+   runtime_.add( { 3, pmethodString_g, std::string("str")});
+
+   callback_(runtime_);                                                        // add more runtime context to the callback
+
    value valueResult;
    result = calculate_s(vectorPostfix, &valueResult, runtime_);
    if( result.first == false ) { throw std::invalid_argument(result.second); }

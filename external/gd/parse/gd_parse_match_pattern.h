@@ -5,10 +5,14 @@
 
 #pragma once
 
+#include "gd/gd_compiler.h"
+
 #include <array>
 #include <cassert>
 #include <cstring>
+#if GD_COMPILER_HAS_CPP20_SUPPORT
 #include <span>
+#endif
 #include <string>
 #include <string_view>
 #include <vector>
