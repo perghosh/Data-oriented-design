@@ -226,7 +226,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    if( poptionsActive->exists("help") == true ) 
    {
       std::string stringDocumentation;
-      optionsApplication.print_documentation( stringDocumentation, gd::cli::options::tag_documentation_dense{});
+      poptionsActive->print_documentation( stringDocumentation, gd::cli::options::tag_documentation_dense{});
       PrintMessage( stringDocumentation, gd::argument::arguments() );
       return { true, "" };
    }
@@ -956,15 +956,17 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
 #endif
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
-   {  // ## `count` command, count number of lines in file
+   {  // ## `copy` command, count number of lines in file
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file from source to target" );
       optionsCommand.add({"source", 's', "File to copy"});
       optionsCommand.add({"destination", 'd', "Destination, where file is copied to"});
       optionsCommand.add({"backup", 'b', "If destination file exits then make a backup"});
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
@@ -981,6 +983,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in directory" );
       optionsCommand.add({"source", 's', "Directory to list"});
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
@@ -1006,8 +1009,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
 #endif
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
-      //optionsCommand.add({});
    }
 
    {  // ## `join` command, joins two or more files

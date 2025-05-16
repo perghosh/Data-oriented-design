@@ -210,6 +210,7 @@ private:
       m_vectorOption = o.m_vectorOption;
       m_vectorSubOption = o.m_vectorSubOption;
       m_argumentsValue = o.m_argumentsValue;
+      m_poptionsParent = o.m_poptionsParent;
    }
    void common_construct( options&& o ) noexcept {
       m_uFirstToken = o.m_uFirstToken;
@@ -219,6 +220,7 @@ private:
       m_vectorOption = std::move( o.m_vectorOption );
       m_vectorSubOption = std::move( o.m_vectorSubOption );
       m_argumentsValue = std::move( o.m_argumentsValue );
+      m_poptionsParent = o.m_poptionsParent;
    }
 
 // ## operator -----------------------------------------------------------------
@@ -245,6 +247,10 @@ public:
    bool is_sub() const;
    /// Check if single dash options is allowed
    bool is_single_dash() const { return is_flag( eFlagSingleDash ); }
+
+   void parent(const options* poptionsParent) { m_poptionsParent = poptionsParent; }
+   void set_parent(const options* poptionsParent) { m_poptionsParent = poptionsParent; }
+   const options* get_parent() const { return m_poptionsParent; }
 
 //@}
 
@@ -390,6 +396,8 @@ public:
    std::vector<option> m_vectorOption; ///< Valid option values
    gd::argument::arguments m_argumentsValue;///< Argument values
    std::vector< options > m_vectorSubOption;///< Attached subcommands 
+
+   const options* m_poptionsParent = nullptr; ///< Pointer to parent options (if this is sub command)
 
 
 // ## free functions ------------------------------------------------------------
