@@ -2,6 +2,7 @@
 * @file CLIList.cpp
 */
 
+// @TAG #cli
 
 #include "../Command.h"
 

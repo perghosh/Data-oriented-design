@@ -2,6 +2,8 @@
 * @file CLIHistory.cpp
 */
 
+// @TAG #cli
+
 
 #include "../Application.h"
 
