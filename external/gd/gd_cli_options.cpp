@@ -484,7 +484,6 @@ void options::print_documentation( std::string& stringDocumentation, tag_documen
       stringDocumentation += stringLine;
       it.print_documentation( stringDocumentation, tag_documentation_table{});
    }
-
 }
 
 /** ---------------------------------------------------------------------------
@@ -492,19 +491,37 @@ void options::print_documentation( std::string& stringDocumentation, tag_documen
  * 
  * Prints information not using to many lines, a bit denser
  * 
- * Prints information about commands and arguments for each command
  * @param stringDocumentation reference to string getting documentation text
  */
 void options::print_documentation( std::string& stringDocumentation, tag_documentation_dense ) const
 {
-   constexpr size_t uNameColumnWidth = 30; // Adjust column width for option names
+   constexpr size_t uTotalColumnWidth = 80; // Total width of the output
+   constexpr size_t uNameColumnWidth = 25; // Adjust column width for option names
+   constexpr size_t uDescriptionColumnWidth = uTotalColumnWidth - uNameColumnWidth; // Adjust column width for descriptions
    constexpr char chSeparator = '-';      // Separator for sections
 
-   std::ostringstream ossDocumentation;
+   std::string string_; // temporary string for formatting
+   std::ostringstream OSSDocumentation; // String stream used to produce documentation
+
+   OSSDocumentation << std::string(uTotalColumnWidth, chSeparator) << "\n"; // Dynamic separator line
+
+   std::string stringName = name(); // Get the name of the command
+
+   if( stringName.empty() == false )
+   {
+      OSSDocumentation << "\n"; // Blank line before command name
+      string_ = "## " + stringName; // Command name as a section header
+      string_.append(uNameColumnWidth - string_.size(), ' ');
+      OSSDocumentation << string_ ; // Command name as a section header
+      OSSDocumentation << description() << "\n"; // Description of the command
+      OSSDocumentation << "\n"; // Blank line before command name
+   }
 
    // Header for options
-   ossDocumentation << "Available Options:\n";
-   ossDocumentation << std::string(uNameColumnWidth + 50, chSeparator) << "\n"; // Dynamic separator line
+   string_ = "command options ";
+   string_.append(uNameColumnWidth - string_.size(), ' ');
+   OSSDocumentation << string_;
+   OSSDocumentation << std::string(uNameColumnWidth + uDescriptionColumnWidth - string_.length(), chSeparator) << "\n"; // Dynamic separator line
 
    // Format and print each option
    for(const auto& option : m_vectorOption)
@@ -515,25 +532,30 @@ void options::print_documentation( std::string& stringDocumentation, tag_documen
          stringName.append(uNameColumnWidth - stringName.size(), ' '); // Align names to column width
       }
 
-      ossDocumentation << stringName << "  " << option.description() << "\n";
+      OSSDocumentation << stringName << option.description() << "\n";
    }
 
-   // Add a blank line after options
-   ossDocumentation << "\n";
-
-   // Process sub-options
-   for(const auto& subOption : m_vectorSubOption)
+   if( get_parent() != nullptr )
    {
-      ossDocumentation << "## " << subOption.name() << "\n";
-      ossDocumentation << subOption.description() << "\n";
-      ossDocumentation << std::string(uNameColumnWidth + 50, chSeparator) << "\n"; // Separator for sub-options
+      string_ = "global options";
+      string_.append(uNameColumnWidth - string_.size(), ' ');
+      OSSDocumentation << "\n" << string_;
+      OSSDocumentation << std::string(uNameColumnWidth + uDescriptionColumnWidth - string_.length(), chSeparator) << "\n"; // Dynamic separator line
 
-      // Recursively print sub-option documentation
-      subOption.print_documentation(stringDocumentation, tag_documentation_dense{});
+      // Format and print each option from the parent
+      for(const auto& option : get_parent()->m_vectorOption)
+      {
+         std::string stringName = "[" + std::string(option.name()) + "]";
+         if(stringName.size() < uNameColumnWidth)
+         {
+            stringName.append(uNameColumnWidth - stringName.size(), ' '); // Align names to column width
+         }
+         OSSDocumentation << stringName << option.description() << "\n";
+      }
    }
 
    // Append the formatted string to the provided documentation
-   stringDocumentation += ossDocumentation.str();
+   stringDocumentation += OSSDocumentation.str();
 
 }
 
