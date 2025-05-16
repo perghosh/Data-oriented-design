@@ -17,6 +17,36 @@
 
 #include "Command.h"
 
+namespace detail {
+
+   /// add file to table
+   void add_file_to_table(const gd::file::path& pathFile, gd::table::dto::table* ptable_, bool bSize = false)
+   {
+      auto uRow = ptable_->row_add_one();
+
+      ptable_->cell_set(uRow, "key", uRow + 1);
+      auto folder_ = pathFile.parent_path().string();
+      ptable_->cell_set(uRow, "folder", folder_);
+      auto filename_ = pathFile.filename().string();
+      ptable_->cell_set(uRow, "filename", filename_);
+      ptable_->cell_set(uRow, "extension", pathFile.extension().string());
+
+      // get file size
+      if( bSize == true )
+      {
+         std::string stringFilePath = pathFile.string();
+         std::ifstream ifstreamFile(stringFilePath.data(), std::ios::binary | std::ios::ate);
+         if( ifstreamFile.is_open() == true )
+         {
+            std::streamsize uSize = ifstreamFile.tellg();
+            ptable_->cell_set(uRow, "size", uSize, gd::types::tag_convert{});
+         }
+         ifstreamFile.close();
+      }
+   }
+
+}
+
 
  /** --------------------------------------------------------------------------
  * @brief Harvests files from a specified directory path and populates a table with their details.
@@ -56,37 +86,13 @@
  */
 std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::table::dto::table* ptable_, unsigned uDepth )
 {                                                                                                  assert( ptable_ != nullptr );
-   // ## add file to table
-   auto add_ = [ptable_](const gd::file::path& pathFile)
-   {
-      auto uRow = ptable_->get_row_count();
-      ptable_->row_add();
-
-      ptable_->cell_set(uRow, "key", uRow + 1);
-      auto folder_ = pathFile.parent_path().string();
-      ptable_->cell_set(uRow, "folder", folder_);
-      auto filename_ = pathFile.filename().string();
-      ptable_->cell_set(uRow, "filename", filename_);
-      ptable_->cell_set(uRow, "extension", pathFile.extension().string());
-
-      // get file size
-      std::string stringFilePath = pathFile.string();
-      std::ifstream ifstreamFile(stringFilePath.data(), std::ios::binary | std::ios::ate);
-      if( ifstreamFile.is_open() == true )
-      {
-         std::streamsize uSize = ifstreamFile.tellg();
-         ptable_->cell_set(uRow, "size", uSize, gd::types::tag_convert{});
-      }
-      ifstreamFile.close();
-   };
-
    try
    {
       if( std::filesystem::is_directory(stringPath) == false )                 // not a directory
       {
          if( std::filesystem::is_regular_file(stringPath) == true )            // is file
          {
-            add_(gd::file::path(stringPath));
+            detail::add_file_to_table(gd::file::path(stringPath), ptable_);
             return { true, "" };
          }
          else
@@ -113,7 +119,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::
                try
                {
                   std::string string_ = it.path().string();
-                  add_(gd::file::path(string_));
+                  detail::add_file_to_table(gd::file::path(string_), ptable_);
                }
                catch( const std::exception& e )
                {
