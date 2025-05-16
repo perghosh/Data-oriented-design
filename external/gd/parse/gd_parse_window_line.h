@@ -10,7 +10,7 @@
 #include <cassert>
 #include <cstring>
 #ifdef GD_COMPILER_HAS_CPP20_SUPPORT
-#include <span>
+#  include <span>
 #endif
 #include <string>
 #include <string_view>

@@ -2,6 +2,8 @@
  * @file CLIHistory.cpp
  */
 
+#include "gd/expression/gd_expression_runtime.h"
+
 
 #include "../Application.h"
 

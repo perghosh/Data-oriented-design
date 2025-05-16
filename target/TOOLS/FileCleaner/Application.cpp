@@ -284,7 +284,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    else if( stringCommandName == "dir" )
    {
       auto result_ = CLI::Dir_g(poptionsActive);
-      result_;
+      if( result_.first == false ) return result_;
    }
    else if( stringCommandName == "history" )
    {
