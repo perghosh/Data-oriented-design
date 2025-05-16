@@ -62,7 +62,7 @@ std::pair<bool, std::string> Count_g( const gd::cli::options* poptionsCount, CDo
  * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
  */
 std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, CDocument* pdocument)
-{
+{                                                                                                  assert( poptionsCount != nullptr );
    const gd::cli::options& options_ = *poptionsCount;
 
    enum { linecount_report_, patterncount_report_ };
