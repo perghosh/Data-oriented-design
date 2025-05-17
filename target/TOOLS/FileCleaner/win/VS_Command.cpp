@@ -229,6 +229,8 @@ std::pair<bool, std::string> CVisualStudio::Open(const std::vector<std::string>&
          if (FAILED(hr) || !pWindow) {
             return { false, "Failed to open file: " + stringFile + ". HRESULT: 0x" + std::format("{:08X}", static_cast<unsigned>(hr)) };
          }
+
+         pWindow->Activate(); // Activate the window after opening it
       }
    }
    catch(_com_error& e) 
