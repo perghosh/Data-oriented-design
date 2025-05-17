@@ -44,46 +44,45 @@ namespace detail {
          ifstreamFile.close();
       }
    }
-
 }
 
 
  /** --------------------------------------------------------------------------
- * @brief Harvests files from a specified directory path and populates a table with their details.
- *
- * This method recursively traverses the directory structure starting from the given path, 
- * collecting information about each file and storing it in the provided table. The information 
- * includes the file's folder, filename, extension, and size.
- *
- * @param stringPath The root directory path to start harvesting files from.
- * @param ptable_ A pointer to the table where the harvested file details will be stored.
- *                The table must be pre-initialized and not null.
- * @param uDepth The maximum depth for recursive traversal. A value of 0 means no recursion.
- * @return A pair containing:
- *         - `bool`: `true` if the harvesting was successful, `false` otherwise.
- *         - `std::string`: An empty string on success, or an error message on failure.
- *
- * @note The method uses `std::filesystem` for directory traversal and file operations.
- *       If an error occurs during traversal (e.g., permission issues), the method will 
- *       return `false` along with the error message.
- *
- * @example
- * @code
- * gd::table::dto::table table;
- * std::string path = "/example/directory";
- * unsigned depth = 2;
- * auto result = FILES_Harvest_g(path, &table, depth);
- * if(result.first) {
- *     std::cout << "Files harvested successfully." << std::endl;
- * } else {
- *     std::cerr << "Error: " << result.second << std::endl;
- * }
- * @endcode
- * 
- * @verbatim
- * 
- * @endverbatim
- */
+  * @brief Harvests files from a specified directory path and populates a table with their details.
+  *
+  * This method recursively traverses the directory structure starting from the given path, 
+  * collecting information about each file and storing it in the provided table. The information 
+  * includes the file's folder, filename, extension, and size.
+  *
+  * @param stringPath The root directory path to start harvesting files from.
+  * @param ptable_ A pointer to the table where the harvested file details will be stored.
+  *                The table must be pre-initialized and not null.
+  * @param uDepth The maximum depth for recursive traversal. A value of 0 means no recursion.
+  * @return A pair containing:
+  *         - `bool`: `true` if the harvesting was successful, `false` otherwise.
+  *         - `std::string`: An empty string on success, or an error message on failure.
+  *
+  * @note The method uses `std::filesystem` for directory traversal and file operations.
+  *       If an error occurs during traversal (e.g., permission issues), the method will 
+  *       return `false` along with the error message.
+  *
+  * @example
+  * @code
+  * gd::table::dto::table table;
+  * std::string path = "/example/directory";
+  * unsigned depth = 2;
+  * auto result = FILES_Harvest_g(path, &table, depth);
+  * if(result.first) {
+  *     std::cout << "Files harvested successfully." << std::endl;
+  * } else {
+  *     std::cerr << "Error: " << result.second << std::endl;
+  * }
+  * @endcode
+  * 
+  * @verbatim
+  * 
+  * @endverbatim
+  */
 std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::table::dto::table* ptable_, unsigned uDepth )
 {                                                                                                  assert( ptable_ != nullptr );
    try
