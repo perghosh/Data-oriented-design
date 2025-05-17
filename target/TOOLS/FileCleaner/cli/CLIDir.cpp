@@ -57,7 +57,8 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir)
    }
 
    auto stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
-   std::cout << stringTable << "\n";
+   CApplication application;
+   application.PrintMessage(stringTable, gd::argument::arguments());
 
    return { true, "" };
 }
