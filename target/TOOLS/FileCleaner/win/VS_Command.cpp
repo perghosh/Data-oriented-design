@@ -1,5 +1,8 @@
 ﻿#include <filesystem>
 
+#include "gd/gd_variant_view.h"
+#include "gd/gd_table_aggregate.h"
+
 #include "gd/expression/gd_expression_value.h"
 #include "gd/expression/gd_expression_token.h"
 #include "gd/expression/gd_expression_method_01.h"
@@ -214,29 +217,18 @@ std::pair<bool, std::string> CVisualStudio::Open(const std::vector<std::string>&
       // Iterate through the file paths
       for(const auto& stringFile : vectorFile)
       {
-         // Verify file exists
-         if( std::filesystem::exists(stringFile) == false ) { return { false, "File not found: " + stringFile }; }
+         if (!std::filesystem::exists(stringFile)) {
+            return { false, "File not found: " + stringFile };
+         }
 
-         // Open the file in Visual Studio
          CComPtr<EnvDTE::Window> pWindow = nullptr;
-         iResult = m_pDTE->OpenFile(CComBSTR("Text"), CComBSTR(stringFile.c_str()), &pWindow);
-
-         // If you need the document, get it from the window
-         if(SUCCEEDED(iResult) && pWindow) {
-            CComPtr<EnvDTE::Document> pDocument = nullptr;
-            pWindow->get_Document(&pDocument);
+         //CComBSTR bstrKind(L"Text");
+         CComBSTR bstrKind(L"{00000000-0000-0000-0000-000000000000}"); // vsViewKindTextView
+         CComBSTR bstrFile(stringFile.c_str());
+         HRESULT hr = m_pDTE->OpenFile(bstrKind, bstrFile, &pWindow);
+         if (FAILED(hr) || !pWindow) {
+            return { false, "Failed to open file: " + stringFile + ". HRESULT: 0x" + std::format("{:08X}", static_cast<unsigned>(hr)) };
          }
-
-         if(FAILED(iResult)) { return { false, "Failed to open file: " + stringFile + ". HRESULT: " + std::to_string(iResult) }; }
-
-         /*
-         CComPtr<EnvDTE::Document> pDocument;
-         iResult = pDTE->OpenFile(CComBSTR("Text"), CComBSTR(stringFile.c_str()), &pDocument);
-         if(FAILED(iResult) || !pDocument)
-         {
-            return { false, "Failed to open file: " + stringFile + ". HRESULT: " + std::to_string(iResult) };
-         }
-         */
       }
    }
    catch(_com_error& e) 
@@ -339,16 +331,29 @@ using namespace gd::expression;
 
 static std::pair<bool, std::string> open_s( runtime* pruntime, const std::vector<value>& vectorArgument )
 {                                                                                                  assert(vectorArgument.size() > 0);
+   std::string stringResult;
+   const auto& vColumn = vectorArgument[0];
+
    CVisualStudio* pVS = pruntime->get_global_as<CVisualStudio>( "vs" );
    if( pVS != nullptr )
    {
-      std::vector<std::string> vectorFile;
-      for( const auto& value : vectorArgument )
+      gd::table::dto::table* ptable_ = pVS->GetTable();
+      auto stringColumn = vColumn.get_string();
+      unsigned uColumn = ptable_->column_find_index(stringColumn);
+      if( (int)uColumn == -1 ) { return { false, std::format( "Invalid column name: {}", vColumn.get_string() )}; }
+
+      gd::table::aggregate<gd::table::dto::table> aggregate_(ptable_);
+      std::vector<gd::variant_view> vectorFile = aggregate_.unique(uColumn, 0, ptable_->get_row_count());
+      std::vector<std::string> vectorFilePath;
+      for( const auto& itFile : vectorFile )
       {
-         if( value.is_string() == false ) { return { false, "Invalid argument type. Expected string." }; }
-         vectorFile.push_back( value.get_string() );
+         std::string stringFile = itFile.as_string();
+         if( std::filesystem::exists(stringFile) == false ) { return { false, std::format("File not found: {}", stringFile) }; }
+         vectorFilePath.push_back(stringFile);
       }
-      return pVS->Open( vectorFile );
+      auto result_ = pVS->Open(vectorFilePath);
+      if( result_.first == false ) { return result_; }
+      // return pVS->Open( vectorFile );
    }
 
    return { true, "" };
