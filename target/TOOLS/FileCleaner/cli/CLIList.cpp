@@ -112,8 +112,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          pdocument->MESSAGE_Display( stringCliTable );
       }
       else
-      {
-         if( options_["script"].is_true() == true )
+      {                                                                        // @TAG #script
+         if( options_["script"].is_true() == true )                            
          {
             std::string stringScript = options_["script"].as_string();
             VS::CVisualStudio visualstudio;

@@ -113,6 +113,20 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Filters out files from the cache table based on a string filter.
+ *
+ * This method checks each file in the cache table against the provided string filter.
+ * If a file does not match the filter, it is removed from the cache table.
+ *
+ * @param stringFilter The filter string to apply to the filenames. Not that this is a wildcard filter and may contain multiple filters separated by ';'.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @pre The `file` cache table must be prepared and available in the cache.
+ * @post The `file` table is updated to remove files that do not match the filter.
+ */
 std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stringFilter)
 {                                                                                                  assert( stringFilter.empty() == false );
    std::vector<uint64_t> vectorRemoveRow;
@@ -982,7 +996,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
 
    // Define the result table structure  
    constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );
-   table tableResult(uTableStyle, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+   table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"} }, gd::table::tag_prepare{});
 
    // Retrieve the file-pattern cache table  
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
@@ -1003,12 +1017,19 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
       pathFile += stringFilename;
       std::string stringFile = pathFile.string();
 
+      // ## Add a new row to the result table
+
+      auto uNewRow = tableResult.row_add_one();
+      tableResult.cell_set(uNewRow, "file", stringFile);
+
+      // ### Prepare the format to match the editor
+
       uint64_t uLineinSource = ptableLineList->cell_get_variant_view(uRow, "row");// get row data from table
       uLineinSource++;                                                        // line number in source file is 1-based, in table it is 0-based
       uint64_t uColumninSource = ptableLineList->cell_get_variant_view(uRow, "column");// get row data from table
 
 
-      // ## Build the result string for the file where pattern was found  
+      // #### Build the result string for the file where pattern was found  
       if( eEditor == eVisualStudio )
       {
          stringFile += "(";
@@ -1040,8 +1061,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
 
       stringFile += stringLine;
 
-      auto uNewRow = tableResult.row_add_one();
-      tableResult.cell_set(uNewRow, 0, stringFile);
+      tableResult.cell_set(uNewRow, 0, stringFile);                            // add clickable string to table
    }
 
    return tableResult;

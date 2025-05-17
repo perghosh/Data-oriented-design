@@ -84,11 +84,13 @@ public:
    std::pair<bool, std::string> Connect();
    std::pair<bool, std::string> Print( const std::string_view& stringText, tag_vs_output );
    std::pair<bool, std::string> Open(const std::vector<std::string>& vectorFile);
+   std::pair<bool, std::string> AddBookmark(const std::string& stringPath, int iLine, const std::string& stringDescription);
 
 
    std::pair<bool, std::string> ExecuteExpression( const std::string_view& stringExpression );
 
-   void AddTable(const gd::table::dto::table* ptable) { m_vectorTable.push_back(ptable); }
+   void AddTable(gd::table::dto::table* ptable) { m_vectorTable.push_back(ptable); }
+   gd::table::dto::table* GetTable() { return m_vectorTable[0]; }
    const gd::table::dto::table* GetTable() const { return m_vectorTable[0]; }
 
 //@}
@@ -109,7 +111,7 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    CComPtr<EnvDTE::_DTE> m_pDTE;
-   std::vector<const gd::table::dto::table*> m_vectorTable;
+   std::vector<gd::table::dto::table*> m_vectorTable;
 
 
 // ## free functions ------------------------------------------------------------
