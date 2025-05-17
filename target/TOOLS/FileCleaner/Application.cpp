@@ -927,7 +927,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    { // ## 'dir' command, list files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in directory" );
-      optionsCommand.add({"source", 's', "Directory to list"});
+      optionsCommand.add({ "source", 's', "Directory to list" });
+      optionsCommand.add({ "filter", "Filter file extensions" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
