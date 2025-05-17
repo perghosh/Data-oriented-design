@@ -98,7 +98,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
 
    auto tableResultLineList = pdocument->RESULT_PatternLineList();
-   // LOG_INFORMATION_RAW("== Lines in result: " & tableResultLineList.get_row_count() & " breaks if above: " & uMax );
+
 
    std::string stringOutput = options_["output"].as_string();
    if (stringOutput.empty() == true)
@@ -113,6 +113,19 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       }
       else
       {
+         if( options_["script"].is_true() == true )
+         {
+            std::string stringScript = options_["script"].as_string();
+            VS::CVisualStudio visualstudio;
+            result_ = visualstudio.Connect();
+            if( result_.first == true )
+            {
+               visualstudio.AddTable( &tableResultLineList );
+               result_ = visualstudio.ExecuteExpression( stringScript );
+            }
+         }
+
+
          //stringCliTable = "\n-- Result from search  --\n";
          stringCliTable = "\n";
          CDocument::RESULT_VisualStudio_s(tableResultLineList, stringCliTable);

@@ -66,6 +66,7 @@ struct method
    using method_runtime_2 = std::pair<bool, std::string>(*)( runtime*, const std::vector<value>&, std::vector<variant_t>& );
 
    bool operator<(const std::string_view& stringName) const { return std::string_view(m_piName) < stringName; }
+   bool operator==(const std::string_view& stringName) const { return std::string_view(m_piName) == stringName; }
 
    bool is_runtime() const { return ( m_uFlags & eFlagRuntime ) != 0; } ///< check if method has runtime as first argument
    bool is_void() const { return ( m_uFlags & eFlagVoid ) != 0; } ///< check if method has no return value
@@ -94,6 +95,49 @@ struct method
  */
 struct runtime
 {
+   enum enumGlobalState : unsigned
+   {
+      eGlobalStateUnknown = 0x00, ///< unknown state
+      eGlobalStateActive  = 0x01, ///< global object is active
+   };
+
+   /**
+    * \brief
+    *
+    *
+    */
+   struct global
+   {
+      // ## construction -------------------------------------------------------------
+
+      global() {}
+      global(const std::string_view& stringName, void* pObject) : m_uState{}, m_stringName(stringName), m_pObject(pObject) {}
+      global(unsigned uState, const std::string_view& stringName, void* pObject) : m_uState(uState), m_stringName(stringName), m_pObject(pObject) {}
+      global(const global& o) : m_uState(o.m_uState), m_stringName(o.m_stringName), m_pObject(o.m_pObject) {}
+      global(global&& o) noexcept : m_uState(o.m_uState), m_stringName(std::move(o.m_stringName)), m_pObject(o.m_pObject) { o.m_pObject = nullptr; } // move constructor
+      ~global() {}
+
+      // Comparison operators for use with std::lower_bound and associative containers
+      bool operator<(const global& other) const { return m_stringName < other.m_stringName; }
+      bool operator<(const std::string_view& stringName) const { return m_stringName < stringName; }
+      friend bool operator<(const std::string_view& stringName, const global& global_) { return stringName < global_.m_stringName; }
+
+      const std::string& name() const { return m_stringName; } ///< get name of the global object
+      bool is_active() const { return ( m_uState & eGlobalStateActive ) != 0; } ///< check if global object is active
+      void set_active() { m_uState |= eGlobalStateActive; } ///< set global object as active
+      void set_inactive() { m_uState &= ~eGlobalStateActive; } ///< set global object as inactive
+
+      void* get_object() const { return m_pObject; } ///< get pointer to the global object
+      void set_object(void* pObject) { m_pObject = pObject; } ///< set pointer to the global object
+
+      // ## attributes
+      unsigned m_uState; ///< 
+      std::string m_stringName; ///< name of the global object
+      void* m_pObject; ///< pointer to the global object
+   };
+
+
+
 // ## construction ------------------------------------------------------------
    runtime() {}
    runtime( const std::function<bool (const std::string_view&, value::variant_t* )>& callback_ ): m_functionFind(callback_) {}
@@ -156,7 +200,7 @@ struct runtime
    bool find_value( const std::string_view& stringName, value::variant_t* pvariant_ ) ;
 
    /// add global object
-   void add_global(const std::string_view& stringName, void* pObject) { m_vectorGlobal.push_back(std::make_pair(std::string(stringName), pObject)); }
+   void add_global(const std::string_view& stringName, void* pObject) { m_vectorGlobal.push_back( { std::string(stringName), pObject } ); }
    /// set global object for name or if not found add it to the vector
    void set_global(const std::string_view& stringName, void* pObject);
 
@@ -180,7 +224,7 @@ struct runtime
    /// @brief vector of methods
    std::vector<std::tuple<unsigned,const method*,std::string>> m_vectorMethod; ///< vector of methods
    /// @brief vector of global objects, its just named void* pointers
-   std::vector<std::pair<std::string, void*>> m_vectorGlobal; ///< vector of global objects
+   std::vector<global> m_vectorGlobal; ///< vector of global objects
    /// @brief error strings, colleting error messsages
    std::vector<std::string> m_stringError;
 
@@ -212,9 +256,9 @@ inline void runtime::get_all_variables(std::vector<std::pair<std::string, value:
 template<typename TYPE>
 TYPE* runtime::get_global_as(const std::string_view& stringName) const
 {
-   for (const auto& pair : m_vectorGlobal)
+   for (const auto& global_ : m_vectorGlobal)
    {
-      if( pair.first == stringName )  return static_cast<TYPE*>(pair.second);
+      if( global_.name() == stringName )  return static_cast<TYPE*>(global_.get_object());
    }
    return nullptr;
 }
@@ -223,9 +267,9 @@ TYPE* runtime::get_global_as(const std::string_view& stringName) const
 /// @brief get void * object by name, if not found then set it to nullptr
 inline void runtime::get_global(const std::string_view& stringName, void** ppObject) const
 {                                                                                                  assert( ppObject != nullptr );
-   for( auto& pair : m_vectorGlobal )
+   for( const auto& global_ : m_vectorGlobal )
    {
-      if( pair.first == stringName ) { *ppObject = pair.second; return; }
+      if( global_.name() == stringName ) { *ppObject = global_.get_object(); return; }
    }
    *ppObject = nullptr;
 }
@@ -233,9 +277,9 @@ inline void runtime::get_global(const std::string_view& stringName, void** ppObj
 /// @brief get global object by name, if not found then return nullptr
 inline void* runtime::get_global(const std::string_view& stringName) const
 {
-   for (const auto& pair : m_vectorGlobal)
+   for(const auto& global_ : m_vectorGlobal)
    {
-      if( pair.first == stringName )  return pair.second;
+      if( global_.name() == stringName )  return global_.get_object();
    }
    return nullptr;
 }
@@ -243,9 +287,9 @@ inline void* runtime::get_global(const std::string_view& stringName) const
 /// @brief set global object for name or if not found add it to the vector
 inline void runtime::set_global(const std::string_view& stringName, void* pObject)
 {
-   for( auto& pair : m_vectorGlobal )
+   for( auto& global_ : m_vectorGlobal )
    {
-      if( pair.first == stringName ) { pair.second = pObject; return; }
+      if( global_.name() == stringName ) { global_.set_object( pObject ); return; }
    }
    add_global(stringName, pObject);
 }

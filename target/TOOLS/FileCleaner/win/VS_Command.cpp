@@ -252,14 +252,39 @@ using namespace gd::expression;
 //============================================================================
 
 static std::pair<bool, std::string> open_s( runtime* pruntime, const std::vector<value>& vectorArgument )
-{                                                                                                  assert(vectorArgument.size() > 0);                       
+{                                                                                                  assert(vectorArgument.size() > 0);
+   CVisualStudio* pVS = pruntime->get_global_as<CVisualStudio>( "vs" );
+   if( pVS != nullptr )
+   {
+      std::vector<std::string> vectorFile;
+      for( const auto& value : vectorArgument )
+      {
+         if( value.is_string() == false ) { return { false, "Invalid argument type. Expected string." }; }
+         vectorFile.push_back( value.get_string() );
+      }
+      return pVS->Open( vectorFile );
+   }
 
    return { true, "" };
 }
 
 
 static std::pair<bool, std::string> print_s( runtime* pruntime, const std::vector<value>& vectorArgument, value* pvalueResult)
-{                                                                                                  assert(vectorArgument.size() > 0);                       
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+
+   CVisualStudio* pVS = pruntime->get_global_as<CVisualStudio>( "vs" );
+   if( pVS != nullptr )
+   {
+      std::vector<std::string> vectorFile;
+      for( const auto& value : vectorArgument )
+      {
+         if( value.is_string() == false ) { return { false, "Invalid argument type. Expected string." }; }
+         vectorFile.push_back( value.get_string() );
+      }
+
+      return pVS->Open( vectorFile );
+   }
 
    return { true, "" };
 }
@@ -287,6 +312,10 @@ std::pair<bool, std::string> CVisualStudio::ExecuteExpression(const std::string_
    // NOTE: vectorVariable is not defined in this scope. Assuming member variable or needs to be passed in.
    //gd::expression::runtime runtime_(vectorVariable);
    gd::expression::runtime runtime_;
+
+   runtime_.add_global( "vs", this );
+
+
    runtime_.add( { 4, gd::expression::pmethodDefault_g, ""});
    runtime_.add( { 3, gd::expression::pmethodString_g, std::string("str")});
    runtime_.add( { 2, pmethodVisualStudio_g, std::string("vs")});
