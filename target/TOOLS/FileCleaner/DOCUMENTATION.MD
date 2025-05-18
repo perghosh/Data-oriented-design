@@ -38,10 +38,10 @@ Counts lines in files or folders, or counts pattern occurrences.
 
 **Options:**
 - `--source <path>`: File or folder to count lines in. If not specified, the current directory is used. Cleaner supports positional arguments for source path, so you can use `cleaner count /home/username/dev/project/src/`.
-- `--recursive <depth>`: Perform the operation recursively up to the specified depth.
-- `--filter <pattern>`: Filter files using wildcard patterns (e.g., `*.h;*.cpp`).
-- `--output <file>`: Save the output to a file.
 - `--pattern <patterns>`: Patterns to count, separated by `,` or `;`. Note that adding a pattern switches to counting pattern occurrences instead of lines.
+- `--filter <pattern>`: Filter files using wildcard patterns (e.g., `*.h;*.cpp`).
+- `--recursive <depth>`: Perform the operation recursively up to the specified depth.
+- `--output <file>`: Save the output to a file.
 - `--sort <column>`: Sort the output by column name when result is printed to console.
 - `--stats <type>`: Show statistics for the specified pattern. Currently "sum" is the only statistic available.
 - `--table <name>`: Specify a table name for SQL output.
@@ -59,8 +59,8 @@ Lists rows matching specified patterns in files or folders.
 **Options:**
 - `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner list /home/username/dev/project/src/`.
 - `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
-- `--rpattern <regex>`: Regular expression pattern to search for.
 - `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;`.
+- `--rpattern <regex>`: Regular expression pattern to search for.
 - `--script <pattern>`: Additional filter for script files.
 - `--max <count>`: Limit the number of results.
 - `--segment <type>`: Segment in code to find patterns. Valid segments are: code, **comment**, **string**, and **all** (all = all code).
@@ -70,7 +70,7 @@ Lists rows matching specified patterns in files or folders.
 
 ---
 
-### copy
+### copy (not ready yet)
 Copies files from source to destination.
 
 **Options:**
@@ -85,8 +85,8 @@ Lists files in a directory.
 
 **Options:**
 - `--source <path>`: Directory to list.
-- `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;` (e.g., `*.h;*.cpp`).
 - `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
+- `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;` (e.g., `*.h;*.cpp`).
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 
 ---
