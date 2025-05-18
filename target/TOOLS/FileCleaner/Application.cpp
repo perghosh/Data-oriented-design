@@ -284,7 +284,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "dir" )
    {
-      auto result_ = CLI::Dir_g(poptionsActive);
+      auto* pdocument = DOCUMENT_Get("dir", true );
+      auto result_ = CLI::Dir_g(poptionsActive, pdocument);
       if( result_.first == false ) return result_;
    }
    else if( stringCommandName == "history" )
@@ -561,6 +562,23 @@ CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName)
    return nullptr;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Retrieves a document by its name, creating it if it doesn't exist.
+ * 
+ * @param stringName The name of the document to retrieve or create.
+ * @param bCreate Whether to create the document if it doesn't exist and bCreate is true.
+ * @return CDocument* Pointer to the document if found or created, otherwise nullptr.
+ */
+CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName, bool bCreate)
+{
+   auto pdocument = DOCUMENT_Get(stringName);
+   if( pdocument == nullptr && bCreate == true )
+   {
+      pdocument = DOCUMENT_Add(stringName);
+   }
+   return pdocument;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Removes a document by its name.
@@ -829,8 +847,15 @@ std::string CApplication::ERROR_Report() const
 }
 
 
-// 0TAG0OPTIONS.Application
-
+/** --------------------------------------------------------------------------
+ * @brief Converts a string representation of the UI type to the corresponding enum value.
+ *
+ * This static method takes a string view representing the UI type and returns the corresponding
+ * enumUIType value. If the string does not match any known UI type, it returns eUITypeUnknown.
+ *
+ * @param stringUIType The string representation of the UI type (e.g., "console", "web", "vs").
+ * @return enumUIType The corresponding enum value for the UI type.
+ */
 CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_view& stringUIType)
 {
    if( stringUIType == "console" )   return eUITypeConsole;
@@ -842,6 +867,9 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
 
    return eUITypeUnknown; // Default to none if no match found
 }
+
+// 0TAG0OPTIONS.Application
+
 
 /** --------------------------------------------------------------------------- @TAG #option
  * @brief Prepares the application options for command-line usage.
@@ -927,7 +955,13 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    { // ## 'dir' command, list files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in directory" );
-      optionsCommand.add({"source", 's', "Directory to list"});
+      optionsCommand.add({ "source", 's', "Directory to list" });
+      optionsCommand.add({ "filter", "Filter file extensions" });
+      optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
+#ifdef _WIN32
+      optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format"} );
+      optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
+#endif
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
@@ -949,7 +983,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "rpattern", "regular expression pattern to search for"});
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
-      optionsCommand.add({ "script", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
+      optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
       optionsCommand.add({ "max", "Max list count to avoid too many hits"});
       optionsCommand.add({ "segment", "type of segment in code to searh in"});
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );

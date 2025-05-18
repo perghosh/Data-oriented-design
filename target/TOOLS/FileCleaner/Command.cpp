@@ -45,46 +45,97 @@ namespace detail {
       }
    }
 
+   /// add file to table if it matches wildcard filter
+   bool add_file_to_table(const gd::file::path& pathFile, const std::string_view& stringWildcard, gd::table::dto::table* ptable_, bool bSize = false)
+   {
+      auto filename_ = pathFile.filename().string();                                               assert(filename_.empty() == false);
+      if( stringWildcard.empty() == false )
+      {
+         std::vector<std::string_view> vectorWildcard = gd::utf8::split(stringWildcard, ';');
+         bool bMatched = false;
+         for( const auto& filter_ : vectorWildcard )
+         {
+            bool bMatch = gd::ascii::strcmp( filename_, filter_, gd::utf8::tag_wildcard{} );
+            if( bMatch == true ) { bMatched = true; break; }
+         }
+
+         if( bMatched == false ) return false;                                 // no match, return false
+      }
+
+      auto uRow = ptable_->row_add_one();
+      ptable_->cell_set(uRow, "key", uRow + 1);
+
+      unsigned uColumnPath = ptable_->column_find_index("path");               // get column index for path
+      if( uColumnPath != (unsigned)-1 )                                        // found "path" column ?
+      {
+         ptable_->cell_set(uRow, uColumnPath, pathFile.string());              // set path in table
+      }
+      else
+      {
+         auto folder_ = pathFile.parent_path().string();
+         ptable_->cell_set(uRow, "folder", folder_);
+         ptable_->cell_set(uRow, "filename", filename_);
+      }
+
+      ptable_->cell_set(uRow, "extension", pathFile.extension().string());
+
+      // get file size
+      if( bSize == true )
+      {
+         std::string stringFilePath = pathFile.string();
+         std::ifstream ifstreamFile(stringFilePath.data(), std::ios::binary | std::ios::ate);
+         if( ifstreamFile.is_open() == true )
+         {
+            std::streamsize uSize = ifstreamFile.tellg();
+            ptable_->cell_set(uRow, "size", uSize, gd::types::tag_convert{});
+         }
+         ifstreamFile.close();
+      }
+
+      return true;                                                             // match, return true
+   }
+
 }
 
 
  /** --------------------------------------------------------------------------
- * @brief Harvests files from a specified directory path and populates a table with their details.
- *
- * This method recursively traverses the directory structure starting from the given path, 
- * collecting information about each file and storing it in the provided table. The information 
- * includes the file's folder, filename, extension, and size.
- *
- * @param stringPath The root directory path to start harvesting files from.
- * @param ptable_ A pointer to the table where the harvested file details will be stored.
- *                The table must be pre-initialized and not null.
- * @param uDepth The maximum depth for recursive traversal. A value of 0 means no recursion.
- * @return A pair containing:
- *         - `bool`: `true` if the harvesting was successful, `false` otherwise.
- *         - `std::string`: An empty string on success, or an error message on failure.
- *
- * @note The method uses `std::filesystem` for directory traversal and file operations.
- *       If an error occurs during traversal (e.g., permission issues), the method will 
- *       return `false` along with the error message.
- *
- * @example
- * @code
- * gd::table::dto::table table;
- * std::string path = "/example/directory";
- * unsigned depth = 2;
- * auto result = FILES_Harvest_g(path, &table, depth);
- * if(result.first) {
- *     std::cout << "Files harvested successfully." << std::endl;
- * } else {
- *     std::cerr << "Error: " << result.second << std::endl;
- * }
- * @endcode
- * 
- * @verbatim
- * 
- * @endverbatim
- */
-std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::table::dto::table* ptable_, unsigned uDepth )
+  * @brief Harvests files from a specified directory path and populates a table with their details.
+  *
+  * This method recursively traverses the directory structure starting from the given path, 
+  * collecting information about each file and storing it in the provided table. The information 
+  * includes the file's folder, filename, extension, and size.
+  *
+  * @param stringPath The root directory path to start harvesting files from.
+  * @param stringWildcard A wildcard pattern to filter files. Only files matching this pattern will be added to the table.
+  * @param ptable_ A pointer to the table where the harvested file details will be stored.
+  *                The table must be pre-initialized and not null.
+  * @param uDepth The maximum depth for recursive traversal. A value of 0 means no recursion.
+  * @return A pair containing:
+  *         - `bool`: `true` if the harvesting was successful, `false` otherwise.
+  *         - `std::string`: An empty string on success, or an error message on failure.
+  *
+  * @note The method uses `std::filesystem` for directory traversal and file operations.
+  *       If an error occurs during traversal (e.g., permission issues), the method will 
+  *       return `false` along with the error message.
+  *
+  * @example
+  * @code
+  * gd::table::dto::table table;
+  * std::string path = "/example/directory";
+  * unsigned depth = 2;
+  * auto result = FILES_Harvest_g(path, &table, depth);
+  * if(result.first) {
+  *     std::cout << "Files harvested successfully." << std::endl;
+  * } else {
+  *     std::cerr << "Error: " << result.second << std::endl;
+  * }
+  * @endcode
+  * 
+  * @verbatim
+  * 
+  * @endverbatim
+  */
+std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, const std::string& stringWildcard, gd::table::dto::table* ptable_, unsigned uDepth )
 {                                                                                                  assert( ptable_ != nullptr );
    try
    {
@@ -92,7 +143,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::
       {
          if( std::filesystem::is_regular_file(stringPath) == true )            // is file
          {
-            detail::add_file_to_table(gd::file::path(stringPath), ptable_);
+            detail::add_file_to_table(gd::file::path(stringPath), stringWildcard, ptable_);
             return { true, "" };
          }
          else
@@ -108,7 +159,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::
             if( uDepth > 0 )
             {
                auto stringChildPath = it.path().string();
-               auto [bOk, stringError] = FILES_Harvest_g(stringChildPath, ptable_, (uDepth - 1) );// recursive call to harvest files in subdirectories
+               auto [bOk, stringError] = FILES_Harvest_g(stringChildPath, stringWildcard, ptable_, (uDepth - 1) );// recursive call to harvest files in subdirectories
                if( bOk == false ) return { false, stringError };               // error in recursive call
             }
          }
@@ -119,7 +170,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, gd::
                try
                {
                   std::string string_ = it.path().string();
-                  detail::add_file_to_table(gd::file::path(string_), ptable_);
+                  detail::add_file_to_table(gd::file::path(string_), stringWildcard, ptable_);
                }
                catch( const std::exception& e )
                {
@@ -151,11 +202,12 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
 
    unsigned uRecursive = argumentsPath["recursive"].as_uint();
    std::string stringSource = argumentsPath["source"].as_string();
+   std::string stringWildcard = argumentsPath["filter"].as_string();
    auto vectorPath = gd::utf8::split(stringSource, ';');
 
    for( auto itPath : vectorPath )
    {
-      auto [bOk, stringError] = FILES_Harvest_g(std::string(itPath), ptable_, uRecursive); // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+      auto [bOk, stringError] = FILES_Harvest_g(std::string(itPath), stringWildcard, ptable_, uRecursive); // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( bOk == false ) return { false, stringError };
    }
 

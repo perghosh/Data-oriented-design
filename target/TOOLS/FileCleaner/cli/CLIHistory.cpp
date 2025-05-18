@@ -2,6 +2,8 @@
  * @file CLIHistory.cpp
  */
 
+ // @TAG #cli
+
 #include "gd/expression/gd_expression_runtime.h"
 
 
