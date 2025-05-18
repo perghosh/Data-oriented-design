@@ -284,7 +284,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "dir" )
    {
-      auto result_ = CLI::Dir_g(poptionsActive);
+      auto* pdocument = DOCUMENT_Get("dir", true );
+      auto result_ = CLI::Dir_g(poptionsActive, pdocument);
       if( result_.first == false ) return result_;
    }
    else if( stringCommandName == "history" )
@@ -559,6 +560,23 @@ CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName)
       }
    }
    return nullptr;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Retrieves a document by its name, creating it if it doesn't exist.
+ * 
+ * @param stringName The name of the document to retrieve or create.
+ * @param bCreate Whether to create the document if it doesn't exist and bCreate is true.
+ * @return CDocument* Pointer to the document if found or created, otherwise nullptr.
+ */
+CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName, bool bCreate)
+{
+   auto pdocument = DOCUMENT_Get(stringName);
+   if( pdocument == nullptr && bCreate == true )
+   {
+      pdocument = DOCUMENT_Add(stringName);
+   }
+   return pdocument;
 }
 
 
