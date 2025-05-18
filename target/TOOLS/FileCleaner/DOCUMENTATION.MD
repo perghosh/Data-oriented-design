@@ -60,7 +60,7 @@ Lists rows matching specified patterns in files or folders.
 - `--source <path>`: File or folder to search for patterns.
 - `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
 - `--rpattern <regex>`: Regular expression pattern to search for.
-- `--filter <pattern>`: Filter files using wildcard patterns.
+- `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;`.
 - `--script <pattern>`: Additional filter for script files.
 - `--max <count>`: Limit the number of results.
 - `--segment <type>`: Segment in code to find patterns. Valid segments are: code, **comment**, **string**, and **all** (all = all code).
@@ -85,6 +85,9 @@ Lists files in a directory.
 
 **Options:**
 - `--source <path>`: Directory to list.
+- `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;` (e.g., `*.h;*.cpp`).
+- `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
+- `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 
 ---
 
