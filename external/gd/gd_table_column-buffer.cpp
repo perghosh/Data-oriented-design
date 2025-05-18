@@ -3487,7 +3487,16 @@ void table_column_buffer::plant( const table_column_buffer& tablePlant, const st
 }
 
 void table_column_buffer::plant( const table_column_buffer& tablePlant, unsigned uColumnFrom, unsigned uColumnTo, uint64_t uFrom, uint64_t uCount )
-{                                                                                                  assert( uColumnFrom < tablePlant.get_column_count() ); assert( uColumnTo < get_column_count() );
+{                                                                                                  assert( uColumnFrom < tablePlant.get_column_count() ); assert( uColumnTo <= get_column_count() );
+   // ## check if table need more rows to be able to plant data
+   if( get_row_count() < (uFrom + uCount) )
+   {
+      // calculate how many rows need to be added
+      uint64_t uRowCount = ( uFrom + uCount ) - get_row_count();
+      row_add(uRowCount);                                                      // add rows to table
+      if( is_null() == true ) row_set_null(get_row_count(), uRowCount);        // set all values to null
+   }
+
    // ## Loop from "from" row and number of count rows extracting selected value
    //    and set to current table in column
    for( uint64_t uRow = uFrom, uToRow = uFrom + uCount; uRow < uToRow; uRow++ )
