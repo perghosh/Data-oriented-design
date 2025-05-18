@@ -103,6 +103,7 @@ public:
  *///@{
    /// Prepare cache information structure
    void CACHE_Prepare( const std::string_view& stringId );
+   void CACHE_Prepare( const std::string_view& stringId, std::unique_ptr<gd::table::dto::table>* ptable );
    /// Load cache data
    std::pair<bool, std::string> CACHE_Load( const std::string_view& stringId );
    bool CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId );
@@ -194,6 +195,12 @@ public:
 
 
 };
+
+/// \brief Prepare cache information structure
+inline void CDocument::CACHE_Prepare( const std::string_view& stringId )
+{
+   CACHE_Prepare(stringId, nullptr);
+}
 
 inline std::string CDocument::RESULT_VisualStudio_s(gd::table::dto::table& table_) {
    std::string stringResult;

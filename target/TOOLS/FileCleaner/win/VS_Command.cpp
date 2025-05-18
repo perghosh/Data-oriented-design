@@ -1,4 +1,7 @@
-#include <filesystem>
+﻿#include <filesystem>
+
+#include "gd/gd_variant_view.h"
+#include "gd/gd_table_aggregate.h"
 
 #include "gd/expression/gd_expression_value.h"
 #include "gd/expression/gd_expression_token.h"
@@ -8,6 +11,22 @@
 #include "VS_Command.h"
 
 namespace VS {
+
+
+namespace detail {
+   CComPtr<EnvDTE::TextDocument> GetTextDocumentFromDocument(EnvDTE::Document* pDocument) 
+   {
+      CComPtr<IDispatch> pDispatch;
+      HRESULT hr = pDocument->QueryInterface(__uuidof(EnvDTE::TextDocument), (void**)&pDispatch);
+      if (FAILED(hr) || !pDispatch) { return nullptr; }
+
+      CComPtr<EnvDTE::TextDocument> pTextDocument;
+      hr = pDispatch->QueryInterface(__uuidof(EnvDTE::TextDocument), (void**)&pTextDocument);
+      if (FAILED(hr) || !pTextDocument) { return nullptr; }
+
+      return pTextDocument;
+   }
+} // namespace detail
 
 
 
@@ -198,29 +217,20 @@ std::pair<bool, std::string> CVisualStudio::Open(const std::vector<std::string>&
       // Iterate through the file paths
       for(const auto& stringFile : vectorFile)
       {
-         // Verify file exists
-         if( std::filesystem::exists(stringFile) == false ) { return { false, "File not found: " + stringFile }; }
+         if (!std::filesystem::exists(stringFile)) {
+            return { false, "File not found: " + stringFile };
+         }
 
-         // Open the file in Visual Studio
          CComPtr<EnvDTE::Window> pWindow = nullptr;
-         iResult = m_pDTE->OpenFile(CComBSTR("Text"), CComBSTR(stringFile.c_str()), &pWindow);
-
-         // If you need the document, get it from the window
-         if(SUCCEEDED(iResult) && pWindow) {
-            CComPtr<EnvDTE::Document> pDocument = nullptr;
-            pWindow->get_Document(&pDocument);
+         //CComBSTR bstrKind(L"Text");
+         CComBSTR bstrKind(L"{00000000-0000-0000-0000-000000000000}"); // vsViewKindTextView
+         CComBSTR bstrFile(stringFile.c_str());
+         HRESULT hr = m_pDTE->OpenFile(bstrKind, bstrFile, &pWindow);
+         if (FAILED(hr) || !pWindow) {
+            return { false, "Failed to open file: " + stringFile + ". HRESULT: 0x" + std::format("{:08X}", static_cast<unsigned>(hr)) };
          }
 
-         if(FAILED(iResult)) { return { false, "Failed to open file: " + stringFile + ". HRESULT: " + std::to_string(iResult) }; }
-
-         /*
-         CComPtr<EnvDTE::Document> pDocument;
-         iResult = pDTE->OpenFile(CComBSTR("Text"), CComBSTR(stringFile.c_str()), &pDocument);
-         if(FAILED(iResult) || !pDocument)
-         {
-            return { false, "Failed to open file: " + stringFile + ". HRESULT: " + std::to_string(iResult) };
-         }
-         */
+         pWindow->Activate(); // Activate the window after opening it
       }
    }
    catch(_com_error& e) 
@@ -242,6 +252,76 @@ std::pair<bool, std::string> CVisualStudio::Open(const std::vector<std::string>&
    return { true, "" };
 }
 
+/** --------------------------------------------------------------------------- @TAG #bookmark #vs
+* @brief Adds a bookmark at the specified line in a file in Visual Studio.
+*
+* This method connects to the active Visual Studio instance, opens the specified file if necessary,
+* and adds a bookmark at the specified line with an optional description. The file doesn't need
+* to be the active document.
+*
+* @param stringPath The full path to the file where the bookmark should be added.
+* @param iLine The line number where the bookmark should be added (0-based).
+* @param stringDescription Optional description for the bookmark.
+* @param tag_vs_bookmark A tag dispatcher to indicate the bookmark operation (unused in this implementation).
+* 
+* @return A pair containing:
+*         - `true` and an empty string if the operation succeeds.
+*         - `false` and an error message if the operation fails.
+*
+* @note This method requires an active Visual Studio instance to function correctly.
+*       If no instance is found or an error occurs during the operation, an appropriate
+*       error message is returned. The file will be opened if it's not already open.
+*/
+std::pair<bool, std::string> CVisualStudio::AddBookmark(const std::string& stringPath, int iLine, const std::string& stringDescription)
+{
+   HRESULT iResult = S_OK;
+   try
+   {
+      /*
+      // Verify file exists
+      if( std::filesystem::exists(stringPath) == false ) { return { false, "File not found: " + stringPath }; }
+      // Open the file in Visual Studio
+      CComPtr<EnvDTE::Window> pWindow = nullptr;
+      iResult = m_pDTE->OpenFile(CComBSTR("Text"), CComBSTR(stringPath.c_str()), &pWindow);
+      if(FAILED(iResult) || !pWindow) { return { false, "Failed to open file: " + stringPath + ". HRESULT: " + std::to_string(iResult) }; }
+      // Get the document from the window
+      CComPtr<EnvDTE::Document> pDocument = nullptr;
+      iResult = pWindow->get_Document(&pDocument);
+      if(FAILED(iResult) || !pDocument) { return { false, "Failed to get document from window. HRESULT: " + std::to_string(iResult) }; }
+      // Get the TextDocument interface from the Document
+      CComPtr<EnvDTE::TextDocument> pTextDocument = detail::GetTextDocumentFromDocument(pDocument);
+      if(!pTextDocument) { return { false, "Failed to get TextDocument interface." }; }
+      // Add a bookmark at the specified line
+      CComPtr<EnvDTE::EditPoint> pStartPoint = nullptr;
+      iResult = pTextDocument->CreateEditPoint(nullptr, &pStartPoint);
+      if(FAILED(iResult) || !pStartPoint) { return { false, "Failed to create EditPoint. HRESULT: " + std::to_string(iResult) }; }
+      // Move to the specified line and add a bookmark
+      iResult = pStartPoint->MoveToLineAndOffset(iLine + 1, 1); // Line numbers are 1-based in Visual Studio
+      if(FAILED(iResult)) { return { false, "Failed to move EditPoint to line. HRESULT: " + std::to_string(iResult) }; }
+      CComPtr<EnvDTE::Bookmark> pBookmark = nullptr;
+      iResult = pTextDocument->Bookmarks->Add(pStartPoint, CComBSTR(stringDescription.c_str()), &pBookmark);
+      if( FAILED(iResult) || !pBookmark ) {
+         return { false, "Failed to add bookmark.
+         */
+   }
+   catch(_com_error& e) 
+   {
+      std::cerr << "COM Error: " << e.ErrorMessage() << std::endl;
+      return { false, "COM Error: " + std::string(e.ErrorMessage()) };
+   }
+   catch( const std::exception& e )
+   {
+      std::cerr << "Exception: " << e.what() << std::endl;
+      return { false, "Exception: " + std::string(e.what()) };
+   }
+   catch( ... )
+   {
+      std::cerr << "Unknown error occurred." << std::endl;
+      return { false, "Unknown error occurred." };
+   }
+   return {true, ""};
+}
+
 
 
 using namespace gd::expression;
@@ -252,14 +332,57 @@ using namespace gd::expression;
 //============================================================================
 
 static std::pair<bool, std::string> open_s( runtime* pruntime, const std::vector<value>& vectorArgument )
-{                                                                                                  assert(vectorArgument.size() > 0);                       
+{                                                                                                  assert(vectorArgument.size() > 0);
+   std::string stringResult;
+   const auto& vColumn = vectorArgument[0];
+
+   CVisualStudio* pVS = pruntime->get_global_as<CVisualStudio>( "vs" );
+   if( pVS != nullptr )
+   {
+      gd::table::dto::table* ptable_ = pVS->GetTable();
+      auto stringColumn = vColumn.get_string();
+      unsigned uColumn = ptable_->column_find_index(stringColumn);
+      if( (int)uColumn == -1 ) { return { false, std::format( "Invalid column name: {}", vColumn.get_string() )}; }
+
+      gd::table::aggregate<gd::table::dto::table> aggregate_(ptable_);
+      std::vector<gd::variant_view> vectorFile = aggregate_.unique(uColumn, 0, ptable_->get_row_count());
+      std::vector<std::string> vectorFilePath;
+      for( const auto& itFile : vectorFile )
+      {
+         std::string stringFile = itFile.as_string();
+         if( std::filesystem::exists(stringFile) == false ) { return { false, std::format("File not found: {}", stringFile) }; }
+         vectorFilePath.push_back(stringFile);
+      }
+      auto result_ = pVS->Open(vectorFilePath);
+      if( result_.first == false ) { return result_; }
+      // return pVS->Open( vectorFile );
+   }
 
    return { true, "" };
 }
 
 
 static std::pair<bool, std::string> print_s( runtime* pruntime, const std::vector<value>& vectorArgument, value* pvalueResult)
-{                                                                                                  assert(vectorArgument.size() > 0);                       
+{                                                                                                  assert(vectorArgument.size() > 0);
+   std::string stringResult;
+   const auto& vColumn = vectorArgument[0];
+
+   CVisualStudio* pVS = pruntime->get_global_as<CVisualStudio>( "vs" );
+   if( pVS != nullptr )
+   {
+      gd::table::dto::table* ptable_ = pVS->GetTable();
+      unsigned uColumn = ptable_->column_find_index(vColumn.get_string());
+      if( (int)uColumn == -1 ) { return { false, std::format( "Invalid column name: {}", vColumn.get_string() )}; }
+
+      for( const auto& itRow : *ptable_ )
+      {
+         if( stringResult.empty() == false ) { stringResult += "\n"; }
+         std::string stringRow = itRow.cell_get_variant_view(uColumn).as_string();
+         stringResult += stringRow;
+      }
+
+      pVS->Print(stringResult, tag_vs_output{});
+   }
 
    return { true, "" };
 }
@@ -287,6 +410,10 @@ std::pair<bool, std::string> CVisualStudio::ExecuteExpression(const std::string_
    // NOTE: vectorVariable is not defined in this scope. Assuming member variable or needs to be passed in.
    //gd::expression::runtime runtime_(vectorVariable);
    gd::expression::runtime runtime_;
+
+   runtime_.add_global( "vs", this );
+
+
    runtime_.add( { 4, gd::expression::pmethodDefault_g, ""});
    runtime_.add( { 3, gd::expression::pmethodString_g, std::string("str")});
    runtime_.add( { 2, pmethodVisualStudio_g, std::string("vs")});

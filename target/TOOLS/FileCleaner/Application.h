@@ -134,6 +134,7 @@ public:
    // ## Get documents
    const CDocument* DOCUMENT_Get(const std::string_view& stringName) const;
    CDocument* DOCUMENT_Get(const std::string_view& stringName);
+   CDocument* DOCUMENT_Get(const std::string_view& stringName, bool bCreate);
 
    // ## Remove documents
    void DOCUMENT_Remove(const std::string_view& stringName);

@@ -113,10 +113,24 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Filters out files from the cache table based on a string filter.
+ *
+ * This method checks each file in the cache table against the provided string filter.
+ * If a file does not match the filter, it is removed from the cache table.
+ *
+ * @param stringFilter The filter string to apply to the filenames. Not that this is a wildcard filter and may contain multiple filters separated by ';'.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @pre The `file` cache table must be prepared and available in the cache.
+ * @post The `file` table is updated to remove files that do not match the filter.
+ */
 std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stringFilter)
 {                                                                                                  assert( stringFilter.empty() == false );
    std::vector<uint64_t> vectorRemoveRow;
-   auto vectorPath = gd::utf8::split(stringFilter, ';');
+   auto vectorWildcard = gd::utf8::split(stringFilter, ';');
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
 
    for( uint64_t uRow = 0, uRowCount = ptableFile->size(); uRow < uRowCount; uRow++ )
@@ -127,7 +141,7 @@ std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stri
       // ## match file against wildcards
 
       // ### go through filters to check for a match
-      for( const auto& filter_ : vectorPath )
+      for( const auto& filter_ : vectorWildcard )
       {
          bool bMatch = gd::ascii::strcmp( stringFilename, filter_, gd::utf8::tag_wildcard{} );
          if( bMatch == true ) { bMatched = true; break; }
@@ -517,55 +531,75 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
  *  
  * @note This method assumes that the `CACHE_Add` function handles the ownership of the table.  
  */  
-void CDocument::CACHE_Prepare(const std::string_view& stringId)  
-{  
-  using namespace gd::table::dto;  
-  constexpr unsigned uTableStyle = (table::eTableFlagNull32|table::eTableFlagRowStatus);  
+void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<gd::table::dto::table>* ptable)
+{
+   using namespace gd::table::dto;
+   constexpr unsigned uTableStyle = ( table::eTableFlagNull32 | table::eTableFlagRowStatus );
 
-  auto ptableFind = CACHE_Get(stringId, false);  
-  if( ptableFind != nullptr ) return;                                         // table already exists, exit  
+   if( ptable == nullptr )
+   {
+      auto ptableFind = CACHE_Get(stringId, false);
+      if( ptableFind != nullptr ) return;                                      // table already exists, exit  
+   }
 
-  // ## prepare file list  
-  //    columns: "path, size, date, extension  
-  if( stringId == "file" )                                                    // file cache, used to store file information  
-  {  
-     auto ptable_ = CACHE_Get(stringId, false);  
-     if( ptable_ == nullptr )  
-     {  
-        // file table: key | path | size | date | extension  
-        auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{} ) );  
-        CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache  
-     }  
-  }  
-  else if( stringId == "file-count" )                                         // row counter table  
-  {  
-     auto ptable_ = CACHE_Get(stringId, false);  
-     if( ptable_ == nullptr )  
-     {  
-        // file-count table: key | file-key | filename  
-        //           count | code | characters | comment | string  
-        auto ptable_ = std::make_unique<table>( table( uTableStyle,   
-           { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},   
-             {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"} }, gd::table::tag_prepare{} )  
-        );  
-        CACHE_Add(std::move(*ptable_), stringId);                             // add it to internal application cache  
-     }  
-  }  
-  else if( stringId == "file-linelist" )                                      // lists line where pattern was found  
-  {  
-     auto ptable_ = CACHE_Get(stringId, false);  
-     if( ptable_ == nullptr )  
-     {  
-        // file-linelist table: key | file-key | filename  
-        //                      line | row | column | pattern  
-        //                      line = the row in text where pattern was found  
-        auto ptable_ = std::make_unique<table>( table( uTableStyle,   
-           { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},   
-             {"rstring", 0, "line"}, {"uint64", 0, "row"}, {"uint64", 0, "column"}, {"string", 32, "pattern"} }, gd::table::tag_prepare{} )  
-        );  
-        CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache  
-     }  
-  }  
+   std::unique_ptr<gd::table::dto::table> ptable_;
+
+   // ## prepare file list  
+   //    columns: "path, size, date, extension  
+   if( stringId == "file" )                                                    // file cache, used to store file information  
+   {
+      auto p_ = CACHE_Get(stringId, false);
+      if( p_ == nullptr )
+      {
+         // file table: key | path | size | date | extension  
+         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{}));
+      }
+   }
+   else if( stringId == "file-dir" )                                           // file cache, used to store file information  
+   {
+      auto p_ = CACHE_Get(stringId, false);
+      if( p_ == nullptr )
+      {
+         // file table: key | path | size | date | extension  
+         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 10, "extension"} }, gd::table::tag_prepare{}));
+      }
+   }
+   else if( stringId == "file-count" )                                         // row counter table  
+   {
+      auto p_ = CACHE_Get(stringId, false);
+      if( p_ == nullptr )
+      {
+         // file-count table: key | file-key | filename  
+         //           count | code | characters | comment | string  
+         ptable_ = std::make_unique<table>(table(uTableStyle,
+            { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
+              {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"} }, gd::table::tag_prepare{})
+         );
+      }
+   }
+   else if( stringId == "file-linelist" )                                      // lists line where pattern was found  
+   {
+      auto p_ = CACHE_Get(stringId, false);
+      if( p_ == nullptr )
+      {
+         // file-linelist table: key | file-key | filename  
+         //                      line | row | column | pattern  
+         //                      line = the row in text where pattern was found  
+         ptable_ = std::make_unique<table>(table(uTableStyle,
+            { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
+              {"rstring", 0, "line"}, {"uint64", 0, "row"}, {"uint64", 0, "column"}, {"string", 32, "pattern"} }, gd::table::tag_prepare{})
+         );
+      }
+   }
+
+   if( ptable != nullptr )
+   {
+      *ptable = std::move(ptable_);                                            // move table to caller
+   }
+   else
+   {
+      CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache  
+   }
 }
 
 /** ---------------------------------------------------------------------------
@@ -982,7 +1016,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
 
    // Define the result table structure  
    constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );
-   table tableResult(uTableStyle, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+   table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"} }, gd::table::tag_prepare{});
 
    // Retrieve the file-pattern cache table  
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
@@ -1003,12 +1037,19 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
       pathFile += stringFilename;
       std::string stringFile = pathFile.string();
 
+      // ## Add a new row to the result table
+
+      auto uNewRow = tableResult.row_add_one();
+      tableResult.cell_set(uNewRow, "file", stringFile);
+
+      // ### Prepare the format to match the editor
+
       uint64_t uLineinSource = ptableLineList->cell_get_variant_view(uRow, "row");// get row data from table
       uLineinSource++;                                                        // line number in source file is 1-based, in table it is 0-based
       uint64_t uColumninSource = ptableLineList->cell_get_variant_view(uRow, "column");// get row data from table
 
 
-      // ## Build the result string for the file where pattern was found  
+      // #### Build the result string for the file where pattern was found  
       if( eEditor == eVisualStudio )
       {
          stringFile += "(";
@@ -1040,8 +1081,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
 
       stringFile += stringLine;
 
-      auto uNewRow = tableResult.row_add_one();
-      tableResult.cell_set(uNewRow, 0, stringFile);
+      tableResult.cell_set(uNewRow, 0, stringFile);                            // add clickable string to table
    }
 
    return tableResult;
@@ -1051,7 +1091,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
 
 void CDocument::MESSAGE_Display(const std::string_view& stringMessage)
 {
-   m_papplication->PrintMessage(stringMessage, {{}} );                         // display message in application window
+   m_papplication->PrintMessage(stringMessage, gd::argument::arguments() );    // display message in application window
 }
 
 void CDocument::MESSAGE_Display(const std::string_view& stringMessage, const gd::argument::arguments& argumentsMessage )

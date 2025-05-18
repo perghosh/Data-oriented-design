@@ -28,6 +28,8 @@
 #include <comdef.h>
 #include <atlbase.h>
 
+#include "gd/gd_table_column-buffer.h"
+
 
 #import "libid:80cc9f66-e7d8-4ddd-85b6-d9e6cd0e93e2" version("8.0") lcid("0") raw_interfaces_only named_guids
 #import "libid:1A31287A-4D7D-413e-8E32-3B374931BD89" version("8.0") lcid("0") raw_interfaces_only named_guids
@@ -82,9 +84,14 @@ public:
    std::pair<bool, std::string> Connect();
    std::pair<bool, std::string> Print( const std::string_view& stringText, tag_vs_output );
    std::pair<bool, std::string> Open(const std::vector<std::string>& vectorFile);
+   std::pair<bool, std::string> AddBookmark(const std::string& stringPath, int iLine, const std::string& stringDescription);
 
 
    std::pair<bool, std::string> ExecuteExpression( const std::string_view& stringExpression );
+
+   void AddTable(gd::table::dto::table* ptable) { m_vectorTable.push_back(ptable); }
+   gd::table::dto::table* GetTable() { return m_vectorTable[0]; }
+   const gd::table::dto::table* GetTable() const { return m_vectorTable[0]; }
 
 //@}
 
@@ -104,6 +111,7 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    CComPtr<EnvDTE::_DTE> m_pDTE;
+   std::vector<gd::table::dto::table*> m_vectorTable;
 
 
 // ## free functions ------------------------------------------------------------
