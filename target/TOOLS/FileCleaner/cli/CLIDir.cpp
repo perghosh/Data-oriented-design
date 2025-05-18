@@ -2,6 +2,7 @@
 * @file CLIHistory.cpp
 */
 
+#include <format>
 
 #include "../Application.h"
 
