@@ -1,6 +1,6 @@
 # Cleaner.exe Documentation
 
-`cleaner.exe` is a console application designed to perform various file and folder operations, such as counting lines, listing patterns, and managing databases. It supports recursive operations, pattern matching, and output customization.
+`cleaner.exe` is a console application designed to perform various file and folder operations, such as counting lines, listing patterns, joining files, and managing databases. It supports recursive operations, pattern matching, and output customization.
 
 ---
 
@@ -9,14 +9,22 @@
 - [Commands](#commands)
   - [count](#count)
   - [list](#list)
+  - [copy](#copy)
+  - [dir](#dir)
+  - [history](#history)
   - [help](#help)
   - [version](#version)
 - [Examples](#examples)
+- [Supported File Extensions](#supported-file-extensions-and-languages)
 - [Notes](#notes)
 
 ---
 
 ## Usage
+
+```
+cleaner.exe <command> [options]
+```
 
 - **command**: The operation to perform (e.g., `count`, `list`, `db`, etc.).
 - **options**: Additional parameters specific to the command.
@@ -26,18 +34,22 @@
 ## Commands
 
 ### count
-Counts lines in files or folders.
+Counts lines in files or folders, or counts pattern occurrences.
 
 **Options:**
 - `--source <path>`: File or folder to count lines in.
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--filter <pattern>`: Filter files using wildcard patterns (e.g., `*.h;*.cpp`).
 - `--output <file>`: Save the output to a file.
-- `--pattern <patterns>`: Patterns to count, separated by `,` or `;`. Note that adding pattern to count switches to count number of times pattern is found instead of counting lines and segments
-- `--sort`: Sort the output by column name, this is when result is printed to console.
-- `--stats`: Show statistics for the specified pattern. For now "sum" is the only statistic available.
+- `--pattern <patterns>`: Patterns to count, separated by `,` or `;`. Note that adding a pattern switches to counting pattern occurrences instead of lines.
+- `--sort <column>`: Sort the output by column name when result is printed to console.
+- `--stats <type>`: Show statistics for the specified pattern. Currently "sum" is the only statistic available.
 - `--table <name>`: Specify a table name for SQL output.
-- `-R` Search recursively in current or selected folder as deep as possible (max 16 levels).
+- `--comment <chars>`: Pair of characters marking start and end for comments.
+- `--string <chars>`: Pair of characters marking start and end for strings.
+- `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
+- `--vs`: Adapt to Visual Studio output window format, making files clickable.
+- `--win`: Windows-specific functionality, adapting to features specific to Windows.
 
 ---
 
@@ -45,12 +57,42 @@ Counts lines in files or folders.
 Lists rows matching specified patterns in files or folders.
 
 **Options:**
-- `--max <count>`: Limit the number of results.
-- `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
-- `--recursive <depth>`: Perform the operation recursively up to the specified depth.
-- `--segment`: Segment in code to find patterns. Valid segments now are code, **comment**, **string**, and **all** (all = all code).
 - `--source <path>`: File or folder to search for patterns.
-- `-R` Search recursively in current or selected folder as deep as possible (max 16 levels).
+- `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
+- `--rpattern <regex>`: Regular expression pattern to search for.
+- `--filter <pattern>`: Filter files using wildcard patterns.
+- `--script <pattern>`: Additional filter for script files.
+- `--max <count>`: Limit the number of results.
+- `--segment <type>`: Segment in code to find patterns. Valid segments are: code, **comment**, **string**, and **all** (all = all code).
+- `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
+- `--vs`: Adapt to Visual Studio output window format, making files clickable.
+- `--win`: Windows-specific functionality, adapting to features specific to Windows.
+
+---
+
+### copy
+Copies files from source to destination.
+
+**Options:**
+- `--source <path>`: File to copy.
+- `--destination <path>`: Destination where file is copied to.
+- `--backup`: If destination file exists, make a backup before copying.
+
+---
+
+### dir
+Lists files in a directory.
+
+**Options:**
+- `--source <path>`: Directory to list.
+
+---
+
+### history
+Handles command history.
+
+**Options:**
+- `--create`: Initialize history logic, creates folders and files needed to manage history, also enables configuration settings.
 
 ---
 
@@ -67,35 +109,26 @@ Displays the version of the application.
 ## Examples
 
 ### Count lines in files found in active folder
-Go to folder and write (windows) `cleaner.exe count` and linux `cleaner count`  
+Go to folder and write (Windows): `cleaner.exe count` or Linux: `cleaner count`  
 Sort by column name "filename" and print to console: `cleaner count -R --sort filename`
-Sort on code lines and only count lines in cpp files: `cleaner count -R --sort code --filter *.cpp `
+Sort on code lines and only count lines in cpp files: `cleaner count -R --sort code --filter *.cpp`
 
-List rows matching specified patterns in files or folders.
+### List rows matching specified patterns in files or folders
 `cleaner list /home/username/dev/project/src/ --pattern text-to-find --recursive 3`
 
-Count lines in a folder recursively
+### Count lines in a folder recursively
 `cleaner.exe count --source "C:\dev\project" --recursive 3 --filter ".cpp;.h" --output "result.txt"`
 
-List patterns in files
+### List patterns in files
 `cleaner.exe list --source "D:\tests" --recursive 2 --pattern "TEST_CASE,EXPECT,static_assert"`
 
+### List files in Visual Studio ouput window (make sure that one instance of visual studio is open)
+`cleaner list --source "project-full-path" -vs --pattern "TEST_CASE,EXPECT,static_assert"`
 
-
----
-
-## Notes
-- The application supports recursive operations with a configurable depth.
-- Outputs can be saved to files or printed to the console.
-- Wildcard patterns are supported for filtering files.
-- SQL-related commands require a valid table name and database configuration.
+### Use the dir command to list *.cpp* files in current directory and subfolders (no source = current directory)
+`cleaner dir -R "--filter", "*.cpp"`
 
 ---
-
-For further details, refer to the source code or contact the development team.
-
-
-
 
 ## Supported File Extensions and Languages
 
@@ -130,4 +163,16 @@ For further details, refer to the source code or contact the development team.
 | `.vim` | Vim Script | Line: `"` | Double quotes with escape chars<br>Single quotes with escape chars |
 | `.txt`, `.md` | Plain text/Markdown | None | None defined |
 
+---
 
+## Notes
+- The application supports recursive operations with a configurable depth, or using `-R` for maximum depth (16 levels).
+- Outputs can be saved to files or printed to the console.
+- Wildcard patterns are supported for filtering files.
+- SQL-related commands require a valid table name and database configuration.
+- Visual Studio integration is available with the `--vs` option for clickable file paths.
+- Command history can be enabled and configured for persistent command tracking.
+
+---
+
+For further details, refer to the source code or contact the development team.
