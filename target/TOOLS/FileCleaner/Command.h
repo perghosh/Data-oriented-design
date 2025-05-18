@@ -10,6 +10,7 @@
 
  // ## STL
 
+#include <filesystem>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -17,7 +18,8 @@
 #include <string_view>
 #include <utility>
 #include <vector>
-#include <filesystem>
+#include <regex>
+
 
  // ## GD
 
@@ -49,7 +51,10 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
 std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
 std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
 std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector<std::string>& vectorPattern, std::vector<uint64_t>& vectorCount );
+/// @brief Collects the number of lines in a file that match a specific pattern, this is case sensetive matching.
 std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::dto::table* ptable_ );
+/// @brief Collects the number of lines in a file that match a specific pattern, this use regex matching.
+std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_);
 
 std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);
 

@@ -82,9 +82,6 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       result_ = pdocument->FILE_Filter(stringFilter);                                              if( !result_.first ) { return result_; }
    }
 
-   std::string stringPattern = options_["pattern"].as_string();                                    //LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
-   auto vectorPattern = CApplication::Split_s(stringPattern);                 // split pattern string into vector
-
    uint64_t uMax = options_["max"].as_uint64(); // max number of lines to be printed
    if (uMax == 0) uMax = 512; // default to 512 lines
 
@@ -92,8 +89,21 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    std::string stringSegment = options_["segment"].as_string(); // type of segment to search in, code, comment or string, maybe all
    if (stringSegment.empty() == false) argumentsList.set("state", stringSegment.c_str());
 
-   result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // count rows in harvested files
-   if (result_.first == false) return result_;
+   if( options_.exists("pattern") == true )
+   {
+      std::string stringPattern = options_["pattern"].as_string();                                    //LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
+      auto vectorPattern = CApplication::Split_s(stringPattern);                 // split pattern string into vector
+      result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // count rows in harvested files
+      if (result_.first == false) return result_;
+   }
+   else if( options_.exists("rpattern") == true )
+   {
+      std::string stringPattern = options_["rpattern"].as_string();                                    //LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
+      auto vectorPattern = CApplication::Split_s(stringPattern);                 // split pattern string into vector
+      //result_ = pdocument->FILE_UpdateRPatternList(vectorPattern, argumentsList); // count rows in harvested files
+      //if (result_.first == false) return result_;
+   }
+   else { return { false, "No pattern specified" }; }                          // no pattern specified
 
    auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
 

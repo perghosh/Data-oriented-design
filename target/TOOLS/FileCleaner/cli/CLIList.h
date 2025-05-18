@@ -31,5 +31,6 @@ NAMESPACE_CLI_BEGIN
 
 std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocument* pdocument);
 std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList, CDocument* pdocument);
+// std::pair<bool, std::string> ListRPattern_g(const gd::cli::options* poptionsList, CDocument* pdocument);
 
 NAMESPACE_CLI_END

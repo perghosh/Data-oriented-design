@@ -12,6 +12,7 @@
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
+#include <regex>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -87,6 +88,7 @@ public:
    std::pair<bool, std::string> FILE_UpdateRowCounters();
    std::pair<bool, std::string> FILE_UpdatePatternCounters( const std::vector<std::string>& vectorPattern );
    std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList );
+   std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList );
       
 //@}
 
