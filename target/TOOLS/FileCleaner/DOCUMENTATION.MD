@@ -1,6 +1,6 @@
 # Cleaner.exe Documentation
 
-`cleaner.exe` is a console application designed to perform various file and folder operations, such as counting lines, listing patterns, joining files, and managing databases. It supports recursive operations, pattern matching, and output customization.
+`cleaner.exe` is a console application designed to perform various file and folder operations, such as search in files or counting lines etc, it has strong search capabilities, allowing users to find specific patterns in files and folders. The application is built with a focus on performance and usability, making it suitable for developers and system administrators who need to manage large codebases or datasets efficiently.
 
 ---
 
