@@ -33,7 +33,8 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 
    if( options_.exists("pattern") == true )
    {
-
+      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", options_["filter"].as_string() }, { "pattern", options_["pattern"].as_string() }});
+      
    }
    else if( options_.exists("rpattern") == true )
    {
@@ -86,6 +87,20 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    auto stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
    application.PrintMessage(stringTable, gd::argument::arguments());
    */
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, const gd::argument::shared::arguments& arguments_, CDocument* pdocument )
+{                                                                                                  assert( stringSource != "" );
+   std::unique_ptr<gd::table::dto::table> ptable;
+   pdocument->CACHE_Prepare( "file-dir", &ptable );
+   auto stringFilter = arguments_["filter"].as_string();
+   unsigned uDepth = arguments_["depth"].as_uint();
+   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth);
+   if( result_.first == false ) return result_;
+
+   auto stringPattern = arguments_["pattern"].as_string();
 
    return { true, "" };
 }
