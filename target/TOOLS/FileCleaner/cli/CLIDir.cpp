@@ -112,7 +112,7 @@ std::pair<bool, std::string> DirFilter_g( const std::string& stringSource, const
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
 
-   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth);
+   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth, true);
    if( result_.first == false ) return result_;
    auto stringTable = gd::table::to_string(*ptable.get(), { {"verbose", true} }, gd::table::tag_io_cli{});
    pdocument->MESSAGE_Display(stringTable);
@@ -141,7 +141,7 @@ std::pair<bool, std::string> DirFilter_g(const std::string& stringSource, const 
    std::unique_ptr<gd::table::dto::table> ptable;
    pdocument->CACHE_Prepare( "file-dir", &ptable );
 
-   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth);
+   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth, true );
    if( result_.first == false ) return result_;
    auto stringTable = gd::table::to_string(*ptable.get(), { {"verbose", true} }, gd::table::tag_io_cli{});
    pdocument->MESSAGE_Display(stringTable);
