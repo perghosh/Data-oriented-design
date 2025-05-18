@@ -149,6 +149,11 @@ std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, cons
    if( vectorDeleteRow.empty() == false )                                      // if the vector is not empty, delete the rows
    {
       ptableFile->erase(vectorDeleteRow);                                      // delete the rows from the table
+      // ## fix the row numbers
+      for( uint64_t uRow = 0; uRow < ptableFile->get_row_count(); uRow++ )
+      {
+         ptableFile->cell_set(uRow, "key", uRow + 1);                          // set new key numbers to make key work for user, like index for each file
+      }
    }
 
    // ## Display the table
