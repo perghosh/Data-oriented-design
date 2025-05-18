@@ -39,6 +39,15 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    {
 
    }
+   else if( options_.exists("vs") == true || options_.exists("script") == true )
+   {
+      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", options_["filter"].as_string() }});
+
+      if( options_.exists("vs") == true ) arguments_.append( "vs", true );
+      if( options_.exists("script") == true ) arguments_.append( "script", options_["script"].as_string() );
+
+      auto result_ = DirFilter_g( stringSource, arguments_, pdocument );
+   }
    else
    {
       std::string stringFilter = options_["filter"].as_string();
@@ -81,17 +90,52 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    return { true, "" };
 }
 
+std::pair<bool, std::string> DirFilter_g( const std::string& stringSource, const gd::argument::shared::arguments& arguments_, CDocument* pdocument )
+{                                                                                                  assert( stringSource != "" );
+   std::unique_ptr<gd::table::dto::table> ptable;
+   pdocument->CACHE_Prepare( "file-dir", &ptable );
+
+   auto stringFilter = arguments_["filter"].as_string();
+   unsigned uDepth = arguments_["depth"].as_uint();
+
+   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth);
+   if( result_.first == false ) return result_;
+   auto stringTable = gd::table::to_string(*ptable.get(), { {"verbose", true} }, gd::table::tag_io_cli{});
+   pdocument->MESSAGE_Display(stringTable);
+
+#ifdef _WIN32
+   if( arguments_.exists("script") == true )
+   {
+      std::string stringScript = arguments_["script"].as_string();
+      VS::CVisualStudio visualstudio;
+      result_ = visualstudio.Connect();
+      if( result_.first == true )
+      {
+         visualstudio.AddTable( ptable.get() );
+         result_ = visualstudio.ExecuteExpression( stringScript );
+      }
+      if( result_.first == false ) return result_;
+   }
+#endif // _WIN32
+
+   return { false, "" };
+}
+
+
 std::pair<bool, std::string> DirFilter_g(const std::string& stringSource, const std::string& stringFilter, unsigned uDepth, CDocument* pdocument )
 {                                                                                                  assert( stringSource != "" );
    std::unique_ptr<gd::table::dto::table> ptable;
    pdocument->CACHE_Prepare( "file-dir", &ptable );
 
-   FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth);
+   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth);
+   if( result_.first == false ) return result_;
    auto stringTable = gd::table::to_string(*ptable.get(), { {"verbose", true} }, gd::table::tag_io_cli{});
    pdocument->MESSAGE_Display(stringTable);
 
    return { false, "" };
 }
+
+
 
 
 NAMESPACE_CLI_END

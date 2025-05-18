@@ -123,6 +123,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
                visualstudio.AddTable( &tableResultLineList );
                result_ = visualstudio.ExecuteExpression( stringScript );
             }
+            if( result_.first == false ) return result_;
          }
 
 
