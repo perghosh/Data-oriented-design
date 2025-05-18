@@ -145,7 +145,11 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          }
       }
 #else
-      stringCliTable = gd::table::to_string(tableResultLineList, gd::table::tag_io_cli{});
+      // ## Just print the "line" column 
+      gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+      table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
+
+      stringCliTable = gd::table::to_string(table_, gd::table::tag_io_cli{});
       pdocument->MESSAGE_Display( stringCliTable );
 #endif // _WIN32
    }
