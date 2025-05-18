@@ -892,6 +892,239 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    return { true, "" };
 }
 
+
+
+
+
+std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_)
+{
+   enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
+
+   unsigned uFindInState = eStateCode; // state of the parser
+
+   // ## if state is sent than try to figure out from what state to find patterns
+   if( argumentsPath.exists("state") == true )
+   {
+      std::string stringState = argumentsPath["state"].as_string();
+      if     ( stringState == "comment" ) uFindInState = eStateComment;
+      else if( stringState == "string"  ) uFindInState = eStateString;
+      else if( stringState == "code"    ) uFindInState = eStateCode;
+      else if( stringState == "all"     ) uFindInState = ( eStateComment | eStateString | eStateCode );
+   }
+
+   uint64_t uFileKey = argumentsPath["file-key"]; // key to file for main table holding activ files
+
+   // ## prepare source file
+
+   std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
+   if( std::filesystem::is_regular_file(stringFile) == false ) return { false, "File not found: " + stringFile };
+   gd::file::path pathFile(stringFile);
+   std::string stringExtension = pathFile.extension().string();
+
+   // ### Open file
+
+   std::ifstream file_(stringFile, std::ios::binary);
+   if(file_.is_open() == false) return { false, "Failed to open file: " + stringFile };
+
+   gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
+
+   gd::expression::parse::state state_; // state is used to check what type of code part we are in
+   auto result_ = CApplication::PrepareState_s( {{"source",stringFile}}, state_);
+   if( result_.first == false ) return result_;                               // error in state preparation
+
+
+   uint64_t uCountNewLine = 0;                                                // counts all new lines in file (all '\n' characters)
+
+   // ## find pattern in code using regex, returns index to matched regex in regexPatterns if match, otherwise -1
+   auto find_pattern_ = [&vectorRegexPatterns](const std::string& text, uint64_t* puColumn) -> int {
+      for(size_t u = 0; u < vectorRegexPatterns.size(); ++u)
+      {
+         std::smatch match;
+         if(std::regex_search(text, match, vectorRegexPatterns[u].first)) 
+         {
+            if(puColumn) *puColumn = match.position(0);
+            return static_cast<int>(u);
+         }
+      }
+      return -1;
+   };
+
+   // ## find pattern in code, returns index to found pattern within patternsFind if match, otherwise -1
+   auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&vectorRegexPatterns](int iPatternIndex, std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
+      {  
+         stringText = gd::utf8::trim_to_string(stringText);                   // trim
+
+         // ## adds line with information about found pattern to table holding matches
+         auto uRow = ptable_->row_add_one();
+         ptable_->cell_set(uRow, "key", uRow + 1);
+         ptable_->cell_set(uRow, "file-key", uFileKey);
+         ptable_->cell_set(uRow, "filename", stringFile);
+         ptable_->cell_set(uRow, "line", stringText);
+         ptable_->cell_set(uRow, "row", uLineRow);
+         ptable_->cell_set(uRow, "column", uColumn);
+         ptable_->cell_set(uRow, "pattern", stringPattern, gd::types::tag_adjust{});
+      };
+
+
+   std::string stringSourceCode; // gets source code for analysis
+   std::string stringText;       // gets text for analysis
+   uint64_t uRowCharacterCodeCount = 0; // number of characters of code in current row (helper variable)
+
+
+   // ## Read the file into the buffer
+   auto uAvailable = lineBuffer.available();
+   file_.read((char*)lineBuffer.buffer(), uAvailable);
+   auto uReadSize = file_.gcount();                                           // get number of valid bytes read
+   lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
+
+   // ## Process the file
+   while(lineBuffer.eof() == false)
+   {
+      uCountNewLine += lineBuffer.count('\n');                                // count all new lines in buffer
+
+      auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});         // get first and last position of buffer
+
+      for(auto it = first_; it < last_; it++ ) 
+      {
+         if( state_.in_state() == false )                                     // not in a state? that means we are reading source code
+         {
+            // ## check if we have found state
+            if( state_[*it] != 0 && state_.exists( it ) == true )
+            {
+               if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) )
+               {
+                  uint64_t uColumn;
+                  int iPattern = find_pattern_(stringSourceCode, &uColumn);    // try to find pattern in source code
+                  if( iPattern != -1 )                                        // did we find a pattern?
+                  {
+                     // ## figure ot row and column
+                     auto uRow = uCountNewLine; // row number for current buffer
+                     auto uPosition = it - first_;
+                     uRow -= lineBuffer.count('\n', uPosition);               // subtract number of new lines in buffer from current position to get the right row
+
+                     add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, vectorRegexPatterns[iPattern].second); // add line to table
+                  }
+               }
+               stringSourceCode.clear();                                      // clear source code
+               state_.activate(it);                                           // activate state
+
+               // If multiline and `uRowCharacterCodeCount` is not 0 that means that there are characters in the code section before multiline
+               if( uRowCharacterCodeCount > 0 && state_.is_multiline() == false ) 
+               { 
+                  stringSourceCode.clear();
+                  uRowCharacterCodeCount = 0;
+               }
+
+               continue;
+            }
+
+            
+            if( *it == '\n' ) 
+            { 
+               if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) )
+               {
+                  uint64_t uColumn;
+                  int iPattern = find_pattern_(stringSourceCode, &uColumn);    // try to find pattern in source code
+                  if( iPattern != -1 )                                         // did we find a pattern?
+                  {
+                     // ## figure ot row and column
+                     auto uRow = uCountNewLine; // row number for current buffer
+                     auto uPosition = it - first_;
+                     uRow -= lineBuffer.count('\n', uPosition);                // subtract number of new lines in buffer from current position to get the right row
+
+                     add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, vectorRegexPatterns[iPattern].second); // add line to table
+                  }
+               }
+
+               stringSourceCode.clear();
+               uRowCharacterCodeCount = 0;                                    // reset code character count for next line
+               continue;
+            }
+            else if( gd::expression::is_code_g( *it ) != 0 ) 
+            { 
+               uRowCharacterCodeCount++;                                      // count all code characters in line
+            }
+
+            stringSourceCode += *it;                                          // add character to source code
+         }
+         else
+         {  // Handle state that is outside code
+            stringText += *it;                                                // add character to text for analysis
+            // ## check if we have found end of state
+            unsigned uLength;
+            if( state_.deactivate(it, &uLength, gd::expression::parse::state::tag_manual{}) == true ) // NOTE: this needs manual reset of internal state
+            {
+               if( uFindInState != eStateCode && stringText.empty() == false )
+               {
+                  if( uFindInState & ( eStateComment | eStateString ) )        // if find text in comment or string
+                  {
+                     if( ( state_.is_comment() == true && ( uFindInState & eStateComment ) ) ||
+                         ( state_.is_string() == true && ( uFindInState & eStateString ) ) )
+                     {
+                        uint64_t uColumn;
+                        int iPattern = find_pattern_(stringSourceCode, &uColumn);    // try to find pattern in source code
+                        if( iPattern != -1 )                                           // did we find a pattern?
+                        {
+                           // ## figure ot row and column
+                           auto uRow = uCountNewLine; // row number for current buffer
+                           auto uPosition = it - first_;
+                           uRow -= lineBuffer.count('\n', uPosition);         // subtract number of new lines in buffer from current position to get the right row
+
+                           add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, vectorRegexPatterns[iPattern].second); // add line to table
+                        }
+                     }
+                  } // if( uFindInState & ( eStateComment | eStateString ) )
+               } // if( stringText.empty() == false )
+
+               state_.clear_state();                                           // clear state
+               stringText.clear();                                             // clear text for analysis
+
+
+               if( uLength > 1 ) it += ( uLength - 1 );                        // skip to end of state marker and if it is more than 1 character, skip to end of state
+               continue;
+            }
+
+            if( *it == '\n' )
+            {
+               if( (uFindInState & ( eStateComment | eStateString )) && stringText.empty() == false )
+               {
+                  if( ( state_.is_comment() == true && ( uFindInState & eStateComment ) ) ||
+                      ( state_.is_string() == true && ( uFindInState & eStateString ) ) )
+                  {
+                     uint64_t uColumn;
+                     int iPattern = find_pattern_(stringSourceCode, &uColumn);    // try to find pattern in source code
+                     if( iPattern != -1 )                                      // did we find a pattern?
+                     {
+                        // ## figure ot row and column
+                        auto uRow = uCountNewLine;                             // row number for current buffer
+                        auto uPosition = it - first_;
+                        uRow -= lineBuffer.count('\n', uPosition);             // subtract number of new lines in buffer from current position to get the right row
+
+                        add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, vectorRegexPatterns[iPattern].second); // add line to table
+                     }
+                  }
+               }
+
+               stringText.clear();                                             // clear text for analysis
+            }
+         }
+      }
+
+      lineBuffer.rotate();                                                    // rotate buffer
+
+      if( uReadSize > 0 )                                                     // was it possible to read data last read, then more data is available
+      {
+         auto uAvailable = lineBuffer.available();                            // get available space in buffer to be filled
+         file_.read((char*)lineBuffer.buffer(), lineBuffer.available());      // read more data into available space in buffer
+         uReadSize = file_.gcount();
+         lineBuffer.update(uReadSize);                                        // update valid size in line buffer
+      }
+   }
+
+   return { true, "" };
+}
+
+
 // 0TAG0FileExtensions.PrepareState
 
 

@@ -446,6 +446,41 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 }
 
 
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList )
+{
+   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
+   auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
+   assert(ptableFile != nullptr);
+
+   std::string_view stringState;
+   if( argumentsList.exists("state") == true ) { stringState = argumentsList["state"].as_string_view(); } // Get the state (code, comment, string) to search in
+
+   uint64_t uMax = argumentsList["max"].as_uint64(); // Get the maximum number of lines to be printed
+   for(const auto& itRowFile : *ptableFile)
+   {
+      // ## Generate the full file path (folder + filename)
+      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
+      gd::file::path pathFile(string_);
+      string_ = itRowFile.cell_get_variant_view("filename").as_string();
+      pathFile += string_;
+      std::string stringFile = pathFile.string();
+
+      auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
+
+      // Find lines with patterns and update the "file-linelist" table
+      gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+      if( stringState.empty() == false ) arguments_.set("state", stringState.data()); // Set the state (code, comment, string) to search in
+      auto result_ = COMMAND_ListLinesWithPattern( arguments_, vectorRegexPatterns, ptableLineList );
+      if(result_.first == false)
+      {
+         ERROR_Add(result_.second); // Add error to the internal error list
+      }
+      if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
+   }
+   return {true, ""};
+}
+
+
 
 std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::arguments& argumentsResult, const gd::table::dto::table* ptableResult)
 {
