@@ -37,7 +37,7 @@ cleaner.exe <command> [options]
 Counts lines in files or folders, or counts pattern occurrences.
 
 **Options:**
-- `--source <path>`: File or folder to count lines in.
+- `--source <path>`: File or folder to count lines in. If not specified, the current directory is used. Cleaner supports positional arguments for source path, so you can use `cleaner count /home/username/dev/project/src/`.
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--filter <pattern>`: Filter files using wildcard patterns (e.g., `*.h;*.cpp`).
 - `--output <file>`: Save the output to a file.
@@ -57,7 +57,7 @@ Counts lines in files or folders, or counts pattern occurrences.
 Lists rows matching specified patterns in files or folders.
 
 **Options:**
-- `--source <path>`: File or folder to search for patterns.
+- `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner list /home/username/dev/project/src/`.
 - `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
 - `--rpattern <regex>`: Regular expression pattern to search for.
 - `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;`.

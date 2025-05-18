@@ -917,10 +917,10 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    {  // ## `copy` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );
       optionsCommand.add({ "source", 's', "File/folders to count lines in"});
-      optionsCommand.add({ "comment", "Pair of characters marking start and end for comments"});
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
-      optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
+      //optionsCommand.add({ "comment", "Pair of characters marking start and end for comments"});
+      //optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
       optionsCommand.add({ "sort", "Sorts result on selected column name" });
       optionsCommand.add({ "stats", "Add statistics to generated output" });
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
@@ -956,8 +956,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    { // ## 'dir' command, list files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in directory" );
       optionsCommand.add({ "source", 's', "Directory to list" });
-      optionsCommand.add({ "filter", "Filter file extensions" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
+      optionsCommand.add({ "filter", "Filter file extensions" });
       optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32
