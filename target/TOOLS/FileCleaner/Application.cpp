@@ -957,6 +957,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in directory" );
       optionsCommand.add({ "source", 's', "Directory to list" });
       optionsCommand.add({ "filter", "Filter file extensions" });
+      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32

@@ -30,10 +30,10 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    unsigned uRecursive = options_["recursive"].as_uint();
    if(uRecursive == 0 && options_.exists("R") == true) uRecursive = 16;        // set to 16 if R is set, find all files
 
-   if( options_.exists("pattern") == true )
+   if( options_.exists("pattern") == true )                                    // 
    {
       gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", options_["filter"].as_string() }, { "pattern", options_["pattern"].as_string() }});
-      
+      auto result_ = DirPattern_g( stringSource, arguments_, pdocument );
    }
    else if( options_.exists("rpattern") == true )
    {
@@ -47,6 +47,7 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
       if( options_.exists("script") == true ) arguments_.append( "script", options_["script"].as_string() );
 
       auto result_ = DirFilter_g( stringSource, arguments_, pdocument );
+      if( result_.first == false ) return result_;
    }
    else
    {
@@ -90,16 +91,70 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief
+ *   Performs a directory search using the specified source path and filter, then applies one or more patterns to the results.
+ *
+ *   - Harvests files from the given directory path using the provided filter and search depth.
+ *   - For each file found, checks if it matches any of the specified patterns.
+ *   - Removes files from the result set that do not match any pattern.
+ *   - Displays the filtered result table to the user.
+ *
+ * @param stringSource The source directory path to search.
+ * @param arguments_   Arguments containing "filter", "depth", and "pattern" keys.
+ * @param pdocument    Pointer to the document object for storing and displaying results.
+ * @return std::pair<bool, std::string> Pair indicating success/failure and an error message if any.
+ */
 std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, const gd::argument::shared::arguments& arguments_, CDocument* pdocument )
 {                                                                                                  assert( stringSource != "" );
    std::unique_ptr<gd::table::dto::table> ptable;
    pdocument->CACHE_Prepare( "file-dir", &ptable );
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
-   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth);
-   if( result_.first == false ) return result_;
+   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth, true);        if( result_.first == false ) return result_;
 
+   gd::table::dto::table* ptableFile = ptable.get();                           // get the table pointer
+   std::vector<uint64_t> vectorCount; // vector storing results from COMMAND_CollectPatternStatistics
+   std::vector<uint64_t> vectorDeleteRow; 
+
+   // ## Filter the table with the pattern or patterns sent
    auto stringPattern = arguments_["pattern"].as_string();
+   auto vectorPattern = CApplication::Split_s(stringPattern);
+
+   for( const auto& itRowFile : *ptableFile )
+   {
+      std::string stringFile = itRowFile.cell_get_variant_view("path").as_string(); // get the file path
+
+      // ## Match the pattern/patterns with the file
+
+      auto result_ = COMMAND_CollectPatternStatistics( {{"source", stringFile} }, vectorPattern, vectorCount );
+      if( result_.first == false ) { pdocument->ERROR_Add(result_.second); }
+
+      // ## Check for pattern matches, vector contains the number of matches for each pattern
+
+      bool bPatternMatch = false;
+      for( unsigned u = 0; u < vectorCount.size(); u++ )
+      {
+         if( vectorCount[u] > 0 ) { bPatternMatch = true; break; }
+      }
+
+      if( bPatternMatch == false )
+      {
+         vectorDeleteRow.push_back(itRowFile.get_row());                       // add the row index to the delete vector
+      }
+
+      vectorCount.resize(vectorPattern.size(), 0);                             // set counters to 0 in vector
+   }
+
+   if( vectorDeleteRow.empty() == false )                                      // if the vector is not empty, delete the rows
+   {
+      ptableFile->erase(vectorDeleteRow);                                      // delete the rows from the table
+   }
+
+   // ## Display the table
+
+   auto stringTable = gd::table::to_string(*ptable.get(), { {"verbose", true} }, gd::table::tag_io_cli{});
+   pdocument->MESSAGE_Display(stringTable);
 
    return { true, "" };
 }
@@ -136,6 +191,14 @@ std::pair<bool, std::string> DirFilter_g( const std::string& stringSource, const
 }
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Similar to the standard dir command with a filter
+ * @param stringSource source path or paths, separated by a ;
+ * @param stringFilter filter string, e.g. *.txt;*.docx
+ * @param uDepth depth of the search, 0 = current directory, 1 = subdirectory, 2 = sub-subdirectory, etc.
+ * @param pdocument pointer to the document object where data is stored
+ * @return a pair of bool and string, where the bool indicates success or failure, and the string contains the error message or result
+ */
 std::pair<bool, std::string> DirFilter_g(const std::string& stringSource, const std::string& stringFilter, unsigned uDepth, CDocument* pdocument )
 {                                                                                                  assert( stringSource != "" );
    std::unique_ptr<gd::table::dto::table> ptable;
