@@ -135,7 +135,7 @@ namespace detail {
   * 
   * @endverbatim
   */
-std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, const std::string& stringWildcard, gd::table::dto::table* ptable_, unsigned uDepth )
+std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, const std::string& stringWildcard, gd::table::dto::table* ptable_, unsigned uDepth, bool bSize )
 {                                                                                                  assert( ptable_ != nullptr );
    try
    {
@@ -143,7 +143,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
       {
          if( std::filesystem::is_regular_file(stringPath) == true )            // is file
          {
-            detail::add_file_to_table(gd::file::path(stringPath), stringWildcard, ptable_);
+            detail::add_file_to_table(gd::file::path(stringPath), stringWildcard, ptable_, bSize);
             return { true, "" };
          }
          else
@@ -159,7 +159,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
             if( uDepth > 0 )
             {
                auto stringChildPath = it.path().string();
-               auto [bOk, stringError] = FILES_Harvest_g(stringChildPath, stringWildcard, ptable_, (uDepth - 1) );// recursive call to harvest files in subdirectories
+               auto [bOk, stringError] = FILES_Harvest_g(stringChildPath, stringWildcard, ptable_, (uDepth - 1), bSize );// recursive call to harvest files in subdirectories
                if( bOk == false ) return { false, stringError };               // error in recursive call
             }
          }
@@ -170,7 +170,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
                try
                {
                   std::string string_ = it.path().string();
-                  detail::add_file_to_table(gd::file::path(string_), stringWildcard, ptable_);
+                  detail::add_file_to_table(gd::file::path(string_), stringWildcard, ptable_, bSize);
                }
                catch( const std::exception& e )
                {

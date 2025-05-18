@@ -958,6 +958,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "source", 's', "Directory to list" });
       optionsCommand.add({ "filter", "Filter file extensions" });
       optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
+      optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format"} );
       optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
