@@ -1,6 +1,3 @@
-int i = 0;    
-
-
 /**
  * @file Application.cpp
  * 
