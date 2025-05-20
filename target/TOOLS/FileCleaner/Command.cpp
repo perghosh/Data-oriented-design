@@ -771,15 +771,8 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                   }
                }
                stringSourceCode.clear();                                      // clear source code
+               uRowCharacterCodeCount = 0;
                state_.activate(it);                                           // activate state
-
-               // If multiline and `uRowCharacterCodeCount` is not 0 that means that there are characters in the code section before multiline
-               if( uRowCharacterCodeCount > 0 && state_.is_multiline() == false ) 
-               { 
-                  stringSourceCode.clear();
-                  uRowCharacterCodeCount = 0;
-               }
-
                continue;
             }
 
@@ -936,13 +929,13 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    uint64_t uCountNewLine = 0;                                                // counts all new lines in file (all '\n' characters)
 
    // ## find pattern in code using regex, returns index to matched regex in regexPatterns if match, otherwise -1
-   auto find_pattern_ = [&vectorRegexPatterns](const std::string& text, uint64_t* puColumn) -> int {
+   auto find_pattern_ = [&vectorRegexPatterns](const std::string& stringText, uint64_t* puColumn) -> int {
       for(size_t u = 0; u < vectorRegexPatterns.size(); ++u)
       {
-         std::smatch match;
-         if(std::regex_search(text, match, vectorRegexPatterns[u].first)) 
+         std::smatch smatch_;
+         if(std::regex_search(stringText, smatch_, vectorRegexPatterns[u].first)) 
          {
-            if(puColumn) *puColumn = match.position(0);
+            if(puColumn) *puColumn = smatch_.position(0);
             return static_cast<int>(u);
          }
       }
@@ -992,10 +985,11 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
             if( state_[*it] != 0 && state_.exists( it ) == true )
             {
                if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) )
-               {
+               {                                                                                   assert( stringSourceCode.empty() == false );
+                  stringSourceCode = gd::utf8::trim_right_to_string(stringSourceCode);// trim right because we are in code state and changes state in the middle of the line
                   uint64_t uColumn;
                   int iPattern = find_pattern_(stringSourceCode, &uColumn);    // try to find pattern in source code
-                  if( iPattern != -1 )                                        // did we find a pattern?
+                  if( iPattern != -1 )                                         // did we find a pattern?
                   {
                      // ## figure ot row and column
                      auto uRow = uCountNewLine; // row number for current buffer
@@ -1006,15 +1000,8 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                   }
                }
                stringSourceCode.clear();                                      // clear source code
+               uRowCharacterCodeCount = 0;
                state_.activate(it);                                           // activate state
-
-               // If multiline and `uRowCharacterCodeCount` is not 0 that means that there are characters in the code section before multiline
-               if( uRowCharacterCodeCount > 0 && state_.is_multiline() == false ) 
-               { 
-                  stringSourceCode.clear();
-                  uRowCharacterCodeCount = 0;
-               }
-
                continue;
             }
 
@@ -1022,7 +1009,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
             if( *it == '\n' ) 
             { 
                if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) )
-               {
+               {                                                                                   assert( stringSourceCode.empty() == false );
                   uint64_t uColumn;
                   int iPattern = find_pattern_(stringSourceCode, &uColumn);    // try to find pattern in source code
                   if( iPattern != -1 )                                         // did we find a pattern?
