@@ -451,6 +451,78 @@ std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& 
    return {true, ""};
 }
 
+/**
+ * @brief Prints a progress message to the console or other output based on the UI type.
+ */
+std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat)
+{
+   constexpr size_t uMaxLength = 160; // Maximum length for the message
+   enumUIType eUIType = m_eUIType; // Get the UI type from the application instance
+   std::string stringPrint( stringMessage );
+
+   if( stringPrint.length() < uMaxLength )
+   {
+      stringPrint += std::string(uMaxLength - stringPrint.length(), ' ');      // Pad with spaces to fill the line
+   }
+   else if( stringPrint.length() > uMaxLength )
+   {
+      stringPrint = stringPrint.substr(0, uMaxLength);
+   }
+
+
+   if( argumentsFormat.exists("ui") == true ) 
+   {
+      std::string stringUIType = argumentsFormat["ui"].as_string();
+      eUIType = GetUITypeFromString_s( stringUIType );
+   }
+
+   switch(eUIType)
+   {
+   case eUITypeConsole:
+      std::cout << "\r" << stringPrint;
+      break;
+   case eUITypeWeb:
+      // Implement web output logic here
+      // e.g., send message to web UI log
+      break;
+   case eUITypeWIMP:
+      // Implement desktop UI message box or log
+      break;
+   case eUITypeVSCode:
+#ifdef _WIN32
+   case eUITypeVS:
+   {
+      auto result_ = VS::CVisualStudio::Print_s( stringMessage, VS::tag_vs_output{});
+      if( result_.first == false ) 
+      { 
+         std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
+         std::cerr << stringError << "\n";
+         return result_; 
+      }
+   }
+   break;
+#endif // _WIN32
+   case eUITypeSublime:
+      // Implement extension output logic here
+      break;
+   default:
+   {
+      // Fallback to console
+      if( argumentsFormat.exists("clear") == true )
+      {
+         stringPrint = "";                                                     // Clear the line if "clear" argument is present
+         stringPrint.append(uMaxLength, ' ');                                  // Fill the line with spaces
+         stringPrint += "\r";                                                  // Move the cursor to the beginning of the line
+      }
+      
+      std::cout << "\r" << stringPrint;
+   }
+   break;
+   }
+
+   return {true, ""};
+}
+
 
 std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_view& stringFileName)
 {

@@ -412,8 +412,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
-   assert(ptableFile != nullptr);
-
+                                                                                                   assert(ptableFile != nullptr);
    std::string_view stringState;
    if( argumentsList.exists("state") == true ) { stringState = argumentsList["state"].as_string_view(); } // Get the state (code, comment, string) to search in
 
@@ -427,6 +426,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
       string_ = itRowFile.cell_get_variant_view("filename").as_string();
       pathFile += string_;
       std::string stringFile = pathFile.string();
+      MESSAGE_Progress( stringFile );
 
       auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
 
@@ -442,6 +442,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
       if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
    }
 
+   MESSAGE_Progress("", {{"clear", true}});
+
    return {true, ""};
 }
 
@@ -450,8 +452,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
 {
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
-   assert(ptableFile != nullptr);
-
+                                                                                                   assert(ptableFile != nullptr);
    std::string_view stringState;
    if( argumentsList.exists("state") == true ) { stringState = argumentsList["state"].as_string_view(); } // Get the state (code, comment, string) to search in
 
@@ -464,6 +465,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
       string_ = itRowFile.cell_get_variant_view("filename").as_string();
       pathFile += string_;
       std::string stringFile = pathFile.string();
+      MESSAGE_Progress( stringFile );
 
       auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
 
@@ -477,9 +479,11 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
       }
       if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
    }
+
+   MESSAGE_Progress("", {{"clear", true}});
+
    return {true, ""};
 }
-
 
 
 std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::arguments& argumentsResult, const gd::table::dto::table* ptableResult)
@@ -1132,6 +1136,16 @@ void CDocument::MESSAGE_Display(const std::string_view& stringMessage)
 void CDocument::MESSAGE_Display(const std::string_view& stringMessage, const gd::argument::arguments& argumentsMessage )
 {
    m_papplication->PrintMessage(stringMessage, argumentsMessage );             // display message in application window
+}
+
+void CDocument::MESSAGE_Progress(const std::string_view& stringMessage)
+{
+   m_papplication->PrintProgress(stringMessage, gd::argument::arguments() );   // display progress message in application
+}
+
+void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd::argument::arguments& argumentsMessage )
+{
+   m_papplication->PrintProgress(stringMessage, argumentsMessage );            // display progress message in application
 }
 
 

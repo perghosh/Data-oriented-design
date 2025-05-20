@@ -78,9 +78,10 @@ public:
 //@}
 
 /** @name FILE
-* 
+* File operations work on tables stored in cache and ech table is identified by a string id.
 *///@{
 
+   /// @brief Harvest file information and store it in a table (harvest = collect)
    std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath );
    std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath, std::string stringFilter );
    std::pair<bool, std::string> FILE_Filter( const std::string_view& stringFilter );
@@ -147,6 +148,9 @@ public:
    /// Display message to user
    void MESSAGE_Display( const std::string_view& stringMessage );
    void MESSAGE_Display( const std::string_view& stringMessage, const gd::argument::arguments& arguments_ );
+   /// Display message to user with progress information
+   void MESSAGE_Progress( const std::string_view& stringMessage );
+   void MESSAGE_Progress( const std::string_view& stringMessage, const gd::argument::arguments& arguments_ );
 
 //@}
 
