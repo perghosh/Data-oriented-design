@@ -89,19 +89,37 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    std::string stringSegment = options_["segment"].as_string(); // type of segment to search in, code, comment or string, maybe all
    if (stringSegment.empty() == false) argumentsList.set("state", stringSegment.c_str());
 
+   // ## check for pattern that 
    if( options_.exists("pattern") == true )
    {
-      std::string stringPattern = options_["pattern"].as_string();                                    //LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
+      std::string stringPattern = options_["pattern"].as_string();
       auto vectorPattern = CApplication::Split_s(stringPattern);                 // split pattern string into vector
-      result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // count rows in harvested files
+      result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
    }
    else if( options_.exists("rpattern") == true )
    {
-      std::string stringPattern = options_["rpattern"].as_string();                                    //LOG_INFORMATION_RAW("== --pattern: " & stringPattern);
-      auto vectorPattern = CApplication::Split_s(stringPattern);                 // split pattern string into vector
-      //result_ = pdocument->FILE_UpdateRPatternList(vectorPattern, argumentsList); // count rows in harvested files
-      //if (result_.first == false) return result_;
+      std::string stringPattern = options_["rpattern"].as_string();
+      std::vector<std::string> vectorPattern = CApplication::Split_s(stringPattern); // split pattern string into vector
+      std::vector< std::pair<std::regex, std::string> > vectorRegexPatterns;   // vector of regex patterns and their string representation
+      
+      // ## convert string to regex and put it into vectorRegexPatterns
+      for( auto& stringPattern : vectorPattern )
+      {
+         try
+         {
+            std::regex regexPattern(stringPattern);
+            vectorRegexPatterns.push_back({ regexPattern, stringPattern });
+         }
+         catch (const std::regex_error& e)
+         {                                                                      
+            std::string stringError = "Invalid regex pattern: '" + stringPattern + "'. Error: " + e.what();
+            return { false, stringError };
+         }
+      }
+
+      result_ = pdocument->FILE_UpdatePatternList(vectorRegexPatterns, argumentsList); // Search for patterns in harvested files and place them into the result table
+      if (result_.first == false) return result_;
    }
    else { return { false, "No pattern specified" }; }                          // no pattern specified
 
