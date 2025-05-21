@@ -887,8 +887,30 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 
 
 
-
-
+/** ----------------------------------------------------------------------------
+ * @brief Lists lines in a file that match any of the provided regular expression patterns.
+ *
+ * This function reads the specified file and searches for lines that match any of the given regular expressions.
+ * It supports searching within code, comment, string, or all states, as specified by the "state" argument.
+ * For each matching line, it records details such as the file key, filename, line content, row, column, and matched pattern in the provided table.
+ *
+ * @param argumentsPath Arguments container with the following keys:
+ *   - "source" (string): Path to the source file to search.
+ *   - "file-key" (uint64_t): Unique key identifying the file.
+ *   - "state" (string, optional): State to search in ("code", "comment", "string", or "all"). Defaults to "code".
+ * @param vectorRegexPatterns Vector of pairs, each containing a std::regex and its string representation, to search for in the file.
+ * @param ptable_ Pointer to the table where matching line details will be stored.
+ * @return std::pair<bool, std::string> Returns {true, ""} on success, or {false, error message} on failure.
+ *
+ * Each matching line added to the table will include:
+ *   - "key": Unique row identifier.
+ *   - "file-key": The file key from argumentsPath.
+ *   - "filename": The name of the file being processed.
+ *   - "line": The content of the matching line.
+ *   - "row": The line number of the match.
+ *   - "column": The column number where the match starts.
+ *   - "pattern": The matched pattern as a string.
+ */
 std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_)
 {
    enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string

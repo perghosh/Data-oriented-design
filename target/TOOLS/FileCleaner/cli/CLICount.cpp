@@ -137,6 +137,8 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
       if( iReportType == linecount_report_ ) { tableResult = pdocument->RESULT_RowCount(); }
       else                                   { tableResult = pdocument->RESULT_PatternCount(); }
 
+      // ## Paging and limiting results to display
+
 
       // ## prepare statistics
 
