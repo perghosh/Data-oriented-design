@@ -130,45 +130,72 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
 
    if( !bPrint && !bOutput && stringOutput.empty() ) { bPrint = true; }        // Default to printing if no output options are specified
    if( bPrint == true && uStatistics == 0 ) { uStatistics = stats_sum_; }      // set output to stdout if print is set
+
+   // ## prepare statistics
+
+   gd::table::dto::table tableResult;
+   if( iReportType == linecount_report_ ) { tableResult = pdocument->RESULT_RowCount(); }
+   else                                   { tableResult = pdocument->RESULT_PatternCount(); }
+
+   unsigned uFooterRowCount = 0;
+   if( uStatistics != 0 )
+   {
+      if( uStatistics & stats_sum_ )
+      {
+         if( iReportType == linecount_report_ )
+         {
+            if( bExplain == true ) { pdocument->MESSAGE_Display(CLI::CountGetExplain_g("count-lines")); }
+            result_ = TABLE_AddSumRow(&tableResult, { 2, 3, 4, 5, 6 });                            if( !result_.first ) { return result_; }
+            tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
+            uFooterRowCount = 1;
+         }
+         else if( iReportType == patterncount_report_ )
+         {                                                                                         assert(options_["pattern"].is_true());
+            std::vector<unsigned> vectorColumn;
+            for( auto u = 2u; u < tableResult.get_column_count(); u++ ) vectorColumn.push_back(u);// add sum columns
+
+            result_ = TABLE_AddSumRow(&tableResult, vectorColumn);                                 if( !result_.first ) { return result_; }
+            uFooterRowCount = 1;
+         }
+      }
+   }
+
+   // ## Paging and limiting results to display
+   std::string stringHeader;
+
+   if( options_.exists("page") == true )
+   {
+      uint64_t uPage = options_["page"].as_uint64();                          // default page number
+      if( uPage > 0 ) uPage--;                                                // internal page is 0 based
+      uint64_t uPageSize = options_["page-size"].as_uint64();
+      if( uPageSize == 0 ) uPageSize = 10;                                    // default page size
+
+      gd::table::page page_( uPage, uPageSize, 0, uFooterRowCount, tableResult.size() );
+      if( uPage > page_.get_page_count() && uPage > 0 ) 
+      { 
+         page_.set_page(page_.get_page_count() - 1);                          // set to last page if out of range
+         page_.set_flags(gd::table::page::eFlagAll, 0);                       // copy all rows from page index to end
+         stringHeader += "From row: " + std::to_string(page_.first() + 1) + " to row: " + std::to_string(page_.get_row_count() + 1) + "\n";
+      }
+      else
+      {
+         stringHeader += "Page: " + std::to_string(uPage + 1) + " of " + std::to_string(page_.get_page_count() + 1) + "\n";
+      }
+
+      gd::table::dto::table tableResultPage(tableResult, page_);              // create a new table with the page size
+      tableResult = std::move(tableResultPage);                               // move the page result to the original table
+   }  
+
    
    if( bPrint || bOutput || !stringOutput.empty() )                            // Generate and handle results ?
    {
-      gd::table::dto::table tableResult;
-      if( iReportType == linecount_report_ ) { tableResult = pdocument->RESULT_RowCount(); }
-      else                                   { tableResult = pdocument->RESULT_PatternCount(); }
-
-      // ## Paging and limiting results to display
-
-
-      // ## prepare statistics
-
-      if( uStatistics != 0 )
-      {
-         if( uStatistics & stats_sum_ )
-         {
-            if( iReportType == linecount_report_ )
-            {
-               if( bExplain == true ) { pdocument->MESSAGE_Display( CLI::CountGetExplain_g("count-lines") ); }
-               result_ = TABLE_AddSumRow(&tableResult, { 2, 3, 4, 5, 6 });                         if( !result_.first ) { return result_; }
-               tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
-            }
-            else if( iReportType == patterncount_report_ )
-            {                                                                                      assert( options_["pattern"].is_true() );
-               auto tableResultPattern = pdocument->RESULT_PatternCount();
-               std::vector<unsigned> vectorColumn;
-               for( auto u = 2u; u < tableResultPattern.get_column_count(); u++ ) vectorColumn.push_back(u);// add sum columns
-
-               result_ = TABLE_AddSumRow(&tableResultPattern, vectorColumn);                       if( !result_.first ) { return result_; }
-            }
-         }
-      }
-
       if( bPrint == true ) 
       {
          
          std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
          if( options_.exists("vs") == false )
          {
+            if( stringHeader.empty() == false  ) pdocument->MESSAGE_Display( stringHeader );
             pdocument->MESSAGE_Display( stringCliTable );
          }
          else
