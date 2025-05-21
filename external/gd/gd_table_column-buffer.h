@@ -357,6 +357,7 @@ public:
    table_column_buffer( const table_column_buffer& o, uint64_t uFrom, uint64_t uCount );
    table_column_buffer( const table_column_buffer& o, const std::vector<uint64_t> vectorRow );
    table_column_buffer( const table_column_buffer& o, const range& rangeCopy );
+   table_column_buffer( const table_column_buffer& o, const page& pageCopy );
 // assign
    table_column_buffer& operator=( const table_column_buffer& o ) { clear(); common_construct( o ); return *this; }
    table_column_buffer& operator=( table_column_buffer&& o ) noexcept { clear(); common_construct( std::move( o ) ); return *this; }

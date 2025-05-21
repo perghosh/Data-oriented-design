@@ -247,7 +247,58 @@ table_column_buffer::table_column_buffer(const table_column_buffer& o, const ran
       row_reserve_add( rangeCopy.height() );
       append( o, rangeCopy.r1(), rangeCopy.height(), vectorColumn );
    }
+}
 
+
+/** --------------------------------------------------------------------------
+ * @brief Copy constructor for table_column_buffer using a page object.
+ *
+ * This constructor creates a new table_column_buffer by copying the column structure from another
+ * table_column_buffer and then copying a specific range of rows as defined by the pageCopy object.
+ * The method reserves space for the header, footer, and page size, and copies the corresponding rows
+ * from the source table. Header and footer rows are handled separately to ensure correct placement.
+ *
+ * @param o The source table_column_buffer to copy from.
+ * @param pageCopy The page object specifying which rows (header, footer, and page data) to copy.
+ */
+table_column_buffer::table_column_buffer(const table_column_buffer& o, const page& pageCopy)
+   : m_puData{}
+{
+   common_construct(o, tag_columns{});                                         // Copy the column structure from the source table
+   
+   row_reserve_add( pageCopy.get_header() + pageCopy.get_footer() + pageCopy.get_page_size() ); // Reserve space for rows, header and footer and page size
+
+   uint64_t uRowCount = pageCopy.get_row_count();
+
+   // ## copy header from page to table, this is used when table is created from page
+   if( pageCopy.get_header() > 0 && uRowCount > pageCopy.get_header() )
+   {
+      append( o, 0, pageCopy.get_header() );
+      uRowCount -= pageCopy.get_header();                                      // remove header from row count
+   }
+
+   // ## prepare for footer
+   uint64_t ufooter = 0;
+   if( pageCopy.get_footer() > 0 && uRowCount > pageCopy.get_footer() )
+   {
+      ufooter = pageCopy.get_footer();
+      uRowCount -= ufooter;                                                    // remove footer from row count
+   }
+
+   // ## copy page data to table
+   if( pageCopy.first() < uRowCount )
+   {
+      // calculate row count to copy, this is used when table is created from page
+      uint64_t uRowCountCopy = uRowCount - pageCopy.first();                  // remove header and footer from row count
+      if( uRowCountCopy > pageCopy.get_page_size() ) uRowCountCopy = pageCopy.get_page_size(); // check if we have more rows than page size
+      append( o, pageCopy.first(), uRowCountCopy );
+   }
+
+   // ## copy footer from page to table, this is used when table is created from page
+   if( ufooter > 0 && uRowCount > 0 )
+   {
+      append( o, get_row_count() - ufooter, ufooter);
+   }
 }
 
 

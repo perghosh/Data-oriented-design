@@ -44,7 +44,7 @@ std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocum
    return { true, "" };
 }
 
-/**
+/** ---------------------------------------------------------------------------
  * @brief Processes the 'list' command by harvesting files, applying filters, searching for patterns, and outputting results.
  *
  * This function performs the following steps:

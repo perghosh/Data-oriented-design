@@ -993,6 +993,9 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
       //optionsCommand.add({ "comment", "Pair of characters marking start and end for comments"});
       //optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
+
+      optionsCommand.add({ "page", "Index for page to print and if page-size is not set then default page-size is 10" });
+      optionsCommand.add({ "page-size", "Max number of rows in each page" });
       optionsCommand.add({ "sort", "Sorts result on selected column name" });
       optionsCommand.add({ "stats", "Add statistics to generated output" });
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });

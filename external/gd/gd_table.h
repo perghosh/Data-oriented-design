@@ -422,6 +422,77 @@ struct range
 
 };
 
+
+/**
+ * \brief
+ *
+ *
+ */
+struct page
+{
+// ## construction ------------------------------------------------------------
+   page() {}
+   
+   page( uint64_t uPage, uint64_t uPageSize) : m_uPage{ uPage }, m_uPageSize{ uPageSize }, m_uHeader{ 0 }, m_uFooter{ 0 } {}
+   page( uint64_t uPage, uint64_t uPageSize, uint64_t uHeader, uint64_t uFooter) : m_uPage{ uPage }, m_uPageSize{ uPageSize }, m_uHeader{ uHeader }, m_uFooter{ uFooter } {}
+   // copy
+   page(const page& o) { common_construct(o); }
+   page(page&& o) noexcept { common_construct(std::move(o)); }
+   // assign
+   page& operator=(const page& o) { common_construct(o); return *this; }
+   page& operator=(page&& o) noexcept { common_construct(std::move(o)); return *this; }
+
+   ~page() {}
+   // common copy
+   void common_construct(const page& o) {}
+   void common_construct(page&& o) noexcept {}
+
+// ## methods -----------------------------------------------------------------
+   uint64_t get_page() const noexcept           { return m_uPage; }
+   uint64_t get_page_size() const noexcept      { return m_uPageSize; }
+   uint64_t get_header() const noexcept         { return m_uHeader; }
+   uint64_t get_footer() const noexcept         { return m_uFooter; }
+   uint64_t get_row_count() const noexcept      { return m_uRowCount - (m_uFooter + m_uFooter); }
+   void     set_page( uint64_t uPage )          { m_uPage = uPage; }
+   void     set_page_size( uint64_t uPageSize ) { m_uPageSize = uPageSize; }
+   void     set_header( uint64_t uHeader )      { m_uHeader = uHeader; }
+   void     set_footer( uint64_t uFooter )      { m_uFooter = uFooter; }
+   void     set_row_count(uint64_t uRowCount)   { m_uRowCount = uRowCount; }
+
+   void set_page(uint64_t uPage, uint64_t uPageSize, uint64_t uHeader, uint64_t uFooter) { m_uPage = uPage; m_uPageSize = uPageSize; m_uHeader = uHeader; m_uFooter = uFooter; }
+
+   uint64_t first() const noexcept { return m_uPage * m_uPageSize; } ///< first row in page
+   uint64_t last() const noexcept { return first() + m_uPageSize - 1; } ///< last row in page
+
+   /// go to next page in table, (sets page to next page in table)
+   bool next() { if( m_uPage < get_page_count() ) { m_uPage++; return true; } return false; }
+   /// got to last page in table, (sets page to last page in table)
+   void goto_last_page() { m_uPage = get_page_count(); }
+   /// go to first page in table (sets page to first page in table)
+   void goto_first_page() { m_uPage = 0; }
+
+   /// get number of pages available for table
+   uint64_t get_page_count() const noexcept;
+
+
+// ## attributes --------------------------------------------------------------
+   uint64_t m_uPage = 0;      ///< Index for page
+   uint64_t m_uPageSize = 0;  ///< Number of rows in each page
+   uint64_t m_uHeader = 0;    ///< Number of rows in header
+   uint64_t m_uFooter = 0;    ///< last column in page
+   uint64_t m_uRowCount = 0;  ///< Number of rows for table page is working on
+
+// ## free functions ----------------------------------------------------------
+
+};
+
+inline uint64_t page::get_page_count() const noexcept {                                            assert( m_uPageSize != 0 ); 
+   if( m_uRowCount < m_uPageSize ) return 1;
+   return (uint64_t)ceil( get_row_count() / m_uPageSize ); 
+}
+
+
+
 /**
  * @brief Used for columns without name
 */
