@@ -423,31 +423,65 @@ struct range
 };
 
 
-/**
- * \brief
+/** ===========================================================================
+ * \brief Represents a page of rows in a table, supporting paging operations.
  *
+ * The page struct is used to manage a logical "page" of rows within a table, 
+ * including information about the page index, page size, header and footer rows, 
+ * and the total number of rows. It provides methods to navigate between pages, 
+ * retrieve page boundaries, and manage page flags.
  *
+ * Flags can be used to mark special page behaviors, such as absolute (header) pages 
+ * or pages that include all rows. The struct also provides utility functions to 
+ * calculate the first and last row indices for the current page, and to determine 
+ * the total number of pages available.
+ *
+ * Example usage:
+ * \code
+ * gd::table::page p(0, 100, 2, 2, 1000);
+ * uint64_t firstRow = p.first();
+ * uint64_t lastRow = p.last();
+ * p.next();
+ * \endcode
  */
 struct page
 {
+   enum enumFlags
+   {
+      eFlagNone     = 0x00, ///< no flags
+      eFlagAbsolute = 0x01, ///< header page
+      eFlagAll      = 0x02, ///< take all rows from page positions
+   };
 // ## construction ------------------------------------------------------------
    page() {}
    
    page( uint64_t uPage, uint64_t uPageSize) : m_uPage{ uPage }, m_uPageSize{ uPageSize }, m_uHeader{ 0 }, m_uFooter{ 0 } {}
    page( uint64_t uPage, uint64_t uPageSize, uint64_t uHeader, uint64_t uFooter) : m_uPage{ uPage }, m_uPageSize{ uPageSize }, m_uHeader{ uHeader }, m_uFooter{ uFooter } {}
+   page(uint64_t uPage, uint64_t uPageSize, uint64_t uHeader, uint64_t uFooter, uint64_t uRowCount) : m_uPage{ uPage }, m_uPageSize{ uPageSize }, m_uHeader{ uHeader }, m_uFooter{ uFooter }, m_uRowCount{ uRowCount } {}
    // copy
    page(const page& o) { common_construct(o); }
-   page(page&& o) noexcept { common_construct(std::move(o)); }
    // assign
    page& operator=(const page& o) { common_construct(o); return *this; }
-   page& operator=(page&& o) noexcept { common_construct(std::move(o)); return *this; }
 
    ~page() {}
    // common copy
-   void common_construct(const page& o) {}
-   void common_construct(page&& o) noexcept {}
+   void common_construct(const page& o) {
+      m_uPage     = o.m_uPage;
+      m_uPageSize = o.m_uPageSize;
+      m_uHeader   = o.m_uHeader;
+      m_uFooter   = o.m_uFooter;
+      m_uRowCount = o.m_uRowCount;
+   }
+
+// ## operator ----------------------------------------------------------------
+   page& operator++() { m_uPage += 1; return *this; }
+   page& operator--() { assert( m_uPage > 0 ); m_uPage -= 1; return *this; }
 
 // ## methods -----------------------------------------------------------------
+   bool is_all() const noexcept { return ( m_uFlags & eFlagAll ) != 0; }
+   bool is_end_of_table() const noexcept { return ( m_uPage >= get_page_count() ); } ///< check if page is end of table
+   bool isEOF() const noexcept { return ( m_uPage >= get_page_count() ); } ///< check if page is end of table (EOF)
+
    uint64_t get_page() const noexcept           { return m_uPage; }
    uint64_t get_page_size() const noexcept      { return m_uPageSize; }
    uint64_t get_header() const noexcept         { return m_uHeader; }
@@ -458,6 +492,9 @@ struct page
    void     set_header( uint64_t uHeader )      { m_uHeader = uHeader; }
    void     set_footer( uint64_t uFooter )      { m_uFooter = uFooter; }
    void     set_row_count(uint64_t uRowCount)   { m_uRowCount = uRowCount; }
+
+   void     set_flags(uint64_t uSet, uint64_t uClear) { m_uFlags |= uSet; m_uFlags &= ~uClear; }
+   void     set_flags(uint64_t uFlags) { m_uFlags = uFlags; }
 
    void set_page(uint64_t uPage, uint64_t uPageSize, uint64_t uHeader, uint64_t uFooter) { m_uPage = uPage; m_uPageSize = uPageSize; m_uHeader = uHeader; m_uFooter = uFooter; }
 
@@ -476,13 +513,12 @@ struct page
 
 
 // ## attributes --------------------------------------------------------------
-   uint64_t m_uPage = 0;      ///< Index for page
-   uint64_t m_uPageSize = 0;  ///< Number of rows in each page
-   uint64_t m_uHeader = 0;    ///< Number of rows in header
-   uint64_t m_uFooter = 0;    ///< last column in page
-   uint64_t m_uRowCount = 0;  ///< Number of rows for table page is working on
-
-// ## free functions ----------------------------------------------------------
+   uint64_t m_uFlags    = eFlagNone;///< flags used to customize page behaviour
+   uint64_t m_uPage     = 0;        ///< Index for page
+   uint64_t m_uPageSize = 0;        ///< Number of rows in each page
+   uint64_t m_uHeader   = 0;        ///< Number of rows in header
+   uint64_t m_uFooter   = 0;        ///< last column in page
+   uint64_t m_uRowCount = 0;        ///< Number of rows for table page is working on
 
 };
 
