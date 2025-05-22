@@ -24,6 +24,18 @@ std::vector<std::string> ReadIgnoreList(const std::string& stringPath)
    std::ifstream ifstreamFile;
    ifstreamFile.open(stringPath);
 
+   auto bSingleChar = [](const std::string& stringText, char iType)
+   {
+      for( int i = 0; i < stringText.size(); i++ )
+      {
+         if( stringText[i] != iType )
+         {
+            return false;
+         }
+      }
+      return true;
+   };
+
    if( ifstreamFile.is_open() == true )
    {
       std::string stringLine;
@@ -31,13 +43,17 @@ std::vector<std::string> ReadIgnoreList(const std::string& stringPath)
       {
          for( int i = 0; i < stringLine.size(); i++ )
          {
-            if( stringLine[i] != '#' && stringLine[i] != ' ' )
+            if( stringLine[i] == '#' )
             {
-               vectorExtensions.push_back(stringLine);
+               break;
+            }
+            else if( bSingleChar(stringLine, ' ') == true )
+            {
                break;
             }
             else
             {
+               vectorExtensions.push_back(stringLine);
                break;
             }
          }
@@ -53,7 +69,8 @@ std::vector<std::string> ReadIgnoreList(const std::string& stringPath)
 TEST_CASE("[file] test", "[file]")
 {
    std::cout << "h\n";
-   std::string stringPath = "C:\\dev\\work\\DOD\\.gitignore";
+   //std::string stringPath = "C:\\dev\\work\\DOD\\.gitignore";
+   std::string stringPath = "D:\\dev\\testfiles\\testignore.txt";
    std::vector<std::string> vectorList = ReadIgnoreList(stringPath);
 
    for( std::string stringExtension : vectorList )
