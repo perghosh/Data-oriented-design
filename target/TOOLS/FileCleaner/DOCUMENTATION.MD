@@ -42,6 +42,8 @@ Counts lines in files or folders, or counts pattern occurrences.
 - `--filter <pattern>`: Filter files using wildcard patterns (e.g., `*.h;*.cpp`).
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--output <file>`: Save the output to a file.
+- `--page <index>`: Print the output to the console from slected page, default page size is 10 lines.
+- `--page-size <size>`: Specify the number of lines per page for console output.
 - `--sort <column>`: Sort the output by column name when result is printed to console.
 - `--stats <type>`: Show statistics for the specified pattern. Currently "sum" is the only statistic available.
 - `--table <name>`: Specify a table name for SQL output.
@@ -130,6 +132,9 @@ Sort on code lines and only count lines in cpp files: `cleaner count -R --sort c
 
 ### Use the dir command to list *.cpp* files in current directory and subfolders (no source = current directory)
 `cleaner dir -R "--filter", "*.cpp"`
+
+### View last page for the largest files
+`cleaner count -R "--page", "-1"`
 
 ---
 
