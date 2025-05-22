@@ -174,8 +174,9 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
       if( uPage > page_.get_page_count() && uPage > 0 ) 
       { 
          page_.set_page(page_.get_page_count() - 1);                          // set to last page if out of range
+         uPage = page_.get_page();
          page_.set_flags(gd::table::page::eFlagAll, 0);                       // copy all rows from page index to end
-         stringHeader += "From row: " + std::to_string(page_.first() + 1) + " to row: " + std::to_string(page_.get_row_count() + 1) + "\n";
+         stringHeader += "From row: " + std::to_string(page_.first() + 1) + " in page " + std::to_string(uPage + 1) +  " to row: " + std::to_string(page_.get_row_count() + 1) + "\n";
       }
       else
       {
