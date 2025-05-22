@@ -159,6 +159,8 @@ std::pair<bool, std::string> CApplication::Initialize()
    if( result_.first == false ) return result_;
 #endif
 
+
+
    // Perform initialization tasks here
    // For example, you might want to initialize documents or other resources
 
