@@ -165,22 +165,23 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
 
    if( options_.exists("page") == true )
    {
-      uint64_t uPage = options_["page"].as_uint64();                          // default page number
-      if( uPage > 0 ) uPage--;                                                // internal page is 0 based
       uint64_t uPageSize = options_["page-size"].as_uint64();
       if( uPageSize == 0 ) uPageSize = 10;                                    // default page size
+      int64_t iPage = options_["page"].as_int64();                            // default page number
+      if( iPage > 0 ) iPage--;                                                // internal page is 0 based
 
-      gd::table::page page_( uPage, uPageSize, 0, uFooterRowCount, tableResult.size() );
-      if( uPage > page_.get_page_count() && uPage > 0 ) 
+
+      gd::table::page page_( (uint64_t)iPage, uPageSize, 0, uFooterRowCount, tableResult.size() );
+      if( iPage > (int64_t)page_.get_page_count() || iPage < 0 ) 
       { 
          page_.set_page(page_.get_page_count() - 1);                          // set to last page if out of range
-         uPage = page_.get_page();
+         uint64_t uPage = page_.get_page();
          page_.set_flags(gd::table::page::eFlagAll, 0);                       // copy all rows from page index to end
          stringHeader += "From row: " + std::to_string(page_.first() + 1) + " in page " + std::to_string(uPage + 1) +  " to row: " + std::to_string(page_.get_row_count() + 1) + "\n";
       }
       else
       {
-         stringHeader += "Page: " + std::to_string(uPage + 1) + " of " + std::to_string(page_.get_page_count() + 1) + "\n";
+         stringHeader += "Page: " + std::to_string(iPage + 1) + " of " + std::to_string(page_.get_page_count() + 1) + "\n";
       }
 
       gd::table::dto::table tableResultPage(tableResult, page_);              // create a new table with the page size
