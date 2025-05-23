@@ -36,6 +36,9 @@ file(GLOB FILES_ "cli/*.h" "cli/*.cpp" )
 list(APPEND TARGET_FILES_ ${FILES_})
 unset(FILES_)
 
+file(GLOB FILES_ "configuration/*.h" "configuration/*.cpp" )
+list(APPEND TARGET_FILES_ ${FILES_})
+unset(FILES_)
 
 
 
