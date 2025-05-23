@@ -71,6 +71,25 @@ public:
       eUIFile,            ///< Output to file
    };
 
+   /**
+    * \enum enumApplicationState
+    * \brief Represents the state of the application.
+    *
+    * - eApplicationStateUnknown:  Unknown or unspecified application state.
+    * - eApplicationStateInitialized:  Application has been initialized.
+    * - eApplicationStateWork:  Application is in work state, threads are running.
+    * - eApplicationStateIdle:  Application is in pause state, threads are paused.
+    * - eApplicationStateExit:  Application is in exit state, threads are exiting.
+    */
+   enum enumApplicationState
+   {
+      eApplicationStateUnknown = 0, ///< Unknown or unspecified application state
+      eApplicationStateInitialized = 0x01, ///< Application has been initialized
+      eApplicationStateWork = 0x02, ///< Application is in work state, threads are running
+      eApplicationStateIdle = 0x04, ///< Application is in pause state, threads are paused
+      eApplicationStateExit = 0x08, ///< Application is in exit state, threads are exiting
+   };
+
 // ## construction -------------------------------------------------------------
 public:  // 0TAG0construct.Application
    CApplication() {}
@@ -102,6 +121,15 @@ public:
    enumUIType GetUIType() const { return m_eUIType; }
    void SetUIType(enumUIType eUIType) { m_eUIType = eUIType; }
    std::string GetUITypeAsString() const;
+
+   // ## application state checks
+   
+   bool IsInitialized() const { return ( m_uApplicationState & eApplicationStateInitialized ) != 0; }
+   bool IsWork() const { return ( m_uApplicationState & eApplicationStateWork ) != 0; }
+   bool IsIdle() const { return ( m_uApplicationState & eApplicationStateIdle ) != 0; }
+   bool IsExit() const { return ( m_uApplicationState & eApplicationStateExit ) != 0; }
+
+   void SetState(unsigned uSet, unsigned uClear) { m_uApplicationState = ( m_uApplicationState & ~uClear ) | uSet; }
 //@}
 
 /** \name INTERFACE
@@ -190,6 +218,7 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    enumUIType m_eUIType = eUITypeUnknown; ///< Type of user interface
+   unsigned m_uApplicationState = eApplicationStateUnknown; ///< State of the application
 
    /// List of documents
    std::vector<std::unique_ptr<CDocument>> m_vectorDocument;
