@@ -11,6 +11,7 @@
 
 #include <filesystem>
 #include <format>
+#include <thread>
 
 #include "pugixml/pugixml.hpp"
 
@@ -41,7 +42,6 @@
 #include "cli/CLIHistory.h"
 #include "cli/CLIList.h"
 
-#include "Command.h"
 
 #include "Application.h"
 
@@ -247,6 +247,37 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    // ## set command name
    std::string stringCommandName = poptionsActive->name();
    PROPERTY_Set("command", stringCommandName);                                                     LOG_INFORMATION_RAW("== Command: " & stringCommandName);
+
+
+   // Lambda to execute CLI functions in separate threads
+   auto execute_ = [](auto call_, const gd::cli::options* poptions, auto* pdocument_, const std::string& stringCommand) -> std::pair<bool, std::string> {
+      std::thread thread_([call_, poptions, pdocument_, stringCommand]() {
+         try 
+         {
+            pdocument_->GetApplication()->SetState(eApplicationStateWork, 0);
+            call_(poptions, pdocument_);
+         } 
+         catch(const std::exception& e) 
+         {
+            // generate error message
+            std::string stringError = std::format("Error in {} thread: {}", stringCommand, e.what());
+            pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
+         } 
+         catch(...) 
+         {
+            // generate error message
+            std::string stringError = std::format("Unknown error in {} thread", stringCommand);
+            pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
+         }
+         });
+
+      // Detach thread to run independently
+      thread_.detach();
+
+      return { true, stringCommand + " operation started successfully" };
+   };
+
+   // return executeInThread(CLI::Count_g, poptionsActive, pdocument, "Count");
 
    // ## check for sql statements
    if( poptionsActive->exists("statements") == true )
