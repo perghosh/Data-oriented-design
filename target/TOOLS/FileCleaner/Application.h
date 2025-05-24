@@ -220,6 +220,7 @@ public:
    enumUIType m_eUIType = eUITypeUnknown; ///< Type of user interface
    unsigned m_uApplicationState = eApplicationStateUnknown; ///< State of the application
 
+   std::shared_mutex m_sharedmutex;  ///< mutex used for application command that may be used by different threads
    /// List of documents
    std::vector<std::unique_ptr<CDocument>> m_vectorDocument;
 

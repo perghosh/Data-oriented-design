@@ -120,6 +120,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
    if( iArgumentCount > 1 )
    {
+      PROPERTY_Set("threads", true);                                           // activate threading
+
       std::string stringArgument = gd::cli::options::to_string_s(iArgumentCount, ppbszArgument, 1);
       PROPERTY_Add("arguments", stringArgument);                                                   LOG_INFORMATION_RAW("== Arguments: " & stringArgument);
 
@@ -248,33 +250,39 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    std::string stringCommandName = poptionsActive->name();
    PROPERTY_Set("command", stringCommandName);                                                     LOG_INFORMATION_RAW("== Command: " & stringCommandName);
 
+   bool bUseThreads = PROPERTY_Get("threads").as_bool(); // get number of threads
 
-   // Lambda to execute CLI functions in separate threads
-   auto execute_ = [](auto call_, const gd::cli::options* poptions, auto* pdocument_, const std::string& stringCommand) -> std::pair<bool, std::string> {
-      std::thread thread_([call_, poptions, pdocument_, stringCommand]() {
+
+   // ## Lambda to execute CLI functions in separate threads
+   //    Note that `eApplicationStateWork` is set and should be checked for in application to delay exit
+   auto execute_ = [&stringCommandName](auto call_, const gd::cli::options& options_, auto* pdocument_) -> std::pair<bool, std::string> {
+      std::thread thread_([call_, options_, pdocument_, &stringCommandName]() {
          try 
          {
-            pdocument_->GetApplication()->SetState(eApplicationStateWork, 0);
-            call_(poptions, pdocument_);
+            pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
+            call_(&options_, pdocument_);
          } 
          catch(const std::exception& e) 
          {
             // generate error message
-            std::string stringError = std::format("Error in {} thread: {}", stringCommand, e.what());
+            std::string stringError = std::format("Error in {} thread: {}", stringCommandName, e.what());
             pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
          } 
          catch(...) 
          {
             // generate error message
-            std::string stringError = std::format("Unknown error in {} thread", stringCommand);
+            std::string stringError = std::format("Unknown error in {} thread", stringCommandName);
             pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
          }
-         });
+
+         pdocument_->GetApplication()->SetState(eApplicationStateIdle, eApplicationStateWork); // Set idle state
+      });
 
       // Detach thread to run independently
+      pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
       thread_.detach();
 
-      return { true, stringCommand + " operation started successfully" };
+      return { true, "" };
    };
 
    // return executeInThread(CLI::Count_g, poptionsActive, pdocument, "Count");
@@ -293,16 +301,9 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    if( stringCommandName == "count" )                                          // command = "count"
    {
       // Add a document for the "count" command
-      auto* pdocument = DOCUMENT_Get("count");
-      if( pdocument == nullptr ) 
-      {
-         pdocument = DOCUMENT_Add("count");
-         if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
-      }
-
-      return CLI::Count_g(poptionsActive, pdocument);                         // count lines in file or directory
-
-      //return RUN_Count( poptionsActive );
+      auto* pdocument = DOCUMENT_Get("count", true);
+      if( bUseThreads == true ) { return execute_(CLI::Count_g, poptionsActive->clone_arguments(), pdocument); } // count lines in file or directory in its own thread
+      else                      { return CLI::Count_g(poptionsActive, pdocument); }// count lines in file or directory
    }
    else if( stringCommandName == "db" )
    {
@@ -329,14 +330,9 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    else if( stringCommandName == "list" )
    {
       // Add a document for the "count" command
-      auto* pdocument = DOCUMENT_Get("list");
-      if( pdocument == nullptr ) 
-      {
-         pdocument = DOCUMENT_Add("list");
-         if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
-      }
-
-      return CLI::List_g(poptionsActive, pdocument);                          // list lines in file or directory with the matched pattern
+      auto* pdocument = DOCUMENT_Get("list", true);
+      if( bUseThreads == true ) { return execute_(CLI::List_g, poptionsActive->clone_arguments(), pdocument); } // list lines in file or directory with the matched pattern in its own thread
+      else                      { return CLI::List_g(poptionsActive, pdocument); }// list lines in file or directory with the matched pattern
    }
    else if( stringCommandName == "help" )                                      // command = "help"
    {
@@ -438,6 +434,8 @@ std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& 
    // For example: severity, color, output target, etc.
    // Example: std::string_view severity = argumentsFormat["severity"].as_string_view();
 
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutex );
+
    enumUIType eUIType = m_eUIType; // Get the UI type from the application instance
 
    if( argumentsFormat.exists("ui") == true ) 
@@ -489,7 +487,9 @@ std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& 
  */
 std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat)
 {
-   constexpr size_t uMaxLength = 160; // Maximum length for the message
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutex );
+
+   constexpr size_t uMaxLength = 100; // Maximum length for the message
    enumUIType eUIType = m_eUIType; // Get the UI type from the application instance
    std::string stringPrint( stringMessage );
 
@@ -548,7 +548,7 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
          stringPrint += "\r";                                                  // Move the cursor to the beginning of the line
       }
       
-      std::cout << "\r" << stringPrint;
+      std::cout << "\033[A\033[2K\r" << stringPrint << std::flush;
    }
    break;
    }
@@ -924,7 +924,7 @@ void CApplication::DATABASE_CloseActive()
 */
 void CApplication::ERROR_Add( const std::string_view& stringError )
 {
-   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );            // locks `m_vectorError`
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError ); // locks `m_vectorError`
    gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
    m_vectorError.push_back( std::move(argumentsError) );
 }
