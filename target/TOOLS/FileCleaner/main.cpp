@@ -40,6 +40,16 @@ int main(int iArgumentCount, char** ppbszArgument)
          std::cout << "\n\nFound internal errors: " << stringError << "\n";
       }
 
+      if( papplication_g->IsWork() == true )
+      {
+         // Wait until application is idle, in loop we check the flag until idle is set
+         while( papplication_g->IsWork() == true )
+         {
+            // Optionally, sleep to avoid busy-waiting, this will lower the cpu work
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+         }
+      }
+
       papplication_->Exit();
    }
    catch( const std::exception& e_ )

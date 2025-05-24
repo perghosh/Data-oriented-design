@@ -277,7 +277,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
       string_ = itRowFile.cell_get_variant_view("filename").as_string();
       pathFile += string_;
       std::string stringFile = pathFile.string();
-      
+
+      MESSAGE_Progress( stringFile );
 
       gd::argument::shared::arguments argumentsResult;
 
@@ -294,6 +295,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
          ptableFileCount->cell_set(iRowIndexCount, "string", argumentsResult["string"].as_uint64());
       }
    }
+
+   MESSAGE_Progress("", {{"clear", true}});
 
    return { true, "" };
 }

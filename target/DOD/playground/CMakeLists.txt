@@ -77,7 +77,7 @@ endif()
 
 
 
-set( USE_TEST_ OFF )
+set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_console")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
@@ -173,16 +173,6 @@ endif()
 
 set( USE_TEST_ OFF )
 if( USE_TEST_ )
-   set(TEST_NAME_ "PLAY_KevinConsole")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
-      "${TEST_NAME_}.cpp"
-   )
-   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
-   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
-endif()
-
-set( USE_TEST_ OFF )
-if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_game_worm")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
       "${TEST_NAME_}.cpp"
@@ -191,22 +181,3 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
 endif()
 
-set( USE_TEST_ OFF )
-if( USE_TEST_ )
-   set(TEST_NAME_ "PLAY_KevinConsole2")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
-      "${TEST_NAME_}.cpp"
-   )
-   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
-   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
-endif()
-
-set( USE_TEST_ OFF )
-if( USE_TEST_ )
-   set(TEST_NAME_ "PLAY_KevinLogger")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
-      "${TEST_NAME_}.cpp"
-   )
-   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
-   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS GD_LOG_SIMPLE)
-endif()

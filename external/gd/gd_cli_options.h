@@ -192,6 +192,7 @@ public:
    options( const std::initializer_list<option>& listOption ) { add( listOption ); }
    options( const std::string_view& stringName, const std::initializer_list<option>& listOption ): m_stringName{ stringName } { add( listOption ); }
    options( unsigned uFlags, const std::string_view& stringName, const std::initializer_list<option>& listOption ): m_uFlags{uFlags}, m_stringName{ stringName } { add( listOption ); }
+   options( const std::string_view& stringName, const gd::argument::arguments& arguments_ ): m_stringName{ stringName }, m_argumentsValue(arguments_) {}
 // copy
    options( const options& o ) { common_construct( o ); }
    options( options&& o ) noexcept { common_construct( std::move( o ) ); }
@@ -372,6 +373,8 @@ public:
    /// return sub options for specified name
    options sub_get( const std::string_view& stringName ) const;
 
+   /// copy needed data to work with options
+   options clone_arguments() const { return options(m_stringName, m_argumentsValue); }
 //@}
 
 protected:
