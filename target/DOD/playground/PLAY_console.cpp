@@ -5,9 +5,9 @@
 #include "gd/console/gd_console_style.h"
 #include "gd/console/gd_console_print.h"
 
-#ifdef _WIN32
-#  include "windows.h"
-#endif
+#include "explore/gd_test.h"
+
+#include "explore/gd_test.h"
 
 #undef min
 #undef max
@@ -16,7 +16,14 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE( "[console] get console information", "[console]" ) {
+   gd::console::console console_;
 
+   auto result_ = console_.initialize();                                                           REQUIRE( result_.first );
+}
+
+
+#ifdef _WIN32
 
 /// ---------------------------------------------------------------------------            
 /// \brief 
@@ -127,6 +134,5 @@ TEST_CASE( "[console] lines", "[console]" ) {
 
    stringOut = deviceTest.render( gd::console::tag_format_cli{} );
    std::cout << stringOut;
-
-
 }
+#endif
