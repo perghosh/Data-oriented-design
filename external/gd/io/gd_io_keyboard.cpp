@@ -13,6 +13,7 @@ _GD_IO_BEGIN
 */
 int kbhit()
 {
+   /*
    struct termios oldt, newt;
    int iCharacter;
    int iOldFlags;
@@ -34,6 +35,7 @@ int kbhit()
       ungetc(iCharacter, stdin);
       return 1;
    }
+      */
 
    return 0;
 }
@@ -49,12 +51,14 @@ int getch()
 {
    struct termios oldt, newt;
    int iCharacter;
+   /*
    tcgetattr(STDIN_FILENO, &oldt);
    newt = oldt;
    newt.c_lflag &= ~(ICANON | ECHO);
    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
    iCharacter = getchar();
    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+   */
    return iCharacter;
 }
 #endif

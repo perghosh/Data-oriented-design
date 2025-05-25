@@ -27,6 +27,7 @@ inline constexpr uint8_t uTailetextMarker_d = 0x01;
 #endif
 
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <string>
 #include <string_view>

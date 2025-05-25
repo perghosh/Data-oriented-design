@@ -5,7 +5,9 @@
 #include "gd/console/gd_console_style.h"
 #include "gd/console/gd_console_print.h"
 
-#include "Windows.h"
+#ifdef _WIN32
+#  include "windows.h"
+#endif
 
 #undef min
 #undef max
