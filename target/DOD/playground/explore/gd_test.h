@@ -51,17 +51,20 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   std::pair<int, int> xy() const { return { m_iCursorX, m_iCursorY }; }
 
    void set_size(int iWidth, int iHeight);
    void set_xy(int iX, int iY);
    void set_buffer_size(int iBufferWidth, int iBufferHeight);
-
 
 //@}
 
 /** \name OPERATION
 *///@{
    std::pair<bool, std::string> initialize();
+
+   /// set cursor position in console
+   std::pair<bool, std::string> move_to(int iX, int iY);
 
 //@}
 

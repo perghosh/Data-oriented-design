@@ -22,6 +22,65 @@ std::pair<bool, std::string> console::initialize()
    return read_console_information_s( this );
 }
 
+std::pair<bool, std::string> console::move_to(int iX, int iY)
+{
+   // Validate coordinates
+   if (iX < 0 || iY < 0) {
+      return { false, "Invalid coordinates: negative values not allowed" };
+   }
+
+   // If console dimensions are known, validate bounds
+   if (m_iWidth > 0 && m_iHeight > 0) {
+      if (iX >= m_iWidth || iY >= m_iHeight) {
+         return { false, "Coordinates out of console bounds" };
+      }
+   }
+
+#ifdef _WIN32
+   // Windows implementation
+   HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+   if(hConsole == INVALID_HANDLE_VALUE) 
+   {
+      return { false, "Failed to get console handle" };
+   }
+
+   COORD coord;
+   coord.X = static_cast<SHORT>(iX);
+   coord.Y = static_cast<SHORT>(iY);
+
+   if( ::SetConsoleCursorPosition(hConsole, coord) ) 
+   {
+      // Update internal state
+      set_xy(iX, iY);
+   } 
+   else 
+   {
+      return { false, "Failed to set cursor position" };
+   }
+#else
+   // POSIX implementation (Linux, macOS, etc.)
+   // Use ANSI escape sequence to set cursor position
+   // Note: ANSI coordinates are 1-based, so we add 1 to our 0-based coordinates
+   char piBuffer[32];
+   int iLength = snprintf(piBuffer, sizeof(piBuffer), "\033[%d;%dH", iY + 1, iX + 1);
+
+   if(iLength < 0 || iLength >= static_cast<int>(sizeof(piBuffer))) { return { false, "Failed to format escape sequence" }; }
+
+   ssize_t uBytesWritten = write(STDOUT_FILENO, piBuffer, len);
+   if(uBytesWritten == iLength) 
+   {
+      // Update internal state
+      set_xy(iX, iY);
+      // Flush output to ensure cursor position is immediately updated
+      if(fsync(STDOUT_FILENO) == 0 || errno == EINVAL) { return { true, "" }; } 
+      else { return { false, "Failed to flush output" }; }
+   } 
+   else { return { false, "Failed to write cursor position escape sequence" }; }
+#endif
+
+   return { true, "" };
+}
+
 
 std::pair<bool, std::string> console::read_console_information_s( console* pconsole )
 {
@@ -65,24 +124,21 @@ std::pair<bool, std::string> console::read_console_information_s( console* pcons
    // Set terminal to raw mode for reading cursor position
    termiosNew = termiosOld;
    termiosNew.c_lflag &= ~(ICANON | ECHO);
-   if(tcsetattr(STDIN_FILENO, TCSANOW, &termiosNew) != 0) {
-      return { false, "Failed to set terminal attributes" };
-   }
+   if(tcsetattr(STDIN_FILENO, TCSANOW, &termiosNew) != 0) { return { false, "Failed to set terminal attributes" }; }
 
    // Query cursor position
-   char buf[32];
-   memset(buf, 0, sizeof(buf));
-   unsigned int x = 0, y = 0;
+   char piBuffer[32];
+   memset(piBuffer, 0, sizeof(piBuffer));
+   unsigned int uX = 0, uY = 0;
 
    // Send cursor position query
    if(write(STDOUT_FILENO, "\033[6n", 4) == 4) 
    {
-      // Read response
-      ssize_t bytes_read = read(STDIN_FILENO, buf, sizeof(buf) - 1);
-      if(bytes_read > 0) 
+      ssize_t uBytesRead = read(STDIN_FILENO, piBuffer, sizeof(piBuffer) - 1); // Read response
+      if(uBytesRead > 0) 
       {
-         buf[bytes_read] = '\0';
-         if(sscanf(buf, "\033[%u;%uR", &y, &x) == 2) { pconsole->set_xy(x - 1, y - 1); } // Adjust for 0-based indexing 
+         buf[uBytesRead] = '\0';
+         if(sscanf(piBuffer, "\033[%u;%uR", &uY, &uX) == 2) { pconsole->set_xy(uX - 1, uY - 1); } // Adjust for 0-based indexing 
          else 
          {  // Restore terminal settings before returning error
             tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld);
@@ -116,90 +172,4 @@ std::pair<bool, std::string> console::read_console_information_s( console* pcons
 _GD_CONSOLE_END
 
 
-
-/*
-
-#include <iostream>
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <sys/ioctl.h>
-#include <unistd.h>
-#endif
-
-// Structure to hold console dimensions
-struct ConsoleInfo {
-    int width;
-    int height;
-    int cursorX;
-    int cursorY;
-    int bufferWidth;
-    int bufferHeight;
-};
-
-ConsoleInfo getConsoleInfo() {
-    ConsoleInfo info = {0, 0, 0, 0, 0, 0};
-
-#ifdef _WIN32
-    // Windows implementation
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-
-    if(GetConsoleScreenBufferInfo(hConsole, &csbi)) {
-        // Console size (visible window)
-        info.width = csbi.srWindow.Right - csbi.srWindow.Left + 1;
-        info.height = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
-
-        // Cursor position
-        info.cursorX = csbi.dwCursorPosition.X;
-        info.cursorY = csbi.dwCursorPosition.Y;
-
-        // Buffer size
-        info.bufferWidth = csbi.dwSize.X;
-        info.bufferHeight = csbi.dwSize.Y;
-    }
-#else
-    // POSIX implementation (Linux, macOS, etc.)
-    struct winsize ws;
-    if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != -1) {
-        // Console size
-        info.width = ws.ws_col;
-        info.height = ws.ws_row;
-
-        // Buffer size (same as console size in most POSIX terminals)
-        info.bufferWidth = ws.ws_col;
-        info.bufferHeight = ws.ws_row;
-    }
-
-    // Cursor position (using ANSI escape codes)
-    char buf[32];
-    unsigned int x = 0, y = 0;
-    write(STDOUT_FILENO, "\033[6n", 4); // Query cursor position
-    if(read(STDIN_FILENO, buf, sizeof(buf)) > 0) {
-        if(sscanf(buf, "\033[%u;%uR", &y, &x) == 2) {
-            info.cursorX = x - 1; // Adjust for 0-based indexing
-            info.cursorY = y - 1;
-        }
-    }
-#endif
-
-    return info;
-}
-
-int main() {
-    ConsoleInfo info = getConsoleInfo();
-
-    std::cout << "Console Width: " << info.width << std::endl;
-    std::cout << "Console Height: " << info.height << std::endl;
-    std::cout << "Cursor X: " << info.cursorX << std::endl;
-    std::cout << "Cursor Y: " << info.cursorY << std::endl;
-    std::cout << "Buffer Width: " << info.bufferWidth << std::endl;
-    std::cout << "Buffer Height: " << info.bufferHeight << std::endl;
-
-    return 0;
-}
-
-
-
-*/
 
