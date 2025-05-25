@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <inttypes.h>
+
 #include "gd_utf8.h"
 
 #include "gd_log_logger_printer.h"
@@ -165,7 +167,8 @@ bool printer_csvfile::print(const message& message)
          //std::string stringDuration = std::format("{:02d}s:{:02d}ms:{:03d}us", seconds_, milliseconds_, microseconds_);
          char piBuffer[30];
          //sprintf( piBuffer, "%02ld:%02ld:%03ld", seconds_, milliseconds_, microseconds_ );
-         sprintf(piBuffer, "%02lld:%02lld:%03lld", seconds_, milliseconds_, microseconds_);
+         // Use PRId64 for portable int64_t formatting
+         sprintf(piBuffer, "%02" PRId64 ":%02" PRId64 ":%03" PRId64, seconds_, milliseconds_, microseconds_);
          std::string stringDuration = piBuffer;
          m_tableCSV.cell_set( uRow, 5, stringDuration );
 

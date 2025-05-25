@@ -1,3 +1,5 @@
+#include <cstring>
+
 #ifdef _WIN32
 #  include <windows.h>
 #endif
@@ -5,6 +7,7 @@
 #ifndef _WIN32
 #  include <sys/ioctl.h>
 #  include <unistd.h>
+#  include <termios.h>
 #endif
 
 #include "gd_test.h"
