@@ -66,6 +66,10 @@ public:
    /// set cursor position in console
    std::pair<bool, std::string> move_to(int iX, int iY);
 
+   /// set console text color
+   void set_foreground_color(int iRed, int iGreen, int iBlue);
+   void set_background_color(int iRed, int iGreen, int iBlue);
+
 //@}
 
 protected:
