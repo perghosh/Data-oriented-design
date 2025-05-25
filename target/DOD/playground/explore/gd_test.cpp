@@ -83,7 +83,7 @@ std::pair<bool, std::string> console::move_to(int iX, int iY)
 
    if(iLength < 0 || iLength >= static_cast<int>(sizeof(piBuffer))) { return { false, "Failed to format escape sequence" }; }
 
-   ssize_t uBytesWritten = write(STDOUT_FILENO, piBuffer, len);
+   ssize_t uBytesWritten = write(STDOUT_FILENO, piBuffer, iLength);
    if(uBytesWritten == iLength) 
    {
       // Update internal state
