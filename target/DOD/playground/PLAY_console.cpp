@@ -20,6 +20,9 @@ TEST_CASE( "[console] get console information", "[console]" ) {
    gd::console::console console_;
 
    auto result_ = console_.initialize();                                                           REQUIRE( result_.first );
+
+   console_.move_to( 10, 5 );
+   std::cout << "Console position: " << console_.xy().first << ", " << console_.xy().second << std::endl;
 }
 
 
