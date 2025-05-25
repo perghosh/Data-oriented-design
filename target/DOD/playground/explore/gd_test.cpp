@@ -1,3 +1,4 @@
+#include <iostream>
 #include <cstring>
 
 #ifdef _WIN32
@@ -24,6 +25,19 @@ std::pair<bool, std::string> console::initialize()
 
    return read_console_information_s( this );
 }
+
+void console::set_foreground_color(int iRed, int iGreen, int iBlue)
+{
+   // ANSI escape code for 24-bit foreground color: \033[38;2;R;G;Bm
+   std::cout << "\033[38;2;" << iRed << ";" << iGreen << ";" << iBlue << "m";
+}
+
+void console::set_background_color(int iRed, int iGreen, int iBlue) 
+{
+   // ANSI escape code for 24-bit background color: \033[48;2;R;G;B m
+   std::cout << "\033[48;2;" << iRed << ";" << iGreen << ";" << iBlue << "m";
+}
+
 
 std::pair<bool, std::string> console::move_to(int iX, int iY)
 {
