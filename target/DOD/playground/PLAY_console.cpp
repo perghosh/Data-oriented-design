@@ -16,7 +16,14 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE( "[console] get console information", "[console]" ) {
+   gd::console::console console_;
 
+   auto result_ = console_.initialize();                                                           REQUIRE( result_.first );
+}
+
+
+#ifdef _WIN32
 
 /// ---------------------------------------------------------------------------            
 /// \brief 
@@ -77,12 +84,6 @@ inline void console::print_at(uint32_t uRow, uint32_t uColumn, const std::string
    position_update();
 }
 
-TEST_CASE( "[console] get console information", "[console]" ) {
-   gd::console::console console_;
-
-   auto result_ = console_.initialize();                                                           REQUIRE( result_.first );
-}
-
 
 TEST_CASE( "[console] 01", "[console]" ) {
    console console_( ::GetStdHandle( STD_OUTPUT_HANDLE ) );
@@ -133,6 +134,5 @@ TEST_CASE( "[console] lines", "[console]" ) {
 
    stringOut = deviceTest.render( gd::console::tag_format_cli{} );
    std::cout << stringOut;
-
-
 }
+#endif
