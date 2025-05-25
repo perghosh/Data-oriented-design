@@ -124,9 +124,10 @@ void PrintFiles(const std::string& stringPath, const std::vector<std::string> ve
 TEST_CASE("[file] test", "[file]")
 {
    std::cout << "h\n";
-   //std::string stringPath = "C:\\dev\\work\\DOD\\.gitignore";
-   std::string stringPath = "D:\\dev\\testfiles\\testignore.txt";
+   std::string stringPath = "C:\\dev\\work\\DOD\\.gitignore";
+   //std::string stringPath = "D:\\dev\\testfiles\\testignore.txt";
    std::vector<std::string> vectorList = ReadIgnoreList(stringPath);
+   //std::string stringDirectory = "D:\\dev\\work\\DOD\\target\\TOOLS\\FileCleaner\\cli";
    std::string stringDirectory = "D:\\dev\\work\\DOD\\target\\TOOLS\\FileCleaner\\cli";
 
    for( std::string stringExtension : vectorList )
