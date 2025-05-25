@@ -5,6 +5,8 @@
 #include "gd/console/gd_console_style.h"
 #include "gd/console/gd_console_print.h"
 
+#include "explore/gd_test.h"
+
 #include "Windows.h"
 
 #undef min
@@ -73,6 +75,12 @@ inline void console::print_at(uint32_t uRow, uint32_t uColumn, const std::string
    position_set( uRow, uColumn );
    print( stringText );
    position_update();
+}
+
+TEST_CASE( "[console] get console information", "[console]" ) {
+   gd::console::console console_;
+
+   auto result_ = console_.initialize();                                                           REQUIRE( result_.first );
 }
 
 
