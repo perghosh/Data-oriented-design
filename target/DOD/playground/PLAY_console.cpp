@@ -7,7 +7,9 @@
 
 #include "explore/gd_test.h"
 
+#ifdef _WIN32
 #include "windows.h"
+#endif
 
 #undef min
 #undef max
