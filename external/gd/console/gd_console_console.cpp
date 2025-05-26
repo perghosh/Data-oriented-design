@@ -337,9 +337,9 @@ std::pair<bool, std::tuple<int, int, int>> console::query_background_color_s()
    // Restore terminal settings
    tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld);
    
-   if(bytesRead > 0)
+   if(uBytesRead > 0)
    {
-      piBuffer[bytesRead] = '\0';
+      piBuffer[uBytesRead] = '\0';
       
       // Parse response format: \033]11;rgb:rrrr/gggg/bbbb\007
       // or \033]11;#rrggbb\007
@@ -360,7 +360,7 @@ std::pair<bool, std::tuple<int, int, int>> console::query_background_color_s()
       {
          // Try hex format
          piColorStart = strchr(piBuffer, '#');
-         if(piColorStart ! nullptr)
+         if(piColorStart != nullptr)
          {
             unsigned int uRGB;
             if(sscanf(piColorStart, "#%x", &uRGB) == 1)
