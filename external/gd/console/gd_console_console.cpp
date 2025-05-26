@@ -158,7 +158,7 @@ std::pair<bool, std::string> console::read_console_information_s( console* pcons
       ssize_t uBytesRead = read(STDIN_FILENO, piBuffer, sizeof(piBuffer) - 1); // Read response
       if(uBytesRead > 0) 
       {
-         buf[uBytesRead] = '\0';
+         piBuffer[uBytesRead] = '\0';
          if(sscanf(piBuffer, "\033[%u;%uR", &uY, &uX) == 2) { pconsole->set_xy(uX - 1, uY - 1); } // Adjust for 0-based indexing 
          else 
          {  // Restore terminal settings before returning error
