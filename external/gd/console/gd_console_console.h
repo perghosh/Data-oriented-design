@@ -1,3 +1,7 @@
+/**
+ * \file gd_console_console.h
+ */
+
 #pragma once
 
 #include <cassert>
@@ -66,8 +70,9 @@ public:
    /// set cursor position in console
    std::pair<bool, std::string> move_to(int iX, int iY);
 
-   /// set console text color
+   /// Set text color using ANSI escape codes
    void set_foreground_color(int iRed, int iGreen, int iBlue);
+   /// Set background color using ANSI escape codes
    void set_background_color(int iRed, int iGreen, int iBlue);
 
 //@}

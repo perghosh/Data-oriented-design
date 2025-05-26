@@ -5,7 +5,7 @@
 #include "gd/console/gd_console_style.h"
 #include "gd/console/gd_console_print.h"
 
-#include "explore/gd_test.h"
+#include "gd/console/gd_console_console.h"
 
 #include "windows.h"
 

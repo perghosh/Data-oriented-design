@@ -81,7 +81,6 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_console")
    add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
-      "explore/gd_test.cpp"
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
