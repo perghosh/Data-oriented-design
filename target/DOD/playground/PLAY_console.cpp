@@ -7,7 +7,9 @@
 
 #include "gd/console/gd_console_console.h"
 
+#ifdef _WIN32
 #include "windows.h"
+#endif
 
 #undef min
 #undef max
