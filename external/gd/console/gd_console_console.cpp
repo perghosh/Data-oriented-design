@@ -1,3 +1,8 @@
+/**
+* \file gd_console_console.cpp
+*/
+
+
 #include <iostream>
 #include <cstring>
 
@@ -11,7 +16,7 @@
 #  include <termios.h>
 #endif
 
-#include "gd_test.h"
+#include "gd_console_console.h"
 
 _GD_CONSOLE_BEGIN
 
@@ -26,12 +31,14 @@ std::pair<bool, std::string> console::initialize()
    return read_console_information_s( this );
 }
 
+/// Set text color using ANSI escape codes
 void console::set_foreground_color(int iRed, int iGreen, int iBlue)
 {
    // ANSI escape code for 24-bit foreground color: \033[38;2;R;G;Bm
    std::cout << "\033[38;2;" << iRed << ";" << iGreen << ";" << iBlue << "m";
 }
 
+/// Set background color using ANSI escape codes
 void console::set_background_color(int iRed, int iGreen, int iBlue) 
 {
    // ANSI escape code for 24-bit background color: \033[48;2;R;G;B m
@@ -61,19 +68,16 @@ std::pair<bool, std::string> console::move_to(int iX, int iY)
       return { false, "Failed to get console handle" };
    }
 
-   COORD coord;
-   coord.X = static_cast<SHORT>(iX);
-   coord.Y = static_cast<SHORT>(iY);
+   COORD coord_;
+   coord_.X = static_cast<SHORT>(iX);
+   coord_.Y = static_cast<SHORT>(iY);
 
-   if( ::SetConsoleCursorPosition(hConsole, coord) ) 
+   if( ::SetConsoleCursorPosition(hConsole, coord_) ) 
    {
       // Update internal state
       set_xy(iX, iY);
    } 
-   else 
-   {
-      return { false, "Failed to set cursor position" };
-   }
+   else { return { false, "Failed to set cursor position" }; }
 #else
    // POSIX implementation (Linux, macOS, etc.)
    // Use ANSI escape sequence to set cursor position
