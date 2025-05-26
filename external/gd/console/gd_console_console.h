@@ -70,10 +70,22 @@ public:
    /// set cursor position in console
    std::pair<bool, std::string> move_to(int iX, int iY);
 
+   std::pair<bool, std::tuple<int, int, int>> query_foreground_color() const { return query_foreground_color_s(); }
+   std::pair<bool, std::tuple<int, int, int>> query_background_color() const { return query_background_color_s(); }
+
    /// Set text color using ANSI escape codes
    void set_foreground_color(int iRed, int iGreen, int iBlue);
+   void set_foreground_color( std::tuple<int, int, int> color ) { set_foreground_color(std::get<0>(color), std::get<1>(color), std::get<2>(color)); }
    /// Set background color using ANSI escape codes
    void set_background_color(int iRed, int iGreen, int iBlue);
+   void set_background_color(std::tuple<int, int, int> color) { set_background_color(std::get<0>(color), std::get<1>(color), std::get<2>(color)); }
+
+   /// Clear the entire screen
+   //std::pair<bool, std::string> clear_screen();
+   std::pair<bool, std::string> clear_line() { return clear_line_s(); }
+
+   /// Read text from the console at the specified position and length
+   std::pair<bool, std::string> read_text(int iStartX, int iStartY, int iLength) { return read_text_s(iStartX, iStartY, iLength); }
 
 //@}
 
@@ -104,6 +116,12 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
    static std::pair<bool, std::string> read_console_information_s( console* pconsole );
+   static std::pair<bool, std::tuple<int, int, int>> query_foreground_color_s();
+   static std::pair<bool, std::tuple<int, int, int>> query_background_color_s();
+
+   static std::pair<bool, std::string> clear_line_s();
+
+   static std::pair<bool, std::string> read_text_s(int iStartX, int iStartY, int iLength);
 
 };
 

@@ -188,6 +188,260 @@ std::pair<bool, std::string> console::read_console_information_s( console* pcons
    return { true, "" };
 }
 
+/// Query actual console foreground color (from terminal/console)
+std::pair<bool, std::tuple<int, int, int>> console::query_foreground_color_s()
+{
+#ifdef _WIN32
+   // Windows implementation
+   HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+   if(hConsole == INVALID_HANDLE_VALUE) { return { false, {0, 0, 0} }; }
+
+   CONSOLE_SCREEN_BUFFER_INFOEX csbiex_ = {};
+   csbiex_.cbSize = sizeof(CONSOLE_SCREEN_BUFFER_INFOEX);
+   
+   if(GetConsoleScreenBufferInfoEx(hConsole, &csbiex_))
+   {
+      // Extract foreground color index from attributes
+      WORD foregroundIndex = csbiex_.wAttributes & 0x0F;
+      
+      // Get RGB values from color table
+      COLORREF uColor = csbiex_.ColorTable[foregroundIndex];
+      int iRed = GetRValue(uColor);
+      int iGreen = GetGValue(uColor);
+      int iBlue = GetBValue(uColor);
+      
+      return { true, {iRed, iGreen, iBlue} };
+   }
+#else
+   // POSIX implementation using OSC escape sequences
+   // Save current terminal settings
+   struct termios termiosOld, termiosNew;
+   if(tcgetattr(STDIN_FILENO, &termiosOld) != 0) { return { false, {0, 0, 0} }; }
+
+   // Set terminal to raw mode for reading response
+   termiosNew = termiosOld;
+   termiosNew.c_lflag &= ~(ICANON | ECHO);
+   termiosNew.c_cc[VMIN] = 0;   // Non-blocking read
+   termiosNew.c_cc[VTIME] = 10;  // 1 second timeout
+   
+   if(tcsetattr(STDIN_FILENO, TCSANOW, &termiosNew) != 0) { return { false, {0, 0, 0} }; }
+
+   // Query foreground color using OSC 10
+   const char* piszQuery = "\033]10;?\007";
+   if(write(STDOUT_FILENO, piszQuery, strlen(piszQuery)) != static_cast<ssize_t>(strlen(piszQuery)))
+   {
+      tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld);
+      return { false, {0, 0, 0} };
+   }
+
+   // Read response
+   char piBuffer[256];
+   memset(piBuffer, 0, sizeof(piBuffer));
+   ssize_t uBytesRead = read(STDIN_FILENO, piBuffer, sizeof(piBuffer) - 1);
+   
+   // Restore terminal settings
+   tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld);
+   
+   if(uBytesRead > 0)
+   {
+      piBuffer[uBytesRead] = '\0';
+      
+      // Parse response format: \033]10;rgb:rrrr/gggg/bbbb\007
+      // or \033]10;#rrggbb\007
+      char* piColorStart = strstr(piBuffer, "rgb:");
+      if(piColorStart != nullptr)
+      {
+         unsigned int r16, g16, b16;
+         if(sscanf(piColorStart, "rgb:%x/%x/%x", &r16, &g16, &b16) == 3)
+         {
+            // Convert from 16-bit to 8-bit values
+            int iRed = (r16 >> 8) & 0xFF;
+            int iGreen = (g16 >> 8) & 0xFF;  
+            int iBlue = (b16 >> 8) & 0xFF;
+            return { true, {iRed, iGreen, iBlue} };
+
+         }
+      }
+      else
+      {
+         // Try hex format
+         piColorStart = strchr(piBuffer, '#');
+         if(piColorStart)
+         {
+            unsigned int uRGB;
+            if(sscanf(piColorStart, "#%x", &uRGB) == 1)
+            {
+               int iRed = (uRGB >> 16) & 0xFF;
+               int iGreen = (uRGB >> 8) & 0xFF;
+               int iBlue = uRGB & 0xFF;
+               return { true, {iRed, iGreen, iBlue} };
+            }
+         }
+      }
+   }
+#endif
+   return { false, {0, 0, 0} };
+}
+
+/// Query actual console background color (from terminal/console)
+std::pair<bool, std::tuple<int, int, int>> console::query_background_color_s()
+{
+#ifdef _WIN32
+   // Windows implementation
+   HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+   if(hConsole == INVALID_HANDLE_VALUE) { return { false, {0, 0, 0} }; }
+
+   CONSOLE_SCREEN_BUFFER_INFOEX csbiex_ = {};
+   csbiex_.cbSize = sizeof(CONSOLE_SCREEN_BUFFER_INFOEX);
+   
+   if(GetConsoleScreenBufferInfoEx(hConsole, &csbiex_))
+   {
+      // Extract background color index from attributes
+      WORD backgroundIndex = (csbiex_.wAttributes & 0xF0) >> 4;
+      
+      // Get RGB values from color table
+      COLORREF uColor = csbiex_.ColorTable[backgroundIndex];
+      int iRed = GetRValue(uColor);
+      int iGreen = GetGValue(uColor);
+      int iBlue = GetBValue(uColor);
+
+      return { true, {iRed, iGreen, iBlue} };
+   }
+#else
+   // POSIX implementation using OSC escape sequences
+   // Save current terminal settings
+   struct termios termiosOld, termiosNew;
+   if(tcgetattr(STDIN_FILENO, &termiosOld) != 0) { return { false, {0, 0, 0} }; }
+
+   // Set terminal to raw mode for reading response
+   termiosNew = termiosOld;
+   termiosNew.c_lflag &= ~(ICANON | ECHO);
+   termiosNew.c_cc[VMIN] = 0;   // Non-blocking read
+   termiosNew.c_cc[VTIME] = 10;  // 1 second timeout
+   
+   if(tcsetattr(STDIN_FILENO, TCSANOW, &termiosNew) != 0) {return { false, {0, 0, 0} };}
+
+   // Query background color using OSC 11
+   const char* query = "\033]11;?\007";
+   if(write(STDOUT_FILENO, query, strlen(query)) != static_cast<ssize_t>(strlen(query)))
+   {
+      tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld);
+      return { false, {0, 0, 0} };
+   }
+
+   // Read response
+   char piBuffer[256];
+   memset(piBuffer, 0, sizeof(piBuffer));
+   ssize_t uBytesRead = read(STDIN_FILENO, piBuffer, sizeof(piBuffer) - 1);
+
+   // Restore terminal settings
+   tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld);
+   
+   if(bytesRead > 0)
+   {
+      piBuffer[bytesRead] = '\0';
+      
+      // Parse response format: \033]11;rgb:rrrr/gggg/bbbb\007
+      // or \033]11;#rrggbb\007
+      char* piColorStart = strstr(piBuffer, "rgb:");
+      if(piColorStart)
+      {
+         unsigned int r16, g16, b16;
+         if(sscanf(piColorStart, "rgb:%x/%x/%x", &r16, &g16, &b16) == 3)
+         {
+            // Convert from 16-bit to 8-bit values
+            int iRed = (r16 >> 8) & 0xFF;
+            int iGreen = (g16 >> 8) & 0xFF;  
+            int iBlue = (b16 >> 8) & 0xFF;
+            return { true, {iRed, iGreen, iBlue} };
+         }
+      }
+      else
+      {
+         // Try hex format
+         piColorStart = strchr(piBuffer, '#');
+         if(piColorStart ! nullptr)
+         {
+            unsigned int uRGB;
+            if(sscanf(piColorStart, "#%x", &uRGB) == 1)
+            {
+               int iRed = (uRGB >> 16) & 0xFF;
+               int iGreen = (uRGB >> 8) & 0xFF;
+               int iBlue = uRGB & 0xFF;
+               return { true, {iRed, iGreen, iBlue} };
+            }
+         }
+      }
+   }
+#endif
+   return { false, {0, 0, 0} };
+}
+
+
+/// Clear entire current line
+std::pair<bool, std::string> console::clear_line_s()
+{
+#ifdef _WIN32
+   HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+   if(hConsole == INVALID_HANDLE_VALUE) { return { false, "Failed to get console handle" }; }
+
+   CONSOLE_SCREEN_BUFFER_INFO csbi_;
+   if(!GetConsoleScreenBufferInfo(hConsole, &csbi_)) { return { false, "Failed to get console screen buffer info" }; }
+
+   COORD coords_ = { 0, csbi_.dwCursorPosition.Y };
+   DWORD uCharsToWrite = csbi_.dwSize.X;
+   DWORD uCharsWritten;
+
+   if(!FillConsoleOutputCharacter(hConsole, ' ', uCharsToWrite, coords_, &uCharsWritten)) { return { false, "Failed to clear line" }; }
+   
+   // Move cursor to beginning of line
+   if(!SetConsoleCursorPosition(hConsole, coords_)) { return { false, "Failed to move cursor to beginning of line" }; }
+#else
+   // POSIX implementation
+   const char* piszClearSequence = "\033[2K\r";  // Clear line and return to beginning
+   ssize_t uBytesWritten = write(STDOUT_FILENO, piszClearSequence, strlen(piszClearSequence));
+   
+   if(uBytesWritten != static_cast<ssize_t>(strlen(piszClearSequence))) { return { false, "Failed to write clear sequence" }; }
+#endif
+
+   return { true, "" };
+}
+
+
+/// Read characters from console buffer at specified position
+std::pair<bool, std::string> console::read_text_s(int iStartX, int iStartY, int iLength)
+{
+   // Validate parameters
+   if (iStartX < 0 || iStartY < 0 || iLength <= 0) { return { false, "" }; }
+
+#ifdef _WIN32
+   // Windows implementation using ReadConsoleOutputCharacter
+   HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+   if(hConsole == INVALID_HANDLE_VALUE) { return { false, "" }; }
+
+   // Allocate buffer for characters
+   std::vector<TCHAR> vectorBuffer(iLength + 1);
+   COORD readCoord = { static_cast<SHORT>(iStartX), static_cast<SHORT>(iStartY) };
+   DWORD uCharsRead = 0;
+
+   if(ReadConsoleOutputCharacter(hConsole, vectorBuffer.data(), iLength, readCoord, &uCharsRead))
+   {
+      vectorBuffer[uCharsRead] = '\0';
+      std::string stringResult(vectorBuffer.begin(), vectorBuffer.begin() + uCharsRead);
+      
+      // Remove trailing spaces (common in console buffers)
+      while (!stringResult.empty() && stringResult.back() == ' ') {
+         stringResult.pop_back();
+      }
+      
+      return { true, stringResult };
+   }
+
+#else
+   assert(false && "POSIX console buffer reading not implemented yet");
+#endif
+   return { false, "" };
+}
 
 
 _GD_CONSOLE_END

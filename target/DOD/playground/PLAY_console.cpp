@@ -23,14 +23,19 @@ TEST_CASE( "[console] get console information", "[console]" ) {
 
    auto result_ = console_.initialize();                                                           REQUIRE( result_.first );
 
+   auto color_ = console_.query_foreground_color();
+
    console_.move_to( 10, 5 );
-   console_.set_foreground_color( 0, 50, 0 );
-   console_.set_background_color( 25, 0, 0 );
+   console_.set_foreground_color( 0, 150, 0 );
+   //console_.set_background_color( 25, 0, 0 );
    std::cout << "Console position: " << console_.xy().first << ", " << console_.xy().second << std::endl;
+   std::cout << "XXXXXXXXX\n";
+   console_.set_foreground_color( color_.second );
+   std::cout << "XXXXXXXXX\n";
 }
 
 
-#ifdef _WIN32
+#ifdef _WIN32x
 
 /// ---------------------------------------------------------------------------            
 /// \brief 
