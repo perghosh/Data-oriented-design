@@ -46,6 +46,35 @@ _GD_GROUP_ALGEBRA_BEGIN
 
 // -------------------------------------------------------------------- ALGEBRA
 
+template <typename TYPE>
+struct point
+{
+   point() = default;
+   point(TYPE x_, TYPE y_) : m_x(x_), m_y(y_) {}
+   point(const std::pair<TYPE, TYPE>& pair_) : m_x(pair_.first), m_y(pair_.second) {}
+
+   operator std::pair<TYPE, TYPE>() const { return {m_x, m_y}; }
+
+   TYPE x() const { return m_x; }
+   TYPE y() const { return m_y; }
+
+   TYPE m_x = TYPE{};
+   TYPE m_y = TYPE{};
+};
+
+
+
+template <typename TYPE>
+struct line
+{
+   line() = default;
+   line(const point<TYPE>& start_, const point<TYPE>& end_) : m_start(start_), m_end(end_) {}
+   line(const std::pair<TYPE, TYPE>& start_, const std::pair<TYPE, TYPE>& end_) : m_start(start_), m_end(end_) {}
+   operator std::pair<point<TYPE>, point<TYPE>>() const { return {m_start, m_end}; }
+   point<TYPE> m_start;
+   point<TYPE> m_end;
+};
+
 /** ---------------------------------------------------------------------------
  * @brief Split primitive value into pair and the number of bits decide how to split them
  * @param uFrom primitive value that is split

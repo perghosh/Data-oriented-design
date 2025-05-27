@@ -49,15 +49,15 @@ void console::set_background_color(int iRed, int iGreen, int iBlue)
 std::pair<bool, std::string> console::move_to(int iX, int iY)
 {
    // Validate coordinates
-   if (iX < 0 || iY < 0) {
+   if(iX < 0 || iY < 0) 
+   {
       return { false, "Invalid coordinates: negative values not allowed" };
    }
 
    // If console dimensions are known, validate bounds
-   if (m_iWidth > 0 && m_iHeight > 0) {
-      if (iX >= m_iWidth || iY >= m_iHeight) {
-         return { false, "Coordinates out of console bounds" };
-      }
+   if(m_iWidth > 0 && m_iHeight > 0) 
+   {
+      if(iX >= m_iWidth || iY >= m_iHeight) { return { false, "Coordinates out of console bounds" }; }
    }
 
 #ifdef _WIN32
@@ -100,6 +100,12 @@ std::pair<bool, std::string> console::move_to(int iX, int iY)
 #endif
 
    return { true, "" };
+}
+
+void console::print( const gd::math::algebra::point<unsigned>& point_, std::string_view stringText)
+{
+   move_to(point_.x(), point_.y());
+   std::cout << stringText;
 }
 
 
@@ -412,7 +418,7 @@ std::pair<bool, std::string> console::clear_line_s()
 std::pair<bool, std::string> console::read_text_s(int iStartX, int iStartY, int iLength)
 {
    // Validate parameters
-   if (iStartX < 0 || iStartY < 0 || iLength <= 0) { return { false, "" }; }
+   if(iStartX < 0 || iStartY < 0 || iLength <= 0) { return { false, "" }; }
 
 #ifdef _WIN32
    // Windows implementation using ReadConsoleOutputCharacter

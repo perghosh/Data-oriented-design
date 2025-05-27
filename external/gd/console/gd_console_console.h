@@ -11,6 +11,8 @@
 #include <string_view>
 #include <type_traits>
 
+#include "../gd_math.h"
+
 
 #ifndef _GD_CONSOLE_BEGIN
 #define _GD_CONSOLE_BEGIN namespace gd { namespace console {
@@ -21,12 +23,79 @@ _GD_CONSOLE_BEGIN
 
 
 /**
- * \brief object used to manage console metrics and positioning
+ * \brief
  *
  *
+ */
+struct progress
+{
+// ## construction ------------------------------------------------------------
+   progress() {}
+   progress(unsigned uRow, unsigned uWidth, unsigned uMax): m_uRow(uRow), m_uColumn(0), m_uWidth(uWidth), m_uMax(uMax), m_uValue(0) { }
+   progress(unsigned uRow, unsigned uColumn, unsigned uWidth, unsigned uMax): m_uRow(uRow), m_uColumn(uColumn), m_uWidth(uWidth), m_uMax(uMax), m_uValue(0) { }
+   // copy
+   progress(const progress& o) { common_construct(o); }
+   // assign
+   progress& operator=(const progress& o) { common_construct(o); return *this; }
+
+   ~progress() {}
+// common copy
+   void common_construct(const progress& o) {
+      m_uRow = o.m_uRow;
+      m_uColumn = o.m_uColumn;
+      m_uWidth = o.m_uWidth;
+      m_uMax = o.m_uMax;
+      m_uValue = o.m_uValue;
+   }
+
+// ## methods -----------------------------------------------------------------
+   gd::math::algebra::point<unsigned> first() const { return { m_uColumn, m_uRow }; }
+   gd::math::algebra::point<unsigned> position() const { return { m_uValue, m_uRow }; }
+   gd::math::algebra::point<unsigned> last() const { return { m_uMax, m_uRow }; }
+
+   void reset() { m_uValue = 0; }
+   void update(unsigned uValue) { assert(uValue <= m_uMax); m_uValue = uValue; }
+   void complete() { m_uValue = m_uMax; }
+
+/** \name DEBUG
+*///@{
+
+//@}
+
+// ## attributes --------------------------------------------------------------
+   unsigned m_uRow = 0; ///< Row in the console where the progress bar is displayed
+   unsigned m_uColumn = 0; ///< Column in the console where the progress bar is displayed
+   unsigned m_uWidth = 0; ///< Width of the progress bar
+   unsigned m_uMax = 0; ///< Maximum value for the progress bar
+   unsigned m_uValue = 0; ///< Current value of the progress bar
+
+
+// ## free functions ----------------------------------------------------------
+
+};
+
+
+/**
+ * @class console
+ * @brief Manages console metrics, positioning, and color operations.
  *
- \code
- \endcode
+ * The console class provides an interface for manipulating and querying
+ * console properties such as size, cursor position, buffer size, and text colors.
+ * It supports setting and retrieving the cursor position, changing the console's
+ * foreground and background colors using ANSI escape codes, and reading or clearing
+ * lines of text from the console.
+ *
+ * Example usage:
+ * @code
+ * gd::console::console con;
+ * con.set_size(80, 25);
+ * con.set_xy(0, 0);
+ * con.set_foreground_color(255, 0, 0); // Set text color to red
+ * con.set_background_color(0, 0, 0);   // Set background to black
+ * @endcode
+ *
+ * @note This class is designed to be platform-agnostic, but some features may
+ *       depend on the underlying terminal or operating system.
  */
 class console
 {
@@ -70,6 +139,8 @@ public:
    /// set cursor position in console
    std::pair<bool, std::string> move_to(int iX, int iY);
 
+   void print( const gd::math::algebra::point<unsigned>& point_, std::string_view stringText );
+
    std::pair<bool, std::tuple<int, int, int>> query_foreground_color() const { return query_foreground_color_s(); }
    std::pair<bool, std::tuple<int, int, int>> query_background_color() const { return query_background_color_s(); }
 
@@ -86,6 +157,7 @@ public:
 
    /// Read text from the console at the specified position and length
    std::pair<bool, std::string> read_text(int iStartX, int iStartY, int iLength) { return read_text_s(iStartX, iStartY, iLength); }
+
 
 //@}
 
