@@ -46,14 +46,15 @@ TEST_CASE( "[console] progressbar", "[console]" ) {
    progress progressBar(5, 100, 100);
    progressBar.update( 20 );
 
+   gd::math::algebra::point<unsigned> positionOffsetLeft(3u, 0u);
+
    // simulate incrementing the progress bar
    for (int i = 0; i <= 100; i += 1) {
       progressBar.update(i);
       console_.print( progressBar.position(), "X" );
-      //console_.move_to(5, 5);
-      //console_.set_foreground_color(0, 150, 0);
-      //std::cout << "Progress: " << progressBar.render() << " (" << i << "%)" << std::endl;
-      //console_.set_foreground_color(color_.second);
+
+      if( i > 3 ) { console_.print( progressBar.position() - positionOffsetLeft, "O"); }
+      
       std::this_thread::sleep_for(std::chrono::milliseconds(100)); // simulate work
    }
 
