@@ -54,44 +54,79 @@ template <typename TYPE>
 struct point
 {
    constexpr point() noexcept : m_x(TYPE{}), m_y(TYPE{}) {}
+   /// Construct point with explicit x,y coordinates
    constexpr point(TYPE x_, TYPE y_) noexcept : m_x(x_), m_y(y_) {}
+   /// Construct point from std::pair (first=x, second=y)
    constexpr point(const std::pair<TYPE, TYPE>& pair_) noexcept : m_x(pair_.first), m_y(pair_.second) {}
 
    operator std::pair<TYPE, TYPE>() const { return {m_x, m_y}; }
 
+   /// Equality: true if both x and y coordinates match exactly
    constexpr bool operator==(const point<TYPE>& other_) const { return m_x == other_.m_x && m_y == other_.m_y; }
+   /// Inequality: negation of equality operator
    constexpr bool operator!=(const point<TYPE>& other_) const { return !(*this == other_); }
+   /// Lexicographic ordering: compares x first, then y if x values are equal
    constexpr bool operator<(const point<TYPE>& other_) const { return std::tie(m_x, m_y) < std::tie(other_.m_x, other_.m_y); }
 
-   // operator addition
+   // ## operator addition
+
+   /// Add scalar to both coordinates: (x,y) + s = (x+s, y+s)
    point<TYPE> operator+(const TYPE& value_) const { return point<TYPE>(m_x + value_, m_y + value_); }
+   /// Vector addition: (x1,y1) + (x2,y2) = (x1+x2, y1+y2)
    point<TYPE> operator+(const point<TYPE>& other_) const { return point<TYPE>(m_x + other_.m_x, m_y + other_.m_y); }
 
-   // operator subtraction
+   // ## operator subtraction
+
+   /// Subtract scalar from both coordinates: (x,y) - s = (x-s, y-s)
    point<TYPE> operator-(const TYPE& value_) const { return point<TYPE>(m_x - value_, m_y - value_); }
+   /// Vector subtraction: (x1,y1) - (x2,y2) = (x1-x2, y1-y2)
    point<TYPE> operator-(const point<TYPE>& other_) const { return point<TYPE>(m_x - other_.m_x, m_y - other_.m_y); }
 
-   // add equal operator
+   // ## add-equal operator (+=)
+
+   /// In-place scalar addition: modifies this point by adding value to both coordinates
    point<TYPE>& operator+=(const TYPE& value_) { m_x += value_; m_y += value_; return *this; }
+   /// In-place vector addition: modifies this point by adding other point's coordinates
    point<TYPE>& operator+=(const point<TYPE>& other_) { m_x += other_.m_x; m_y += other_.m_y; return *this; }
 
-   // subtract equal operator
+   // ## subtract-equal operator (-=)
+
+   /// In-place scalar subtraction: modifies this point by subtracting value from both coordinates
    point<TYPE>& operator-=(const TYPE& value_) { m_x -= value_; m_y -= value_; return *this; }
+   // In-place vector subtraction: modifies this point by subtracting other point's coordinates
    point<TYPE>& operator-=(const point<TYPE>& other_) { m_x -= other_.m_x; m_y -= other_.m_y; return *this; }
    
 
    constexpr TYPE x() const { return m_x; }
    constexpr TYPE y() const { return m_y; }
 
-   constexpr TYPE distance_squared(const point<TYPE>& other_) const noexcept {
-      TYPE dx = m_x - other_.m_x;
-      TYPE dy = m_y - other_.m_y;
-      return dx * dx + dy * dy;
+   /// Add value to x coordinate only, keeping y unchanged
+   point<TYPE>& add_x(const TYPE& value_) { m_x += value_; return *this; }
+
+   /// Add value to y coordinate only, keeping x unchanged
+   point<TYPE>& add_y(const TYPE& value_) { m_y += value_; return *this; }
+
+   /// Subtract value from x coordinate only, keeping y unchanged
+   point<TYPE>& sub_x(const TYPE& value_) { m_x -= value_; return *this; }
+
+   /// Subtract value from y coordinate only, keeping x unchanged
+   point<TYPE>& sub_y(const TYPE& value_) { m_y -= value_; return *this; }
+
+   /// Calculate squared Euclidean distance: d² = (x2-x1)² + (y2-y1)². Faster than distance() since no sqrt
+   constexpr TYPE distance_squared(const point<TYPE>& pointOther) const noexcept {
+      TYPE dx_ = m_x - pointOther.m_x;
+      TYPE dy_ = m_y - pointOther.m_y;
+      return dx_ * dx_ + dy_ * dy_;
    }
 
    /// Calculate distance to other point
-   constexpr double distance(const point<TYPE>& other_) const noexcept {
-      return std::sqrt(static_cast<double>(distance_squared(other_)));
+   constexpr double distance(const point<TYPE>& pointOther) const noexcept {
+      return std::sqrt(static_cast<double>(distance_squared(pointOther)));
+   }
+
+   /// Check if points are approximately equal within tolerance: |x1-x2| <= tolerance && |y1-y2| <= tolerance
+   constexpr bool almost_equal(const point<TYPE>& other_, const TYPE& tolerance_) const noexcept {
+      return std::abs(m_x - other_.m_x) <= tolerance_ && std::abs(m_y - other_.m_y) <= tolerance_;
    }
 
    TYPE m_x = TYPE{};
