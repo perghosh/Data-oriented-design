@@ -16,6 +16,8 @@
 #include <utility>
 #include <type_traits>
 
+#include "gd_compiler.h"
+
 #ifndef _GD_MATH_BEGIN
    #define _GD_MATH_BEGIN namespace gd { namespace math {
    #define _GD_MATH_END } }
@@ -46,34 +48,134 @@ _GD_GROUP_ALGEBRA_BEGIN
 
 // -------------------------------------------------------------------- ALGEBRA
 
+#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+
 template <typename TYPE>
 struct point
 {
-   point() = default;
-   point(TYPE x_, TYPE y_) : m_x(x_), m_y(y_) {}
-   point(const std::pair<TYPE, TYPE>& pair_) : m_x(pair_.first), m_y(pair_.second) {}
+   constexpr point() noexcept : m_x(TYPE{}), m_y(TYPE{}) {}
+   constexpr point(TYPE x_, TYPE y_) noexcept : m_x(x_), m_y(y_) {}
+   constexpr point(const std::pair<TYPE, TYPE>& pair_) noexcept : m_x(pair_.first), m_y(pair_.second) {}
 
    operator std::pair<TYPE, TYPE>() const { return {m_x, m_y}; }
 
-   TYPE x() const { return m_x; }
-   TYPE y() const { return m_y; }
+   constexpr bool operator==(const point<TYPE>& other_) const { return m_x == other_.m_x && m_y == other_.m_y; }
+   constexpr bool operator!=(const point<TYPE>& other_) const { return !(*this == other_); }
+   constexpr bool operator<(const point<TYPE>& other_) const { return std::tie(m_x, m_y) < std::tie(other_.m_x, other_.m_y); }
+
+   // operator addition
+   point<TYPE> operator+(const TYPE& value_) const { return point<TYPE>(m_x + value_, m_y + value_); }
+   point<TYPE> operator+(const point<TYPE>& other_) const { return point<TYPE>(m_x + other_.m_x, m_y + other_.m_y); }
+
+   // operator subtraction
+   point<TYPE> operator-(const TYPE& value_) const { return point<TYPE>(m_x - value_, m_y - value_); }
+   point<TYPE> operator-(const point<TYPE>& other_) const { return point<TYPE>(m_x - other_.m_x, m_y - other_.m_y); }
+
+   // add equal operator
+   point<TYPE>& operator+=(const TYPE& value_) { m_x += value_; m_y += value_; return *this; }
+   point<TYPE>& operator+=(const point<TYPE>& other_) { m_x += other_.m_x; m_y += other_.m_y; return *this; }
+
+   // subtract equal operator
+   point<TYPE>& operator-=(const TYPE& value_) { m_x -= value_; m_y -= value_; return *this; }
+   point<TYPE>& operator-=(const point<TYPE>& other_) { m_x -= other_.m_x; m_y -= other_.m_y; return *this; }
+   
+
+   constexpr TYPE x() const { return m_x; }
+   constexpr TYPE y() const { return m_y; }
+
+   constexpr TYPE distance_squared(const point<TYPE>& other_) const noexcept {
+      TYPE dx = m_x - other_.m_x;
+      TYPE dy = m_y - other_.m_y;
+      return dx * dx + dy * dy;
+   }
+
+   /// Calculate distance to other point
+   constexpr double distance(const point<TYPE>& other_) const noexcept {
+      return std::sqrt(static_cast<double>(distance_squared(other_)));
+   }
 
    TYPE m_x = TYPE{};
    TYPE m_y = TYPE{};
 };
 
+// Deduction guide
+template<typename TYPE> point(std::pair<TYPE, TYPE>) -> point<TYPE>;
 
+template<typename T> concept Numeric = std::is_arithmetic_v<T>;
 
-template <typename TYPE>
-struct line
-{
-   line() = default;
-   line(const point<TYPE>& start_, const point<TYPE>& end_) : m_start(start_), m_end(end_) {}
-   line(const std::pair<TYPE, TYPE>& start_, const std::pair<TYPE, TYPE>& end_) : m_start(start_), m_end(end_) {}
-   operator std::pair<point<TYPE>, point<TYPE>>() const { return {m_start, m_end}; }
-   point<TYPE> m_start;
-   point<TYPE> m_end;
+template<Numeric TYPE>
+struct line {
+   // Constructors
+   constexpr line() noexcept : m_pointStart(point<TYPE>{}), m_pointEnd(point<TYPE>{}) {}
+   constexpr line(const point<TYPE>& start, const point<TYPE>& end) noexcept : m_pointStart(start), m_pointEnd(end) {}
+   constexpr line(const std::pair<TYPE, TYPE>& start, const std::pair<TYPE, TYPE>& end) noexcept
+      : m_pointStart(start), m_pointEnd(end) {}
+
+   // Conversion to pair of points
+   constexpr operator std::pair<point<TYPE>, point<TYPE>>() const noexcept { return {m_pointStart, m_pointEnd}; }
+
+   // Comparison operators
+   constexpr bool operator==(const line& o) const noexcept { return m_pointStart == o.m_pointStart && m_pointEnd == o.m_pointEnd; }
+   constexpr bool operator!=(const line& o) const noexcept { return !(*this == o); }
+   constexpr bool operator<(const line& o) const noexcept {
+      return std::tie(m_pointStart, m_pointEnd) < std::tie(o.m_pointStart, o.m_pointEnd);
+   }
+
+   // Arithmetic operators (translation)
+   constexpr line operator+(const TYPE& value_) const noexcept {
+      return line(m_pointStart + value_, m_pointEnd + value_);
+   }
+   constexpr line operator+(const point<TYPE>& offset_) const noexcept {
+      return line(m_pointStart + offset_, m_pointEnd + offset_);
+   }
+   constexpr line operator-(const TYPE& value_) const noexcept {
+      return line(m_pointStart - value_, m_pointEnd - value_);
+   }
+   constexpr line operator-(const point<TYPE>& offset_) const noexcept {
+      return line(m_pointStart - offset_, m_pointEnd - offset_);
+   }
+
+   // Compound assignment
+   constexpr line& operator+=(const TYPE& value_) noexcept {
+      m_pointStart += value_;
+      m_pointEnd += value_;
+      return *this;
+   }
+   constexpr line& operator+=(const point<TYPE>& offset_) noexcept {
+      m_pointStart += offset_;
+      m_pointEnd += offset_;
+      return *this;
+   }
+   constexpr line& operator-=(const TYPE& value_) noexcept {
+      m_pointStart -= value_;
+      m_pointEnd -= value_;
+      return *this;
+   }
+   constexpr line& operator-=(const point<TYPE>& offset_) noexcept {
+      m_pointStart -= offset_;
+      m_pointEnd -= offset_;
+      return *this;
+   }
+
+   // Accessors
+   constexpr point<TYPE> start() const noexcept { return m_pointStart; }
+   constexpr point<TYPE> end() const noexcept { return m_pointEnd; }
+
+   // Utility functions
+   constexpr TYPE length_squared() const noexcept { return m_pointStart.distance_squared(m_pointEnd); }
+   constexpr double length() const noexcept { return m_pointStart.distance(m_pointEnd); }
+   constexpr point<TYPE> midpoint() const noexcept { return point<TYPE>(( m_pointStart.x() + m_pointEnd.x() ) / TYPE{ 2 }, ( m_pointStart.y() + m_pointEnd.y() ) / TYPE{ 2 }); }
+
+private:
+   point<TYPE> m_pointStart;
+   point<TYPE> m_pointEnd;
 };
+
+// Deduction guide
+template<typename T>
+line(std::pair<T, T>, std::pair<T, T>) -> line<T>;
+
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT
 
 /** ---------------------------------------------------------------------------
  * @brief Split primitive value into pair and the number of bits decide how to split them
