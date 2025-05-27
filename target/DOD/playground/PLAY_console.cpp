@@ -1,3 +1,5 @@
+#include <thread>
+
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_variant.h"
@@ -18,6 +20,7 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+
 TEST_CASE( "[console] get console information", "[console]" ) {
    gd::console::console console_;
 
@@ -33,6 +36,31 @@ TEST_CASE( "[console] get console information", "[console]" ) {
    console_.set_foreground_color( color_.second );
    std::cout << "XXXXXXXXX\n";
 }
+
+TEST_CASE( "[console] progressbar", "[console]" ) {
+   using namespace gd::console;
+   console console_;
+   auto result_ = console_.initialize();                                                           REQUIRE( result_.first );
+   auto color_ = console_.query_foreground_color();
+
+   progress progressBar(5, 100, 100);
+   progressBar.update( 20 );
+
+   // simulate incrementing the progress bar
+   for (int i = 0; i <= 100; i += 1) {
+      progressBar.update(i);
+      console_.print( progressBar.position(), "X" );
+      //console_.move_to(5, 5);
+      //console_.set_foreground_color(0, 150, 0);
+      //std::cout << "Progress: " << progressBar.render() << " (" << i << "%)" << std::endl;
+      //console_.set_foreground_color(color_.second);
+      std::this_thread::sleep_for(std::chrono::milliseconds(100)); // simulate work
+   }
+
+
+
+}
+
 
 
 #ifdef _WIN32x
