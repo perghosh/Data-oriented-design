@@ -55,8 +55,17 @@ _GD_TYPES_BEGIN
 
 // ----------------------------------------------------------------------------
 // ## state related tag dispatchers
-struct tag_state_success {};  ///< success state
+struct tag_state_active {};   ///< active state, like currently operational
+struct tag_state_canceled {}; ///< canceled state, like aborted or nullified
+struct tag_state_completed {};///< completed state, like finished or done
+struct tag_state_error {};    ///< error state, like an error occurred
 struct tag_state_failure {};  ///< failure state
+struct tag_state_inactive {}; ///< inactive state, like paused or disabled
+struct tag_state_pending {};  ///< pending state, like awaiting processing
+struct tag_state_queued {};   ///< queued state, like waiting in a queue
+struct tag_state_running {};  ///< running state, like in progress
+struct tag_state_stopped {};  ///< stopped state, like halted or terminated
+struct tag_state_success {};  ///< success state
 
 // ----------------------------------------------------------------------------
 // ## focus on count
@@ -68,19 +77,33 @@ struct tag_multiple {};       ///< multiple is used in some form
 
 // ----------------------------------------------------------------------------
 // ## value related tag dispatchers
-
+struct tag_alias {};          ///< alias is used in some form
+struct tag_category {};       ///< category is used in some form, like type or group
+struct tag_code {};           ///< code is used in some form, like a reference code
+struct tag_comment {};        ///< comment is used in some form, like user notes
 struct tag_date {};           ///< date is used in some form
 struct tag_description {};    ///< description is used in some form
-struct tag_success {};        ///< success is used in some form
-struct tag_warning {};        ///< warning is used in some form
 struct tag_error {};          ///< error is used in some form
+struct tag_flag {};           ///< flag is used in some form, like true/false or on/off
 struct tag_id {};             ///< id is used in some form
+struct tag_index {};          ///< index is used in some form, like a numeric position
 struct tag_key {};            ///< key is used in some form
+struct tag_label {};          ///< label is used in some form, like a short identifier
+struct tag_metadata {};       ///< metadata is used in some form, like additional info
 struct tag_name {};           ///< name is used in some form
-struct tag_alias {};          ///< alias is used in some form
+struct tag_priority {};       ///< priority is used in some form, like high/low
+struct tag_reference {};      ///< reference is used in some form, like a pointer or link
+struct tag_role {};           ///< role is used in some form, like user role or permission
+struct tag_state {};          ///< state is used in some form, like current condition
+struct tag_status {};         ///< status is used in some form, like active/inactive
+struct tag_success {};        ///< success is used in some form
 struct tag_table {};          ///< table is used in some form
 struct tag_tag {};            ///< tag value
+struct tag_timestamp {};      ///< timestamp is used in some form, like a date-time combination
+struct tag_type {};           ///< type is used in some form, like data type or class
 struct tag_value {};          ///< value used in some form
+struct tag_version {};        ///< version is used in some form, like v1.0
+struct tag_warning {};        ///< warning is used in some form
 
 struct tag_main_type {};      /// main type if there are secondary types
 struct tag_secondary_type {}; /// secondary type if there are main types
@@ -102,8 +125,8 @@ struct tag_stack {};          ///< stl std::stack object is used in some form
 struct tag_string {};         ///< stl std::string object is used in some form
 struct tag_string_view {};    ///< stl std::string_view object is used in some form
 struct tag_tuple {};          ///< stl std::tuple object is used in some form
-struct tag_vector {};         ///< stl std::vector object is used in some form
 struct tag_variant {};        ///< stl std::variant object is used in some form
+struct tag_vector {};         ///< stl std::vector object is used in some form
 
 struct tag_recursive {};      ///< stl std::recursive object is used in some form
 
@@ -120,6 +143,26 @@ struct tag_uri {};            ///< data is in uri format (url encoded)
 struct tag_url {};            ///< data is in url format
 struct tag_utf8 {};           ///< data is in utf8 format
 struct tag_xml {};            ///< data is in xml format
+
+// ----------------------------------------------------------------------------
+// ## unit related tag dispatchers
+struct tag_angle {};          ///< data is in angle format, like 10.00 deg or 10.00 rad
+struct tag_area {};           ///< data is in area format, like 10.00 m² or 10.00 ft²
+struct tag_currency{};        ///< data is in currency format, like 10.00 EUR or 10.00 USD
+struct tag_energy {};         ///< data is in energy format, like 10.00 J or 10.00 kWh
+struct tag_frequency {};      ///< data is in frequency format, like 10.00 Hz or 10.00 kHz
+struct tag_length{};          ///< data is in length format, like 10.00 m or 10.00 ft
+struct tag_mass {};           ///< data is in mass format, like 10.00 g or 10.00 kg (alternative to weight)
+struct tag_percent {};        ///< data is in percent format, like 10% or 0.1
+struct tag_power {};          ///< data is in power format, like 10.00 W or 10.00 hp
+struct tag_pressure {};       ///< data is in pressure format, like 10.00 Pa or 10.00 psi
+struct tag_size {};           ///< data is in size format, like 10.00 MB or 10.00 GB
+struct tag_speed {};          ///< data is in speed format, like 10.00 km/h or 10.00 mph
+struct tag_temperature {};    ///< data is in temperature format, like 10.00 C or 10.00 F
+struct tag_time {};           ///< data is in time format, like 10.00 s or 10.00 min
+struct tag_volume {};         ///< data is in volume format, like 10.00 L or 10.00 gal
+struct tag_weight {};         ///< data is in weight format, like 10.00 kg or 10.00 lb
+
 
 // ----------------------------------------------------------------------------
 // ## operation related tag dispatchers
