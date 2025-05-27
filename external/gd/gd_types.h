@@ -108,7 +108,12 @@ struct tag_warning {};        ///< warning is used in some form
 struct tag_main_type {};      /// main type if there are secondary types
 struct tag_secondary_type {}; /// secondary type if there are main types
 
+struct tag_callback {};       ///< callback is used in some form, like a function pointer
+struct tag_constant {};       ///< constant is used in some form, like a fixed value
 struct tag_method {};         ///< method is used in some form
+struct tag_object {};         ///< object is used in some form, like an instance
+struct tag_parameter {};      ///< parameter is used in some form, like a function argument
+struct tag_pointer {};        ///< pointer is used in some form, like a memory address
 struct tag_property {};       ///< property is used in some form
 struct tag_variable {};       ///< variable is used in some form
 
@@ -135,6 +140,7 @@ struct tag_recursive {};      ///< stl std::recursive object is used in some for
 struct tag_ascii {};          ///< data is in ascii format
 struct tag_base32 {};         ///< data is in base32 format
 struct tag_base64 {};         ///< data is in base64 format
+struct tag_binary {};         ///< data is in binary format
 struct tag_csv {};            ///< data is in csv format
 struct tag_hex {};            ///< data is in hex format
 struct tag_json {};           ///< data is in json format
@@ -143,6 +149,7 @@ struct tag_uri {};            ///< data is in uri format (url encoded)
 struct tag_url {};            ///< data is in url format
 struct tag_utf8 {};           ///< data is in utf8 format
 struct tag_xml {};            ///< data is in xml format
+struct tag_yaml {};           ///< data is in YAML format
 
 // ----------------------------------------------------------------------------
 // ## unit related tag dispatchers
