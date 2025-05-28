@@ -54,6 +54,14 @@ _GD_TYPES_BEGIN
  */
 
 // ----------------------------------------------------------------------------
+// ## type related tag dispatchers
+struct tag_type_unsigned {};  ///< unsigned type, like uint8_t, uint16_t, uint32_t, uint64_t
+struct tag_type_signed {};    ///< signed type, like int8_t, int16_t, int32_t, int64_t
+struct tag_type_decimal {};   ///< number with decimals, like float or double
+struct tag_type_integer {};   ///< integer type, like int or long
+struct tag_type_number {};    ///< any number type, like int, float, double, etc
+
+// ----------------------------------------------------------------------------
 // ## state related tag dispatchers
 struct tag_state_active {};   ///< active state, like currently operational
 struct tag_state_canceled {}; ///< canceled state, like aborted or nullified
@@ -169,6 +177,14 @@ struct tag_temperature {};    ///< data is in temperature format, like 10.00 C o
 struct tag_time {};           ///< data is in time format, like 10.00 s or 10.00 min
 struct tag_volume {};         ///< data is in volume format, like 10.00 L or 10.00 gal
 struct tag_weight {};         ///< data is in weight format, like 10.00 kg or 10.00 lb
+
+// ----------------------------------------------------------------------------
+// ## layout related tag dispatchers
+struct tag_row_column {};     ///< row-column format, like Excel (rows horizontal, columns vertical)
+struct tag_column_row {};     ///< column-row format, transposed Excel-like layout
+struct tag_xy {};             ///< x-y ordering, like Cartesian coordinates (x horizontal, y vertical)
+struct tag_yx {};             ///< y-x ordering, transposed Cartesian coordinates
+
 
 
 // ----------------------------------------------------------------------------
