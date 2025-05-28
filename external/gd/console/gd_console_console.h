@@ -31,8 +31,11 @@ _GD_CONSOLE_BEGIN
 struct progress
 {
 // ## construction ------------------------------------------------------------
-   progress() {}
-   progress(unsigned uRow, unsigned uWidth, unsigned uMax): m_uRow(uRow), m_uColumn(0), m_uWidth(uWidth), m_uMax(uMax), m_uValue(0) { }
+   progress() : m_uRow(0), m_uColumn(0), m_uWidth(0), m_uMax(0), m_uValue(0) {}
+   progress(unsigned uRow, unsigned uColumn) : m_uRow(uRow), m_uColumn(uColumn), m_uWidth(0), m_uMax(0), m_uValue(0) {}
+   progress( const std::pair<unsigned, unsigned>& pairRC ): m_uRow(pairRC.first), m_uColumn(pairRC.second), m_uWidth(0), m_uMax(0), m_uValue(0) {}
+   progress(const std::pair<unsigned, unsigned>& pairRC, unsigned uWidth) : m_uRow(pairRC.first), m_uColumn(pairRC.second), m_uWidth(0), m_uMax(0), m_uValue(0) { set_width( uWidth ); }
+   progress(unsigned uRow, unsigned uColumn, unsigned uWidth): m_uRow(uRow), m_uColumn(uColumn), m_uWidth(0), m_uMax(0), m_uValue(0) { set_width( uWidth ); }
    progress(unsigned uRow, unsigned uColumn, unsigned uWidth, unsigned uMax): m_uRow(uRow), m_uColumn(uColumn), m_uWidth(uWidth), m_uMax(uMax), m_uValue(0) { }
    // copy
    progress(const progress& o) { common_construct(o); }
@@ -51,7 +54,7 @@ struct progress
 
 // ## methods -----------------------------------------------------------------
    void set_position(unsigned uRow, unsigned uColumn) { m_uRow = uRow; m_uColumn = uColumn; }
-   void set_position(const std::pair<unsigned, unsigned>& pair) { m_uRow = pair.first; m_uColumn = pair.second; }
+   void set_position(const std::pair<unsigned, unsigned>& pairRC) { m_uRow = pairRC.first; m_uColumn = pairRC.second; }
 
    void set_width(unsigned uWidth);
    void set_max(unsigned uMax) { assert(uMax > 0); m_uMax = uMax; }
@@ -192,6 +195,9 @@ public:
    //std::pair<bool, std::string> clear_screen();
    std::pair<bool, std::string> clear_line() { return clear_line_s(); }
 
+   /// read curcsor position in console
+   std::pair<bool, std::string> read_cursor_position() { return read_console_cursor_position_s(this); }
+
    /// Read text from the console at the specified position and length
    std::pair<bool, std::string> read_text(int iStartX, int iStartY, int iLength) { return read_text_s(iStartX, iStartY, iLength); }
 
@@ -225,6 +231,7 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
    static std::pair<bool, std::string> read_console_information_s( console* pconsole );
+   static std::pair<bool, std::string> read_console_cursor_position_s( console* pconsole );
    static std::pair<bool, std::tuple<int, int, int>> query_foreground_color_s();
    static std::pair<bool, std::tuple<int, int, int>> query_background_color_s();
 

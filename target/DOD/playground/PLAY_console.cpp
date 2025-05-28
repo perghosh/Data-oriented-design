@@ -56,11 +56,27 @@ TEST_CASE( "[console] get console information", "[console]" ) {
    console console_;
 
    auto result_ = console_.initialize();                                                           REQUIRE( result_.first );
-   progress progressBar;
-   progressBar.set_position( console_.yx( gd::types::tag_type_unsigned{}));
-   progressBar.set_width(50);
 
-   PrintProgressbar(50, progressBar, console_);
+   {
+      progress progressBar;
+      progressBar.set_position( console_.yx( gd::types::tag_type_unsigned{}));
+      progressBar.set_width(50);
+
+      PrintProgressbar(50, progressBar, console_);
+   }
+
+   {
+      console_.read_cursor_position();
+      progress progressBar( console_.yx( gd::types::tag_type_unsigned{}), 50 );
+      for(int i = 0; i <= 100; i += 1) {
+         progressBar.update(i, gd::types::tag_percent{});
+         std::string stringProgress = std::format("[{:3d}%] ", i);
+         progressBar.print_to( "[ ", "=", ">", " ]", stringProgress );
+         stringProgress += "\r";
+         console_.print( stringProgress );
+         std::this_thread::sleep_for(std::chrono::milliseconds(100)); // simulate work
+      }
+   }
 
 
    /*
