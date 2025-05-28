@@ -226,10 +226,87 @@ std::pair<bool, std::string> console::read_console_information_s( console* pcons
    // Restore terminal settings
    if(tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld) != 0) {return { false, "Failed to restore terminal attributes" }; }
 #endif
+  return { true, "" };
+}
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Reads and updates the console class cursor position.
+ *
+ * This function queries the underlying terminal or console for its current
+ * cursor position and updates the provided console object with these values.
+ * The implementation is platform-specific:
+ * - On Windows, it uses GetConsoleScreenBufferInfo to retrieve the cursor position.
+ * - On POSIX systems, it uses ANSI escape codes to query the cursor position.
+ *
+ * @param pconsole Pointer to the console object to update.
+ * @return A pair where the first element is true on success, false on failure.
+ *         The second element contains an error message if the operation failed.
+ */
+std::pair<bool, std::string> console::read_console_cursor_position_s( console* pconsole )
+{                                                                                                  assert( pconsole != nullptr );
+#ifdef _WIN32
+   // Windows implementation
+   HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE); // Get the console handle
+   if(hConsole == INVALID_HANDLE_VALUE) { return { false, "Failed to get console handle" }; }
+   CONSOLE_SCREEN_BUFFER_INFO csbi_;
+   if(GetConsoleScreenBufferInfo(hConsole, &csbi_) != 0 ) 
+   {
+      int iCursorX = csbi_.dwCursorPosition.X;
+      int iCursorY = csbi_.dwCursorPosition.Y;
+      pconsole->set_xy(iCursorX, iCursorY);
+   } 
+   else { return { false, "Failed to get console screen buffer info" }; }
+#else
+   // POSIX implementation (Linux, macOS, etc.)
+   struct termios termiosOld, termiosNew;
+
+   // ## Save current terminal settings
+   if(tcgetattr(STDIN_FILENO, &termiosOld) != 0) { return { false, "Failed to get terminal attributes" }; }
+
+   // ## Set terminal to raw mode for reading cursor position
+   termiosNew = termiosOld;
+   termiosNew.c_lflag &= ~(ICANON | ECHO);
+   if(tcsetattr(STDIN_FILENO, TCSANOW, &termiosNew) != 0) { return { false, "Failed to set terminal attributes" }; }
+
+   // Query cursor position
+   char piBuffer[32] = { 0 }; // Buffer for cursor position response
+   unsigned int uX = 0, uY = 0;
+
+   if(write(STDOUT_FILENO, "\033[6n", 4) == 4)                                 // Send cursor position query
+   {
+      ssize_t uBytesRead = read(STDIN_FILENO, piBuffer, sizeof(piBuffer) - 1); // Read response
+      if(uBytesRead > 0) 
+      {
+         piBuffer[uBytesRead] = '\0';
+         if(sscanf(piBuffer, "\033[%u;%uR", &uY, &uX) == 2) { pconsole->set_xy(uX - 1, uY - 1); } // Adjust for 0-based indexing 
+         else 
+         {  // Restore terminal settings before returning error
+            tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld);
+            return { false, "Failed to parse cursor position response" };
+         }
+      } 
+      else 
+      {
+         // Restore terminal settings before returning error
+         tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld);
+         return { false, "Failed to read cursor position response" };
+      }
+   } 
+   else 
+   {
+      // Restore terminal settings before returning error
+      tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld);
+      return { false, "Failed to send cursor position query" };
+   }
+
+   // Restore terminal settings
+   if(tcsetattr(STDIN_FILENO, TCSANOW, &termiosOld) != 0) {return { false, "Failed to restore terminal attributes" }; }
+#endif
 
    return { true, "" };
 }
+
 
 /// Query actual console foreground color (from terminal/console)
 std::pair<bool, std::tuple<int, int, int>> console::query_foreground_color_s()
