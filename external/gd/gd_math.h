@@ -9,6 +9,7 @@
 
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -112,7 +113,7 @@ struct point
    /// Subtract value from y coordinate only, keeping x unchanged
    point<TYPE>& sub_y(const TYPE& value_) { m_y -= value_; return *this; }
 
-   /// Calculate squared Euclidean distance: d² = (x2-x1)² + (y2-y1)². Faster than distance() since no sqrt
+   /// Calculate squared Euclidean distance: dï¿½ = (x2-x1)ï¿½ + (y2-y1)ï¿½. Faster than distance() since no sqrt
    constexpr TYPE distance_squared(const point<TYPE>& pointOther) const noexcept {
       TYPE dx_ = m_x - pointOther.m_x;
       TYPE dy_ = m_y - pointOther.m_y;
