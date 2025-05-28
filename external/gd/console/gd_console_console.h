@@ -11,6 +11,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "../gd_types.h"
 #include "../gd_math.h"
 
 
@@ -49,13 +50,29 @@ struct progress
    }
 
 // ## methods -----------------------------------------------------------------
+   void set_position(unsigned uRow, unsigned uColumn) { m_uRow = uRow; m_uColumn = uColumn; }
+   void set_position(const std::pair<unsigned, unsigned>& pair) { m_uRow = pair.first; m_uColumn = pair.second; }
+
+   void set_width(unsigned uWidth);
+   void set_max(unsigned uMax) { assert(uMax > 0); m_uMax = uMax; }
+
+   unsigned get_row() const { return m_uRow; }
+   unsigned row() const { return m_uRow; }
+   unsigned get_column() const { return m_uColumn; }
+   unsigned column() const { return m_uColumn; }
+
+   unsigned get_width() const { return m_uWidth; }
+
    gd::math::algebra::point<unsigned> first() const { return { m_uColumn, m_uRow }; }
    gd::math::algebra::point<unsigned> position() const { return { m_uValue, m_uRow }; }
    gd::math::algebra::point<unsigned> last() const { return { m_uMax, m_uRow }; }
 
    void reset() { m_uValue = 0; }
    void update(unsigned uValue) { assert(uValue <= m_uMax); m_uValue = uValue; }
+   void update( unsigned uValue, gd::types::tag_percent);
    void complete() { m_uValue = m_uMax; }
+
+   void print_to(const std::string& stringLeft, const std::string& stringFill, const std::string& stringPointer, const std::string& stringRight, std::string& stringBar) const;
 
 /** \name DEBUG
 *///@{
@@ -73,6 +90,18 @@ struct progress
 // ## free functions ----------------------------------------------------------
 
 };
+
+/// Set progress bar width and adjust max if necessary
+inline void progress::set_width(unsigned uWidth) { 
+   m_uWidth = uWidth; 
+   m_uMax = m_uMax < m_uWidth ? uWidth : m_uMax; 
+}
+
+/// Updates the progress value based on a percentage
+inline void progress::update( unsigned uValue, gd::types::tag_percent) {                           assert(uValue <= 100);
+   m_uValue = (m_uMax * uValue) / 100; // Convert percentage to value based on max
+}
+
 
 
 /**
@@ -125,9 +154,13 @@ public:
 /** \name GET/SET
 *///@{
    std::pair<int, int> xy() const { return { m_iCursorX, m_iCursorY }; }
+   std::pair<int, int> yx() const { return { m_iCursorY, m_iCursorX }; }
+   std::pair<unsigned, unsigned> yx( gd::types::tag_type_unsigned ) const { return { (unsigned)m_iCursorY, (unsigned)m_iCursorX }; }
+   
 
    void set_size(int iWidth, int iHeight);
    void set_xy(int iX, int iY);
+   void set_row_column(int iRow, int iColumn) { set_xy(iColumn, iRow); }
    void set_buffer_size(int iBufferWidth, int iBufferHeight);
 
 //@}
@@ -137,9 +170,13 @@ public:
    std::pair<bool, std::string> initialize();
 
    /// set cursor position in console
-   std::pair<bool, std::string> move_to(int iX, int iY);
+   std::pair<bool, std::string> move_to(int iRow, int iColumn);
+   std::pair<bool, std::string> move_to(auto row_, auto column_, gd::types::tag_row_column) { return move_to( (int)row_, (int)column_ ); }
+   std::pair<bool, std::string> move_to(auto column_, auto row_, gd::types::tag_column_row) { return move_to( (int)row_, (int)column_ ); }
 
    void print( const gd::math::algebra::point<unsigned>& point_, std::string_view stringText );
+   /// Prints text using stringstream
+   void print( const std::string& stringText );
 
    std::pair<bool, std::tuple<int, int, int>> query_foreground_color() const { return query_foreground_color_s(); }
    std::pair<bool, std::tuple<int, int, int>> query_background_color() const { return query_background_color_s(); }

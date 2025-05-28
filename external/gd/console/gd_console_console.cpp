@@ -3,8 +3,8 @@
 */
 
 
-#include <iostream>
 #include <cstring>
+#include <iostream>
 
 #ifdef _WIN32
 #  include <windows.h>
@@ -19,6 +19,25 @@
 #include "gd_console_console.h"
 
 _GD_CONSOLE_BEGIN
+
+
+// Add this method to the gd::console::progress class
+void progress::print_to(const std::string& stringLeft, const std::string& stringFill, const std::string& stringPointer, const std::string& stringRight, std::string& stringBar) const 
+{
+   // Example: [=====>     ]
+   //unsigned percent = this->percent(); // assuming percent() returns 0-100
+   unsigned uWidth = get_width();
+   //unsigned pos = (percent * bar_width) / 100;
+
+   stringBar += stringLeft;
+   for( unsigned u = 0; u < uWidth; ++u ) 
+   {
+      if(u < m_uValue) { stringBar += stringFill; }
+      else if(u == m_uValue) { stringBar += stringPointer; }
+      else stringBar += " ";
+   }
+   stringBar += stringRight;
+}
 
 
 std::pair<bool, std::string> console::initialize() 
@@ -46,18 +65,15 @@ void console::set_background_color(int iRed, int iGreen, int iBlue)
 }
 
 
-std::pair<bool, std::string> console::move_to(int iX, int iY)
+std::pair<bool, std::string> console::move_to(int iRow, int iColumn)
 {
    // Validate coordinates
-   if(iX < 0 || iY < 0) 
-   {
-      return { false, "Invalid coordinates: negative values not allowed" };
-   }
+   if(iRow < 0 || iColumn < 0) { return { false, "Invalid coordinates: negative values not allowed" }; }
 
    // If console dimensions are known, validate bounds
    if(m_iWidth > 0 && m_iHeight > 0) 
    {
-      if(iX >= m_iWidth || iY >= m_iHeight) { return { false, "Coordinates out of console bounds" }; }
+      if(iColumn >= m_iWidth || iRow >= m_iHeight) { return { false, "Coordinates out of console bounds" }; }
    }
 
 #ifdef _WIN32
@@ -69,13 +85,12 @@ std::pair<bool, std::string> console::move_to(int iX, int iY)
    }
 
    COORD coord_;
-   coord_.X = static_cast<SHORT>(iX);
-   coord_.Y = static_cast<SHORT>(iY);
+   coord_.X = static_cast<SHORT>(iColumn);
+   coord_.Y = static_cast<SHORT>(iRow);
 
    if( ::SetConsoleCursorPosition(hConsole, coord_) ) 
    {
-      // Update internal state
-      set_xy(iX, iY);
+      set_xy(iColumn, iRow);                                                  // Update internal state
    } 
    else { return { false, "Failed to set cursor position" }; }
 #else
@@ -83,7 +98,7 @@ std::pair<bool, std::string> console::move_to(int iX, int iY)
    // Use ANSI escape sequence to set cursor position
    // Note: ANSI coordinates are 1-based, so we add 1 to our 0-based coordinates
    char piBuffer[32];
-   int iLength = snprintf(piBuffer, sizeof(piBuffer), "\033[%d;%dH", iY + 1, iX + 1);
+   int iLength = snprintf(piBuffer, sizeof(piBuffer), "\033[%d;%dH", iRow + 1, iColumn + 1);
 
    if(iLength < 0 || iLength >= static_cast<int>(sizeof(piBuffer))) { return { false, "Failed to format escape sequence" }; }
 
@@ -91,7 +106,7 @@ std::pair<bool, std::string> console::move_to(int iX, int iY)
    if(uBytesWritten == iLength) 
    {
       // Update internal state
-      set_xy(iX, iY);
+      set_xy(iColumn, iRow);
       // Flush output to ensure cursor position is immediately updated
       if(fsync(STDOUT_FILENO) == 0 || errno == EINVAL) { return { true, "" }; } 
       else { return { false, "Failed to flush output" }; }
@@ -108,10 +123,32 @@ void console::print( const gd::math::algebra::point<unsigned>& point_, std::stri
    std::cout << stringText;
 }
 
-
-std::pair<bool, std::string> console::read_console_information_s( console* pconsole )
+void console::print( const std::string& stringText )
 {
+   std::cout << stringText;
+   // Flush output to ensure immediate display
+   std::cout.flush();
+}
 
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Reads and updates the console's size, buffer size, and cursor position.
+ *
+ * This function queries the underlying terminal or console for its current
+ * dimensions (width and height), buffer size, and the current cursor position.
+ * It updates the provided console object with these values. The implementation
+ * is platform-specific:
+ * - On Windows, it uses GetConsoleScreenBufferInfo to retrieve the information.
+ * - On POSIX systems, it uses ioctl to get the window size and ANSI escape
+ *   codes to query the cursor position.
+ *
+ * @param pconsole Pointer to the console object to update.
+ * @return A pair where the first element is true on success, false on failure.
+ *         The second element contains an error message if the operation failed.
+ */
+std::pair<bool, std::string> console::read_console_information_s( console* pconsole )
+{                                                                                                  assert( pconsole != nullptr );
 #ifdef _WIN32
    // Windows implementation
    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);

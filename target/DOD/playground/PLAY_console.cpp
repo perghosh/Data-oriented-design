@@ -1,3 +1,4 @@
+#include <format>
 #include <thread>
 
 #include "gd/gd_utf8.h"
@@ -20,12 +21,49 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+void PrintProgressbar( unsigned uPercent, gd::console::progress& progress_, gd::console::console& console_ ) 
+{
+   //console_.move_to( progress_.row(), progress_.column(), gd::types::tag_row_column{});
+
+
+   std::string stringProgress = std::format("[{:3d}%] ", uPercent);
+
+   progress_.update(uPercent, gd::types::tag_percent{});
+
+   progress_.print_to( "[ ", "=", ">", " ]", stringProgress );
+   console_.print( stringProgress);
+
+   std::cout << std::endl;
+
+/*
+   int barWidth = 70;
+   float progress = (float)i / total;
+   std::cout << "[ ";
+   int pos = barWidth * progress;
+   for (int j = 0; j < barWidth; ++j) {
+      if (j < pos) std::cout << "=";
+      else if (j == pos) std::cout << ">";
+      else std::cout << " ";
+   }
+   std::cout << " ] " << int(progress * 100.0) << " %\r";
+   std::cout.flush();
+   */
+}
+
 
 TEST_CASE( "[console] get console information", "[console]" ) {
-   gd::console::console console_;
+   using namespace gd::console;
+   console console_;
 
    auto result_ = console_.initialize();                                                           REQUIRE( result_.first );
+   progress progressBar;
+   progressBar.set_position( console_.yx( gd::types::tag_type_unsigned{}));
+   progressBar.set_width(50);
 
+   PrintProgressbar(50, progressBar, console_);
+
+
+   /*
    auto color_ = console_.query_foreground_color();
 
    console_.move_to( 10, 5 );
@@ -35,30 +73,34 @@ TEST_CASE( "[console] get console information", "[console]" ) {
    std::cout << "XXXXXXXXX\n";
    console_.set_foreground_color( color_.second );
    std::cout << "XXXXXXXXX\n";
+   */
 }
 
 TEST_CASE( "[console] progressbar", "[console]" ) {
+   /*
    using namespace gd::console;
    console console_;
    auto result_ = console_.initialize();                                                           REQUIRE( result_.first );
    auto color_ = console_.query_foreground_color();
 
-   progress progressBar(5, 100, 100);
-   progressBar.update( 20 );
+   {
+      progress progressBar(5, 100, 100);
+      progressBar.update( 20 );
 
-   gd::math::algebra::point<unsigned> positionOffsetLeft(3u, 0u);
+      gd::math::algebra::point<unsigned> positionOffsetLeft(3u, 0u);
 
-   // simulate incrementing the progress bar
-   for (int i = 0; i <= 100; i += 1) {
-      progressBar.update(i);
-      console_.print( progressBar.position(), "X" );
+      // simulate incrementing the progress bar
+      for (int i = 0; i <= 100; i += 1) {
+         progressBar.update(i);
+         console_.print( progressBar.position(), "X" );
 
-      if( i > 3 ) { console_.print( progressBar.position() - positionOffsetLeft, "O"); }
+         if( i > 3 ) { console_.print( progressBar.position() - positionOffsetLeft, "O"); }
       
-      std::this_thread::sleep_for(std::chrono::milliseconds(100)); // simulate work
+         std::this_thread::sleep_for(std::chrono::milliseconds(100)); // simulate work
+      }
    }
 
-
+   */
 
 }
 
