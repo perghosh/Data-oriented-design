@@ -179,8 +179,23 @@ std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
    char piBuffer[1024]; // buffer used to check if file is binary or not
    std::vector<uint64_t> vectorRemoveRow;
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
+
+   uint64_t uFileIndex = 0; // index for file table
+   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
+
    for( uint64_t uRow = 0, uRowCount = ptableFile->size(); uRow < uRowCount; uRow++ )
    {
+      uFileIndex++;                                                            // increment file index for each file, used for progress message
+
+      // ## calculate percentage for progress message
+
+      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
+      {
+         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
+         MESSAGE_Progress( "", {{"percent", uPercent}, {"sticky", true} });
+      }
+
+
       // ## generate full file path
 
       auto stringFilename = ptableFile->cell_get_variant_view(uRow, "filename").as_string_view();
@@ -211,6 +226,8 @@ std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
    {
       ptableFile->erase(vectorRemoveRow);
    }
+
+   MESSAGE_Progress("", {{"clear", true}});
 
    return { true, "" };
 }
@@ -250,8 +267,13 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
    auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
    auto* ptableFileCount = CACHE_Get("file-count");                                                assert( ptableFileCount != nullptr );
 
+   uint64_t uFileIndex = 0; // index for file table
+   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
+
    for( const auto& itRowFile : *ptableFile )
    {
+      uFileIndex++;                                                            // increment file index for each file, used for progress message
+
       int64_t iRowIndexCount = -1;
       uint64_t uFileKey = itRowFile.cell_get_variant_view("key");
       for( auto itRowCount = ptableFileCount->begin(); itRowCount != ptableFileCount->end(); ++itRowCount )
@@ -278,8 +300,14 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
       pathFile += string_;
       std::string stringFile = pathFile.string();
 
-      MESSAGE_Progress( stringFile );
+      // ## calculate percentage for progress message
 
+      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
+      {
+         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
+         MESSAGE_Progress( "", {{"percent", uPercent}, {"sticky", true} });
+      }
+      
       gd::argument::shared::arguments argumentsResult;
 
       auto result_ = COMMAND_CollectFileStatistics( {{"source", stringFile} }, argumentsResult);

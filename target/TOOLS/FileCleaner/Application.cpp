@@ -489,6 +489,8 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
 {
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutex );
 
+   
+
    constexpr size_t uMaxLength = 100; // Maximum length for the message
    enumUIType eUIType = m_eUIType; // Get the UI type from the application instance
    std::string stringPrint( stringMessage );
@@ -509,11 +511,49 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
       eUIType = GetUITypeFromString_s( stringUIType );
    }
 
+   if( eUIType == eUITypeUnknown ) { eUIType = eUITypeConsole; } // Fallback to console if UI type is unknown
+
    switch(eUIType)
    {
-   case eUITypeConsole:
-      std::cout << "\r" << stringPrint;
-      break;
+   case eUITypeConsole: 
+   {
+      if( argumentsFormat.empty() == false )
+      {
+         if( m_console.empty() == true )
+         {
+            auto result_ = m_console.initialize();                             // Initialize console
+            if( result_.first == false ) return result_;
+         }
+
+         // ## Print progress to console
+         if( argumentsFormat.exists("percent") == true )                       // print progress with percentage
+         {
+            unsigned uPercent = argumentsFormat["percent"].as_uint();
+            std::string stringProgress = std::format("[{:3d}%] ", uPercent);
+
+            unsigned uWidth = 80; // Width of the progress bar
+            if( (unsigned)m_console.get_width() < uWidth ) uWidth = (unsigned)m_console.get_width(); // Adjust width to console size
+
+            gd::console::progress progressBar( m_console.yx( gd::types::tag_type_unsigned{}), 80 );
+
+            progressBar.update(uPercent, gd::types::tag_percent{});
+            progressBar.print_to( "[ ", "=", ">", " ]", stringProgress );
+            m_console.print( stringProgress );
+
+            if( argumentsFormat.exists("sticky") == true ) { std::cout << "\r"; } // If "sticky" argument is present, keep the cursor on the same line
+         }
+         else if( argumentsFormat.exists("clear") == true )
+         {
+            m_console.clear_line();                                            // Clear the current line in the console
+         }
+         
+      }
+      else
+      {
+         std::cout << stringPrint;
+      }
+   }
+   break;
    case eUITypeWeb:
       // Implement web output logic here
       // e.g., send message to web UI log
@@ -1126,6 +1166,14 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( "version", "Print version" );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+}
+
+// ----------------------------------------------------------------------------
+/// @brief Prepare console for command line usage
+std::pair<bool, std::string> CApplication::Prepare_s(gd::console::console* pconsole)
+{
+   auto result_ = pconsole->initialize();
+   return result_;
 }
 
 // ----------------------------------------------------------------------------
