@@ -27,6 +27,8 @@
 #include "gd/gd_log_logger_printer.h"
 #include "gd/gd_log_logger_define.h"
 
+#include "gd/console/gd_console_console.h"
+
 
 #include "application/database/Metadata_Statements.h"
 #include "Document.h"
@@ -232,6 +234,8 @@ public:
    std::shared_mutex m_sharedmutexError;        ///< mutex used to manage errors in threaded environment
    std::vector< gd::argument::arguments > m_vectorError; ///< vector storing internal errors
 
+   gd::console::console m_console; ///< console used for printing formated messages to user
+
 // ## free functions ------------------------------------------------------------
 public:
    // ## Constants
@@ -242,6 +246,8 @@ public:
 
    /// Prepare options for application, options are used to parse command-line arguments
    static void Prepare_s( gd::cli::options& optionsApplication );
+   /// Prepare console for application, console is used to print messages to user
+   static std::pair<bool, std::string> Prepare_s( gd::console::console* pconsole );
    /// Prepare logging for application.
    static void PrepareLogging_s();
    /// Prepare state used to investigate source files

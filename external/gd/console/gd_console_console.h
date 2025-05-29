@@ -160,6 +160,8 @@ public:
    std::pair<int, int> yx() const { return { m_iCursorY, m_iCursorX }; }
    std::pair<unsigned, unsigned> yx( gd::types::tag_type_unsigned ) const { return { (unsigned)m_iCursorY, (unsigned)m_iCursorX }; }
    
+   int get_width() const { return m_iWidth; }
+   int get_height() const { return m_iHeight; }
 
    void set_size(int iWidth, int iHeight);
    void set_xy(int iX, int iY);
@@ -200,6 +202,9 @@ public:
 
    /// Read text from the console at the specified position and length
    std::pair<bool, std::string> read_text(int iStartX, int iStartY, int iLength) { return read_text_s(iStartX, iStartY, iLength); }
+
+   /// check if the console is empty (width or height <= 0)
+   bool empty() const { return m_iWidth <= 0 || m_iHeight <= 0; }
 
 
 //@}
