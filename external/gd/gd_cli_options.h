@@ -301,6 +301,7 @@ public:
    /// empty is same as no arguments values added
    bool empty() const noexcept { return m_argumentsValue.empty(); }
 
+   void clear(const std::string_view& stringName) { m_argumentsValue.remove(stringName); }
    /// remove values in options
    void clear() { m_argumentsValue.clear(); }
    /// remove all values, also from sub options

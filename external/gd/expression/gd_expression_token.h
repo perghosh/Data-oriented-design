@@ -44,6 +44,9 @@ enum enumTokenType
    eTokenTypeLabel           = 11,
    eTokenTypeMember          = 12,
    eTokenTypeEnd             = 13,
+
+   eTokenTypeBlock           = 14,
+   eTokenTypeStatement       = 15,
 };
 
 
@@ -52,17 +55,18 @@ enum enumKeyword
 {
    eKeywordIf                = 0x0001,
    eKeywordElse              = 0x0002,
-   eKeywordWhile             = 0x0003,
-   eKeywordFor               = 0x0004,
-   eKeywordSwitch            = 0x0005,
-   eKeywordDo                = 0x0006,
-   eKeywordReturn            = 0x0007,
-   eKeywordBreak             = 0x0008,
-   eKeywordContinue          = 0x0009,
-   eKeywordCase              = 0x000A,
-   eKeywordDefault           = 0x000B,
-   eKeywordGoto              = 0x000C,
-   eKeywordThis              = 0x000D,
+   eKeywordElseIf            = 0x0003,
+   eKeywordWhile             = 0x0004,
+   eKeywordFor               = 0x0005,
+   eKeywordSwitch            = 0x0006,
+   eKeywordDo                = 0x0007,
+   eKeywordReturn            = 0x0008,
+   eKeywordBreak             = 0x0009,
+   eKeywordContinue          = 0x000A,
+   eKeywordCase              = 0x000B,
+   eKeywordDefault           = 0x000C,
+   eKeywordGoto              = 0x000D,
+   eKeywordThis              = 0x000E,
 
    eKeywordBegin             = 0x0010,
    eKeywordEnd               = 0x0011,
