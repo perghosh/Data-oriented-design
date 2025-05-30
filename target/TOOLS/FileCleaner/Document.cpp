@@ -1232,7 +1232,7 @@ void CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_, std::strin
    {
       // combine all columns into one row
       std::string stringRow;
-      for( unsigned uColumn = 0; uColumn < uColumnCount; uColumn++ )
+      for( unsigned uColumn = 0; uColumn < (uColumnCount - 1); uColumn++ )
       {
          if( uColumn != 0 ) stringRow += "\t"; // add tab between columns
          auto stringColumn = itRow.cell_get_variant_view(uColumn).as_string();

@@ -237,6 +237,12 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       return { true, "" };
    }
 
+   if( optionsApplication.exists("filter") == true )               // if filter is set
+   {
+      std::string stringFilter = optionsApplication["filter"].as_string();
+      if( stringFilter == "*" ) optionsApplication.clear("filter"); // if filter is "*", clear it
+   }
+
    /// ## prepare command
 
 #ifndef NDEBUG
@@ -343,7 +349,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "version" )
    {
-      std::cout << "version 0.9.6" << "\n";
+      std::cout << "version 0.9.7" << "\n";
    }
    else
    {
@@ -1077,9 +1083,9 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    {  // ## `copy` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );
-      optionsCommand.add({ "source", 's', "File/folders to count lines in"});
-      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
+      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
+      optionsCommand.add({ "source", 's', "File/folders to count lines in"});
       //optionsCommand.add({ "comment", "Pair of characters marking start and end for comments"});
       //optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
 
@@ -1145,10 +1151,10 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    // ## 'list' list rows with specified patterns
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "list rows with specified patterns" );
-      optionsCommand.add({ "source", 's', "File/folders where to search for patterns in"});
-      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
-      optionsCommand.add({ "rpattern", "regular expression pattern to search for"});
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
+      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
+      optionsCommand.add({ "source", 's', "File/folders where to search for patterns in"});
+      optionsCommand.add({ "rpattern", "regular expression pattern to search for"});
       optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
       optionsCommand.add({ "max", "Max list count to avoid too many hits"});
       optionsCommand.add({ "segment", "type of segment in code to searh in"});
@@ -1463,7 +1469,7 @@ void CApplication::PathPrepare_s(std::string& stringPath)
    }
    else
    {
-      if( stringPath.empty() )                                                // no path ?
+      if( stringPath.empty() || stringPath == "." )                           // no path ?
       {
          std::filesystem::path pathFile = std::filesystem::current_path();    // take current working directory
          stringPath = pathFile.string();
