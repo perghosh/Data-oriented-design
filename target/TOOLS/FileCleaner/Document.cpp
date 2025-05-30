@@ -192,7 +192,7 @@ std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
       if( uFileIndex % 10 == 0 ) // show progress message every 10 files
       {
          uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
-         MESSAGE_Progress( "", {{"percent", uPercent}, {"sticky", true} });
+         MESSAGE_Progress("", { {"percent", uPercent}, {"label", "Scan files"}, {"sticky", true} });
       }
 
 
@@ -202,23 +202,31 @@ std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
       auto stringFolder = ptableFile->cell_get_variant_view(uRow, "folder").as_string_view();
       gd::file::path pathFile(stringFolder);
       pathFile += stringFilename;
-    
-      std::string stringFile = pathFile.string();
-      if( std::filesystem::is_regular_file(stringFile) == false ) { vectorRemoveRow.push_back(uRow); }
-      else
-      {
-         // ## open file and check if it is a text file
 
-         // Open filenn and read 1024 bytes into buffer
-         std::ifstream file_(stringFile, std::ios::binary);
-         if( file_.is_open() == false ) { vectorRemoveRow.push_back(uRow); continue; }
-         file_.read(piBuffer, sizeof(piBuffer));
-         auto uSize = file_.gcount();
-         file_.close();
-         if( uSize == 0 ) { vectorRemoveRow.push_back(uRow); continue; }
-         // Check if file is binary
-         bool bIsText = gd::utf8::is_text( piBuffer, uSize );
-         if( bIsText == false ) { vectorRemoveRow.push_back(uRow); continue; }
+      
+      std::string stringExtension = pathFile.extension().string();
+
+      bool bIsText = CApplication::IsTextFile_s(stringExtension); // Check if file is text or binary based on extension
+    
+      if( bIsText == false )
+      {
+         std::string stringFile = pathFile.string();
+         if( std::filesystem::is_regular_file(stringFile) == false ) { vectorRemoveRow.push_back(uRow); }
+         else
+         {
+            // ## open file and check if it is a text file
+
+            // Open filenn and read 1024 bytes into buffer
+            std::ifstream file_(stringFile, std::ios::binary);
+            if( file_.is_open() == false ) { vectorRemoveRow.push_back(uRow); continue; }
+            file_.read(piBuffer, sizeof(piBuffer));
+            auto uSize = file_.gcount();
+            file_.close();
+            if( uSize == 0 ) { vectorRemoveRow.push_back(uRow); continue; }
+            // Check if file is binary
+            bIsText = gd::utf8::is_text( piBuffer, uSize );
+            if( bIsText == false ) { vectorRemoveRow.push_back(uRow); continue; }
+         }
       }
    }
 
@@ -305,7 +313,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
       if( uFileIndex % 10 == 0 ) // show progress message every 10 files
       {
          uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
-         MESSAGE_Progress( "", {{"percent", uPercent}, {"sticky", true} });
+         MESSAGE_Progress( "", {{"percent", uPercent}, {"label", "Scan files"}, {"sticky", true} });
       }
       
       gd::argument::shared::arguments argumentsResult;
@@ -447,17 +455,27 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    std::string_view stringState;
    if( argumentsList.exists("state") == true ) { stringState = argumentsList["state"].as_string_view(); } // Get the state (code, comment, string) to search in
 
+   uint64_t uFileIndex = 0; // index for file table
+   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
    uint64_t uMax = argumentsList["max"].as_uint64(); // Get the maximum number of lines to be printed
 
    for(const auto& itRowFile : *ptableFile)
    {
+      // ## calculate percentage for progress message
+
+      uFileIndex++;                                                            // increment file index for each file, used for progress message
+      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
+      {
+         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
+         MESSAGE_Progress( "", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true} });
+      }
+
       // ## Generate the full file path (folder + filename)
       auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
       gd::file::path pathFile(string_);
       string_ = itRowFile.cell_get_variant_view("filename").as_string();
       pathFile += string_;
       std::string stringFile = pathFile.string();
-      MESSAGE_Progress( stringFile );
 
       auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
 
@@ -487,16 +505,26 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
    std::string_view stringState;
    if( argumentsList.exists("state") == true ) { stringState = argumentsList["state"].as_string_view(); } // Get the state (code, comment, string) to search in
 
+   uint64_t uFileIndex = 0; // index for file table
+   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
    uint64_t uMax = argumentsList["max"].as_uint64(); // Get the maximum number of lines to be printed
    for(const auto& itRowFile : *ptableFile)
    {
+      // ## calculate percentage for progress message
+
+      uFileIndex++;                                                            // increment file index for each file, used for progress message
+      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
+      {
+         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
+         MESSAGE_Progress( "", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true} });
+      }
+
       // ## Generate the full file path (folder + filename)
       auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
       gd::file::path pathFile(string_);
       string_ = itRowFile.cell_get_variant_view("filename").as_string();
       pathFile += string_;
       std::string stringFile = pathFile.string();
-      MESSAGE_Progress( stringFile );
 
       auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
 
@@ -1075,7 +1103,7 @@ gd::table::dto::table CDocument::RESULT_PatternCount()
  *  
  * @note The editor type (e.g., Visual Studio or VSCode) is currently hardcoded but can be retrieved from application settings in the future.  
  */  
-gd::table::dto::table CDocument::RESULT_PatternLineList()
+gd::table::dto::table CDocument::RESULT_PatternLineList( size_t uPatternCount )
 {
    enum enumEditor { eVisualStudio, eVSCode, eSublime };
    using namespace gd::table::dto;
@@ -1143,11 +1171,16 @@ gd::table::dto::table CDocument::RESULT_PatternLineList()
          stringFile += " - [";
       }
 
-      stringFile += ptableLineList->cell_get_variant_view(uRow, "pattern").as_string();
-      stringFile += "] - ";
+      // ## If more than one pattern that is searched for then add pattern to string
+      if( uPatternCount > 1 )
+      {
+         stringFile += ptableLineList->cell_get_variant_view(uRow, "pattern").as_string();
+         stringFile += "] - [";
+      }
 
       std::string stringLine = ptableLineList->cell_get_variant_view(uRow, "line").as_string();
       if( stringLine.length() > 120 ) stringLine = stringLine.substr(0, 120) + "..."; // limit line length to 120 characters  
+      stringLine += "]";                                                       // close line with ]
 
       stringFile += stringLine;
 

@@ -11,6 +11,7 @@
 
 #include <filesystem>
 #include <format>
+#include <set>
 #include <thread>
 
 #include "pugixml/pugixml.hpp"
@@ -490,8 +491,10 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutex );
 
    
-
    constexpr size_t uMaxLength = 100; // Maximum length for the message
+   constexpr size_t uMIN_LENGTH_PROGRESS = 60; // Minimum length for the progress bar
+   constexpr size_t uMAX_LENGTH_PROGRESS = 120; // Maximum length for the progress bar
+
    enumUIType eUIType = m_eUIType; // Get the UI type from the application instance
    std::string stringPrint( stringMessage );
 
@@ -528,16 +531,29 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
          // ## Print progress to console
          if( argumentsFormat.exists("percent") == true )                       // print progress with percentage
          {
+            std::string stringProgress;
+
+            if( argumentsFormat.exists("label") == true )            // If "label" argument is present, use it
+            {
+               stringProgress = argumentsFormat["label"].as_string() + ": ";
+            }
+
             unsigned uPercent = argumentsFormat["percent"].as_uint();
-            std::string stringProgress = std::format("[{:3d}%] ", uPercent);
+            stringProgress += std::format("[{:3d}%] ", uPercent);
 
-            unsigned uWidth = 80; // Width of the progress bar
-            if( (unsigned)m_console.get_width() < uWidth ) uWidth = (unsigned)m_console.get_width(); // Adjust width to console size
 
-            gd::console::progress progressBar( m_console.yx( gd::types::tag_type_unsigned{}), 80 );
+            if( m_console.get_width() > uMIN_LENGTH_PROGRESS )
+            {
+               unsigned uWidth = 80; // Default width of the progress bar
+               if( m_console.get_width() < ( uWidth + stringProgress.length() - 5 ) ) uWidth = (unsigned)( m_console.get_width() - stringProgress.length() - 5 ); // Adjust width based on console size
+               if( (unsigned)m_console.get_width() < uWidth ) uWidth = (unsigned)m_console.get_width(); // Adjust width to console size
 
-            progressBar.update(uPercent, gd::types::tag_percent{});
-            progressBar.print_to( "[ ", "=", ">", " ]", stringProgress );
+               gd::console::progress progressBar( m_console.yx( gd::types::tag_type_unsigned{}), uWidth );
+
+               progressBar.update(uPercent, gd::types::tag_percent{});
+               progressBar.print_to( "[ ", "=", ">", " ]", stringProgress );
+            }
+
             m_console.print( stringProgress );
 
             if( argumentsFormat.exists("sticky") == true ) { std::cout << "\r"; } // If "sticky" argument is present, keep the cursor on the same line
@@ -1103,9 +1119,9 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    { // ## 'dir' command, list files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in directory" );
-      optionsCommand.add({ "source", 's', "Directory to list" });
-      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "filter", "Filter file extensions" });
+      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
+      optionsCommand.add({ "source", 's', "Directory to list" });
       optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32
@@ -1220,9 +1236,9 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
 
    if( stringExtension.length() < 2 ) return { false, "File extension is too short: " + stringExtension };
 
-   if( stringExtension[1] == 'c' || stringExtension[1] == 'h' )
+   if( stringExtension[1] == 'c' || stringExtension[1] == 'h' || stringExtension[1] == 'i' )
    {
-      if( stringExtension == ".cpp" || stringExtension == ".c" || stringExtension == ".cc" || stringExtension == ".cxx" || stringExtension == ".h" || stringExtension == ".hpp" || stringExtension == ".hxx" )
+      if( stringExtension == ".cpp" || stringExtension == ".c" || stringExtension == ".cc" || stringExtension == ".cxx" || stringExtension == ".h" || stringExtension == ".hpp" || stringExtension == ".hxx" || stringExtension == ".ipp" )
       {
          state_.add(std::string_view("LINECOMMENT"), "//", "\n");
          state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
@@ -1271,7 +1287,7 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
       state_.add(std::string_view("RAWSTRING"), "r#\"", "\"#");
       state_.add(std::string_view("RAWSTRING"), "r##\"", "\"##");
    }
-   else if( stringExtension == ".html" || stringExtension == ".xml" )
+   else if( stringExtension == ".html" || stringExtension == ".htm" || stringExtension == ".xml" )
    {
       state_.add(std::string_view("BLOCKCOMMENT"), "<!--", "-->");
       state_.add(std::string_view("STRING"), "\"", "\"");
@@ -1361,6 +1377,30 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
       state_.add(std::string_view("LINECOMMENT"), "\"", "\n");
       state_.add(std::string_view("STRING"), "\"", "\"", "\\");
       state_.add(std::string_view("STRING"), "\'", "\'", "\'");
+   }
+   else if( stringExtension == ".bat" || stringExtension == ".cmd" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "REM", "\n");
+      state_.add(std::string_view("LINECOMMENT"), "::", "\n");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+   }
+   else if( stringExtension == ".ps1" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "<#", "#>");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("STRING"), "\'", "\'");
+      state_.add(std::string_view("RAWSTRING"), "@\"", "\n\"@");
+   }
+   else if( stringExtension == ".mak" || stringExtension == ".makefile" || stringExtension == ".ninja" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+   }
+   else if( stringExtension == ".ini" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), ";", "\n");
+      state_.add(std::string_view("LINECOMMENT"), "#", "\n");
    }
    else if( stringExtension == ".txt" || stringExtension == ".md" )
    {
@@ -1699,6 +1739,31 @@ std::vector<std::string> CApplication::Split_s(const std::string& stringText, ch
    vectorResult = gd::utf8::split( stringText, iEffectiveDelimiter, gd::utf8::tag_string{});
 
    return vectorResult;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Checks if the provided file extension is a known text file type.
+ *
+ * This function checks if the given file extension matches any of the predefined text file extensions.
+ * It returns true if the extension is recognized as a text file, otherwise false.
+ *
+ * @param stringExtension The file extension to check, provided as a string_view.
+ * @return bool True if the extension is a known text file type, false otherwise.
+ */
+bool CApplication::IsTextFile_s(const std::string_view& stringExtension)
+{
+   // Check if the file extension is one of the known text file types
+   static const std::set<std::string_view> setTextFileExtension = 
+   {
+      ".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm", ".css", ".js", ".ts",
+      ".jsx", ".tsx", ".py", ".java", ".c", ".cpp", ".h", ".hpp", ".ipp", ".go",
+      ".cs", ".fs", ".kt", ".swift", ".rs", ".lua", ".php", ".rb",
+      ".pl", ".pm", ".sh", ".bash", ".yaml", ".yml", ".toml",
+      ".dart", ".clj", ".vim", ".bat", ".cmd", ".ps1",
+      ".mak", ".ninja", ".makefile", ".ini"
+   };
+
+   return setTextFileExtension.find(stringExtension) != setTextFileExtension.end();
 }
 
 

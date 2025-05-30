@@ -61,7 +61,8 @@ std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocum
  * @return A std::pair where the first element is a boolean indicating success (true) or failure (false), and the second element is a string containing an error message if the operation failed, or an empty string on success.
  */
 std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList, CDocument* pdocument)
-{                                                                                                  assert( poptionsList != nullptr );
+{                                                                                                  assert( poptionsList != nullptr ); assert( pdocument != nullptr );
+   size_t uSearchPatternCount = 0; // count of patterns to search for
    const gd::cli::options& options_ = *poptionsList;
    std::string stringSource = options_["source"].as_string();
    CApplication::PathPrepare_s(stringSource);                                 // if source is empty then set it to current path, otherwiss prepare it
@@ -93,7 +94,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    if( options_.exists("pattern") == true )
    {
       std::string stringPattern = options_["pattern"].as_string();
-      auto vectorPattern = CApplication::Split_s(stringPattern);                 // split pattern string into vector
+      auto vectorPattern = CApplication::Split_s(stringPattern);               // split pattern string into vector
+      uSearchPatternCount = vectorPattern.size();                              // count the number of patterns to search for
       result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
    }
@@ -101,6 +103,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    {
       std::string stringPattern = options_["rpattern"].as_string();
       std::vector<std::string> vectorPattern = CApplication::Split_s(stringPattern); // split pattern string into vector
+      uSearchPatternCount = vectorPattern.size(); // count the number of patterns to search for
       std::vector< std::pair<std::regex, std::string> > vectorRegexPatterns;   // vector of regex patterns and their string representation
       
       // ## convert string to regex and put it into vectorRegexPatterns
@@ -125,7 +128,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
 
    auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
 
-   auto tableResultLineList = pdocument->RESULT_PatternLineList();
+   auto tableResultLineList = pdocument->RESULT_PatternLineList( uSearchPatternCount );// generate the result table for pattern line list
 
 
    std::string stringOutput = options_["output"].as_string();
@@ -140,7 +143,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
          table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
 
-         stringCliTable = gd::table::to_string(table_, gd::table::tag_io_cli{});
+         stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
          pdocument->MESSAGE_Display( stringCliTable );
       }
       else
