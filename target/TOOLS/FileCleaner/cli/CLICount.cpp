@@ -91,6 +91,7 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    }
    else 
    {
+      // If no filter is specified, filter out binary files to avoid counting them. 
       result_ = pdocument->FILE_FilterBinaries();                                                  if( !result_.first ) { return result_; }
    }
 

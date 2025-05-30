@@ -69,6 +69,8 @@ struct tag_io_json {};
 struct tag_io_xml {};
 /// tag dispatcher used for command line interface
 struct tag_io_cli {};
+/// tag dispatcher used for raw formatting, this is used to write data without any formating, just as it is in table
+struct tag_io_raw {};
 /// tag dispatcher for uri formatting
 struct tag_io_uri {};
 /// tag dispatcher for sql formatting
@@ -347,6 +349,18 @@ inline std::string to_string( const table& table, tag_io_cli ) {
    to_string( table, 0, table.get_row_count(), vectorWidth, {}, stringResult, tag_io_cli{} );
    return stringResult;
 }
+
+// ## RAW IO ------------------------------------------------------------------
+
+void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_raw );
+
+/// convert table to string in grid format formated with proper column withds
+inline std::string to_string( const dto::table& table, tag_io_raw ) {
+   std::string stringResult;
+   to_string( table, 0, table.get_row_count(), {}, stringResult, tag_io_raw{} );
+   return stringResult;
+}
+
 
 // ## SQL IO ------------------------------------------------------------------
 

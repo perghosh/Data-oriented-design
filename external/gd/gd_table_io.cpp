@@ -970,6 +970,7 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
    stringOut += stringResult;
 }
 
+
 /** ---------------------------------------------------------------------------
 * @brief print table with nicer format, sutable for console printing
 * @param table table to print
@@ -1235,6 +1236,96 @@ void to_string( const dto::table& table, std::string& stringOut, const std::vect
    stringOut += stringColumns;
 }
 
+/// raw table to string conversion, used for CLI output
+template <typename TABLE>
+void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentOption, std::string& stringOut )
+{
+   if( argumentOption.exists("count") == true ) { uCount = argumentOption["count"].as_uint64(); }  // set max count if argument for count is found
+
+   unsigned uMax = (unsigned)-1;                // max column width
+   auto uEnd = uBegin + uCount;                 // last row to print to string
+   unsigned uColumnCount = table.get_column_count(); // number of columns in table
+   std::string stringHeader;                    // Column headers
+   std::string stringResult;                    // result string with table data
+   std::string stringValue;                     // value as string added to result
+   std::string stringColumnDivide("  ");        // Text to divied columns
+   std::vector<gd::variant_view> vectorValue;   // used to fetch values from table
+
+   bool bNr = argumentOption["nr"].is_true();   // should rows be numbered?
+   bool bRaw = true; // argumentOption["raw"].is_true(); // dont add quotes around text?
+
+   // ## Check for prepend string
+   if( argumentOption.exists("prepend") == true ) stringResult += argumentOption["prepend"].as_string();
+
+   // ## Print column names
+   {
+      unsigned uColumn = 0;
+      if( bNr == true ) 
+      { 
+         uColumnCount++;
+         stringHeader += "#";
+         stringHeader += stringColumnDivide;
+      };
+
+      for( ;uColumn < uColumnCount; uColumn++ )
+      {
+         std::string stringName( table.column_get_name(uColumn) );
+         stringHeader += stringName;
+         stringHeader += stringColumnDivide;
+      }
+
+      stringHeader += '\n';
+   }
+
+   stringResult += stringHeader;
+   
+   for( auto uRow = uBegin; uRow < uEnd; uRow++ )
+   {
+      vectorValue.clear();
+      table.row_get_variant_view( uRow, vectorValue );
+
+      if( bNr == true ) vectorValue.insert( vectorValue.begin(), uRow );
+
+      unsigned uColumn = 0;
+
+      for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it < itEnd; it++ )
+      {
+         if( uColumn > 0 ) stringResult.append(stringColumnDivide);            // split columns with text "  " ?
+         auto value_ = *it;
+
+         if( value_.is_null() == true )
+         {
+            stringValue = "";
+         }
+         else if( value_.is_string() == true )
+         {
+            const std::string_view text_ = value_.as_string_view();
+            stringValue += text_;
+         }
+         else
+         {
+            stringValue = value_.as_string();
+         }
+
+         if(stringValue.length() > uMax)
+         {
+            stringValue = stringValue.substr( 0, uMax - 3 );
+            stringValue += std::string_view{"..."};
+         }
+
+         stringResult += stringValue;
+         stringValue.clear();
+
+         uColumn++;
+      }
+
+      stringResult.append( std::string_view{"\n"});
+   }
+
+   stringOut += stringResult;
+}
+
+
 // ## CLI IO (command line interface) -----------------------------------------
 
 void to_string(const dto::table& table, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_header, tag_io_cli)
@@ -1260,6 +1351,11 @@ void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, std::v
 void to_string(const table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const std::vector<unsigned>& vectorcolumn, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli)
 {
    to_string_s( table, uBegin, uCount, vectorWidth, vectorcolumn, argumentOption, stringOut );
+}
+
+void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_raw)
+{
+   to_string_s( table, uBegin, uCount, argumentOption, stringOut );
 }
 
 
