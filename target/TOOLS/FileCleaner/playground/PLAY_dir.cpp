@@ -30,7 +30,7 @@ TEST_CASE("[file] read .gitignore", "[file]")
 
    gd::expression::parse::state state_;
    state_.add(std::string_view("LINECOMMENT"), "//", "\n");
-   gd::parse::window::line lineBuffer(1024, gd::types::tag_create{});         // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
+   gd::parse::window::line lineBuffer(64, gd::types::tag_create{});          // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
 
    file_.read((char*)lineBuffer.buffer(), lineBuffer.available());
    auto uReadSize = file_.gcount();                                           // get number of valid bytes read
@@ -45,15 +45,10 @@ TEST_CASE("[file] read .gitignore", "[file]")
          // Process the line here, e.g., print it or store it
          std::cout << stringLine << std::endl;
       }
-      while
-      auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});
-      for( const auto* it = first_; it != last_; ++it )                       // For each character in the buffer
-      {
-         std::string_view stringLine;
-         it = lineBuffer.getline( it, stringLine );
-      }
+
+      lineBuffer.rotate();
+      file_.read((char*)lineBuffer.buffer(), lineBuffer.available());
+      uReadSize = file_.gcount();                                             // get number of valid bytes read
+      lineBuffer.update(uReadSize);
    }
-
-
-
 }
