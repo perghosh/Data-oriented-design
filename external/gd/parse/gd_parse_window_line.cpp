@@ -72,7 +72,7 @@ void line::common_construct(line&& o) noexcept
  * \endcode
  */
 void line::create() 
-{                                                                                                  assert( m_uSize >= 0x80 ); // minimum size is 128 bytes
+{                                                                                                  assert( m_uSize >= 64 ); // minimum size is 128 bytes
    if( m_uCapacity == 0 ) m_uCapacity = m_uSize + (m_uSize >> 1);              // 50% extra space if not specified
                                                                                                    assert( m_uCapacity > m_uSize ); // capacity must be larger than size
    m_puBuffer = new uint8_t[m_uCapacity]; 
@@ -148,7 +148,15 @@ uint64_t line::write(const uint8_t* puData, uint64_t uSize)
  */
 void line::rotate()
 {
-   if( m_uLast > m_uSize )
+   if( m_uFirst > 0 )
+   {
+      // If m_uFirst is greater than 0, we need to move the data to the start based on m_uFirst
+      uint64_t uSwapSize = m_uLast - m_uFirst;                                 // Calculate swap size
+      std::memmove(m_puBuffer, m_puBuffer + m_uFirst, uSwapSize);
+      m_uLast = uSwapSize;                                                     // Adjust last position
+      m_uFirst = 0;                                                            // Reset first position
+   }
+   else if( m_uLast > m_uSize )
    {
       uint64_t uSwapSize = m_uLast - m_uSize;                                  // Calculate swap size
       std::memmove(m_puBuffer, m_puBuffer + m_uSize, uSwapSize);
@@ -333,24 +341,22 @@ bool line::getline(std::string_view& stringLine, uint64_t uOffset, char iDelimit
    }
 
    // ## Find the delimiter
-   const uint8_t* puDataStart = m_puBuffer + uOffset;
-   const uint8_t* puDataEnd = m_puBuffer + uDataSize;
-   const uint8_t* bFound = static_cast<const uint8_t*>( std::memchr(puDataStart, static_cast<unsigned char>(iDelimiter), puDataEnd - puDataStart) );
+   const uint8_t* puDataStart = m_puBuffer + m_uFirst;
+   const uint8_t* puDataEnd = m_puBuffer + uDataSize;                                              assert(puDataEnd > puDataStart); // Ensure data end is after start
+   const uint8_t* puDelimiter = static_cast<const uint8_t*>( std::memchr(puDataStart, static_cast<unsigned char>(iDelimiter), puDataEnd - puDataStart) );
 
-   if(bFound == true)
+   if(puDelimiter != nullptr)
    {
-      uint64_t lineLen = found - dataStart;
-      stringLine = std::string_view(reinterpret_cast<const char*>(dataStart), lineLen);
-      // Optionally, update m_uFirst or m_uLast if you want to consume the line
-      // m_uFirst = (found + 1) - m_puBuffer;
+      uint64_t uLength = puDelimiter - puDataStart;
+      stringLine = std::string_view(reinterpret_cast<const char*>(puDataStart), uLength);
+      // update m_uFirst or m_uLast to consume the line
+      m_uFirst = (puDelimiter + 1) - m_puBuffer;
       return true;
    }
-   else
-   {
-      // No delimiter found, return the rest as a partial line
-      stringLine = std::string_view(reinterpret_cast<const char*>(dataStart), dataEnd - dataStart);
-      return false;
-   }
+
+   // No delimiter found, return the rest as a partial line
+   stringLine = std::string_view(reinterpret_cast<const char*>(puDataStart), puDataEnd - puDataStart);
+   return false;
 }
 
 
