@@ -34,6 +34,8 @@ _GD_PARSE_WINDOW_BEGIN
  * The line class provides a buffer implementation that supports efficient reading,
  * writing, and processing of linear data. It maintains a main buffer of specified size
  * and capacity, along with a look-ahead buffer positioned after the main buffer.
+ * 
+ * @note The member `m_uFirst` is important when convenience methods is use as it indicates the first valid position in the buffer
  *
  * Key features include:
  * - Automatic buffer rotation to efficiently handle continuous data streams
@@ -136,7 +138,9 @@ public:
 
 /** \name OPERATION
 *///@{
-/// create buffer, this will allocate memory for the buffer and set the size of the buffer
+   // ## buffer operations
+
+   /// create buffer, this will allocate memory for the buffer and set the size of the buffer
    void create();
    /// write data to buffer, this will write data to the end of the buffer and return the number of bytes written
    uint64_t write(const uint8_t* puData, uint64_t uSize); 
@@ -144,6 +148,8 @@ public:
    void rotate();
    /// close buffer, free memory and reset attributes
    void close() { delete[] m_puBuffer; m_puBuffer = nullptr; m_uLast = 0; m_uSizeSummary = 0; } ///< close buffer, free memory and reset attributes
+
+   // ## information methods
 
    /// available free space in buffer, this informs how much data can be written to the buffer
    uint64_t available() const { return m_uCapacity - m_uLast; } 
@@ -180,6 +186,11 @@ public:
    uint64_t count(const uint8_t* puData, uint64_t uSize, uint64_t uOffset = 0) const; ///< count data in buffer
    uint64_t count(const std::string_view& stringData, uint64_t uOffset = 0) const { return count((const uint8_t*)stringData.data(), stringData.length(), uOffset); } ///< count data in buffer
    uint64_t count(char iCharacter, uint64_t uOffset = 0) const;
+
+   // ## convenience methods
+
+   /// Try to read a line from the buffer, returns true if line was found (if read it updates the last position in buffer)
+   bool getline(std::string_view& stringLine, uint64_t uOffset = 0, char iDelimiter = '\n'); ///< get line from buffer, returns true if line was found
 
    // ## iterator methods
 
