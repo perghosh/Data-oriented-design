@@ -309,5 +309,49 @@ uint64_t line::count(char iCharacter, uint64_t uOffset) const
    return uCount;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Extracts a line from the buffer based on a delimiter.
+ *
+ * This method searches for the delimiter starting from the specified offset,
+ * extracts the substring up to the delimiter (or end of buffer), and sets it
+ * to the provided string view. Returns true if a line was found, false otherwise.
+ *
+ * @param stringLine Reference to a string view to hold the extracted line.
+ * @param uOffset The offset in the buffer to start the search from.
+ * @param iDelimiter The character used as the delimiter to separate lines.
+ *
+ * @return True if a line was found, false otherwise.
+ */
+bool line::getline(std::string_view& stringLine, uint64_t uOffset, char iDelimiter)
+{                                                                                                  assert(m_puBuffer != nullptr); assert(uOffset < m_uLast);
+   // Only search within occupied data
+   uint64_t uDataSize = occupied();
+   if(uOffset >= uDataSize)
+   {
+      stringLine = std::string_view();
+      return false;
+   }
+
+   // ## Find the delimiter
+   const uint8_t* puDataStart = m_puBuffer + uOffset;
+   const uint8_t* puDataEnd = m_puBuffer + uDataSize;
+   const uint8_t* bFound = static_cast<const uint8_t*>( std::memchr(puDataStart, static_cast<unsigned char>(iDelimiter), puDataEnd - puDataStart) );
+
+   if(bFound == true)
+   {
+      uint64_t lineLen = found - dataStart;
+      stringLine = std::string_view(reinterpret_cast<const char*>(dataStart), lineLen);
+      // Optionally, update m_uFirst or m_uLast if you want to consume the line
+      // m_uFirst = (found + 1) - m_puBuffer;
+      return true;
+   }
+   else
+   {
+      // No delimiter found, return the rest as a partial line
+      stringLine = std::string_view(reinterpret_cast<const char*>(dataStart), dataEnd - dataStart);
+      return false;
+   }
+}
+
 
 _GD_PARSE_WINDOW_END
