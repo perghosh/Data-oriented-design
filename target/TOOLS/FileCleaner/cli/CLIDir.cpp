@@ -30,9 +30,16 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    unsigned uRecursive = options_["recursive"].as_uint();
    if(uRecursive == 0 && options_.exists("R") == true) uRecursive = 16;        // set to 16 if R is set, find all files
 
+   std::string stringFilter = options_["filter"].as_string();
+   if( stringFilter == "*" ) 
+   { 
+      stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
+      if( uRecursive == 0 ) uRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
+   }
+
    if( options_.exists("pattern") == true )                                    // 
    {
-      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", options_["filter"].as_string() }, { "pattern", options_["pattern"].as_string() }});
+      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", stringFilter }, { "pattern", options_["pattern"].as_string() }});
       auto result_ = DirPattern_g( stringSource, arguments_, pdocument );
    }
    else if( options_.exists("rpattern") == true )
@@ -41,7 +48,7 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    }
    else if( options_.exists("vs") == true || options_.exists("script") == true )
    {
-      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", options_["filter"].as_string() }});
+      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", stringFilter }});
 
       if( options_.exists("vs") == true ) arguments_.append( "vs", true );
       if( options_.exists("script") == true ) arguments_.append( "script", options_["script"].as_string() );
@@ -51,42 +58,8 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    }
    else
    {
-      std::string stringFilter = options_["filter"].as_string();
       auto result_ = DirFilter_g( stringSource, stringFilter, uRecursive, pdocument );
    }
-/*
-
-   auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "path"} }, gd::table::tag_prepare{}));
-
-   // Add to table
-   for( const auto& it : std::filesystem::directory_iterator(stringSource) )
-   {
-      if( it.is_regular_file() || it.is_directory() )
-      {
-         std::string stringFilePath = it.path().string();
-
-         if( (*poptionsDir)["filter"].is_true() == true )
-         {
-            std::string stringFilter = (*poptionsDir)["filter"].as_string();
-            std::string stringExtension = it.path().extension().string();
-
-            if( stringFilter == stringExtension )
-            {
-               ptable->row_add();
-               ptable->cell_set(ptable->get_row_count() - 1, "path", stringFilePath);
-            }
-         }
-         else
-         {
-            ptable->row_add();
-            ptable->cell_set(ptable->get_row_count() - 1, "path", stringFilePath);
-         }
-      }
-   }
-
-   auto stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
-   application.PrintMessage(stringTable, gd::argument::arguments());
-   */
 
    return { true, "" };
 }

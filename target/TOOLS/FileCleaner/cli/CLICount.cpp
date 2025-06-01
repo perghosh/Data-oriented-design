@@ -80,20 +80,16 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    CApplication::PathPrepare_s(stringSource);
    int iRecursive = options_["recursive"].as_int();
    if( iRecursive == 0 && options_.exists("R") == true ) iRecursive = 16;// set to 16 if D is set, find all files
-   gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
-   auto result_ = pdocument->FILE_Harvest(argumentsPath);                                          if( !result_.first ) { return result_; }
 
-   // Apply file filters if specified
-   if( options_["filter"].is_true() ) 
-   {
-      std::string stringFilter = options_["filter"].as_string();
-      result_ = pdocument->FILE_Filter(stringFilter);                                              if( !result_.first ) { return result_; }
+   std::string stringFilter = options_["filter"].as_string();
+   if( stringFilter == "*" ) 
+   { 
+      stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
+      if( iRecursive == 0 ) iRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
    }
-   else 
-   {
-      // If no filter is specified, filter out binary files to avoid counting them. 
-      result_ = pdocument->FILE_FilterBinaries();                                                  if( !result_.first ) { return result_; }
-   }
+
+   gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
+   auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);                            if( !result_.first ) { return result_; }
 
    // Count rows in the harvested files
    result_ = pdocument->FILE_UpdateRowCounters();                                                  if( !result_.first ) { return result_; }
