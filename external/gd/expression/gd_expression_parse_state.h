@@ -304,12 +304,15 @@ public:
 /** \name GET/SET
 *///@{
    bool in_state() const { return m_iActive != -1; } ///< check if in state
+   /// test character if it is a marker hint, this will return 1 if the character is a marker hint, 0 otherwise
+   uint8_t check_marker_hint(uint8_t uCharacter) const { return m_arrayMarkerHint[uCharacter]; } ///< check marker hint for character
    bool is_multiline() const { return (decltype(m_uFirstMultiline_s))get_state() >= m_uFirstMultiline_s; } ///< check if state is multiline
    enumState get_state() const { return m_vectorRule[m_iActive].get_state(); } ///< get current state
    enumGroup get_group() const { return enumGroup(get_state() & 0xFF00); } ///< get current group
    enumStateNumber get_state_number() const { return enumStateNumber(get_state() & 0x00FF); } ///< get current state number
    void set_state(int64_t iActive) { m_iActive = iActive; } ///< set current state rule
    const std::vector<rule>& get_rule() const { return m_vectorRule; } ///< get vector of rules
+   int get_rule_index(const char* piText) const;
    const std::array<uint8_t, 256>& get_marker_hint() const { return m_arrayMarkerHint; } ///< get marker hint
    const rule& get_rule(size_t uIndex) const { assert(uIndex < m_vectorRule.size()); return m_vectorRule[uIndex]; } ///< get rule at index
 
@@ -348,6 +351,18 @@ public:
    /// deactivate state, this doesn't change the internal state but checks if the text is matches deactivate marker text
    bool deactivate(const char* piText, unsigned* puLength, tag_manual );
    bool deactivate(const uint8_t* puText, unsigned* puLength, tag_manual) { return deactivate(reinterpret_cast<const char*>( puText ), puLength, tag_manual()); } ///< check if state is deactivated based on text passed, this matches the end of the rule for active state
+
+   // ## find in data
+
+   /// find first occurrence of a rule in the text, this will return the index of the first rule that matches the text or -1 if not found
+   std::pair<int, const char*> find_first( const char* piText, size_t uLength, unsigned* puLength = nullptr) const;
+   std::pair<int, const char*> find_first( const std::string_view& stringText, unsigned* puLength = nullptr ) const;
+
+
+   /// read first value in text
+   std::pair<int, std::string_view> read_first( const char* piText, size_t uLength ) const;
+   /// read first value in text, this will return the index of the first rule that matches the text or -1 if not found
+   std::pair<int, std::string_view> read_first(const std::string_view& stringText) const; 
 
    // ## iterator methods
 
@@ -497,6 +512,18 @@ inline bool state::deactivate(const char* piText, unsigned* puLength, tag_manual
       return true; 
    }
    return false;
+}
+
+
+/// find first occurrence of a rule in the text, this will return the index of the first rule that matches the text or -1 if not found
+inline std::pair<int, const char*> state::find_first( const std::string_view& stringText, unsigned* puLength ) const {
+   if( stringText.empty() == false ) return find_first(stringText.data(), stringText.length(), puLength);
+   return std::make_pair(-1, nullptr); // return -1 if string is empty
+} 
+
+/// read first value in text
+inline std::pair<int, std::string_view> state::read_first(const std::string_view& stringText) const {
+   return read_first(stringText.data(), stringText.length());
 }
 
 
