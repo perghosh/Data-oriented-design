@@ -70,9 +70,14 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    int iRecursive = options_["recursive"].as_int();
    if (iRecursive == 0 && options_.exists("R") == true) iRecursive = 16; // set to 16 if R is set, find all files
 
-   gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
    std::string stringFilter = options_["filter"].as_string();
+   if( stringFilter == "*" ) 
+   { 
+      stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
+      if( iRecursive == 0 ) iRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
+   }
 
+   gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
    auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);       // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
    if (result_.first == false) return result_;
 
