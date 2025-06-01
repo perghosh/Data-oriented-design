@@ -334,7 +334,7 @@ bool line::getline(std::string_view& stringLine, uint64_t uOffset, char iDelimit
 {                                                                                                  assert(m_puBuffer != nullptr); assert(uOffset < m_uLast);
    // Only search within occupied data
    uint64_t uDataSize = occupied();
-   if(uOffset >= uDataSize)
+   if((uOffset + m_uFirst) >= uDataSize)                                      // if offset isn't within boundaries
    {
       stringLine = std::string_view();
       return false;
