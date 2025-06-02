@@ -92,6 +92,36 @@ public:
       eApplicationStateExit = 0x08, ///< Application is in exit state, threads are exiting
    };
 
+
+   /**
+    * \brief
+    *
+    *
+    */
+   struct ignore
+   {
+      enum enumType
+      {
+         eTypeRoot = 0x0001, ///< Ignore type is root ignore, only the first matching folder is ignored
+         eTypeFolder = 0x0002, ///< Ignore type is folder ignore, all matching folders are ignored
+      };
+
+      ignore() {}
+      ignore(const unsigned uType, const std::string_view& stringIgnore): m_uType(uType), m_stringIgnore(stringIgnore) {}
+      ignore(const ignore& o) : m_uType(o.m_uType), m_stringIgnore(o.m_stringIgnore) {}
+      ~ignore() {}
+
+      bool is_root() const { return ( m_uType & eTypeRoot ) != 0; } ///< Check if ignore is root ignore
+      bool is_folder() const { return ( m_uType & eTypeFolder ) != 0; } ///< Check if ignore is folder ignore
+
+
+      // ## attributes
+      unsigned m_uType = 0; ///< Type of ignore, e.g. folder, file, and how to apply it
+      std::string m_stringIgnore; ///< String with ignore pattern
+   };
+
+
+
 // ## construction -------------------------------------------------------------
 public:  // 0TAG0construct.Application
    CApplication() {}
