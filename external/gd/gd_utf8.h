@@ -754,6 +754,10 @@ namespace gd {
       /// find positions in text where characters start
       inline std::pair<const uint8_t*, const uint8_t*> trim(const uint8_t* puText) { return trim(puText, puText + std::strlen((const char*)puText)); }
       inline std::pair<const uint8_t*, const uint8_t*> trim(const std::string_view& stringText) { return trim((const uint8_t*)stringText.data(), (const uint8_t*)stringText.data() + stringText.length()); }
+      inline std::string_view trim(const std::string_view& stringText, gd::types::tag_view) { 
+         auto pair_ = trim((const uint8_t*)stringText.data(), (const uint8_t*)stringText.data() + stringText.length());
+         return std::string_view(reinterpret_cast<const char*>( pair_.first ), pair_.second - pair_.first);
+      }
       /**
        * @brief find positions in text where characters start
        * @param puText pointer to text scanned for first and last character
