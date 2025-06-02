@@ -77,7 +77,7 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    std::string stringSource = options_["source"].as_string();
    bool bExplain = options_["explain"].is_true();
    
-   CApplication::PathPrepare_s(stringSource);
+   CApplication::PreparePath_s(stringSource);
    int iRecursive = options_["recursive"].as_int();
    if( iRecursive == 0 && options_.exists("R") == true ) iRecursive = 16;// set to 16 if D is set, find all files
 

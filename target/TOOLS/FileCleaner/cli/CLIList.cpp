@@ -65,7 +65,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    size_t uSearchPatternCount = 0; // count of patterns to search for
    const gd::cli::options& options_ = *poptionsList;
    std::string stringSource = options_["source"].as_string();
-   CApplication::PathPrepare_s(stringSource);                                 // if source is empty then set it to current path, otherwiss prepare it
+   CApplication::PreparePath_s(stringSource);                                 // if source is empty then set it to current path, otherwiss prepare it
 
    int iRecursive = options_["recursive"].as_int();
    if (iRecursive == 0 && options_.exists("R") == true) iRecursive = 16; // set to 16 if R is set, find all files

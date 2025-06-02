@@ -176,6 +176,21 @@ public:
    bool DOCUMENT_Empty() const;
    void DOCUMENT_Clear();
 
+   // ## Add ignore pattern to list of ignored folders
+
+   void IGNORE_Add( const std::string_view& stringIgnore ) { m_vectorIgnore.push_back( std::string( stringIgnore ) ); }
+   void IGNORE_Add( const std::vector<std::string>& vectorIgnore ) { m_vectorIgnore.insert( m_vectorIgnore.end(), vectorIgnore.begin(), vectorIgnore.end() ); }
+
+   /// Ccheck if paths is to be ignored
+   bool IGNORE_Match( const std::string_view& stringPath );
+
+   /// Return number of ignore patterns
+   size_t IGNORE_Size() const { return m_vectorIgnore.size(); }
+   /// Check if ignore list is empty
+   bool IGNORE_Empty() const { return m_vectorIgnore.empty(); }
+   /// Clear ignore list
+   void IGNORE_Clear() { m_vectorIgnore.clear(); }
+
    // ## iterator methods for documents
    std::vector<std::unique_ptr<CDocument>>::iterator DOCUMENT_Begin();
    std::vector<std::unique_ptr<CDocument>>::iterator DOCUMENT_End();
@@ -226,6 +241,8 @@ public:
    /// List of documents
    std::vector<std::unique_ptr<CDocument>> m_vectorDocument;
 
+   std::vector<std::string> m_vectorIgnore; ///< Strings with patterns for folders to ignore
+
    std::vector< gd::database::database_i* > m_vectorDatabase; ///< list of connected databases
    gd::database::database_i* m_pdatabase = nullptr;  ///< active database connection
 
@@ -254,7 +271,10 @@ public:
    static std::pair<bool, std::string> PrepareState_s(const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state_);
 
    // ## Path operations
-   static void PathPrepare_s( std::string& stringPath );
+   static void PreparePath_s( std::string& stringPath );
+
+   /// Read folders to ignore from ignore file if found, otherwise return empty vector
+   static std::pair<bool, std::string> ReadIgnoreFile_s( const std::string_view& stringForderOrFile, std::vector<std::string>& vectorIgnorePattern );
 
    // ## Read data from database
 
@@ -278,7 +298,7 @@ public:
 #ifdef _WIN32
    // ## windows specific functions
 
-   /// Prepare for windows specific functionality, things like initialize COM
+   /// Prepare for windows OS specific functionality, things like initialize COM
    static std::pair<bool, std::string> PrepareWindows_s();
    /// Exit windows specific functionality, things like uninitialize COM
    static std::pair<bool, std::string> ExitWindows_s();

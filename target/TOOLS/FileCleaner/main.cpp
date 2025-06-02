@@ -31,8 +31,8 @@ int main(int iArgumentCount, char** ppbszArgument)
       auto result_ =  papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
       if( result_.first == false ) { std::cout << "Error: " << result_.second << "\n"; return -1; }
 
-      result_ = papplication_->Initialize();                                                     assert( result_.first );
-      if( result_.first == false ) { assert( false ); std::cout << "Error: " << result_.second << "\n"; assert( false ); return -1; }
+      //result_ = papplication_->Initialize();                                                     assert( result_.first );
+      //if( result_.first == false ) { assert( false ); std::cout << "Error: " << result_.second << "\n"; assert( false ); return -1; }
 
       std::string stringError = papplication_g->ERROR_Report();
       if( stringError.empty() == false )
