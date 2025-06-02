@@ -25,7 +25,7 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 {                                                                                                  assert( poptionsDir != nullptr );
    const gd::cli::options& options_ = *poptionsDir;
    std::string stringSource = (*poptionsDir)["source"].as_string(); 
-   CApplication::PathPrepare_s(stringSource);                                  // if source is empty then set it to current path, otherwiss prepare it
+   CApplication::PreparePath_s(stringSource);                                  // if source is empty then set it to current path, otherwiss prepare it
 
    unsigned uRecursive = options_["recursive"].as_uint();
    if(uRecursive == 0 && options_.exists("R") == true) uRecursive = 16;        // set to 16 if R is set, find all files

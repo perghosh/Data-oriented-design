@@ -21,6 +21,7 @@
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
 #include "gd/gd_file.h"
+#include "gd/parse/gd_parse_window_line.h"
 
 
 #ifdef _WIN32
@@ -31,6 +32,18 @@
 #  include <sys/stat.h>
 #  include <pwd.h>
 #  include <cstdlib>
+#endif
+
+#ifdef _WIN32
+#include <shlwapi.h>
+bool os_fnmatch(const char* piPattern, const char* piPath) {
+   return PathMatchSpecA(piPath, piPattern) == TRUE;
+}
+#else
+#include <fnmatch.h>
+bool os_fnmatch(const char* piPattern, const char* piPath) {
+   return fnmatch(piPattern, piPath, FNM_PATHNAME) == 0;
+}
 #endif
 
 
@@ -161,6 +174,23 @@ std::pair<bool, std::string> CApplication::Initialize()
    auto result_ = PrepareWindows_s();
    if( result_.first == false ) return result_;
 #endif
+
+   // ## Configure current paths and ignore ifnormation
+
+   std::filesystem::path pathCurrent = std::filesystem::current_path();
+   std::string stringCurrentPath = pathCurrent.string();
+   stringCurrentPath = "C:\\dev\\home\\DOD";
+   PROPERTY_Add("folder-current", stringCurrentPath );
+
+   std::vector<std::string> vectorIgnore;
+   result_ = ReadIgnoreFile_s( stringCurrentPath, vectorIgnore );
+   if( result_.first == false ) return result_;
+
+   // Add ignore paths
+   if( vectorIgnore.empty() == false ) 
+   {                                                                                               LOG_INFORMATION_RAW("== Read: " & vectorIgnore.size() & " ignore patterns");
+      IGNORE_Add( vectorIgnore ); 
+   }
 
 
 
@@ -789,6 +819,34 @@ void CApplication::DOCUMENT_Clear()
 {
    m_vectorDocument.clear();
 }
+
+/// ---------------------------------------------------------------------------
+/// Checks if the given file path matches any ignore pattern in m_vectorIgnore.
+/// Normalizes the path to use forward slashes. Uses os_fnmatch for pattern matching.
+/// Returns true if the path should be ignored, false otherwise.
+bool CApplication::IGNORE_Match(const std::string_view& stringPath)
+{
+    auto normalize_ = [](std::string s_) -> std::string {
+        std::replace(s_.begin(), s_.end(), '\\', '/');
+        return s_;
+    };
+
+    std::string pathNorm = normalize_(std::string(stringPath));
+
+    for( const auto& pattern_ : m_vectorIgnore) 
+    {
+       bool bMatch = gd::ascii::strcmp( stringPath, pattern_, gd::utf8::tag_wildcard{});
+       if( bMatch == true ) return true;
+       /*
+       if( os_fnmatch( pattern_.data(), stringPath.data() ) == true )
+       {
+          return true;
+       }
+       */
+    }
+    return false;
+}
+
 
 
 // 0TAG0Database.Application
@@ -1440,11 +1498,11 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
  * ### Example Usage:
  * ```cpp
  * std::string path = "relative/path";
- * CApplication::PathPrepare_s(path);
+ * CApplication::PreparePath_s(path);
  * // path is now absolute
  * ```
  **/
-void CApplication::PathPrepare_s(std::string& stringPath)
+void CApplication::PreparePath_s(std::string& stringPath)
 {
    auto uPosition = stringPath.find_first_of(";,");                           // Find the first occurrence of `;` or `,` if multiple path
 
@@ -1461,7 +1519,7 @@ void CApplication::PathPrepare_s(std::string& stringPath)
             if( stringNewPath.empty() == false )  stringNewPath += iSplitCharacter;
 
             std::string stringCheck = it;
-            PathPrepare_s(stringCheck);
+            PreparePath_s(stringCheck);
             stringNewPath += stringCheck;
          }
       }
@@ -1493,6 +1551,93 @@ void CApplication::PathPrepare_s(std::string& stringPath)
          } // if( pathFile.is_absolute() == false )
       } // if( stringPath.empty() ) else
    } // if( uPosition != std::string::npos ) else
+}
+
+
+std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_view& stringForderOrFile, std::vector<std::string>& vectorIgnorePattern )
+{
+   using gd::expression::parse::state;
+
+   std::vector<std::filesystem::path> vectorFile;
+   std::filesystem::path pathForderOrFile(stringForderOrFile);
+
+   if( std::filesystem::is_directory( pathForderOrFile ) == true)
+   {
+      // ## first, check for gitignore file in the directory
+      std::filesystem::path pathGitIgnore = pathForderOrFile / ".gitignore"; // Check for .gitignore file
+      if( std::filesystem::exists(pathGitIgnore) && std::filesystem::is_regular_file(pathGitIgnore)) { vectorFile.push_back(pathGitIgnore); }
+      else
+      {
+         // ## if no .gitignore file we try to find some file that have the ignore pattern in folder
+         
+         unsigned uMax = 20; // Limit the number of files to read, to avoid too many files
+         for( const auto& entry_ : std::filesystem::directory_iterator(pathForderOrFile) )
+         {
+            if( entry_.is_regular_file() && entry_.path().extension().string().find( "ignore" ) != std::string::npos ) // Check for .ignore files
+            {
+               vectorFile.push_back(entry_);
+            }
+
+            if( --uMax == 0 ) break;                                          // Limit the number of files to read
+         }
+      }
+   }
+   else
+   {
+      vectorFile.push_back( pathForderOrFile );
+   }
+
+   if( vectorFile.empty() == true ) return { true, "" };
+
+   // ## read ignore file, if it exists
+   std::filesystem::path pathInput = vectorFile.front();                      // Take the first file from the vector
+
+   std::ifstream file_(pathInput, std::ios::binary);
+   if( file_.is_open() == false ) { return { false, "Failed to open ignore file: " + pathInput.string() }; } // failed to open file
+
+   gd::expression::parse::state state_;
+   state_.add(std::string_view("LINECOMMENT"), "#", "\n");
+   gd::parse::window::line lineBuffer(1024, gd::types::tag_create{});         // create line buffer 64 * 16 = 1024 bytes = 16 cache lines
+
+
+   file_.read((char*)lineBuffer.buffer(), lineBuffer.available());
+   auto uReadSize = file_.gcount();                                           // get number of valid bytes read
+   lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
+
+   // ## Process the file
+   while(lineBuffer.eof() == false)
+   {
+      std::string_view stringLine;
+      while( lineBuffer.getline( stringLine ) == true )
+      {
+         // ## Process the line, filter comments
+
+         auto [iRule, piPosition] = state_.find_first(stringLine);           // find first rule in the line or return -1 if no rule and if whe have a position then process it
+
+         // ### If we have don't have a rule, but a pointer then process it (this is code)
+
+         if( iRule == -1 && piPosition != nullptr )                      
+         {
+            auto [ iRule, stringValue ] = state_.read_first( stringLine );    // get line value
+
+            // #### Check if we have a folder or file to ignore
+
+            if( stringValue.find_first_of(".* ?") == std::string::npos )       // a bit brutal but skip everything with . * ?
+            {
+               std::string string_( stringValue );
+               std::replace(string_.begin(), string_.end(), '\\', '/');
+               vectorIgnorePattern.push_back( string_ );
+            }
+         }
+      }
+
+      lineBuffer.rotate();
+      file_.read((char*)lineBuffer.buffer(), lineBuffer.available());
+      uReadSize = file_.gcount();                                             // get number of valid bytes read
+      lineBuffer.update(uReadSize);
+   }
+
+   return {true, ""};
 }
 
 void CApplication::Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer )
@@ -1825,5 +1970,8 @@ std::pair<bool, std::string> CApplication::ExitWindows_s()
 
 
 #endif
+
+
+
 
 

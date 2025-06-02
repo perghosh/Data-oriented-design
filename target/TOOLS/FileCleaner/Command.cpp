@@ -154,8 +154,18 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
 
       for( const auto& it : std::filesystem::directory_iterator(stringPath) )
       {
-         if( it.is_directory() == true )                                       // is file directory
+         if( it.is_directory() == true )                                      // is file directory
          {
+            if( papplication_g->IGNORE_Empty() == false )
+            {
+               auto stringDirectory = it.path().string();
+               // convert to forward slashes for consistency
+               std::replace(stringDirectory.begin(), stringDirectory.end(), '\\', '/');
+
+               bool bIgnore = papplication_g->IGNORE_Match( stringDirectory );
+               if( bIgnore == true ) continue;                                // ignore this directory
+            }
+
             if( uDepth > 0 )
             {
                auto stringChildPath = it.path().string();
