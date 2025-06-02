@@ -94,7 +94,7 @@ public:
 
 
    /**
-    * \brief
+    * \brief ignore information for folders or files to ignore
     *
     *
     */
@@ -104,6 +104,8 @@ public:
       {
          eTypeRoot = 0x0001, ///< Ignore type is root ignore, only the first matching folder is ignored
          eTypeFolder = 0x0002, ///< Ignore type is folder ignore, all matching folders are ignored
+         eTypeFile = 0x0004, ///< Ignore type is file ignore, all matching files are ignored
+         eTypeWildcard = 0x0008, ///< Ignore type is wildcard ignore, all matching files and folders are ignored
       };
 
       ignore() {}
@@ -208,8 +210,8 @@ public:
 
    // ## Add ignore pattern to list of ignored folders
 
-   void IGNORE_Add( const std::string_view& stringIgnore ) { m_vectorIgnore.push_back( std::string( stringIgnore ) ); }
-   void IGNORE_Add( const std::vector<std::string>& vectorIgnore ) { m_vectorIgnore.insert( m_vectorIgnore.end(), vectorIgnore.begin(), vectorIgnore.end() ); }
+   void IGNORE_Add( unsigned uType, const std::string_view& stringIgnore ) { m_vectorIgnore.push_back( { uType, std::string( stringIgnore ) } ); }
+   void IGNORE_Add( const std::vector<ignore>& vectorIgnore ) { m_vectorIgnore.insert( m_vectorIgnore.end(), vectorIgnore.begin(), vectorIgnore.end() ); }
 
    /// Ccheck if paths is to be ignored
    bool IGNORE_Match( const std::string_view& stringPath );
@@ -271,7 +273,7 @@ public:
    /// List of documents
    std::vector<std::unique_ptr<CDocument>> m_vectorDocument;
 
-   std::vector<std::string> m_vectorIgnore; ///< Strings with patterns for folders to ignore
+   std::vector<ignore> m_vectorIgnore; ///< Strings with patterns for folders to ignore
 
    std::vector< gd::database::database_i* > m_vectorDatabase; ///< list of connected databases
    gd::database::database_i* m_pdatabase = nullptr;  ///< active database connection
@@ -304,7 +306,7 @@ public:
    static void PreparePath_s( std::string& stringPath );
 
    /// Read folders to ignore from ignore file if found, otherwise return empty vector
-   static std::pair<bool, std::string> ReadIgnoreFile_s( const std::string_view& stringForderOrFile, std::vector<std::string>& vectorIgnorePattern );
+   static std::pair<bool, std::string> ReadIgnoreFile_s( const std::string_view& stringForderOrFile, std::vector<ignore>& vectorIgnorePattern );
 
    // ## Read data from database
 

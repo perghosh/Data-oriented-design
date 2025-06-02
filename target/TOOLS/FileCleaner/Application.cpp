@@ -182,7 +182,7 @@ std::pair<bool, std::string> CApplication::Initialize()
    stringCurrentPath = "C:\\dev\\home\\DOD";
    PROPERTY_Add("folder-current", stringCurrentPath );
 
-   std::vector<std::string> vectorIgnore;
+   std::vector<ignore> vectorIgnore;
    result_ = ReadIgnoreFile_s( stringCurrentPath, vectorIgnore );
    if( result_.first == false ) return result_;
 
@@ -1554,7 +1554,7 @@ void CApplication::PreparePath_s(std::string& stringPath)
 }
 
 
-std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_view& stringForderOrFile, std::vector<std::string>& vectorIgnorePattern )
+std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_view& stringForderOrFile, std::vector<ignore>& vectorIgnore )
 {
    using gd::expression::parse::state;
 
@@ -1622,11 +1622,28 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
 
             // #### Check if we have a folder or file to ignore
 
-            if( stringValue.find_first_of(".* ?") == std::string::npos )       // a bit brutal but skip everything with . * ?
+            if( stringValue.find_first_of(".") == std::string::npos )       // a bit brutal but skip everything with .
             {
-               std::string string_( stringValue );
-               std::replace(string_.begin(), string_.end(), '\\', '/');
-               vectorIgnorePattern.push_back( string_ );
+               stringValue = gd::utf8::trim(stringValue, gd::types::tag_view{});// trim whitespace from the start and end of the string
+               unsigned uType = 0;                                          // type of ignore
+               if( stringValue[0] == '/' )                                  // if starts with / then it is a folder
+               {
+                  uType = unsigned(ignore::eTypeRoot|ignore::eTypeFolder);
+                  stringValue = stringValue.substr(1);                      // remove the first character
+               }
+               else if( stringValue.back() == '/' )
+               {
+                  uType = unsigned(ignore::eTypeFolder);
+                  stringValue = stringValue.substr(0, stringValue.length() - 1); // remove the last character
+               }
+
+               if( uType != 0 )
+               {
+                  if( stringValue.find_first_of("*?") != std::string_view::npos ) { uType |= unsigned(ignore::eTypeWildcard); } // if we have a wildcard then set the type to wildcard
+                  std::string string_( stringValue );
+                  std::replace(string_.begin(), string_.end(), '\\', '/');
+                  vectorIgnore.push_back( { uType, string_ } );
+               }
             }
          }
       }
