@@ -58,4 +58,6 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 
 std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);
 
+std::pair<bool, std::string> TABLE_RemoveZeroRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);
+
 

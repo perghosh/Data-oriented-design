@@ -1051,10 +1051,10 @@ gd::table::dto::table CDocument::RESULT_RowCount()
 gd::table::dto::table CDocument::RESULT_PatternCount()
 {
    using namespace gd::table::dto;
-   constexpr unsigned FIXED_COLUMN_COUNT = 2; // Number of fixed columns (folder and filename)
+   constexpr unsigned FIXED_COLUMN_COUNT = 1; // Number of fixed columns (folder and filename)
    // Define the result table structure
    constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );
-   table tableResult(uTableStyle, { {"rstring", 0, "folder"}, {"rstring", 0, "filename"} });
+   table tableResult(uTableStyle, { {"rstring", 0, "filename"} });
    // Retrieve the file-pattern cache table
    auto* ptableFilePattern = CACHE_Get("file-pattern", false);                                     assert(ptableFilePattern != nullptr);
    unsigned uColumnFileName = ptableFilePattern->column_get_index("filename") + 1; // get index for filename column
@@ -1068,13 +1068,18 @@ gd::table::dto::table CDocument::RESULT_PatternCount()
    {
       auto stringFilename = itRowCount.cell_get_variant_view("filename").as_string();
       auto stringFolder = itRowCount.cell_get_variant_view("folder").as_string();
+
+      gd::file::path pathFile(stringFolder);
+      pathFile += stringFilename;
+      std::string stringFile = pathFile.string();
+
+
       auto uRowSource = itRowCount.get_row();
       ptableFilePattern->row_get_variant_view(uRowSource, uColumnFileName, vectorPatternCount); // get row data from table
       // Add a new row to the result table
       auto uRow = tableResult.get_row_count();
       tableResult.row_add(gd::table::tag_null{});
-      tableResult.cell_set(uRow, "folder", stringFolder);
-      tableResult.cell_set(uRow, "filename", stringFilename);
+      tableResult.cell_set(uRow, "filename", stringFile);
 
       tableResult.row_set(uRow, FIXED_COLUMN_COUNT,  vectorPatternCount);      // set row data to table from column 2, after filename
 

@@ -820,31 +820,53 @@ void CApplication::DOCUMENT_Clear()
    m_vectorDocument.clear();
 }
 
-/// ---------------------------------------------------------------------------
+/// --------------------------------------------------------------------------- @TAG #ignore
 /// Checks if the given file path matches any ignore pattern in m_vectorIgnore.
 /// Normalizes the path to use forward slashes. Uses os_fnmatch for pattern matching.
 /// Returns true if the path should be ignored, false otherwise.
-bool CApplication::IGNORE_Match(const std::string_view& stringPath)
-{
-    auto normalize_ = [](std::string s_) -> std::string {
-        std::replace(s_.begin(), s_.end(), '\\', '/');
-        return s_;
-    };
+bool CApplication::IGNORE_Match(const std::string_view& stringPath, const std::string_view& stringRoot) const
+{                                                                                                  assert(stringPath.empty() == false); // Ensure the path is not empty                                    
+   auto normalize_ = [](std::string s_) -> std::string {
+      std::replace(s_.begin(), s_.end(), '\\', '/');
+      return s_;
+      };
 
-    std::string pathNorm = normalize_(std::string(stringPath));
+   std::string_view stringRoot_ = stringRoot;
 
-    for( const auto& pattern_ : m_vectorIgnore) 
-    {
-       bool bMatch = gd::ascii::strcmp( stringPath, pattern_, gd::utf8::tag_wildcard{});
-       if( bMatch == true ) return true;
-       /*
-       if( os_fnmatch( pattern_.data(), stringPath.data() ) == true )
-       {
-          return true;
-       }
-       */
-    }
-    return false;
+   if( stringRoot_.empty() == true )
+   {
+      stringRoot_ = PROPERTY_Get("folder-current").as_string_view(); // if no root is given, use current folder
+   }
+
+   /// ## Generate paht that works like the project path
+   //     This is used to match against ignore patterns
+   auto uRootLength = stringRoot_.length();
+   if( stringRoot_.back() != '/' && stringRoot_.back() != '\\' ) uRootLength++;
+   std::string stringProjectPath( stringPath.substr(uRootLength) );  // remove root from path
+
+   stringProjectPath = normalize_(stringProjectPath);                         // normalize path to use forward slashes
+   auto vectorFolder = gd::utf8::split(stringProjectPath, '/'); // split path into parts
+
+   for( const auto& ignore_ : m_vectorIgnore )
+   {
+      std::string_view stringMatch = ignore_;
+
+      if( ignore_.is_folder() == true )
+      {
+         if( ignore_.is_root() == true )
+         {
+            if( vectorFolder[0] == stringMatch ) return true;                  // if root is matched, ignore the path
+         }
+         else
+         {  // match any folder in the path
+            for( const auto& folder_ : vectorFolder )
+            {
+               if( folder_ == stringMatch ) return true;                       // if any part matches, ignore the path
+            }
+         }
+      }
+   }
+   return false;
 }
 
 
@@ -1553,7 +1575,28 @@ void CApplication::PreparePath_s(std::string& stringPath)
    } // if( uPosition != std::string::npos ) else
 }
 
-
+/** --------------------------------------------------------------------------- @TAG #ignore
+ * @brief Reads ignore patterns from a specified file or directory and populates a vector of ignore rules.
+ *
+ * This static method attempts to read ignore patterns (such as those found in .gitignore or other ignore files)
+ * from the provided file or directory path. If a directory is specified, it looks for a .gitignore file or other
+ * files containing "ignore" in their name within the directory. The method parses the file(s), extracts ignore
+ * patterns, and fills the provided vector with ignore rules, handling folder and wildcard patterns as needed.
+ *
+ * @param stringForderOrFile The path to a file or directory to search for ignore patterns.
+ * @param vectorIgnore Reference to a vector that will be populated with parsed ignore rules.
+ * @return std::pair<bool, std::string> Returns a pair where the first element is true on success and false on failure,
+ *         and the second element contains an error message if applicable.
+ *
+ * Example usage:
+ * @code
+ * std::vector<ignore> vectorPattern;
+ * auto result = CApplication::ReadIgnoreFile_s("/path/to/project", vectorPattern);
+ * if (!result.first) {
+ *     std::cerr << "Error: " << result.second << std::endl;
+ * }
+ * @endcode
+ */
 std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_view& stringForderOrFile, std::vector<ignore>& vectorIgnore )
 {
    using gd::expression::parse::state;
@@ -1612,7 +1655,7 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
       {
          // ## Process the line, filter comments
 
-         auto [iRule, piPosition] = state_.find_first(stringLine);           // find first rule in the line or return -1 if no rule and if whe have a position then process it
+         auto [iRule, piPosition] = state_.find_first(stringLine);            // find first rule in the line or return -1 if no rule and if whe have a position then process it
 
          // ### If we have don't have a rule, but a pointer then process it (this is code)
 
@@ -1622,7 +1665,8 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
 
             // #### Check if we have a folder or file to ignore
 
-            if( stringValue.find_first_of(".") == std::string::npos )       // a bit brutal but skip everything with .
+            auto position_ = stringValue.find('.');                           // find . character
+            if( position_ == 0 || position_  == std::string::npos )           // a bit brutal but skip everything with . unless folder starts with .
             {
                stringValue = gd::utf8::trim(stringValue, gd::types::tag_view{});// trim whitespace from the start and end of the string
                unsigned uType = 0;                                          // type of ignore
@@ -1635,6 +1679,10 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
                {
                   uType = unsigned(ignore::eTypeFolder);
                   stringValue = stringValue.substr(0, stringValue.length() - 1); // remove the last character
+               }
+               else if( stringValue.find_first_of("*?") == std::string::npos )
+               {
+                  uType = unsigned(ignore::eTypeFolder);
                }
 
                if( uType != 0 )

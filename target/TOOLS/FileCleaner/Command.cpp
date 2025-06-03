@@ -1177,3 +1177,27 @@ std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, con
 
    return { true, "" };
 }
+
+std::pair<bool, std::string> TABLE_RemoveZeroRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex)
+{
+   std::vector<uint64_t> vectorRemoveRow; // vector to hold rows to be removed
+
+   auto uRowCount = ptable_->get_row_count(); 
+   for( unsigned uRow = 0; uRow < uRowCount; ++uRow )
+   {
+      bool bZero = true;
+      for( unsigned uColumnIndex : vectorColumnIndex )
+      {                                                                                               assert( uColumnIndex < ptable_->get_column_count() );
+         auto uValue = ptable_->cell_get<uint64_t>(uRow, uColumnIndex);
+         if( uValue != 0 ) { bZero = false; break; }
+      }
+      if( bZero == true ) vectorRemoveRow.push_back(uRow);                    // if all values in row are zero, add row to remove vector
+   }
+
+   if( vectorRemoveRow.empty() == false )
+   {
+      ptable_->erase(vectorRemoveRow); // remove rows from table
+   }
+
+   return { true, "" };
+}
