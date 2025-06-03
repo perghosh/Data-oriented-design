@@ -71,7 +71,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    if (iRecursive == 0 && options_.exists("R") == true) iRecursive = 16; // set to 16 if R is set, find all files
 
    std::string stringFilter = options_["filter"].as_string();
-   if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" ) 
+   if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" )   // if filter is set to * or . or ** then we want all files, so clear the filter and deep recursion
    { 
       stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
       if( iRecursive == 0 ) iRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
@@ -85,6 +85,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    if( options_["filter"].is_true() == true )                                 // Apply file filters if specified
    {
       std::string stringFilter = options_["filter"].as_string();
+      // If the filter is empty, we do not apply any filter and remove files that do not match the filter
       result_ = pdocument->FILE_Filter(stringFilter);                                              if( !result_.first ) { return result_; }
    }
 

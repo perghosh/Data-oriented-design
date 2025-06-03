@@ -757,13 +757,18 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
       uCountNewLine += lineBuffer.count('\n');                                // count all new lines in buffer
 
       auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});         // get first and last position of buffer
+#ifndef NDEBUG
+      auto iState_d = state_.m_iActive;
+      std::string_view stringText_d( (const char*)first_, last_ - first_ ); // for debug purposes
+#endif // NDEBUG
 
       for(auto it = first_; it < last_; it++ ) 
       {
          if( state_.in_state() == false )                                     // not in a state? that means we are reading source code
          {
-            // ## check if we have found state
-            if( state_[*it] != 0 && state_.exists( it ) == true )
+            // ## SOURCE CODE
+            //    check if we have found state
+            if( state_[*it] != 0 && state_.exists(it) == true )               // switch to state ?
             {
                if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) )
                {
@@ -824,7 +829,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
             if( state_.deactivate(it, &uLength, gd::expression::parse::state::tag_manual{}) == true ) // NOTE: this needs manual reset of internal state
             {
                if( uFindInState != eStateCode && stringText.empty() == false )
-               {
+               {                                                                                            
                   if( uFindInState & ( eStateComment | eStateString ) )        // if find text in comment or string
                   {
                      if( ( state_.is_comment() == true && ( uFindInState & eStateComment ) ) ||
@@ -854,8 +859,10 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                continue;
             }
 
-            if( *it == '\n' )
+            if( *it == '\n' )                                                 // end of line ?
             {
+               // ## if we are in comment or string state, then we need to check if we have found pattern in text.
+
                if( (uFindInState & ( eStateComment | eStateString )) && stringText.empty() == false )
                {
                   if( ( state_.is_comment() == true && ( uFindInState & eStateComment ) ) ||
@@ -1033,7 +1040,8 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                }
                stringSourceCode.clear();                                      // clear source code
                uRowCharacterCodeCount = 0;
-               state_.activate(it);                                           // activate state
+               auto uSize = state_.activate(it);                              // activate state
+               it += (uSize - 1);                                             // skip to end of state marker
                continue;
             }
 
