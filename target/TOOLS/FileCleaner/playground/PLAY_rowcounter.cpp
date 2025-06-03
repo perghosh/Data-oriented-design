@@ -18,6 +18,57 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE("[rowcouner] test state", "[rowcouner]") {
+   gd::expression::parse::state state_;
+   //state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+   //state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+   state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+   //state_.add(std::string_view("RAWSTRING"), "R\"(", ")\"");
+
+   std::string stringText = R"(
+3:."56\"\"\"7"
+4:."89\"\"\"\"10"
+
+1:."12"
+2:."34\""
+
+)";
+
+   // Test the state machine with a string that contains various states in string using raw pointers
+   std::string stringState;
+   const auto* piPosition = stringText.data();
+   while( *piPosition )
+   {
+      if( state_.in_state() == false )
+      {
+         if( state_[*piPosition] != 0 && state_.exists( piPosition ) == true)
+         {
+            std::cout << "OUT: " << stringState << ",\n";
+            stringState.clear(); // Clear the stringState for the next state
+            auto uLength = state_.activate(piPosition); 
+            piPosition += uLength; // -1 because we will increment it in the next loop
+         }
+      }
+      else
+      {
+         unsigned uLength;
+         if( state_.deactivate(piPosition, &uLength ) == true )
+         {
+            std::cout << "IN: " <<  stringState << ",\n";
+            stringState.clear(); // Clear the stringState for the next state
+            piPosition += uLength; // -1 because we will increment it in the next loop
+         }
+      }
+
+      if( *piPosition == '\n' ) piPosition++;
+      stringState += *piPosition; // Append the current character to the stringState
+      if( *piPosition ) piPosition++;
+   }
+
+   std::cout << "Last: " << stringState << "\n";
+   stringState.clear(); // Clear the stringState for the next state
+}
+
 
 TEST_CASE("[rowcouner] match", "[rowcouner]") {
    gd::parse::patterns patterns_;

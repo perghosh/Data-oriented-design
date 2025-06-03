@@ -213,8 +213,8 @@ public:
          : m_eState(state), m_stringStart(stringStart), m_stringEnd(stringEnd) {}
       rule(enumState state, const std::string_view& stringStart, const std::string_view& stringEnd, const std::string_view& stringEscape) :
          m_eState(state), m_stringStart(stringStart), m_stringEnd(stringEnd), m_stringEscape(stringEscape) {}
-      rule(const rule& o): m_eState(o.m_eState), m_stringStart(o.m_stringStart), m_stringEnd(o.m_stringEnd) {}
-      rule(rule&& o) noexcept : m_eState(o.m_eState), m_stringStart(std::move(o.m_stringStart)), m_stringEnd(std::move(o.m_stringEnd)) {}
+      rule(const rule& o): m_eState(o.m_eState), m_stringStart(o.m_stringStart), m_stringEnd(o.m_stringEnd), m_stringEscape(o.m_stringEscape) {}
+      rule(rule&& o) noexcept : m_eState(o.m_eState), m_stringStart(std::move(o.m_stringStart)), m_stringEnd(std::move(o.m_stringEnd)), m_stringEscape(std::move(o.m_stringEscape)) {}
       rule& operator=(const rule& o) {
          assert(this != &o); m_eState = o.m_eState; m_stringStart = o.m_stringStart; m_stringEnd = o.m_stringEnd; m_stringEscape = o.m_stringEscape;
          return *this;
@@ -258,6 +258,19 @@ public:
          if( std::strncmp(piText - m_stringEscape.length(), m_stringEscape.c_str(), m_stringEscape.length()) == 0 ) {
             return true;
          }
+
+         /*
+         if( m_stringEscape.length() == 1 ) {
+            auto escape_ = m_stringEscape[0]; // get escape character
+            if( *( piText - 1 ) == escape_ && *( piText - 2 ) != escape_ ) return true; // check if the previous character is the escape character and not escaped itself
+         }
+         else {
+            if( std::strncmp(piText - m_stringEscape.length(), m_stringEscape.c_str(), m_stringEscape.length()) == 0 ) {
+               // found escape character, so the text might be escaped if this is not escaped also
+               return true;
+            }
+         }
+         */
          return false;
       }
 

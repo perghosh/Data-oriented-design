@@ -1,4 +1,4 @@
-/**
+/** @TAG #ignore
  * @file Application.cpp
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
@@ -8,6 +8,8 @@
  * - `0TAG0OPTIONS.Application` - prepare command line options
  * 
  */
+
+/* @TAG #ignore */
 
 #include <filesystem>
 #include <format>

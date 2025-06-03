@@ -82,7 +82,7 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    if( iRecursive == 0 && options_.exists("R") == true ) iRecursive = 16;     // set to 16 if D is set, find all files
 
    std::string stringFilter = options_["filter"].as_string();
-   if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" ) 
+   if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" )   // if filter is set to * or . or ** then we want all files, so clear the filter and deep recursion 
    { 
       stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
       if( iRecursive == 0 ) iRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
