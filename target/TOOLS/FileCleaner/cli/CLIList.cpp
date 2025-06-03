@@ -71,7 +71,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    if (iRecursive == 0 && options_.exists("R") == true) iRecursive = 16; // set to 16 if R is set, find all files
 
    std::string stringFilter = options_["filter"].as_string();
-   if( stringFilter == "*" ) 
+   if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" ) 
    { 
       stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
       if( iRecursive == 0 ) iRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
