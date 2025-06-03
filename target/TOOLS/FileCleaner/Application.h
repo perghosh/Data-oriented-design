@@ -95,8 +95,10 @@ public:
 
    /**
     * \brief ignore information for folders or files to ignore
-    *
-    *
+    * 
+    * Holds information about folders or files to ignore during processing.
+    * 
+    * Note that rules in ignore is appliced from the project root folder downwards.
     */
    struct ignore
    {
@@ -113,9 +115,12 @@ public:
       ignore(const ignore& o) : m_uType(o.m_uType), m_stringIgnore(o.m_stringIgnore) {}
       ~ignore() {}
 
+      operator std::string_view() const { return m_stringIgnore; } ///< Convert ignore to string view
+
       bool is_root() const { return ( m_uType & eTypeRoot ) != 0; } ///< Check if ignore is root ignore
       bool is_folder() const { return ( m_uType & eTypeFolder ) != 0; } ///< Check if ignore is folder ignore
-
+      bool is_file() const { return ( m_uType & eTypeFile ) != 0; } ///< Check if ignore is file ignore
+      bool is_wildcard() const { return ( m_uType & eTypeWildcard ) != 0; } ///< Check if ignore is wildcard ignore
 
       // ## attributes
       unsigned m_uType = 0; ///< Type of ignore, e.g. folder, file, and how to apply it
@@ -214,7 +219,8 @@ public:
    void IGNORE_Add( const std::vector<ignore>& vectorIgnore ) { m_vectorIgnore.insert( m_vectorIgnore.end(), vectorIgnore.begin(), vectorIgnore.end() ); }
 
    /// Ccheck if paths is to be ignored
-   bool IGNORE_Match( const std::string_view& stringPath );
+   bool IGNORE_Match( const std::string_view& stringPath, const std::string_view& stringRoot ) const;
+   bool IGNORE_Match( const std::string_view& stringPath ) const { return IGNORE_Match( stringPath, std::string_view() ); }
 
    /// Return number of ignore patterns
    size_t IGNORE_Size() const { return m_vectorIgnore.size(); }

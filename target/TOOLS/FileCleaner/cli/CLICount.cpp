@@ -79,7 +79,7 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    
    CApplication::PreparePath_s(stringSource);
    int iRecursive = options_["recursive"].as_int();
-   if( iRecursive == 0 && options_.exists("R") == true ) iRecursive = 16;// set to 16 if D is set, find all files
+   if( iRecursive == 0 && options_.exists("R") == true ) iRecursive = 16;     // set to 16 if D is set, find all files
 
    std::string stringFilter = options_["filter"].as_string();
    if( stringFilter == "*" ) 
@@ -94,9 +94,9 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    // Count rows in the harvested files
    result_ = pdocument->FILE_UpdateRowCounters();                                                  if( !result_.first ) { return result_; }
 
-   if( options_["pattern"].is_true() )                              // Handle pattern matching if specified
+   if( options_["pattern"].is_true() )                                        // Handle pattern matching if specified
    {
-      iReportType = patterncount_report_;                                           // set report type to pattern report
+      iReportType = patterncount_report_;                                     // set report type to pattern report
       std::string stringPattern = options_["pattern"].as_string();
       auto vectorPattern = CApplication::Split_s(stringPattern);
       result_ = pdocument->FILE_UpdatePatternCounters(vectorPattern);                              if( !result_.first ) { return result_; }
@@ -149,10 +149,15 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
          else if( iReportType == patterncount_report_ )
          {                                                                                         assert(options_["pattern"].is_true());
             std::vector<unsigned> vectorColumn;
-            for( auto u = 2u; u < tableResult.get_column_count(); u++ ) vectorColumn.push_back(u);// add sum columns
+            for( auto u = 1u; u < tableResult.get_column_count(); u++ ) vectorColumn.push_back(u);// add sum columns
 
+            result_ = TABLE_RemoveZeroRow(&tableResult, vectorColumn);                             if( !result_.first ) { return result_; }
             result_ = TABLE_AddSumRow(&tableResult, vectorColumn);                                 if( !result_.first ) { return result_; }
-            uFooterRowCount = 1;
+            if( tableResult.get_row_count() > 0 )
+            {
+               tableResult.cell_set(tableResult.get_row_count() - 1, "filename", "Total:");
+               uFooterRowCount = 1;                                           // if we have a footer row, set the count to 1
+            }
          }
       }
    }
