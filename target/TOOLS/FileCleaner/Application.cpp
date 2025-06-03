@@ -169,9 +169,10 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
 std::pair<bool, std::string> CApplication::Initialize()
 {
+   std::pair<bool, std::string> result_;
 #ifdef _WIN32
    // Initialize Windows-specific functionality, such as COM
-   auto result_ = PrepareWindows_s();
+   result_ = PrepareWindows_s();
    if( result_.first == false ) return result_;
 #endif
 
