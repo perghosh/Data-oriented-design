@@ -31,15 +31,25 @@ cleaner.exe <command> [options]
 
 ---
 
+### Usage Examples with *
+Cleaner support some shortcuts to make it esier to use.
+The `*` added after command means that cleaner should scan all files in current folder and subfolders. Its a shortcut for `-R` and `--source *`.
+
+- `cleaner count *` count lines in all files in current folder and subfolders.
+- `cleaner count * assert,for,if,while` counts the patterns "assert", "for", "if", "while" in all files in current folder and subfolders.
+- `cleaner list * assert` lists all rows matching pattern "assert" in all files in current folder and subfolders.`
+- `cleaner dir *` lists all files in current folder and subfolders.
+
+
 ## Commands
 
 ### count
 Counts lines in files or folders, or counts pattern occurrences.
 
 **Options:**
-- `--source <path>`: File or folder to count lines in. If not specified, the current directory is used. Cleaner supports positional arguments for source path, so you can use `cleaner count /home/username/dev/project/src/`.
-- `--pattern <patterns>`: Patterns to count, separated by `,` or `;`. Note that adding a pattern switches to counting pattern occurrences instead of lines.
 - `--filter <pattern>`: Filter files using wildcard patterns (e.g., `*.h;*.cpp`).
+- `--pattern <patterns>`: Patterns to count, separated by `,` or `;`. Note that adding a pattern switches to counting pattern occurrences instead of lines.
+- `--source <path>`: File or folder to count lines in. If not specified, the current directory is used. Cleaner supports positional arguments for source path, so you can use `cleaner count /home/username/dev/project/src/`.
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--output <file>`: Save the output to a file.
 - `--page <index>`: Print the output to the console from slected page, default page size is 10 lines.
@@ -59,9 +69,9 @@ Counts lines in files or folders, or counts pattern occurrences.
 Lists rows matching specified patterns in files or folders.
 
 **Options:**
-- `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner list /home/username/dev/project/src/`.
-- `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
 - `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;`.
+- `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
+- `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner list /home/username/dev/project/src/`.
 - `--rpattern <regex>`: Regular expression pattern to search for.
 - `--script <pattern>`: Additional filter for script files.
 - `--max <count>`: Limit the number of results.
@@ -86,9 +96,9 @@ Copies files from source to destination.
 Lists files in a directory.
 
 **Options:**
-- `--source <path>`: Directory to list.
-- `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
 - `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;` (e.g., `*.h;*.cpp`).
+- `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
+- `--source <path>`: Directory to list.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 
 ---
