@@ -179,6 +179,11 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
             std::cerr << stringError << "\n";
             return result_;
          }
+         else
+         {
+            std::string stringPrint = std::format("Printed to Visual Studio output: {} rows", tableResultLineList.get_row_count());
+            std::cerr << stringPrint << "\n";
+         }
       }
 #else
       // ## Just print the "line" column 
