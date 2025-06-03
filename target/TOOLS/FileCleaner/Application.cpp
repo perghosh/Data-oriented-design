@@ -180,7 +180,6 @@ std::pair<bool, std::string> CApplication::Initialize()
 
    std::filesystem::path pathCurrent = std::filesystem::current_path();
    std::string stringCurrentPath = pathCurrent.string();
-   stringCurrentPath = "C:\\dev\\home\\DOD";
    PROPERTY_Add("folder-current", stringCurrentPath );
 
    std::vector<ignore> vectorIgnore;
