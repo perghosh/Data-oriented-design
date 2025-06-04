@@ -365,7 +365,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
  *   occurrences of each pattern and updates the "file-pattern" table with the results.
  * - If an error occurs during the process, it is added to the internal error list.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::vector<std::string>& vectorPattern)
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::argument::shared::arguments& argumentsPattern, const std::vector<std::string>& vectorPattern)
 {                                                                                                  assert( vectorPattern.empty() == false ); assert( vectorPattern.size() < 64 ); // max 64 patterns
    using namespace gd::table::dto;
    constexpr unsigned uTableStyle = (table::eTableFlagNull64|table::eTableFlagRowStatus);
@@ -407,7 +407,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const std::ve
       ptableFilePattern->cell_set( uRow, "folder", itRowFile.cell_get_variant_view("folder") );
       ptableFilePattern->cell_set( uRow, "filename", itRowFile.cell_get_variant_view("filename") );
 
-      auto result_ = COMMAND_CollectPatternStatistics( {{"source", stringFile} }, vectorPattern, vectorCount );
+      gd::argument::shared::arguments argumentsPattern_({ {"source", stringFile} });
+      if( argumentsPattern.exists("state") == true ) { argumentsPattern_.set("state", argumentsPattern["state"].as_string_view()); } // set the state (code, comment, string) to search in
+      auto result_ = COMMAND_CollectPatternStatistics( argumentsPattern_, vectorPattern, vectorCount );
       if( result_.first == false ) { ERROR_Add(result_.second); }
 
       for( unsigned u = 0; u < vectorCount.size(); u++ )

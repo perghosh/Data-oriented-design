@@ -1170,7 +1170,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "source", 's', "File/folders to count lines in"});
       //optionsCommand.add({ "comment", "Pair of characters marking start and end for comments"});
       //optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
-
+      optionsCommand.add({ "segment", "type of segment in code to search in"});
       optionsCommand.add({ "page", "Index for page to print and if page-size is not set then default page-size is 10" });
       optionsCommand.add({ "page-size", "Max number of rows in each page" });
       optionsCommand.add({ "sort", "Sorts result on selected column name" });
@@ -1239,7 +1239,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "rpattern", "regular expression pattern to search for"});
       optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
       optionsCommand.add({ "max", "Max list count to avoid too many hits"});
-      optionsCommand.add({ "segment", "type of segment in code to searh in"});
+      optionsCommand.add({ "segment", "type of segment in code to search in"});
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format, make files clickable"} );

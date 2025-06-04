@@ -97,10 +97,14 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
 
    if( options_["pattern"].is_true() )                                        // Handle pattern matching if specified
    {
+      gd::argument::shared::arguments argumentsPattern;
+      std::string stringSegment = options_["segment"].as_string(); // type of segment to search in, code, comment or string, maybe all
+      if(stringSegment.empty() == false) argumentsPattern.set("state", stringSegment.c_str());
+
       iReportType = patterncount_report_;                                     // set report type to pattern report
       std::string stringPattern = options_["pattern"].as_string();
       auto vectorPattern = CApplication::Split_s(stringPattern);
-      result_ = pdocument->FILE_UpdatePatternCounters(vectorPattern);                              if( !result_.first ) { return result_; }
+      result_ = pdocument->FILE_UpdatePatternCounters(argumentsPattern, vectorPattern);            if( !result_.first ) { return result_; }
    }
 
    // ## Determine sorting options
