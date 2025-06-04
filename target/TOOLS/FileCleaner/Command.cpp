@@ -51,7 +51,11 @@ namespace detail {
       auto filename_ = pathFile.filename().string();                                               assert(filename_.empty() == false);
       if( stringWildcard.empty() == false )
       {
-         std::vector<std::string_view> vectorWildcard = gd::utf8::split(stringWildcard, ';');
+         char iSplit = ';';                                                   // separator for wildcards
+         auto uPosition = stringWildcard.find_first_of(";,");
+         if( uPosition != std::string_view::npos ) { iSplit = stringWildcard[uPosition]; } // use the first separator found
+
+         std::vector<std::string_view> vectorWildcard = gd::utf8::split(stringWildcard, iSplit);
          bool bMatched = false;
          for( const auto& filter_ : vectorWildcard )
          {
@@ -212,12 +216,13 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
 
    unsigned uRecursive = argumentsPath["recursive"].as_uint();
    std::string stringSource = argumentsPath["source"].as_string();
-   std::string stringWildcard = argumentsPath["filter"].as_string();
+   std::string stringFilter = argumentsPath["filter"].as_string();
+
    auto vectorPath = gd::utf8::split(stringSource, ';');
 
    for( auto itPath : vectorPath )
    {
-      auto [bOk, stringError] = FILES_Harvest_g(std::string(itPath), stringWildcard, ptable_, uRecursive); // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+      auto [bOk, stringError] = FILES_Harvest_g(std::string(itPath), stringFilter, ptable_, uRecursive); // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( bOk == false ) return { false, stringError };
    }
 
