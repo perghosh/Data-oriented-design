@@ -3609,7 +3609,7 @@ _GD_ARGUMENT_BEGIN
 namespace debug {
 
    /** ------------------------------------------------------------------------
-    * @brief print data in argument to view what it contains, usefull in debug
+    * @brief print data in argument to view what it contains, useful in debug
     * @param argumentPrint argument to print
     * @return string with argument information
    */
@@ -3624,7 +3624,7 @@ namespace debug {
    }
 
    /** ------------------------------------------------------------------------
-    * @brief print data in arguments to view what it contains, usefull in debug
+    * @brief print data in arguments to view what it contains, useful in debug
     * @param argumentsToPrint arguments to print
     * @return string with arguments information
    */

@@ -504,6 +504,17 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
 
    unsigned uFindInState = eStateCode; // state of the parser
 
+   // ## if state is sent than try to figure out from what state to find patterns
+   if( argumentsPath.exists("state") == true )
+   {
+      std::string stringState = argumentsPath["state"].as_string();
+      if( stringState == "comment" ) uFindInState = eStateComment;
+      else if( stringState == "string" ) uFindInState = eStateString;
+      else if( stringState == "code" ) uFindInState = eStateCode;
+      else if( stringState == "all" ) uFindInState = ( eStateComment | eStateString | eStateCode );
+   }
+
+
    gd::parse::patterns patternsFind(vectorPattern); // patterns to find in source code
    patternsFind.sort();                                                       // Sort patterns by length, longest first
 
@@ -607,7 +618,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
             stringText += *it;                                                // add character to text for analysis
             // ## check if we have found end of state
             unsigned uLength;
-            if( state_.deactivate( it, &uLength ) == true ) 
+            if( state_.deactivate( it, &uLength, gd::expression::parse::state::tag_manual{}) == true ) 
             {
                if( uFindInState & (eStateComment|eStateString) )
                {
@@ -620,8 +631,8 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
                      count_(stringText);
                   }
                }
+               state_.clear_state();                                           // clear state
                stringText.clear();                                             // clear text for analysis
-               
                
                if( uLength > 1 ) it += ( uLength - 1 );                       // skip to end of state marker and if it is more than 1 character, skip to end of state
                continue;
