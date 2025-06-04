@@ -1,6 +1,15 @@
 # Cleaner.exe Documentation
 
-`cleaner.exe` is a console application designed to perform various file and folder operations, such as search in files or counting lines etc, it has strong search capabilities, allowing users to find specific patterns in files and folders. The application is built with a focus on performance and usability, making it suitable for developers and system administrators who need to manage large codebases or datasets efficiently.
+## Introducing cleaner – A Fast, Focused Code Search Tool
+
+`cleaner` is a lightweight console application that integrates seamlessly with popular editors and IDEs like Visual Studio, Visual Studio Code, etc.
+
+`cleaner` complements the search functionality in these tools and is built to be fast and efficient when it comes to searching through files and folders, counting lines, listing lines that match specific patterns, and handling file and directory operations.
+
+Searching effectively is powerful, but searching through everything—especially in large codebases—can be time-consuming and resource-intensive. cleaner is designed to handle these situations. It allows searching in parts, searching within sections of code, and presenting search results in a way that suits the intended purpose.
+
+Why the name `cleaner`? Managing code often means cleaning—removing clutter, refactoring, or reorganizing. But first, you need to find what needs fixing. cleaner helps you search smarter, so you can clean better.
+
 
 ---
 
@@ -26,7 +35,7 @@
 cleaner.exe <command> [options]
 ```
 
-- **command**: The operation to perform (e.g., `count`, `list`, `db`, etc.).
+- **command**: The operation to perform (e.g., `count`, `list`, `dir`, etc.).
 - **options**: Additional parameters specific to the command.
 
 ---
@@ -51,6 +60,7 @@ Counts lines in files or folders, or counts pattern occurrences.
 - `--pattern <patterns>`: Patterns to count, separated by `,` or `;`. Note that adding a pattern switches to counting pattern occurrences instead of lines.
 - `--source <path>`: File or folder to count lines in. If not specified, the current directory is used. Cleaner supports positional arguments for source path, so you can use `cleaner count /home/username/dev/project/src/`.
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
+- `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
 - `--output <file>`: Save the output to a file.
 - `--page <index>`: Print the output to the console from slected page, default page size is 10 lines.
 - `--page-size <size>`: Specify the number of lines per page for console output.
@@ -73,6 +83,7 @@ Lists rows matching specified patterns in files or folders.
 - `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
 - `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner list /home/username/dev/project/src/`.
 - `--rpattern <regex>`: Regular expression pattern to search for.
+- `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
 - `--script <pattern>`: Additional filter for script files.
 - `--max <count>`: Limit the number of results.
 - `--segment <type>`: Segment in code to find patterns. Valid segments are: code, **comment**, **string**, and **all** (all = all code).
