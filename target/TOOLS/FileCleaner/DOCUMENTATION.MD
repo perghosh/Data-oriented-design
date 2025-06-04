@@ -33,7 +33,7 @@ cleaner.exe <command> [options]
 
 ### Usage Examples with *
 Cleaner support some shortcuts to make it esier to use.
-The `*` added after command means that cleaner should scan all files in current folder and subfolders. Its a shortcut for `-R` and `--source *`.
+The `*` (or `.`, `**` beacuse `*` is specific in linux) added after command means that cleaner should scan all files in current folder and subfolders. Its a shortcut for `-R` and `--source *`.
 
 - `cleaner count *` count lines in all files in current folder and subfolders.
 - `cleaner count * assert,for,if,while` counts the patterns "assert", "for", "if", "while" in all files in current folder and subfolders.
