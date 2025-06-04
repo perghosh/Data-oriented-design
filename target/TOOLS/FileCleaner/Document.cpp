@@ -130,7 +130,12 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
 std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stringFilter)
 {                                                                                                  assert( stringFilter.empty() == false );
    std::vector<uint64_t> vectorRemoveRow;
-   auto vectorWildcard = gd::utf8::split(stringFilter, ';');
+
+   char iSplit = ';';                                                   // separator for wildcards
+   auto uPosition = stringFilter.find_first_of(";,");
+   if( uPosition != std::string_view::npos ) { iSplit = stringFilter[uPosition]; } // use the first separator found
+
+   auto vectorWildcard = gd::utf8::split(stringFilter, iSplit);
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
 
    for( uint64_t uRow = 0, uRowCount = ptableFile->size(); uRow < uRowCount; uRow++ )
