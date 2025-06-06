@@ -85,8 +85,30 @@ if( USE_TARGET_ )
 
    if(MSVC)
    else()
+
+         # Linux-specific optimizations for size and compatibility
+      target_compile_options(${TARGET_NAME_} PRIVATE 
+         -Os                    # Optimize for size
+         -ffunction-sections    # Place each function in its own section
+         -fdata-sections        # Place each data item in its own section
+         -fno-exceptions        # Disable exceptions if not needed
+         -fno-rtti              # Disable RTTI if not needed
+         -fno-stack-protector   # Remove stack protection overhead
+      )
+      
+      # Link options for maximum compatibility and minimal size
+      target_link_options(${TARGET_NAME_} PRIVATE 
+         -static-libstdc++      # Static link C++ standard library
+         -static-libgcc         # Static link GCC runtime
+         -Wl,--gc-sections      # Remove unused sections
+         -Wl,--strip-all        # Strip all symbols
+         -Wl,--as-needed        # Only link needed libraries
+         -s                     # Strip symbol table
+      )
+
+
       # Link GLIBCXX statically
-      target_link_options(${TARGET_NAME_} PRIVATE -static-libstdc++)
+      # target_link_options(${TARGET_NAME_} PRIVATE -static-libstdc++)
    endif()
    
 endif()
