@@ -1120,7 +1120,7 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
 // 0TAG0OPTIONS.Application
 
 
-/** --------------------------------------------------------------------------- @TAG #option
+/** ---------------------------------------------------------------------------
  * @brief Prepares the application options for command-line usage.
  *
  * This method sets up the available command-line options for the application,
@@ -1150,7 +1150,7 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
  * - `help`     : Displays help information.
  * - `version`  : Displays the application version.
  */
-void CApplication::Prepare_s(gd::cli::options& optionsApplication)
+void CApplication::Prepare_s(gd::cli::options& optionsApplication)             // @TAG #options.Application
 {
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
@@ -1164,10 +1164,10 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    //optionsApplication.add({ "statements", "file containing sql statements"});
 
    {  // ## `copy` command, copies file from source to target
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "count lines in file" );
-      optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count lines in file" );
+      optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
-      optionsCommand.add({ "source", 's', "File/folders to count lines in"});
+      optionsCommand.add({ "source", 's', "File(s) or folder(s) to count lines in"});
       //optionsCommand.add({ "comment", "Pair of characters marking start and end for comments"});
       //optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
       optionsCommand.add({ "segment", "type of segment in code to search in"});
@@ -1207,7 +1207,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    { // ## 'dir' command, list files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in directory" );
-      optionsCommand.add({ "filter", "Filter file extensions" });
+      optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, search for patterns in all found text files" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "source", 's', "Directory to list" });
       optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
@@ -1234,13 +1234,14 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "list rows with specified patterns" );
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
-      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
-      optionsCommand.add({ "source", 's', "File/folders where to search for patterns in"});
-      optionsCommand.add({ "rpattern", "regular expression pattern to search for"});
+      optionsCommand.add({ "pattern", 'p', "Patterns to search for (multiple values separated by commas or semicolons)"});
+      optionsCommand.add({ "source", 's', "File(s) or folder(s) to search"});
+      optionsCommand.add({ "rpattern", "Regular expression pattern to search for"});
       optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
-      optionsCommand.add({ "max", "Max list count to avoid too many hits"});
-      optionsCommand.add({ "segment", "type of segment in code to search in"});
-      optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
+      optionsCommand.add({ "max", "Maximum number of results to return"});
+      optionsCommand.add({ "segment", "Type of code segment to search within (code, comment, string or all)"});
+      optionsCommand.add_flag( {"R", "Enable recursive scanning of all subfolders (depth limit: 16)"} );
+      optionsCommand.add_flag( {"match-all", "Require all specified patterns to match in each row"} );
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format, make files clickable"} );
       optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
@@ -1567,10 +1568,22 @@ void CApplication::PreparePath_s(std::string& stringPath)
             if( pathFile.is_relative() == true )                              // Check if path is relative
             {
                // ## make path absolute
-
-               std::filesystem::path pathAbsolute = std::filesystem::absolute(pathFile);
-               gd::file::path path_(pathAbsolute);
-               stringPath = path_.string();
+               
+               if( stringPath.find("..") != -1 )
+               {
+                  // If path contains "..", we need to resolve it relative to the current working directory
+                  gd::file::path path_( std::filesystem::current_path() );
+                  path_ += stringPath;
+                  std::filesystem::path pathAbsolute = std::filesystem::absolute(path_);
+                  //path_. = pathAbsolute;
+                  stringPath = pathAbsolute.string();
+               }
+               else
+               {
+                  std::filesystem::path pathAbsolute = std::filesystem::absolute(pathFile);
+                  gd::file::path path_(pathAbsolute);
+                  stringPath = path_.string();
+               }
             }
          } // if( pathFile.is_absolute() == false )
       } // if( stringPath.empty() ) else
