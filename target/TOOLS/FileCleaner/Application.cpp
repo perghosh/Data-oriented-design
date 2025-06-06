@@ -524,7 +524,7 @@ std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& 
 /**
  * @brief Prints a progress message to the console or other output based on the UI type.
  */
-std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat)
+std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat) // @TAG #progress.Application
 {
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutex );
 
@@ -1305,7 +1305,7 @@ void CApplication::PrepareLogging_s()
 
 
 
-/** --------------------------------------------------------------------------- @TAG #state #parse
+/** --------------------------------------------------------------------------- @TAG #state #parse.Application
  * @brief Prepares the state for parsing based on the file extension.
  * @param argumentsPath The arguments containing the source path for harvesting files.
  * @param state_ The state object to be prepared.
