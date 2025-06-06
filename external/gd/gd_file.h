@@ -142,6 +142,8 @@ struct path
 
    ~path() {}
 
+   path& operator=(const std::filesystem::path& path_) { m_stringPath = path_.string(); normalize_path_s(m_stringPath); return *this; }
+
    // ## operators to return path in different formats
 
    operator std::string_view() const { return std::string_view( m_stringPath ); }
