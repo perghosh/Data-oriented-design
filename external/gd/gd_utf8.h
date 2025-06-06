@@ -43,6 +43,8 @@ namespace gd {
    namespace utf8 {
       // tag dispatcher for utf8 if no support for char8_t
       struct tag_utf8{};
+      // tag dispatcher to escape something in text
+      struct tag_escape {};
       /// tag dispatcher for wildcard matching
       struct tag_wildcard{};
       /// tag dispatcher when there is a find operations
@@ -834,9 +836,12 @@ namespace gd {
       
       // ## Split methods, split string into parts
 
+      /// Split string into std::string_view parts, each part is separated by `chSplit` character
       void split( const char* pbBegin, const char* pbEnd, char chSplit, std::vector<std::string_view>& vectorPart );
       void split( const std::string_view& stringText, char chSplitWith, std::vector<std::string_view>& vectorPart );
       inline std::vector<std::string_view> split( const std::string_view& stringText, char chSplitWith ) { std::vector<std::string_view> v_; split( stringText, chSplitWith, v_ ); return v_; }
+
+      /// Split string into std::string parts, each part is separated by `chSplit` character
       void split( const std::string_view& stringText, char chSplitWith, std::vector<std::string>& vectorPart );
       inline std::vector<std::string> split( const std::string_view& stringText, char chSplitWith, tag_string ) { std::vector<std::string> v_; split( stringText, chSplitWith, v_ ); return v_; }
       void split( const std::string_view& stringText, const std::string_view& stringSplit, std::vector<std::string>& vectorPart );
@@ -855,6 +860,16 @@ namespace gd {
       void split( const char* pbBegin, const char* pbEnd, char chSplitWith, std::vector< std::variant< unsigned, std::string > >& vectorPart );
       inline void split(const std::string_view& stringText, char chSplitWith, std::vector< std::variant< unsigned, std::string > >& vectorPart) {
          split( stringText.data(), stringText.data() + stringText.length(), chSplitWith, vectorPart );
+      }
+
+      // ## split with escape character, double split character is used to escape split character
+
+      /// Split string into std::string parts, each part is separated by `chSplit` character, escape character is used to escape split character
+      void split(const std::string_view& stringText, char chSplitWith, std::vector<std::string>& vectorPart, tag_escape);
+      inline std::vector<std::string> split(const std::string_view& stringText, char chSplitWith, tag_escape) {
+         std::vector<std::string> vectorPart;
+         split(stringText, chSplitWith, vectorPart, tag_escape{});
+         return vectorPart;
       }
 
       // ### split into vector with `string_view`

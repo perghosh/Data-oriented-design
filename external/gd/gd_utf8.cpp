@@ -2765,6 +2765,49 @@ namespace gd {
       }
 
       /** -------------------------------------------------------------------
+       * @brief Split string into multiple strings and store them in vector, string is split where char is found.
+       *        Double split characters are treated as escape sequences and replaced with single character.
+       * @param stringText text to split into multiple parts
+       * @param chSplitWith character used to mark where to split text (double occurrence = escaped)
+       * @param vectorPart vector where strings are stored
+       */
+      void split(const std::string_view& stringText, char chSplitWith, std::vector<std::string>& vectorPart, tag_escape)
+      {
+         std::string stringPart;                // Store string parts added to vector
+
+         for(size_t u = 0; u < stringText.size(); u++)
+         {
+            if(stringText[u] == chSplitWith)                                   // match split character
+            {
+               // Check if next character is also the split character (escape sequence)
+               if(u + 1 < stringText.size() && stringText[u + 1] == chSplitWith)
+               {
+                  stringPart += chSplitWith;                                   // Double split character found - add single character to current part
+                  u++;                                                         // Skip the next character since we processed both
+               }
+               else
+               {  // Single split character found - end current part and start new one
+                  vectorPart.emplace_back(stringPart);
+                  stringPart.clear();
+               }
+            }
+            else
+            {
+               stringPart += stringText[u];
+            }
+         }
+
+         // Add final part if it contains text or if string ends with single split character
+         // Note that there are an edge case if onli one split character is found and then we cant check for two split characters
+         if( stringPart.empty() == false || 
+             (stringText.empty() == false && stringText.back() == chSplitWith && (stringText.size() == 1 || stringText[stringText.size()-2] != chSplitWith))
+         )
+         {
+            vectorPart.emplace_back(stringPart);
+         }
+      }
+
+      /** -------------------------------------------------------------------
        * @brief Split string into multiple strings and store them in vector, string is split where char is found
        * @param stringText text to split into multiple parts
        * @param stringSplit character sequence that marks where to split text
