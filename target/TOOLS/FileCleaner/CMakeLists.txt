@@ -86,24 +86,24 @@ if( USE_TARGET_ )
    if(MSVC)
    else()
 
-         # Linux-specific optimizations for size and compatibility
+      # Linux-specific optimizations for full static linking
       target_compile_options(${TARGET_NAME_} PRIVATE 
          -Os                    # Optimize for size
          -ffunction-sections    # Place each function in its own section
          -fdata-sections        # Place each data item in its own section
-         -fno-exceptions        # Disable exceptions if not needed
-         -fno-rtti              # Disable RTTI if not needed
-         -fno-stack-protector   # Remove stack protection overhead
+         -fPIC                  # Position independent code (needed for static linking)
       )
       
-      # Link options for maximum compatibility and minimal size
+      # Full static linking - creates completely standalone binary
       target_link_options(${TARGET_NAME_} PRIVATE 
+         -static                # Full static linking - links everything statically
          -static-libstdc++      # Static link C++ standard library
          -static-libgcc         # Static link GCC runtime
          -Wl,--gc-sections      # Remove unused sections
          -Wl,--strip-all        # Strip all symbols
          -Wl,--as-needed        # Only link needed libraries
          -s                     # Strip symbol table
+         -pthread               # Static link pthread
       )
 
 
