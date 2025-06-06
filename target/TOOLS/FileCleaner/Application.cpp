@@ -1967,7 +1967,7 @@ std::vector<std::string> CApplication::Split_s(const std::string& stringText, ch
 
    // ## Split the string using the effective delimiter
 
-   vectorResult = gd::utf8::split( stringText, iEffectiveDelimiter, gd::utf8::tag_string{});
+   vectorResult = gd::utf8::split( stringText, iEffectiveDelimiter, gd::utf8::tag_escape{});
 
    return vectorResult;
 }
