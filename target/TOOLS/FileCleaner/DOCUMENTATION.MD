@@ -163,7 +163,7 @@ Sort on code lines and only count lines in cpp files: `cleaner count -R --sort c
 
 | Extension | Language | Comment Styles | String Formats |
 |-----------|----------|---------------|---------------|
-| `.cpp`, `.c`, `.h`, `.hpp` | C/C++ | Line: `//`<br>Block: `/* */` | Standard strings with escape chars<br>Raw strings: `R"()"` |
+| `.cpp`, `.c`, `.h`, `.hpp`, `.cc`, `.cxx`, `.hxx`, `.ipp`  | C/C++ | Line: `//`<br>Block: `/* */` | Standard strings with escape chars<br>Raw strings: `R"()"` |
 | `.cs` | C# | Line: `//`<br>Block: `/* */` | Standard strings with escape chars<br>Verbatim strings: `"""..."""` |
 | `.fs` | F# | Line: `//`<br>Block: `/* */` | Standard strings with escape chars<br>Verbatim strings: `"""..."""` |
 | `.kt` | Kotlin | Line: `//`<br>Block: `/* */` | Standard strings with escape chars<br>Multiline strings: `"""..."""` |
@@ -191,6 +191,10 @@ Sort on code lines and only count lines in cpp files: `cleaner count -R --sort c
 | `.clj` | Clojure | Line: `;` | Double quotes with escape chars |
 | `.vim` | Vim Script | Line: `"` | Double quotes with escape chars<br>Single quotes with escape chars |
 | `.txt`, `.md` | Plain text/Markdown | None | None defined |
+| `.bat`, `.cmd` | Batch/Command | Line: `REM`<br>Line: `::` | Double and single quotes with escape chars |
+| `.ps1` | PowerShell | Line: `#`<br>Block: `<#` `#>` | Double and single quotes with escape chars<br>Here-strings: `@"` `"@` |
+| `.mak`, `.makefile`, `.ninja` | Make/Ninja | Line: `#` | None defined |
+| `.ini` | INI/Config | Line: `;`<br>Line: `#` | None defined |
 
 ---
 
