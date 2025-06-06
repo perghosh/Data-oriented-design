@@ -2,7 +2,7 @@
 * @file CLIList.cpp
 */
 
-// @TAG #cli
+// @TAG #cli #list
 
 #include "../Command.h"
 
@@ -104,13 +104,19 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       uSearchPatternCount = vectorPattern.size();                              // count the number of patterns to search for
       result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
+
+      if( options_["match-all"].is_true() == true )
+      {
+         result_ = ListMatchAllPatterns_g( vectorPattern, pdocument );
+         if (result_.first == false) return result_;
+      }
    }
    else if( options_.exists("rpattern") == true )
    {
       std::string stringPattern = options_["rpattern"].as_string();
       std::vector<std::string> vectorPattern = CApplication::Split_s(stringPattern); // split pattern string into vector
       uSearchPatternCount = vectorPattern.size(); // count the number of patterns to search for
-      std::vector< std::pair<std::regex, std::string> > vectorRegexPatterns;   // vector of regex patterns and their string representation
+      std::vector< std::pair<std::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
       
       // ## convert string to regex and put it into vectorRegexPatterns
       for( auto& stringPattern : vectorPattern )
@@ -118,7 +124,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          try
          {
             std::regex regexPattern(stringPattern);
-            vectorRegexPatterns.push_back({ regexPattern, stringPattern });
+            vectorRegexPattern.push_back({ regexPattern, stringPattern });
          }
          catch (const std::regex_error& e)
          {                                                                      
@@ -127,8 +133,15 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          }
       }
 
-      result_ = pdocument->FILE_UpdatePatternList(vectorRegexPatterns, argumentsList); // Search for patterns in harvested files and place them into the result table
+      result_ = pdocument->FILE_UpdatePatternList(vectorRegexPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
+
+      if( options_["match-all"].is_true() == true )
+      {
+         result_ = ListMatchAllPatterns_g( vectorRegexPattern, pdocument );
+         if (result_.first == false) return result_;
+      }
+
    }
    else { return { false, "No pattern specified" }; }                          // no pattern specified
 
@@ -201,8 +214,80 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       if (result_.first == false) return result_;
    }
 
+   return { true, "" }; // return success
+}
+
+std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector<std::string>& vectorPattern, CDocument* pdocument, int iMatchCount )
+{                                                                                                  assert( pdocument != nullptr ); assert( vectorPattern.size() > 0 ); // at least one pattern must be specified
+   std::vector<uint64_t> vectorRowDelete; // vector of row numbers to delete
+
+   auto ptableLineList = pdocument->CACHE_Get("file-linelist"); // get the file line list from the cache
+
+   if( iMatchCount == -1 ) iMatchCount = (int)vectorPattern.size();                     // if iMatchCount is -1 then set it to the size of the vectorPattern, so we check all patterns
+
+   // ## iterate over all rows in table and check the line text for all patterns
+   for( size_t uRow = 0; uRow < ptableLineList->get_row_count(); ++uRow )
+   {
+      std::string_view stringLineText = ptableLineList->cell_get_variant_view(uRow, "line").as_string_view(); // get the line text
+      int iMatch = iMatchCount;                                               // number of patterns to match, if -1 then match all
+      
+      for( const auto& stringPattern : vectorPattern )                        // check if all patterns match the line text
+      {
+         if( stringLineText.find(stringPattern) == std::string::npos )        // if pattern is not found in line text
+         {
+            iMatch--;                                                         // decrement the match count 
+            if( iMatch <= 0 ) break;                                          // if we have matched all patterns, break the loop
+         }
+      }
+      
+      if( iMatch != 0 ) vectorRowDelete.push_back(uRow);                      // if not all patterns match, add row number to delete vector
+   }
+
+   // ## delete all rows that do not match all patterns
+   if( vectorRowDelete.empty() == false )
+   {
+      ptableLineList->erase( vectorRowDelete );
+   }
+
    return { true, "" };
 }
+
+std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair<std::regex, std::string> >& vectorRegexPattern, CDocument* pdocument, int iMatchCount)
+{                                                                                                  assert( pdocument != nullptr ); assert( vectorRegexPattern.size() > 0 ); // at least one pattern must be specified
+   std::vector<uint64_t> vectorRowDelete; // vector of row numbers to delete
+
+   auto ptableLineList = pdocument->CACHE_Get("file-linelist"); // get the file line list from the cache
+
+   if( iMatchCount == -1 ) iMatchCount = (int)vectorRegexPattern.size();                // if iMatchCount is -1 then set it to the size of the vectorPattern, so we check all patterns
+
+   // ## iterate over all rows in table and check the line text for all patterns
+   for( size_t uRow = 0; uRow < ptableLineList->get_row_count(); ++uRow )
+   {
+      std::string_view stringLineText = ptableLineList->cell_get_variant_view(uRow, "line").as_string_view(); // get the line text
+      int iMatch = iMatchCount;                                               // number of patterns to match, if -1 then match all
+
+      for(size_t u = 0; u < vectorRegexPattern.size(); ++u)
+      {
+         if( std::regex_search(stringLineText.begin(), stringLineText.end(), vectorRegexPattern[u].first) )
+         {
+            iMatch--;                                                         // decrement the match count 
+            if( iMatch <= 0 ) break;                                          // if we have matched all patterns, break the loop
+         }
+      }
+      
+      if( iMatch != 0 ) vectorRowDelete.push_back(uRow);                      // if not all patterns match, add row number to delete vector
+   }
+
+   // ## delete all rows that do not match all patterns
+
+   if( vectorRowDelete.empty() == false )
+   {
+      ptableLineList->erase( vectorRowDelete );
+   }
+
+   return { true, "" };
+}
+
 
 
 
