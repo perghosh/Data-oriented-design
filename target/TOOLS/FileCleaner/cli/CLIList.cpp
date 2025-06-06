@@ -233,7 +233,7 @@ std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector<std::strin
       
       for( const auto& stringPattern : vectorPattern )                        // check if all patterns match the line text
       {
-         if( stringLineText.find(stringPattern) == std::string::npos )        // if pattern is not found in line text
+         if( stringLineText.find(stringPattern) != std::string::npos )        // if pattern is not found in line text
          {
             iMatch--;                                                         // decrement the match count 
             if( iMatch <= 0 ) break;                                          // if we have matched all patterns, break the loop
