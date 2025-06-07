@@ -14,6 +14,7 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, ref
 ---
 
 ## Table of Contents
+- [Install](#install)
 - [Usage](#usage)
 - [Commands](#commands)
   - [count](#count)
@@ -28,6 +29,10 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, ref
 - [Notes](#notes)
 
 ---
+
+## Install
+
+Easiest is to just copy cleaner executable to windows/system32 or /usr/local/bin if you are running windows or linux.
 
 ## Usage
 
