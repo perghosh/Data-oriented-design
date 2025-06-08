@@ -311,6 +311,7 @@ public:
 
    gd::variant get_variant( const std::string_view& stringName ) const;
    gd::variant_view get_variant_view( const std::string_view& stringName ) const noexcept;
+   gd::variant_view get_variant_view( const std::string_view& stringName, gd::types::tag_state_active ) const noexcept;
    gd::variant_view get_variant_view( const std::string_view* pstringName ) const noexcept;
    gd::variant_view get_variant_view( const std::string_view& stringName, unsigned uindex ) const noexcept;
    gd::variant_view get_variant_view( const std::string_view* pstringName, unsigned uindex ) const noexcept;
@@ -336,6 +337,8 @@ public:
 
    /// Check if arguments exists
    bool exists( const std::string_view stringName ) const noexcept { return m_argumentsValue.exists( stringName ); }
+   /// Check if arguments exists in active options
+   bool exists( const std::string_view stringName, gd::types::tag_state_active ) const noexcept;
 
    // ## Iterators, default name and one version that specifically names option
 

@@ -5,7 +5,8 @@
  * - `0TAG0Initialize.Application` - Initialize the application from command line 
  * - `0TAG0RUN.Application` - run commands, there are a number of commands that can be run
  * - `0TAG0Database.Application` - database operations
- * - `0TAG0OPTIONS.Application` - prepare command line options
+ * - `0TAG0Options.Application` - prepare command line options
+ * - `0TAG0Settings.Application` - settings operations
  * 
  */
 
@@ -53,10 +54,13 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 #  include "win/VS_Command.h"
 #endif
 
+#include "configuration/Settings.h"
+
 #include "cli/CLICount.h"
 #include "cli/CLIDir.h"
 #include "cli/CLIHistory.h"
 #include "cli/CLIList.h"
+#include "cli/CLIRun.h"
 
 
 #include "Application.h"
@@ -145,6 +149,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       CApplication::Prepare_s(optionsApplication);                             // prepare command-line options
 
       // ## Parse the command-line arguments
+
       auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);
       if( bOk == false ) 
       { 
@@ -158,6 +163,18 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          }
          
          return { false, stringError }; 
+      }
+
+      // ### Check if settings file is used and should be loaded
+
+      if( optionsApplication.exists("settings", gd::types::tag_state_active{}) == true )// if settings file is set
+      {
+         std::string stringSettingsFile = optionsApplication.get_variant_view("settings", gd::types::tag_state_active{}).as_string();
+         if( stringSettingsFile.empty() == false )
+         {
+            auto result_ = SETTINGS_Load(stringSettingsFile);    // load configuration file
+            if( result_.first == false ) { return result_; }
+         }
       }
 
       // ## Process the command-line arguments
@@ -372,6 +389,17 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       auto* pdocument = DOCUMENT_Get("list", true);
       if( bUseThreads == true ) { return execute_(CLI::List_g, poptionsActive->clone_arguments(), pdocument); } // list lines in file or directory with the matched pattern in its own thread
       else                      { return CLI::List_g(poptionsActive, pdocument); }// list lines in file or directory with the matched pattern
+   }
+   else if( stringCommandName == "run" )
+   { 
+      std::string stringCommand = ( *poptionsActive )["command"].as_string();
+
+      return CLI::Run_g(stringCommand, this);
+
+      /*
+      if( bUseThreads == true ) { return execute_(CLI::Run_g, stringCommand, this); } // list lines in file or directory with the matched pattern in its own thread
+      else                      { return CLI::Run_g(poptionsActivestringCommand, this); }// list lines in file or directory with the matched pattern
+      */
    }
    else if( stringCommandName == "help" )                                      // command = "help"
    {
@@ -1061,6 +1089,28 @@ void CApplication::DATABASE_CloseActive()
    }
 }
 
+// 0TAG0Settings.Application @TAG #settings.Application
+
+std::pair<bool, std::string> CApplication::SETTINGS_Load(const std::string_view& stringFileName)
+{
+   gd::file::path pathSettings(stringFileName);
+   std::string stringExtension = pathSettings.extension().string();
+   
+   std::transform(stringExtension.begin(), stringExtension.end(), stringExtension.begin(), ::tolower); // convert to loarer case for case-insensitive comparison
+
+   if( stringExtension == ".xml" )
+   {
+      auto result_ = SettingsRead_s( stringFileName, gd::types::tag_xml{});
+      if( result_.first == false ) 
+      { 
+         std::string stringError = std::format("Failed to load settings from XML file: {}", result_.second);
+         return { false, stringError }; 
+      }
+   }
+
+   return { true, "" }; // Placeholder for settings loading logic
+}
+
 
 /** ---------------------------------------------------------------------------
 * @brief Add error to internal list of errors
@@ -1117,7 +1167,7 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
    return eUITypeUnknown; // Default to none if no match found
 }
 
-// 0TAG0OPTIONS.Application
+// 0TAG0Options.Application
 
 
 /** ---------------------------------------------------------------------------
@@ -1157,7 +1207,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
    optionsApplication.add_flag( {"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
    optionsApplication.add_flag({ "help", "Prints help information about command" });
-   optionsApplication.add({ "configuration", "name of configuration file" });
+   optionsApplication.add({ "settings", "name of settings file" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
@@ -1264,6 +1314,13 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
 
    {  // ## `help` print help about champion
       gd::cli::options optionsCommand( "help", "Print command line help" );
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
+   {  // ## `version` print current version
+      gd::cli::options optionsCommand( "run", "Run command from loaded command templates" );
+      optionsCommand.add({"name", "Name or index for command to execute"});
+      optionsCommand.add({"list", "List command found in loaded settings"});
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
@@ -1749,9 +1806,11 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
-std::pair<bool, std::string> CApplication::ConfigurationRead_s(const std::string_view stringFile, gd::types::tag_xml)
+std::pair<bool, std::string> CApplication::SettingsRead_s(const std::string_view stringFile, gd::types::tag_xml)
 {
-   pugi::xml_document xmldocument;
+
+   pugi::xml_document xmldocument; // Create an XML document object to hold the parsed XML data
+   CONFIGURATION::CSettings settings_; // Create a settings object to hold configuration data
    
    // Load the XML file
    pugi::xml_parse_result result = xmldocument.load_file(stringFile.data());
@@ -1777,19 +1836,22 @@ std::pair<bool, std::string> CApplication::ConfigurationRead_s(const std::string
          std::string stringApplication = xmlnodeMetadata.child("application").text().get();
       }
 
-      
+      CONFIGURATION::CSettings::settings* psettingsAdd = nullptr;
       // Read command node
       pugi::xml_node xmlnodeCommand = xmlnodeTemplate.child("command");
-      if(xmlnodeCommand)
+      if((bool)xmlnodeCommand == true )
       {
          std::string stringCommandName = xmlnodeCommand.attribute("name").value();
          std::string stringCommandDescription = xmlnodeCommand.attribute("description").value();
          std::string stringCommandData = xmlnodeCommand.text().get();
 
          if( stringTemplateName.empty() == true ) stringTemplateName = stringCommandName; // Use command name as template name if not specified
-         
-         // Process command data (remove CDATA wrapper if present)
-         // Command data is stored in CDATA section
+
+         psettingsAdd = settings_.Add(stringTemplateName, stringCommandData, stringCommandDescription); // Add command to settings
+      }
+      else
+      {
+         psettingsAdd = settings_.Add(stringTemplateName, stringTemplateDescription); // Add command to settings
       }
       
       
