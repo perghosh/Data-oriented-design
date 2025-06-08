@@ -311,8 +311,12 @@ public:
    // ## Path operations
    static void PreparePath_s( std::string& stringPath );
 
+   // ## Configuration read functions
+
    /// Read folders to ignore from ignore file if found, otherwise return empty vector
    static std::pair<bool, std::string> ReadIgnoreFile_s( const std::string_view& stringForderOrFile, std::vector<ignore>& vectorIgnorePattern );
+
+   static std::pair<bool, std::string> ConfigurationRead_s(const std::string_view stringFile, gd::types::tag_xml );
 
    // ## Read data from database
 

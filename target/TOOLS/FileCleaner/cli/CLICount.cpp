@@ -3,7 +3,7 @@
  * @brief Command line interface for counting lines in files.
  */
 
- // @TAG #cli
+ // @TAG #cli #count
 
 
 #include "../Command.h"
