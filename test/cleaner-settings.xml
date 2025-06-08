@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<templates>
+   <template name="count-all-files" description="count all lines in current folder">
+      <command description="count lines in source code files"><![CDATA[ count * ]]></command>      
+   </template>
+   <!--
+   <template name="template-name" description="optional description">
+      <command name="command name" description="optional description"><![CDATA[ raw command line string {option name needed to be filled in} ]]></command>
+      <metadata>
+         <author></author>
+         <version></version>
+         <application></application>
+      </metadata>
+      <configuration>
+         <options>
+            <option name="option-name-1" type="string" required="true" default="" description="First option description"></option>
+            <option name="option-name-2" type="boolean" required="false" default="false" description="Second option description"></option>
+         </options>
+      </configuration>
+   </template>
+   -->
+</templates>
