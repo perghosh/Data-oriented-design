@@ -16,7 +16,7 @@
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
 
-#include "../Document.h"
+#include "../Application.h"
 
 #ifndef NAMESPACE_CLI_BEGIN
 
@@ -27,5 +27,6 @@
 
 NAMESPACE_CLI_BEGIN
 
+std::pair<bool, std::string> Run_g(const std::string& stringCommand, CApplication* papplication );
 
 NAMESPACE_CLI_END

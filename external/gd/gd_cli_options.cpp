@@ -325,6 +325,18 @@ gd::variant_view options::get_variant_view( const std::string_view& stringName )
    return value_;
 }
 
+/// return option value if found for name, if sub command is active then search in sub command
+gd::variant_view options::get_variant_view( const std::string_view& stringName, gd::types::tag_state_active ) const noexcept
+{                                                                                                  assert( stringName.empty() == false );
+   const options* poptions_ = sub_find_active();
+   if( poptions_ != nullptr )
+   {
+      return poptions_->get_variant_view( stringName );
+   }
+   auto value_ = m_argumentsValue[stringName].get_variant_view();
+   return value_;
+}
+
 /// return option value if found for name
 gd::variant_view options::get_variant_view( const std::string_view* ptringName ) const noexcept
 {                                                                                                  assert( ptringName->empty() == false );
@@ -442,6 +454,43 @@ void options::iif( const std::string_view& stringName, std::function< void( cons
    {
       false_( variantviewValue );
    }
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Check if an option exists and is set.
+ *
+ * This method checks if the specified option name exists and is set in the current options context.
+ * If there is an active subcommand, it checks within the active subcommand; otherwise, it checks in the current options.
+ *
+ * @param stringName The name of the option to check.
+ * @param gd::types::tag_state_active Tag to indicate checking in the active subcommand if present.
+ * @return true if the option exists and is set, false otherwise.
+ *
+ * @code
+ * gd::cli::options cli_options;
+ * cli_options.add({ "input", 'i', "Input file" });
+ * cli_options.add({ "output", 'o', "Output file" });
+ * 
+ * // Parse command-line arguments
+ * auto [ok, err] = cli_options.parse(argc, argv);
+ * if (!ok) { std::cerr << err << std::endl; return 1; }
+ * 
+ * // Check if "input" option exists (is set)
+ * if (cli_options.exists("input", gd::types::tag_state_active{})) {
+ *     std::cout << "Input option is set." << std::endl;
+ * }
+ * @endcode
+ */
+bool options::exists( const std::string_view stringName, gd::types::tag_state_active ) const noexcept
+{                                                                                                  assert( stringName.empty() == false );
+   const auto* poptions_ = sub_find_active();
+   if( poptions_ != nullptr )
+   {
+      return poptions_->exists( stringName );
+   }
+
+   return exists( stringName );
 }
 
 

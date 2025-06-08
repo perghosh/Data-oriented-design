@@ -9,6 +9,12 @@
 
 NAMESPACE_CLI_BEGIN
 
+std::pair<bool, std::string> Run_g(const std::string& stringCommand, CApplication* papplication )
+{
+
+   return { true, "" };
+}
+
 
 NAMESPACE_CLI_END
 

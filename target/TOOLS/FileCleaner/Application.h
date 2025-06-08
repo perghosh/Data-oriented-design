@@ -247,6 +247,11 @@ public:
    void DATABASE_CloseActive();
 //@}
 
+/** \name DATABASE
+*///@{
+   std::pair<bool, std::string> SETTINGS_Load(const std::string_view& stringFileName );
+//@}
+
 /** \name ERROR
 *///@{
 /// Add error to internal list of errors
@@ -316,7 +321,7 @@ public:
    /// Read folders to ignore from ignore file if found, otherwise return empty vector
    static std::pair<bool, std::string> ReadIgnoreFile_s( const std::string_view& stringForderOrFile, std::vector<ignore>& vectorIgnorePattern );
 
-   static std::pair<bool, std::string> ConfigurationRead_s(const std::string_view stringFile, gd::types::tag_xml );
+   static std::pair<bool, std::string> SettingsRead_s(const std::string_view stringFile, gd::types::tag_xml );
 
    // ## Read data from database
 
