@@ -1157,6 +1157,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
    optionsApplication.add_flag( {"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
    optionsApplication.add_flag({ "help", "Prints help information about command" });
+   optionsApplication.add({ "configuration", "name of configuration file" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
@@ -1718,6 +1719,113 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
    }
 
    return {true, ""};
+}
+
+/** --------------------------------------------------------------------------- @TAG #parse.Application
+ * @brief Reads configuration from an XML file and populates the application state.
+ * @param stringFile The path to the XML file to read.
+ * @param tag_xml Unused parameter, kept for compatibility with the function signature.
+ * 
+ * @verbatim
+<templates>
+   <template name="template-name" description="optional description">
+      <command name="command name" description="optional description"><![CDATA[ raw command line string {option name needed to be filled in} ]]></command>
+      <metadata>
+         <autor></autor>
+         <version></version>
+         <application></application>
+      </metadata>
+      <configuration>
+         <options>
+            <option name="option-name" type="boolean|integer|decimal|string" required="true" default="value" description="optional description"></option>   
+            <option name="option-name" type="boolean|integer|decimal|string" required="true" default="value" description="optional description"></option>   
+         </options>
+      </configuration>
+   </template>
+</templates>
+ * @endverbatim
+ * 
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> CApplication::ConfigurationRead_s(const std::string_view stringFile, gd::types::tag_xml)
+{
+   pugi::xml_document xmldocument;
+   
+   // Load the XML file
+   pugi::xml_parse_result result = xmldocument.load_file(stringFile.data());
+   if(!result) { return { false, std::string("Failed to load XML file: ") + result.description() }; }
+   
+   // Get the root templates node
+   pugi::xml_node xmlnodeTemplates = xmldocument.child("templates");
+   if(!xmlnodeTemplates) { return { false, "No 'templates' root node found in XML" }; }
+   
+   // ## Iterate through each template
+   for(pugi::xml_node xmlnodeTemplate = xmlnodeTemplates.child("template"); xmlnodeTemplate; xmlnodeTemplate = xmlnodeTemplate.next_sibling("template"))
+   {
+      // ## Read template attributes
+      std::string stringTemplateName = xmlnodeTemplate.attribute("name").value();
+      std::string stringTemplateDescription = xmlnodeTemplate.attribute("description").value();
+
+      // ## `metadata` element
+      pugi::xml_node xmlnodeMetadata = xmlnodeTemplate.child("metadata");
+      if(xmlnodeMetadata)
+      {
+         std::string stringAutor = xmlnodeMetadata.child("autor").text().get();
+         std::string stringVersion = xmlnodeMetadata.child("version").text().get();
+         std::string stringApplication = xmlnodeMetadata.child("application").text().get();
+      }
+
+      
+      // Read command node
+      pugi::xml_node xmlnodeCommand = xmlnodeTemplate.child("command");
+      if(xmlnodeCommand)
+      {
+         std::string stringCommandName = xmlnodeCommand.attribute("name").value();
+         std::string stringCommandDescription = xmlnodeCommand.attribute("description").value();
+         std::string stringCommandData = xmlnodeCommand.text().get();
+
+         if( stringTemplateName.empty() == true ) stringTemplateName = stringCommandName; // Use command name as template name if not specified
+         
+         // Process command data (remove CDATA wrapper if present)
+         // Command data is stored in CDATA section
+      }
+      
+      
+      // Read configuration node
+      pugi::xml_node xmlnodeConfiguration = xmlnodeTemplate.child("configuration");
+      if(xmlnodeConfiguration)
+      {
+         pugi::xml_node xmlnodeOptions = xmlnodeConfiguration.child("options");
+         if(xmlnodeOptions)
+         {
+            // Iterate through all options
+            for(pugi::xml_node xmlnodeOption = xmlnodeOptions.child("option"); xmlnodeOption; xmlnodeOption = xmlnodeOption.next_sibling("option"))
+            {
+               std::string stringOptionName = xmlnodeOption.attribute("name").value();
+               std::string stringOptionType = xmlnodeOption.attribute("type").value();
+               std::string stringOptionRequired = xmlnodeOption.attribute("required").value();
+               std::string stringOptionDefault = xmlnodeOption.attribute("default").value();
+               std::string stringOptionDesc = xmlnodeOption.attribute("description").value();
+               
+               if(stringOptionName.empty() == true) { return { false, "Option missing required 'name' attribute" }; }
+               
+               // ## Validate option type
+               if(stringOptionType.empty() == false &&
+                  stringOptionType != "boolean" && 
+                  stringOptionType != "integer" && 
+                  stringOptionType != "decimal" && 
+                  stringOptionType != "string") { return { false, "Invalid option type: " + stringOptionType }; }
+               
+               // Here you would typically store the parsed data in your configuration structure
+               // For example: m_vectorOptions.push_back({stringOptionName, stringOptionType, ...});
+            }
+         }
+      }
+   }
+   
+   return { true, "" };
 }
 
 void CApplication::Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer )

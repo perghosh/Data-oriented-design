@@ -1,3 +1,5 @@
+// $TAG #play #ini #xml #history
+
 #include <filesystem>
 
 #include "gd/gd_file.h"
