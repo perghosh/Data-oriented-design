@@ -33,9 +33,11 @@
 #include "application/database/Metadata_Statements.h"
 #include "Document.h"
 
+
 #include "application/ApplicationBasic.h"
 
 namespace gd { namespace cli { class options; } }
+namespace CONFIGURATION { class CSettings; }
 
 /**
  * \brief
@@ -293,6 +295,8 @@ public:
 
    std::shared_mutex m_sharedmutexError;        ///< mutex used to manage errors in threaded environment
    std::vector< gd::argument::arguments > m_vectorError; ///< vector storing internal errors
+
+   CONFIGURATION::CSettings* m_psettings = nullptr;
 
    gd::console::console m_console; ///< console used for printing formated messages to user
 
