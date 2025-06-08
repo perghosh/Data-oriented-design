@@ -114,7 +114,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    else if( options_.exists("rpattern") == true )
    {
       std::string stringPattern = options_["rpattern"].as_string();
-      std::vector<std::string> vectorPattern = CApplication::Split_s(stringPattern); // split pattern string into vector
+      std::vector<std::string> vectorPattern;
+      vectorPattern.push_back(stringPattern); // put the regex pattern into a vector
       uSearchPatternCount = vectorPattern.size(); // count the number of patterns to search for
       std::vector< std::pair<std::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
       
