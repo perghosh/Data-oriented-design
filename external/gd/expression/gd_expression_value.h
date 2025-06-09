@@ -47,6 +47,9 @@ struct value
    value(const value& o) { common_construct(o); }
    value(value&& o) noexcept { common_construct(std::move(o)); }
    // assign
+   value& operator=(bool bValue) { m_value = bValue; return *this; }
+   value& operator=(int64_t iValue) { m_value = iValue; return *this; }
+   value& operator=(double dValue) { m_value = dValue; return *this; }
    value& operator=(const std::string& stringValue) { m_value = stringValue; return *this; }
    value& operator=(const value& o) { common_construct(o); return *this; }
    value& operator=(value&& o) noexcept { common_construct(std::move(o)); return *this; }
@@ -57,9 +60,6 @@ struct value
    void common_construct(value&& o) noexcept { m_value = std::move(o.m_value); }
 
 // ## operator ----------------------------------------------------------------
-   value& operator=(int64_t v_) { m_value = v_; return *this; }
-   value& operator=(double v_) { m_value = v_; return *this; }
-
    operator variant_t&() { return m_value; } ///< convert to variant_t
    operator int64_t() const { return as_integer(); } ///< convert to int64_t
    /// @brief compare two values, returns true if equal
@@ -152,3 +152,4 @@ struct value
 
 
 _GD_EXPRESSION_END
+

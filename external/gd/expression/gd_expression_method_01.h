@@ -35,6 +35,11 @@ std::pair<bool, std::string> sum_g(const std::vector< value >& vectorArgument, v
 std::pair<bool, std::string> tolower_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> toupper_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 
+std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> missing_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> starts_with_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> ends_with_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+
 
 // Array of MethodInfo definitions
 const method pmethodDefault_g[] = {
@@ -45,9 +50,20 @@ const method pmethodDefault_g[] = {
 };
 
 const method pmethodString_g[] = {
+   { (void*)&ends_with_g, "ends_with", 2, 1 },
+   { (void*)&has_g, "has", 2, 1 },
    { (void*)&length_g, "length", 1, 1 },
+   { (void*)&missing_g, "missing", 2, 1 },
+   { (void*)&starts_with_g, "starts_with", 2, 1 },
    { (void*)&tolower_g, "tolower", 1, 1},
    { (void*)&toupper_g, "toupper", 1, 1 }
+
+   // str::has, str::missing, str::starts_with, str::ends_with,
+   // str::replace, str::split, str::join, str::trim, str::pad, str::format
+   // str::to_number, str::to_boolean, str::to_date, str::to_datetime, str::to_time,
+   // str::to_string, str::count, str::has_duplicates
+
+
 };
 
 

@@ -16,7 +16,7 @@ CSettings::settings* CSettings::AddCommand( const std::string& name_, const std:
 }
 
 
-CSettings::settings* CSettings::settings::Find( const std::string& name_ )
+CSettings::settings* CSettings::Find( const std::string& name_ )
 {
    for ( auto& setting : m_vectorSettings )
    {
@@ -25,7 +25,7 @@ CSettings::settings* CSettings::settings::Find( const std::string& name_ )
    return nullptr;
 }
 
-const CSettings::settings* CSettings::settings::Find( const std::string& name_ ) const
+const CSettings::settings* CSettings::Find( const std::string& name_ ) const
 {
    for ( const auto& setting : m_vectorSettings )
    {
