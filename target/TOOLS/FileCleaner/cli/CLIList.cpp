@@ -150,6 +150,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
 
    auto tableResultLineList = pdocument->RESULT_PatternLineList( uSearchPatternCount );// generate the result table for pattern line list
 
+   // ## check for expression to do some preprocessing on the result table
+
 
    std::string stringOutput = options_["output"].as_string();
    if (stringOutput.empty() == true)
@@ -208,6 +210,10 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       stringCliTable = gd::table::to_string(table_, gd::table::tag_io_cli{});
       pdocument->MESSAGE_Display( stringCliTable );
 #endif // _WIN32
+
+      // Print number of lines found
+      std::string stringMessage = std::format("Found {} lines '{}'", tableResultLineList.get_row_count(), options_.exists("pattern") ? options_["pattern"].as_string() : "none");
+      pdocument->MESSAGE_Display(stringMessage);
    }
    else
    {
