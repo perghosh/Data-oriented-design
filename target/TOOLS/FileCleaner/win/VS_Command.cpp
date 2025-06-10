@@ -414,8 +414,8 @@ std::pair<bool, std::string> CVisualStudio::ExecuteExpression(const std::string_
    runtime_.add_global( "vs", this );
 
 
-   runtime_.add( { 4, gd::expression::pmethodDefault_g, ""});
-   runtime_.add( { 3, gd::expression::pmethodString_g, std::string("str")});
+   runtime_.add( { uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
+   runtime_.add( { uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
    runtime_.add( { 2, pmethodVisualStudio_g, std::string("vs")});
 
    gd::expression::value valueResult;

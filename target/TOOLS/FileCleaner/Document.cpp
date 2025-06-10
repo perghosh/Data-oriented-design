@@ -1236,6 +1236,19 @@ void CDocument::ERROR_Add( const std::string_view& stringError )
    m_vectorError.push_back( std::move(argumentsError) );
 }
 
+void CDocument::ERROR_Print() 
+{
+   std::shared_lock<std::shared_mutex> lock_( m_sharedmutexError );            // locks `m_vectorError`
+   if( m_vectorError.empty() == true ) return;                                 // no errors, exit
+
+   for( const auto& itError : m_vectorError )
+   {
+      std::string stringError = itError["text"].as_string();
+      if( stringError.empty() == false ) { m_papplication->PrintError(stringError, gd::argument::arguments() ); } // print error message
+   }
+
+}
+
 void CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult )
 {
    unsigned uColumnCount = table_.get_column_count(); // get number of columns

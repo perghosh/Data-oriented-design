@@ -135,11 +135,34 @@ std::pair<bool, std::string> toupper_g(const std::vector<value>& vectorArgument,
    return { true, "" };
 }
 
+/// Count the number of occurrences of a word (needle) in text (haystack).
+std::pair<bool, std::string> count_g(const std::vector< value >& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 1);
+   const auto& haystack_ = vectorArgument[1];
+   const auto& needle_ = vectorArgument[0];
+   if( haystack_.is_string() && needle_.is_string() )
+   {
+      auto stringText = haystack_.as_string_view();
+      auto stringWord = needle_.as_string_view();
+      size_t uCount = 0;
+      size_t uPosition = stringText.find(stringWord);
+      while(uPosition != std::string_view::npos)
+      {
+         ++uCount;
+         uPosition = stringText.find(stringWord, uPosition + stringWord.size());
+      }
+      *pvalueResult = static_cast<int64_t>(uCount);
+      return { true, "" };
+   }
+
+   return { false, "count_g - Invalid argument type" };
+}
+
 /// Check if word (needle) is contained in text (haystack).
 std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
-   const auto& haystack_ = vectorArgument[0];
-   const auto& needle_ = vectorArgument[1];
+   const auto& haystack_ = vectorArgument[1];
+   const auto& needle_ = vectorArgument[0];
    if( haystack_.is_string() && needle_.is_string() )
    {
       auto text_ = haystack_.as_string_view();
@@ -153,8 +176,8 @@ std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, v
 /// Check if word (needle) is not contained in text (haystack).
 std::pair<bool, std::string> missing_g(const std::vector< value >& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
-   const auto& haystack_ = vectorArgument[0];
-   const auto& needle_ = vectorArgument[1];
+   const auto& haystack_ = vectorArgument[1];
+   const auto& needle_ = vectorArgument[0];
    if( haystack_.is_string() && needle_.is_string() )
    {
       auto text_ = haystack_.as_string_view();
@@ -168,8 +191,8 @@ std::pair<bool, std::string> missing_g(const std::vector< value >& vectorArgumen
 /// Check if text (haystack) starts with prefix (start).
 std::pair<bool, std::string> starts_with_g(const std::vector< value >& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
-   const auto& haystack_ = vectorArgument[0];
-   const auto& prefix_ = vectorArgument[1];
+   const auto& haystack_ = vectorArgument[1];
+   const auto& prefix_ = vectorArgument[0];
    if( haystack_.is_string() && prefix_.is_string() )
    {
       auto text_ = haystack_.as_string_view();
@@ -183,8 +206,8 @@ std::pair<bool, std::string> starts_with_g(const std::vector< value >& vectorArg
 /// Check if text (haystack) ends with suffix (end).
 std::pair<bool, std::string> ends_with_g(const std::vector< value >& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
-   const auto& haystack_ = vectorArgument[0];
-   const auto& suffix_ = vectorArgument[1];
+   const auto& haystack_ = vectorArgument[1];
+   const auto& suffix_ = vectorArgument[0];
    if( haystack_.is_string() && suffix_.is_string() )
    {
       auto text_ = haystack_.as_string_view();
