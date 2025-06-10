@@ -122,8 +122,8 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
       {
          bAllowPositional = false;                                             // no more positional arguments are allowed
          const char* pbszFindArgument = pbszArgument + 1;                      // move past first dash
-         if( *pbszFindArgument == '-' ) pbszFindArgument++;
-         poptionActive = find( pbszFindArgument );                             // move to argument name
+         if( *pbszFindArgument == '-' ) pbszFindArgument++;                    // move to argument name
+         poptionActive = find( pbszFindArgument );                             
 
          if(poptionActive == nullptr && bMayBeFlag == false )
          {

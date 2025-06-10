@@ -316,7 +316,13 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          try 
          {
             pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
-            call_(&options_, pdocument_);
+            auto result_ = call_(&options_, pdocument_);
+            if( result_.first == false ) 
+            { 
+               pdocument_->ERROR_Add(result_.second);                          // Add error to the document's error list
+               pdocument_->ERROR_Print();                                      // Print errors to the console
+               return;                                                         // Exit thread if error occurred
+            }
          } 
          catch(const std::exception& e) 
          {
@@ -389,6 +395,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       auto* pdocument = DOCUMENT_Get("list", true);
       if( bUseThreads == true ) { return execute_(CLI::List_g, poptionsActive->clone_arguments(), pdocument); } // list lines in file or directory with the matched pattern in its own thread
       else                      { return CLI::List_g(poptionsActive, pdocument); }// list lines in file or directory with the matched pattern
+      if( pdocument->ERROR_Empty() == false ) { pdocument->ERROR_Print(); }
    }
    else if( stringCommandName == "run" )
    { 
@@ -675,6 +682,12 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
    break;
    }
 
+   return {true, ""};
+}
+
+std::pair<bool, std::string> CApplication::PrintError(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat)
+{
+   std::cout << "\n##\n## ERROR \n## ------\n" << stringMessage << std::flush;
    return {true, ""};
 }
 
@@ -1262,7 +1275,6 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "source", 's', "Directory to list" });
       optionsCommand.add({ "script", "Pass script file for advanced processing" });
-      optionsCommand.add({ "expression", 'e', "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality"});
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format"} );
@@ -1289,6 +1301,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "pattern", 'p', "Patterns to search for (multiple values separated by commas or semicolons)"});
       optionsCommand.add({ "source", 's', "File(s) or folder(s) to search"});
       optionsCommand.add({ "rpattern", "Regular expression pattern to search for"});
+      optionsCommand.add({ "expression", 'e', "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality"});
       optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
       optionsCommand.add({ "max", "Maximum number of results to return"});
       optionsCommand.add({ "segment", "Type of code segment to search within (code, comment, string or all)"});

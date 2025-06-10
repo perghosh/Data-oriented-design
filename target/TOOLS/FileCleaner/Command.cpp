@@ -14,6 +14,12 @@
 #include "gd/gd_utf8.h"
 #include "gd/parse/gd_parse_window_line.h"
 
+#include "gd/expression/gd_expression_value.h"
+#include "gd/expression/gd_expression_token.h"
+#include "gd/expression/gd_expression_method_01.h"
+#include "gd/expression/gd_expression_runtime.h"
+
+
 
 #include "Command.h"
 
@@ -1217,6 +1223,80 @@ std::pair<bool, std::string> TABLE_RemoveZeroRow(gd::table::dto::table* ptable_,
       }
       if( bZero == true ) vectorRemoveRow.push_back(uRow);                    // if all values in row are zero, add row to remove vector
    }
+
+   if( vectorRemoveRow.empty() == false )
+   {
+      ptable_->erase(vectorRemoveRow); // remove rows from table
+   }
+
+   return { true, "" };
+}
+
+
+std::pair<bool, std::string> EXPRESSION_FilterOnColumn_g( gd::table::dto::table* ptable_, unsigned uColumn, const std::vector<std::string> vectorExpression )
+{                                                                                                  assert(ptable_ != nullptr); assert(uColumn < ptable_->get_column_count());
+   using namespace gd::expression;
+
+   // ## Prepare runtime for expressions, adds methods for default and string
+   gd::expression::runtime runtime_;
+   runtime_.set_debug();                                                      // enable debug mode for runtime, needed becuase user are able to set methods
+   runtime_.add( { uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
+   runtime_.add({ uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str") }); // string methods, set namespace "str" for string methods
+
+
+   std::vector<uint64_t> vectorRemoveRow; // vector to hold rows to be removed
+
+   std::vector< std::vector<gd::expression::token> > vectorExpressionToken;   // vector to hold expression tokens for each expression
+
+   for( const auto& stringExpression : vectorExpression )                     // Convert each expression string to tokens and put them into vectorExpressionToken
+   {
+      // ## generate expression tokens from string expression
+
+      std::vector<token> vectorToken;
+      auto result_ = token::parse_s(stringExpression, vectorToken, gd::expression::tag_formula{});
+
+      // ## convert to postfix notation
+
+      std::vector<token> vectorPostfix;
+      result_ = token::compile_s(vectorToken, vectorPostfix, gd::expression::tag_postfix{});  if( result_.first == false ) { return result_; }
+
+      vectorExpressionToken.emplace_back(std::move(vectorPostfix));           // store parsed tokens
+   }
+
+   auto uRowCount = ptable_->get_row_count(); 
+   for( unsigned uRow = 0; uRow < uRowCount; ++uRow )
+   {
+      auto stringValue = ptable_->cell_get_variant_view(uRow, uColumn).as_string();
+      runtime_.set_variable( "line", stringValue );
+
+      for( auto & vectorPostfix : vectorExpressionToken )
+      {
+         // ## calculate expression for current row
+
+         gd::expression::value valueResult;
+         auto result_ = token::calculate_s(vectorPostfix, &valueResult, runtime_);
+         if( result_.first == false ) { return result_; }                     // error in calculation ?
+
+         if( valueResult.is_bool() == true )                                  // if expression is false, then remove row
+         {
+            bool bResult = valueResult.as_bool();                             // get boolean result
+            if( bResult == false ) { vectorRemoveRow.push_back(uRow); break; } // if expression is false, then remove row and break out of loop
+         }
+         else
+         {
+            // ## Generate error information
+            //    Harvest expressions to return information about them
+            std::string stringError;
+            for( const auto& it : vectorExpression )
+            {
+               stringError += std::format("   {}\n", it);
+            }
+
+            return { false, std::format( "Expression is not returning boolean value:\n   {}", stringError) };
+         }
+      }
+   }
+
 
    if( vectorRemoveRow.empty() == false )
    {

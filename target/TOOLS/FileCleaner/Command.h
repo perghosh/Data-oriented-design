@@ -60,4 +60,7 @@ std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, con
 
 std::pair<bool, std::string> TABLE_RemoveZeroRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);
 
+/// @brief Filters the table based on the expression provided for a specific column. To keep the row, the expression must evaluate to true.
+std::pair<bool, std::string> EXPRESSION_FilterOnColumn_g( gd::table::dto::table* ptable_, unsigned uColumn, const std::vector<std::string> vectorExpression );
+
 

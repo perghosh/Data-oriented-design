@@ -95,6 +95,12 @@ struct method
  */
 struct runtime
 {
+   enum enumFlags : unsigned
+   {
+      eFlagUnknown = 0x00, ///< no flags
+      eFlagDebug   = 0x01, ///< debug mode enabled
+   };
+
    enum enumGlobalState : unsigned
    {
       eGlobalStateUnknown = 0x00, ///< unknown state
@@ -102,9 +108,11 @@ struct runtime
    };
 
    /**
-    * \brief
+    * \brief Represents a global object in the runtime.
     *
-    *
+    * Global is a named object that can be accessed globally within the runtime.
+    * Used to somhow manage global objects that may be needed for methods added to the runtime.
+    * Remember that expression runtime is not logic that are able to manage object,
     */
    struct global
    {
@@ -154,6 +162,9 @@ struct runtime
    // common copy
    void common_construct(const runtime& o) { m_vectorVariable = o.m_vectorVariable; m_functionFind = o.m_functionFind; m_stringError = o.m_stringError; }
    void common_construct(runtime&& o) noexcept { m_vectorVariable = std::move( o.m_vectorVariable ); m_functionFind = std::move( o.m_functionFind ); m_stringError = std::move( o.m_stringError ); }
+
+   void set_debug(bool bDebug = true) { if( bDebug ) m_uFlags |= eFlagDebug; else m_uFlags &= ~eFlagDebug; } ///< set debug mode
+   bool is_debug() const { return ( m_uFlags & eFlagDebug ) != 0; } ///< check if debug mode is enabled
 
 // ## methods -----------------------------------------------------------------
    /**
@@ -217,6 +228,7 @@ struct runtime
 //@}
 
 // ## attributes --------------------------------------------------------------
+   unsigned m_uFlags = 0; ///< flags for the runtime, currently not used
    /// @brief vector of variables
    std::vector< std::pair<std::string, value::variant_t>> m_vectorVariable; ///< vector of values  
    /// @brief callback function used to find variable from external source

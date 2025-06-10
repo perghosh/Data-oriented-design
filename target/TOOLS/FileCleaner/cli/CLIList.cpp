@@ -148,10 +148,21 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
 
    auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
 
-   auto tableResultLineList = pdocument->RESULT_PatternLineList( uSearchPatternCount );// generate the result table for pattern line list
-
    // ## check for expression to do some preprocessing on the result table
 
+   if( options_["expression"].is_true() == true )
+   {
+      std::string stringExpression = options_["expression"].as_string();
+      if( stringExpression.empty() == false )
+      {
+         std::vector<std::string> vectorExpression;
+         vectorExpression.push_back(stringExpression);                        // put the expression into a vector
+         result_ = EXPRESSION_FilterOnColumn_g(ptableLineList, ptableLineList->column_get_index("line"), vectorExpression); // filter the result table based on the expression
+         if(result_.first == false) return result_;
+      }
+   }
+
+   auto tableResultLineList = pdocument->RESULT_PatternLineList( uSearchPatternCount );// generate the result table for pattern line list
 
    std::string stringOutput = options_["output"].as_string();
    if (stringOutput.empty() == true)

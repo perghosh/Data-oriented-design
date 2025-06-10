@@ -679,6 +679,16 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
             if( pmethod_ != nullptr )
             {
                unsigned uCount = pmethod_->in_count();
+
+               if( runtime_.is_debug() == true )
+               {
+                  if( stackValue.size() < pmethod_->in_count() )
+                  {
+                     return { false, "[calculate_s] - Not enough arguments for method: " + std::string(stringMethod) + " - expected: " + std::to_string(pmethod_->in_count()) + ", got: " + std::to_string(stackValue.size()) };
+                  }
+               }
+
+
                for( unsigned i = 0; i < uCount; i++ )
                {
                   if( stackValue.empty() == false )
