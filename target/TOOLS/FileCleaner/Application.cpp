@@ -1340,6 +1340,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "pattern", 'p', "Patterns to search for (multiple values separated by commas or semicolons)"});
       optionsCommand.add({ "source", 's', "File(s) or folder(s) to search"});
       optionsCommand.add({ "rpattern", "Regular expression pattern to search for"});
+      optionsCommand.add({ "context", "Show information to put the result in context, normally code around"});
       optionsCommand.add({ "expression", 'e', "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality"});
       optionsCommand.add({ "script", "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality" });
       optionsCommand.add({ "max", "Maximum number of results to return"});
