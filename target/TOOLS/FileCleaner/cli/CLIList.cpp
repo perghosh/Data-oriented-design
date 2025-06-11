@@ -4,6 +4,8 @@
 
 // @TAG #cli #list
 
+#include <format>
+
 #include "../Command.h"
 
 #ifdef _WIN32

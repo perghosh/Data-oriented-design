@@ -6,6 +6,7 @@
  * 
  */
 
+#include <format>
 #include <iterator>
 
 #include "gd/gd_file.h"
