@@ -1152,14 +1152,15 @@ gd::table::dto::table CDocument::RESULT_PatternCount()
  * - The result string includes the file path, line and column numbers, matched pattern, and a snippet of the line.  
  * - The snippet is truncated to 120 characters if it exceeds this length.  
  *  
- * @return A table containing the pattern line list for each file.  
+ * @param 
+ * @return A table containing the pattern line list for each file. Columns in table are line, file, and context.
  *  
  * @pre The "file" and "file-linelist" cache tables must be prepared and available in the cache.  
  * @post The result table is generated with the pattern line list.  
  *  
  * @note The editor type (e.g., Visual Studio or VSCode) is currently hardcoded but can be retrieved from application settings in the future.  
  */  
-gd::table::dto::table CDocument::RESULT_PatternLineList( size_t uPatternCount )
+gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arguments& argumentsOption )
 {
    enum enumEditor { eVisualStudio, eVSCode, eSublime };
    using namespace gd::table::dto;
@@ -1168,15 +1169,26 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( size_t uPatternCount )
    if( stringEditor == "vscode" ) eEditor = eVSCode;
    else if( stringEditor == "sublime" ) eEditor = eSublime;
 
+   int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
+
+   unsigned uPatternCount = argumentsOption.get_argument( "pattern-count", 1u );
+   if( argumentsOption.exists("offset") == true )
+   {
+      iContextOffset = argumentsOption.get_argument( "offset", 0ll ) - 1;
+      iContextCount = argumentsOption.get_argument( "count", 0ll );
+   }
+
    // Define the result table structure  
    constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );
-   table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"} }, gd::table::tag_prepare{});
+   table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"}, {"rstring", 0, "context"} }, gd::table::tag_prepare{});
 
    // Retrieve the file-pattern cache table  
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
    auto* ptableLineList = CACHE_Get("file-linelist", false);                                       assert(ptableLineList != nullptr);
 
    unsigned uKeyColumnInFile = ptableFile->column_get_index("key"); // get index for key column  
+
+   std::string string_;
 
    for( uint64_t uRow = 0, uRowCount = ptableLineList->size(); uRow < uRowCount; uRow++ )
    {
@@ -1241,6 +1253,13 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( size_t uPatternCount )
       stringFile += stringLine;
 
       tableResult.cell_set(uNewRow, 0, stringFile);                            // add clickable string to table
+
+      if( iContextCount != 0 )
+      {
+         string_.clear();
+         FILES_ReadLines_g(pathFile.string(), uLineinSource, iContextOffset, iContextCount, "-- ", ">> ", string_);
+         tableResult.cell_set(uNewRow, 2, string_);
+      }
    }
 
    return tableResult;

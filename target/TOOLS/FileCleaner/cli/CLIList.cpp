@@ -4,6 +4,7 @@
 
 // @TAG #cli #list
 
+#include <cstdint>
 #include <format>
 
 #include "../Command.h"
@@ -164,7 +165,29 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       }
    }
 
-   auto tableResultLineList = pdocument->RESULT_PatternLineList( uSearchPatternCount );// generate the result table for pattern line list
+   int64_t iOffset = 0, iCount = 0; // variables used to bring context to found code
+
+   if( options_.exists("context") == true )
+   {
+      std::string stringContext = options_["context"].as_string();             // context is in the format offset,count like -2,6 to get lines from 2 before and 6 lines
+
+      // parse context to numbers
+      auto vectorOffsetCount = gd::utf8::split( stringContext, ',' );          // get offset value and count
+      // parse first value to int
+      size_t uPosition;
+      iOffset = std::stoll(vectorOffsetCount[0].data(), &uPosition);
+
+      if( vectorOffsetCount.size() > 1 )
+      {
+         iCount = std::stoll(vectorOffsetCount[1].data(), &uPosition);
+      }
+   }
+
+
+   gd::argument::arguments argumentsOption( { { "pattern-count", (unsigned)uSearchPatternCount } } );
+   if( iOffset != 0 || iCount != 0 ) { argumentsOption.append( "offset", iOffset ); argumentsOption.append( "count", iCount ); }
+   auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsOption );// generate the result table for pattern line list
+
 
    std::string stringOutput = options_["output"].as_string();
    if (stringOutput.empty() == true)
