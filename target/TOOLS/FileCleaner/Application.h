@@ -50,6 +50,19 @@ namespace CONFIGURATION { class CSettings; }
 class CApplication : public application::basic::CApplication
 {
 public:
+   // type of mode for the application, Available modes: `review`, `stats`, `search`, `changes`, `audit`, `document`
+   enum enumMode 
+   {
+      eModeUnknown = 0, ///< Unknown or unspecified mode
+      eModeReview,      ///< Review mode, used for reviewing files
+      eModeStats,       ///< Statistics mode, used for gathering statistics
+      eModeSearch,      ///< Search mode, used for searching files
+      eModeChanges,     ///< Changes mode, used for tracking changes in files
+      eModeAudit,       ///< Audit mode, used for auditing files
+      eModeDocument     ///< Document mode, used for managing documents
+   };
+
+
    /**
     * \enum enumUIType
     * \brief Represents the type of user interface for the application.
@@ -159,6 +172,11 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   enumMode GetMode() const { return m_eMode; }
+   void SetMode(enumMode eMode) { m_eMode = eMode; }
+   void SetMode(const std::string_view& stringMode); 
+   std::string GetModeAsString() const;
+
    enumUIType GetUIType() const { return m_eUIType; }
    void SetUIType(enumUIType eUIType) { m_eUIType = eUIType; }
    std::string GetUITypeAsString() const;
@@ -281,6 +299,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   enumMode m_eMode = eModeUnknown; ///< Mode of the application, e.g. review, stats, search, changes, audit, document
    enumUIType m_eUIType = eUITypeUnknown; ///< Type of user interface
    unsigned m_uApplicationState = eApplicationStateUnknown; ///< State of the application
 

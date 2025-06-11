@@ -98,6 +98,25 @@ void CApplication::common_construct(CApplication&& o) noexcept
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Returns the string representation of the current mode.
+ */ 
+std::string CApplication::GetModeAsString() const
+{
+   switch (m_eMode)
+   {
+   case eModeReview:   return "review";
+   case eModeStats:    return "stats";
+   case eModeSearch:   return "search";
+   case eModeChanges:  return "changes";
+   case eModeAudit:    return "audit";
+   case eModeDocument: return "document";
+   case eModeUnknown:
+   default:            return "unknown";
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief Returns the string representation of the UI type.
  *
  * This method converts the enum value of the UI type to its corresponding string representation.
@@ -118,6 +137,26 @@ std::string CApplication::GetUITypeAsString() const
    }
    return  "unknown";
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Sets the mode of the application based on the provided string.
+ *
+ * This method updates the application's mode based on the input string. If the string does not match any known modes,
+ * it sets the mode to `eModeUnknown`.
+ *
+ * @param stringMode The string representation of the mode to set.
+ */
+void CApplication::SetMode(const std::string_view& stringMode)
+{
+   if     (stringMode == "review"  ) m_eMode = eModeReview;
+   else if(stringMode == "stats"   ) m_eMode = eModeStats;
+   else if(stringMode == "search"  ) m_eMode = eModeSearch;
+   else if(stringMode == "changes" ) m_eMode = eModeChanges;
+   else if(stringMode == "audit"   ) m_eMode = eModeAudit;
+   else if(stringMode == "document") m_eMode = eModeDocument;
+   else                              m_eMode = eModeUnknown;
+}
+
 
 
 /** ---------------------------------------------------------------------------
@@ -286,10 +325,10 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       return { true, "" };
    }
 
-   if( optionsApplication.exists("filter") == true )               // if filter is set
+   if( optionsApplication.exists("mode", gd::types::tag_state_active{}) == true )// if mode the set application mode
    {
-      std::string stringFilter = optionsApplication["filter"].as_string();
-      if( stringFilter == "*" ) optionsApplication.clear("filter"); // if filter is "*", clear it
+      auto stringMode = optionsApplication.get_variant_view("mode", gd::types::tag_state_active{} ).as_string_view();
+      SetMode(stringMode);                                                    // set application mode
    }
 
    /// ## prepare command
@@ -321,7 +360,6 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
             { 
                pdocument_->ERROR_Add(result_.second);                          // Add error to the document's error list
                pdocument_->ERROR_Print();                                      // Print errors to the console
-               return;                                                         // Exit thread if error occurred
             }
          } 
          catch(const std::exception& e) 
@@ -1220,8 +1258,9 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
    optionsApplication.add_flag( {"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
    optionsApplication.add_flag({ "help", "Prints help information about command" });
-   optionsApplication.add({ "settings", "name of settings file" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
+   optionsApplication.add({ "mode", "Specifies the operational mode of the tool, adapting its behavior for different code analysis purposes. Available modes: `review`, `stats`, `search`, `changes`, `audit`, `document`" });
+   optionsApplication.add({ "settings", "name of settings file" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
    //optionsApplication.add({ "database", "Set folder where logger places log files"});
@@ -1679,7 +1718,7 @@ void CApplication::PreparePath_s(std::string& stringPath)
  * @code
  * std::vector<ignore> vectorPattern;
  * auto result = CApplication::ReadIgnoreFile_s("/path/to/project", vectorPattern);
- * if (!result.first) {
+ * if(!result.first) {
  *     std::cerr << "Error: " << result.second << std::endl;
  * }
  * @endcode
@@ -2209,7 +2248,7 @@ std::pair<bool, std::string> CApplication::PrepareWindows_s()
       nullptr                         // Reserved
    );
 
-   if (FAILED(hr)) 
+   if(FAILED(hr)) 
    {
       CoUninitialize(); // Clean up COM if security initialization fails
       return {false, "Failed to initialize COM security. HRESULT: " + std::to_string(hr)};

@@ -105,13 +105,20 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
       std::string stringPattern = options_["pattern"].as_string();
       auto vectorPattern = CApplication::Split_s(stringPattern);
       result_ = pdocument->FILE_UpdatePatternCounters(argumentsPattern, vectorPattern);            if( !result_.first ) { return result_; }
-   }
 
-   // ## Determine sorting options
-   if( options_["sort"].is_true() == true )
+      if( options_["sort"].is_true() == true )
+      {
+         std::string stringSortColumn = options_["sort"].as_string();
+         result_ = pdocument->CACHE_Sort( "file-pattern", stringSortColumn );                      if( !result_.first ) { return result_; }
+      }
+   }
+   else
    {
-      std::string stringSortColumn = options_["sort"].as_string();
-      result_ = pdocument->CACHE_Sort( "file-count", stringSortColumn );                           if( !result_.first ) { return result_; }
+      if( options_["sort"].is_true() == true )
+      {
+         std::string stringSortColumn = options_["sort"].as_string();
+         result_ = pdocument->CACHE_Sort( "file-count", stringSortColumn );                        if( !result_.first ) { return result_; }
+      }
    }
 
    // ## Determine statistics options
@@ -147,8 +154,13 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
          if( iReportType == linecount_report_ )
          {
             if( bExplain == true ) { pdocument->MESSAGE_Display(CLI::CountGetExplain_g("count-lines")); }
-            result_ = TABLE_AddSumRow(&tableResult, { 2, 3, 4, 5, 6 });                            if( !result_.first ) { return result_; }
-            tableResult.cell_set(tableResult.get_row_count() - 1, "folder", "Total:");
+            std::vector<unsigned> vectorColumn;
+            vectorColumn.push_back(tableResult.column_get_index("filename") + 1); // add first sum column for code
+            // add four more sum columns to vector increasing by 1 each time
+            for( auto u = 0; u < 4; u++ ) vectorColumn.push_back(vectorColumn.back() + 1); // add sum columns
+
+            result_ = TABLE_AddSumRow(&tableResult, vectorColumn);                                if( !result_.first ) { return result_; }
+            tableResult.cell_set(tableResult.get_row_count() - 1, 0u, "Total:");
             uFooterRowCount = 1;
          }
          else if( iReportType == patterncount_report_ )

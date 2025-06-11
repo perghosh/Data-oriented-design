@@ -318,7 +318,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
       if( uFileIndex % 10 == 0 ) // show progress message every 10 files
       {
          uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
-         MESSAGE_Progress( "", {{"percent", uPercent}, {"label", "Scan files"}, {"sticky", true} });
+         MESSAGE_Progress("", { {"percent", uPercent}, {"label", "Scan files"}, {"sticky", true} });  // update progress message
       }
       
       gd::argument::shared::arguments argumentsResult;
@@ -849,7 +849,25 @@ std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& strin
       std::string stringColumn = column_.as_string();
       if( stringColumn[0] == '-' ) { bAscending = false; stringColumn.erase(0, 1); }
       iColumn = ptable_->column_find_index(stringColumn);
-      if( iColumn == -1 ) { return { false, "Column not found: " + stringColumn }; }
+      if( iColumn == -1 ) 
+      { 
+         bool bError = true;
+         // check if column is a number, if so, convert it to index
+         if( stringColumn.find_first_not_of("0123456789") == std::string::npos )
+         {
+            iColumn = std::stoi(stringColumn);
+            if( iColumn < 0 ) { bAscending = false; iColumn = -iColumn; }
+
+            // check if column index is valid and not above column count
+            if( (unsigned)iColumn < ptable_->get_column_count() ) { bError = false; } // column index is valid
+         }
+
+
+         if( bError == true ) 
+         { 
+            return { false, "Column not found: " + stringColumn }; 
+         }
+      }
    }
    else if( column_.is_integer() )
    {
@@ -1009,7 +1027,22 @@ gd::table::dto::table CDocument::RESULT_RowCount()
    using namespace gd::table::dto;
    // Define the result table structure
    constexpr unsigned uTableStyle = (table::eTableFlagNull32 | table::eTableFlagRowStatus);
-   table tableResult(uTableStyle, {{"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"}}, gd::table::tag_prepare{});
+
+   std::vector< std::tuple< std::string_view, unsigned, std::string_view > > 
+      vectorColumn( {{"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"}} );
+
+   // ## check for modes where user wants to see code
+   //    in this case we remove the folder column and only show filename and count to make it compact and easy to open file in editor
+
+   auto eMode = GetApplication()->GetMode(); // get application mode
+   if( eMode == CApplication::eModeReview || eMode == CApplication::eModeSearch )
+   { 
+      // remove folder and only show filename and count
+      vectorColumn.erase(vectorColumn.begin());                               // remove first column, folder
+      eMode = CApplication::eModeReview;                                      // set mode to review to simplify code to adapt to this mode
+   }
+
+   table tableResult(uTableStyle, vectorColumn, gd::table::tag_prepare{});
 
    // Retrieve the file and file-count cache tables
    auto* ptableFile = CACHE_Get("file", false);                                                    assert( ptableFile != nullptr );
@@ -1032,8 +1065,19 @@ gd::table::dto::table CDocument::RESULT_RowCount()
             // Add a new row to the result table
             auto uRow = tableResult.get_row_count();
             tableResult.row_add( gd::table::tag_null{} );
-            tableResult.cell_set(uRow, "folder", stringFolder );
-            tableResult.cell_set(uRow, "filename", stringFilename);
+
+            if( eMode == CApplication::eModeReview )
+            {
+               // add full path to file
+               gd::file::path pathFile( stringFolder );
+               pathFile += stringFilename;
+               tableResult.cell_set(uRow, "filename", pathFile.string());
+            }
+            else
+            {
+               tableResult.cell_set(uRow, "folder", stringFolder );
+               tableResult.cell_set(uRow, "filename", stringFilename);
+            }
             tableResult.cell_set(uRow, "count", uCount);
             if( itRowCount.cell_get_variant_view("code").is_null() == false )
             {
