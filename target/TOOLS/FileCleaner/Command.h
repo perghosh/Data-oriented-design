@@ -47,6 +47,9 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
 /// @brief Harvests files from the specified path and populates a table with their details.
 std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_ );
 
+/// @brief Read lines from a file, starting at the specified row and offset, and returning the specified number of lines.
+std::pair<bool, std::string> FILES_ReadLines_g( const std::string& stringPath, unsigned uRow, int iOffset, unsigned uCount, const std::string_view& stringIndent, std::string& stringLines );
+
 /// @brief Counts the number of rows in a file. 
 std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
 std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );

@@ -241,6 +241,57 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
    return { true, "" };
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Reads lines from a file starting at a specified row with an offset and count.
+ *
+ * This method reads lines from the specified file, starting at the given row (with an optional offset),
+ * and returns a specified number of lines. The lines are concatenated into a single string.
+ *
+ * @param stringPath The path to the file to read lines from.
+ * @param uRow The starting row (0-based index) from which to begin reading lines.
+ * @param iOffset An offset to apply to the starting row. Can be negative to move up or positive to move down.
+ * @param uCount The number of lines to read from the file.
+ * @param stringIndent A string to prepend to each line read from the file.
+ * @param stringLines A reference to a string where the read lines will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> FILES_ReadLines_g(const std::string& stringPath, unsigned uRow, int iOffset, unsigned uCount, const std::string_view& stringIndent, std::string& stringLines)
+{                                                                                                  assert( stringPath.empty() == false );
+   if( std::filesystem::is_regular_file(stringPath) == false ) return { false, "File not found: " + stringPath };
+
+   std::ifstream file_(stringPath, std::ios::binary);
+   if( file_.is_open() == false ) return { false, "Failed to open file: " + stringPath };
+
+   // Calculate the starting line (with offset)
+   int64_t iStartLine = static_cast<int64_t>(uRow) + static_cast<int64_t>(iOffset);
+   if( iStartLine < 0 ) iStartLine = 0;
+   uint64_t uStartLine = static_cast<uint64_t>(iStartLine); // ensure we work with unsigned for line counting
+
+   std::string stringLine;
+   unsigned uCurrentLine = 0;
+   unsigned uLinesRead = 0;
+
+   while( std::getline(file_, stringLine) )
+   {
+      if( uCurrentLine >= uStartLine )
+      {
+         stringLines += stringIndent;
+         stringLines += stringLine;
+         stringLines += '\n';
+         uLinesRead++;
+         if( uLinesRead >= uCount ) break;
+      }
+      uCurrentLine++;
+   }
+
+   if( uLinesRead == 0 ) return { false, "No lines read from file (check row/offset/count)" };
+
+   return { true, "" };
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Counts the number of rows in a file.
  * 
@@ -1241,8 +1292,8 @@ std::pair<bool, std::string> EXPRESSION_FilterOnColumn_g( gd::table::dto::table*
    // ## Prepare runtime for expressions, adds methods for default and string
    gd::expression::runtime runtime_;
    runtime_.set_debug();                                                      // enable debug mode for runtime, needed becuase user are able to set methods
-   runtime_.add( { uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
-   runtime_.add({ uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str") }); // string methods, set namespace "str" for string methods
+   runtime_.add( { (unsigned)uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
+   runtime_.add( { (unsigned)uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str") }); // string methods, set namespace "str" for string methods
 
 
    std::vector<uint64_t> vectorRemoveRow; // vector to hold rows to be removed
