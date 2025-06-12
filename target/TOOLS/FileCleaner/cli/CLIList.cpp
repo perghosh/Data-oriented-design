@@ -165,7 +165,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       }
    }
 
-   int64_t iOffset = 0, iCount = 0; // variables used to bring context to found code
+   int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
 
    if( options_.exists("context") == true )
    {
@@ -175,17 +175,17 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       auto vectorOffsetCount = gd::utf8::split( stringContext, ',' );          // get offset value and count
       // parse first value to int
       size_t uPosition;
-      iOffset = std::stoll(vectorOffsetCount[0].data(), &uPosition);
+      iContextOffset = std::stoll(vectorOffsetCount[0].data(), &uPosition);
 
       if( vectorOffsetCount.size() > 1 )
       {
-         iCount = std::stoll(vectorOffsetCount[1].data(), &uPosition);
+         iContextCount = std::stoll(vectorOffsetCount[1].data(), &uPosition);
       }
    }
 
 
    gd::argument::arguments argumentsOption( { { "pattern-count", (unsigned)uSearchPatternCount } } );
-   if( iOffset != 0 || iCount != 0 ) { argumentsOption.append( "offset", iOffset ); argumentsOption.append( "count", iCount ); }
+   if( iContextOffset != 0 || iContextCount != 0 ) { argumentsOption.append( "offset", iContextOffset ); argumentsOption.append( "count", iContextCount ); }
    auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsOption );// generate the result table for pattern line list
 
 
@@ -197,11 +197,31 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
 #ifdef _WIN32
       if (poptionsList->exists("vs") == false)
       {
-         // ## Just print the "line" column 
-         gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
-         table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
+         if( iContextCount == 0 )
+         {
+            // ## Just print the "line" column 
+            gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+            table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
+            stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+         }
+         else
+         {
+            // ## Print the "line" with context
+            gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+            for( auto itRow : tableResultLineList )
+            {
+               std::string stringLine = itRow.cell_get_variant_view("line").as_string(); // get the line text
+               stringLine += "\n";                                            // add a newline to the line text
+               std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
+               gd::utf8::indent(stringContext, "-- ");                         // indent the context code by 3 spaces
+               stringLine += stringContext;                                   // add the context code to the line text
+               auto uRow = table_.row_add_one();
+               table_.cell_set(uRow, "line", stringLine);                     // set the line text in the result table
+            }
 
-         stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+            stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+         }
+         
          pdocument->MESSAGE_Display( stringCliTable );
       }
       else

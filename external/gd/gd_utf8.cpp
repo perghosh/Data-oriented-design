@@ -3150,6 +3150,44 @@ namespace gd {
 
 
       /** -------------------------------------------------------------------
+       * @brief Indent text with new line character and indent string
+       * @param stringText text to indent
+       * @param stringIndent indent string to use
+       * @param iNewLine new line character used to mark where to indent text
+      */
+      void indent(std::string& stringText, const std::string_view& stringIndent, char iNewLine)
+      {
+         std::string stringIndented;  // String with indented text
+         size_t uLength = stringText.length(); // Length of text to indent
+         if( uLength > 0 )
+         {
+            stringIndented.append(stringIndent);                              // Add indent at start of string
+
+            const char* piBegin = stringText.c_str();
+            const char* piEnd = piBegin + uLength; // Start and end of text to indent
+            const char* piAddFrom = piBegin; // Pointer to add text from
+            for( const char* piPosition = piBegin; piPosition < piEnd; piPosition++ )
+            {
+               if( *piPosition == iNewLine )                                       // found new line character
+               {
+                  std::string_view stringAdd(piAddFrom, (piPosition - piAddFrom) + 1);// Get text from start to new line character
+                  stringIndented.append( stringAdd );                          // append indent to new line
+                  piAddFrom = piPosition + 1;                                  // move to next position after new line character
+                  if( (piPosition + 1) < piEnd ) stringIndented.append(stringIndent);                        
+               }
+            }
+            
+            if( piAddFrom < piEnd ) 
+            { 
+               std::string_view stringAdd( piAddFrom, piEnd - piAddFrom);      // Get text from start to new line character
+               stringIndented.append( stringAdd );
+            }
+         }
+
+         stringText = std::move(stringIndented);
+      }
+
+      /** -------------------------------------------------------------------
        * @brief Print utf8 text buffer data to buffer as hexadecimal string
        * @param puText utf8 text buffer
        * @param puEnd end of utf8 text buffer

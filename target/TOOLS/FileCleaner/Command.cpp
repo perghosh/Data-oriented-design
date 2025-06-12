@@ -6,6 +6,8 @@
  * 
  */
 
+ // @TAG #command.refactor
+
 #include <format>
 #include <iterator>
 
@@ -252,20 +254,16 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
  * @param uRow The starting row (0-based index) from which to begin reading lines.
  * @param iOffset An offset to apply to the starting row. Can be negative to move up or positive to move down.
  * @param iCount The number of lines to read from the file.
- * @param stringIndent A string to prepend to each line read from the file.
- * @param stringLines A reference to a string where the read lines will be stored.
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
-std::pair<bool, std::string> FILES_ReadLines_g(const std::string& stringPath, uint64_t uRow, int64_t iOffset, uint64_t uCount, std::string_view stringIndent, std::string_view stringIndentLine, std::string& stringLines)
+std::pair<bool, std::string> FILES_ReadLines_g(const std::string& stringPath, uint64_t uRow, int64_t iOffset, uint64_t uCount, std::string& stringLines)
 {                                                                                                  assert( stringPath.empty() == false );
    if( std::filesystem::is_regular_file(stringPath) == false ) return { false, "File not found: " + stringPath };
 
    std::ifstream file_(stringPath, std::ios::binary);
    if( file_.is_open() == false ) return { false, "Failed to open file: " + stringPath };
-
-   if( stringIndentLine.empty() ) stringIndentLine = stringIndent;
 
    // Calculate the starting line (with offset)
    int64_t iStartLine = static_cast<int64_t>(uRow) + static_cast<int64_t>(iOffset);
@@ -281,9 +279,6 @@ std::pair<bool, std::string> FILES_ReadLines_g(const std::string& stringPath, ui
       if( uCurrentLine >= uStartLine )
       {
          iOffset++;
-
-         if( iOffset == 0 ) stringLines += stringIndentLine;
-         else stringLines += stringIndent;
 
          stringLines += stringLine;
          stringLines += '\n';

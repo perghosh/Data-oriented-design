@@ -13,6 +13,8 @@
 | size | size needed in bytes to store characters |
 | split | split text into multiple text parts |
 | trim | remove space characters from start and end |
+| offset | tries to find parts in string and collects offset positions |
+| indent | indent text with spaces or other patterns |
 | is | is methods checks if text is something or not |
 
 */
@@ -965,8 +967,11 @@ namespace gd {
          return vectorOffset;
       }
 
+      // ## indent methods, used to indent text
 
-      // void split( const std::string_view& stringText, const std::string_view& stringSplit, std::vector<gd::argument::arguments>& vectorPart );
+      /// Indent text with indent string, each line is indented with `stringIndent` text and new line ? is used to separate lines
+      void indent( std::string& stringText, const std::string_view& stringIndent, char iNewLine = '\n' );
+
 
       // ## Print utf8 i various forms
 

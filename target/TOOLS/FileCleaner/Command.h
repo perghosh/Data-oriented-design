@@ -5,6 +5,8 @@
  * 
  */
 
+// @TAG #command.refactor
+
 #pragma once
 
 
@@ -48,7 +50,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
 std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_ );
 
 /// @brief Read lines from a file, starting at the specified row and offset, and returning the specified number of lines.
-std::pair<bool, std::string> FILES_ReadLines_g( const std::string& stringPath, uint64_t uRow, int64_t iOffset, uint64_t uCount, std::string_view stringIndent, std::string_view stringIndentLine, std::string& stringLines );
+std::pair<bool, std::string> FILES_ReadLines_g( const std::string& stringPath, uint64_t uRow, int64_t iOffset, uint64_t uCount, std::string& stringLines );
 
 /// @brief Counts the number of rows in a file. 
 std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
