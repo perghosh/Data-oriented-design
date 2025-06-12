@@ -158,7 +158,67 @@ namespace gd {
          if( uLength1 > uLength2 ) return 1;
          return 0;
       }
-   }
+
+      
+      /**
+       * @brief Finds the pointer to the nth occurrence of a character in a C-style string.
+       *
+       * Searches the null-terminated string pointed to by @p pbszText for the @p uNth occurrence
+       * of the character @p iCharacter. If @p uNth is 0, returns the start of the string.
+       * If the character is not found the specified number of times, returns nullptr.
+       *
+       * @param pbszText    Pointer to the null-terminated string to search.
+       * @param iCharacter  Character to search for.
+       * @param uNth        The occurrence number to find (1-based; 0 returns pbszText).
+       * @return            Pointer to the nth occurrence of @p iCharacter, or nullptr if not found.
+       */
+      const char* strchr(const char* pbszText, char iCharacter, size_t uNth)
+      {                                                                                            assert(pbszText != nullptr);
+         if( uNth == 0 ) return pbszText;                                     // if uNth is 0 then return pointer to start of string
+
+         const char* pbszPosition = pbszText;
+         while( *pbszPosition != '\0' && uNth > 0 )
+         {
+            if( *pbszPosition == iCharacter )
+            {
+               uNth--;
+               if( uNth == 0 ) return pbszPosition; // found nth character
+            }
+            pbszPosition++;
+         }
+
+         return nullptr;
+      }
+
+      /**
+       * @brief Finds the pointer to the nth occurrence of a character in a std::string_view.
+       *
+       * Searches the string view for the @p uNth occurrence of the character @p iCharacter.
+       * If @p uNth is 0, returns the start of the string view.
+       * If the character is not found the specified number of times, returns nullptr.
+       *
+       * @param stringText  The string view to search.
+       * @param iCharacter  Character to search for.
+       * @param uNth        The occurrence number to find (1-based; 0 returns start of string).
+       * @return            Pointer to the nth occurrence of @p iCharacter, or nullptr if not found.
+       */
+      const char* strchr(const std::string_view& stringText, char iCharacter, size_t uNth )
+      {
+         if( uNth == 0 ) return stringText.data(); // if uNth is 0 then return pointer to start of string
+         const char* pbszPosition = stringText.data();
+         const char* pbszEnd = pbszPosition + stringText.length();
+         while( pbszPosition < pbszEnd && uNth > 0 )
+         {
+            if( *pbszPosition == iCharacter )
+            {
+               uNth--;
+               if( uNth == 0 ) return pbszPosition; // found nth character
+            }
+            pbszPosition++;
+         }
+         return nullptr;
+      }
+   } /// ascii
 } // gd
 
 
