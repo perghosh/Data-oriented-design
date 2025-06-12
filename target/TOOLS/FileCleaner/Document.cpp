@@ -636,7 +636,7 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
  *  
  * @note This method assumes that the `CACHE_Add` function handles the ownership of the table.  
  */  
-void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<gd::table::dto::table>* ptable) // $TAG #cache.prepare
+void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<gd::table::dto::table>* ptable) // @TAG #cache.prepare
 {
    using namespace gd::table::dto;
    constexpr unsigned uTableStyle = ( table::eTableFlagNull32 | table::eTableFlagRowStatus );
@@ -838,7 +838,7 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
 * @post The rows in the cache table are sorted based on the specified column.
 *
 */
-std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_)
+std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_)  // @TAG #cache.sort
 {
    bool bAscending = true;
    int iColumn = -1;
@@ -1162,7 +1162,11 @@ gd::table::dto::table CDocument::RESULT_PatternCount()
  */  
 gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arguments& argumentsOption )
 {
+   // @brief Enum for editor types
    enum enumEditor { eVisualStudio, eVSCode, eSublime };
+   // @brief Enum constant for column positions in table
+   enum enumColumn { eColumnLine = 0, eColumnFile, eColumnContext, eColumnRow, eColumnRowInContext };
+
    using namespace gd::table::dto;
    enumEditor eEditor = eVisualStudio; // TODO: get editor from application settings  
    auto stringEditor = m_papplication->PROPERTY_Get("editor").as_string();
@@ -1180,7 +1184,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
 
    // Define the result table structure  
    constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );
-   table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"}, {"rstring", 0, "context"} }, gd::table::tag_prepare{});
+   table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"}, {"rstring", 0, "context"}, {"uint64", 0, "row"}, {"uint64", 0, "row-in-context"} }, gd::table::tag_prepare{});
 
    // Retrieve the file-pattern cache table  
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
@@ -1257,8 +1261,10 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
       if( iContextCount != 0 )
       {
          string_.clear();
-         FILES_ReadLines_g(pathFile.string(), uLineinSource, iContextOffset, iContextCount, "-- ", ">> ", string_);
+         FILES_ReadLines_g(pathFile.string(), uLineinSource, iContextOffset, iContextCount, string_);
          tableResult.cell_set(uNewRow, 2, string_);
+         tableResult.cell_set(uNewRow, eColumnRow, uLineinSource, gd::types::tag_convert{});
+         tableResult.cell_set(uNewRow, eColumnRowInContext, iContextOffset * -1, gd::types::tag_convert{});
       }
    }
 
