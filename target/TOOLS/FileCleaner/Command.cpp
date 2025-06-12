@@ -254,11 +254,13 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
  * @param uRow The starting row (0-based index) from which to begin reading lines.
  * @param iOffset An offset to apply to the starting row. Can be negative to move up or positive to move down.
  * @param iCount The number of lines to read from the file.
+ * @param stringLines A reference to a string where the read lines will be concatenated.
+ * @param piLeadingLineCount A pointer to an integer where the number of leading lines (lines before the starting row) will be stored. Can be `nullptr` if not needed.
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
-std::pair<bool, std::string> FILES_ReadLines_g(const std::string& stringPath, uint64_t uRow, int64_t iOffset, uint64_t uCount, std::string& stringLines)
+std::pair<bool, std::string> FILES_ReadLines_g(const std::string& stringPath, uint64_t uRow, int64_t iOffset, uint64_t uCount, std::string& stringLines, int64_t* piLeadingLineCount )
 {                                                                                                  assert( stringPath.empty() == false );
    if( std::filesystem::is_regular_file(stringPath) == false ) return { false, "File not found: " + stringPath };
 
@@ -269,6 +271,10 @@ std::pair<bool, std::string> FILES_ReadLines_g(const std::string& stringPath, ui
    int64_t iStartLine = static_cast<int64_t>(uRow) + static_cast<int64_t>(iOffset);
    if( iStartLine < 0 ) iStartLine = 0;
    uint64_t uStartLine = static_cast<uint64_t>(iStartLine); // ensure we work with unsigned for line counting
+
+   // Calculate the leading line count if requested, this is to be used to know how many lines were before the starting line
+   // and to mark what the important line is in the concatenated stringLines
+   if( piLeadingLineCount != nullptr ) { *piLeadingLineCount = (uRow - uStartLine) - 1; } // calculate leading lines
 
    std::string stringLine;
    uint64_t uCurrentLine = 0;

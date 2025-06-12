@@ -51,6 +51,8 @@ namespace gd {
       struct tag_wildcard{};
       /// tag dispatcher when there is a find operations
       struct tag_find{};
+      /// tag dispatcher when there is a find operations
+      struct tag_find_nth{};
       /// tag dispatcher for analyze operations
       struct tag_analyze {};
 
@@ -717,6 +719,12 @@ namespace gd {
       }
 
       int stricmp(std::string_view string1, std::string_view string2);
+
+      // ## find character in text
+
+      /// returns pointer to first occurrence of character in text or nullptr if not found
+      const char* strchr(const char* pbszText, char iCharacter, size_t uNth );
+      const char* strchr(const std::string_view& stringText, char iCharacter, size_t uNth );
 
       ///@}
    }

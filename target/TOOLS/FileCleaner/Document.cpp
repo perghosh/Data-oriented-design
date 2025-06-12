@@ -1165,7 +1165,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
    // @brief Enum for editor types
    enum enumEditor { eVisualStudio, eVSCode, eSublime };
    // @brief Enum constant for column positions in table
-   enum enumColumn { eColumnLine = 0, eColumnFile, eColumnContext, eColumnRow, eColumnRowInContext };
+   enum enumColumn { eColumnLine = 0, eColumnFile, eColumnContext, eColumnRow, eColumnRowLeading };
 
    using namespace gd::table::dto;
    enumEditor eEditor = eVisualStudio; // TODO: get editor from application settings  
@@ -1184,7 +1184,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
 
    // Define the result table structure  
    constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );
-   table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"}, {"rstring", 0, "context"}, {"uint64", 0, "row"}, {"uint64", 0, "row-in-context"} }, gd::table::tag_prepare{});
+   table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"}, {"rstring", 0, "context"}, {"uint64", 0, "row"}, {"uint64", 0, "row-leading"} }, gd::table::tag_prepare{});
 
    // Retrieve the file-pattern cache table  
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
@@ -1261,10 +1261,11 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
       if( iContextCount != 0 )
       {
          string_.clear();
-         FILES_ReadLines_g(pathFile.string(), uLineinSource, iContextOffset, iContextCount, string_);
+         int64_t iLeadingLines = 0;
+         FILES_ReadLines_g(pathFile.string(), uLineinSource, iContextOffset, iContextCount, string_, &iLeadingLines);
          tableResult.cell_set(uNewRow, 2, string_);
          tableResult.cell_set(uNewRow, eColumnRow, uLineinSource, gd::types::tag_convert{});
-         tableResult.cell_set(uNewRow, eColumnRowInContext, iContextOffset * -1, gd::types::tag_convert{});
+         tableResult.cell_set(uNewRow, eColumnRowLeading, iLeadingLines, gd::types::tag_convert{});
       }
    }
 

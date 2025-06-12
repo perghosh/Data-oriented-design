@@ -214,8 +214,22 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
                stringLine += "\n";                                            // add a newline to the line text
                std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
                gd::utf8::indent(stringContext, "-- ");                         // indent the context code by 3 spaces
-               stringLine += stringContext;                                   // add the context code to the line text
                auto uRow = table_.row_add_one();
+
+               // ## mark the line with that has the matched pattern
+
+               auto uLeadingRow = itRow.cell_get_variant_view( "row-leading" ).as_uint();
+               auto piPosition = gd::ascii::strchr(stringContext, '\n', uLeadingRow);// find the leading row in the context code
+               if( piPosition != nullptr && piPosition[1] != 0 && piPosition[2] != 0 ) // if the leading row is found
+               {
+                  auto uIndex = piPosition - stringContext.data() + 1;        // get the index of the leading row
+                  stringContext[uIndex] = '>';                                // mark the leading row with a '>' character
+                  uIndex++;
+                  stringContext[uIndex] = '>';                                // mark the leading row with a '>' character
+               }
+
+               stringLine += stringContext;                                   // add the context code to the line text
+
                table_.cell_set(uRow, "line", stringLine);                     // set the line text in the result table
             }
 
