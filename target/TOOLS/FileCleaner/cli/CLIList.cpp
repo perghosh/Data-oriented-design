@@ -223,7 +223,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
                auto piPosition = gd::ascii::strchr(stringContext, '\n', uLeadingRow);// find the leading row in the context code
                if( piPosition != nullptr && piPosition[1] != 0 && piPosition[2] != 0 ) // if the leading row is found
                {
-                  auto uIndex = piPosition - stringContext.data() + 1;        // get the index of the leading row
+                  auto uIndex = piPosition - stringContext.data();            // get the index of the leading row
+                  if( uLeadingRow > 0 ) uIndex++;                             // if the leading row is greater than 0, then we have a leading row, so increment the index past new line character is needed
                   stringContext[uIndex] = '>';                                // mark the leading row with a '>' character
                   uIndex++;
                   stringContext[uIndex] = '>';                                // mark the leading row with a '>' character
