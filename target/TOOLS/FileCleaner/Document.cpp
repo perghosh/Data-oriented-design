@@ -1178,8 +1178,8 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
    unsigned uPatternCount = argumentsOption.get_argument( "pattern-count", 1u );
    if( argumentsOption.exists("offset") == true )
    {
-      iContextOffset = argumentsOption.get_argument( "offset", 0ll ) - 1;
-      iContextCount = argumentsOption.get_argument( "count", 0ll );
+      iContextOffset = argumentsOption.get_argument( "offset", (int64_t)0 ) - 1;
+      iContextCount = argumentsOption.get_argument( "count", (int64_t)0 );
    }
 
    // Define the result table structure  
