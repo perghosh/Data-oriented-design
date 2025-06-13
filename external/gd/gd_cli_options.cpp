@@ -85,6 +85,15 @@ void options::add_global( const options& options_ )
    }
 }
 
+/// Get all values for name as variant_view's in list
+std::vector<gd::variant_view> options::get_all(const std::string_view& stringName) const
+{
+   auto vectorValues = m_argumentsValue.get_argument_all(stringName, gd::types::tag_view{}); // get all values for name
+
+   return vectorValues;
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Parse application arguments
  * @param iArgumentCount number of arguments to parse

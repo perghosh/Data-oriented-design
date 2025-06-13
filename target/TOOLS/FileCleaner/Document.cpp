@@ -505,7 +505,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 
 
 std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList )
-{
+{                                                                                                  assert(vectorRegexPatterns.empty() == false); // Ensure the rpattern list is not empty
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
                                                                                                    assert(ptableFile != nullptr);
