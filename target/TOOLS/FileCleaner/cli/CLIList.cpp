@@ -116,13 +116,14 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    }
    else if( options_.exists("rpattern") == true )
    {
-      std::string stringPattern = options_["rpattern"].as_string();
-      std::vector<std::string> vectorPattern;
-      vectorPattern.push_back(stringPattern); // put the regex pattern into a vector
+      auto vectorRPattern = options_.get_all("rpattern"); // get all regex patterns
+      std::vector<std::string> vectorPattern; // store regex patterns as strings
+      for( auto& rpattern : vectorRPattern ) { vectorPattern.push_back(rpattern.as_string()); }
       uSearchPatternCount = vectorPattern.size(); // count the number of patterns to search for
       std::vector< std::pair<std::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
       
       // ## convert string to regex and put it into vectorRegexPatterns
+
       for( auto& stringPattern : vectorPattern )
       {
          try
@@ -145,25 +146,10 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          result_ = ListMatchAllPatterns_g( vectorRegexPattern, pdocument );
          if (result_.first == false) return result_;
       }
-
    }
    else { return { false, "No pattern specified" }; }                          // no pattern specified
 
-   auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
-
-   // ## check for expression to do some preprocessing on the result table
-
-   if( options_["expression"].is_true() == true )
-   {
-      std::string stringExpression = options_["expression"].as_string();
-      if( stringExpression.empty() == false )
-      {
-         std::vector<std::string> vectorExpression;
-         vectorExpression.push_back(stringExpression);                        // put the expression into a vector
-         result_ = EXPRESSION_FilterOnColumn_g(ptableLineList, ptableLineList->column_get_index("line"), vectorExpression); // filter the result table based on the expression
-         if(result_.first == false) return result_;
-      }
-   }
+   // ## context handling, if context is specified then we will bring some context to the found code
 
    int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
 
@@ -183,6 +169,21 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       }
    }
 
+   auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
+
+   // ## check for expression to do some preprocessing on the result table
+
+   if( options_["expression"].is_true() == true )
+   {
+      std::string stringExpression = options_["expression"].as_string();
+      if( stringExpression.empty() == false )
+      {
+         std::vector<std::string> vectorExpression;
+         vectorExpression.push_back(stringExpression);                        // put the expression into a vector
+         result_ = EXPRESSION_FilterOnColumn_g(ptableLineList, ptableLineList->column_get_index("line"), vectorExpression); // filter the result table based on the expression
+         if(result_.first == false) return result_;
+      }
+   }
 
    gd::argument::arguments argumentsOption( { { "pattern-count", (unsigned)uSearchPatternCount } } );
    if( iContextOffset != 0 || iContextCount != 0 ) { argumentsOption.append( "offset", iContextOffset ); argumentsOption.append( "count", iContextCount ); }

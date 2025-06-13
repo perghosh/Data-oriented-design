@@ -283,6 +283,8 @@ public:
    template <typename VALUE>
    void add_value( const std::string_view& stringName, const VALUE& v ) { m_argumentsValue.append( stringName, v ); }
 
+   std::vector<gd::variant_view> get_all(const std::string_view& stringName) const;
+
    // ## find added option's
 
    option* find( const std::string_view& stringName );

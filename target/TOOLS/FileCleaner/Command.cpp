@@ -1170,7 +1170,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                          ( state_.is_string() == true && ( uFindInState & eStateString ) ) )
                      {
                         uint64_t uColumn;
-                        int iPattern = find_pattern_(stringSourceCode, &uColumn);    // try to find pattern in source code
+                        int iPattern = find_pattern_(stringText, &uColumn);    // try to find pattern in source code
                         if( iPattern != -1 )                                           // did we find a pattern?
                         {
                            // ## figure ot row and column
@@ -1178,7 +1178,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
                            auto uPosition = it - first_;
                            uRow -= lineBuffer.count('\n', uPosition);         // subtract number of new lines in buffer from current position to get the right row
 
-                           add_line_to_table_(iPattern, stringSourceCode, uRow, uColumn, vectorRegexPatterns[iPattern].second); // add line to table
+                           add_line_to_table_(iPattern, stringText, uRow, uColumn, vectorRegexPatterns[iPattern].second); // add line to table
                         }
                      }
                   } // if( uFindInState & ( eStateComment | eStateString ) )
