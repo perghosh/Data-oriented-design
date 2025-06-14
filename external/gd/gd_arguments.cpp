@@ -239,6 +239,55 @@ void arguments::argument::get_binary_as_hex(std::string& stringHex) const
    if( uLength >= 0x1000 ) delete[] pbsz;
 }
 
+/** ----------------------------------------------------------------------------- get_bool */ /**
+ * @brief Tries to convert value to bool and returns that bool value.
+ *        For numbers, 0 is false and any other value is true.
+ *        For strings, empty is false, non-empty is true.
+ *        For floating point, 0.0 is false, otherwise true.
+ *        For bool, returns the stored value.
+ *        For unknown types, returns false.
+ * @return bool converted value
+ */
+bool arguments::argument::get_bool() const
+{
+   switch( type_number_s(m_eType) )
+   {
+   case arguments::eTypeNumberUnknown:
+      return false;
+   case arguments::eTypeNumberBool:
+      return m_unionValue.b;
+   case arguments::eTypeNumberInt8:
+      return m_unionValue.v_int8 != 0;
+   case arguments::eTypeNumberUInt8:
+      return m_unionValue.v_uint8 != 0;
+   case arguments::eTypeNumberInt16:
+      return m_unionValue.v_int16 != 0;
+   case arguments::eTypeNumberUInt16:
+      return m_unionValue.v_uint16 != 0;
+   case arguments::eTypeNumberInt32:
+      return m_unionValue.v_int32 != 0;
+   case arguments::eTypeNumberUInt32:
+      return m_unionValue.v_uint32 != 0;
+   case arguments::eTypeNumberInt64:
+      return m_unionValue.v_int64 != 0;
+   case arguments::eTypeNumberUInt64:
+      return m_unionValue.v_uint64 != 0;
+   case arguments::eTypeNumberFloat:
+      return m_unionValue.f != 0.0f;
+   case arguments::eTypeNumberDouble:
+      return m_unionValue.d != 0.0;
+   case arguments::eTypeNumberString:
+   case arguments::eTypeNumberUtf8String:
+      return ( m_unionValue.pbsz != nullptr && *m_unionValue.pbsz != '\0' );
+   case arguments::eTypeNumberWString:
+      return ( m_unionValue.pwsz != nullptr && *m_unionValue.pwsz != L'\0' );
+   default:
+      assert(false);
+      return false;
+   }
+}
+
+
 /*----------------------------------------------------------------------------- get_int */ /**
  * Tries to convert value to int and returns that int value, if it failles to convert to int then 0 is returned
  * \return int converted value
@@ -299,7 +348,6 @@ int arguments::argument::get_int() const
    default:
                                                                                                    assert( false );
    }
-
 
    return iValue;
 }

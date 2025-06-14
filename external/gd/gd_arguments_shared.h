@@ -474,9 +474,8 @@ public:
       gd::variant_view as_variant_view() const { return get_variant_view(); }
       std::string_view as_string_view() const { return get_string_view(); }
 
-
+      bool         get_bool() const;
       int          get_int() const;
-      bool         get_bool() const { return get_int(); };
       unsigned int get_uint() const;
       int64_t      get_int64() const;
       uint64_t     get_uint64() const;

@@ -658,6 +658,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       {
          // file table: key | path | size | date | extension  
          ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 20, "extension"} }, gd::table::tag_prepare{}));
+         ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }
    else if( stringId == "file-dir" )                                           // file cache, used to store file information  
@@ -667,6 +668,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       {
          // file table: key | path | size | date | extension  
          ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 20, "extension"} }, gd::table::tag_prepare{}));
+         ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }
    else if( stringId == "file-count" )                                         // row counter table  
@@ -680,6 +682,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
             { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
               {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"} }, gd::table::tag_prepare{})
          );
+         ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }
    else if( stringId == "file-linelist" )                                      // lists line where pattern was found  
@@ -694,6 +697,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
             { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
               {"rstring", 0, "line"}, {"uint64", 0, "row"}, {"uint64", 0, "column"}, {"string", 32, "pattern"} }, gd::table::tag_prepare{})
          );
+         ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }
 
@@ -779,6 +783,44 @@ bool CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view
    m_vectorTableCache.push_back( std::move( ptable ) );                        // insert table to vector
 
    return true;
+}
+
+std::string CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId, gd::types::tag_temporary )
+{
+   std::string stringTableId( stringId );
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );       // locks `m_vectorTableCache`
+
+   table.property_set({ "temporary", true }); // mark table as temporary
+
+   if( stringTableId.empty() == true ) 
+   { 
+      stringTableId = gd::uuid(gd::uuid::tag_random{}).to_string();
+      table.property_set({ "id", stringTableId }); // set id to table
+   }
+   
+#ifndef NDEBUG
+   if( stringId.empty() == false )
+   {
+      // ## There is a tiny chance table was added before this method was called, we need to check with exclusive lock
+      for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
+      {
+         auto argumentId = (*it)->property_get( "id" );
+         if( argumentId.is_string() && stringTableId == (const char*)argumentId ) { assert(false ); return "Table with id already exists in cache"; } // found table, exit
+      }
+   }
+#endif // NDEBUG
+
+   /// Create unique_ptr with table and move table data to this table
+   std::unique_ptr<gd::table::dto::table> ptable = std::make_unique<gd::table::dto::table>( std::move( table ) );
+   m_vectorTableCache.push_back( std::move( ptable ) );            // insert table to vector
+
+   return stringTableId;
+}
+
+void CDocument::CACHE_Add( std::unique_ptr< gd::table::dto::table > ptableAdd )
+{
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );       // locks `m_vectorTableCache`
+   m_vectorTableCache.push_back( std::move( ptableAdd ) );                     // insert table to vector
 }
 
 /** ---------------------------------------------------------------------------
@@ -973,6 +1015,35 @@ gd::argument::arguments CDocument::CACHE_GetInformation( const std::string_view&
 
    return argumentsCache;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Erase all temporary cache tables.
+ *
+ * This method removes all tables from the cache that are marked as temporary.
+ * A table is considered temporary if its "temporary" property is set to true.
+ *
+ * @param tag_temporary Tag dispatch to select this overload.
+ */
+void CDocument::CACHE_Erase(gd::types::tag_temporary)
+{
+   std::unique_lock<std::shared_mutex> lock_(m_sharedmutexTableCache);
+
+   // Remove all tables with property "temporary" == true
+   auto itTable = m_vectorTableCache.begin();
+   while( itTable != m_vectorTableCache.end() )
+   {
+      auto argumentTemporary = (*itTable)->property_get("temporary");
+      if (argumentTemporary.is_bool() && argumentTemporary.as_bool())
+      {
+         itTable = m_vectorTableCache.erase(itTable);
+      }
+      else
+      {
+         ++itTable;
+      }
+   }
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Erase table cache

@@ -7,6 +7,7 @@
 #include <memory>
 #include <random>
 
+#include "gd_types.h"
 #include "gd_utf8.h"
 
 #if defined(__APPLE__) && defined(__GNUG__) && !defined(__clang__)
@@ -64,7 +65,8 @@ assert( (uuidTest1 == uuidTest2) == false ); // never match
 struct uuid
 {
 public:
-   struct tag_null {};
+   using tag_null = gd::types::tag_command_nullify; ///< tag used to create null uuid value, it is used to create uuid with no value (all bytes set to 0)
+   using tag_random = gd::types::tag_command_random;
 
 public:
    typedef uint8_t           value_type;                                       ///< primitive type
@@ -80,6 +82,7 @@ public:
 public:
    uuid();
    uuid( tag_null ) { clear(); }
+   uuid( tag_random ) { *this = new_uuid_s(); } ///< create new random uuid value
    uuid( const uuid& o );
    uuid( const uint8_t* puUuid ) { memcpy( m_pbData, puUuid, 16 ); }
    uuid( const char* pbsHexBegin, const char* pbsHexEnd ) { assert( (pbsHexEnd - pbsHexBegin) == 32 || (pbsHexEnd - pbsHexBegin) == 36 ); read( (const value_type*)pbsHexBegin, (const value_type*)pbsHexEnd ); }
@@ -120,6 +123,8 @@ public:
    /// object size
    static constexpr size_type static_size() noexcept { return 16; }
    constexpr size_type size() const noexcept { return static_size(); }
+
+   std::string to_string() const;  ///< convert uuid to string in uuid format
 
    /// clear buffer (set to 00000000-0000-0000-0000-000000000000)
    void clear() const noexcept;
@@ -383,6 +388,8 @@ inline bool operator<(const uuid& uuidLeft, const uuid& uuidRight) noexcept
     return memcmp( uuidLeft, uuidRight, sizeof(uuidLeft.m_pbData) ) < 0;
 #endif
 }
+
+inline std::string uuid::to_string() const { return to_string_g(*this); }
 
 
 
