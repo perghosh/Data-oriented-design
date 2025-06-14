@@ -70,6 +70,14 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    std::string stringSource = options_["source"].as_string();
    CApplication::PreparePath_s(stringSource);                                 // if source is empty then set it to current path, otherwiss prepare it
 
+   std::string stringIgnore = options_["ignore"].as_string();
+   if( stringIgnore.empty() == false ) 
+   { 
+      auto vectorIgnore = CApplication::Split_s(stringIgnore);
+      pdocument->GetApplication()->IGNORE_Add(vectorIgnore);                  // add ignore patterns to the application
+   }
+
+
    int iRecursive = options_["recursive"].as_int();
    if (iRecursive == 0 && options_.exists("R") == true) iRecursive = 16; // set to 16 if R is set, find all files
 

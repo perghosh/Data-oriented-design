@@ -76,6 +76,13 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    // Harvest files based on the "source" option
    std::string stringSource = options_["source"].as_string();
    bool bExplain = options_["explain"].is_true();
+
+   std::string stringIgnore = options_["ignore"].as_string();
+   if( stringIgnore.empty() == false ) 
+   { 
+      auto vectorIgnore = CApplication::Split_s(stringIgnore);
+      pdocument->GetApplication()->IGNORE_Add(vectorIgnore);                  // add ignore patterns to the application
+   }
    
    CApplication::PreparePath_s(stringSource);
    int iRecursive = options_["recursive"].as_int();

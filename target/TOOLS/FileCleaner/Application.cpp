@@ -901,6 +901,37 @@ void CApplication::DOCUMENT_Clear()
    m_vectorDocument.clear();
 }
 
+void CApplication::IGNORE_Add(const std::vector<std::string> vectorIgnore)
+{
+   for( const auto& stringIgnore : vectorIgnore )
+   {
+      std::string stringValue = stringIgnore; // copy the ignore pattern
+      unsigned uType = 0;                                          // type of ignore
+      if( stringIgnore[0] == '/' )                                  // if starts with / then it is a folder
+      {
+         uType = unsigned(ignore::eTypeRoot|ignore::eTypeFolder);
+         stringValue = stringValue.substr(1);                      // remove the first character
+      }
+      else if( stringValue.back() == '/' )
+      {
+         uType = unsigned(ignore::eTypeFolder);
+         stringValue = stringValue.substr(0, stringValue.length() - 1); // remove the last character
+      }
+      else if( stringValue.find_first_of("*?") == std::string::npos )
+      {
+         uType = unsigned(ignore::eTypeFolder);
+      }
+
+      if( uType != 0 )
+      {
+         if( stringValue.find_first_of("*?") != std::string_view::npos ) { uType |= unsigned(ignore::eTypeWildcard); } // if we have a wildcard then set the type to wildcard
+         std::string string_( stringValue );
+         std::replace(string_.begin(), string_.end(), '\\', '/');
+         m_vectorIgnore.push_back( { uType, string_ } );
+      }
+   }
+}
+
 /// --------------------------------------------------------------------------- @TAG #ignore
 /// Checks if the given file path matches any ignore pattern in m_vectorIgnore.
 /// Normalizes the path to use forward slashes. Uses os_fnmatch for pattern matching.
@@ -1271,6 +1302,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "source", 's', "File(s) or folder(s) to count lines in"});
+      optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
       //optionsCommand.add({ "comment", "Pair of characters marking start and end for comments"});
       //optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
       optionsCommand.add({ "segment", "type of segment in code to search in"});
@@ -1340,6 +1372,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
       optionsCommand.add({ "pattern", 'p', "Patterns to search for (multiple values separated by commas or semicolons)"});
       optionsCommand.add({ "source", 's', "File(s) or folder(s) to search"});
+      optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
       optionsCommand.add({ "rpattern", "Regular expression pattern to search for"});
       optionsCommand.add({ "context", "Show information to put the result in context, normally code around"});
       optionsCommand.add({ "expression", 'e', "Pass script to command, this is for advanced customization. With scripting you can perform non standard functionality"});
