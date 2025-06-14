@@ -110,11 +110,13 @@ Copies files from source to destination.
 
 ### dir
 Lists files in a directory.
+Dir differs from normal dir/ls in that it addapted to work for developers or people that work with code related files. For example it can filter files basedon whats inside the file.
 
 **Options:**
 - `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;` (e.g., `*.h;*.cpp`).
 - `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
 - `--source <path>`: Directory to list.
+- `--sort <column>`: Sort the output by column name when result is printed to console.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 
 ---
