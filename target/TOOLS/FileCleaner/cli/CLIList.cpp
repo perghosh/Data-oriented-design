@@ -107,6 +107,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    std::string stringSegment = options_["segment"].as_string(); // type of segment to search in, code, comment or string, maybe all
    if (stringSegment.empty() == false) argumentsList.set("state", stringSegment.c_str());
 
+   pdocument->GetApplication()->UpdateApplicationState();                     // update the application state to reflect the current state of the application
+
    // ## check for pattern that 
    if( options_.exists("pattern") == true )
    {

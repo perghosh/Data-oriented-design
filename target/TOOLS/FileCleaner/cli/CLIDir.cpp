@@ -43,6 +43,8 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    unsigned uRecursive = options_["recursive"].as_uint();
    if(uRecursive == 0 && options_.exists("R") == true) uRecursive = 16;        // set to 16 if R is set, find all files
 
+   pdocument->GetApplication()->UpdateApplicationState();
+
    std::string stringFilter = options_["filter"].as_string();
    if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" ) 
    { 

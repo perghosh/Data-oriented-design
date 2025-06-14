@@ -51,7 +51,6 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    CACHE_Prepare("file-count");
    auto* ptable_ = CACHE_Get("file");                                                              assert( ptable_ != nullptr );
 
-
    auto result_ = FILES_Harvest_g(argumentsPath, ptable_);
    if( result_.first == false ) return result_;
 
