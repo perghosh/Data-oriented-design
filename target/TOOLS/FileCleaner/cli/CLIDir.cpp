@@ -30,7 +30,7 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    std::string stringSource = (*poptionsDir)["source"].as_string(); 
    CApplication::PreparePath_s(stringSource);                                  // if source is empty then set it to current path, otherwiss prepare it
 
-   std::string stringTableResultId = gd::uuid(gd::uuid::tag_random{}).to_string(); // create a random id for the table result
+   // std::string stringTableResultId = gd::uuid(gd::uuid::tag_random{}).to_string(); // create a random id for the table result
 
    unsigned uRecursive = options_["recursive"].as_uint();
    if(uRecursive == 0 && options_.exists("R") == true) uRecursive = 16;        // set to 16 if R is set, find all files
