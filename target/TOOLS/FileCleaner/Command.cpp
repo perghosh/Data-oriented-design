@@ -8,6 +8,7 @@
 
  // @TAG #command.refactor
 
+#include <chrono>
 #include <format>
 #include <iterator>
 
@@ -43,6 +44,17 @@ namespace detail {
       // get file size
       if( bSize == true )
       {
+         std::error_code errorcode_;                                           // error code for last write time
+         auto time_ = std::filesystem::last_write_time(pathFile, errorcode_);
+         if( !errorcode_ )
+         { 
+            auto sctp_ = std::chrono::time_point_cast<std::chrono::system_clock::duration>( time_ - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now() );
+            auto now_ = std::chrono::system_clock::now();
+            auto diff_ = now_ - sctp_;
+            auto days_ = std::chrono::duration_cast<std::chrono::days>(diff_).count();
+            ptable_->cell_set(uRow, "date", static_cast<double>(days_), gd::types::tag_convert{});
+         }
+
          std::string stringFilePath = pathFile.string();
          std::ifstream ifstreamFile(stringFilePath.data(), std::ios::binary | std::ios::ate);
          if( ifstreamFile.is_open() == true )
@@ -95,6 +107,17 @@ namespace detail {
       // get file size
       if( bSize == true )
       {
+         std::error_code errorcode_;                                           // error code for last write time
+         auto time_ = std::filesystem::last_write_time(pathFile, errorcode_);
+         if( !errorcode_ )
+         { 
+            auto sctp_ = std::chrono::time_point_cast<std::chrono::system_clock::duration>( time_ - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now() );
+            auto now_ = std::chrono::system_clock::now();
+            auto diff_ = now_ - sctp_;
+            auto days_ = std::chrono::duration_cast<std::chrono::days>(diff_).count();
+            ptable_->cell_set(uRow, "date", static_cast<double>(days_), gd::types::tag_convert{});
+         }
+
          std::string stringFilePath = pathFile.string();
          std::ifstream ifstreamFile(stringFilePath.data(), std::ios::binary | std::ios::ate);
          if( ifstreamFile.is_open() == true )

@@ -100,9 +100,11 @@ public:
 //@}
 
 /** \name CACHE
- * Document are able to cache information and it can handle different named caches.
- * Each cache is stored in a named table and that table is then stored in 
- * member vector in document called `m_vectorTableCache`.
+ * Documents can cache information and support multiple named caches.
+ * Each cache is stored in a named table, which is kept in the document's `m_vectorTableCache` member.
+ * Each table also stores a string ID that identifies it within the cache.
+ * Tables may also be marked as temporary, meaning they should be removed as soon as they are no longer needed.
+ *    CDocument is then used as a data source for moving data between operations.
  *///@{
    /// Prepare cache information structure
    void CACHE_Prepare( const std::string_view& stringId );
@@ -110,7 +112,9 @@ public:
    /// Load cache data
    std::pair<bool, std::string> CACHE_Load( const std::string_view& stringId );
    bool CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId );
+   std::string CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId, gd::types::tag_temporary );
    bool CACHE_Add( gd::table::dto::table&& table ) { return CACHE_Add( std::forward<gd::table::dto::table>( table ), std::string_view{}); }
+   void CACHE_Add( std::unique_ptr< gd::table::dto::table > ptableAdd );
    /// Return table with cache data
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId, bool bLoad );
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId ) { return CACHE_Get( stringId, true ); }
@@ -121,6 +125,8 @@ public:
    std::pair<bool, std::string> CACHE_GetInformation( const std::string_view& stringId, gd::argument::arguments& argumentsCache );
    gd::argument::arguments CACHE_GetInformation( const std::string_view& stringId );
    void CACHE_Erase( const std::string_view& stringId );
+   /// Erase all temporary cache tables
+   void CACHE_Erase( gd::types::tag_temporary );
    /// Dump cache data to string
    std::string CACHE_Dump(const std::string_view& stringId);
 #ifndef NDEBUG

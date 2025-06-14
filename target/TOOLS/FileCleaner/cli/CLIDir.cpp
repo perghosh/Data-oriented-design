@@ -4,6 +4,8 @@
 
 #include <format>
 
+#include "gd/gd_uuid.h"
+
 #include "../Command.h"
 #include "../Application.h"
 
@@ -27,6 +29,8 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    const gd::cli::options& options_ = *poptionsDir;
    std::string stringSource = (*poptionsDir)["source"].as_string(); 
    CApplication::PreparePath_s(stringSource);                                  // if source is empty then set it to current path, otherwiss prepare it
+
+   std::string stringTableResultId = gd::uuid(gd::uuid::tag_random{}).to_string(); // create a random id for the table result
 
    unsigned uRecursive = options_["recursive"].as_uint();
    if(uRecursive == 0 && options_.exists("R") == true) uRecursive = 16;        // set to 16 if R is set, find all files
@@ -60,7 +64,16 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    else
    {
       auto result_ = DirFilter_g( stringSource, stringFilter, uRecursive, pdocument );
+      if( result_.first == false ) return result_;
    }
+
+   if( options_.exists("sort") == true )
+   {
+      pdocument->CACHE_Sort("file-dir", options_["sort"]);                    // sort the table by the given sort value
+   }
+
+   DirPrint_g(pdocument);                                                     // print the table to the console
+
 
    return { true, "" };
 }
@@ -130,11 +143,6 @@ std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, cons
       }
    }
 
-   // ## Display the table
-
-   auto stringTable = gd::table::to_string(*ptable.get(), { {"verbose", true} }, gd::table::tag_io_cli{});
-   pdocument->MESSAGE_Display(stringTable);
-
    return { true, "" };
 }
 
@@ -148,8 +156,6 @@ std::pair<bool, std::string> DirFilter_g( const std::string& stringSource, const
 
    auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth, true);
    if( result_.first == false ) return result_;
-   auto stringTable = gd::table::to_string(*ptable.get(), { {"verbose", true} }, gd::table::tag_io_cli{});
-   pdocument->MESSAGE_Display(stringTable);
 
 #ifdef _WIN32
    if( arguments_.exists("script") == true )
@@ -166,7 +172,7 @@ std::pair<bool, std::string> DirFilter_g( const std::string& stringSource, const
    }
 #endif // _WIN32
 
-   return { false, "" };
+   return { true, "" };
 }
 
 
@@ -185,10 +191,25 @@ std::pair<bool, std::string> DirFilter_g(const std::string& stringSource, const 
 
    auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth, true );
    if( result_.first == false ) return result_;
-   auto stringTable = gd::table::to_string(*ptable.get(), { {"verbose", true} }, gd::table::tag_io_cli{});
+
+   pdocument->CACHE_Add( std::move( ptable ) );
+   
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Prints the directory table to the console
+ * @param pdocument pointer to the document object where data is stored
+ * @return a pair of bool and string, where the bool indicates success or failure, and the string contains the error message or result
+ */
+std::pair<bool, std::string> DirPrint_g(CDocument* pdocument)
+{
+   const auto* ptable_ = pdocument->CACHE_Get("file-dir");                                         assert(ptable_ != nullptr);
+
+   auto stringTable = gd::table::to_string( *ptable_, { {"verbose", true} }, gd::table::tag_io_cli{});
    pdocument->MESSAGE_Display(stringTable);
 
-   return { false, "" };
+   return { true, "" };
 }
 
 

@@ -1314,6 +1314,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "source", 's', "Directory to list" });
       optionsCommand.add({ "script", "Pass script file for advanced processing" });
+      optionsCommand.add({ "sort", "Sorts result on selected column name" });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format"} );

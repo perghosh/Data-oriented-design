@@ -53,6 +53,19 @@ _GD_TYPES_BEGIN
  * tag dispatchers have zero cost and removes the need to create a lot of different names for methods
  */
 
+ // ----------------------------------------------------------------------------
+ // ## command related tag dispatchers
+struct tag_command_add {};      ///< add command, like add item to list
+struct tag_command_remove {};   ///< remove command, like remove item from list
+struct tag_command_update {};   ///< update command, like update item in list
+struct tag_command_generate {}; ///< generate command, like generate new item or data
+struct tag_command_execute {};  ///< execute command, like run a function or method
+struct tag_command_random {};   ///< random command, like generate random value or item
+struct tag_command_sort {};     ///< sort command, like sort items in a list or array
+struct tag_command_filter {};   ///< filter command, like filter items in a list or array
+struct tag_command_nullify {};  ///< nullify command, like set item to null or empty state
+
+
 // ----------------------------------------------------------------------------
 // ## type related tag dispatchers
 struct tag_type_unsigned {};  ///< unsigned type, like uint8_t, uint16_t, uint32_t, uint64_t
@@ -112,6 +125,7 @@ struct tag_type {};           ///< type is used in some form, like data type or 
 struct tag_value {};          ///< value used in some form
 struct tag_version {};        ///< version is used in some form, like v1.0
 struct tag_warning {};        ///< warning is used in some form
+struct tag_temporary {};      ///< temporary is used in some form, like a temporary value or state
 
 struct tag_main_type {};      /// main type if there are secondary types
 struct tag_secondary_type {}; /// secondary type if there are main types

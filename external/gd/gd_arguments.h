@@ -409,6 +409,7 @@ public:
          }
       }
 
+      bool         as_bool() const { return get_bool(); }
       unsigned int as_uint() const { return get_uint(); }
       int          as_int() const { return get_int(); }
       int64_t      as_int64() const { return get_int64(); }
@@ -420,8 +421,8 @@ public:
       std::string_view as_string_view() const { return get_string_view(); }
 
 
+      bool         get_bool() const;
       int          get_int() const;
-      bool         get_bool() const { return get_int(); };
       unsigned int get_uint() const;
       int64_t      get_int64() const;
       uint64_t     get_uint64() const;
