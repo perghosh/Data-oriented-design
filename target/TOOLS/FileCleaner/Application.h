@@ -239,6 +239,7 @@ public:
 
    void IGNORE_Add( unsigned uType, const std::string_view& stringIgnore ) { m_vectorIgnore.push_back( { uType, std::string( stringIgnore ) } ); }
    void IGNORE_Add( const std::vector<ignore>& vectorIgnore ) { m_vectorIgnore.insert( m_vectorIgnore.end(), vectorIgnore.begin(), vectorIgnore.end() ); }
+   void IGNORE_Add( const std::vector<std::string> vectorIgnore );
 
    /// Ccheck if paths is to be ignored
    bool IGNORE_Match( const std::string_view& stringPath, const std::string_view& stringRoot ) const;
