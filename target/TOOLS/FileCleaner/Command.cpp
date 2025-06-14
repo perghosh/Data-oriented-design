@@ -192,7 +192,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
       {
          if( it.is_directory() == true )                                      // is file directory
          {
-            if( papplication_g->IGNORE_Empty() == false )
+            if( papplication_g->IsState( CApplication::eApplicationStateCheckIgnoreFolder ) == true )
             {
                auto stringDirectory = it.path().string();
                // convert to forward slashes for consistency
@@ -216,6 +216,12 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
                try
                {
                   std::string string_ = it.path().string();
+                  if( papplication_g->IsState( CApplication::eApplicationStateCheckIgnoreFile ) == true )
+                  {
+                     bool bIgnore = papplication_g->IGNORE_MatchFilename( string_ );
+                     if( bIgnore == true ) continue;
+                  }
+
                   detail::add_file_to_table(gd::file::path(string_), stringWildcard, ptable_, bSize);
                }
                catch( const std::exception& e )

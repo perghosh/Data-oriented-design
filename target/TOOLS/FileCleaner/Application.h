@@ -100,11 +100,14 @@ public:
     */
    enum enumApplicationState
    {
-      eApplicationStateUnknown = 0, ///< Unknown or unspecified application state
-      eApplicationStateInitialized = 0x01, ///< Application has been initialized
-      eApplicationStateWork = 0x02, ///< Application is in work state, threads are running
-      eApplicationStateIdle = 0x04, ///< Application is in pause state, threads are paused
-      eApplicationStateExit = 0x08, ///< Application is in exit state, threads are exiting
+      eApplicationStateUnknown           = 0,    ///< Unknown or unspecified application state
+      eApplicationStateInitialized       = 0x01, ///< Application has been initialized
+      eApplicationStateWork              = 0x02, ///< Application is in work state, threads are running
+      eApplicationStateIdle              = 0x04, ///< Application is in pause state, threads are paused
+      eApplicationStateExit              = 0x08, ///< Application is in exit state, threads are exiting
+
+      eApplicationStateCheckIgnoreFolder = 0x10, ///< Application is checking ignore patterns for folders, used to avoid processing folders that are ignored
+      eApplicationStateCheckIgnoreFile   = 0x20, ///< Application is checking ignore patterns for files, used to avoid processing files that are ignored
    };
 
 
@@ -188,6 +191,8 @@ public:
    bool IsIdle() const { return ( m_uApplicationState & eApplicationStateIdle ) != 0; }
    bool IsExit() const { return ( m_uApplicationState & eApplicationStateExit ) != 0; }
 
+   bool IsState(unsigned uState) const { return ( m_uApplicationState & uState ) != 0; }
+
    void SetState(unsigned uSet, unsigned uClear) { m_uApplicationState = ( m_uApplicationState & ~uClear ) | uSet; }
 //@}
 
@@ -202,6 +207,8 @@ public:
 /** \name OPERATION
 *///@{
    std::pair<bool, std::string> Initialize( gd::cli::options& optionsApplication );
+   /// Update application state
+   void UpdateApplicationState();
    /// Create application specific directory if it does not exist
    std::pair<bool, std::string> CreateDirectory();
    /// Print message to user
@@ -244,6 +251,7 @@ public:
    /// Ccheck if paths is to be ignored
    bool IGNORE_Match( const std::string_view& stringPath, const std::string_view& stringRoot ) const;
    bool IGNORE_Match( const std::string_view& stringPath ) const { return IGNORE_Match( stringPath, std::string_view() ); }
+   bool IGNORE_MatchFilename(const std::string_view& stringFileName ) const;
 
    /// Return number of ignore patterns
    size_t IGNORE_Size() const { return m_vectorIgnore.size(); }

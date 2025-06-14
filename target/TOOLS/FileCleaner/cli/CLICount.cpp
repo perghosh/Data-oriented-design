@@ -94,7 +94,8 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
       stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
       if( iRecursive == 0 ) iRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
    }
-   //else if(stringFilter.empty() == false ) { CApplication::PreparePath_s(stringFilter); }
+
+   pdocument->GetApplication()->UpdateApplicationState();
 
    gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive}, {"filter", stringFilter} });
    auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);                            if( !result_.first ) { return result_; }

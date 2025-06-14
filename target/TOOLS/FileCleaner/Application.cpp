@@ -464,6 +464,30 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Updates the application state based on information from application data.
+ */ 
+void CApplication::UpdateApplicationState()
+{
+   // ## Update ignore state based on ignore information
+   //    This state is used to optimize file operations and avoid unnecessary checks
+   unsigned uIgnore = 0;
+   SetState( 0, (eApplicationStateCheckIgnoreFolder|eApplicationStateCheckIgnoreFile) );
+   for( const auto& it : m_vectorIgnore )
+   {
+      if( it.is_file() == true ) 
+      {
+         uIgnore |= eApplicationStateCheckIgnoreFile; // set ignore file state
+      }
+      else if( it.is_folder() == true ) 
+      {
+         uIgnore |= eApplicationStateCheckIgnoreFolder; // set ignore folder state
+      }
+   }
+
+   SetState( uIgnore, 0 );
+}
+
 /** --------------------------------------------------------------------------- @TAG #directory
  * @brief Creates application specific directory where files used for cleaner are stored
  * 
@@ -917,9 +941,9 @@ void CApplication::IGNORE_Add(const std::vector<std::string> vectorIgnore)
          uType = unsigned(ignore::eTypeFolder);
          stringValue = stringValue.substr(0, stringValue.length() - 1); // remove the last character
       }
-      else if( stringValue.find_first_of("*?") == std::string::npos )
+      else if( stringValue.find_first_of("*?") != std::string::npos )
       {
-         uType = unsigned(ignore::eTypeFolder);
+         uType = unsigned(ignore::eTypeFile|ignore::eTypeWildcard);
       }
 
       if( uType != 0 )
@@ -1001,6 +1025,21 @@ bool CApplication::IGNORE_Match(const std::string_view& stringPath, const std::s
          }
       }
    }
+   return false;
+}
+
+bool CApplication::IGNORE_MatchFilename(const std::string_view& stringFileName) const
+{
+   for( const auto& ignore_ : m_vectorIgnore )
+   {
+      if( ignore_.is_file() == true )
+      {
+         std::string_view stringMatch = ignore_;
+         bool bMatch = gd::ascii::strcmp( stringFileName, stringMatch, gd::utf8::tag_wildcard{});
+         if( bMatch == true ) return true;                                  // if file name matches the ignore pattern, ignore the path      }
+      }
+   }
+
    return false;
 }
 
