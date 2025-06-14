@@ -952,9 +952,32 @@ bool CApplication::IGNORE_Match(const std::string_view& stringPath, const std::s
 
    /// ## Generate paht that works like the project path
    //     This is used to match against ignore patterns
+   std::string stringProjectPath;
    auto uRootLength = stringRoot_.length();
    if( stringRoot_.back() != '/' && stringRoot_.back() != '\\' ) uRootLength++;
-   std::string stringProjectPath( stringPath.substr(uRootLength) );  // remove root from path
+   if( uRootLength < stringPath.length() )
+   {
+      // covert to lowercase ant match beginning of the path with the root
+      std::string stringPathLower( stringPath );
+      // convert root to lowercase and match beginning of the path with the root
+      std::transform(stringPathLower.begin(), stringPathLower.end(), stringPathLower.begin(), ::tolower);
+
+      std::string stringRootLower(stringRoot_);
+      std::transform(stringRootLower.begin(), stringRootLower.end(), stringRootLower.begin(), ::tolower);
+
+      if( stringPathLower.find(stringRootLower) == 0 )
+      {
+         stringProjectPath = stringPath.substr(uRootLength);                  // remove root from path
+      }
+      else
+      {
+         stringProjectPath = stringPath;                                      // if root is not found in path, use the whole path
+      }
+   }
+   else
+   {
+      stringProjectPath = stringPath;                                         // if root is longer than path, use the whole path
+   }
 
    stringProjectPath = normalize_(stringProjectPath);                         // normalize path to use forward slashes
    auto vectorFolder = gd::utf8::split(stringProjectPath, '/'); // split path into parts
@@ -1345,6 +1368,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, search for patterns in all found text files" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "source", 's', "Directory to list" });
+      optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
       optionsCommand.add({ "script", "Pass script file for advanced processing" });
       optionsCommand.add({ "sort", "Sorts result on selected column name" });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );

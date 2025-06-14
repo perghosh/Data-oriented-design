@@ -707,7 +707,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
    }
    else
    {
-      CACHE_Add(std::move(*ptable_), stringId); // add it to internal application cache  
+      CACHE_Add(std::move(*ptable_)); // add it to internal application cache  
    }
 }
 
@@ -777,7 +777,7 @@ bool CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view
    std::unique_ptr<gd::table::dto::table> ptable = std::make_unique<gd::table::dto::table>( std::move( table ) );
 
    if( stringId.empty() == false )
-   {                                                                                               assert( ptable->property_get( "id" ).is_null() );
+   {
       ptable->property_set( { "id", stringTableId } );
    }
    m_vectorTableCache.push_back( std::move( ptable ) );                        // insert table to vector
