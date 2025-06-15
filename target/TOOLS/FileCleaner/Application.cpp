@@ -1028,6 +1028,11 @@ bool CApplication::IGNORE_Match(const std::string_view& stringPath, const std::s
    return false;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Checks if the given file name matches any ignore pattern in m_vectorIgnore.
+ * Normalizes the file name to use forward slashes. Uses gd::ascii::strcmp for wildcard matching.
+ * Returns true if the file name should be ignored, false otherwise.
+ */
 bool CApplication::IGNORE_MatchFilename(const std::string_view& stringFileName) const
 {
    for( const auto& ignore_ : m_vectorIgnore )
