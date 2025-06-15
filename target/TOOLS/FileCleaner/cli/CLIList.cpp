@@ -88,6 +88,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       if( iRecursive == 0 ) iRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
    }
 
+   pdocument->GetApplication()->UpdateApplicationState();                     // update the application state to reflect the current state of the application
+
    gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
    auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);       // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
    if (result_.first == false) return result_;
@@ -106,8 +108,6 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    gd::argument::shared::arguments argumentsList({ {"max", uMax} });
    std::string stringSegment = options_["segment"].as_string(); // type of segment to search in, code, comment or string, maybe all
    if (stringSegment.empty() == false) argumentsList.set("state", stringSegment.c_str());
-
-   pdocument->GetApplication()->UpdateApplicationState();                     // update the application state to reflect the current state of the application
 
    // ## check for pattern that 
    if( options_.exists("pattern") == true )
