@@ -12,4 +12,4 @@
 - string methods for scripting is added. This need to be documented because its advanced usage.
 - `dir` command is improved, now it is usefull.
 - `dir` have gotten **sort** option to be able to sort the output by name, size, date, or extension. Example: `dir --sort date` will sort by date (default is how old the latest change is in days).
-- ``
+- `ignore` is added to all main commands. support for folders and file names to ignore.
