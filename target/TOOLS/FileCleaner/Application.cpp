@@ -925,7 +925,7 @@ void CApplication::DOCUMENT_Clear()
    m_vectorDocument.clear();
 }
 
-void CApplication::IGNORE_Add(const std::vector<std::string> vectorIgnore)
+void CApplication::IGNORE_Add(const std::vector<std::string> vectorIgnore)     // @TAG #ignore.Application
 {
    for( const auto& stringIgnore : vectorIgnore )
    {
@@ -956,7 +956,7 @@ void CApplication::IGNORE_Add(const std::vector<std::string> vectorIgnore)
    }
 }
 
-/// --------------------------------------------------------------------------- @TAG #ignore
+/// --------------------------------------------------------------------------- 
 /// Checks if the given file path matches any ignore pattern in m_vectorIgnore.
 /// Normalizes the path to use forward slashes. Uses os_fnmatch for pattern matching.
 /// Returns true if the path should be ignored, false otherwise.

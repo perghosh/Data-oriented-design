@@ -215,14 +215,16 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
             {
                try
                {
-                  std::string string_ = it.path().string();
+                  //std::string string_ = it.path().string();
+                  gd::file::path path_(it);
                   if( papplication_g->IsState( CApplication::eApplicationStateCheckIgnoreFile ) == true )
                   {
+                     std::string string_ = path_.filename().string();
                      bool bIgnore = papplication_g->IGNORE_MatchFilename( string_ );
                      if( bIgnore == true ) continue;
                   }
 
-                  detail::add_file_to_table(gd::file::path(string_), stringWildcard, ptable_, bSize);
+                  detail::add_file_to_table(path_, stringWildcard, ptable_, bSize);
                }
                catch( const std::exception& e )
                {
