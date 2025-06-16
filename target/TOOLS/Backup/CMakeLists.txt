@@ -1,7 +1,7 @@
 # CMakeList.txt : CMake project for ImGui user interface for ERD
 # project specific logic here.
 #
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.10)
 
 project("cleaner" LANGUAGES CXX C)
 
