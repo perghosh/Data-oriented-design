@@ -1992,7 +1992,7 @@ std::pair<bool, std::string> CApplication::SettingsRead_s(const std::string_view
          std::string stringApplication = xmlnodeMetadata.child("application").text().get();
       }
 
-      CONFIGURATION::CSettings::settings* psettingsAdd = nullptr;
+      CONFIGURATION::CSettings::settings* psettingsAdd;
       // Read command node
       pugi::xml_node xmlnodeCommand = xmlnodeTemplate.child("command");
       if((bool)xmlnodeCommand == true )
