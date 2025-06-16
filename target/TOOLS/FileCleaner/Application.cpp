@@ -2325,6 +2325,8 @@ std::vector<std::string> CApplication::SplitNumber_s(const std::string& stringTe
       }
    }
 
+   if( stringNumber.empty() == false ) vectorNumber.push_back(stringNumber);  // add last string if any
+
    return vectorNumber;                                                       // Return the vector of numbers
 }
 
