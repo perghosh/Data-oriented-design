@@ -80,18 +80,18 @@ if( USE_TARGET_ )
    target_compile_definitions(${TARGET_NAME_} PRIVATE GD_LOG_SIMPLE)
    target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 
-   
-   
-
    if(MSVC)
    else()
 
       # Linux-specific optimizations for full static linking
       target_compile_options(${TARGET_NAME_} PRIVATE 
-         -Os                    # Optimize for size
+         -O3                    # Optimize for size
          -ffunction-sections    # Place each function in its own section
          -fdata-sections        # Place each data item in its own section
+         -fno-stack-protector   # Remove stack protection overhead
          -fPIC                  # Position independent code (needed for static linking)
+         -mavx2                 # Enable AVX2 SIMD instructions
+         -mbmi                  # Enable bit manipulation instructions
       )
       
       # Full static linking - creates completely standalone binary
