@@ -152,13 +152,14 @@ auto plogger = get_s();            // default logger
    #pragma clang diagnostic push
    #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
    #pragma clang diagnostic ignored "-Wunused-value"
-   #pragma clang diagnostic ignored "-Wdeprecated-enum-compare"
    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   #pragma clang diagnostic ignored "-Wunused-variable"
 #elif defined( __GNUC__ )
    #pragma GCC diagnostic push
    #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
    #pragma GCC diagnostic ignored "-Wunused-value"
    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+   #pragma GCC diagnostic ignored "-Wunused-variable"
 #elif defined( _MSC_VER )
    #pragma warning(push)
    #pragma warning( disable: 4996 26812 )

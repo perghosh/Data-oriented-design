@@ -256,7 +256,7 @@ struct row
    // ## construction -------------------------------------------------------------
 
    row() : m_ptable( nullptr ) {}
-   row( TABLE* ptable, uint64_t uRow ): m_ptable(ptable), m_uRow(uRow) {}
+   row( TABLE* ptable, uint64_t uRow ): m_uRow(uRow), m_ptable(ptable) {}
    ~row() {}
 
    cell<TABLE> operator[]( uint32_t uIndex ) { return cell<TABLE>( m_ptable, m_uRow, uIndex ); }

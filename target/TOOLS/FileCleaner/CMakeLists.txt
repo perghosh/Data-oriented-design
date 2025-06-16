@@ -83,32 +83,46 @@ if( USE_TARGET_ )
    if(MSVC)
    else()
 
-      # Linux-specific optimizations for full static linking
-      target_compile_options(${TARGET_NAME_} PRIVATE 
-         -O3                    # Optimize for size
-         -ffunction-sections    # Place each function in its own section
-         -fdata-sections        # Place each data item in its own section
-         -fno-stack-protector   # Remove stack protection overhead
-         -fPIC                  # Position independent code (needed for static linking)
-         -mavx2                 # Enable AVX2 SIMD instructions
-         -mbmi                  # Enable bit manipulation instructions
-      )
-      
-      # Full static linking - creates completely standalone binary
-      target_link_options(${TARGET_NAME_} PRIVATE 
-         -static                # Full static linking - links everything statically
-         -static-libstdc++      # Static link C++ standard library
-         -static-libgcc         # Static link GCC runtime
-         -Wl,--gc-sections      # Remove unused sections
-         -Wl,--strip-all        # Strip all symbols
-         -Wl,--as-needed        # Only link needed libraries
-         -s                     # Strip symbol table
-         -pthread               # Static link pthread
-      )
-
-
-      # Link GLIBCXX statically
-      # target_link_options(${TARGET_NAME_} PRIVATE -static-libstdc++)
-   endif()
-   
+      if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+         # Debug build - prioritize debugging over optimization
+         target_compile_options(${TARGET_NAME_} PRIVATE
+            -g                     # Generate debug info
+            -O0                    # No optimization
+            -fno-omit-frame-pointer # Keep frame pointers for better stack traces
+            -fno-inline            # Don't inline functions
+            -Wall                  # Enable warnings
+            -Wextra                # Extra warnings
+         )
+         
+         # Debug linking - keep symbols and avoid stripping
+         target_link_options(${TARGET_NAME_} PRIVATE
+            -g                     # Keep debug symbols
+            # Remove static linking for debug builds to avoid issues
+            -pthread               # Link pthread
+         )
+      else()
+         # Release build - optimize for performance
+         target_compile_options(${TARGET_NAME_} PRIVATE
+            -O3                    # Optimize for performance
+            -ffunction-sections    # Place each function in its own section
+            -fdata-sections        # Place each data item in its own section
+            -fno-stack-protector   # Remove stack protection overhead
+            -fPIC                  # Position independent code
+            -mavx2                 # Enable AVX2 SIMD instructions
+            -mbmi                  # Enable bit manipulation instructions
+         )
+         
+         # Release linking - full static linking
+         target_link_options(${TARGET_NAME_} PRIVATE
+            -static                # Full static linking
+            -static-libstdc++      # Static link C++ standard library
+            -static-libgcc         # Static link GCC runtime
+            -Wl,--gc-sections      # Remove unused sections
+            -Wl,--strip-all        # Strip all symbols
+            -Wl,--as-needed        # Only link needed libraries
+            -s                     # Strip symbol table
+            -pthread               # Static link pthread
+         )
+      endif()
+   endif()   
 endif()
