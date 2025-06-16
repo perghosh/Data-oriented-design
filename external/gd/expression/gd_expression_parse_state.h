@@ -320,8 +320,10 @@ public:
    bool in_state() const { return m_iActive != -1; } ///< check if in state
    /// test character if it is a marker hint, this will return 1 if the character is a marker hint, 0 otherwise
    uint8_t check_marker_hint(uint8_t uCharacter) const { return m_arrayMarkerHint[uCharacter]; } ///< check marker hint for character
+   // check if state is multiline, this will return true if the state is a multiline state
    bool is_multiline() const { return (decltype(m_uFirstMultiline_s))get_state() >= m_uFirstMultiline_s; } ///< check if state is multiline
-   enumState get_state() const { return m_vectorRule[m_iActive].get_state(); } ///< get current state
+   /// get current state, this will return the state of the active rule if any, otherwise it will crash
+   enumState get_state() const { assert( m_iActive != -1 );  return m_vectorRule[m_iActive].get_state(); } ///< get current state
    enumGroup get_group() const { return enumGroup(get_state() & 0xFF00); } ///< get current group
    enumStateNumber get_state_number() const { return enumStateNumber(get_state() & 0x00FF); } ///< get current state number
    void set_state(int64_t iActive) { m_iActive = iActive; } ///< set current state rule
@@ -350,6 +352,10 @@ public:
       m_vectorRule.emplace_back(rule(to_state_s(stringState), stringStart, stringEnd, stringEscape));
       add_marker_hint(stringStart[0]);
    }
+
+   /// Sets marker to hint for some character, this is a but custom when you need more control or just parse without rules
+   void set_marker(uint8_t uMark) { m_arrayMarkerHint[uMark] = 1; } ///< set marker hint for character
+   void set_marker(char iMark) { set_marker(uint8_t(iMark)); } ///< set marker hint for character
 
    void clear() { m_vectorRule.clear(); m_arrayMarkerHint = { 0 }; } ///< clear vector of rules
    void clear_state() { m_iActive = -1; } ///< clear state

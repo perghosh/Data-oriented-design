@@ -453,7 +453,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 {                                                                                                  assert(vectorPattern.empty() == false); // Ensure the pattern list is not empty
                                                                                                    assert(vectorPattern.size() < 64);      // Ensure the pattern list contains fewer than 64 patterns
    gd::parse::patterns patternsFind(vectorPattern);
-   patternsFind.sort();                                                       // Sort patterns by length, longest first
+   patternsFind.sort();                                                       // Sort patterns by length, longest first (important for pattern matching)
 
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
@@ -1286,7 +1286,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
 
       uint64_t uLineinSource = ptableLineList->cell_get_variant_view(uRow, "row");// get row data from table
       uLineinSource++;                                                        // line number in source file is 1-based, in table it is 0-based
-      uint64_t uColumninSource = ptableLineList->cell_get_variant_view(uRow, "column");// get row data from table
+      //uint64_t uColumninSource = ptableLineList->cell_get_variant_view(uRow, "column");// get row data from table
 
 
       // #### Build the result string for the file where pattern was found  
@@ -1294,16 +1294,16 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
       {
          stringFile += "(";
          stringFile += std::to_string(uLineinSource);
-         stringFile += ",";
-         stringFile += std::to_string(uColumninSource);
+         //stringFile += ",";
+         //stringFile += std::to_string(uColumninSource);
          stringFile += "):  [";
       }
       else if( eEditor == eVSCode )
       {
          stringFile += ":";
          stringFile += std::to_string(uLineinSource);
-         stringFile += ":";
-         stringFile += std::to_string(uColumninSource);
+         //stringFile += ":";
+         //stringFile += std::to_string(uColumninSource);
          stringFile += " - [";
       }
       else if( eEditor == eSublime )
@@ -1396,13 +1396,16 @@ void CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_, std::strin
    for( const auto& itRow : table_ )
    {
       // combine all columns into one row
+      std::string stringRow = itRow.cell_get_variant_view("line").as_string();
+      /*
       std::string stringRow;
-      for( unsigned uColumn = 0; uColumn < (uColumnCount - 1); uColumn++ )
+      for( unsigned uColumn = 0; uColumn < (uColumnCount - 3); uColumn++ )
       {
          if( uColumn != 0 ) stringRow += "\t"; // add tab between columns
          auto stringColumn = itRow.cell_get_variant_view(uColumn).as_string();
          if( stringColumn.empty() == false ) stringRow += stringColumn;
       }
+      */
       stringRow += "\n";
       stringResult += stringRow;
    }

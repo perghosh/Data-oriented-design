@@ -371,8 +371,11 @@ public:
    /// Print history to console
    static std::pair<bool, std::string> HistoryPrint_s();
 
-   // Split string into vector of strings, delimitier is ; or ,. It first tries to find ;, if not found then it tries to find ,
+   /// Split string into vector of strings, delimitier is ; or ,. It first tries to find ;, if not found then it tries to find ,
    static std::vector<std::string> Split_s(const std::string& stringText, char iCharacter = 0);
+   /// Splits a string into vector of number string, it tries to figure out characters used to split numbers.
+   static std::vector<std::string> SplitNumber_s(const std::string& stringText);
+
 
    static bool IsTextFile_s(const std::string_view& stringExtension);
    

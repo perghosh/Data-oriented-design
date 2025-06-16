@@ -168,15 +168,20 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       std::string stringContext = options_["context"].as_string();             // context is in the format offset,count like -2,6 to get lines from 2 before and 6 lines
 
       // parse context to numbers
-      auto vectorOffsetCount = gd::utf8::split( stringContext, ',' );          // get offset value and count
-      // parse first value to int
-      size_t uPosition;
-      iContextOffset = std::stoll(vectorOffsetCount[0].data(), &uPosition);
-
-      if( vectorOffsetCount.size() > 1 )
+      auto vectorOffsetCount = CApplication::SplitNumber_s( stringContext );   // get offset value and count
+      size_t position_; // not used
+      if( vectorOffsetCount.size() == 1 )
       {
-         iContextCount = std::stoll(vectorOffsetCount[1].data(), &uPosition);
+         iContextCount = std::stoll(vectorOffsetCount[0].data(), &position_);
       }
+      else if( vectorOffsetCount.size() > 1 )
+      {
+         iContextOffset = std::stoll(vectorOffsetCount[0].data(), &position_);
+         iContextCount = std::stoll(vectorOffsetCount[1].data(), &position_);
+      }
+
+      iContextOffset = iContextOffset % 100;                                  // limit the offset to 100 lines, so we do not get too much context
+      iContextCount = iContextCount % 1000;                                   // limit the count to 1000 lines, so we do not get too much context
    }
 
    auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
