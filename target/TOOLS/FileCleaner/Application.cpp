@@ -65,6 +65,15 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 
 #include "Application.h"
 
+#if defined( __clang__ )
+   #pragma clang diagnostic ignored "-Wunused-variable"
+   #pragma clang diagnostic ignored "-Wunused-but-set-variable"
+#elif defined( __GNUC__ )
+   #pragma GCC diagnostic ignored "-Wunused-variable"
+   #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#elif defined( _MSC_VER )
+#endif
+
 
 /// Global pointer to application object
 CApplication* papplication_g = nullptr;
@@ -1783,7 +1792,7 @@ void CApplication::PreparePath_s(std::string& stringPath)
             {
                // ## make path absolute
                
-               if( stringPath.find("..") != -1 )
+               if( stringPath.find("..") != std::string::npos )               // If path contains "..", we need to resolve it relative to the current working directory   
                {
                   // If path contains "..", we need to resolve it relative to the current working directory
                   gd::file::path path_( std::filesystem::current_path() );

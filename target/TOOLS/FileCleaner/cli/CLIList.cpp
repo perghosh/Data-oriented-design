@@ -294,7 +294,45 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
       table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
 
-      stringCliTable = gd::table::to_string(table_, gd::table::tag_io_cli{});
+      if( iContextCount == 0 )
+      {
+         // ## Just print the "line" column 
+         gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+         table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
+         stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+      }
+      else
+      {
+         // ## Print the "line" with context
+         gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+         for( auto itRow : tableResultLineList )
+         {
+            std::string stringLine = itRow.cell_get_variant_view("line").as_string(); // get the line text
+            stringLine += "\n";                                            // add a newline to the line text
+            std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
+            gd::utf8::indent(stringContext, "-- ");                         // indent the context code by 3 spaces
+            auto uRow = table_.row_add_one();
+
+            // ## mark the line with that has the matched pattern
+
+            auto uLeadingRow = itRow.cell_get_variant_view( "row-leading" ).as_uint();
+            auto piPosition = gd::ascii::strchr(stringContext, '\n', uLeadingRow);// find the leading row in the context code
+            if( piPosition != nullptr && piPosition[1] != 0 && piPosition[2] != 0 ) // if the leading row is found
+            {
+               auto uIndex = piPosition - stringContext.data();            // get the index of the leading row
+               if( uLeadingRow > 0 ) uIndex++;                             // if the leading row is greater than 0, then we have a leading row, so increment the index past new line character is needed
+               stringContext[uIndex] = '>';                                // mark the leading row with a '>' character
+               uIndex++;
+               stringContext[uIndex] = '>';                                // mark the leading row with a '>' character
+            }
+
+            stringLine += stringContext;                                   // add the context code to the line text
+
+            table_.cell_set(uRow, "line", stringLine);                     // set the line text in the result table
+         }
+
+         stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+      }
       pdocument->MESSAGE_Display( stringCliTable );
 #endif // _WIN32
 

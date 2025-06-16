@@ -550,7 +550,7 @@ private:
    // common copy
    //void common_construct( const database_i& o ) { m_pdatabase = o.m_pdatabase; m_stringName = m_stringName; }
    void common_construct( database_i&& o ) noexcept {
-      m_pdatabase = std::move( o.m_pdatabase ); m_stringName = std::move( m_stringName );
+      m_pdatabase = std::move( o.m_pdatabase ); m_stringName = std::move( o.m_stringName );
    }
 
 // ## operator -----------------------------------------------------------------

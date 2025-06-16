@@ -1346,7 +1346,6 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 
       if( uReadSize > 0 )                                                     // was it possible to read data last read, then more data is available
       {
-         auto uAvailable = lineBuffer.available();                            // get available space in buffer to be filled
          file_.read((char*)lineBuffer.buffer(), lineBuffer.available());      // read more data into available space in buffer
          uReadSize = file_.gcount();
          lineBuffer.update(uReadSize);                                        // update valid size in line buffer

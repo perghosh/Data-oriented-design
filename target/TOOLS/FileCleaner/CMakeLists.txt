@@ -91,7 +91,7 @@ if( USE_TARGET_ )
             -fno-omit-frame-pointer # Keep frame pointers for better stack traces
             -fno-inline            # Don't inline functions
             -Wall                  # Enable warnings
-            -Wextra                # Extra warnings
+            #-Wextra                # Extra warnings
          )
          
          # Debug linking - keep symbols and avoid stripping
