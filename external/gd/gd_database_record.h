@@ -378,7 +378,6 @@ public:
 */
 inline int record::get_column_index_for_name( const std::string_view& stringName ) const {
    for( auto it = std::begin( m_vectorColumn ), itEnd = std::end( m_vectorColumn ); it != itEnd; it++ ) {
-      auto u = it->name();
       auto name_ = it->name( m_namesColumn );
       if( name_ == stringName )
       {
