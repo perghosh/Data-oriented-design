@@ -51,6 +51,8 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
 
 /// @brief Read lines from a file, starting at the specified row and offset, and returning the specified number of lines.
 std::pair<bool, std::string> FILES_ReadLines_g( const std::string& stringPath, uint64_t uRow, int64_t iOffset, uint64_t uCount, std::string& stringLines, int64_t* piLeadingLineCount = nullptr );
+/// Read the full line from source file into line column to get the full preview so user recognize the code
+std::pair<bool, std::string> FILES_ReadFullRow_g( std::ifstream* pfstream, gd::table::dto::table* ptable_, uint64_t uRowStartOffset );
 
 /// @brief Counts the number of rows in a file. 
 std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );

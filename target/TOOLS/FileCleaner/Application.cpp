@@ -2299,6 +2299,36 @@ std::vector<std::string> CApplication::Split_s(const std::string& stringText, ch
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Splits a string into a vector of strings based on the presence of numbers.
+ *
+ * This function scans through the input string and extracts substrings that represent numbers.
+ * It handles digits, decimal points, and signs (positive/negative) to identify valid number formats.
+ *
+ * @param stringText The input string to be parsed for numbers.
+ * @return std::vector<std::string> A vector containing the extracted number strings.
+ */
+std::vector<std::string> CApplication::SplitNumber_s(const std::string& stringText)
+{
+   std::vector<std::string> vectorNumber;
+   /// Parse string and try to extract numbers
+   std::string stringNumber;
+   for( const auto& it : stringText )
+   {
+      if( std::isdigit(it) || it == '.' || it == '-' || it == '+' ) // Check if character is a digit or a sign
+      {
+         stringNumber += it;                                                  // Append to current number
+      }
+      else if( stringNumber.empty() == false )                                // If we hit a non-digit and we have a number, push it to the vector
+      {
+         vectorNumber.push_back(stringNumber);
+         stringNumber.clear();                                                // Clear current number
+      }
+   }
+
+   return vectorNumber;                                                       // Return the vector of numbers
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Checks if the provided file extension is a known text file type.
  *
  * This function checks if the given file extension matches any of the predefined text file extensions.

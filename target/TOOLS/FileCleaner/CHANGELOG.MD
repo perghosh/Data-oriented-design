@@ -1,15 +1,27 @@
 # Changelog
 
+## v0.9.8
 
-## v 0.9.8
+### Fixes
+- Fixed relative path handling for all commands.
 
-- Fixed relative paths for all commands.
-- Argument to match all patterns passed to list command. If three patterns are passed, all three will be matched. Argument is `--match-all` and is a flag.
-- Multiple xpattern is possible in `list` command. If multiple patterns are passed, all will be matched.
-- rpattern works in string and comment segments. rpattern is a regex patterns.
-- context argument where code around the match is printed. Argument is `--context` and you need to pass the first offset line and the number of lines to print around the match. Example: `--context -2,5` will print 2 lines before and 5 lines are extracted.
-- Added global modes, based on mode cleaner will behave differently. Mode logic is going to be extended in future releases. Preliminary modes are: `review`, `stats`, `search`, `changes`, `audit`, and `document`.
-- string methods for scripting is added. This need to be documented because its advanced usage.
-- `dir` command is improved, now it is usefull.
-- `dir` have gotten **sort** option to be able to sort the output by name, size, date, or extension. Example: `dir --sort date` will sort by date (default is how old the latest change is in days).
-- `ignore` is added to all main commands. support for folders and file names to ignore.
+### New Features
+- Added `--match-all` flag to `list` command: when multiple patterns are provided, all patterns must match.
+- Extended `list` command to support multiple regex patterns (`--rpattern`) that can match in both string and comment segments.
+- Introduced `--context` option to display surrounding code for matches. Specify line offset and range (e.g., `--context -2,5` shows 2 lines before and 5 lines after the match).
+- Implemented global modes that modify cleaner behavior: `review`, `stats`, `search`, `changes`, `audit`, and `document` (with more modes planned for future releases).
+- Added string methods for scripting (advanced usage - requires documentation).
+
+### Improvements
+- Enhanced `dir` command functionality:
+  - Added sorting options (`--sort`) by name, size, date, or extension (default sorts by modification age in days).
+- Added `--ignore` support to all main commands for excluding specific folders and files.
+- Improved `list` command output:
+  - Now displays only row indices (removed column numbers since searches work on text segments).
+  - Shows complete lines for matches rather than partial line segments.
+
+### Notes
+- The mode logic will be expanded in future updates.
+- Documentation is needed for the new scripting string methods.
+
+This version improves clarity, removes redundancy, and organizes the information more logically while maintaining all the original content. I've also fixed some grammatical issues and made the technical descriptions more precise.

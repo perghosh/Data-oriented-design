@@ -331,6 +331,86 @@ std::pair<bool, std::string> FILES_ReadLines_g(const std::string& stringPath, ui
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Reads a full row from a file and populates the corresponding line in the table.
+ *
+ * This method reads lines from the specified file starting at the given row offset in table,
+ * and populates the corresponding line in the table. It uses a window buffer to read
+ * lines efficiently and handles line breaks correctly.
+ * 
+ * When parsing the file for matching patterns it only reads parts of lines that are relevant and that is not the same as what the user likes to see when results are displayed.
+ * Users what to see the full line from source code, so this method reads the full line from the file and places it in the table.
+ *
+ * @param pfstream A pointer to an input file stream from which to read lines.
+ * @param ptable_ A pointer to the table where the lines will be stored.
+ * @param uRowStartOffset The starting row offset in the table from which to begin reading lines.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> FILES_ReadFullRow_g(std::ifstream* pfstream, gd::table::dto::table* ptable_, uint64_t uRowStartOffset)
+{                                                                                                  assert(ptable_ != nullptr); assert(uRowStartOffset < ptable_->get_row_count() ); assert( pfstream != nullptr );
+   unsigned uColumnRow = ptable_->column_get_index("row");                     // get column index for row
+   unsigned uColumnLine = ptable_->column_get_index("line");                   // get column index for line
+
+   uint64_t uFileReadLine = 0;                                                 // read line counter, this is used to count lines read from file and match with row in table
+   gd::parse::window::line windowLine_(8192 - 512, 8192, gd::types::tag_create{});// create line buffer
+
+   auto uAvailable = windowLine_.available();
+   pfstream->read((char*)windowLine_.buffer(), uAvailable);
+   auto uReadSize = pfstream->gcount();                                        // get number of valid bytes read
+   windowLine_.update(uReadSize);                                              // Update valid size in line buffer
+
+   std::string stringLine;                                                     // string to hold line read from file
+
+   auto uRow = uRowStartOffset;
+   uint64_t uReadRow = ptable_->cell_get<uint64_t>(uRow, uColumnRow);          // get row from table
+
+   // ## Scan file and read lines found in table
+   while( windowLine_.eof() == false )
+   {
+      auto [first_, last_] = windowLine_.range(gd::types::tag_pair{});         // get range of valid data in buffer
+      for( auto it = first_; it < last_; it++ ) 
+      {
+         if( *it == '\n' )                                                     // count lines read from file
+         {
+            if( uFileReadLine == uReadRow )                                    // is we at the line we want to read
+            {
+               stringLine = gd::utf8::trim_to_string(stringLine);              // trim line
+               ptable_->cell_set(uRow, uColumnLine, stringLine);               // set line in table
+
+               // ## read next row from table and make sure it is larger than the previous row
+               auto uReadRowOld = uReadRow;
+               do{
+                  uRow++;
+                  if( uRow >= ptable_->get_row_count() ) { return { true, "" }; } // if we reached end of table, return success
+                  uReadRow = ptable_->cell_get<uint64_t>(uRow, uColumnRow);    // get row from table
+               } while( uReadRow == uReadRowOld );
+            }
+
+            stringLine.clear();
+            uFileReadLine++;                                 
+         }
+         else if( uFileReadLine == uReadRow )                                  // found line to read
+         {
+            stringLine += *it;
+         }
+      }
+
+      windowLine_.rotate();                                                   // rotate buffer
+
+      if( uReadSize > 0 )                                                     // was it possible to read data last read, then more data is available
+      {
+         auto uAvailable = windowLine_.available();                           // get available space in buffer to be filled
+         pfstream->read((char*)windowLine_.buffer(), windowLine_.available());// read more data into available space in buffer
+         uReadSize = pfstream->gcount();
+         windowLine_.update(uReadSize);                                       // update valid size in line buffer
+      }
+   }
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Counts the number of rows in a file.
  * 
  * This method reads the specified file and counts the number of rows (lines) in it.
@@ -800,6 +880,8 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 {
    enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
 
+   uint64_t uSaveRowCount = ptable_->get_row_count(); // save number of rows to fill in the full row for found rows at the end
+
    unsigned uFindInState = eStateCode; // state of the parser
 
    // ## if state is sent than try to figure out from what state to find patterns
@@ -1011,6 +1093,15 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
       }
    }
 
+   // ## Check if rows have been added, if so then read the full line into "line" field as a preview
+   if( ptable_->size() > uSaveRowCount )
+   {
+      // move file to the beginning
+      file_.clear(); // clear EOF and fail bits
+      file_.seekg(0, std::ios::beg); // move to the beginning of the file
+      FILES_ReadFullRow_g( &file_, ptable_, uSaveRowCount ); // read full row into "line" field as a preview for all rows that were added to the table
+   }
+
    return { true, "" };
 }
 
@@ -1045,6 +1136,8 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
 
    unsigned uFindInState = eStateCode; // state of the parser
+
+   uint64_t uSaveRowCount = ptable_->get_row_count(); // save number of rows to fill in the full row for found rows at the end
 
    // ## if state is sent than try to figure out from what state to find patterns
    if( argumentsPath.exists("state") == true )
@@ -1260,6 +1353,16 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
       }
    }
 
+   // ## Check if rows have been added, if so then read the full line into "line" field as a preview
+   if( ptable_->size() > uSaveRowCount )
+   {
+      // move file to the beginning
+      file_.clear(); // clear EOF and fail bits
+      file_.seekg(0, std::ios::beg); // move to the beginning of the file
+      FILES_ReadFullRow_g( &file_, ptable_, uSaveRowCount ); // read full row into "line" field as a preview for all rows that were added to the table
+   }
+
+
    return { true, "" };
 }
 
@@ -1298,6 +1401,19 @@ std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, con
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Removes rows from a table where all specified columns have a value of zero.
+ * 
+ * This function iterates through each row in the table and checks the specified columns.
+ * If all values in the specified columns for a row are zero, that row is marked for removal.
+ * After checking all rows, the marked rows are removed from the table.
+ * 
+ * @param ptable_ Pointer to the table from which rows will be removed.
+ * @param vectorColumnIndex A vector of column indices to check for zero values.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> TABLE_RemoveZeroRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex)
 {
    std::vector<uint64_t> vectorRemoveRow; // vector to hold rows to be removed
@@ -1323,6 +1439,19 @@ std::pair<bool, std::string> TABLE_RemoveZeroRow(gd::table::dto::table* ptable_,
 }
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Filters rows in a table based on expressions evaluated against a specified column.
+ * 
+ * This function evaluates each expression against the value in the specified column of each row.
+ * If the expression evaluates to false, the row is removed from the table.
+ * 
+ * @param ptable_ Pointer to the table to filter.
+ * @param uColumn The index of the column to evaluate.
+ * @param vectorExpression A vector of strings representing expressions to evaluate.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> EXPRESSION_FilterOnColumn_g( gd::table::dto::table* ptable_, unsigned uColumn, const std::vector<std::string> vectorExpression )
 {                                                                                                  assert(ptable_ != nullptr); assert(uColumn < ptable_->get_column_count());
    using namespace gd::expression;

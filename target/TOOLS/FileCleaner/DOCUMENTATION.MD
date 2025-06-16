@@ -91,6 +91,8 @@ Lists rows matching specified patterns in files or folders.
 - `--ignore <match;match;match>`: Ignore files or folders matching the specified patterns. Multiple patterns are separated by `;`.
 - `--rpattern <regex>`: Regular expression pattern to search for.
 - `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
+- `--recursive <depth>`: Perform the operation recursively up to the specified depth.
+- `--context <lines>`: Show surrounding lines of a match, where `<lines>` is the number of lines to show before and after the match or if only one number is specified it will show that many lines after the match.
 - `--script <pattern>`: Additional filter for script files.
 - `--max <count>`: Limit the number of results.
 - `--segment <type>`: Segment in code to find patterns. Valid segments are: code, **comment**, **string**, and **all** (all = all code).
@@ -124,7 +126,7 @@ Dir differs from normal dir/ls in that it addapted to work for developers or peo
 
 ---
 
-### history
+### history (not ready yet)
 Handles command history.
 
 **Options:**
@@ -153,6 +155,7 @@ Sort on code lines and only count lines in cpp files: `cleaner count -R --sort c
 `cleaner list /home/username/dev/project/src/ --pattern text-to-find --recursive 3`
 
 ### Count lines in a folder recursively
+Using `-R` to search recursively and `--source` to specify the folder:  
 `cleaner.exe count --source "C:\dev\project" --recursive 3 --filter ".cpp;.h" --output "result.txt"`
 
 ### List patterns in files
@@ -166,6 +169,10 @@ Sort on code lines and only count lines in cpp files: `cleaner count -R --sort c
 
 ### View last page for the largest files
 `cleaner count -R "--page", "-1"`
+
+### With "context" option, you can see the surrounding lines of a match
+`cleaner list -R --filter "*.h" --pattern "#pragma once" --context 20` - This probably shows some includes statements after the match
+`cleaner list -R --filter "*.h" --pattern "using pointer" --context "-10 20"` - Shows 10 lines before and 20 lines after an may inform about member types.
 
 ---
 
