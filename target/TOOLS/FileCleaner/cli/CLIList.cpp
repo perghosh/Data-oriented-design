@@ -337,7 +337,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
 #endif // _WIN32
 
       // Print number of lines found
-      std::string stringMessage = std::format("Found {} lines '{}'", tableResultLineList.get_row_count(), options_.exists("pattern") ? options_["pattern"].as_string() : "none");
+      std::string stringMessage = std::format("Found {} lines", tableResultLineList.get_row_count() );
       pdocument->MESSAGE_Display(stringMessage);
    }
    else
