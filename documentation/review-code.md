@@ -70,7 +70,7 @@ This checklist might look lengthy, but the items are quick to check. It helps as
 
 ## 6. Type Aliases (`using`/`typedef`)
 - **Intuitive Names**: Are aliases clear and domain-relevant, or do they obscure meaning?
-  - *Why it matters*: Good aliases clarify intent; poor ones confuse readers. Remember that alias are often domain-specific. And domain-specific names is not always good. 
+  - *Why it matters*: Good aliases can clarify intent; but more often confuse readers. Remember that alias are often domain-specific. And domain-specific names is not always good. 
   - *Check*: Ensure names like `using Distance = double;` are meaningful.
 
 ## 7. Methods and Functions
@@ -95,7 +95,7 @@ This checklist might look lengthy, but the items are quick to check. It helps as
 ## 9. STL and Standard Library
 - **Effective Use**: Does the code leverage STL (e.g., `std::vector`, `std::algorithm`) appropriately? Does the code merge well with the standard library?
   - *Why it matters*: Using STL simplifies code, becuse most C++ knows about STL. It's also well thought out.
-  - *Check*: Look for proper use of containers, algorithms, and modern features (e.g., `std::optional`, `std::string_view`). Are stl types used like value_type, iterator, etc.?
+  - *Check*: Look for proper use of containers, algorithms, and modern features (e.g., `std::optional`, `std::string_view`). Are stl types used like `value_type`, `iterator`, etc.?
 
 ## 10. File and Project Structure
 - **Logical Organization**: Are files and directories grouped by module, feature, or layer?
