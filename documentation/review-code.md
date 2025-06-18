@@ -8,6 +8,9 @@ This checklist might look lengthy, but the items are quick to check. It helps as
 - **Looks Good**: Is the code visually appealing and easy to read?
   - *Why it matters*: Can you spot that developer care about the code?
   - *Check*: Is formatters used this is harder but if not and the code looks nice , it is a good sign.
+- **Broken lines**: Are there lines broken just to fit a certain length?
+  - *Why it matters*: Broken lines can disrupt flow and readability.
+  - *Check*: Look for lines that are broken unnecessarily, especially in comments or long strings.
 - **Consistent Style**: Is the code uniformly formatted (e.g., indentation, bracing, line lengths)? Does it follow patterns?
   - *Why it matters*: Consistent formatting improves readability and signals developer care.
   - *Check*: Look for similar code with different styles. It's ok if code in different areas has different styles, but it should be consistent within the same area.
@@ -80,9 +83,9 @@ This checklist might look lengthy, but the items are quick to check. It helps as
 - **Single Responsibility**: Does each method perform only one task as implied by its name?
   - *Why it matters*: Methods doing multiple tasks are harder to test and maintain (much harder).
   - *Check*: Flag methods longer than 50-60 lines or with multiple logical tasks.
-  - **Parameter Count**: Are methods limited to 3-4 parameters?
-   - *Why it matters*: Too many parameters complicate method signatures and usage.
-   - *Check*: Look for methods with more than 4 parameters. Consider using structs or classes to group related parameters.
+- **Parameter Count**: Are methods limited to 3-4 parameters?
+ - *Why it matters*: Too many parameters complicate method signatures and usage.
+ - *Check*: Look for methods with more than 4 parameters. Consider using structs or classes to group related parameters.
 
 ## 8. Error Handling
 - **Explicit and Debuggable**: Are errors handled clearly?
@@ -151,19 +154,5 @@ Note that it doesn't mean that code is bad, but it may need some attention.
 - `[=!<>]{3,}` - Complex comparison chains.
 
 
-
-
-## Regular expression to find code blocks
-```regex
-[\w-]*\n[\s\S]*?\n
-
-```
-
-- `^\s{20}if\s*\(` - If statement with 20 spaces before it
-- `^[ \t]*[a-zA-Z_][\w:<>, \t*&]*\s+([a-zA-Z_][a-zA-Z_0-9]{20,})\s*\(` - Function definition with 20 or more characters in the function name
-- `\b[a-zA-Z][a-zA-Z0-9_]{19,}\b(?=\s*\()` one more
-- `\b([a-zA-Z_][a-zA-Z_0-9]{20,})\b\s*=` - Variable assignment with 20 or more characters
-- `` - find #define statements to check if you understand the constant names
-- `\b\w+\s*=\s*\d+(\.\d+)?\b` - Find variable assignments with numbers
 
 
