@@ -1,31 +1,38 @@
 
 # C++ Code Review Checklist
 
-This checklist ensures C++ code is readable, maintainable, and high-quality. Use it to evaluate code systematically, focusing on clarity, structure, and best practices.
+This checklist might look lengthy, but the items are quick to check. It helps assess code quality—not to find bugs, but to spot potential problems. The code could still be well-written.
+
 
 ## 1. Code Formatting
-- **Consistent Style**: Is the code uniformly formatted (e.g., indentation, bracing, line lengths)? Does it follow a style guide?
+- **Looks Good**: Is the code visually appealing and easy to read?
+  - *Why it matters*: Can you spot that developer care about the code?
+  - *Check*: Is formatters used this is harder but if not and the code looks nice , it is a good sign.
+- **Consistent Style**: Is the code uniformly formatted (e.g., indentation, bracing, line lengths)? Does it follow patterns?
   - *Why it matters*: Consistent formatting improves readability and signals developer care.
-  - *Check*: Look for mixed tabs/spaces, inconsistent brace styles, or chaotic layout.
+  - *Check*: Look for similar code with different styles. It's ok if code in different areas has different styles, but it should be consistent within the same area.
 - **Indentation Levels**: Are there excessive nested blocks (deep indentation)?
   - *Why it matters*: Deep indentation suggests complex logic that may need refactoring.
-  - *Check*: Flag functions with more than 3-4 levels of nesting.
-- **Message Chains**: Are there long chains of method calls (e.g., `obj.a().b().c()`)?
+  - *Check*: Flag functions with more than 4-5 levels of nesting.
+- **Message Chains**: Are there long chains of method calls (e.g., `obj.a().b().c()`)? Message chains looks nice, but they make code harder to maintain.
   - *Why it matters*: Long message chains indicate tight coupling, making code harder to modify or test.
   - *Check*: Look for chained calls that could be simplified or broken into intermediate variables.
-- **Spacing**: Is whitespace used effectively (e.g., around operators, after commas)?
-  - *Why it matters*: Proper spacing enhances readability and reduces visual clutter.
-  - *Check*: Ensure consistent spacing (e.g., `int x = 5;` vs. `int x=5;`).
+- **Debug-Friendliness**: Does the code include intentional debugging support?
+  - *Why it matters*: Debug-friendly code simplifies troubleshooting and reduces time spent on issues. It saves a lot of time.
+  - *Check*: Look for debuggcode, try to find out if those that wrote the code understood how to help others to manage it. For example, are there temporary variables that help to understand the code flow?  Assertions that trigger for developer errors?
 
 ## 2. Comments
 - **Clarity**: Do comments explain *why* code exists, especially for non-obvious logic?
   - *Why it matters*: Comments clarify intent, aiding maintenance and onboarding.
   - *Check*: Verify comments are concise, relevant, and avoid stating the obvious (e.g., avoid `i++ // increment i`). Look for documentation on functions/classes.
+- **if and for loops**: Are comments used to explain complex conditions or logic and are they easy to read? When devlopers read code conditionals are important, so comments should be used to clarify them if not obvious.
+  - *Why it matters*: Complex conditions can be hard to understand at a glance. 
+  - *Check*: Ensure comments clarify the purpose of intricate conditions (e.g., `if (x > 0 && y < 10) // Check if x is positive and y is less than 10`).
 
 ## 3. Variables
 - **Meaningful Names**: Are variable names descriptive and self-explanatory?
   - *Why it matters*: Clear names reduce guesswork and improve comprehension.
-  - *Check*: Avoid vague names (e.g., `tmp`, `data`) and prefer domain-specific names (e.g., `iUserAge`, `dOrderTotal`).
+  - *Check*: Avoid vague names (e.g., `tmp`, `data`) and prefer domain-specific names or a combination of type and domain name (e.g., `iUserAge`, `dOrderTotal`).
 - **Abbreviations**: Are abbreviations minimal and widely understood?
   - *Why it matters*: Excessive or obscure abbreviations confuse readers.
   - *Check*: Flag cryptic abbreviations (e.g., `usrMngr` vs. `userManager`).
@@ -39,6 +46,15 @@ This checklist ensures C++ code is readable, maintainable, and high-quality. Use
   - *Why it matters*: Overuse of `auto` can make debugging harder by hiding types.
   - *Check*: Verify `auto` is used for clear cases (e.g., iterators, lambdas) but not where type clarity is critical (e.g., `auto x = GetValue();`).
 
+## 4. Bad code
+   - **Lots of getters and setters**: Are there many getters and setters that could be simplified?
+     - *Why it matters*: Excessive getters/setters can indicate poor encapsulation or design and tight coupling.
+     - *Check*: Look for classes with numerous trivial getters/setters that could be replaced with direct access or better abstractions.
+   - **Direct member access**: Are there instances where class members are accessed directly instead of through methods?
+     - *Why it matters*: Direct access can break encapsulation and lead to maintenance issues.
+     - *Check*: Identify cases where class members are accessed directly (e.g., `obj.member`) instead of using methods (e.g., `obj.GetMember()`).
+   - **Complex Expressions**: Are there overly complex expressions that could be simplified?
+
 ## 4. Templates
 - **Effective Use**: Are templates used to improve code reuse without adding complexity?
   - *Why it matters*: Templates enhance flexibility but can reduce readability if overused or make code hard to understand.
@@ -51,26 +67,32 @@ This checklist ensures C++ code is readable, maintainable, and high-quality. Use
 
 ## 6. Type Aliases (`using`/`typedef`)
 - **Intuitive Names**: Are aliases clear and domain-relevant, or do they obscure meaning?
-  - *Why it matters*: Good aliases clarify intent; poor ones confuse readers.
+  - *Why it matters*: Good aliases clarify intent; poor ones confuse readers. Remember that alias are often domain-specific. And domain-specific names is not always good. 
   - *Check*: Ensure names like `using Distance = double;` are meaningful.
 
 ## 7. Methods and Functions
+- **Redundant naming**: Does a method name unnecessarily repeat the class name or describe its parameters? A method's identity is defined by its name and parameters—not by restating what’s already clear.
+  - *Why it matters*: Duplicate names can lead to confusion and errors.
+  - *Check*: Ensure method names are distinct and meaningful without duplicating class or parameter context.
 - **Concise Names**: Are method names descriptive yet concise, avoiding verbosity?
   - *Why it matters*: Long names (e.g., `calculateTotalPriceAndApplyDiscounts`) suggest methods do too much.
   - *Check*: Ensure names reflect a single purpose (e.g., `calculateTotal`, `ApplyDiscounts`).
 - **Single Responsibility**: Does each method perform only one task as implied by its name?
-  - *Why it matters*: Methods doing multiple tasks are harder to test and maintain.
-  - *Check*: Flag methods longer than 20-30 lines or with multiple logical tasks.
+  - *Why it matters*: Methods doing multiple tasks are harder to test and maintain (much harder).
+  - *Check*: Flag methods longer than 50-60 lines or with multiple logical tasks.
+  - **Parameter Count**: Are methods limited to 3-4 parameters?
+   - *Why it matters*: Too many parameters complicate method signatures and usage.
+   - *Check*: Look for methods with more than 4 parameters. Consider using structs or classes to group related parameters.
 
 ## 8. Error Handling
-- **Explicit and Debuggable**: Are errors handled clearly (e.g., exceptions, error codes, `std::expected`)?
+- **Explicit and Debuggable**: Are errors handled clearly?
   - *Why it matters*: Robust error handling prevents crashes and aids debugging.
   - *Check*: Verify consistent error mechanisms and proper logging of issues.
 
 ## 9. STL and Standard Library
-- **Effective Use**: Does the code leverage STL (e.g., `std::vector`, `std::algorithm`) appropriately?
-  - *Why it matters*: STL reduces bugs and improves performance compared to custom implementations.
-  - *Check*: Look for proper use of containers, algorithms, and modern features (e.g., `std::optional`, `std::string_view`). Flag reinvented wheels (e.g., custom arrays). Are stl types used like value_type, iterator, etc.?
+- **Effective Use**: Does the code leverage STL (e.g., `std::vector`, `std::algorithm`) appropriately? Does the code merge well with the standard library?
+  - *Why it matters*: Using STL simplifies code, becuse most C++ knows about STL. It's also well thought out.
+  - *Check*: Look for proper use of containers, algorithms, and modern features (e.g., `std::optional`, `std::string_view`). Are stl types used like value_type, iterator, etc.?
 
 ## 10. File and Project Structure
 - **Logical Organization**: Are files and directories grouped by module, feature, or layer?
@@ -131,7 +153,7 @@ Note that it doesn't mean that code is bad, but it may need some attention.
 
 
 
-## Rgular expression to find code blocks
+## Regular expression to find code blocks
 ```regex
 [\w-]*\n[\s\S]*?\n
 
