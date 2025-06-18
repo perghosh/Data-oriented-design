@@ -58,22 +58,22 @@ This checklist might look lengthy, but the items are quick to check. It helps as
      - *Check*: Identify cases where class members are accessed directly (e.g., `obj.member`) instead of using methods (e.g., `obj.GetMember()`).
    - **Complex Expressions**: Are there overly complex expressions that could be simplified?
 
-## 4. Templates
+## 5. Templates
 - **Effective Use**: Are templates used to improve code reuse without adding complexity?
   - *Why it matters*: Templates enhance flexibility but can reduce readability if overused or make code hard to understand.
   - *Check*: Review template parameters and constraints (e.g., C++20 concepts). Ensure they solve a real problem and aren’t overly generic.
 
-## 5. Inheritance
+## 6. Inheritance
 - **Justification**: Is inheritance used for true “is-a” relationships, or is it overused?
   - *Why it matters*: Misused inheritance creates tight coupling, complicating refactoring.
   - *Check*: Verify inheritance follows the Liskov Substitution Principle. Prefer composition where possible. Flag deep hierarchies or concrete base classes.
 
-## 6. Type Aliases (`using`/`typedef`)
+## 7. Type Aliases (`using`/`typedef`)
 - **Intuitive Names**: Are aliases clear and domain-relevant, or do they obscure meaning?
   - *Why it matters*: Good aliases can clarify intent; but more often confuse readers. Remember that alias are often domain-specific. And domain-specific names is not always good. 
   - *Check*: Ensure names like `using Distance = double;` are meaningful.
 
-## 7. Methods and Functions
+## 8. Methods and Functions
 - **Redundant naming**: Does a method name unnecessarily repeat the class name or describe its parameters? A method's identity is defined by its name and parameters—not by restating what’s already clear.
   - *Why it matters*: Duplicate names can lead to confusion and errors.
   - *Check*: Ensure method names are distinct and meaningful without duplicating class or parameter context.
@@ -87,22 +87,22 @@ This checklist might look lengthy, but the items are quick to check. It helps as
  - *Why it matters*: Too many parameters complicate method signatures and usage.
  - *Check*: Look for methods with more than 4 parameters. Consider using structs or classes to group related parameters.
 
-## 8. Error Handling
+## 9. Error Handling
 - **Explicit and Debuggable**: Are errors handled clearly?
   - *Why it matters*: Robust error handling prevents crashes and aids debugging.
   - *Check*: Verify consistent error mechanisms and proper logging of issues.
 
-## 9. STL and Standard Library
+## 10. STL and Standard Library
 - **Effective Use**: Does the code leverage STL (e.g., `std::vector`, `std::algorithm`) appropriately? Does the code merge well with the standard library?
   - *Why it matters*: Using STL simplifies code, becuse most C++ knows about STL. It's also well thought out.
   - *Check*: Look for proper use of containers, algorithms, and modern features (e.g., `std::optional`, `std::string_view`). Are stl types used like `value_type`, `iterator`, etc.?
 
-## 10. File and Project Structure
+## 11. File and Project Structure
 - **Logical Organization**: Are files and directories grouped by module, feature, or layer?
   - *Why it matters*: A clear structure simplifies navigation and scalability.
   - *Check*: Verify meaningful file names, proper header/source separation, and use of header guards or `#pragma once`. Flag circular dependencies.
 
-## 11. Codebase Navigation
+## 12. Codebase Navigation
 - **Ease of Exploration**: Is the code easy to navigate and test?
   - *Why it matters*: A navigable codebase speeds up development and debugging.
   - *Check*: Ensure clear module boundaries, consistent naming, and testable units. Verify unit tests exist for critical functionality.
