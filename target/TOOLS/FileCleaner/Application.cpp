@@ -58,6 +58,7 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 
 #include "cli/CLICount.h"
 #include "cli/CLIDir.h"
+#include "cli/CLIFind.h"
 #include "cli/CLIHistory.h"
 #include "cli/CLIList.h"
 #include "cli/CLIRun.h"
@@ -430,6 +431,12 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       auto* pdocument = DOCUMENT_Get("dir", true );
       auto result_ = CLI::Dir_g(poptionsActive, pdocument);
       if( result_.first == false ) return result_;
+   }
+   else if( stringCommandName == "find" )
+   {
+      auto* pdocument = DOCUMENT_Get("find", true );
+      auto result_ = CLI::Find_g( poptionsActive, pdocument );
+      //HistoryPrint_s();
    }
    else if( stringCommandName == "history" )
    {
@@ -1373,7 +1380,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
    //optionsApplication.add({ "database", "Set folder where logger places log files"});
    //optionsApplication.add({ "statements", "file containing sql statements"});
 
-   {  // ## `copy` command, copies file from source to target
+   {  // ## `count` command, copies file from source to target @TAG #count.Application
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count lines in file" );
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
@@ -1397,7 +1404,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
-   {  // ## `copy` command, count number of lines in file
+   {  // ## `copy` command, count number of lines in file @TAG #copy.Application
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file from source to target" );
       optionsCommand.add({"source", 's', "File to copy"});
       optionsCommand.add({"destination", 'd', "Destination, where file is copied to"});
@@ -1416,7 +1423,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
    }
 
 
-   { // ## 'dir' command, list files
+   { // ## 'dir' command, list files @TAG #dir.Application
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in directory" );
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, search for patterns in all found text files" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
@@ -1433,6 +1440,22 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
    }
+
+   { // ## 'find' command, list files @TAG #find.Application
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "find", "Find files in directory" );
+      optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, search for patterns in all found text files" });
+      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
+      optionsCommand.add({ "rpattern", "Regular expression pattern to search for"});
+      optionsCommand.add({ "source", 's', "Directory to search in" });
+      optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
+      optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
+#ifdef _WIN32
+      optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format"} );
+      optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
+#endif
+      optionsApplication.sub_add(std::move(optionsCommand));
+   }
+
 
    // ## 'history' handle history 
    {
@@ -1752,26 +1775,44 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
  **/
 void CApplication::PreparePath_s(std::string& stringPath)
 {
-   auto uPosition = stringPath.find_first_of(";,");                           // Find the first occurrence of `;` or `,` if multiple path
-
+   char iSplitCharacter = ':'; // default split character
+   auto uPosition = stringPath.find_first_of(":;,");                          // Find the first occurrence of ':', `;` or `,` if multiple path
    if( uPosition != std::string::npos )
    {
-      char iSplitCharacter = stringPath[uPosition]; // split character
+      iSplitCharacter = stringPath[uPosition];                                // split character
+   }
+
+   PreparePath_s( stringPath, iSplitCharacter );
+} 
+
+void CApplication::PreparePath_s( std::string& stringPath, char iSplitCharacter )
+{
+   if( iSplitCharacter != 0 )
+   {
       std::string stringNewPath; // new generated path
 
-      auto vectorPath = Split_s(stringPath);                                  // Split string by `;` or `,` and check files to make them absolute
-      for( const auto& it : vectorPath )
+      std::filesystem::path pathFile(stringPath);
+      if( pathFile.is_absolute() == false )
       {
-         if( it.empty() == false )
+         auto vectorPath = Split_s(stringPath, iSplitCharacter);               // Split string by `iSplitCharacter` and check files to make them absolute
+         for( const auto& it : vectorPath )
          {
-            if( stringNewPath.empty() == false )  stringNewPath += iSplitCharacter;
+            if( it.empty() == false )
+            {
+               if( stringNewPath.empty() == false )  stringNewPath += iSplitCharacter; // Add split character if not the first path
 
-            std::string stringCheck = it;
-            PreparePath_s(stringCheck);
-            stringNewPath += stringCheck;
+               std::string stringCheck = it;
+               PreparePath_s(stringCheck, 0);
+               stringNewPath += stringCheck;
+            }
          }
+         stringPath = stringNewPath;                                           // Update to the fixed path
       }
-      stringPath = stringNewPath;                                             // Update to the fixed path
+      else
+      {
+         // ## path is absolute, no need to change it
+         stringPath = pathFile.string();                                       // Convert to string
+      }
    }
    else
    {
@@ -2283,7 +2324,7 @@ std::vector<std::string> CApplication::Split_s(const std::string& stringText, ch
    {
       // ## Determine the effective delimiter
 
-      auto uSemicolon = stringText.find(";");
+      auto uSemicolon = stringText.find(":");
       auto uComma = stringText.find(",");
 
       if( uSemicolon != std::string::npos && uComma != std::string::npos )

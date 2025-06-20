@@ -257,6 +257,8 @@ inline std::pair<const uint8_t*, const uint8_t*> line::range(gd::types::tag_pair
    return std::make_pair(m_puBuffer, m_puBuffer + occupied());
 }
 
+// dont remove this, it is used in the documentation "arrow down" 
+
 /*
  * \class line
  * 

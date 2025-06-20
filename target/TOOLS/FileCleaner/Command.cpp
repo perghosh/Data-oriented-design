@@ -410,6 +410,72 @@ std::pair<bool, std::string> FILES_ReadFullRow_g(std::ifstream* pfstream, gd::ta
    return { true, "" };
 }
 
+std::pair<bool, std::string> CLEAN_File_g(const std::string& stringPath, const const gd::argument::shared::arguments& argumentsOption, std::vector<uint8_t>& vectorBuffer)
+{
+   if( std::filesystem::is_regular_file(stringPath) == false ) return { false, "File not found: " + stringPath };
+
+   std::ifstream file_(stringPath, std::ios::binary);
+   if( file_.is_open() == false ) return { false, "Failed to open file: " + stringPath };
+
+   bool bKeepNwline = argumentsOption.get_argument<bool>("newline", true);    // keep newlines ?
+   gd::parse::window::line windowLine_(8192 - 512, 8192, gd::types::tag_create{});// create line buffer
+
+   std::string stringFile = stringPath;                                                            assert(stringFile.empty() == false);
+   gd::expression::parse::state state_; // state for parsing expressions
+   auto result_ = CApplication::PrepareState_s( {{"source",stringFile}}, state_);
+   if( result_.first == false ) return result_;                                // error in state preparation
+
+   auto uAvailable = windowLine_.available(); // get available space in buffer to be filled
+   file_.read((char*)windowLine_.buffer(), uAvailable);                        // read more data into available space in buffer
+   auto uSize = file_.gcount(); // get number of valid bytes read
+   windowLine_.update(uSize);                                                  // Update valid size in line buffer                  
+   // ## Scan file and read lines found in table
+   while( windowLine_.eof() == false )
+   {
+      auto [first_, last_] = windowLine_.range(gd::types::tag_pair{});         // get range of valid data in buffer
+      for( const auto* it = first_; it < last_; it++ ) 
+      {
+         if( state_.in_state() == false )                                     // not in a state? that means we are reading source code
+         {
+            // ## check if we have found state
+            if( state_[*it] != 0 && state_.exists( it ) == true )
+            {
+               state_.activate(it);                                           // activate state
+            }
+            else
+            {
+               vectorBuffer.push_back(*it);                                   // add character to buffer
+            }
+         }
+         else
+         {
+            // ## check if we have found end of state
+            unsigned uLength;
+            if( state_.deactivate( it, &uLength ) == true ) 
+            {
+               if( uLength > 1 ) it += (uLength - 1);                         // skip to end of state marker and if it is more than 1 character, skip to end of state
+               // check for ending linebreak 
+               if( *it == '\n' && bKeepNwline == true ) vectorBuffer.push_back(*it);// add newline to buffer if we keep newlines
+               continue;
+            }
+
+            if( *it == '\n' && bKeepNwline == true ) vectorBuffer.push_back(*it);
+         }
+      }
+
+      windowLine_.rotate();                                                   // rotate buffer
+
+      auto uAvailable = windowLine_.available();                              // get available space in buffer to be filled
+      file_.read((char*)windowLine_.buffer(), windowLine_.available());       // read more data into available space in buffer
+      uSize = file_.gcount();
+      windowLine_.update(uSize);                                              // update valid size in line buffer
+   }
+
+   file_.close();
+
+   return { true, "" };
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Counts the number of rows in a file.
  * 
