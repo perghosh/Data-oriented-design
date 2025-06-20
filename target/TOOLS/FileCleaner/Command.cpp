@@ -1431,7 +1431,66 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    return { true, "" };
 }
 
+std::pair<bool, std::string> COMMAND_FindPattern(const std::vector<uint8_t>& vectorBuffer, const std::vector<std::pair<std::regex, std::string>>& vectorRegexPatterns, gd::table::dto::table* ptable_)
+{
+   std::vector<std::pair<uint64_t, std::string>> vectorRow; // vector to hold matched rows and the pattern that matched
 
+   try {
+      // Convert entire buffer to string for regex processing
+      std::string bufferText(reinterpret_cast<const char*>(vectorBuffer.data()), vectorBuffer.size());
+
+      // Function to count newlines from start to get row number
+      auto getRowFromPosition = [&bufferText](size_t pos) -> uint64_t {
+         return static_cast<uint64_t>(std::count(bufferText.begin(), bufferText.begin() + pos, '\n'));
+         };
+
+      // Search for each regex pattern in the entire buffer
+      for (const auto& pattern : vectorRegexPatterns) {
+         std::sregex_iterator iter(bufferText.begin(), bufferText.end(), pattern.first);
+         std::sregex_iterator end;
+
+         // Find all matches for this pattern
+         while (iter != end) {
+            const std::smatch& match = *iter;
+            size_t matchPosition = static_cast<size_t>(match.position());
+
+            // Determine which row this match starts in
+            uint64_t rowNumber = getRowFromPosition(matchPosition);
+
+            // Store the match with its row number and pattern identifier
+            vectorRow.emplace_back(rowNumber, pattern.second);
+
+            ++iter;
+         }
+      }
+
+      // Sort results by row number for easier processing
+      std::sort(vectorRow.begin(), vectorRow.end(), 
+         [](const std::pair<uint64_t, std::string>& a, const std::pair<uint64_t, std::string>& b) {
+            return a.first < b.first;
+         });
+
+      // Optional: Store results in the table if needed
+      if (ptable_ != nullptr) {
+         // Add matched rows to table - implementation depends on your table structure
+         // Example (adjust based on your table API):
+         /*
+         for (const auto& row : vectorRow) {
+         ptable_->add_row(row.first, row.second);
+         }
+         */
+      }
+
+      // Return success with info about matches found
+      uint64_t totalLines = static_cast<uint64_t>(std::count(bufferText.begin(), bufferText.end(), '\n')) + 1;
+      std::string result = "Found " + std::to_string(vectorRow.size()) + " matches across " + std::to_string(totalLines) + " lines";
+      return {true, result};
+   }
+   catch (const std::exception& e) 
+   {
+      return {false, std::string("Error processing patterns: ") + e.what()};
+   }
+}
 // 0TAG0FileExtensions.PrepareState
 
 
