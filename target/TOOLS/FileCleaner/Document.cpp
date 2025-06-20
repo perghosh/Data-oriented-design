@@ -502,7 +502,31 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    return {true, ""};
 }
 
-
+/** ---------------------------------------------------------------------------
+ * @brief Updates the pattern list for files in the cache using regex patterns.
+ *
+ * This method processes a list of regex patterns and applies them to the files stored in the cache.
+ * It generates a list of lines in each file where the patterns are found and stores the results
+ * in the "file-linelist" cache table.
+ *
+ * @param vectorRegexPatterns A vector of pairs containing regex patterns and their names.
+ *                            The vector must not be empty.
+ * @param argumentsList The arguments containing additional parameters such as state and max lines.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @pre The `vectorRegexPatterns` must not be empty.
+ * @post The "file-linelist" cache table is updated with the lines where the patterns are found.
+ *
+ * @details
+ * - The method ensures that the "file-linelist" cache table is prepared and available.
+ * - For each file in the "file" cache table, it generates the full file path by combining
+ *   the "folder" and "filename" columns.
+ * - It then calls the `COMMAND_ListLinesWithPattern` function to find the lines in the file
+ *   that match the regex patterns and updates the "file-linelist" table with the results.
+ * - If an error occurs during the process, it is added to the internal error list.
+ */
 std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList )
 {                                                                                                  assert(vectorRegexPatterns.empty() == false); // Ensure the rpattern list is not empty
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
@@ -548,6 +572,68 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
    MESSAGE_Progress("", {{"clear", true}});
 
    return {true, ""};
+}
+
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind )
+{
+   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
+   auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
+
+   auto default_ = gd::argument::shared::arguments();
+   gd::argument::shared::arguments& options_ = default_;
+   if( pargumentsFind != nullptr ) options_ = *pargumentsFind ;
+
+   uint64_t uFileIndex = 0; // index for file table
+   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
+   uint64_t uMax = options_.get_argument<uint64_t>("max", 500u );
+
+   std::vector<uint8_t> vectorBlob;
+   vectorBlob.reserve( 64 * 64 );
+
+
+   for(const auto& itRowFile : *ptableFile)
+   {
+      // ## calculate percentage for progress message
+
+      uFileIndex++;                                                            // increment file index for each file, used for progress message
+      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
+      {
+         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
+         MESSAGE_Progress( "", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true} });
+      }
+
+      // ## Generate the full file path (folder + filename)
+      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
+      gd::file::path pathFile(string_);
+      string_ = itRowFile.cell_get_variant_view("filename").as_string();
+      pathFile += string_;
+      std::string stringFile = pathFile.string();
+
+      auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
+
+      // Find lines with patterns and update the "file-linelist" table
+      gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+      //if( stringState.empty() == false ) arguments_.set("state", stringState.data()); // Set the state (code, comment, string) to search in
+      vectorBlob.clear();                                                     // Clear the blob vector to reuse it for the next file
+      auto result_ = CLEAN_File_g(stringFile, arguments_, vectorBlob);        // Load file into memory as a blob
+      if( result_.first == false)
+      {
+         ERROR_Add(result_.second);                                           // Add error to the internal error list
+         continue;                                                            // Skip to the next file if there was an error
+      }
+
+      /*
+      result_ = COMMAND_ListLinesWithPattern( arguments_, vectorRegexPatterns, ptableLineList );
+      if(result_.first == false)
+      {
+         ERROR_Add(result_.second); // Add error to the internal error list
+      }
+      */
+      if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
+   }
+
+
+   return { true, "" };
 }
 
 

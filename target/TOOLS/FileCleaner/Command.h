@@ -54,6 +54,9 @@ std::pair<bool, std::string> FILES_ReadLines_g( const std::string& stringPath, u
 /// Read the full line from source file into line column to get the full preview so user recognize the code
 std::pair<bool, std::string> FILES_ReadFullRow_g( std::ifstream* pfstream, gd::table::dto::table* ptable_, uint64_t uRowStartOffset );
 
+/// @brief Cleans a file by removing unwanted characters and patterns, and returns the cleaned content in a vector.
+std::pair<bool, std::string> CLEAN_File_g( const std::string& stringPath, const gd::argument::shared::arguments& argumentsOption, std::vector<uint8_t>& vectorCleaned );
+
 /// @brief Counts the number of rows in a file. 
 std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
 std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );

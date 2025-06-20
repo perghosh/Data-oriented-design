@@ -349,6 +349,7 @@ public:
 
    // ## Path operations
    static void PreparePath_s( std::string& stringPath );
+   static void PreparePath_s( std::string& stringPath, char iSplitCharacter );
 
    // ## Configuration read functions
 
