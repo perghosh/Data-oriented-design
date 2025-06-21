@@ -1773,7 +1773,7 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
  * // path is now absolute
  * ```
  **/
-void CApplication::PreparePath_s(std::string& stringPath)
+unsigned CApplication::PreparePath_s(std::string& stringPath)
 {
    char iSplitCharacter = ':'; // default split character
    auto uPosition = stringPath.find_first_of(":;,");                          // Find the first occurrence of ':', `;` or `,` if multiple path
@@ -1782,11 +1782,12 @@ void CApplication::PreparePath_s(std::string& stringPath)
       iSplitCharacter = stringPath[uPosition];                                // split character
    }
 
-   PreparePath_s( stringPath, iSplitCharacter );
+   return PreparePath_s( stringPath, iSplitCharacter );
 } 
 
-void CApplication::PreparePath_s( std::string& stringPath, char iSplitCharacter )
+unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharacter )
 {
+   unsigned uPathCount = 0;
    if( iSplitCharacter != 0 )
    {
       std::string stringNewPath; // new generated path
@@ -1802,7 +1803,7 @@ void CApplication::PreparePath_s( std::string& stringPath, char iSplitCharacter 
                if( stringNewPath.empty() == false )  stringNewPath += iSplitCharacter; // Add split character if not the first path
 
                std::string stringCheck = it;
-               PreparePath_s(stringCheck, 0);
+               uPathCount += PreparePath_s(stringCheck, 0);
                stringNewPath += stringCheck;
             }
          }
@@ -1812,6 +1813,7 @@ void CApplication::PreparePath_s( std::string& stringPath, char iSplitCharacter 
       {
          // ## path is absolute, no need to change it
          stringPath = pathFile.string();                                       // Convert to string
+         uPathCount++;
       }
    }
    else
@@ -1820,6 +1822,7 @@ void CApplication::PreparePath_s( std::string& stringPath, char iSplitCharacter 
       {
          std::filesystem::path pathFile = std::filesystem::current_path();    // take current working directory
          stringPath = pathFile.string();
+         uPathCount++;                                                        // Increment path count
       }
       else
       {
@@ -1841,17 +1844,21 @@ void CApplication::PreparePath_s( std::string& stringPath, char iSplitCharacter 
                   std::filesystem::path pathAbsolute = std::filesystem::absolute(path_);
                   //path_. = pathAbsolute;
                   stringPath = pathAbsolute.string();
+                  uPathCount++;                                               // Increment path count
                }
                else
                {
                   std::filesystem::path pathAbsolute = std::filesystem::absolute(pathFile);
                   gd::file::path path_(pathAbsolute);
                   stringPath = path_.string();
+                  uPathCount++;                                               // Increment path count
                }
             }
          } // if( pathFile.is_absolute() == false )
       } // if( stringPath.empty() ) else
    } // if( uPosition != std::string::npos ) else
+
+   return uPathCount;
 }
 
 /** --------------------------------------------------------------------------- @TAG #ignore

@@ -348,8 +348,8 @@ public:
    static std::pair<bool, std::string> PrepareState_s(const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state_);
 
    // ## Path operations
-   static void PreparePath_s( std::string& stringPath );
-   static void PreparePath_s( std::string& stringPath, char iSplitCharacter );
+   static unsigned PreparePath_s( std::string& stringPath );
+   static unsigned PreparePath_s( std::string& stringPath, char iSplitCharacter );
 
    // ## Configuration read functions
 

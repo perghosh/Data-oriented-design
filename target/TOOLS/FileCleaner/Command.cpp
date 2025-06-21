@@ -410,7 +410,7 @@ std::pair<bool, std::string> FILES_ReadFullRow_g(std::ifstream* pfstream, gd::ta
    return { true, "" };
 }
 
-std::pair<bool, std::string> CLEAN_File_g(const std::string& stringPath, const const gd::argument::shared::arguments& argumentsOption, std::vector<uint8_t>& vectorBuffer)
+std::pair<bool, std::string> CLEAN_File_g(const std::string& stringPath, const gd::argument::shared::arguments& argumentsOption, std::string& stringBuffer)
 {
    if( std::filesystem::is_regular_file(stringPath) == false ) return { false, "File not found: " + stringPath };
 
@@ -444,7 +444,7 @@ std::pair<bool, std::string> CLEAN_File_g(const std::string& stringPath, const c
             }
             else
             {
-               vectorBuffer.push_back(*it);                                   // add character to buffer
+               stringBuffer.push_back(*it);                                   // add character to buffer
             }
          }
          else
@@ -455,11 +455,11 @@ std::pair<bool, std::string> CLEAN_File_g(const std::string& stringPath, const c
             {
                if( uLength > 1 ) it += (uLength - 1);                         // skip to end of state marker and if it is more than 1 character, skip to end of state
                // check for ending linebreak 
-               if( *it == '\n' && bKeepNwline == true ) vectorBuffer.push_back(*it);// add newline to buffer if we keep newlines
+               if( *it == '\n' && bKeepNwline == true ) stringBuffer.push_back(*it);// add newline to buffer if we keep newlines
                continue;
             }
 
-            if( *it == '\n' && bKeepNwline == true ) vectorBuffer.push_back(*it);
+            if( *it == '\n' && bKeepNwline == true ) stringBuffer.push_back(*it);
          }
       }
 
@@ -983,7 +983,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 
    uint64_t uCountNewLine = 0;                                                // counts all new lines in file (all '\n' characters)
 
-   // ## find pattern in code, returns index to found pattern within patternsFind if match, otherwise -1
+   // ## Function to add line to table
    auto add_line_to_table_ = [uFileKey,ptable_,&stringFile,&patternsFind](int iPatternIndex, std::string& stringText, uint64_t uLineRow, uint64_t uColumn, const std::string_view& stringPattern ) 
       {  
          stringText = gd::utf8::trim_to_string(stringText);                   // trim
@@ -1431,58 +1431,77 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    return { true, "" };
 }
 
-std::pair<bool, std::string> COMMAND_FindPattern(const std::vector<uint8_t>& vectorBuffer, const std::vector<std::pair<std::regex, std::string>>& vectorRegexPatterns, gd::table::dto::table* ptable_)
+std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode, const std::vector<std::pair<std::regex, std::string>>& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_)
 {
+   uint64_t uFileKey = argumentsFind["file-key"]; // key to file for main table holding activ files
+   std::string stringFile = argumentsFind["source"].as_string();                                   assert(stringFile.empty() == false);
    std::vector<std::pair<uint64_t, std::string>> vectorRow; // vector to hold matched rows and the pattern that matched
 
-   try {
-      // Convert entire buffer to string for regex processing
-      std::string bufferText(reinterpret_cast<const char*>(vectorBuffer.data()), vectorBuffer.size());
-
-      // Function to count newlines from start to get row number
-      auto getRowFromPosition = [&bufferText](size_t pos) -> uint64_t {
-         return static_cast<uint64_t>(std::count(bufferText.begin(), bufferText.begin() + pos, '\n'));
+   try 
+   {
+      // ## Function to add line to table
+      auto add_line_to_table_ = [uFileKey,ptable_,&stringFile]( uint64_t uLineRow, const std::string_view& stringPattern ) 
+         {  
+            // ## adds line with information about found pattern to table holding matches
+            auto uRow = ptable_->row_add_one();
+            ptable_->cell_set(uRow, "key", uRow + 1);
+            ptable_->cell_set(uRow, "file-key", uFileKey);
+            ptable_->cell_set(uRow, "filename", stringFile);
+            ptable_->cell_set(uRow, "row", uLineRow);
+            ptable_->cell_set(uRow, "pattern", stringPattern, gd::types::tag_adjust{});
          };
 
-      // Search for each regex pattern in the entire buffer
-      for (const auto& pattern : vectorRegexPatterns) {
-         std::sregex_iterator iter(bufferText.begin(), bufferText.end(), pattern.first);
-         std::sregex_iterator end;
+      // ## Function to count newlines from start to get row number
+      auto count_newline_ = [&stringCode](size_t pos) -> uint64_t 
+      {
+         return static_cast<uint64_t>(std::count(stringCode.begin(), stringCode.begin() + pos, '\n'));
+      };
 
-         // Find all matches for this pattern
-         while (iter != end) {
-            const std::smatch& match = *iter;
-            size_t matchPosition = static_cast<size_t>(match.position());
+      // ## Search for each regex pattern in the entire buffer
+      for(const auto& pattern : vectorRegexPatterns) 
+      {
+         std::sregex_iterator itRegex(stringCode.begin(),stringCode.end(), pattern.first);
+         std::sregex_iterator itEnd;
 
-            // Determine which row this match starts in
-            uint64_t rowNumber = getRowFromPosition(matchPosition);
-
-            // Store the match with its row number and pattern identifier
-            vectorRow.emplace_back(rowNumber, pattern.second);
-
-            ++iter;
+         // ### Find all matches for this pattern
+         while(itRegex != itEnd) 
+         {
+            const std::smatch& match_ = *itRegex;
+            size_t uPosition = static_cast<size_t>( match_.position() );       // Get the position of the match in the string
+            uint64_t uRow = count_newline_(uPosition);                         // Determine which row this match starts in
+            vectorRow.emplace_back(uRow, pattern.second);                      // Store the match with its row number and pattern identifier
+            ++itRegex;
          }
       }
 
       // Sort results by row number for easier processing
       std::sort(vectorRow.begin(), vectorRow.end(), 
-         [](const std::pair<uint64_t, std::string>& a, const std::pair<uint64_t, std::string>& b) {
-            return a.first < b.first;
-         });
+         [](const std::pair<uint64_t, std::string>& a, const std::pair<uint64_t, std::string>& b) { return a.first < b.first; });
 
-      // Optional: Store results in the table if needed
-      if (ptable_ != nullptr) {
-         // Add matched rows to table - implementation depends on your table structure
-         // Example (adjust based on your table API):
-         /*
-         for (const auto& row : vectorRow) {
-         ptable_->add_row(row.first, row.second);
+      // ## Store results in the table if needed
+      if( vectorRow.empty() == false && ptable_ != nullptr) 
+      {
+         std::string stringFile = argumentsFind["source"].as_string(); // Get the source file name
+
+         // Open the file to read full lines later
+         std::ifstream file_(stringFile, std::ios::binary);
+         if( file_.is_open() == false ) { return {false, "Failed to open file: " + stringFile}; }
+
+         for( const auto& it : vectorRow ) 
+         {
+            uint64_t uRow = it.first; // Get the row number
+            add_line_to_table_(uRow, it.second); // Add the row to the table
          }
-         */
+
+
+         file_.clear(); // clear EOF and fail bits
+         file_.seekg(0, std::ios::beg); // move to the beginning of the file
+         auto result_ = FILES_ReadFullRow_g( &file_, ptable_, ptable_->size() - vectorRow.size() ); // read full line for each row into "line" field as a preview for all rows that were added to the table
+         if( result_.first == false ) { return result_; }                     // If reading full lines failed, return error
       }
 
       // Return success with info about matches found
-      uint64_t totalLines = static_cast<uint64_t>(std::count(bufferText.begin(), bufferText.end(), '\n')) + 1;
+      uint64_t totalLines = static_cast<uint64_t>(std::count(stringCode.begin(), stringCode.end(), '\n')) + 1;
       std::string result = "Found " + std::to_string(vectorRow.size()) + " matches across " + std::to_string(totalLines) + " lines";
       return {true, result};
    }
