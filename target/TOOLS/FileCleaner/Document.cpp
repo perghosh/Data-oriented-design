@@ -587,8 +587,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
    uint64_t uMax = options_.get_argument<uint64_t>("max", 500u );
 
-   std::vector<uint8_t> vectorBlob;
-   vectorBlob.reserve( 64 * 64 );
+   std::string stringBuffer;
+   stringBuffer.reserve( 64 * 64 );
 
 
    for(const auto& itRowFile : *ptableFile)
@@ -613,13 +613,22 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
       // Find lines with patterns and update the "file-linelist" table
       gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
-      //if( stringState.empty() == false ) arguments_.set("state", stringState.data()); // Set the state (code, comment, string) to search in
-      vectorBlob.clear();                                                     // Clear the blob vector to reuse it for the next file
-      auto result_ = CLEAN_File_g(stringFile, arguments_, vectorBlob);        // Load file into memory as a blob
+      stringBuffer.clear();                                                   // Clear the blob vector to reuse it for the next file
+      auto result_ = CLEAN_File_g(stringFile, arguments_, stringBuffer);      // Load file into memory as a blob
       if( result_.first == false)
       {
          ERROR_Add(result_.second);                                           // Add error to the internal error list
          continue;                                                            // Skip to the next file if there was an error
+      }
+
+      if( stringBuffer.empty() == true ) continue;                            // Skip empty files
+
+      // ## Find patterns in the file blob
+      result_ = COMMAND_FindPattern_g(stringBuffer, vectorRegexPatterns, arguments_, ptableLineList ); // Find lines with patterns in the file blob
+      if( result_.first == false )
+      {
+         ERROR_Add(result_.second); // Add error to the internal error list
+         continue; // Skip to the next file if there was an error
       }
 
       /*

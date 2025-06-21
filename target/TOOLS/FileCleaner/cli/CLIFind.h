@@ -39,4 +39,6 @@ NAMESPACE_CLI_BEGIN
 std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocument* pdocument);
 std::pair<bool, std::string> Find_g(const std::vector<std::string>& vectorSource, const gd::argument::arguments* pargumentsFind, CDocument* pdocument);
 
+std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint );
+
 NAMESPACE_CLI_END

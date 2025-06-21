@@ -34,8 +34,9 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
    if( vectorSourceToPrepare.size() == 1 )
    {
       std::string stringSource = vectorSourceToPrepare[0].as_string();
-      CApplication::PreparePath_s(stringSource, ':');                         // if source is empty then set it to current path, otherwise prepare it
-      vectorSource = CApplication::Split_s(stringSource, ':');                // split source string into vector of sources
+      auto uCount = CApplication::PreparePath_s(stringSource, ':');           // if source is empty then set it to current path, otherwise prepare it
+      if( uCount == 1 ) vectorSource.push_back(stringSource);                 // if there is only one source then add it to the vector
+      else if( uCount > 1 )  vectorSource = CApplication::Split_s(stringSource, ':');// if there are multiple sources then split them by ':'
    }
    else if( vectorSourceToPrepare.size() > 1 )
    {
@@ -72,6 +73,8 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 {                                                                                                  assert(pdocument != nullptr);assert(pargumentsFind != nullptr);
    const gd::argument::arguments& options_ = *pargumentsFind; // get the options from the command line arguments
 
+   uint64_t uPatternCount = 0; // count of patterns to search for
+
    int iRecursive = options_["recursive"].as_int();
    if (iRecursive == 0 && options_.exists("R") == true) iRecursive = 16;      // set to 16 if R is set, find all files
 
@@ -97,7 +100,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       auto vectorRPattern = options_.get_argument_all("rpattern", gd::types::tag_view{}); // get all regex patterns
       std::vector<std::string> vectorPattern; // store regex patterns as strings
       for( auto& rpattern : vectorRPattern ) { vectorPattern.push_back(rpattern.as_string()); }
-      auto uSearchPatternCount = vectorPattern.size(); // count the number of patterns to search for
+      uPatternCount = vectorPattern.size(); // count the number of patterns to search for
       std::vector< std::pair<std::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
 
       // ## convert string to regex and put it into vectorRegexPatterns
@@ -130,7 +133,31 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       */
    }
 
+   gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uPatternCount }});
+   FindPrint_g(pdocument, argumentsPrint); // Print the results of the find operation
 
+   return { true, "" }; 
+}
+
+std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint )
+{                                                                                                  assert(pdocument != nullptr);
+   std::string stringCliTable; // string to hold the CLI table output
+   size_t uSearchPatternCount = argumentsPrint.get_argument<uint64_t>("pattern-count", 1u); // count of patterns to search for
+   int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
+
+   gd::argument::arguments argumentsOption( { { "pattern-count", (unsigned)uSearchPatternCount } } );
+   if( iContextOffset != 0 || iContextCount != 0 ) { argumentsOption.append( "offset", iContextOffset ); argumentsOption.append( "count", iContextCount ); }
+   auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsOption );// generate the result table for pattern line list
+
+   if( iContextCount == 0 )
+   {
+      // ## Just print the "line" column 
+      gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+      table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
+      stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+   }
+
+   pdocument->MESSAGE_Display( stringCliTable ); // display the result table to the user
 
    return { true, "" }; 
 }

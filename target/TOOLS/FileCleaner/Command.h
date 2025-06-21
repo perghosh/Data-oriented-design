@@ -55,7 +55,7 @@ std::pair<bool, std::string> FILES_ReadLines_g( const std::string& stringPath, u
 std::pair<bool, std::string> FILES_ReadFullRow_g( std::ifstream* pfstream, gd::table::dto::table* ptable_, uint64_t uRowStartOffset );
 
 /// @brief Cleans a file by removing unwanted characters and patterns, and returns the cleaned content in a vector.
-std::pair<bool, std::string> CLEAN_File_g( const std::string& stringPath, const gd::argument::shared::arguments& argumentsOption, std::vector<uint8_t>& vectorBuffer );
+std::pair<bool, std::string> CLEAN_File_g( const std::string& stringPath, const gd::argument::shared::arguments& argumentsOption, std::string& stringBuffer );
 
 /// @brief Counts the number of rows in a file. 
 std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
@@ -66,7 +66,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 /// @brief Collects the number of lines in a file that match a specific pattern, this use regex matching.
 std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_);
 
-std::pair<bool, std::string> COMMAND_FindPattern( const std::vector<uint8_t>& vectorBuffer, const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_ );
+std::pair<bool, std::string> COMMAND_FindPattern_g( const std::string& stringCode, const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_ );
 
 std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);
 
