@@ -264,7 +264,7 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
    std::string stringMessage = std::format("\nFound {} lines", uRowCount);
    pdocument->MESSAGE_Display(stringMessage);                                 // display the number of lines found
 
-
+#ifdef _WIN32
    if( argumentsPrint.exists("vs") == true ) // if vs flag is set, then we want to print to Visual Studio output
    {
       stringCliTable.clear();                                                 // clear the stringCliTable, we will use it to print to Visual Studio output
@@ -282,8 +282,8 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
          std::string stringPrint = std::format("Printed to Visual Studio output: {} rows", tableResultLineList.get_row_count());
          pdocument->MESSAGE_Display(stringPrint);
       }
-
    }
+#endif // _WIN32
 
    return { true, "" }; 
 }
