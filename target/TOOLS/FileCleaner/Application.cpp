@@ -1448,6 +1448,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "rpattern", "Regular expression pattern to search for"});
       optionsCommand.add({ "source", 's', "Directory to search in" });
       optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
+      optionsCommand.add({ "max", "Maximum number of results to return"});
       optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format"} );
