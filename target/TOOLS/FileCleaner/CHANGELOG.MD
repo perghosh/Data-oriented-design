@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.9.9
+
+### New Features
+- New `find` command: With find you can search for complex patterns that span multiple lines. Before it searches code is stripped of comments and and strings.
+  - `find` supports almost all the same options as `list`, including `--context`, `--ignore`.
+
+### Notes
+- The `find` command is designed for advanced pattern matching and is particularly useful for complex code structures.
+- Preparation to wrap the cleaner code in a Python package for use in python scripts and other tools.
+
 ## v0.9.8
 
 ### Fixes
