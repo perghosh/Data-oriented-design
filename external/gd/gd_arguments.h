@@ -1046,7 +1046,7 @@ public:
          append(stringName, vInsert);
          return arguments::get_argument_s(get_buffer_start() + uOffset);
       }
-      return argument();
+      return paramV;
    }
 
    /// return all values for name, name for value do not need to be unique. if name is not found empty vector is returned
