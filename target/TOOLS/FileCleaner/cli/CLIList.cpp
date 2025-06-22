@@ -276,8 +276,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          CDocument::RESULT_VisualStudio_s(tableResultLineList, stringCliTable);
          VS::CVisualStudio visualstudio;
          result_ = visualstudio.Connect();
-         if (result_.first == true) result_ = visualstudio.Print(stringCliTable, VS::tag_vs_output{});
-         if (result_.first == false)
+         if(result_.first == true) result_ = visualstudio.Print(stringCliTable, VS::tag_vs_output{});
+         if(result_.first == false)
          {
             std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
             std::cerr << stringError << "\n";

@@ -1778,6 +1778,15 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
 unsigned CApplication::PreparePath_s(std::string& stringPath)
 {
    char iSplitCharacter = ':'; // default split character
+
+   if( stringPath.empty() || stringPath == "." || stringPath == "*" || stringPath == "**" ) // If path is empty or just a '.', '*' or '**'
+   {
+      std::filesystem::path pathFile = std::filesystem::current_path(); // take current working directory
+      stringPath = pathFile.string();
+      return 1; // Return 1 as we have one path
+   }
+
+
    auto uPosition = stringPath.find_first_of(":;,");                          // Find the first occurrence of ':', `;` or `,` if multiple path
    if( uPosition != std::string::npos )
    {

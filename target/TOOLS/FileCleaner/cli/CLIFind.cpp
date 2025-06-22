@@ -73,6 +73,9 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
       gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uint64_t(2u) } }); // hardcode pattern count to 2 for printing results and allways print patterns
       if( options_.exists("context") == true ) argumentsPrint.append("context", options_["context"].as_string_view()); // if context is set, add it to the print arguments
 
+      // check if vs flag is set, if so then print to Visual Studio output
+      if( options_.exists("vs") == true ) { argumentsPrint.append("vs", true); }
+
       FindPrint_g(pdocument, argumentsPrint); // Print the results of the find operation
    }
 
@@ -209,9 +212,12 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
       iContextCount = iContextCount % 1000;                                   // limit the count to 1000 lines, so we do not get too much context
    }
 
+
    gd::argument::arguments argumentsOption( { { "pattern-count", (unsigned)uSearchPatternCount } } );
    if( iContextOffset != 0 || iContextCount != 0 ) { argumentsOption.append( "offset", iContextOffset ); argumentsOption.append( "count", iContextCount ); }
    auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsOption );// generate the result table for pattern line list
+
+   auto uRowCount = tableResultLineList.get_row_count(); // get the number of rows in the result table
 
    if( iContextCount == 0 )
    {
@@ -253,8 +259,31 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
       stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
    }
 
+   pdocument->MESSAGE_Display( stringCliTable );                              // display the result table to the user
+   // Print number of lines found
+   std::string stringMessage = std::format("\nFound {} lines", uRowCount);
+   pdocument->MESSAGE_Display(stringMessage);                                 // display the number of lines found
 
-   pdocument->MESSAGE_Display( stringCliTable ); // display the result table to the user
+
+   if( argumentsPrint.exists("vs") == true ) // if vs flag is set, then we want to print to Visual Studio output
+   {
+      stringCliTable.clear();                                                 // clear the stringCliTable, we will use it to print to Visual Studio output
+      CDocument::RESULT_VisualStudio_s(tableResultLineList, stringCliTable);
+      VS::CVisualStudio visualstudio;
+      auto result_ = visualstudio.Connect();
+      if(result_.first == true) result_ = visualstudio.Print(stringCliTable, VS::tag_vs_output{});
+      if(result_.first == false)
+      {
+         std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
+         pdocument->MESSAGE_Display(stringError);
+      }
+      else
+      {
+         std::string stringPrint = std::format("Printed to Visual Studio output: {} rows", tableResultLineList.get_row_count());
+         pdocument->MESSAGE_Display(stringPrint);
+      }
+
+   }
 
    return { true, "" }; 
 }
