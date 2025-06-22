@@ -18,6 +18,7 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, ref
 - [Usage](#usage)
 - [Commands](#commands)
   - [count](#count)
+  - [find](#find)
   - [list](#list)
   - [copy](#copy)
   - [dir](#dir)
@@ -75,6 +76,26 @@ Counts lines in files or folders, or counts pattern occurrences.
 - `--table <name>`: Specify a table name for SQL output.
 - `--comment <chars>`: Pair of characters marking start and end for comments.
 - `--string <chars>`: Pair of characters marking start and end for strings.
+- `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
+- `--vs`: Adapt to Visual Studio output window format, making files clickable.
+- `--win`: Windows-specific functionality, adapting to features specific to Windows.
+
+---
+
+### find
+Find is similar to `list` command except that it isn't line based, it searches for patterns in all code for source files and that menas that it is possible to find patterns that spans multiple lines.
+Using more advanced regex patterns is better suited for this command.
+Also remember that code is stripped of comments and strings before searching. Finding patterns in comments or strings is not supported in this command. There you need to use `list` command instead. Reason for this is that `find` is targeted for finding patterns in code logic, and to simplify the search queries.
+
+**Options:**
+- `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;`.
+- `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
+- `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner list /home/username/dev/project/src/`.
+- `--ignore <match;match;match>`: Ignore files or folders matching the specified patterns. Multiple patterns are separated by `;`.
+- `--rpattern <regex>`: Regular expression pattern to search for. Use multiple `--rpattern` to find more than one pattern.
+- `--recursive <depth>`: Perform the operation recursively up to the specified depth.
+- `--context <lines>`: Show surrounding lines of a match, where `<lines>` is the number of lines to show before and after the match or if only one number is specified it will show that many lines after the match.
+- `--max <count>`: Limit the number of results.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 - `--vs`: Adapt to Visual Studio output window format, making files clickable.
 - `--win`: Windows-specific functionality, adapting to features specific to Windows.
@@ -173,6 +194,9 @@ Using `-R` to search recursively and `--source` to specify the folder:
 ### With "context" option, you can see the surrounding lines of a match
 `cleaner list -R --filter "*.h" --pattern "#pragma once" --context 20` - This probably shows some includes statements after the match
 `cleaner list -R --filter "*.h" --pattern "using pointer" --context "-10 20"` - Shows 10 lines before and 20 lines after an may inform about member types.
+
+### Find patterns in code logic
+`cleaner find -R --source "C:\dev\project" --rpattern "if\s*\([^\)]*\)\s*[^\s{][^\n;]*" --context 3 --max 10` - Finds `if` statements without `{}` conditions and shows 3 lines of context around each match.
 
 ---
 
