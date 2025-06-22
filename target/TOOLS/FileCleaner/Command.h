@@ -66,6 +66,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 /// @brief Collects the number of lines in a file that match a specific pattern, this use regex matching.
 std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_);
 
+std::pair<bool, std::string> COMMAND_FindPattern_g( const std::string& stringCode, const std::vector<std::string>& vectorPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_ );
 std::pair<bool, std::string> COMMAND_FindPattern_g( const std::string& stringCode, const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_ );
 
 std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);

@@ -91,6 +91,7 @@ public:
    std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList );
    std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList );
 
+   std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::string >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind );
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsList );
       
 //@}

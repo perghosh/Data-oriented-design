@@ -62,13 +62,35 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
       pdocument->GetApplication()->IGNORE_Add(vectorIgnore);                  // add ignore patterns to the application
    }
 
+   // ## Call the more generic Find_g function, this is to make it possible to call Find_g with different environments, like CLI or GUI
+
    const gd::argument::arguments* pargumentsFind = &options_.get_arguments(); // get the arguments from the command line options
    auto result_ = Find_g(vectorSource, pargumentsFind, pdocument);            // find files in the source directory based on the find arguments
    if( result_.first == false ) return result_;                               // if find failed, return the error
 
+   if( options_.exists("print") == false || options_["print"].is_true() == true )  // default is to print result
+   {
+      gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uint64_t(2u) } }); // hardcode pattern count to 2 for printing results and allways print patterns
+      FindPrint_g(pdocument, argumentsPrint); // Print the results of the find operation
+   }
+
+
    return { true, "" }; 
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Finds files based on the provided source paths and find arguments.
+ *
+ * This function searches for files in the specified source paths, applies regex patterns if provided,
+ * and prints the results of the find operation.
+ *
+ * @param vectorSource A vector of source paths to search for files.
+ * @param pargumentsFind The arguments containing options such as recursive search, filter, and regex patterns.
+ * @param pdocument Pointer to the CDocument instance where the results will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSource, const gd::argument::arguments* pargumentsFind, CDocument* pdocument)
 {                                                                                                  assert(pdocument != nullptr);assert(pargumentsFind != nullptr);
    const gd::argument::arguments& options_ = *pargumentsFind; // get the options from the command line arguments
@@ -95,12 +117,27 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       if (result_.first == false) return result_;
    }
 
+   if( options_.exists("pattern") == true )
+   {
+      auto vectorPattern = options_.get_argument_all("pattern", gd::types::tag_view{}); // get all patterns
+      std::vector<std::string> vectorPatternString;                           // store patterns as strings
+      for( auto& pattern : vectorPattern ) { vectorPatternString.push_back(pattern.as_string()); }
+      
+      uPatternCount = vectorPatternString.size();                             // count the number of patterns to search for
+      if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
+
+      gd::argument::shared::arguments argumentsFind; // prepare arguments for the file update
+      auto result_ = pdocument->FILE_UpdatePatternFind(vectorPatternString, &argumentsFind); // Search for patterns in harvested files and place them into the result table
+      if (result_.first == false) return result_;
+   }
    if( options_.exists("rpattern") == true )
    {
       auto vectorRPattern = options_.get_argument_all("rpattern", gd::types::tag_view{}); // get all regex patterns
       std::vector<std::string> vectorPattern; // store regex patterns as strings
       for( auto& rpattern : vectorRPattern ) { vectorPattern.push_back(rpattern.as_string()); }
       uPatternCount = vectorPattern.size(); // count the number of patterns to search for
+      if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
+
       std::vector< std::pair<std::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
 
       // ## convert string to regex and put it into vectorRegexPatterns
@@ -132,9 +169,6 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       }
       */
    }
-
-   gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uPatternCount }});
-   FindPrint_g(pdocument, argumentsPrint); // Print the results of the find operation
 
    return { true, "" }; 
 }
