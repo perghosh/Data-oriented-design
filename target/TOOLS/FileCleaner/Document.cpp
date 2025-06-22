@@ -574,6 +574,69 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
    return {true, ""};
 }
 
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::string >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind )
+{
+   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
+   auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
+
+   auto default_ = gd::argument::shared::arguments();
+   gd::argument::shared::arguments& options_ = default_;
+   if( pargumentsFind != nullptr ) options_ = *pargumentsFind ;
+
+   uint64_t uFileIndex = 0; // index for file table
+   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
+   uint64_t uMax = options_.get_argument<uint64_t>("max", 500u );             // @@TODO: Change solution to take default value for number of hits from applicaton property
+
+   std::string stringFileBuffer;
+   stringFileBuffer.reserve( 64 * 64 );
+
+   for(const auto& itRowFile : *ptableFile)
+   {
+      // ## calculate percentage for progress message
+
+      uFileIndex++;                                                            // increment file index for each file, used for progress message
+      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
+      {
+         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
+         MESSAGE_Progress( "", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true} });
+      }
+
+      // ## Generate the full file path (folder + filename)
+      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
+      gd::file::path pathFile(string_);
+      string_ = itRowFile.cell_get_variant_view("filename").as_string();
+      pathFile += string_;
+      std::string stringFile = pathFile.string();
+
+      auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
+
+      // Find lines with patterns and update the "file-linelist" table
+      gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+      stringFileBuffer.clear();                                                   // Clear the blob vector to reuse it for the next file
+      auto result_ = CLEAN_File_g(stringFile, arguments_, stringFileBuffer);      // Load file into memory as a blob
+      if( result_.first == false)
+      {
+         ERROR_Add(result_.second);                                           // Add error to the internal error list
+         continue;                                                            // Skip to the next file if there was an error
+      }
+
+      if( stringFileBuffer.empty() == true ) continue;                        // Skip empty files
+
+      // ## Find patterns in the file blob
+      result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorRegexPatterns, arguments_, ptableLineList ); // Find lines with patterns in the file blob
+      if( result_.first == false )
+      {
+         ERROR_Add(result_.second); // Add error to the internal error list
+         continue; // Skip to the next file if there was an error
+      }
+
+      if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
+   }
+
+   return { true, "" };
+
+}
+
 std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind )
 {
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
@@ -585,10 +648,10 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
    uint64_t uFileIndex = 0; // index for file table
    auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
-   uint64_t uMax = options_.get_argument<uint64_t>("max", 500u );
+   uint64_t uMax = options_.get_argument<uint64_t>("max", 500u );             // @@TODO: Change solution to take default value for number of hits from applicaton property
 
-   std::string stringBuffer;
-   stringBuffer.reserve( 64 * 64 );
+   std::string stringFileBuffer; // Buffer to store the file content
+   stringFileBuffer.reserve( 64 * 64 );
 
 
    for(const auto& itRowFile : *ptableFile)
@@ -613,34 +676,26 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
       // Find lines with patterns and update the "file-linelist" table
       gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
-      stringBuffer.clear();                                                   // Clear the blob vector to reuse it for the next file
-      auto result_ = CLEAN_File_g(stringFile, arguments_, stringBuffer);      // Load file into memory as a blob
+      stringFileBuffer.clear();                                               // Clear the blob vector to reuse it for the next file
+      auto result_ = CLEAN_File_g(stringFile, arguments_, stringFileBuffer);  // Load file into memory as a blob
       if( result_.first == false)
       {
          ERROR_Add(result_.second);                                           // Add error to the internal error list
          continue;                                                            // Skip to the next file if there was an error
       }
 
-      if( stringBuffer.empty() == true ) continue;                            // Skip empty files
+      if( stringFileBuffer.empty() == true ) continue;                        // Skip empty files
 
       // ## Find patterns in the file blob
-      result_ = COMMAND_FindPattern_g(stringBuffer, vectorRegexPatterns, arguments_, ptableLineList ); // Find lines with patterns in the file blob
+      result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorRegexPatterns, arguments_, ptableLineList ); // Find lines with patterns in the file blob
       if( result_.first == false )
       {
          ERROR_Add(result_.second); // Add error to the internal error list
          continue; // Skip to the next file if there was an error
       }
 
-      /*
-      result_ = COMMAND_ListLinesWithPattern( arguments_, vectorRegexPatterns, ptableLineList );
-      if(result_.first == false)
-      {
-         ERROR_Add(result_.second); // Add error to the internal error list
-      }
-      */
       if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
    }
-
 
    return { true, "" };
 }

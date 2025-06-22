@@ -126,7 +126,7 @@ namespace gd {
          return count(reinterpret_cast<const uint8_t*>(pbszText)).first;
       };
 
-      /// ## `size` methods is used calculate needed size to store character as utf8 value
+      /// ## `size` methods is used calculate needed size to store character as utf8 value         @@LINK #utf8.size
 
       uint32_t size( uint8_t ch ); // ------------------------------------------------------------- size
       uint32_t size( uint16_t ch ); // ------------------------------------------------------------ size
@@ -190,7 +190,7 @@ namespace gd {
       // sample: 
       // - `convert_ascii` converts from ascii to utf8
       // - `convert_utf8_to_ascii` converts from utf8 to ascii
-
+      //                                                                                           @@LINK #utf8.convert
       ///@{
       uint32_t convert(uint8_t uCharacter, uint8_t* pbszTo); // ----------------------------------- convert
       uint32_t convert(uint16_t uCharacter, uint8_t* pbszTo); // ---------------------------------- convert
@@ -272,7 +272,7 @@ namespace gd {
       std::pair<bool, const uint8_t*> convert_json(const uint8_t* puFrom, const uint8_t* puEnd, uint8_t* puTo);
       std::string convert_json( const std::string_view& stringJson );
 
-      // ## convert text to number
+      // ## convert text to number                                                                 @@LINK #utf8.ato*
 
       uint32_t atou(const uint8_t* puNumber);
       inline uint32_t atou(const char* pbszNumber) { return atou( (const uint8_t*)pbszNumber ); }
@@ -325,7 +325,7 @@ namespace gd {
       /**
        * @brief move operation for pointer in utf-8 buffer
       */
-      namespace move {
+      namespace move {                                                                             // @@LINK #utf8.next
 
          /** \name NEXT OPERATIONS
          moves to next...
@@ -521,7 +521,7 @@ namespace gd {
       /**
        * @brief json formated text encoding
        */
-      namespace json {
+      namespace json {                                                                             // @@LINK #utf8.json
          // ## Validation methods
          bool is_encoded( uint8_t uChar );
          std::pair<bool, const uint8_t*> validate( const uint8_t* pubBegin, const uint8_t* pubEnd );
@@ -600,7 +600,7 @@ namespace gd {
        * |next_sequence|finds next special uri formated sequence (percent and hex number like "%5A")|
        * |convert_uri_to_uf8|Convert uri formated text to utf-8|
       */
-      namespace uri {
+      namespace uri {                                                                              // @@LINK #utf8.uri
          // ## convert uri formated character to utf8 character
          uint32_t character(const uint8_t* pubszCharacter);
          inline uint32_t character(const char* pbszCharacter) { return character( reinterpret_cast<const uint8_t*>( pbszCharacter ) ); }
@@ -661,7 +661,7 @@ namespace gd {
 
       }
 
-      namespace xml {
+      namespace xml {                                                                              // @@LINK #utf8.xml
          uint32_t size( const uint8_t* pubszCharacter );
          bool is_encoded( uint8_t uChar );
 
@@ -762,7 +762,7 @@ namespace gd {
 
          return { puFirst, puLast + 1 };
       }
-
+                                                                                                   // @@LINK #utf8.trim
       /// find positions in text where characters start
       inline std::pair<const uint8_t*, const uint8_t*> trim(const uint8_t* puText) { return trim(puText, puText + std::strlen((const char*)puText)); }
       inline std::pair<const uint8_t*, const uint8_t*> trim(const std::string_view& stringText) { return trim((const uint8_t*)stringText.data(), (const uint8_t*)stringText.data() + stringText.length()); }
@@ -844,7 +844,7 @@ namespace gd {
       std::string quoted_if_text( const std::string_view& stringToQuote );
 
       
-      // ## Split methods, split string into parts
+      // ## Split methods, split string into parts                                                 // @@LINK #utf8.split
 
       /// Split string into std::string_view parts, each part is separated by `chSplit` character
       void split( const char* pbBegin, const char* pbEnd, char chSplit, std::vector<std::string_view>& vectorPart );
