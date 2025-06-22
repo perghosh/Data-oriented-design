@@ -18,6 +18,8 @@
 #include <utility>
 #include <vector>
 
+#include <boost/regex.hpp>
+
 // ## GD
 
 #include "gd/gd_uuid.h"
@@ -92,7 +94,7 @@ public:
    std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList );
 
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::string >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind );
-   std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsList );
+   std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsList );
       
 //@}
 

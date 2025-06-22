@@ -1509,7 +1509,7 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
    return { true, "" };                                                       // Return success if no matches found
 }
 
-std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode, const std::vector<std::pair<std::regex, std::string>>& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_)
+std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode, const std::vector<std::pair<boost::regex, std::string>>& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_)
 {
    uint64_t uFileKey = argumentsFind["file-key"]; // key to file for main table holding activ files
    std::string stringFile = argumentsFind["source"].as_string();                                   assert(stringFile.empty() == false);
@@ -1538,13 +1538,13 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
       // ## Search for each regex pattern in the entire buffer
       for(const auto& pattern : vectorRegexPatterns) 
       {
-         std::sregex_iterator itRegex(stringCode.begin(),stringCode.end(), pattern.first);
-         std::sregex_iterator itEnd;
+         boost::sregex_iterator itRegex(stringCode.begin(),stringCode.end(), pattern.first);
+         boost::sregex_iterator itEnd;
 
          // ### Find all matches for this pattern
          while(itRegex != itEnd) 
          {
-            const std::smatch& match_ = *itRegex;
+            const boost::smatch& match_ = *itRegex;
             size_t uPosition = static_cast<size_t>( match_.position() );       // Get the position of the match in the string
             uint64_t uRow = count_newline_(uPosition);                         // Determine which row this match starts in
             vectorRow.emplace_back(uRow, pattern.second);                      // Store the match with its row number and pattern identifier

@@ -151,7 +151,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       uPatternCount = vectorPattern.size(); // count the number of patterns to search for
       if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
 
-      std::vector< std::pair<std::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
+      std::vector< std::pair<boost::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
 
       // ## convert string to regex and put it into vectorRegexPatterns
 
@@ -159,10 +159,10 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       {
          try
          {
-            std::regex regexPattern(stringPattern);
+            boost::regex regexPattern(stringPattern);
             vectorRegexPattern.push_back({ regexPattern, stringPattern });
          }
-         catch (const std::regex_error& e)
+         catch (const boost::regex_error& e)
          {                                                                      
             std::string stringError = "Invalid regex pattern: '" + stringPattern + "'. Error: " + e.what();
             return { false, stringError };

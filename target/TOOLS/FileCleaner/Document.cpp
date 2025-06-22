@@ -637,7 +637,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
 }
 
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind )
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind )
 {
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
