@@ -109,6 +109,15 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
    pdocument->GetApplication()->UpdateApplicationState();                     // update the application state to reflect the current state of the application
 
+   gd::argument::shared::arguments argumentsFind; // prepare arguments for the file update
+
+   if( options_.exists("max") == true )
+   {
+      uint64_t uMax = options_["max"].as_uint64();
+      argumentsFind.append("max", uMax);                                      // set the maximum number of matches to find
+   }
+
+
    // ## Harvest files from the source paths
    for( const auto& stringSource : vectorSource )
    {
@@ -126,7 +135,6 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       uPatternCount = vectorPatternString.size();                             // count the number of patterns to search for
       if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
 
-      gd::argument::shared::arguments argumentsFind; // prepare arguments for the file update
       auto result_ = pdocument->FILE_UpdatePatternFind(vectorPatternString, &argumentsFind); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
    }
@@ -141,8 +149,6 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       std::vector< std::pair<std::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
 
       // ## convert string to regex and put it into vectorRegexPatterns
-
-      gd::argument::shared::arguments argumentsFind; // prepare arguments for the file update
 
       for( auto& stringPattern : vectorPattern )
       {
