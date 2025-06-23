@@ -21,6 +21,17 @@
 
 NAMESPACE_CLI_BEGIN
 
+
+/** --------------------------------------------------------------------------- @TAG #cli #find
+ * @brief Processes the 'find' command and performs file searching based on provided options.
+ *
+ * @param poptionsFind Pointer to a gd::cli::options object containing command-line options.
+ * @param poptionsFind.source A vector of source paths to search for files.
+ * @param poptionsFind.ignore A string containing ignore patterns to exclude from the search.
+ * @param poptionsFind.context An optional string specifying the context around matched row.
+ * @param pdocument Pointer to a CDocument object used for file searching.
+ * @return A std::pair where the first element is a boolean indicating success (true) or failure (false), and the second element is a string containing an error message if the operation failed, or an empty string on success.
+ */
 std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocument* pdocument)
 {                                                                                                  assert(pdocument != nullptr);assert(poptionsFind != nullptr);
    const gd::cli::options& options_ = *poptionsFind; // get the options from the command line arguments

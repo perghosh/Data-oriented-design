@@ -527,7 +527,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
  *   that match the regex patterns and updates the "file-linelist" table with the results.
  * - If an error occurs during the process, it is added to the internal error list.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList )
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList )
 {                                                                                                  assert(vectorRegexPatterns.empty() == false); // Ensure the rpattern list is not empty
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
