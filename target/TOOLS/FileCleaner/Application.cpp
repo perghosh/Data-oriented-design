@@ -1,4 +1,4 @@
-/** @TAG #ignore
+/**
  * @file Application.cpp
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
@@ -9,8 +9,6 @@
  * - `0TAG0Settings.Application` - settings operations
  * 
  */
-
-/* @TAG #ignore */
 
 #include <filesystem>
 #include <format>
