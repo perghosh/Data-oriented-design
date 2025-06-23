@@ -61,19 +61,35 @@ string& string::append(const char* piData, size_t uLength)
    return uLength;
 }*/
 
+// ## TODO
+// remove piData, replace with string
+// control length and positions
+
 string string::substr(size_t uPosition, size_t uLength)
 {
-   char* piData = new char[uLength + 1];
+   //char* piData = new char[uLength + 1];
 
-   for( int i = 0; i < uLength; i++ )
+   string stringResult;
+   size_t uDataLength = strlen(m_piData);
+
+   if( uDataLength >= (uPosition + uLength) )
    {
-      piData[i] = m_piData[uPosition + i];
+      stringResult.append(m_piData, uLength);
+
+      for( int i = 0; i < uLength; i++ )
+      {
+         stringResult.m_piData[i] = m_piData[uPosition + i];
+      }
+
+      stringResult.m_piData[uLength] = '\0';
+   }
+   else
+   {
+      stringResult.m_piData = new char[1] { '\0' };
    }
 
-   piData[uLength] = '\0'; 
-
-   string stringResult(piData);
-   delete[] piData;
+   //string stringResult(piData);
+   //delete[] piData;
 
    //delete[] m_piData;
    //append(piData);
