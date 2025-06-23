@@ -12,10 +12,13 @@
 
 TEST_CASE("[string] test", "[string]")
 {
-   string stringText("Bye");
+   /*string stringText("Bye");
    stringText.append("Hello", 5);
 
-   stringText += " Good";
+   stringText += " Good";*/
 
-   std::cout << stringText.c_str() << std::endl;;
+   string stringText2("Hello Good");
+   string stringSubString = stringText2.substr(0, 5);
+
+   std::cout << stringSubString.c_str() << std::endl;;
 }
