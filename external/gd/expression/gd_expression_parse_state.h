@@ -260,19 +260,14 @@ public:
          if( std::strncmp(piText - m_stringEscape.length(), m_stringEscape.c_str(), m_stringEscape.length()) == 0 ) {
             return true;
          }
+         return false;
+      }
 
-         /*
-         if( m_stringEscape.length() == 1 ) {
-            auto escape_ = m_stringEscape[0]; // get escape character
-            if( *( piText - 1 ) == escape_ && *( piText - 2 ) != escape_ ) return true; // check if the previous character is the escape character and not escaped itself
+      bool is_escaped_escaped(const char* piText) const {
+         if( m_stringEscape.empty() ) return false; // no escape character
+         if( std::strncmp(piText - m_stringEscape.length() * 2, m_stringEscape.c_str(), m_stringEscape.length()) == 0 ) {
+            return true;
          }
-         else {
-            if( std::strncmp(piText - m_stringEscape.length(), m_stringEscape.c_str(), m_stringEscape.length()) == 0 ) {
-               // found escape character, so the text might be escaped if this is not escaped also
-               return true;
-            }
-         }
-         */
          return false;
       }
 
@@ -519,8 +514,9 @@ inline size_t state::activate(const char* piText) {
 /// check if state is deactivated based on text passed, this matches the end of the rule for active state
 inline bool state::deactivate(const char* piText, unsigned* puLength) {                            assert( m_iActive != -1);
    auto it = m_vectorRule.begin() + m_iActive;
-   if( it->compare_end(piText) == true && it->is_escaped( piText) == false ) { 
-      m_iActive = -1; 
+   auto b_ = it->compare_end(piText); // check if text matches end of rule
+   if( b_ == true && (it->is_escaped_escaped(piText) == true || it->is_escaped(piText) == false) ) { 
+      m_iActive = -1;                                                          // deactivate state
       if( puLength != nullptr ) { *puLength = (unsigned)it->m_stringEnd.length(); } // set next position to the end of the string
       return true; 
    }
@@ -530,7 +526,8 @@ inline bool state::deactivate(const char* piText, unsigned* puLength) {         
 /// deactivate state, this doesn't change the internal state but checks if the text is matches deactivate marker text
 inline bool state::deactivate(const char* piText, unsigned* puLength, tag_manual) {                assert( m_iActive != -1);
    auto it = m_vectorRule.begin() + m_iActive;
-   if( it->compare_end(piText) == true && it->is_escaped( piText) == false ) { 
+   auto b_ = it->compare_end(piText); // check if text matches end of rule
+   if( b_ == true && (it->is_escaped_escaped(piText) == true || it->is_escaped(piText) == false) ) { 
       if( puLength != nullptr ) { *puLength = (unsigned)it->m_stringEnd.length(); } // set next position to the end of the string
       return true; 
    }
