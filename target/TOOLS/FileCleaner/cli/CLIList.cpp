@@ -23,6 +23,16 @@ NAMESPACE_CLI_BEGIN
 
 // ## Dir operations
 
+/** --------------------------------------------------------------------------- @TAG #cli #list
+ * @brief Processes the 'list' command and performs file harvesting and pattern matching.
+ * 
+ * This function checks if the command name is 'list' and if the 'explain' option is set. If so, it would display an explanation (currently commented out).
+ * If the 'explain' option is not set, it calls the ListPattern_g function to perform file harvesting and pattern matching.
+ *
+ * @param poptionsList Pointer to a gd::cli::options object containing command-line options.
+ * @param pdocument Pointer to a CDocument object used for file harvesting and pattern matching.
+ * @return A std::pair where the first element is a boolean indicating success (true) or failure (false), and the second element is a string containing an error message if the operation failed, or an empty string on success.
+ */
 std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocument* pdocument )
 {
    const gd::cli::options& options_ = *poptionsList;
@@ -394,6 +404,17 @@ std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector<std::strin
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Matches all specified regex patterns against the lines in the file line list.
+ *
+ * This function iterates over each row in the file line list and checks if the line text matches all specified regex patterns.
+ * If a line does not match all patterns, it is marked for deletion.
+ *
+ * @param vectorRegexPattern A vector of pairs containing regex patterns and their string representations.
+ * @param pdocument Pointer to a CDocument object used for accessing the file line list.
+ * @param iMatchCount The number of patterns to match. If -1, all patterns are matched.
+ * @return A pair where the first element is a boolean indicating success (true) or failure (false), and the second element is an empty string on success or an error message on failure.
+ */
 std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPattern, CDocument* pdocument, int iMatchCount)
 {                                                                                                  assert( pdocument != nullptr ); assert( vectorRegexPattern.size() > 0 ); // at least one pattern must be specified
    std::vector<uint64_t> vectorRowDelete; // vector of row numbers to delete
