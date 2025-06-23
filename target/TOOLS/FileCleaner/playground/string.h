@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <utility>
+#include <cstring>
 /**
  * \brief
  *
@@ -24,7 +25,7 @@ public:
    string& operator=(const string& o) { common_construct(o); return *this; }
    string& operator=(string&& o) noexcept { common_construct(std::move(o)); return *this; }
 
-   ~string() {}
+   ~string() { delete[] m_piData; }
 private:
    // common copy
    void common_construct(const string& o) {}
@@ -50,7 +51,9 @@ public:
    string& append(const char* piData);
    string& append(const char* piData, size_t uLength);
 
-   size_t size(const char* piData);
+   size_t size() const { return strlen(m_piData); };
+
+   string substr(size_t uPosition = 0, size_t uLength = m_uNoPosition);
 
    const char* c_str() const { return m_piData; }
 
@@ -75,6 +78,8 @@ public:
    char* m_piData;
    uint64_t m_uLength;
    uint64_t m_uBufferSize;
+
+   static const size_t m_uNoPosition = -1;
 
 
 // ## free functions ------------------------------------------------------------
