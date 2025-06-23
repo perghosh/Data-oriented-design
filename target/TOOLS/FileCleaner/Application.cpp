@@ -1591,7 +1591,6 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
       state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
       state_.add(std::string_view("STRING"), "\"", "\"", "\\");
       state_.add(std::string_view("RAWSTRING"), "\"\"\"", "\"\"\"");
-      state_.add(std::string_view("RAWSTRING"), "@\"", "\"", "\\");
    }
    else if( stringExtension == ".java" )
    {
@@ -1640,6 +1639,7 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
       state_.add(std::string_view("LINECOMMENT"), "#", "\n");
       state_.add(std::string_view("BLOCKCOMMENT"), "\"\"\"", "\"\"\"");
       state_.add(std::string_view("STRING"), "\"", "\"");
+      state_.add(std::string_view("STRING"), "'", "'");
    }
    else if( stringExtension == ".sql" )
    {
