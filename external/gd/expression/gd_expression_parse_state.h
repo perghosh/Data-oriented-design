@@ -217,10 +217,12 @@ public:
       rule(rule&& o) noexcept : m_eState(o.m_eState), m_stringStart(std::move(o.m_stringStart)), m_stringEnd(std::move(o.m_stringEnd)), m_stringEscape(std::move(o.m_stringEscape)) {}
       rule& operator=(const rule& o) {
          assert(this != &o); m_eState = o.m_eState; m_stringStart = o.m_stringStart; m_stringEnd = o.m_stringEnd; m_stringEscape = o.m_stringEscape;
+         m_vectorConvert = o.m_vectorConvert; // copy conversion rules
          return *this;
       }
-      rule& operator=(rule&& o) noexcept {
-         assert(this != &o); m_eState = o.m_eState;  m_stringStart = std::move(o.m_stringStart); m_stringEnd = std::move(o.m_stringEnd); m_stringEscape = std::move(o.m_stringEscape);
+      rule& operator=(rule&& o) noexcept { assert(this != &o); 
+         m_eState = o.m_eState;  m_stringStart = std::move(o.m_stringStart); m_stringEnd = std::move(o.m_stringEnd); m_stringEscape = std::move(o.m_stringEscape);
+         m_vectorConvert = std::move(o.m_vectorConvert); // move conversion rules
          return *this;
       }
       ~rule() {}
@@ -279,6 +281,7 @@ public:
       std::string m_stringStart; ///< start of the rule
       std::string m_stringEnd;   ///< end of the rule
       std::string m_stringEscape; ///< escape character
+      std::vector< std::pair<std::string, std::string> > m_vectorConvert; ///< vector of conversion rules, this is used to convert character sequences to other character sequences
    };
 
 // ## types ------------------------------------------------------------------
