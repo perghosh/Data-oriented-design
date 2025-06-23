@@ -130,7 +130,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       std::vector<std::string> vectorPattern; // store regex patterns as strings
       for( auto& rpattern : vectorRPattern ) { vectorPattern.push_back(rpattern.as_string()); }
       uSearchPatternCount = vectorPattern.size(); // count the number of patterns to search for
-      std::vector< std::pair<std::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
+      std::vector< std::pair<boost::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
       
       // ## convert string to regex and put it into vectorRegexPatterns
 
@@ -138,10 +138,10 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       {
          try
          {
-            std::regex regexPattern(stringPattern);
+            boost::regex regexPattern(stringPattern);
             vectorRegexPattern.push_back({ regexPattern, stringPattern });
          }
-         catch (const std::regex_error& e)
+         catch (const boost::regex_error& e)
          {                                                                      
             std::string stringError = "Invalid regex pattern: '" + stringPattern + "'. Error: " + e.what();
             return { false, stringError };
@@ -384,7 +384,7 @@ std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector<std::strin
    return { true, "" };
 }
 
-std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair<std::regex, std::string> >& vectorRegexPattern, CDocument* pdocument, int iMatchCount)
+std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPattern, CDocument* pdocument, int iMatchCount)
 {                                                                                                  assert( pdocument != nullptr ); assert( vectorRegexPattern.size() > 0 ); // at least one pattern must be specified
    std::vector<uint64_t> vectorRowDelete; // vector of row numbers to delete
 
@@ -400,7 +400,7 @@ std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair
 
       for(size_t u = 0; u < vectorRegexPattern.size(); ++u)
       {
-         if( std::regex_search(stringLineText.begin(), stringLineText.end(), vectorRegexPattern[u].first) )
+         if( boost::regex_search(stringLineText.begin(), stringLineText.end(), vectorRegexPattern[u].first) )
          {
             iMatch--;                                                         // decrement the match count 
             if( iMatch <= 0 ) break;                                          // if we have matched all patterns, break the loop
