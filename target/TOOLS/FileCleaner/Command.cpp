@@ -1197,7 +1197,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
  *   - "column": The column number where the match starts.
  *   - "pattern": The matched pattern as a string.
  */
-std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<std::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_)
+std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_)
 {
    enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
 
@@ -1242,10 +1242,10 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    auto find_pattern_ = [&vectorRegexPatterns](const std::string& stringText, uint64_t* puColumn) -> int {
       for(size_t u = 0; u < vectorRegexPatterns.size(); ++u)
       {
-         std::smatch smatch_;
-         if(std::regex_search(stringText, smatch_, vectorRegexPatterns[u].first)) 
+         boost::smatch smatch_;
+         if(boost::regex_search(stringText, smatch_, vectorRegexPatterns[u].first)) 
          {
-            if(puColumn) *puColumn = smatch_.position(0);
+            if(puColumn) *puColumn = smatch_.position( size_t(0) );
             return static_cast<int>(u);
          }
       }

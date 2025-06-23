@@ -23,6 +23,16 @@ NAMESPACE_CLI_BEGIN
 
 // ## Dir operations
 
+/** --------------------------------------------------------------------------- @TAG #cli #list
+ * @brief Processes the 'list' command and performs file harvesting and pattern matching.
+ * 
+ * This function checks if the command name is 'list' and if the 'explain' option is set. If so, it would display an explanation (currently commented out).
+ * If the 'explain' option is not set, it calls the ListPattern_g function to perform file harvesting and pattern matching.
+ *
+ * @param poptionsList Pointer to a gd::cli::options object containing command-line options.
+ * @param pdocument Pointer to a CDocument object used for file harvesting and pattern matching.
+ * @return A std::pair where the first element is a boolean indicating success (true) or failure (false), and the second element is a string containing an error message if the operation failed, or an empty string on success.
+ */
 std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocument* pdocument )
 {
    const gd::cli::options& options_ = *poptionsList;
@@ -112,8 +122,18 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    // ## check for pattern that 
    if( options_.exists("pattern") == true )
    {
-      std::string stringPattern = options_["pattern"].as_string();
-      auto vectorPattern = CApplication::Split_s(stringPattern);               // split pattern string into vector
+      std::vector<std::string> vectorPattern; // vector to store patterns
+      auto vector_ = options_.get_all("pattern"); // get all patterns from options and put them into argumentsList
+      if( vector_.size() == 1 )
+      {
+         auto stringPattern = vector_[0].as_string();
+         vectorPattern = CApplication::Split_s(stringPattern, ';');
+      }
+      // put all patterns into vectorPattern
+      else { for( auto& pattern : vector_ ) { vectorPattern.push_back(pattern.as_string()); } }
+
+      // remove empty patterns
+      vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
       uSearchPatternCount = vectorPattern.size();                              // count the number of patterns to search for
       result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
@@ -130,7 +150,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       std::vector<std::string> vectorPattern; // store regex patterns as strings
       for( auto& rpattern : vectorRPattern ) { vectorPattern.push_back(rpattern.as_string()); }
       uSearchPatternCount = vectorPattern.size(); // count the number of patterns to search for
-      std::vector< std::pair<std::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
+      std::vector< std::pair<boost::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
       
       // ## convert string to regex and put it into vectorRegexPatterns
 
@@ -138,10 +158,10 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       {
          try
          {
-            std::regex regexPattern(stringPattern);
+            boost::regex regexPattern(stringPattern);
             vectorRegexPattern.push_back({ regexPattern, stringPattern });
          }
-         catch (const std::regex_error& e)
+         catch (const boost::regex_error& e)
          {                                                                      
             std::string stringError = "Invalid regex pattern: '" + stringPattern + "'. Error: " + e.what();
             return { false, stringError };
@@ -384,7 +404,18 @@ std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector<std::strin
    return { true, "" };
 }
 
-std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair<std::regex, std::string> >& vectorRegexPattern, CDocument* pdocument, int iMatchCount)
+/** ---------------------------------------------------------------------------
+ * @brief Matches all specified regex patterns against the lines in the file line list.
+ *
+ * This function iterates over each row in the file line list and checks if the line text matches all specified regex patterns.
+ * If a line does not match all patterns, it is marked for deletion.
+ *
+ * @param vectorRegexPattern A vector of pairs containing regex patterns and their string representations.
+ * @param pdocument Pointer to a CDocument object used for accessing the file line list.
+ * @param iMatchCount The number of patterns to match. If -1, all patterns are matched.
+ * @return A pair where the first element is a boolean indicating success (true) or failure (false), and the second element is an empty string on success or an error message on failure.
+ */
+std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPattern, CDocument* pdocument, int iMatchCount)
 {                                                                                                  assert( pdocument != nullptr ); assert( vectorRegexPattern.size() > 0 ); // at least one pattern must be specified
    std::vector<uint64_t> vectorRowDelete; // vector of row numbers to delete
 
@@ -400,7 +431,7 @@ std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair
 
       for(size_t u = 0; u < vectorRegexPattern.size(); ++u)
       {
-         if( std::regex_search(stringLineText.begin(), stringLineText.end(), vectorRegexPattern[u].first) )
+         if( boost::regex_search(stringLineText.begin(), stringLineText.end(), vectorRegexPattern[u].first) )
          {
             iMatch--;                                                         // decrement the match count 
             if( iMatch <= 0 ) break;                                          // if we have matched all patterns, break the loop
