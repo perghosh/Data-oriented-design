@@ -112,8 +112,18 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    // ## check for pattern that 
    if( options_.exists("pattern") == true )
    {
-      std::string stringPattern = options_["pattern"].as_string();
-      auto vectorPattern = CApplication::Split_s(stringPattern);               // split pattern string into vector
+      std::vector<std::string> vectorPattern; // vector to store patterns
+      auto vector_ = options_.get_all("pattern"); // get all patterns from options and put them into argumentsList
+      if( vector_.size() == 1 )
+      {
+         auto stringPattern = vector_[0].as_string();
+         vectorPattern = CApplication::Split_s(stringPattern, ';');
+      }
+      // put all patterns into vectorPattern
+      else { for( auto& pattern : vector_ ) { vectorPattern.push_back(pattern.as_string()); } }
+
+      // remove empty patterns
+      vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
       uSearchPatternCount = vectorPattern.size();                              // count the number of patterns to search for
       result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
