@@ -18,7 +18,7 @@ TEST_CASE("[string] test", "[string]")
    stringText += " Good";*/
 
    string stringText2("Hello Good");
-   string stringSubString = stringText2.substr(0, 5);
+   string stringSubString = stringText2.substr(5, 3);
 
    std::cout << stringSubString.c_str() << std::endl;;
 }
