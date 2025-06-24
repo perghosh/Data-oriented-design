@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <utility>
 #include <cstring>
+#include <iostream>
 /**
  * \brief
  *
@@ -18,6 +19,7 @@ class string
 public:
    string() : m_piData(nullptr), m_uLength(0), m_uBufferSize(0) {}
    string(const char* piData): m_piData(nullptr), m_uLength(0), m_uBufferSize(0) { append(piData); }
+   string(const char* piData, const size_t uLength) : m_piData(nullptr), m_uLength(0), m_uBufferSize(0) { append(piData, uLength); }
    // copy
    string(const string& o) { common_construct(o); }
    string(string&& o) noexcept { common_construct(std::move(o)); }
@@ -51,11 +53,13 @@ public:
    string& append(const char* piData);
    string& append(const char* piData, size_t uLength);
 
+   string& insert(size_t uPosition, const char* piData, size_t uLength);
+
    size_t size() const { return strlen(m_piData); };
 
    string substr(size_t uPosition = 0, size_t uLength = m_uNoPosition);
 
-   const char* c_str() const { return m_piData; }
+   const char* c_str() const;
 
 //@}
 
