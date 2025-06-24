@@ -96,3 +96,16 @@ string string::substr(size_t uPosition, size_t uLength)
    
    return stringResult;
 }
+
+/*
+string string::substr(size_t uPosition, size_t uLength)
+{
+   if( uPosition >= m_uLength ) return string();                              // if position is out of bounds, return empty string
+
+   // check length is within bounds
+   if( uPosition + uLength > m_uLength ) uLength = m_uLength - uPosition;     // adjust length to fit within bounds
+
+   return string(m_piData + uPosition, uLength);                              // create a new string from the substring
+}
+
+*/
