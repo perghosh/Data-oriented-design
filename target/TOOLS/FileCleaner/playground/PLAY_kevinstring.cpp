@@ -22,7 +22,7 @@ TEST_CASE("[string] test", "[string]")
 
    string stringTestText("Hello World");
    
-   stringTestText.insert(6, "C++", 4);
+   stringTestText.insert(6, "C++ ");
 
    std::cout << stringTestText.c_str() << std::endl;;
 }
