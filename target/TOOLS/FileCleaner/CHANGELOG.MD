@@ -5,6 +5,7 @@
 ### New Features
 - New `find` command: With find you can search for complex patterns that span multiple lines. Before it searches code is stripped of comments and and strings.
   - `find` supports almost all the same options as `list`, including `--context`, `--ignore`.
+  - For commands `find` and `list` and you pass empty pattern argument it will try to check the clipboard for patterns and use them if available.
 
 ### Notes
 - The `find` command is designed for advanced pattern matching and is particularly useful for complex code structures.
