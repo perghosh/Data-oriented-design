@@ -159,9 +159,12 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
             vectorPatternString[0] = std::move(stringPattern);                // move the string from clipboard to the pattern vector
          }
       }
-      
-      uPatternCount = vectorPatternString.size();                             // count the number of patterns to search for
+
+      // remove empty patterns
+      vectorPatternString.erase(std::remove_if(vectorPatternString.begin(), vectorPatternString.end(), [](const std::string& str) { return str.empty(); }), vectorPatternString.end());
       if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
+
+      uPatternCount = vectorPatternString.size();                             // count the number of patterns to search for
 
       auto result_ = pdocument->FILE_UpdatePatternFind(vectorPatternString, &argumentsFind); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
@@ -183,6 +186,10 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
             vectorPattern[0] = std::move(stringPattern);                // move the string from clipboard to the pattern vector
          }
       }
+
+      // remove empty patterns
+      vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
+      if( vectorPattern.size() == 0 ) return {false, "No regex patterns provided."}; // if no patterns are provided, return an error
 
       uPatternCount = vectorPattern.size(); // count the number of patterns to search for
       if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
