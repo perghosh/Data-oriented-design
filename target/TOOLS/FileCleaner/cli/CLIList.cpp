@@ -140,6 +140,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
 
       // remove empty patterns
       vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
+      if( vectorPattern.size() == 0 ) return {false, "No patterns provided."}; // if no patterns are provided, return an error
+
       uSearchPatternCount = vectorPattern.size();                              // count the number of patterns to search for
       result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
@@ -167,6 +169,10 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
             vectorPattern[0] = std::move(stringPattern);                // move the string from clipboard to the pattern vector
          }
       }
+
+      // remove empty patterns
+      vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
+      if( vectorPattern.size() == 0 ) return {false, "No regex patterns provided."}; // if no patterns are provided, return an error
 
       uSearchPatternCount = vectorPattern.size(); // count the number of patterns to search for
       std::vector< std::pair<boost::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
