@@ -37,7 +37,7 @@
    #pragma GCC diagnostic ignored "-Wformat"
    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #elif defined( _MSC_VER )
-   #pragma warning( disable : 4996 6054 6387 26812 33010 ) // disable warnings for buffer that might not be zero terminated and 
+   #pragma warning( disable : 4996 6054 6255 6387 26812 33010 ) // disable warnings for buffer that might not be zero terminated and 
 #endif
 
 
@@ -211,8 +211,6 @@ unsigned int arguments::argument::get_binary_as_hex(char* pbsz, unsigned int uLe
 
    return uLength;
 }
-
-#pragma warning( disable : 6255 )
 
 /*----------------------------------------------------------------------------- get_binary_as_hex */ /**
  * Get binary value as hexadecimal formated string
@@ -676,7 +674,7 @@ std::string arguments::argument::get_string() const
       case arguments::eTypeNumberBinary:
       {
          get_binary_as_hex(s);
-         return std::move(s);
+         return s;
       }
       case arguments::eTypeNumberGuid:
       {
@@ -692,7 +690,7 @@ std::string arguments::argument::get_string() const
       if( s.empty() == true ) s = pbsz;
    }
 
-   return std::move(s);
+   return s;
 }
 
 /** ---------------------------------------------------------------------------
@@ -956,7 +954,7 @@ arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>>
  *
  * appending key-value pairs from the provided initializer list, and appending all elements from another arguments object.
  * 
- * `´´{.cpp}
+ * `ï¿½ï¿½{.cpp}
 void print( const gd::argument::arguments arguments_ )
 {
    std::cout << arguments_.print() << std::endl;
@@ -1308,7 +1306,6 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
    {
       if( uType > ARGUMENTS_NO_LENGTH )
       {
-         unsigned uZeroEnd = 0;
          if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
 
          uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
@@ -1325,7 +1322,6 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
 
    if( uType > ARGUMENTS_NO_LENGTH )
    {
-      unsigned uZeroEnd = 0;
       if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
 
       uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);

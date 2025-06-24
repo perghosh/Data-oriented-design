@@ -179,6 +179,25 @@ void CApplication::SetMode(const std::string_view& stringMode)
  */
 std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszArgument[], std::function<bool(const std::string_view&, const gd::variant_view&)> process_)
 {
+   // ## Set OS-specific settings
+#ifdef _WIN32
+   papplication_g->PROPERTY_Add("os", "windows");                              // set OS to windows
+#else
+   std::ifstream file_("/proc/version"); // open the file with os information to read the first line
+   if( file_.is_open() == false ) { papplication_g->PROPERTY_Add("os", "linux"); }
+   else
+   {
+      std::string stringLine; // string to hold the first line of the file
+      std::getline(file_, stringLine);                                         // read first line
+      file_.close();
+      std::transform(stringLine.begin(), stringLine.end(), stringLine.begin(), ::tolower);// convert to lowercase
+      if( stringLine.find("wsl") != std::string::npos || stringLine.find("") != std::string::npos )
+      {
+         papplication_g->PROPERTY_Add("os", "wsl");                            // set OS to WSL
+      }
+   }
+#endif   
+
    PrepareLogging_s();
 
    auto result_ = Initialize();
