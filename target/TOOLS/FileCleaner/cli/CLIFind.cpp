@@ -155,7 +155,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
          {
             std::string stringPattern;
             OS_ReadClipboard_g( stringPattern );
-            if( stringPattern.empty() == false ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
+            if( stringPattern.empty() == true ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
             vectorPatternString[0] = std::move(stringPattern);                // move the string from clipboard to the pattern vector
          }
       }
@@ -182,7 +182,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
          {
             std::string stringPattern;
             OS_ReadClipboard_g( stringPattern );
-            if( stringPattern.empty() == false ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
+            if( stringPattern.empty() == true ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
             vectorPattern[0] = std::move(stringPattern);                // move the string from clipboard to the pattern vector
          }
       }
