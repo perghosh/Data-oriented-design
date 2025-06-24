@@ -56,23 +56,38 @@ string& string::append(const char* piData, size_t uLength)
 
 string& string::insert(size_t uPosition, const char* piData, size_t uLength)
 {
-   // TODO: insert return statement here
-
-   string stringTemp(m_piData + uPosition, m_uLength - uPosition);
-   const char* piTemp = stringTemp.c_str();
-
+   if( uPosition > m_uLength )
+   {
+      return *this;
+   }
+   if( piData == NULL )
+   {
+      return *this;
+   }
+   
    allocate(uLength);
+
+   for( uint64_t u = m_uLength; u > uPosition - 1; --u )
+   {
+      m_piData[u + uLength] = m_piData[u];
+   }
 
    for( uint64_t u = 0; u < uLength; u++ )
    {
       m_piData[uPosition + u] = piData[u];
    }
 
-   for( uint64_t u = 0; u < (m_uLength - uPosition); u++ )
-   {
-      m_piData[(uPosition + uLength) + u] = piTemp[u];
-      //std::cout << piTemp[u];
-   }
+   m_uLength += uLength;
+   m_piData[m_uLength] = '\0';
+
+   return *this;
+}
+
+string& string::insert(size_t uPosition, const char* piData)
+{
+   uint64_t uLength = strlen(piData);
+
+   insert(uPosition, piData, uLength);
 
    return *this;
 }

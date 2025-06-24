@@ -54,6 +54,7 @@ public:
    string& append(const char* piData, size_t uLength);
 
    string& insert(size_t uPosition, const char* piData, size_t uLength);
+   string& insert(size_t uPosition, const char* piData);
 
    size_t size() const { return strlen(m_piData); };
 
