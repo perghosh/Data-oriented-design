@@ -130,7 +130,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          if( stringPattern.empty() == true )                                  // if pattern is empty, read from clipboard
          {
             OS_ReadClipboard_g( stringPattern );
-            if( stringPattern.empty() == false ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
+            if( stringPattern.empty() == true ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
             vectorPattern.push_back(stringPattern); 
          }
          else { vectorPattern = CApplication::Split_s(stringPattern, ';'); }
@@ -165,7 +165,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          {
             std::string stringPattern;
             OS_ReadClipboard_g( stringPattern );
-            if( stringPattern.empty() == false ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
+            if( stringPattern.empty() == true ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
             vectorPattern[0] = std::move(stringPattern);                // move the string from clipboard to the pattern vector
          }
       }
