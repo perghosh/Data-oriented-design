@@ -77,4 +77,6 @@ std::pair<bool, std::string> TABLE_RemoveZeroRow(gd::table::dto::table* ptable_,
 /// @brief Filters the table based on the expression provided for a specific column. To keep the row, the expression must evaluate to true.
 std::pair<bool, std::string> EXPRESSION_FilterOnColumn_g( gd::table::dto::table* ptable_, unsigned uColumn, const std::vector<std::string> vectorExpression );
 
+std::pair<bool, std::string> OS_ReadClipboard_g(std::string& stringClipboard);
+
 

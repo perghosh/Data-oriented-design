@@ -127,7 +127,13 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       if( vector_.size() == 1 )
       {
          auto stringPattern = vector_[0].as_string();
-         vectorPattern = CApplication::Split_s(stringPattern, ';');
+         if( stringPattern.empty() == true )                                  // if pattern is empty, read from clipboard
+         {
+            OS_ReadClipboard_g( stringPattern );
+            if( stringPattern.empty() == false ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
+            vectorPattern.push_back(stringPattern); 
+         }
+         else { vectorPattern = CApplication::Split_s(stringPattern, ';'); }
       }
       // put all patterns into vectorPattern
       else { for( auto& pattern : vector_ ) { vectorPattern.push_back(pattern.as_string()); } }
@@ -149,6 +155,19 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       auto vectorRPattern = options_.get_all("rpattern"); // get all regex patterns
       std::vector<std::string> vectorPattern; // store regex patterns as strings
       for( auto& rpattern : vectorRPattern ) { vectorPattern.push_back(rpattern.as_string()); }
+
+      if( vectorPattern.size() == 1 ) 
+      { 
+         // check for empty pattern, if empty then try to read from clipboard
+         if( vectorPattern[0].empty() == true )
+         {
+            std::string stringPattern;
+            OS_ReadClipboard_g( stringPattern );
+            if( stringPattern.empty() == false ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
+            vectorPattern[0] = std::move(stringPattern);                // move the string from clipboard to the pattern vector
+         }
+      }
+
       uSearchPatternCount = vectorPattern.size(); // count the number of patterns to search for
       std::vector< std::pair<boost::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
       
