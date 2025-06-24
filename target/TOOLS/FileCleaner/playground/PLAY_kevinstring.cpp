@@ -17,8 +17,12 @@ TEST_CASE("[string] test", "[string]")
 
    stringText += " Good";*/
 
-   string stringText2("Hello Good");
-   string stringSubString = stringText2.substr(5, 3);
+   //string stringText2("Hello Good");
+   //string stringSubString = stringText2.substr(5, 3);
 
-   std::cout << stringSubString.c_str() << std::endl;;
+   string stringTestText("Hello World");
+   
+   stringTestText.insert(6, "C++", 4);
+
+   std::cout << stringTestText.c_str() << std::endl;;
 }

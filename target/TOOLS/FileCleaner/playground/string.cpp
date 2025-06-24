@@ -54,6 +54,29 @@ string& string::append(const char* piData, size_t uLength)
    return *this;
 }
 
+string& string::insert(size_t uPosition, const char* piData, size_t uLength)
+{
+   // TODO: insert return statement here
+
+   string stringTemp(m_piData + uPosition, m_uLength - uPosition);
+   const char* piTemp = stringTemp.c_str();
+
+   allocate(uLength);
+
+   for( uint64_t u = 0; u < uLength; u++ )
+   {
+      m_piData[uPosition + u] = piData[u];
+   }
+
+   for( uint64_t u = 0; u < (m_uLength - uPosition); u++ )
+   {
+      m_piData[(uPosition + uLength) + u] = piTemp[u];
+      //std::cout << piTemp[u];
+   }
+
+   return *this;
+}
+
 /*size_t string::size(const char* piData)
 {
    const size_t uLength = strlen(piData);
@@ -67,34 +90,17 @@ string& string::append(const char* piData, size_t uLength)
 
 string string::substr(size_t uPosition, size_t uLength)
 {
-   //char* piData = new char[uLength + 1];
-
-   string stringResult;
-   size_t uDataLength = strlen(m_piData);
-
-   if( uDataLength >= (uPosition + uLength) )
+   if( uPosition >= m_uLength )
    {
-      stringResult.append(m_piData, uLength);
-
-      for( int i = 0; i < uLength; i++ )
-      {
-         stringResult.m_piData[i] = m_piData[uPosition + i];
-      }
-
-      stringResult.m_piData[uLength] = '\0';
-   }
-   else
-   {
-      stringResult.m_piData = new char[1] { '\0' };
+      return string();
    }
 
-   //string stringResult(piData);
-   //delete[] piData;
+   if( uPosition + uLength > m_uLength )
+   {
+      uLength = m_uLength - uPosition;
+   }
 
-   //delete[] m_piData;
-   //append(piData);
-   
-   return stringResult;
+   return string(m_piData + uPosition, uLength);
 }
 
 /*
@@ -109,3 +115,13 @@ string string::substr(size_t uPosition, size_t uLength)
 }
 
 */
+
+const char* string::c_str() const
+{
+   if( m_piData == NULL )
+   {
+      return "";
+   }
+
+   return m_piData;
+}
