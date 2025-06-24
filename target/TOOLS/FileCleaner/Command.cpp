@@ -886,7 +886,6 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
 
       if( uReadSize > 0 )                                                     // was it possible to read data last read, then more data is available
       {
-         auto uAvailable = lineBuffer.available();                            // get available space in buffer to be filled
          file_.read((char*)lineBuffer.buffer(), lineBuffer.available());      // read more data into available space in buffer
          uReadSize = file_.gcount();
          lineBuffer.update(uReadSize);                                        // update valid size in line buffer
@@ -1801,9 +1800,38 @@ std::pair<bool, std::string> OS_ReadClipboard_g(std::string& stringClipboard)
    }
 
    ::CloseClipboard();                                                        // Release the clipboard
-
 #else
+   std::string stringOS = papplication_g->PROPERTY_Get("os").as_string();     // Get OS type
+   if( stringOS == "linux")
+   {
+      FILE* pfile = popen("xclip -selection clipboard -o", "r");
+      if( pfile == nullptr ) { return { false, "Failed to open clipboard" }; }
+      
+      char piBuffer[1024];
+      while( fgets(piBuffer, sizeof(piBuffer), pfile) ) 
+      {
+         stringResult += piBuffer;
+      }
+      pclose(pfile);                                                              // Close the pipe to the clipboard command
+   }
+   else if( stringOS == "wsl" )
+   {
+      FILE* pfile = popen("pwsh.exe -NoProfile -Command \"Get-Clipboard -Raw\"", "r");
+      if( pfile == nullptr ) { return { false, "Failed to open clipboard" }; }
+
+      char piBuffer[1024];
+      while( fgets(piBuffer, sizeof(piBuffer), pfile) )
+      {
+         stringResult += piBuffer;
+      }
+      pclose(pfile);                                                              // Close the pipe to the clipboard command
+   }
+   else
+   {
+      return { false, "Unsupported OS for clipboard reading" };
+   }
 #endif 
+   stringResult = gd::utf8::trim_to_string(stringResult); // Trim the result to remove any leading/trailing whitespace
    stringClipboard = std::move(stringResult);                                  // Move the result to the output string
    return { true, "" };
 }
