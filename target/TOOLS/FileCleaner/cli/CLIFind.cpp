@@ -147,6 +147,18 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       auto vectorPattern = options_.get_argument_all("pattern", gd::types::tag_view{}); // get all patterns
       std::vector<std::string> vectorPatternString;                           // store patterns as strings
       for( auto& pattern : vectorPattern ) { vectorPatternString.push_back(pattern.as_string()); }
+
+      if( vectorPatternString.size() == 1 ) 
+      { 
+         // check for empty pattern, if empty then try to read from clipboard
+         if( vectorPatternString[0].empty() == true )
+         {
+            std::string stringPattern;
+            OS_ReadClipboard_g( stringPattern );
+            if( stringPattern.empty() == false ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
+            vectorPatternString[0] = std::move(stringPattern);                // move the string from clipboard to the pattern vector
+         }
+      }
       
       uPatternCount = vectorPatternString.size();                             // count the number of patterns to search for
       if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
@@ -159,6 +171,19 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       auto vectorRPattern = options_.get_argument_all("rpattern", gd::types::tag_view{}); // get all regex patterns
       std::vector<std::string> vectorPattern; // store regex patterns as strings
       for( auto& rpattern : vectorRPattern ) { vectorPattern.push_back(rpattern.as_string()); }
+
+      if( vectorPattern.size() == 1 ) 
+      { 
+         // check for empty pattern, if empty then try to read from clipboard
+         if( vectorPattern[0].empty() == true )
+         {
+            std::string stringPattern;
+            OS_ReadClipboard_g( stringPattern );
+            if( stringPattern.empty() == false ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
+            vectorPattern[0] = std::move(stringPattern);                // move the string from clipboard to the pattern vector
+         }
+      }
+
       uPatternCount = vectorPattern.size(); // count the number of patterns to search for
       if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
 

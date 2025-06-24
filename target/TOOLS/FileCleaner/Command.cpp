@@ -1747,3 +1747,63 @@ std::pair<bool, std::string> EXPRESSION_FilterOnColumn_g( gd::table::dto::table*
 
    return { true, "" };
 }
+
+
+/** --------------------------------------------------------------------------- @TAG #clipboard
+ * @brief Reads the clipboard content and returns it as a UTF-8 encoded string.
+ * 
+ * This function attempts to read the clipboard content, first trying to retrieve
+ * Unicode text. If that fails, it falls back to ANSI text. The result is returned
+ * as a UTF-8 encoded string.
+ * 
+ * @param stringClipboard Reference to a string where the clipboard content will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if reading was successful, `false` otherwise.
+ *         - `std::string`: An error message if reading failed, or an empty string on success.
+ */
+std::pair<bool, std::string> OS_ReadClipboard_g(std::string& stringClipboard)
+{
+   std::string stringResult;
+
+#ifdef _WIN32
+   if( ::OpenClipboard(nullptr) == FALSE ) { return { false, "Failed to open clipboard" }; }
+
+   // Get handle of clipboard object for Unicode text
+   HANDLE hClipboard = GetClipboardData(CF_UNICODETEXT);
+   if( hClipboard != nullptr) 
+   {
+      wchar_t* piText = static_cast<wchar_t*>(GlobalLock(hClipboard));         // Lock the handle to get the actual text pointer
+      if(piText != nullptr) 
+      {
+         int iBufferSize = WideCharToMultiByte(CP_UTF8, 0, piText, -1, nullptr, 0, nullptr, nullptr);// Convert wide string to narrow string (UTF-8)
+         if(iBufferSize > 0) 
+         {
+            char* piBuffer = new char[iBufferSize];
+            WideCharToMultiByte(CP_UTF8, 0, piText, -1, piBuffer, iBufferSize, nullptr, nullptr);
+            stringResult = piBuffer;
+            delete[] piBuffer;
+         }
+         
+         ::GlobalUnlock(hClipboard);                                          // Release the lock
+      }
+   }
+   else 
+   {
+      // Fallback to ANSI text if Unicode is not available
+      hClipboard = ::GetClipboardData(CF_TEXT); // use hClipboard as previously declared
+      if (hClipboard != nullptr) {
+         char* pszText = static_cast<char*>(GlobalLock(hClipboard));
+         if (pszText != nullptr) {
+            stringResult = pszText;
+            GlobalUnlock(hClipboard);
+         }
+      }
+   }
+
+   ::CloseClipboard();                                                        // Release the clipboard
+
+#else
+#endif 
+   stringClipboard = std::move(stringResult);                                  // Move the result to the output string
+   return { true, "" };
+}
