@@ -235,10 +235,10 @@ public:
    table( unsigned uRowCount ) : m_uFlags( 0 ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_uRowGrowBy( 0 ), m_pcolumns{} {}
    table( unsigned uRowCount, unsigned uFlags ) : m_uFlags( uFlags ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_uRowGrowBy( 0 ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
    table( unsigned uRowCount, unsigned uFlags, unsigned uGrowBy ) : m_uFlags( uFlags ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_uRowGrowBy( uGrowBy ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
-   table( tag_null ) : m_uFlags( eTableFlagNull64 ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( 0 ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
-   table( tag_full_meta ) : m_uFlags( eTableFlagNull64 | eTableFlagRowStatus ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( 0 ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
-   table( unsigned uRowCount, tag_null ) : m_uFlags( eTableFlagNull64 ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
-   table( unsigned uRowCount, tag_full_meta ) : m_uFlags( eTableFlagNull64 | eTableFlagRowStatus ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
+   table( tag_null ) : m_uFlags( eTableFlagNull64|eTableFlagArguments ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( 0 ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
+   table( tag_full_meta ) : m_uFlags( eTableFlagAll ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( 0 ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
+   table( unsigned uRowCount, tag_null ) : m_uFlags( eTableFlagNull64|eTableFlagArguments ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
+   table( unsigned uRowCount, tag_full_meta ) : m_uFlags( eTableFlagAll ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( uRowCount ), m_pcolumns{} { assert( m_uFlags < eTableStateMAX ); }
 
    table( const gd::variant_view& variantviewValue, tag_prepare );
    table( const std::vector< std::string_view >& vectorValue, tag_prepare );
@@ -570,6 +570,7 @@ public:
    gd::argument::shared::arguments* row_create_arguments( uint64_t uRow );
    /// get row arguments object for selected row, make sure that row has arguments object before calling this
    gd::argument::shared::arguments* row_get_arguments_pointer( uint64_t uRow ) const noexcept;
+   gd::argument::shared::arguments* row_get_arguments_pointer( uint64_t uRow );
 
    bool row_for_each( std::function<bool( std::vector<gd::variant_view>&, uint64_t )> callback_ );
    bool row_for_each( std::function<bool( const std::vector<gd::variant_view>&, uint64_t )> callback_ ) const;
