@@ -1,24 +1,5 @@
 #include "string.h"
 
-void string::allocate(const uint64_t uLength)
-{
-   if( (uLength + m_uLength) > m_uBufferSize )
-   {
-      uint64_t uNewSize = m_uLength + uLength;
-      uNewSize += (uNewSize >> 1);
-
-      m_uBufferSize = uNewSize;
-      char* piData = new char[m_uBufferSize];   
-      
-      if( m_piData != NULL )
-      {
-         memcpy( piData, m_piData, m_uLength + 1 );  
-      }
-                            // copy from old buffer to new buffer
-      delete [] m_piData;                                                      // delete old buffer
-      m_piData = piData;                                                       // set to new buffer
-   }
-}
 
 string& string::append(const char* piData)
 {
@@ -190,18 +171,42 @@ string string::substr(size_t uPosition, size_t uLength)
 
 */
 
-const char* string::c_str() const
-{
-   if( m_piData == NULL )
-   {
-      return "";
-   }
-
-   return m_piData;
-}
-
 void string::clear()
 {
-   m_piData = nullptr;
+   if( m_piData != m_piEmpty_s )
+   {
+      *m_piData = '\0';
+   }
+
    m_uLength = 0;
+}
+
+
+/** 
+ * \brief Allocate memory for the string buffer.
+ * 
+ * This function allocates memory for the string buffer if the requested length
+ * exceeds the current buffer size. It increases the buffer size by 50% to allow
+ * for future appends without frequent reallocations.
+ * 
+ * \param uLength The length of the string to be allocated.
+ */
+void string::allocate(uint64_t uLength)
+{
+   if( (uLength + m_uLength) > m_uBufferSize )
+   {
+      uint64_t uNewSize = m_uLength + uLength;
+      uNewSize += (uNewSize >> 1);
+
+      m_uBufferSize = uNewSize;
+      char* piData = new char[m_uBufferSize];   
+
+      if( m_piData != NULL )
+      {
+         memcpy( piData, m_piData, m_uLength + 1 );  
+      }
+      // copy from old buffer to new buffer
+      delete [] m_piData;                                                      // delete old buffer
+      m_piData = piData;                                                       // set to new buffer
+   }
 }

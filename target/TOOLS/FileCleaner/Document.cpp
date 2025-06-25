@@ -1000,7 +1000,7 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
 }
 
 /** ---------------------------------------------------------------------------
-* @brief Sorts a cache table by a specified column.
+* @brief Sorts a cached table by a specified column.
 *
 * This method sorts the rows of a cache table identified by `stringId` based on the values
 * in the specified column. The column can be identified either by its name (string) or
