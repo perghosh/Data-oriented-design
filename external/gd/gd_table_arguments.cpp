@@ -401,7 +401,7 @@ table& table::column_add( unsigned uColumnType, unsigned uSize )
  * @return table_column_buffer& reference to table
 */
 table& table::column_add( unsigned uColumnType, unsigned uSize, const std::string_view& stringName, const std::string_view& stringAlias )
-{                                                                                                  assert( gd::types::validate_number_type_g( uColumnType ) ); assert( uSize < 0x1000'0000 );
+{                                                                                                  assert( m_pcolumns != nullptr ); assert( gd::types::validate_number_type_g( uColumnType ) ); assert( uSize < 0x1000'0000 );
    detail::column columnAdd;
    unsigned uValueOffset{0};
 
@@ -1769,8 +1769,19 @@ std::vector<gd::variant_view> table::cell_get_variant_view( uint64_t uRow, unsig
 */
 gd::variant_view table::cell_get_variant_view( uint64_t uRow, const std::string_view& stringName ) const noexcept
 {                                                                                                  assert( uRow < m_uReservedRowCount );
-   unsigned uColumnIndex = column_get_index( stringName );
-   return cell_get_variant_view( uRow, uColumnIndex );
+   int iColumnIndex = column_find_index( stringName );
+   if( iColumnIndex != -1 )
+   {
+      return cell_get_variant_view( uRow, (unsigned)iColumnIndex );
+   }
+
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   if( *(intptr_t*)pargumentsRow != 0 )
+   {
+      return (*pargumentsRow)[stringName].as_variant_view();
+   }
+
+   return gd::variant_view();
 }
 
 /** ---------------------------------------------------------------------------
@@ -2120,11 +2131,11 @@ void table::cell_set( const range& rangeSet, const gd::variant_view& variantview
  * @param variantviewValue value set to cell
  */
 void table::cell_set_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue ) 
-{                                                                                                  assert(uRow < m_uReservedRowCount);  assert( is_rowarguments() == true );
+{                                                                                                  assert(uRow < m_uReservedRowCount);
    gd::argument::shared::arguments* parguments = row_get_arguments_pointer(uRow);
    // ## Check if row hold any arguments object, if not then create one
    if( parguments == nullptr )
-   {
+   {                                                                                               assert( is_rowarguments() == true ); // need flag that row arguments are used
       parguments = row_create_arguments( uRow );
    }
 
@@ -2302,12 +2313,29 @@ gd::argument::shared::arguments* table::row_create_arguments(uint64_t uRow)
    return pargumentsRow;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief get pointer to row arguments object
+ * @param uRow index to row where arguments object is found
+ * @return pointer to row arguments object
+*/
 gd::argument::shared::arguments* table::row_get_arguments_pointer(uint64_t uRow) const noexcept
 {                                                                                                  assert(row_is_arguments(uRow) == true);
    gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
    return pargumentsRow;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief get pointer to row arguments object, if not found then create one
+ * @param uRow index to row where arguments object is found or created
+ * @return pointer to row arguments object
+*/
+gd::argument::shared::arguments* table::row_get_arguments_pointer(uint64_t uRow)
+{
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   if( *(intptr_t*)pargumentsRow != 0 ) return pargumentsRow;
+
+   return row_create_arguments( uRow );
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Iterates rows in table, harvest row values and call the callback method with row values
