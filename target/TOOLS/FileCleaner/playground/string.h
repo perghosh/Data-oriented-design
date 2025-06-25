@@ -35,8 +35,9 @@ private:
 
 // ## operator -----------------------------------------------------------------
 public:
-   string& operator+=( const char* piData ) { return append( piData ); }
 
+   string& operator+=( const char* piData ) { return append( piData ); }
+   string& operator=(const char* piData) { return assign(piData); }
 
 // ## methods ------------------------------------------------------------------
 public:
@@ -53,14 +54,21 @@ public:
    string& append(const char* piData);
    string& append(const char* piData, size_t uLength);
 
+   string& assign(const char* piData, size_t ulength);
+   string& assign(const char* piData);
+
    string& insert(size_t uPosition, const char* piData, size_t uLength);
    string& insert(size_t uPosition, const char* piData);
+
+   string& replace(size_t uPosition, const char* piData, size_t uLength);
 
    size_t size() const { return strlen(m_piData); };
 
    string substr(size_t uPosition = 0, size_t uLength = m_uNoPosition);
 
    const char* c_str() const;
+
+   void clear();
 
 //@}
 

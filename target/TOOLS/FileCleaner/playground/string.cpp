@@ -54,6 +54,39 @@ string& string::append(const char* piData, size_t uLength)
    return *this;
 }
 
+string& string::assign(const char* piData, size_t ulength)
+{
+   if( piData == NULL )
+   {
+      return *this;
+   }
+
+   //delete[] m_piData;
+   //m_piData = nullptr;
+   allocate(ulength);
+
+   memcpy(m_piData, piData, ulength);
+
+   /*for( uint64_t u = 0; u < ulength; u++ )
+   {
+      m_piData[u] = piData[u];
+   }*/
+
+   m_piData[ulength] = '\0';
+   m_uLength = ulength;
+
+   return *this;
+}
+
+string& string::assign(const char* piData)
+{
+   uint64_t ulength = strlen(piData);
+
+   assign(piData, ulength);
+
+   return *this;
+}
+
 string& string::insert(size_t uPosition, const char* piData, size_t uLength)
 {
    if( uPosition > m_uLength )
@@ -88,6 +121,32 @@ string& string::insert(size_t uPosition, const char* piData)
    uint64_t uLength = strlen(piData);
 
    insert(uPosition, piData, uLength);
+
+   return *this;
+}
+
+string& string::replace(size_t uPosition, const char* piData, size_t uLength)
+{
+   // TODO: insert return statement here
+
+   if( uPosition > m_uLength )
+   {
+      return *this;
+   }
+   if( piData == NULL )
+   {
+      return *this;
+   }
+
+   allocate(uLength);
+
+   for( uint64_t u = 0; u < uLength; u++ )
+   {
+      m_piData[uPosition + u] = piData[u];
+   }
+
+   m_uLength = uPosition + uLength;
+   m_piData[m_uLength] = '\0';
 
    return *this;
 }
@@ -139,4 +198,10 @@ const char* string::c_str() const
    }
 
    return m_piData;
+}
+
+void string::clear()
+{
+   m_piData = nullptr;
+   m_uLength = 0;
 }
