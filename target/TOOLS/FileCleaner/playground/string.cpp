@@ -1,24 +1,5 @@
 #include "string.h"
 
-void string::allocate(const uint64_t uLength)
-{
-   if( (uLength + m_uLength) > m_uBufferSize )
-   {
-      uint64_t uNewSize = m_uLength + uLength;
-      uNewSize += (uNewSize >> 1);
-
-      m_uBufferSize = uNewSize;
-      char* piData = new char[m_uBufferSize];   
-      
-      if( m_piData != NULL )
-      {
-         memcpy( piData, m_piData, m_uLength + 1 );  
-      }
-                            // copy from old buffer to new buffer
-      delete [] m_piData;                                                      // delete old buffer
-      m_piData = piData;                                                       // set to new buffer
-   }
-}
 
 string& string::append(const char* piData)
 {
@@ -51,6 +32,39 @@ string& string::append(const char* piData, size_t uLength)
 
    piInsert[uLength] = '\0';
    m_uLength += uLength;
+   return *this;
+}
+
+string& string::assign(const char* piData, size_t ulength)
+{
+   if( piData == NULL )
+   {
+      return *this;
+   }
+
+   //delete[] m_piData;
+   //m_piData = nullptr;
+   allocate(ulength);
+
+   memcpy(m_piData, piData, ulength);
+
+   /*for( uint64_t u = 0; u < ulength; u++ )
+   {
+      m_piData[u] = piData[u];
+   }*/
+
+   m_piData[ulength] = '\0';
+   m_uLength = ulength;
+
+   return *this;
+}
+
+string& string::assign(const char* piData)
+{
+   uint64_t ulength = strlen(piData);
+
+   assign(piData, ulength);
+
    return *this;
 }
 
@@ -88,6 +102,32 @@ string& string::insert(size_t uPosition, const char* piData)
    uint64_t uLength = strlen(piData);
 
    insert(uPosition, piData, uLength);
+
+   return *this;
+}
+
+string& string::replace(size_t uPosition, const char* piData, size_t uLength)
+{
+   // TODO: insert return statement here
+
+   if( uPosition > m_uLength )
+   {
+      return *this;
+   }
+   if( piData == NULL )
+   {
+      return *this;
+   }
+
+   allocate(uLength);
+
+   for( uint64_t u = 0; u < uLength; u++ )
+   {
+      m_piData[uPosition + u] = piData[u];
+   }
+
+   m_uLength = uPosition + uLength;
+   m_piData[m_uLength] = '\0';
 
    return *this;
 }
@@ -131,12 +171,42 @@ string string::substr(size_t uPosition, size_t uLength)
 
 */
 
-const char* string::c_str() const
+void string::clear()
 {
-   if( m_piData == NULL )
+   if( m_piData != m_piEmpty_s )
    {
-      return "";
+      *m_piData = '\0';
    }
 
-   return m_piData;
+   m_uLength = 0;
+}
+
+
+/** 
+ * \brief Allocate memory for the string buffer.
+ * 
+ * This function allocates memory for the string buffer if the requested length
+ * exceeds the current buffer size. It increases the buffer size by 50% to allow
+ * for future appends without frequent reallocations.
+ * 
+ * \param uLength The length of the string to be allocated.
+ */
+void string::allocate(uint64_t uLength)
+{
+   if( (uLength + m_uLength) > m_uBufferSize )
+   {
+      uint64_t uNewSize = m_uLength + uLength;
+      uNewSize += (uNewSize >> 1);
+
+      m_uBufferSize = uNewSize;
+      char* piData = new char[m_uBufferSize];   
+
+      if( m_piData != NULL )
+      {
+         memcpy( piData, m_piData, m_uLength + 1 );  
+      }
+      // copy from old buffer to new buffer
+      delete [] m_piData;                                                      // delete old buffer
+      m_piData = piData;                                                       // set to new buffer
+   }
 }

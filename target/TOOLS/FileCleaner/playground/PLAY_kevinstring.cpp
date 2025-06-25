@@ -24,5 +24,11 @@ TEST_CASE("[string] test", "[string]")
    
    stringTestText.insert(6, "C++ ");
 
+   stringTestText.assign("Bye");
+   stringTestText.replace(2, "hello", 5);
+   stringTestText += "World";
+
+   stringTestText = "Tree";
+
    std::cout << stringTestText.c_str() << std::endl;;
 }
