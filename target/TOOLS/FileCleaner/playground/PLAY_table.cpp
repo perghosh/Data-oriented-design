@@ -32,4 +32,6 @@ TEST_CASE("[table] custom columns", "[table]")
 
    table_.cell_set(uRow, "path2", gd::variant_view("C:\\test\\file2.txt"));
    { auto b_ = table_.cell_get_variant_view(uRow, "path2"). as_string_view() == "C:\\test\\file2.txt"; REQUIRE(b_); }
+
+   { auto b_ = table_.cell_get_variant_view(uRow, 3).as_string_view() == "C:\\test\\file2.txt"; REQUIRE(b_); }
 }

@@ -1583,7 +1583,7 @@ inline arguments& arguments::set(pointer pPosition, const gd::variant_view& vari
    unsigned uLength;
    if( uType > ARGUMENTS_NO_LENGTH ) 
    { 
-      uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
+      uLength = variantValue.length(); // + get_string_zero_terminate_length_s( uType );
    }
    else
    {
@@ -1601,7 +1601,7 @@ inline arguments& arguments::set(std::string_view stringName, const gd::variant_
    if( uType > ARGUMENTS_NO_LENGTH ) 
    { 
       uType |= eValueLength; 
-      uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
+      uLength = variantValue.length();// + get_string_zero_terminate_length_s( uType );
    }
    else
    {

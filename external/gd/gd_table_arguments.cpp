@@ -1692,6 +1692,12 @@ const reference* table::cell_get_reference( uint64_t uRow, unsigned uColumn ) co
 */
 gd::variant_view table::cell_get_variant_view( uint64_t uRow, unsigned uColumn ) const noexcept
 {                                                                                                  assert( uRow < get_row_count() ); assert( uRow < m_uReservedRowCount ); assert( m_puData != nullptr );
+   if( uColumn >= m_pcolumns->size() )
+   {
+      uColumn -= (unsigned)m_pcolumns->size();                                // if column index is larger than column count then it is tag_arguments
+      return cell_get_variant_view( uRow, uColumn, tag_arguments{});
+   }
+   
    const auto& columnGet = *m_pcolumns->get( uColumn );// column information for value
    auto puRow = row_get( uRow ); // buffer to row
 
@@ -1736,6 +1742,28 @@ gd::variant_view table::cell_get_variant_view( uint64_t uRow, unsigned uColumn )
          }
          else { assert(false); }
       }
+   }
+
+   return gd::variant_view();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief get cell value as variant_view item
+ * 
+ * @note This function is used to get cell value from row that has arguments and remember to decrease column index by column count
+ * 
+ * @param uRow row index for cell
+ * @param uColumn column index to cell
+ * @param tag_arguments tag to specify that arguments are used
+ * @return gd::variant_view cell value
+*/
+gd::variant_view table::cell_get_variant_view(uint64_t uRow, unsigned uColumn, tag_arguments) const noexcept
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( is_rowarguments() );
+   // get row meta data
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   if( *(intptr_t*)pargumentsRow != 0 )
+   {
+      return (*pargumentsRow)[uColumn].as_variant_view();
    }
 
    return gd::variant_view();
