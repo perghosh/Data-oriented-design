@@ -616,6 +616,7 @@ public:
    const reference* cell_get_reference( uint64_t uRow, unsigned uColumn ) const noexcept;
 
    gd::variant_view cell_get_variant_view( uint64_t uRow, unsigned uColumn ) const noexcept;
+   gd::variant_view cell_get_variant_view( uint64_t uRow, unsigned uColumn, tag_arguments ) const noexcept;
    std::vector< gd::variant_view > cell_get_variant_view( uint64_t uRow, unsigned uFromColumn, unsigned uToColumn ) const;
    std::vector< gd::variant_view > cell_get_variant_view( uint64_t uRow ) const { return cell_get_variant_view( uRow, 0, get_column_count() ); }
    gd::variant_view cell_get_variant_view( uint64_t uRow, const std::string_view& stringName ) const noexcept;
