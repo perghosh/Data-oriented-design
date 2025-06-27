@@ -18,6 +18,14 @@
 
 TEST_CASE("[table] custom columns", "[table]") 
 {
+#ifdef _MSC_VER
+   // Enable memory leak check at program exit
+   int tmpFlag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+   tmpFlag |= _CRTDBG_LEAK_CHECK_DF;
+   _CrtSetDbgFlag(tmpFlag);
+#endif
+
+
    gd::table::arguments::table table_( gd::table::tag_full_meta{} );
    table_.column_prepare();
    table_.column_add("rstring", 0, "path");
@@ -34,4 +42,15 @@ TEST_CASE("[table] custom columns", "[table]")
    { auto b_ = table_.cell_get_variant_view(uRow, "path2"). as_string_view() == "C:\\test\\file2.txt"; REQUIRE(b_); }
 
    { auto b_ = table_.cell_get_variant_view(uRow, 3).as_string_view() == "C:\\test\\file2.txt"; REQUIRE(b_); }
+
+   { auto arguments_ = table_.row_get_arguments(0); std::cout << gd::argument::debug::print(arguments_); }
+
+   {
+      auto vector_ = table_.row_get_variant_view(uRow);
+      std::cout << "\n\nRow Variant View: ";
+      for (const auto& variant : vector_) {
+          std::cout << variant.as_string() << " ";
+      }
+      std::cout << std::endl;
+   }
 }
