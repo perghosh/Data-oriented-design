@@ -62,4 +62,17 @@ TEST_CASE("[table] custom columns", "[table]")
       }
       std::cout << std::endl;
    }
+
+   table_.cell_set(uRow, "test", gd::variant_view("test"));
+   table_.cell_set(uRow, 3, gd::variant_view("1234567890"));
+   {
+      std::vector<gd::variant_view> vectorGet;
+      vectorGet = table_.row_get_variant_view( uRow, {0, 1, 2, 3 });
+      std::cout << "\n\nRow Variant View (new): ";
+      for (const auto& variant : vectorGet) {
+         std::cout << variant.as_string() << " ";
+      }
+      std::cout << std::endl;
+   }
+
 }
