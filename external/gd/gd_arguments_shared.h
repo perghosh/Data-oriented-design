@@ -1584,6 +1584,7 @@ inline arguments& arguments::set(pointer pPosition, const gd::variant_view& vari
    if( uType > ARGUMENTS_NO_LENGTH ) 
    { 
       uLength = variantValue.length(); // + get_string_zero_terminate_length_s( uType );
+      uType |= eValueLength; 
    }
    else
    {

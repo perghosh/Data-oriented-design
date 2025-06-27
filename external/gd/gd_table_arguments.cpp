@@ -1920,69 +1920,83 @@ unsigned table::cell_get_length( uint64_t uRow, unsigned uColumnIndex ) const no
 */
 void table::cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue )
 {
-#ifndef NDEBUG
-   if( uRow >= m_uReservedRowCount || uColumn >= m_pcolumns->size() )
-      assert( false );
-#endif // !NDEBUG
-
-                                                                                                   assert( uRow < m_uReservedRowCount );
-   auto& columnSet = *m_pcolumns->get( uColumn );                                                  assert( columnSet.position() < m_uRowSize );
-   uint8_t* puRow = row_get( uRow );
-
-   if( variantviewValue.is_null() == false )
+   unsigned uColumnCount = (unsigned)m_pcolumns->size(); // get column count
+   if( uColumn < uColumnCount )
    {
-#ifndef NDEBUG 
-      auto uValueType_d = variantviewValue.type_number();
-      auto uColumnType_d = columnSet.ctype_number();
-      if( uValueType_d != uColumnType_d ) {                                    // check type, this has to match. You can't set value from type that differ from type in column
-         auto stringValueType_d = gd::types::type_name_g( uValueType_d );
-         auto stringColumnType_d = gd::types::type_name_g( uColumnType_d );
-                                                                                                   assert( uValueType_d == uColumnType_d );
-      }
-#endif // !NDEBUG
+                                                                                                      assert( uRow < m_uReservedRowCount );
+      auto& columnSet = *m_pcolumns->get( uColumn );                                                  assert( columnSet.position() < m_uRowSize );
+      uint8_t* puRow = row_get( uRow );
 
-      auto puBuffer = variantviewValue.get_value_buffer();                     // get pointer to value buffer
+      if( variantviewValue.is_null() == false )
+      {
+   #ifndef NDEBUG 
+         auto uValueType_d = variantviewValue.type_number();
+         auto uColumnType_d = columnSet.ctype_number();
+         if( uValueType_d != uColumnType_d ) {                                    // check type, this has to match. You can't set value from type that differ from type in column
+            auto stringValueType_d = gd::types::type_name_g( uValueType_d );
+            auto stringColumnType_d = gd::types::type_name_g( uColumnType_d );
+                                                                                                      assert( uValueType_d == uColumnType_d );
+         }
+   #endif // !NDEBUG
 
-      auto puRowValue = puRow + columnSet.position();                          // get position to value in row
+         auto puBuffer = variantviewValue.get_value_buffer();                     // get pointer to value buffer
 
-      if( columnSet.is_fixed() )
-      {                                                                                            assert( columnSet.primitive_size() != 0 );
-         memcpy( puRowValue, puBuffer, columnSet.primitive_size() );           // copy value to cell buffer
+         auto puRowValue = puRow + columnSet.position();                          // get position to value in row
+
+         if( columnSet.is_fixed() )
+         {                                                                                            assert( columnSet.primitive_size() != 0 );
+            memcpy( puRowValue, puBuffer, columnSet.primitive_size() );           // copy value to cell buffer
+         }
+         else
+         {   
+            if( columnSet.is_length() == true )
+            {                                                                                         assert( variantviewValue.length() <= columnSet.size() );
+               unsigned uMaxSize = columnSet.size();
+               unsigned uLength = gd::types::value_size_g( variantviewValue.type(), variantviewValue.length() ); // value size in bytes (remember that non fixed value types starts with length information before actual value)
+               if( uLength <= uMaxSize )
+               {
+                  *( uint32_t* )puRowValue = variantviewValue.length();           // set length as first part in buffer
+                  puRowValue += sizeof( uint32_t );                               // move to data
+                  memcpy( puRowValue, puBuffer, uLength );                        // copy value
+               }
+            }
+            else if( columnSet.is_reference() == true )
+            {
+               // ## try to find value and store index for found value if it exists, if not add and store new index
+               int64_t iIndex = m_references.find( variantviewValue );
+               if( iIndex == -1 )
+               {
+                  iIndex = (int64_t )m_references.add( variantviewValue );
+               }
+
+               memcpy( puRowValue, &iIndex, sizeof( intptr_t ) );                 // copy index value into cell
+            }
+            else { assert(false); }
+         }
+
+
+
+         if( is_null() == true ) { cell_set_not_null( uRow, uColumn ); }          // set flag that cell has a value if table is using row status meta data
       }
       else
-      {   
-         if( columnSet.is_length() == true )
-         {                                                                                         assert( variantviewValue.length() <= columnSet.size() );
-            unsigned uMaxSize = columnSet.size();
-            unsigned uLength = gd::types::value_size_g( variantviewValue.type(), variantviewValue.length() ); // value size in bytes (remember that non fixed value types starts with length information before actual value)
-            if( uLength <= uMaxSize )
-            {
-               *( uint32_t* )puRowValue = variantviewValue.length();           // set length as first part in buffer
-               puRowValue += sizeof( uint32_t );                               // move to data
-               memcpy( puRowValue, puBuffer, uLength );                        // copy value
-            }
-         }
-         else if( columnSet.is_reference() == true )
-         {
-            // ## try to find value and store index for found value if it exists, if not add and store new index
-            int64_t iIndex = m_references.find( variantviewValue );
-            if( iIndex == -1 )
-            {
-               iIndex = (int64_t )m_references.add( variantviewValue );
-            }
-
-            memcpy( puRowValue, &iIndex, sizeof( intptr_t ) );                 // copy index value into cell
-         }
-         else { assert(false); }
+      {
+         if( is_null() == true ) { cell_set_null( uRow, uColumn ); }              // cell is null, set null flag
       }
-
-
-
-      if( is_null() == true ) { cell_set_not_null( uRow, uColumn ); }          // set flag that cell has a value if table is using row status meta data
    }
    else
-   {
-      if( is_null() == true ) { cell_set_null( uRow, uColumn ); }              // cell is null, set null flag
+   {                                                                                               assert( is_rowarguments() == true );
+      // if column index is larger than column count then it is tag_arguments
+      gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+      if( *(intptr_t*)pargumentsRow != 0 )
+      {
+         // if column index is larger than column count then it is tag_arguments
+         unsigned uArgumentIndex = uColumn - uColumnCount;                                              
+         gd::argument::shared::arguments::pointer pposition_ = pargumentsRow->find( uArgumentIndex );
+         if( pposition_ != nullptr )
+         {
+            pargumentsRow->set( pposition_, variantviewValue );
+         }
+      }
    }
 }
 
