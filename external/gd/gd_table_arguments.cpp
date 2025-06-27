@@ -2201,13 +2201,32 @@ table_column_buffer::row_const_value_type table_column_buffer::row_get( uint64_t
  * @return std::vector<const gd::variant_view> vector holding row values
 */
 std::vector<gd::variant_view> table::row_get_variant_view( uint64_t uRow ) const
-{                                                                                                  assert( uRow < m_uReservedRowCount );
+{                                                                                                  assert( uRow < 0x0100'0000 ); assert( uRow < m_uReservedRowCount );  assert( m_pcolumns != nullptr );
    std::vector<gd::variant_view> vectorValue;
 
    for( auto u = 0u, uMax = (unsigned)m_pcolumns->size(); u < uMax; u++ )
    {
       vectorValue.push_back( cell_get_variant_view( uRow, u ) );
    }
+
+   if( is_rowarguments() == true )
+   {
+      // ## if row arguments object for row then get those values
+
+      using namespace gd::argument::shared;
+      const gd::argument::shared::arguments* parguments_ = row_get_arguments_pointer(uRow);
+      if( parguments_!= nullptr )
+      {
+         // ## append arguments from row arguments object
+
+         const auto& arguments_ = *parguments_;
+         for( auto* pPosition = arguments_.next(); pPosition != nullptr; pPosition = arguments_.next(pPosition) )
+         {
+            auto v_ = gd::argument::shared::arguments::get_argument_s(pPosition).as_variant_view(); // get argument as variant_view 
+            vectorValue.push_back(v_);                                        // add to vector
+         }
+      }// if( parguments_!= nullptr )
+   }// if( is_rowarguments() == true )
 
    return vectorValue;
 }
@@ -2220,18 +2239,35 @@ std::vector<gd::variant_view> table::row_get_variant_view( uint64_t uRow ) const
  * @return std::vector<gd::variant_view> values from row
 */
 std::vector<gd::variant_view> table::row_get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const
-{
+{                                                                                                  assert( uRow < m_uReservedRowCount );  assert( m_pcolumns != nullptr );
    std::vector<gd::variant_view> vectorValue;
+   unsigned uColumnCount = (unsigned)m_pcolumns->size(); // get column count
+
    for( unsigned u = 0; u < uSize; u++ )
    {                                                                                               assert( puIndex[u] < get_column_count() );
-      vectorValue.push_back( cell_get_variant_view( uRow, puIndex[u] ) );
+      unsigned uColumn = puIndex[u]; // column index to get value from
+      if( uColumn >= uColumnCount )
+      {
+         uColumn -= uColumnCount;                                             // if column index is larger than column count then it is tag_arguments
+         vectorValue.push_back( cell_get_variant_view( uRow, uColumn, tag_arguments{} ) );
+      }
+      else
+      {
+         vectorValue.push_back( cell_get_variant_view( uRow, uColumn ) );
+      }
    }
 
    return vectorValue;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Find row with variant view value in column
+ * @param uColumn column index to search in
+ * @param variantviewFind value to find in column
+ * @return int64_t index to row where value is found, -1 if not found
+*/
 int64_t table::row_get_variant_view( unsigned uColumn, const gd::variant_view& variantviewFind, std::vector<gd::variant_view>& vectorValue ) const
-{
+{                                                                                                  assert( m_pcolumns != nullptr );
    int64_t iRow = find_variant_view( uColumn, variantviewFind );
    if( iRow >= 0 )
    {
@@ -2349,7 +2385,8 @@ gd::argument::shared::arguments* table::row_create_arguments(uint64_t uRow)
 gd::argument::shared::arguments* table::row_get_arguments_pointer(uint64_t uRow) const noexcept
 {                                                                                                  assert(row_is_arguments(uRow) == true);
    gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
-   return pargumentsRow;
+   if( *(intptr_t*)pargumentsRow != 0 ) return pargumentsRow;
+   return nullptr;
 }
 
 /** ---------------------------------------------------------------------------
