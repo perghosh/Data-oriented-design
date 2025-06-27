@@ -25,7 +25,6 @@ TEST_CASE("[table] custom columns", "[table]")
    _CrtSetDbgFlag(tmpFlag);
 #endif
 
-
    gd::table::arguments::table table_( gd::table::tag_full_meta{} );
    table_.column_prepare();
    table_.column_add("rstring", 0, "path");
@@ -49,6 +48,16 @@ TEST_CASE("[table] custom columns", "[table]")
       auto vector_ = table_.row_get_variant_view(uRow);
       std::cout << "\n\nRow Variant View: ";
       for (const auto& variant : vector_) {
+          std::cout << variant.as_string() << " ";
+      }
+      std::cout << std::endl;
+   }
+
+   {
+      std::vector<gd::variant_view> vectorGet;
+      vectorGet = table_.row_get_variant_view( uRow, {0, 1, 2, 3 });
+      std::cout << "\n\nRow Variant View (new): ";
+      for (const auto& variant : vectorGet) {
           std::cout << variant.as_string() << " ";
       }
       std::cout << std::endl;
