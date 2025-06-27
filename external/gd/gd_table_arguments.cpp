@@ -2233,6 +2233,26 @@ std::vector<gd::variant_view> table::row_get_variant_view( uint64_t uRow ) const
 
 /** ---------------------------------------------------------------------------
  * @brief Return row values in vector as variant view items
+ * 
+ * @code
+gd::table::arguments::table table_( gd::table::tag_full_meta{} );
+table_.column_prepare();
+table_.column_add("rstring", 0, "path");
+table_.prepare();
+
+auto uRow = table_.row_add_one();
+table_.cell_set(uRow, "path", gd::variant_view("C:\\test\\file.txt"));
+table_.cell_set(uRow, "path2", gd::variant_view("C:\\test\\file2.txt"));
+
+std::vector<gd::variant_view> vectorGet;
+vectorGet = table_.row_get_variant_view( uRow, {0, 1});
+std::cout << "\n\nRow Variant View): ";
+for (const auto& variant : vectorGet) {
+   std::cout << variant.as_string() << " ";
+}
+std::cout << std::endl;
+ * @endcode
+ * 
  * @param uRow index to row values are returned from
  * @param puIndex pointer to array with column index values harvested into vector
  * @param uSize number of values to harvest
@@ -2244,7 +2264,7 @@ std::vector<gd::variant_view> table::row_get_variant_view( uint64_t uRow, const 
    unsigned uColumnCount = (unsigned)m_pcolumns->size(); // get column count
 
    for( unsigned u = 0; u < uSize; u++ )
-   {                                                                                               assert( puIndex[u] < get_column_count() );
+   {
       unsigned uColumn = puIndex[u]; // column index to get value from
       if( uColumn >= uColumnCount )
       {
