@@ -410,12 +410,42 @@ std::pair<bool, std::string> FILES_ReadFullRow_g(std::ifstream* pfstream, gd::ta
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Cleans a file by reading its content and processing it according to the provided arguments.
+ *
+ * This method reads the content of the specified file, processes it based on the provided arguments,
+ * and stores the cleaned content in the provided string buffer. It handles state activation and deactivation
+ * for parsing expressions within the file.
+ *
+ * @param stringPath The path to the file to be cleaned.
+ * @param argumentsOption The arguments containing options for cleaning, such as whether to keep newlines.
+ * @param stringBuffer A reference to a string where the cleaned content will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> CLEAN_File_g(const std::string& stringPath, const gd::argument::shared::arguments& argumentsOption, std::string& stringBuffer)
 {
-   if( std::filesystem::is_regular_file(stringPath) == false ) return { false, "File not found: " + stringPath };
+   enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
+
+   unsigned uSegment = 0; // default state is code
+
+   // ## Open file
+
+   if( std::filesystem::is_regular_file(stringPath) == false ) return { false, "File not found: " + stringPath }; // check if file exists
 
    std::ifstream file_(stringPath, std::ios::binary);
    if( file_.is_open() == false ) return { false, "Failed to open file: " + stringPath };
+
+   // ## check what type of segmentation we want to keep, default is to keep code segment
+   if( argumentsOption.exists("segment") == true )
+   {
+      auto stringSegment = argumentsOption["segment"].as_string();
+      if( stringSegment == "comment" ) { uSegment |= eStateComment; } 
+      else if( stringSegment == "string" ) { uSegment |= eStateString; } // store state for string segment
+      else if( stringSegment == "all" ) { uSegment = eStateCode | eStateComment | eStateString; } // store states for all segments
+   }
+
 
    bool bKeepNwline = argumentsOption.get_argument<bool>("newline", true);    // keep newlines ?
    gd::parse::window::line windowLine_(8192 - 512, 8192, gd::types::tag_create{});// create line buffer
@@ -432,34 +462,89 @@ std::pair<bool, std::string> CLEAN_File_g(const std::string& stringPath, const g
    // ## Scan file and read lines found in table
    while( windowLine_.eof() == false )
    {
-      auto [first_, last_] = windowLine_.range(gd::types::tag_pair{});         // get range of valid data in buffer
-      for( const auto* it = first_; it < last_; it++ ) 
-      {
-         if( state_.in_state() == false )                                     // not in a state? that means we are reading source code
+      auto [first_, last_] = windowLine_.range(gd::types::tag_pair{});     // get range of valid data in buffer
+
+      if( uSegment == 0 )
+      { 
+         for( const auto* it = first_; it < last_; it++ ) 
          {
-            // ## check if we have found state
-            if( state_[*it] != 0 && state_.exists( it ) == true )
+            if( state_.in_state() == false )                                  // not in a state? that means we are reading source code
             {
-               state_.activate(it);                                           // activate state
+               // ## check if we have found state
+               if( state_[*it] != 0 && state_.exists( it ) == true )
+               {
+                  unsigned uLength = (unsigned)state_.activate(it);           // activate state
+                  if( uLength > 1 ) it += ( uLength - 1 );                    // skip to end of state marker and if it is more than 1 character, skip to end of state
+               }
+               else
+               {
+                  stringBuffer.push_back(*it);                                // add character to buffer
+               }
             }
             else
             {
-               stringBuffer.push_back(*it);                                   // add character to buffer
+               // ## check if we have found end of state
+               unsigned uLength;
+               if( state_.deactivate( it, &uLength ) == true ) 
+               {
+                  if( uLength > 1 ) it += (uLength - 1);                      // skip to end of state marker and if it is more than 1 character, skip to end of state
+                  // check for ending linebreak 
+                  if( *it == '\n' && bKeepNwline == true ) stringBuffer.push_back(*it);// add newline to buffer if we keep newlines
+                  continue;
+               }
+
+               if( *it == '\n' && bKeepNwline == true ) stringBuffer.push_back(*it);
             }
          }
-         else
+      }
+      else
+      {
+         for( const auto* it = first_; it < last_; it++ ) 
          {
-            // ## check if we have found end of state
-            unsigned uLength;
-            if( state_.deactivate( it, &uLength ) == true ) 
+            if( state_.in_state() == false )                                  // not in a state? that means we are reading source code
             {
-               if( uLength > 1 ) it += (uLength - 1);                         // skip to end of state marker and if it is more than 1 character, skip to end of state
-               // check for ending linebreak 
-               if( *it == '\n' && bKeepNwline == true ) stringBuffer.push_back(*it);// add newline to buffer if we keep newlines
-               continue;
+               // ## check if we have found state
+               if( state_[*it] != 0 && state_.exists( it ) == true )
+               {
+                  unsigned uLength = (unsigned)state_.activate(it);           // activate state
+                  if( uLength > 1 ) it += ( uLength - 1 );                    // skip to end of state marker and if it is more than 1 character, skip to end of state
+               }
+               else
+               {
+                  if( (uSegment & eStateCode) != 0 )                          // if we are in code segment
+                  {
+                     stringBuffer.push_back(*it);                              // add character to buffer
+                  }
+                  else
+                  {
+                     if( *it == '\n' && bKeepNwline == true ) stringBuffer.push_back(*it);
+                  }
+               }
             }
+            else
+            {
+               // ## check if we have found end of state
+               unsigned uLength;
+               if( state_.deactivate( it, &uLength ) == true ) 
+               {
+                  if( uLength > 1 ) it += (uLength - 1);                      // skip to end of state marker and if it is more than 1 character, skip to end of state
+                  if( *it == '\n' && bKeepNwline == true ) stringBuffer.push_back(*it);// add newline to buffer if we keep newlines
+                  continue;                                                   // move on
+               }
 
-            if( *it == '\n' && bKeepNwline == true ) stringBuffer.push_back(*it);
+               if( (uSegment & eStateComment) != 0 && state_.is_comment() == true ) // in comment state?
+               {
+                  stringBuffer.push_back(*it);
+               }
+               else if( (uSegment & eStateString) != 0 && state_.is_string() == true ) // in string state?
+               {
+                  stringBuffer.push_back(*it);
+               }
+               else if( *it == '\n' && bKeepNwline == true )                   // if we are not in a selected state and we have a newline
+               {
+                  stringBuffer.push_back(*it);                                  // add newline to buffer
+               }
+            }
          }
       }
 
@@ -1430,6 +1515,21 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    return { true, "" };
 }
 
+/** ----------------------------------------------------------------------------
+ * @brief Finds patterns in a string and stores the results in a table.
+ *
+ * This function searches for specified patterns in the provided string code.
+ * It identifies matches, records their line numbers, and stores the results in a table.
+ * The function supports regular expressions.
+ *
+ * @param stringCode The source code as a string to search for patterns.
+ * @param vectorPatterns A vector of patterns to search for. It holds string that represents the regex pattern and regex object used to search for.
+ * @param argumentsFind Arguments containing arguments how to find and data to generate result.
+ * @param ptable_ Pointer to the table where matching lines will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode, const std::vector<std::string>& vectorPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_)
 {
    uint64_t uFileKey = argumentsFind["file-key"]; // key to file for main table holding activ files
@@ -1748,7 +1848,7 @@ std::pair<bool, std::string> EXPRESSION_FilterOnColumn_g( gd::table::dto::table*
 }
 
 
-/** --------------------------------------------------------------------------- @TAG #clipboard
+/** --------------------------------------------------------------------------- @TAG #clipboard #os
  * @brief Reads the clipboard content and returns it as a UTF-8 encoded string.
  * 
  * This function attempts to read the clipboard content, first trying to retrieve

@@ -51,6 +51,25 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    CACHE_Prepare("file-count");
    auto* ptable_ = CACHE_Get("file");                                                              assert( ptable_ != nullptr );
 
+   // ## Check for verbose mode
+   if( GetApplication()->PROPERTY_Get("verbose").as_bool() == true )
+   {
+      auto vector_ = argumentsPath.get_argument_all("source", gd::types::tag_view{}); // get all source paths
+      if( vector_.size() == 1 )
+      {
+         std::string stringSource( vector_[0] );
+         auto vectorPath = gd::utf8::split(stringSource, ';');   
+         for( const auto& s_ : vectorPath ) { MESSAGE_Display(std::format("source: {}", s_)); }
+      }
+      else if( vector_.size() > 1 )
+      {
+         for( const auto& s_ : vector_ ) { MESSAGE_Display(std::format("source: {}", s_.as_string_view())); }
+      }
+
+      auto uCount = argumentsPath["recursive"].as_uint();
+      MESSAGE_Display(std::format("recursive: {}", uCount));
+   }
+
    auto result_ = FILES_Harvest_g(argumentsPath, ptable_);
    if( result_.first == false ) return result_;
 
@@ -574,7 +593,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
    return {true, ""};
 }
 
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::string >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind )
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::string >& vectorPattern, const gd::argument::shared::arguments* pargumentsFind )
 {
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
@@ -612,8 +631,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
       // Find lines with patterns and update the "file-linelist" table
       gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
-      stringFileBuffer.clear();                                                   // Clear the blob vector to reuse it for the next file
-      auto result_ = CLEAN_File_g(stringFile, arguments_, stringFileBuffer);      // Load file into memory as a blob
+      if( pargumentsFind->exists("segment") == true ) arguments_.append("segment", (*pargumentsFind)["segment"].as_string() ); // Add segment if it exists in the arguments
+      stringFileBuffer.clear();                                               // Clear the blob vector to reuse it for the next file
+      auto result_ = CLEAN_File_g(stringFile, arguments_, stringFileBuffer);  // Load file into memory as a blob
       if( result_.first == false)
       {
          ERROR_Add(result_.second);                                           // Add error to the internal error list
@@ -623,7 +643,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
       if( stringFileBuffer.empty() == true ) continue;                        // Skip empty files
 
       // ## Find patterns in the file blob
-      result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorRegexPatterns, arguments_, ptableLineList ); // Find lines with patterns in the file blob
+      result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorPattern, arguments_, ptableLineList ); // Find lines with patterns in the file blob
       if( result_.first == false )
       {
          ERROR_Add(result_.second); // Add error to the internal error list
@@ -676,6 +696,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
       // Find lines with patterns and update the "file-linelist" table
       gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+      if( pargumentsFind->exists("segment") == true ) arguments_.append("segment", (*pargumentsFind)["segment"].as_string() ); // Add segment if it exists in the arguments
       stringFileBuffer.clear();                                               // Clear the blob vector to reuse it for the next file
       auto result_ = CLEAN_File_g(stringFile, arguments_, stringFileBuffer);  // Load file into memory as a blob
       if( result_.first == false)

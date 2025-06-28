@@ -1,9 +1,14 @@
 # Changelog
 
+## v1.0.0
+### New Features
+- Introduced `verbose` flag for all commands to enable detailed output. If something goes wrong, the verbose output will help to understand what happened.
+- `segment` added to find command. Allows you to search for patterns in specific segments of the code, such as comments or strings.
+
 ## v0.9.9
 
 ### New Features
-- New `find` command: With find you can search for complex patterns that span multiple lines. Before it searches code is stripped of comments and and strings.
+- New `find` command: With find you can search for complex patterns that span multiple lines. Before it searches code is stripped of comments and strings.
   - `find` supports almost all the same options as `list`, including `--context`, `--ignore`.
   - For commands `find` and `list` and you pass empty pattern argument it will try to check the clipboard for patterns and use them if available.
 

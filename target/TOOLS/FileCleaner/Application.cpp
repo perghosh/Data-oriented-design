@@ -318,7 +318,7 @@ std::pair<bool, std::string> CApplication::Exit()
 
 // 0TAG0Initialize.Application
 
-/** --------------------------------------------------------------------------- @TAG #option #print
+/** --------------------------------------------------------------------------- @TAG #option #print #application
  * @brief Initializes the application based on the provided command-line options.
  *
  * This method processes the command-line options and performs initialization tasks
@@ -367,6 +367,12 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    // ## set editor
    std::string stringEditor = ( *poptionsActive )["editor"].as_string();
    PROPERTY_Set("editor", stringEditor);
+
+   // ## check for verbatim mode (this writes extensive information to the console for user to understand whats going on)
+   if( poptionsActive->exists("verbose") == true )
+   {                                                                           // set verbatim mode
+      PROPERTY_Set("verbose", true);                                                               LOG_INFORMATION_RAW("== Verbose mode enabled");
+   }
 
    // ## set command name
    std::string stringCommandName = poptionsActive->name();
@@ -1389,6 +1395,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
    optionsApplication.add_flag({ "print", "Reults from command should be printed" });
    optionsApplication.add_flag( {"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
    optionsApplication.add_flag({ "help", "Prints help information about command" });
+   optionsApplication.add_flag({ "verbose", "Write information about operations that might be useful for user" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "mode", "Specifies the operational mode of the tool, adapting its behavior for different code analysis purposes. Available modes: `review`, `stats`, `search`, `changes`, `audit`, `document`" });
    optionsApplication.add({ "settings", "name of settings file" });
@@ -1466,12 +1473,15 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "context", "Show information to put the result in context, normally code around"});
       optionsCommand.add({ "source", 's', "Directory to search in" });
       optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
+      optionsCommand.add({ "segment", "type of segment in code to search in"});
       optionsCommand.add({ "max", "Maximum number of results to return"});
       optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format"} );
       optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
 #endif
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 

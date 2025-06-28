@@ -76,3 +76,9 @@ TEST_CASE("[table] custom columns", "[table]")
    }
 
 }
+
+TEST_CASE("[table] custom columns", "[table]") 
+{
+   gd::table::arguments::table table_( gd::table::tag_full_meta{} );
+}
+

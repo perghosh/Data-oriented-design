@@ -91,8 +91,28 @@ is copied to that block, old block is deleted.
  *
  *
  *
- \code
- \endcode
+ @code
+ // ## Example of how to use table
+ //    Create table with all meta data, this is used to store nulls, row states and arguments
+ //    Add one "extra" column to show how that can be done.
+
+  gd::table::arguments::table table_( gd::table::tag_full_meta{} ); // create table with all meta data, this is used to store nulls, row states and arguments
+ table_.column_prepare(); // prepare columns, this is needed to set column types and names
+ table_.column_add("rstring", 0, "path");
+ table_.column_add("rstring", 0, "name");
+ table_.column_add("uint64", 0, "size");
+ table_.prepare(); // prepare table to be ready for work
+
+ uint64_t uRow = table_.row_add_one(); // add one row to table, this will return row index to last added row
+ table_.row_set(uRow, { {"path", gd::variant_view("C:\\test\\file.txt")}, {"name", gd::variant_view("file.txt")}, {"size", gd::variant_view(12345)} }, gd::table::tag_convert{});
+
+ bool b_ = table_.cell_get_variant_view(uRow, "path").as_string_view() == "C:\\test\\file.txt"; // check value in column "path"
+ assert(b_);
+
+ table_.cell_set(uRow, "path2", gd::variant_view("C:\\test\\file2.txt")); // add value to column that do not exist yet, it created automatically but just for this row
+ b_ = table_.cell_get_variant_view(uRow, "path2"). as_string_view() == "C:\\test\\file2.txt"; // check value in newly created column "path2"
+ assert(b_);
+ @endcode
  */
 class table
 {

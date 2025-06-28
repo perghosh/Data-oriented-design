@@ -133,6 +133,10 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       argumentsFind.append("max", uMax);                                      // set the maximum number of matches to find
    }
 
+   if( options_.exists("segment") == true )
+   {
+      argumentsFind.append("segment", options_["segment"].as_string());
+   }
 
    // ## Harvest files from the source paths
    for( const auto& stringSource : vectorSource )
@@ -162,9 +166,9 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
       // remove empty patterns
       vectorPatternString.erase(std::remove_if(vectorPatternString.begin(), vectorPatternString.end(), [](const std::string& str) { return str.empty(); }), vectorPatternString.end());
-      if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
 
       uPatternCount = vectorPatternString.size();                             // count the number of patterns to search for
+      if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
 
       auto result_ = pdocument->FILE_UpdatePatternFind(vectorPatternString, &argumentsFind); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
