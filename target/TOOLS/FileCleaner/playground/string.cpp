@@ -5,9 +5,11 @@ string& string::append(const char* piData)
 {
    uint64_t uLength = strlen(piData);
 
-   allocate(uLength);
+   //allocate(uLength);
 
-   char* piInsert = m_piData + m_uLength;
+   append(piData, uLength);
+
+   /*char* piInsert = m_piData + m_uLength;
    for( uint64_t uPosition = 0; uPosition < uLength; uPosition++ )
    {
       piInsert[uPosition] = piData[uPosition];
@@ -15,12 +17,18 @@ string& string::append(const char* piData)
 
    piInsert[uLength] = '\0';
    m_uLength += uLength;
+   */
    return *this;
 }
 
 string& string::append(const char* piData, size_t uLength)
 {
    // TODO: insert return statement here
+
+   if( piData == NULL )
+   {
+      return *this;
+   }
 
    allocate(uLength);
 
