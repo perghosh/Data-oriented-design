@@ -895,6 +895,9 @@ public:
    arguments& append( const std::vector<std::pair<std::string_view,std::string_view>>& vectorStringValue, tag_parse_type );
    arguments& append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue, tag_parse_type );
 
+   arguments& append(const std::string_view& stringName, const std::vector<argument>& vectorArgument);
+   arguments& append(const std::string_view& stringName, const std::vector<gd::variant_view>& vectorArgument);
+
    
 
    std::pair<bool, std::string>  append( const std::string_view& stringValue, tag_parse );
@@ -1456,6 +1459,16 @@ inline arguments& arguments::append( const std::vector<std::pair<std::string_vie
 
 inline arguments& arguments::append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue, tag_parse_type ) {
    for( auto it : vectorStringValue ) append_argument( it.first, it.second, tag_parse_type{} );
+   return *this;
+}
+
+inline arguments& arguments::append(const std::string_view& stringName, const std::vector<argument>& vectorArgument) {
+   for( const auto& it : vectorArgument ) append_argument(stringName, it);
+   return *this;
+}
+
+inline arguments& arguments::append(const std::string_view& stringName, const std::vector<gd::variant_view>& vectorArgument) {
+   for( const auto& it : vectorArgument ) append_argument(stringName, it);
    return *this;
 }
 

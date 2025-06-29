@@ -816,6 +816,10 @@ public:
    arguments& append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue, tag_parse_type );
    std::pair<bool, std::string>  append( const std::string_view& stringValue, tag_parse );
 
+   arguments& append(const std::string_view& stringName, const std::vector<argument>& vectorArgument);
+   arguments& append(const std::string_view& stringName, const std::vector<gd::variant_view>& vectorArgument);
+
+
    template<typename VALUE>
    arguments& append_pair( const std::pair<std::string_view,VALUE>& pair_ ) {
       return append_argument( pair_.first, pair_.second );
@@ -1407,6 +1411,17 @@ inline arguments& arguments::append( const std::vector<std::pair<std::string,std
    for( auto it : vectorStringValue ) append_argument( it.first, it.second, tag_parse_type{} );
    return *this;
 }
+
+inline arguments& arguments::append(const std::string_view& stringName, const std::vector<argument>& vectorArgument) {
+   for( const auto& it : vectorArgument ) append_argument(stringName, it);
+   return *this;
+}
+
+inline arguments& arguments::append(const std::string_view& stringName, const std::vector<gd::variant_view>& vectorArgument) {
+   for( const auto& it : vectorArgument ) append_argument(stringName, it);
+   return *this;
+}
+
 
 /// appends value if it is true (true, valid pointer, non 0 value for numbers, non empty strings)
 template<typename VALUE>

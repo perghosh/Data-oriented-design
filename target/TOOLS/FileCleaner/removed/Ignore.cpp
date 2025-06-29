@@ -1,5 +1,7 @@
 /**
 * @file Ignore.cpp
+* 
+* TODO: Not used yet, the idea is to store ignore patterns, maybe from gitignore files,
 */
 
 #include "Ignore.h"

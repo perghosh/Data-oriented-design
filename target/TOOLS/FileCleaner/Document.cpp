@@ -602,6 +602,14 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    gd::argument::shared::arguments& options_ = default_;
    if( pargumentsFind != nullptr ) options_ = *pargumentsFind ;
 
+   std::vector<std::string> vectorRule;
+   if( pargumentsFind->exists("rule") == true )
+   {
+      auto vector_ = pargumentsFind->get_argument_all("rule"); // Get the rules from the arguments
+      for( const auto& itRule : vector_ ) { vectorRule.push_back(itRule.as_string()); }
+   }
+
+
    uint64_t uFileIndex = 0; // index for file table
    auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
    uint64_t uMax = options_.get_argument<uint64_t>("max", 500u );             // @@TODO: Change solution to take default value for number of hits from applicaton property
@@ -643,6 +651,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
       if( stringFileBuffer.empty() == true ) continue;                        // Skip empty files
 
       // ## Find patterns in the file blob
+      uint64_t uPatternOffset = ptableLineList->size();                       // Get the current row count in the "file-linelist" table
       result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorPattern, arguments_, ptableLineList ); // Find lines with patterns in the file blob
       if( result_.first == false )
       {
@@ -650,8 +659,16 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
          continue; // Skip to the next file if there was an error
       }
 
+      if( vectorRule.empty() == false && uPatternOffset != ptableLineList->size() )
+      {
+         // Pack data needed to process the rules
+         // Expression e( stringFile, stringFileBuffer, vectorRule, uPatternOffset, ptableLineList );
+      }
+
       if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
    }
+
+   MESSAGE_Progress( "", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true} });
 
    return { true, "" };
 
@@ -717,6 +734,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
       if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
    }
+
+   MESSAGE_Progress( "", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true} });
 
    return { true, "" };
 }
