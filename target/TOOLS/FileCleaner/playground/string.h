@@ -37,7 +37,7 @@ private:
 public:
 
    string& operator+=( const char* piData ) { return append( piData ); }
-   string& operator=(const char* piData) { return assign(piData); }
+   string& operator=(const char* piData) { return assign( piData ); }
 
 // ## methods ------------------------------------------------------------------
 public:
