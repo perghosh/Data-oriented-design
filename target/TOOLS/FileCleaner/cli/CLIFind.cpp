@@ -133,10 +133,8 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       argumentsFind.append("max", uMax);                                      // set the maximum number of matches to find
    }
 
-   if( options_.exists("segment") == true )
-   {
-      argumentsFind.append("segment", options_["segment"].as_string());
-   }
+   if( options_.exists("segment") == true ) { argumentsFind.append("segment", options_["segment"].as_string()); }
+   if( options_.exists("rule") == true ) { argumentsFind.append("rule", options_.get_argument_all("rule", gd::types::tag_view{})); }
 
    // ## Harvest files from the source paths
    for( const auto& stringSource : vectorSource )

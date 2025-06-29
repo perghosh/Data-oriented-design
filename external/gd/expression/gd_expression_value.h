@@ -25,6 +25,65 @@
 
 _GD_EXPRESSION_BEGIN 
 
+/**
+ * \brief
+ *
+ *
+ */
+struct any_pointer
+{
+// ## construction ------------------------------------------------------------
+   any_pointer() : m_piName(nullptr), m_pValue(nullptr) {}
+   explicit any_pointer(void* pValue) : m_piName(nullptr), m_pValue(pValue) {}
+   explicit any_pointer(const char* piName, void* pValue) : m_piName(piName), m_pValue(pValue) {}
+   any_pointer(std::pair<const char*, void*> pair_) : m_piName(pair_.first), m_pValue(pair_.second) { assert(m_pValue != nullptr); } ///< construct from pair of name and pointer
+   // copy
+   any_pointer(const any_pointer& o) { common_construct(o); }
+   any_pointer(any_pointer&& o) noexcept { common_construct(std::move(o)); }
+   // assign
+   any_pointer& operator=(const any_pointer& o) { common_construct(o); return *this; }
+   any_pointer& operator=(any_pointer&& o) noexcept { common_construct(std::move(o)); return *this; }
+
+   ~any_pointer() {}
+   // common copy
+   void common_construct(const any_pointer& o) {
+      m_piName = o.m_piName;
+      m_pValue = o.m_pValue;
+   }
+   void common_construct(any_pointer&& o) noexcept {
+      m_piName = o.m_piName;
+      m_pValue = o.m_pValue;
+   }
+
+   // ## operator ----------------------------------------------------------------
+   operator void* ( ) const { return m_pValue; } ///< convert to void pointer
+   operator bool() const { return m_pValue != nullptr; } ///< convert to bool, true if pointer is not null
+   operator std::pair<const char*, void*>() const { return std::make_pair(m_piName, m_pValue); } ///< convert to pair of name and pointer
+   /// @brief compare two pointers, returns true if equal
+   bool operator==(const any_pointer& o) const 
+   {
+      if( m_pValue == nullptr && o.m_pValue == nullptr ) return true; // both are null
+      if( m_pValue == nullptr || o.m_pValue == nullptr ) return false; // one is null, other is not
+      return m_pValue == o.m_pValue; // compare pointers
+   }
+
+   bool operator!=(const any_pointer& o) const { return !(*this == o); } ///< compare pointers     
+   
+// ## methods -----------------------------------------------------------------
+
+/** \name DEBUG
+*///@{
+
+//@}
+
+// ## attributes --------------------------------------------------------------
+   const char* m_piName; ///< name of the pointer, used for debugging and type identification
+   void* m_pValue; ///< pointer to the value, can be any type of pointer
+
+// ## free functions ----------------------------------------------------------
+
+};
+
 
 /**
  * @brief value manages the value used when evaluating the expression
@@ -32,7 +91,7 @@ _GD_EXPRESSION_BEGIN
  */
 struct value
 {
-   using variant_t = std::variant<int64_t, double, std::string, bool>; ///< value type
+   using variant_t = std::variant<int64_t, double, std::string, bool, std::pair<const char*, void*> >; ///< value type
    using value_type = variant_t; ///< value type
 
 // ## construction ------------------------------------------------------------
@@ -144,7 +203,7 @@ struct value
 //@}
 
    // ## attributes --------------------------------------------------------------
-   std::variant<int64_t, double, std::string, bool> m_value; ///< value
+   std::variant<int64_t, double, std::string, bool, std::pair<const char*, void*> > m_value; ///< value
 
    // ## free functions ----------------------------------------------------------
 };

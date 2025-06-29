@@ -58,7 +58,7 @@ int is_code_g( char iCharacter );
 inline int is_code_g(const uint8_t iCharacter) { return is_code_g(char(iCharacter)); } ///< check if the character is a code
 
 /// @brief general variant type with the basic types used in the expressions
-using variant_t = std::variant<int64_t, double, std::string_view, bool>; ///< value type
+using variant_t = std::variant<int64_t, double, std::string_view, bool,std::pair<const char*, void*> >; ///< value type
 
 
 

@@ -24,6 +24,8 @@ set( TARGET_SOURCE_FILES_
    ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
 )
 
+file(GLOB TARGET_AUTOMATION_FILES_ "automation/*.cpp")
+
 if(WIN32)
    # Add Windows specific code
    file(GLOB FILES_ "win/*.h" "win/*.cpp" )
@@ -67,6 +69,7 @@ if( USE_TARGET_ )
       ${external_gd} ${external_pugixml} ${external_sqlite}
       ${TARGET_FILES_}   
       ${TARGET_SOURCE_FILES_}
+      ${TARGET_AUTOMATION_FILES_}
 
       "main.cpp"
    )

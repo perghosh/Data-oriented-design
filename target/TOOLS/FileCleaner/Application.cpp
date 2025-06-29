@@ -1474,6 +1474,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "source", 's', "Directory to search in" });
       optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
       optionsCommand.add({ "segment", "type of segment in code to search in"});
+      optionsCommand.add({ "rule", "rules on what to do with matches"});
       optionsCommand.add({ "max", "Maximum number of results to return"});
       optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
 #ifdef _WIN32
