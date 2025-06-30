@@ -28,7 +28,7 @@ if( USE_TARGET_ )
    set(TARGET_NAME_ "backup")
 
    add_executable(${TARGET_NAME_}
-      ${external_gd}
+      ${GD_SOURCES_ALL}
       ${TARGET_FILES_}   
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
       "main.cpp"

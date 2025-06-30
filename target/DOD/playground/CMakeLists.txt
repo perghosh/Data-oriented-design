@@ -30,7 +30,7 @@ TEMPLATE: Sample template to add executable where you can do development.
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_YourPlayCodeExecutableName")
-   add_executable(${TEST_NAME_} ${source_all} "PLAY_File1.cpp" "PLAY_File2.cpp" "PLAY_File3.cpp"  ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} ${source_all} "PLAY_File1.cpp" "PLAY_File2.cpp" "PLAY_File3.cpp"  ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp" 
    )
    target_link_libraries(${TEST_NAME_} ${CMAKE_DL_LIBS})
@@ -58,7 +58,7 @@ endif()
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_arguments")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -68,7 +68,7 @@ endif()
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_com_server")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -80,7 +80,7 @@ endif()
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_console")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -90,7 +90,7 @@ endif()
 set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_file")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -101,7 +101,7 @@ endif()
 set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_formula")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -111,7 +111,7 @@ endif()
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_gd")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -121,7 +121,7 @@ endif()
 set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_logger")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -131,7 +131,7 @@ endif()
 set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_sqlite")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} ${external_sqlite}
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} ${external_sqlite}
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -142,7 +142,7 @@ endif()
 set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_fake_data")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -154,7 +154,7 @@ endif()
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_router")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -164,7 +164,7 @@ endif()
 set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_Kevin")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -174,7 +174,7 @@ endif()
 set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_game_worm")
-   add_executable(${TEST_NAME_} "main.cpp" ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} "main.cpp" ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)

@@ -55,7 +55,7 @@ if( USE_TARGET_ )
    add_executable(${TARGET_NAME_}
       ${external_sqlite}
       ${external_pugixml}
-      ${external_gd}
+      ${GD_SOURCES_ALL}
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
 
       ${HTTP_FILES_}                                                         # current directory files

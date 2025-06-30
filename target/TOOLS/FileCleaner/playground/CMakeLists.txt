@@ -30,7 +30,7 @@ TEMPLATE: Sample template to add executable where you can do development.
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_YourPlayCodeExecutableName")
-   add_executable(${TEST_NAME_} ${source_all} "PLAY_File1.cpp" "PLAY_File2.cpp" "PLAY_File3.cpp"  ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} ${source_all} "PLAY_File1.cpp" "PLAY_File2.cpp" "PLAY_File3.cpp"  ${GD_SOURCES_ALL} ${external_catch2} 
       "${TEST_NAME_}.cpp" 
    )
    target_link_libraries(${TEST_NAME_} ${CMAKE_DL_LIBS})
@@ -50,13 +50,13 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_convert_file")
    add_executable(${TEST_NAME_}
-      ${external_gd} ${external_pugixml}
+      ${GD_SOURCES_ALL} ${external_pugixml}
       ${TARGET_PLAYGROUND_}   
       ${TARGET_SOURCE_FILES_}
       ${SOURCE_PLAYGROUND_}
    
    
-   "main.cpp" ${external_gd_core} ${external_catch2} ${external_sqlite}
+   "main.cpp" ${GD_SOURCES_ALL_core} ${external_catch2} ${external_sqlite}
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -70,13 +70,13 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_Database")
    add_executable(${TEST_NAME_}
-      ${external_gd} ${external_pugixml} ${external_sqlite}
+      ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite}
       ${TARGET_PLAYGROUND_}   
       ${TARGET_SOURCE_FILES_}
       ${SOURCE_PLAYGROUND_}
    
    
-   "main.cpp" ${external_gd_core} ${external_catch2} 
+   "main.cpp" ${GD_SOURCES_ALL_core} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -89,11 +89,11 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_read_file")
    add_executable(${TEST_NAME_}
-      ${external_gd} 
+      ${GD_SOURCES_ALL} 
       ${SOURCE_PLAYGROUND_}
    
    
-   "main.cpp" ${external_gd_core} ${external_catch2} 
+   "main.cpp" ${GD_SOURCES_ALL_core} ${external_catch2} 
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
@@ -106,7 +106,7 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_test")
    add_executable(${TEST_NAME_}
-      ${external_gd} ${external_pugixml} ${external_sqlite} ${external_catch2}
+      ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite} ${external_catch2}
       ${TARGET_PLAYGROUND_}   
       ${TARGET_SOURCE_FILES_}
       ${SOURCE_PLAYGROUND_}
@@ -125,7 +125,7 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_pugixml")
    add_executable(${TEST_NAME_}
-      ${external_gd} ${external_pugixml} ${external_sqlite}
+      ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite}
       ${TARGET_PLAYGROUND_}   
       ${TARGET_SOURCE_FILES_}
       ${SOURCE_PLAYGROUND_}
@@ -145,7 +145,7 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_rowcounter")
    add_executable(${TEST_NAME_}
-      ${external_gd} ${external_catch2}
+      ${GD_SOURCES_ALL} ${external_catch2}
       ${SOURCE_PLAYGROUND_}
    
    
@@ -160,7 +160,7 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_dir")
    add_executable(${TEST_NAME_}
-      ${external_gd} ${external_pugixml} ${external_sqlite} ${external_catch2}
+      ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite} ${external_catch2}
       ${TARGET_PLAYGROUND_}   
       ${TARGET_SOURCE_FILES_}
       ${SOURCE_PLAYGROUND_}
@@ -179,7 +179,7 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_ignore")
    add_executable(${TEST_NAME_}
-      ${external_gd} ${external_pugixml} ${external_sqlite} ${external_catch2}
+      ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite} ${external_catch2}
       ${TARGET_PLAYGROUND_}   
       ${TARGET_SOURCE_FILES_}
       ${SOURCE_PLAYGROUND_}
@@ -198,7 +198,7 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_kevinstring")
    add_executable(${TEST_NAME_}
-      ${external_gd} ${external_pugixml} ${external_sqlite} ${external_catch2}
+      ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite} ${external_catch2}
       ${TARGET_PLAYGROUND_}   
       ${TARGET_SOURCE_FILES_}
       ${SOURCE_PLAYGROUND_}
@@ -218,7 +218,7 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_table")
    add_executable(${TEST_NAME_}
-      ${external_gd} 
+      ${GD_SOURCES_ALL} 
       ${SOURCE_PLAYGROUND_}
    
    
@@ -234,7 +234,7 @@ set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_folder")
    add_executable(${TEST_NAME_}
-      ${external_gd} 
+      ${GD_SOURCES_ALL} 
       ${SOURCE_PLAYGROUND_}
    
    
