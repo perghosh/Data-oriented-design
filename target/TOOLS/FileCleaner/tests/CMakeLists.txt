@@ -45,7 +45,7 @@ set(SOURCE_TEST_ "main.h" "main.cpp")
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_Expression")
-   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_pugixml} ${external_sqlite} ${external_catch2} 
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite} ${external_catch2} 
       "${TARGET_SOURCE_FILES_}"
       "${TARGET_TEST_}"
       "${TEST_NAME_}.cpp"
@@ -61,7 +61,7 @@ endif()
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_File")
-   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_pugixml} ${external_sqlite} ${external_catch2} 
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite} ${external_catch2} 
       "${TARGET_SOURCE_FILES_}"
       "${TARGET_TEST_}"
       "${TEST_NAME_}.cpp"
@@ -76,7 +76,7 @@ endif()
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_File2")
-   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${GD_SOURCES_ALL} ${external_catch2} 
       "${TARGET_SOURCE_FILES_}"
       "${TARGET_TEST_}"
       "${TEST_NAME_}.cpp"
@@ -94,7 +94,7 @@ endif()
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_Repository")
-   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${GD_SOURCES_ALL} ${external_catch2} 
       "${TARGET_SOURCE_FILES_}"
       "${TARGET_TEST_}"
       "${TEST_NAME_}.cpp"
@@ -109,7 +109,7 @@ endif()
 set( USE_TEST_ ON )
 if( USE_TEST_ )
    set(TEST_NAME_ "TEST_History")
-   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${external_gd} ${external_catch2} 
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${GD_SOURCES_ALL} ${external_catch2} 
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
       "${TARGET_FILES_}"
       "${TEST_NAME_}.cpp"

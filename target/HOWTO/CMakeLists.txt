@@ -25,7 +25,7 @@ endfunction()
 set( USE_TARGET_ ON ) # ========================================================= arguments
 if( USE_TARGET_ )
    set(HOWTO_NAME_ "HOWTO_arguments")
-   add_executable(${HOWTO_NAME_} "main.cpp" ${external_gd} 
+   add_executable(${HOWTO_NAME_} "main.cpp" ${GD_SOURCES_ALL} 
       "${HOWTO_NAME_}.cpp"
    )
    target_include_directories(${HOWTO_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)

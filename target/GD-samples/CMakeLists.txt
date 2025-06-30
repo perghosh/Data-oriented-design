@@ -28,7 +28,7 @@ set( USE_TARGET_ ON ) # ========================================================
 if( USE_TARGET_ )
    set(TARGET_NAME_ "gd_worm")
 
-   add_executable(${TARGET_NAME_} ${external_gd}
+   add_executable(${TARGET_NAME_} ${GD_SOURCES_ALL}
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
       "worm/Application.cpp"
       "worm_main.cpp"
@@ -44,7 +44,7 @@ set( USE_TARGET_ ON ) # ========================================================
 if( USE_TARGET_ )
    set(TARGET_NAME_ "gd_defender")
 
-   add_executable(${TARGET_NAME_} ${external_gd}
+   add_executable(${TARGET_NAME_} ${GD_SOURCES_ALL}
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
 
       "defender_main.cpp"
@@ -60,7 +60,7 @@ set( USE_TARGET_ ON ) # ========================================================
 if( USE_TARGET_ )
    set(TARGET_NAME_ "gd_paint")
 
-   add_executable(${TARGET_NAME_} ${external_gd}
+   add_executable(${TARGET_NAME_} ${GD_SOURCES_ALL}
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
 
       "paint_main.cpp"
