@@ -66,7 +66,7 @@ if( USE_TARGET_ )
    set(TARGET_NAME_ "cleaner")
 
    add_executable(${TARGET_NAME_}
-      ${external_gd} ${external_pugixml} ${external_sqlite}
+      ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite}
       ${TARGET_FILES_}   
       ${TARGET_SOURCE_FILES_}
       ${TARGET_AUTOMATION_FILES_}

@@ -20,6 +20,20 @@ file(GLOB external_gd_core
    ${CMAKE_SOURCE_DIR}/external/gd/gd_variant_view.cpp
 )
 
+# Define the base path for gd library
+set(GD_BASE_PATH ${CMAKE_SOURCE_DIR}/external/gd)
+
+# Collect all .cpp and .h files recursively and by component
+file(GLOB_RECURSE GD_SOURCES_ALL ${GD_BASE_PATH}/*.cpp ${GD_BASE_PATH}/*.h)
+file(GLOB GD_SOURCES_ROOT ${GD_BASE_PATH}/*.cpp ${GD_BASE_PATH}/*.h)
+file(GLOB GD_SOURCES_COM ${GD_BASE_PATH}/com/*.cpp ${GD_BASE_PATH}/com/*.h)
+file(GLOB GD_SOURCES_CONSOLE ${GD_BASE_PATH}/console/*.cpp ${GD_BASE_PATH}/console/*.h)
+file(GLOB GD_SOURCES_DATABASE ${GD_BASE_PATH}/database/*.cpp ${GD_BASE_PATH}/database/*.h)
+file(GLOB GD_SOURCES_EXPRESSION ${GD_BASE_PATH}/expression/*.cpp ${GD_BASE_PATH}/expression/*.h)
+file(GLOB GD_SOURCES_IO ${GD_BASE_PATH}/io/*.cpp ${GD_BASE_PATH}/io/*.h)
+file(GLOB GD_SOURCES_PARSE ${GD_BASE_PATH}/parse/*.cpp ${GD_BASE_PATH}/parse/*.h)
+
+
 # catch2 code, general code to manage data
 file(GLOB external_catch2 ${CMAKE_SOURCE_DIR}/external/catch2/*.cpp)
 
