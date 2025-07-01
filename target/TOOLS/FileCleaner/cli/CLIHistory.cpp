@@ -145,13 +145,21 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 {
    //auto result_ = papplication_g->CreateDirectory();                                               if( result_.first == false ) { return result_; }
 
+   std::string stringName = "history.xml";
    std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
+
+   std::string stringFilePath = (pathCurrentDirectory / stringName).string();
+   gd::argument::arguments argumentsFile( { {"file", stringFilePath}, {"create", true} } );
+    // To create a string representing the full path to "history.xml" in pathCurrentDirectory:
 
    if( std::filesystem::exists(pathCurrentDirectory) == false )
    {
       std::filesystem::create_directory(pathCurrentDirectory); 
-      std::ofstream ofstreamFile(pathCurrentDirectory / "history.xml");
+      std::ofstream ofstreamFile(pathCurrentDirectory / stringName);
       ofstreamFile.close();
+      HistoryPrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
+
+      HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
    }
    else
    {
@@ -161,7 +169,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    return { true, "" };
 }
 
-std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argumentsCreate)
+std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argumentsDelete)
 {
    std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
 
@@ -194,17 +202,33 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
 std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& argumentsXml)
 { 
    std::string stringFileName = argumentsXml["file"].as_string();
+   bool bCreate = argumentsXml["create"];
    if( std::filesystem::exists(stringFileName) == false ) {  return { false, "History file does not exist: " + stringFileName }; }
 
 
    pugi::xml_document xmldocument;
-   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str()); if (!result_) { return { false, "Failed to load XML file: " + stringFileName }; }
+
+   if( bCreate != true )
+   {
+      pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
+   }
+
+   // kontrollera om det gick att läsa xml och om det inte gick så varför, det kan vara en tom fil.
+   // if create == true then we create xml document
+   
+   //if (!result_) { return { false, "Failed to load XML file: " + stringFileName }; }
 
    // Check if the root node is "history"
    pugi::xml_node xmlnodeRoot = xmldocument.child("history");
 
    // If the root node is not "history", create it
    if( xmlnodeRoot.empty() == true ) { xmlnodeRoot = xmldocument.append_child("history"); }
+
+   // Ensure the "entries" node exists under the root
+   pugi::xml_node xmlnodeEntries = xmlnodeRoot.child("entries");
+
+   // If the "entries" node does not exist, create it
+   if( xmlnodeEntries.empty() == true ) { xmlnodeEntries = xmlnodeRoot.append_child("entries"); }
 
    // save the modified XML document back to the file
    xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default );
