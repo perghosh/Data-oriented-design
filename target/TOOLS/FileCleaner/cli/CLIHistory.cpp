@@ -10,35 +10,71 @@
 * @par XML Format Example
 * @code{.xml}
 * <?xml version="1.0" encoding="UTF-8"?>
-* <history>
-*   <entries>
-*     <entry>
-*       <timestamp>2025-07-01T12:34:56Z</timestamp>
-*       <operation>delete</operation>
-*       <details>Removed 5 files from temp directory</details>
-*     </entry>
-*     <entry>
-*       <timestamp>2025-07-01T13:00:00Z</timestamp>
-*       <operation>scan</operation>
-*       <details>Scanned C:\Users\Example\Downloads</details>
-*     </entry>
-*   </entries>
+ <history>
+   <entries>
+     <entry>
+       <timestamp>2025-07-01T12:34:56Z</timestamp>
+       <operation>delete</operation>
+       <arguments>Removed 5 files from temp directory</arguments>
+     </entry>
+     <entry>
+       <timestamp>2025-07-01T13:00:00Z</timestamp>
+       <operation>count</operation>
+       <arguments><![CDATA[ --source  "C:\\dev\\home\\DOD\\external\\gd\\" --recursive 3 --pattern "std::string_view,std::string,std::list -print]]></arguments>
+     </entry>
+     <entry>
+       <timestamp>2025-07-01T14:00:00Z</timestamp>
+       <operation>count</operation>
+       <arguments><![CDATA[ --source  "*" -R --pattern "@TAG" --segment string -print]]></arguments>
+     </entry>
+   </entries>
+   <entries>
+    <entry sequence="001">
+      <when>2025-07-01T11:17:00Z</when>
+      <what>
+        <operation>count</operation>
+        <parameters><![CDATA[--source "C:\\dev\\home\\DOD\\external\\gd\\" --recursive 3 --pattern "std::string_view,std::string,std::list" --print]]></parameters>
+      </what>
+      <outcome>
+        <status>success</status>
+        <duration>1.25s</duration>
+        <matches-found>42</matches-found>
+        <files-scanned>156</files-scanned>
+      </outcome>
+      <annotations>
+        <user-note>String analysis for GD library refactoring</user-note>
+        <bookmarked>yes</bookmarked>
+        <project>gd-modernization</project>
+      </annotations>
+    </entry>
+    </entries>
 * </history>
 * 
 <CommandHistory>
-    <Command>
-        <CommandString>ls -la /home/user</CommandString>
-        <Date>2025-07-01T11:17:00Z</Date>
-        <Type>System</Type>
-        <Favorite>true</Favorite>
-    </Command>
-    <Command>
-        <CommandString>git commit -m "Initial commit"</CommandString>
-        <Date>2025-07-01T10:30:00Z</Date>
-        <Type>VersionControl</Type>
-        <Favorite>false</Favorite>
-    </Command>
-</CommandHistory>* 
+   <Commands>
+       <Command>
+           <CommandString><![CDATA[ --source  "C:\\dev\\home\\DOD\\external\\gd\\" --recursive 3 --pattern "std::string_view,std::string,std::list -print]]></CommandString>
+           <Date>2025-07-01T11:17:00Z</Date>
+           <Type>count</Type>
+           <Favorite>true</Favorite>
+           <Description>Count occurrences of std::string_view in specified directory</Description>
+       </Command>
+       <Command>
+           <CommandString><![CDATA[ --source  "*" -R --pattern "@TAG" --segment string -print]]></CommandString>
+           <Date>2025-07-01T10:30:00Z</Date>
+           <Type>count</Type>
+           <Favorite>false</Favorite>
+           <Description>Count occurrences of @TAG in all files</Description>
+       </Command>
+       <Command>
+           <CommandString><![CDATA[ --source "C:\\Users\\NewUser\\Documents" --recursive 2 --pattern "example" -print]]></CommandString>
+           <Date>2025-07-02T09:15:00Z</Date>
+           <Type>delete</Type>
+           <Favorite>false</Favorite>
+           <Description>Delete files matching example pattern in specified directory</Description>
+       </Command>
+   </Commands>
+</CommandHistory> 
 * @endcode
 *
 * @par JSON Format Example
