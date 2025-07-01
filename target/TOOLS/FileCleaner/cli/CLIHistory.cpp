@@ -161,7 +161,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    return { true, "" };
 }
 
-std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argumentsCreate)
+std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argumentsDelete)
 {
    std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
 
@@ -205,6 +205,12 @@ std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& 
 
    // If the root node is not "history", create it
    if( xmlnodeRoot.empty() == true ) { xmlnodeRoot = xmldocument.append_child("history"); }
+
+   // Ensure the "entries" node exists under the root
+   pugi::xml_node xmlnodeEntries = xmlnodeRoot.child("entries");
+
+   // If the "entries" node does not exist, create it
+   if( xmlnodeEntries.empty() == true ) { xmlnodeEntries = xmldocument.append_child("entries"); }
 
    // save the modified XML document back to the file
    xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default );
