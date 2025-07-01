@@ -79,6 +79,16 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
    auto result_ = Find_g(vectorSource, pargumentsFind, pdocument);            // find files in the source directory based on the find arguments
    if( result_.first == false ) return result_;                               // if find failed, return the error
 
+   if( pargumentsFind->exists("rule") == true )
+   {
+      auto vector_ = pargumentsFind->get_argument_all("rule");
+      std::vector<std::string> vectorRule;
+      for( auto& rule : vector_ ) { vectorRule.push_back(rule.as_string()); }
+
+      result_ = ReadSnippet_g( vectorRule, pdocument );
+      if( result_.first == false ) return result_;                            // if find failed, return the error
+   }
+
    if( options_.exists("print") == false || options_["print"].is_true() == true )  // default is to print result
    {
       gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uint64_t(2u) } }); // hardcode pattern count to 2 for printing results and allways print patterns
@@ -87,7 +97,8 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
       // check if vs flag is set, if so then print to Visual Studio output
       if( options_.exists("vs") == true ) { argumentsPrint.append("vs", true); }
 
-      FindPrint_g(pdocument, argumentsPrint); // Print the results of the find operation
+      result_ = FindPrint_g(pdocument, argumentsPrint);                       // Print the results of the find operation
+      if( result_.first == false ) return result_;                            // if print failed, return the error
    }
 
 
@@ -134,7 +145,6 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
    }
 
    if( options_.exists("segment") == true ) { argumentsFind.append("segment", options_["segment"].as_string()); }
-   if( options_.exists("rule") == true ) { argumentsFind.append("rule", options_.get_argument_all("rule", gd::types::tag_view{})); }
 
    // ## Harvest files from the source paths
    for( const auto& stringSource : vectorSource )
@@ -171,7 +181,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       auto result_ = pdocument->FILE_UpdatePatternFind(vectorPatternString, &argumentsFind); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
    }
-   if( options_.exists("rpattern") == true )
+   else if( options_.exists("rpattern") == true )
    {
       auto vectorRPattern = options_.get_argument_all("rpattern", gd::types::tag_view{}); // get all regex patterns
       std::vector<std::string> vectorPattern; // store regex patterns as strings
@@ -228,6 +238,41 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
    return { true, "" }; 
 }
+
+std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vectorRule, CDocument* pdocument )
+{                                                                                                  assert( vectorRule.empty() == false ); assert(pdocument != nullptr); 
+   auto* ptableLineList = pdocument->CACHE_Get("file-linelist", true);        // ensure the "file-linelist" table is in cache
+
+   if( ptableLineList->size() == 0 ) { return { true, ""}; }
+
+   auto* ptableSnippet = pdocument->CACHE_Get("file-snippet", true);          // ensure the "file-snippet" table is in cache
+
+   // ## convert rules to source code patterns used to collect snippets
+
+   for( const auto& stringRule : vectorRule )
+   {
+      std::string stringPattern = stringRule;
+      auto uPosition = stringPattern.find(':');
+      if( uPosition != std::string::npos ) continue; // if the rule contains a colon, then it is not a valid pattern, so skip it
+      std::string stringRuleName = stringRule.substr(0, uPosition); // get rule name
+
+      if( stringRuleName == "select-between" )
+      {
+         std::string stringArguments = stringRule.substr(uPosition + 1);      // get the pattern after the colon
+         auto vector_ = gd::utf8::split(stringArguments, ',');                // split the arguments by comma
+
+         std::string stringCode("source::select_between( from, to )");
+         gd::argument::shared::arguments argumentsPattern({ {"from", vector_[0]}, {"to", vector_[1]} }); // create arguments for the pattern
+         COMMAND_ReadSnippet_g(argumentsPattern, ptableLineList, ptableSnippet); // read snippet from the source code using the pattern
+      }
+
+
+   }
+
+
+   return { true, "" }; 
+}
+
 
 std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint )
 {                                                                                                  assert(pdocument != nullptr);

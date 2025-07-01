@@ -1689,6 +1689,12 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
 
    return { true, "" };                                                       // Return success if no matches found
 }
+
+
+std::pair<bool, std::string> COMMAND_ReadSnippet_g( const gd::argument::shared::arguments& stringCode, const gd::table::dto::table* ptableLineList, gd::table::dto::table* ptableSnippet)
+{
+    return {true, ""};
+}
 // 0TAG0FileExtensions.PrepareState
 
 
