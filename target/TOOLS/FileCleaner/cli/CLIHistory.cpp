@@ -1,6 +1,69 @@
 /**
- * @file CLIHistory.cpp
- */
+* @file CLIHistory.cpp
+* @brief Implements history management for the cleaner console application.
+*
+* @section history_file_format History File Format
+*
+* The history information for the cleaner console application is stored in either XML or JSON format.
+* Each entry records an operation performed by the cleaner, including a timestamp, operation type, and optional details.
+*
+* @par XML Format Example
+* @code{.xml}
+* <?xml version="1.0" encoding="UTF-8"?>
+* <history>
+*   <entries>
+*     <entry>
+*       <timestamp>2025-07-01T12:34:56Z</timestamp>
+*       <operation>delete</operation>
+*       <details>Removed 5 files from temp directory</details>
+*     </entry>
+*     <entry>
+*       <timestamp>2025-07-01T13:00:00Z</timestamp>
+*       <operation>scan</operation>
+*       <details>Scanned C:\Users\Example\Downloads</details>
+*     </entry>
+*   </entries>
+* </history>
+* 
+<CommandHistory>
+    <Command>
+        <CommandString>ls -la /home/user</CommandString>
+        <Date>2025-07-01T11:17:00Z</Date>
+        <Type>System</Type>
+        <Favorite>true</Favorite>
+    </Command>
+    <Command>
+        <CommandString>git commit -m "Initial commit"</CommandString>
+        <Date>2025-07-01T10:30:00Z</Date>
+        <Type>VersionControl</Type>
+        <Favorite>false</Favorite>
+    </Command>
+</CommandHistory>* 
+* @endcode
+*
+* @par JSON Format Example
+* @code{.json}
+* {
+*   "history": [
+*     {
+*       "timestamp": "2025-07-01T12:34:56Z",
+*       "operation": "delete",
+*       "details": "Removed 5 files from temp directory"
+*     },
+*     {
+*       "timestamp": "2025-07-01T13:00:00Z",
+*       "operation": "scan",
+*       "details": "Scanned C:\\Users\\Example\\Downloads"
+*     }
+*   ]
+* }
+* @endcode
+*
+* @section history_file_fields Fields
+* - @b timestamp: ISO 8601 formatted date and time of the operation.
+* - @b operation: The type of operation performed (e.g., "delete", "scan").
+* - @b details: (Optional) Additional information about the operation.
+*/
 
 // @TAG #cli #history
 
@@ -14,7 +77,6 @@
 
 #include "CLIHistory.h"
 
-                           
 
 
 
