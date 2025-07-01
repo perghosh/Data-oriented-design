@@ -202,7 +202,7 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
 std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& argumentsXml)
 { 
    std::string stringFileName = argumentsXml["file"].as_string();
-   bool bCreate = argumentsXml["create"];
+   bool bCreate = argumentsXml["create"];                                      // TODO: What if create is not set? Default to false?
    if( std::filesystem::exists(stringFileName) == false ) {  return { false, "History file does not exist: " + stringFileName }; }
 
 
