@@ -145,13 +145,19 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 {
    //auto result_ = papplication_g->CreateDirectory();                                               if( result_.first == false ) { return result_; }
 
+   std::string stringName = "history.xml";
    std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
+
+   std::string stringFilePath = (pathCurrentDirectory / stringName).string();
+   gd::argument::arguments argumentsFile( { {"file", stringFilePath}, {"create", true} } );
+    // To create a string representing the full path to "history.xml" in pathCurrentDirectory:
 
    if( std::filesystem::exists(pathCurrentDirectory) == false )
    {
       std::filesystem::create_directory(pathCurrentDirectory); 
-      std::ofstream ofstreamFile(pathCurrentDirectory / "history.xml");
+      std::ofstream ofstreamFile(pathCurrentDirectory / stringName);
       ofstreamFile.close();
+      HistoryPrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
    }
    else
    {
@@ -198,7 +204,12 @@ std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& 
 
 
    pugi::xml_document xmldocument;
-   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str()); if (!result_) { return { false, "Failed to load XML file: " + stringFileName }; }
+   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str()); 
+
+   // kontrollera om det gick att läsa xml och om det inte gick så varför, det kan vara en tom fil.
+   
+   
+   //if (!result_) { return { false, "Failed to load XML file: " + stringFileName }; }
 
    // Check if the root node is "history"
    pugi::xml_node xmlnodeRoot = xmldocument.child("history");
