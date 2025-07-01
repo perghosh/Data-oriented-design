@@ -387,6 +387,7 @@ public:
    operator double() const    { assert(type_number() == variant_type::eTypeNumberDouble); return m_V.d; }
    operator void*() const     { assert(type_number() == variant_type::eTypeNumberPointer); return m_V.p; }
    operator const char*() const { assert(type_number() == variant_type::eTypeNumberString || type_number() == variant_type::eTypeNumberUtf8String || type_number() == variant_type::eTypeNumberJson || type_number() == variant_type::eTypeNumberXml ); return m_V.pbsz; }
+   operator std::string() const { return as_string(); }
 #if defined(__cpp_char8_t)
    operator const char8_t*() const { assert(type_number() == variant_type::eTypeNumberUtf8String); return m_V.putf8_const; }
 #endif
