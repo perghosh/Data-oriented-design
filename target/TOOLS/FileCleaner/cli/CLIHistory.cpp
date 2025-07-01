@@ -110,6 +110,8 @@ std::pair<bool, std::string> c(const gd::argument::arguments& argumentsXml)
 
    // save the modified XML document back to the file
    xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default );
+
+   return { true, "" };
 }
 
 NAMESPACE_CLI_END
