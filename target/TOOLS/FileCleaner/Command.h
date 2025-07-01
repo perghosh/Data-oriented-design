@@ -70,6 +70,8 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
 std::pair<bool, std::string> COMMAND_FindPattern_g( const std::string& stringCode, const std::vector<std::string>& vectorPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_ );
 std::pair<bool, std::string> COMMAND_FindPattern_g( const std::string& stringCode, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_ );
 
+std::pair<bool, std::string> COMMAND_ReadSnippet_g( const gd::argument::shared::arguments& stringCode, const gd::table::dto::table* ptableLineList, gd::table::dto::table* ptableSnippet );
+
 std::pair<bool, std::string> TABLE_AddSumRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);
 
 std::pair<bool, std::string> TABLE_RemoveZeroRow(gd::table::dto::table* ptable_, const std::vector<unsigned>& vectorColumnIndex);

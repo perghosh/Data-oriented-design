@@ -602,14 +602,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    gd::argument::shared::arguments& options_ = default_;
    if( pargumentsFind != nullptr ) options_ = *pargumentsFind ;
 
-   std::vector<std::string> vectorRule;
-   if( pargumentsFind->exists("rule") == true )
-   {
-      auto vector_ = pargumentsFind->get_argument_all("rule"); // Get the rules from the arguments
-      for( const auto& itRule : vector_ ) { vectorRule.push_back(itRule.as_string()); }
-   }
-
-
    uint64_t uFileIndex = 0; // index for file table
    auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
    uint64_t uMax = options_.get_argument<uint64_t>("max", 500u );             // @@TODO: Change solution to take default value for number of hits from applicaton property
@@ -657,12 +649,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
       {
          ERROR_Add(result_.second); // Add error to the internal error list
          continue; // Skip to the next file if there was an error
-      }
-
-      if( vectorRule.empty() == false && uPatternOffset != ptableLineList->size() )
-      {
-         // Pack data needed to process the rules
-         // Expression e( stringFile, stringFileBuffer, vectorRule, uPatternOffset, ptableLineList );
       }
 
       if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
@@ -880,14 +866,22 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       if( p_ == nullptr )
       {
          // file-linelist table: key | file-key | filename  
-         //                      line | row | column | pattern  
+         //                      line | row | column | pattern, segment  
          //                      line = the row in text where pattern was found  
          ptable_ = std::make_unique<table>(table(uTableStyle,
             { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
-              {"rstring", 0, "line"}, {"uint64", 0, "row"}, {"uint64", 0, "column"}, {"string", 32, "pattern"} }, gd::table::tag_prepare{})
+              {"rstring", 0, "line"}, {"uint64", 0, "row"}, {"uint64", 0, "column"}, {"string", 32, "pattern"}, {"string", 10, "segment"} }, gd::table::tag_prepare{})
          );
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
+   }
+   else if( stringId == "file-snippet" )
+   { 
+      ptable_ = std::make_unique<table>(table(uTableStyle,
+         { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
+         {"string", 10, "format"}, {"rstring", 0, "snippet"} }, gd::table::tag_prepare{})
+      );
+      ptable_->property_set("id", stringId);                                  // set id for table, used to identify table in cache
    }
 
    if( ptable != nullptr )
