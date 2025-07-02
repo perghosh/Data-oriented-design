@@ -1772,6 +1772,13 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
    {
       // No special states for text files
    }
+   else if( stringExtension == ".zig" )
+   {
+      state_.add(std::string_view("LINECOMMENT"), "//", "\n");
+      state_.add(std::string_view("BLOCKCOMMENT"), "/*", "*/");
+      state_.add(std::string_view("STRING"), "\"", "\"", "\\");
+      state_.add(std::string_view("RAWSTRING"), "\\\\", "\\\\");
+   }
    else
    {
       return { false, "Unknown file type: " + stringFile };
@@ -2442,11 +2449,11 @@ bool CApplication::IsTextFile_s(const std::string_view& stringExtension)
    static const std::set<std::string_view> setTextFileExtension = 
    {
       ".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm", ".css", ".js", ".ts",
-      ".jsx", ".tsx", ".py", ".java", ".c", ".cpp", ".h", ".hpp", ".ipp", ".go",
+      ".jsx", ".tsx", ".py", ".java", ".c", ".cpp", ".cxx", ".h", ".hpp", ".ipp", ".go",
       ".cs", ".fs", ".kt", ".swift", ".rs", ".lua", ".php", ".rb",
       ".pl", ".pm", ".sh", ".bash", ".yaml", ".yml", ".toml",
       ".dart", ".clj", ".vim", ".bat", ".cmd", ".ps1",
-      ".mak", ".ninja", ".makefile", ".ini"
+      ".mak", ".ninja", ".makefile", ".ini", ".zig"
    };
 
    return setTextFileExtension.find(stringExtension) != setTextFileExtension.end();
