@@ -713,7 +713,11 @@ path& path::add(const std::string_view& stringName)
 {
    std::string stringPath( stringName );
    normalize_path_s(stringPath);
-   if ( has_separator() == false || stringPath[0] != m_iPathDivider_s ) m_stringPath += m_iPathDivider_s;
+#ifdef _WIN32
+   if( has_separator() == false || stringPath[0] != m_iPathDivider_s ) m_stringPath += m_iPathDivider_s;
+#else
+   if( has_separator() == false ) m_stringPath += '/';
+#endif
    m_stringPath += stringPath;
    return *this;
 }
@@ -743,7 +747,7 @@ std::pair<bool, std::string> path::add(const std::initializer_list<std::string_v
    for ( auto it : listName )
    {
       add(it);
-      if ( callback_(m_stringPath) == false ) return { false, m_stringPath };
+      if( callback_(m_stringPath) == false ) return { false, m_stringPath };
    }
    return { true, "" };
 }
@@ -773,7 +777,7 @@ std::pair<bool, std::string> path::add(const std::vector<std::string_view>& vect
    for ( auto it : vectorName )
    {
       add(it);
-      if ( callback_(m_stringPath) == false ) return { false, m_stringPath };
+      if( callback_(m_stringPath) == false ) return { false, m_stringPath };
    }
    return { true, "" };
 }
@@ -788,7 +792,7 @@ std::pair<bool, std::string> path::add(const std::vector<std::string_view>& vect
 path path::concatenate(const path& path_) const
 {
    std::string stringNewPath = m_stringPath;
-   if ( has_separator() == false && path_.has_begin_separator() == false )
+   if( has_separator() == false && path_.has_begin_separator() == false )
    {
       stringNewPath += m_iPathDivider_s;
    }
