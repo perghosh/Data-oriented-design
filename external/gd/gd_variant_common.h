@@ -24,6 +24,8 @@
 
 _GD_BEGIN
 
+#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+
 /// create rule for `variant_view` and `variant`
 template <typename VARIANT>
 concept IsVariant = std::is_same_v<VARIANT, gd::variant> || std::is_same_v<VARIANT, gd::variant_view>;
@@ -50,6 +52,8 @@ RETURN_TYPE get(const VARIANT& v_)
    else
       return (RETURN_TYPE)v_;
 }
+
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT
 
 _GD_END
 
