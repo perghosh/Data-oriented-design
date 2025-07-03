@@ -125,6 +125,8 @@ NAMESPACE_CLI_BEGIN
 
 static std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& argumentsXml);
 
+static std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments& argumentsEntry);
+
 std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
 {
    const gd::cli::options& options_ = *poptionsHistory;
@@ -149,7 +151,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
 
    std::string stringFilePath = (pathCurrentDirectory / stringName).string();
-   gd::argument::arguments argumentsFile( { {"file", stringFilePath}, {"create", true} } );
+   gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"} });
     // To create a string representing the full path to "history.xml" in pathCurrentDirectory:
 
    if( std::filesystem::exists(pathCurrentDirectory) == false )
@@ -158,6 +160,8 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
       std::ofstream ofstreamFile(pathCurrentDirectory / stringName);
       ofstreamFile.close();
       HistoryPrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
+
+      HistoryAppendEntry_s(argumentsFile); // TODO: This is just temporary, we need to remove this later
 
       HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
    }
@@ -202,7 +206,7 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
 std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& argumentsXml)
 { 
    std::string stringFileName = argumentsXml["file"].as_string();
-   bool bCreate = argumentsXml["create"];                                      // TODO: What if create is not set? Default to false?
+   bool bCreate = argumentsXml["create"].is_true();                                      // TODO: What if create is not set? Default to false?
    if( std::filesystem::exists(stringFileName) == false ) {  return { false, "History file does not exist: " + stringFileName }; }
 
 
@@ -212,9 +216,6 @@ std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& 
    {
       pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
    }
-
-   // kontrollera om det gick att läsa xml och om det inte gick så varför, det kan vara en tom fil.
-   // if create == true then we create xml document
    
    //if (!result_) { return { false, "Failed to load XML file: " + stringFileName }; }
 
@@ -232,6 +233,37 @@ std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& 
 
    // save the modified XML document back to the file
    xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default );
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments& argumentsEntry)
+{
+   std::string stringFileName = argumentsEntry["file"].as_string();
+
+   std::string stringCommand = argumentsEntry["command"].as_string();
+   std::string stringLine = argumentsEntry["line"].as_string();
+
+   if( std::filesystem::exists(stringFileName) == false ) { return { false, "History file does not exist: " + stringFileName }; }
+
+
+   pugi::xml_document xmldocument;
+   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
+   if( !result_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
+
+   // Check if entries exist
+   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
+   if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
+
+   // Create a new entry node
+   pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");
+
+   xmlnodeEntry.append_child("command").text().set(stringCommand.c_str());
+   xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
+
+   // save the modified XML document back to the file
+   xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default);
+
 
    return { true, "" };
 }
