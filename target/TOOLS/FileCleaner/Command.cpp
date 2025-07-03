@@ -25,7 +25,7 @@
 
 #include "automation/code-analysis/Expression.h"
 
-
+#include "automation/code-analysis/Run.h"
 
 #include "Command.h"
 
@@ -1695,6 +1695,9 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
 
 std::pair<bool, std::string> COMMAND_ReadSnippet_g( const std::string& stringCode, const gd::argument::shared::arguments& argumentsCode, const gd::table::dto::table* ptableLineList, gd::table::dto::table* ptableSnippet)
 {
+
+   return RunExpression_g(stringCode, argumentsCode, ptableLineList, ptableSnippet);
+   /*
    using namespace gd::expression;
 
    std::vector<gd::expression::token> vectorToken;
@@ -1712,7 +1715,9 @@ std::pair<bool, std::string> COMMAND_ReadSnippet_g( const std::string& stringCod
    runtime_.add( { uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
    //runtime_.add( { uMethodSelectSize_g, pmethodSelect_g, std::string("source")});
 
+   //expression_source
 
+   */
    return {true, ""};
 }
 // 0TAG0FileExtensions.PrepareState

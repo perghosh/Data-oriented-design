@@ -19,6 +19,9 @@
 
 NAMESPACE_AUTOMATION_BEGIN
 
+extern const gd::expression::method pmethodSelect_g[];
+extern const size_t uMethodSelectSize_g;
+
 /**
  * \brief Information about the source used in methods injected into expression engine.
  *
@@ -64,7 +67,7 @@ struct expression_source
 
 };
 
-std::pair<bool, std::string> ExecuteExpression_g(const std::string_view& stringExpression,  const std::vector<gd::expression::value>& vectorVariable );   
+// std::pair<bool, std::string> ExecuteExpression_g(const std::string_view& stringExpression,  const std::vector<gd::expression::value>& vectorVariable );   
 
 
 
