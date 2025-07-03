@@ -79,7 +79,7 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
    auto result_ = Find_g(vectorSource, pargumentsFind, pdocument);            // find files in the source directory based on the find arguments
    if( result_.first == false ) return result_;                               // if find failed, return the error
 
-   if( pargumentsFind->exists("rule") == true )
+   if( pargumentsFind->exists("rule") == true )                                // @TAG #active
    {
       auto vector_ = pargumentsFind->get_argument_all("rule");
       std::vector<std::string> vectorRule;
@@ -239,6 +239,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
    return { true, "" }; 
 }
 
+// @TAG #active
 std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vectorRule, CDocument* pdocument )
 {                                                                                                  assert( vectorRule.empty() == false ); assert(pdocument != nullptr); 
    auto* ptableLineList = pdocument->CACHE_Get("file-linelist", true);        // ensure the "file-linelist" table is in cache
@@ -253,7 +254,7 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
    {
       std::string stringPattern = stringRule;
       auto uPosition = stringPattern.find(':');
-      if( uPosition != std::string::npos ) continue; // if the rule contains a colon, then it is not a valid pattern, so skip it
+      if( uPosition == std::string::npos ) continue; // if the rule contains a colon, then it is not a valid pattern, so skip it
       std::string stringRuleName = stringRule.substr(0, uPosition); // get rule name
 
       if( stringRuleName == "select-between" )
@@ -263,7 +264,7 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
 
          std::string stringCode("source::select_between( from, to )");
          gd::argument::shared::arguments argumentsPattern({ {"from", vector_[0]}, {"to", vector_[1]} }); // create arguments for the pattern
-         COMMAND_ReadSnippet_g(argumentsPattern, ptableLineList, ptableSnippet); // read snippet from the source code using the pattern
+         COMMAND_ReadSnippet_g(stringCode, argumentsPattern, ptableLineList, ptableSnippet); // read snippet from the source code using the pattern
       }
 
 
