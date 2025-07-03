@@ -42,6 +42,11 @@ file(GLOB FILES_ "configuration/*.h" "configuration/*.cpp" )
 list(APPEND TARGET_FILES_ ${FILES_})
 unset(FILES_)
 
+file(GLOB FILES_ "automation/*.h" "automation/*.cpp" "automation/code-analysis/*.h" "automation/code-analysis/*.cpp" )
+list(APPEND TARGET_FILES_ ${FILES_})
+unset(FILES_)
+
+
 
 
 add_subdirectory("playground") # playground cleaner logic

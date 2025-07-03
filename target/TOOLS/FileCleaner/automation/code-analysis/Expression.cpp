@@ -1,5 +1,4 @@
 #include <filesystem>
-#include <fuctional>
 
 #include "gd/gd_variant_view.h"
 #include "gd/gd_table_aggregate.h"
@@ -9,10 +8,12 @@
 #include "gd/expression/gd_expression_method_01.h"
 #include "gd/expression/gd_expression_runtime.h"
 
+#include "Expression.h"
 
 NAMESPACE_AUTOMATION_BEGIN
 
-#include "Expression.h"
+using namespace gd::expression;
+
 
 static std::pair<bool, std::string> CountLines_s( runtime* pruntime, const std::vector<value>& vectorArgument )
 {                                                                                                  assert(vectorArgument.size() > 0);
@@ -41,10 +42,11 @@ const method pmethodSelect_g[] = {
    { (void*)&SelectLines_s, "select_lines", 1, 0, method::eFlagRuntime },
 };
 
-constexpr size_t uMethodSelectSize_g = sizeof(pmethodSelect_g) / sizeof(method);
+const size_t uMethodSelectSize_g = sizeof(pmethodSelect_g) / sizeof(gd::expression::method);
 
 
 // executes expression and takes callback to inject values to runtime
+/*
 std::pair<bool, std::string> ExecuteExpression_g(const std::string_view& stringExpression, 
                                                  const std::vector<gd::expression::value>& vectorVariable
    )   
@@ -73,6 +75,7 @@ std::pair<bool, std::string> ExecuteExpression_g(const std::string_view& stringE
 
    return { true, "" };
 }
+*/
 
 
 NAMESPACE_AUTOMATION_END
