@@ -786,8 +786,8 @@ value token::calculate_s( const std::string_view& stringExpression, const std::v
 
    // ## calculate the result
    runtime runtime_(vectorVariable);
-   runtime_.add( { 4, pmethodDefault_g, ""});
-   runtime_.add( { 3, pmethodString_g, std::string("str")});
+   runtime_.add( { uMethodDefaultSize_g, pmethodDefault_g, ""});
+   runtime_.add( { uMethodStringSize_g, pmethodString_g, std::string("str")});
    value valueResult;
    result = calculate_s(vectorPostfix, &valueResult, runtime_);
    if( result.first == false ) { throw std::invalid_argument(result.second); }
@@ -808,8 +808,8 @@ value token::calculate_s( const std::string_view& stringExpression, const std::v
 
    // ## calculate the result
    runtime runtime_(vectorVariable);
-   runtime_.add( { 4, pmethodDefault_g, ""});
-   runtime_.add( { 3, pmethodString_g, std::string("str")});
+   runtime_.add( { uMethodDefaultSize_g, pmethodDefault_g, ""});
+   runtime_.add( { uMethodStringSize_g, pmethodString_g, std::string("str")});
 
    callback_(runtime_);                                                        // add more runtime context to the callback
 
@@ -861,8 +861,8 @@ value token::calculate_s(const std::string_view& stringExpression, std::unique_p
    if( pruntime == nullptr ) 
    { 
       pruntime = std::make_unique<runtime>();
-      pruntime->add({ 4, pmethodDefault_g, ""});
-      pruntime->add({ 3, pmethodString_g, "str"});
+      pruntime->add({ uMethodDefaultSize_g, pmethodDefault_g, ""});
+      pruntime->add({ uMethodStringSize_g, pmethodString_g, "str"});
    }
 
    return calculate_s(stringExpression, *pruntime.get() );

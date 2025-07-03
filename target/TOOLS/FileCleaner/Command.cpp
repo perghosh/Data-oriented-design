@@ -23,6 +23,8 @@
 #include "gd/expression/gd_expression_method_01.h"
 #include "gd/expression/gd_expression_runtime.h"
 
+#include "automation/code-analysis/Expression.h"
+
 
 
 #include "Command.h"
@@ -1691,9 +1693,27 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
 }
 
 
-std::pair<bool, std::string> COMMAND_ReadSnippet_g( const gd::argument::shared::arguments& stringCode, const gd::table::dto::table* ptableLineList, gd::table::dto::table* ptableSnippet)
+std::pair<bool, std::string> COMMAND_ReadSnippet_g( const std::string& stringCode, const gd::argument::shared::arguments& argumentsCode, const gd::table::dto::table* ptableLineList, gd::table::dto::table* ptableSnippet)
 {
-    return {true, ""};
+   using namespace gd::expression;
+
+   std::vector<gd::expression::token> vectorToken;
+   std::pair<bool, std::string> result = gd::expression::token::parse_s(stringCode, vectorToken, gd::expression::tag_formula{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   // ## compile tokens and that means to convert tokens to postfix, place them in correct order to be processed
+   std::vector<gd::expression::token> vectorPostfix;
+   result = gd::expression::token::compile_s(vectorToken, vectorPostfix, gd::expression::tag_postfix{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   gd::expression::runtime runtime_;
+ 
+   runtime_.add( { uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
+   runtime_.add( { uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
+   //runtime_.add( { uMethodSelectSize_g, pmethodSelect_g, std::string("source")});
+
+
+   return {true, ""};
 }
 // 0TAG0FileExtensions.PrepareState
 
