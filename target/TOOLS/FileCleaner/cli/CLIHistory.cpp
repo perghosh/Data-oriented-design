@@ -266,11 +266,17 @@ std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments&
    xmlnodeEntry.append_child("date").text().set(stringDate.c_str());
    xmlnodeEntry.append_child("command").text().set(stringCommand.c_str());
    
+   std::string stringLine;
+
    for( auto it : vectorLines )
    {
-      std::string stringLine = it.as_string();
-      xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
+      std::string stringTemp = it.as_string();
+      stringLine += stringTemp + " ";
+      //xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
    }
+
+   xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
+
    //xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
 
    // save the modified XML document back to the file
