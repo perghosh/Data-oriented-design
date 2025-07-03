@@ -127,6 +127,8 @@ static std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::argu
 
 static std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments& argumentsEntry);
 
+static std::string CurrentTime_s();
+
 std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
 {
    const gd::cli::options& options_ = *poptionsHistory;
@@ -151,7 +153,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
 
    std::string stringFilePath = (pathCurrentDirectory / stringName).string();
-   gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"} });
+   gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()} } );     // TODO: This is just temporary, we need to edit this later
     // To create a string representing the full path to "history.xml" in pathCurrentDirectory:
 
    if( std::filesystem::exists(pathCurrentDirectory) == false )
@@ -240,11 +242,14 @@ std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& 
 std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments& argumentsEntry)
 {
    std::string stringFileName = argumentsEntry["file"].as_string();
-
+                                                                               assert(!stringFileName.empty());
+   std::string stringDate = argumentsEntry["date"].as_string();
    std::string stringCommand = argumentsEntry["command"].as_string();
-   std::string stringLine = argumentsEntry["line"].as_string();
+   //std::string stringLine = argumentsEntry["line"].as_string();
 
-   if( std::filesystem::exists(stringFileName) == false ) { return { false, "History file does not exist: " + stringFileName }; }
+   std::vector<gd::argument::arguments::argument> vectorLines = argumentsEntry.get_argument_all("line");
+
+   //if( std::filesystem::exists(stringFileName) == false ) { return { false, "History file does not exist: " + stringFileName }; }
 
 
    pugi::xml_document xmldocument;
@@ -258,14 +263,33 @@ std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments&
    // Create a new entry node
    pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");
 
+   xmlnodeEntry.append_child("date").text().set(stringDate.c_str());
    xmlnodeEntry.append_child("command").text().set(stringCommand.c_str());
-   xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
+   
+   for( auto it : vectorLines )
+   {
+      std::string stringLine = it.as_string();
+      xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
+   }
+   //xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
 
    // save the modified XML document back to the file
    xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default);
 
 
    return { true, "" };
+}
+
+std::string CurrentTime_s()
+{
+   auto now_ = std::chrono::system_clock::now();
+   auto nowTime_ = std::chrono::system_clock::to_time_t(now_);
+   auto tm_ = *std::localtime(&nowTime_);
+
+   std::ostringstream ostringstreamTime;
+   ostringstreamTime << std::put_time(&tm_, "%Y-%m-%d %H:%M:%S");
+
+   return ostringstreamTime.str();
 }
 
 NAMESPACE_CLI_END
