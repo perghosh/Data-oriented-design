@@ -13,6 +13,7 @@
 
 #include "gd/gd_arguments.h"
 #include "gd/gd_cli_options.h"
+#include "gd/gd_table_io.h"
 
 
 
@@ -33,6 +34,9 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory);
 std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& argumentsCreate );
 
 /// \brief Delete history file or folder
-std::pair<bool, std::string> HistoryDelete_g( const gd::argument::arguments& argumentsCreate );
+std::pair<bool, std::string> HistoryDelete_g( const gd::argument::arguments& argumentsDelete);
+
+/// \brief Print history file
+std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint);
 
 NAMESPACE_CLI_END

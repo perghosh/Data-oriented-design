@@ -165,6 +165,8 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 
       HistoryAppendEntry_s(argumentsFile); // TODO: This is just temporary, we need to remove this later
 
+      HistoryPrint_g(argumentsFile); // Print the history file to console, this is just for debug purposes
+
       HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
    }
    else
@@ -183,6 +185,40 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
    {
       std::filesystem::remove_all(pathCurrentDirectory); // remove the history folder
    }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint)
+{
+   std::string stringFileName = argumentsPrint["file"].as_string();
+                                                                               assert(!stringFileName.empty());
+   auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+
+   pugi::xml_document xmldocument;
+   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
+   if( !result_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
+
+   // Check if entries exist
+   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
+   if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
+
+   // Iterate through each entry
+   for( auto entry : xmlnodeEntries.children("entry") )
+   {
+      std::string stringDate = entry.child("date").text().get();
+      std::string stringCommand = entry.child("command").text().get();
+      std::string stringLine = entry.child("line").text().get();
+      // Add the entry to the table
+      ptable->row_add();
+      ptable->cell_set(ptable->get_row_count() - 1, "date", stringDate);
+      ptable->cell_set(ptable->get_row_count() - 1, "command", stringCommand);
+      ptable->cell_set(ptable->get_row_count() - 1, "line", stringLine);
+   }
+
+   std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
+   std::cout << "\n" << stringTable << "\n";
+
 
    return { true, "" };
 }
