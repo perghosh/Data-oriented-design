@@ -85,6 +85,11 @@ std::pair<bool, std::string> ExpressionSource::GotoLine()
             {
                unsigned uLength = (unsigned)m_state.activate(it);             // activate state
                if( uLength > 1 ) it += ( uLength - 1 );                       // skip to end of state marker and if it is more than 1 character, skip to end of state
+               if( m_uCurrentLine >= m_uGotoLine )
+               {
+                  set_source( std::move(stringBuffer) );                      // set source code to the buffer
+                  return { true, "" };                                        // return success
+               }
                stringBuffer.clear();
             }
             else
@@ -99,6 +104,12 @@ std::pair<bool, std::string> ExpressionSource::GotoLine()
             if( m_state.deactivate( it, &uLength ) == true ) 
             {
                if( uLength > 1 ) it += (uLength - 1);                         // skip to end of state marker and if it is more than 1 character, skip to end of state
+               if( m_uCurrentLine >= m_uGotoLine )
+               {
+                  set_source( std::move(stringBuffer) );                      // set source code to the buffer
+                  return { true, "" };                                        // return success
+               }
+
                // check for ending linebreak 
                stringBuffer.clear();
             }

@@ -56,6 +56,7 @@ struct ExpressionSource
 // ## methods -----------------------------------------------------------------
    const std::string& source() const { return m_stringSource; } ///< get source code
    void set_source(const std::string_view& stringSource) { m_stringSource = std::string(stringSource); } ///< set source code
+   void set_source(std::string&& stringSource) { m_stringSource = std::move(stringSource); } ///< set source code
    const std::string& file() const { return m_stringFile; } ///< get file name
    void set_file(const std::string_view& stringFile) { m_stringFile = std::string(stringFile); } ///< set file name
    uint64_t goto_line() const { return m_uGotoLine; } ///< get goto line number
@@ -90,6 +91,7 @@ struct ExpressionSource
    std::ifstream m_ifstream; ///< input file stream, used to read source code from file if needed
    gd::parse::window::line m_line; ///< line window, used to read lines from source code
    gd::expression::parse::state m_state; ///< state of the parser, used to read lines from source code
+
 
 
 // ## free functions ----------------------------------------------------------
