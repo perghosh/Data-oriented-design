@@ -262,7 +262,7 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
          std::string stringArguments = stringRule.substr(uPosition + 1);      // get the pattern after the colon
          auto vector_ = gd::utf8::split(stringArguments, ',');                // split the arguments by comma
 
-         std::string stringCode("source::select_between( from, to )");
+         std::string stringCode("source::select_between( source, from, to )");
          gd::argument::shared::arguments argumentsPattern({ {"from", vector_[0]}, {"to", vector_[1]} }); // create arguments for the pattern
          COMMAND_ReadSnippet_g(stringCode, argumentsPattern, ptableLineList, ptableSnippet); // read snippet from the source code using the pattern
       }

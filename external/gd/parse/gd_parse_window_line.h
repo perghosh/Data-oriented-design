@@ -18,9 +18,8 @@
 #include "../gd_types.h"
 
 
-#ifndef _GD_PARSE_BEGIN
-#  define _GD_PARSE_BEGIN namespace gd { namespace parse {
-#  define _GD_PARSE_END } }
+#ifndef _GD_PARSE_WINDOW_BEGIN
+
 #  define _GD_PARSE_WINDOW_BEGIN namespace gd { namespace parse { namespace window {
 #  define _GD_PARSE_WINDOW_END } } }
 #endif
@@ -142,6 +141,8 @@ public:
 
    /// create buffer, this will allocate memory for the buffer and set the size of the buffer
    void create();
+   /// create buffer with specified size and capacity, this will allocate memory for the buffer and set the size of the buffer
+   void create( uint64_t uSize, uint64_t uCapacity );
    /// write data to buffer, this will write data to the end of the buffer and return the number of bytes written
    uint64_t write(const uint8_t* puData, uint64_t uSize); 
    /// rotate buffer, move data from end of buffer to start of buffer
@@ -163,7 +164,7 @@ public:
    uint8_t* data() const { assert(m_uCapacity > m_uSize); assert( m_puBuffer != nullptr ); return m_puBuffer; } ///< pointer to buffer
    uint64_t size() const { assert( m_uCapacity > m_uSize ); return m_uSize; } ///< size of buffer
    uint64_t size_summary() const { return m_uSizeSummary; } ///< size of buffer
-   uint64_t capacity() const { assert( m_uCapacity > m_uSize ); return m_uCapacity; } ///< capacity of buffer
+   uint64_t capacity() const { assert( m_uCapacity > 0 ? m_uCapacity > m_uSize : true ); return m_uCapacity; } ///< capacity of buffer
    uint64_t size_margin() const { return m_uCapacity - m_uSize; }              ///< size of the extra space after buffer used to process data
 
    bool eof() const { return m_uLast == 0; } ///< end of file, no more data in buffer
@@ -186,6 +187,8 @@ public:
    uint64_t count(const uint8_t* puData, uint64_t uSize, uint64_t uOffset = 0) const; ///< count data in buffer
    uint64_t count(const std::string_view& stringData, uint64_t uOffset = 0) const { return count((const uint8_t*)stringData.data(), stringData.length(), uOffset); } ///< count data in buffer
    uint64_t count(char iCharacter, uint64_t uOffset = 0) const;
+
+   void reset() { m_uFirst = 0; m_uLast = 0; m_uSizeSummary = 0; }            ///< reset positions in buffer, this will reset the first and last position in buffer to 0 and size summary to 0
 
    // ## convenience methods
 

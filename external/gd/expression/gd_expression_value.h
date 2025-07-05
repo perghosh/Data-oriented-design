@@ -91,7 +91,7 @@ struct any_pointer
  */
 struct value
 {
-   using variant_t = std::variant<int64_t, double, std::string, bool, std::pair<const char*, void*> >; ///< value type
+   using variant_t = std::variant<int64_t, double, std::string, bool, std::pair<const char*, void*>, std::nullptr_t>; ///< value type
    using value_type = variant_t; ///< value type
 
 // ## construction ------------------------------------------------------------
@@ -100,6 +100,8 @@ struct value
    explicit value( double dValue ): m_value( dValue ) {}
    explicit value( const std::string stringValue ): m_value( stringValue ) {}
    explicit value( bool bValue ): m_value( bValue ) {}
+   explicit value( const std::string_view& stringValue) : m_value(std::string(stringValue)) {}
+   explicit value( const std::pair<const char*, void*>& pair_) : m_value(pair_) {}
    explicit value( const variant_t& value_ ): m_value( value_ ) {}
    explicit value(variant_t&& value_) : m_value(std::move(value_)) {}
    // copy
@@ -145,6 +147,10 @@ struct value
    bool is_string() const { return std::holds_alternative<std::string>(m_value); }
    /// @brief check if value holds a boolean
    bool is_bool() const { return std::holds_alternative<bool>(m_value); }
+   /// @brief check if value holds a pointer
+   bool is_pointer() const { return std::holds_alternative<std::pair<const char*, void*>>(m_value); }
+   /// @brief check if value holds a null pointer
+   bool is_null() const { return std::holds_alternative<std::nullptr_t>(m_value); }
 //@}
 
 /** \name GETTERS
@@ -162,6 +168,8 @@ struct value
    const std::string& get_string() const { assert( is_string() ); return std::get<std::string>(m_value); }
    /// @brief get boolean value, converts integer and double to boolean if needed 
    bool get_bool() const;
+   /// @brief get pointer value
+   void* get_pointer() const { assert( is_pointer() ); return std::get<std::pair<const char*, void*>>(m_value).second; }  
 //@}
 
 /** \name SETTERS
@@ -203,7 +211,7 @@ struct value
 //@}
 
    // ## attributes --------------------------------------------------------------
-   std::variant<int64_t, double, std::string, bool, std::pair<const char*, void*> > m_value; ///< value
+   std::variant<int64_t, double, std::string, bool, std::pair<const char*, void*>, std::nullptr_t > m_value; ///< value
 
    // ## free functions ----------------------------------------------------------
 };
