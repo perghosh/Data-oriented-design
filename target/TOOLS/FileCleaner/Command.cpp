@@ -342,15 +342,15 @@ std::pair<bool, std::string> FILES_ReadLines_g(const std::string& stringPath, ui
  * When parsing the file for matching patterns it only reads parts of lines that are relevant and that is not the same as what the user likes to see when results are displayed.
  * Users what to see the full line from source code, so this method reads the full line from the file and places it in the table.
  *
- * @param pfstream A pointer to an input file stream from which to read lines.
+ * @param pifstream A pointer to an input file stream from which to read lines.
  * @param ptable_ A pointer to the table where the lines will be stored.
  * @param uRowStartOffset The starting row offset in the table from which to begin reading lines.
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
-std::pair<bool, std::string> FILES_ReadFullRow_g(std::ifstream* pfstream, gd::table::dto::table* ptable_, uint64_t uRowStartOffset)
-{                                                                                                  assert(ptable_ != nullptr); assert(uRowStartOffset < ptable_->get_row_count() ); assert( pfstream != nullptr );
+std::pair<bool, std::string> FILES_ReadFullRow_g(std::ifstream* pifstream, gd::table::dto::table* ptable_, uint64_t uRowStartOffset)
+{                                                                                                  assert(ptable_ != nullptr); assert(uRowStartOffset < ptable_->get_row_count() ); assert( pifstream != nullptr );
    unsigned uColumnRow = ptable_->column_get_index("row");                     // get column index for row
    unsigned uColumnLine = ptable_->column_get_index("line");                   // get column index for line
 
@@ -358,8 +358,8 @@ std::pair<bool, std::string> FILES_ReadFullRow_g(std::ifstream* pfstream, gd::ta
    gd::parse::window::line windowLine_(8192 - 512, 8192, gd::types::tag_create{});// create line buffer
 
    auto uAvailable = windowLine_.available();
-   pfstream->read((char*)windowLine_.buffer(), uAvailable);
-   auto uReadSize = pfstream->gcount();                                        // get number of valid bytes read
+   pifstream->read((char*)windowLine_.buffer(), uAvailable);
+   auto uReadSize = pifstream->gcount();                                        // get number of valid bytes read
    windowLine_.update(uReadSize);                                              // Update valid size in line buffer
 
    std::string stringLine;                                                     // string to hold line read from file
@@ -403,8 +403,8 @@ std::pair<bool, std::string> FILES_ReadFullRow_g(std::ifstream* pfstream, gd::ta
       if( uReadSize > 0 )                                                     // was it possible to read data last read, then more data is available
       {
          auto uAvailable = windowLine_.available();                           // get available space in buffer to be filled
-         pfstream->read((char*)windowLine_.buffer(), windowLine_.available());// read more data into available space in buffer
-         uReadSize = pfstream->gcount();
+         pifstream->read((char*)windowLine_.buffer(), windowLine_.available());// read more data into available space in buffer
+         uReadSize = pifstream->gcount();
          windowLine_.update(uReadSize);                                       // update valid size in line buffer
       }
    }
@@ -1715,7 +1715,7 @@ std::pair<bool, std::string> COMMAND_ReadSnippet_g( const std::string& stringCod
    runtime_.add( { uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
    //runtime_.add( { uMethodSelectSize_g, pmethodSelect_g, std::string("source")});
 
-   //expression_source
+   //ExpressionSource
 
    */
    return {true, ""};

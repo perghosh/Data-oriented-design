@@ -72,10 +72,38 @@ void line::common_construct(line&& o) noexcept
  * \endcode
  */
 void line::create() 
-{                                                                                                  assert( m_uSize >= 64 ); // minimum size is 128 bytes
+{                                                                                                  assert( m_puBuffer == nullptr );  assert( m_uSize >= 64 ); // minimum size is 128 bytes
+   reset(); // reset the line before creating it
    if( m_uCapacity == 0 ) m_uCapacity = m_uSize + (m_uSize >> 1);              // 50% extra space if not specified
                                                                                                    assert( m_uCapacity > m_uSize ); // capacity must be larger than size
    m_puBuffer = new uint8_t[m_uCapacity]; 
+}
+
+/** ---------------------------------------------------------------------------
+ * \brief Creates and initializes the buffer with specified size and capacity.
+ *
+ * This method allocates memory for the main buffer based on the provided size and capacity.
+ * If capacity is not specified (equal to 0), it defaults to 150% of the size.
+ * It also sets up the look-ahead buffer to point to the position after the main buffer.
+ *
+ * \pre uSize >= 64 (minimum size is 64 bytes)
+ * \pre m_uCapacity > m_uSize after initialization
+ *
+ * \post m_puBuffer points to a newly allocated buffer of size m_uCapacity
+ *
+ * \code
+ * line l;
+ * l.create(256, 384); // Allocates buffer with 256 bytes size and 384 bytes capacity
+ * \endcode
+ */
+void line::create(uint64_t uSize, uint64_t uCapacity)
+{                                                                                                  assert( m_puBuffer == nullptr ); assert(uSize >= 64); // minimum size is 64 bytes
+   reset(); // reset the line before creating it
+
+   m_uSize = uSize;
+   m_uCapacity = uCapacity != 0 ? uCapacity : (uSize + (uSize >> 1)); // 50% extra if capacity is not provided
+                                                                                                   assert(m_uCapacity > m_uSize); // capacity must be larger than size
+   m_puBuffer = new uint8_t[m_uCapacity]; // allocate buffer
 }
 
 /** ---------------------------------------------------------------------------

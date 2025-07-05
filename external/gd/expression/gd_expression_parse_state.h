@@ -355,7 +355,7 @@ public:
    void set_marker(uint8_t uMark) { m_arrayMarkerHint[uMark] = 1; } ///< set marker hint for character
    void set_marker(char iMark) { set_marker(uint8_t(iMark)); } ///< set marker hint for character
 
-   void clear() { m_vectorRule.clear(); m_arrayMarkerHint = { 0 }; } ///< clear vector of rules
+   void clear() { m_vectorRule.clear(); m_arrayMarkerHint = { 0 }; clear_state(); } ///< clear vector of rules
    void clear_state() { m_iActive = -1; } ///< clear state
    bool empty() const { return m_vectorRule.empty(); } ///< check if vector of rules is empty
    size_t size() const { return m_vectorRule.size(); } ///< get size of vector of rules

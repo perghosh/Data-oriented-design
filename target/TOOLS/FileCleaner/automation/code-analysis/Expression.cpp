@@ -8,6 +8,8 @@
 #include "gd/expression/gd_expression_method_01.h"
 #include "gd/expression/gd_expression_runtime.h"
 
+#include "../../Application.h"
+
 #include "Expression.h"
 
 NAMESPACE_AUTOMATION_BEGIN
@@ -28,8 +30,14 @@ static std::pair<bool, std::string> SelectLines_s( runtime* pruntime, const std:
    return { true, "" };
 }
 
+/// sample: `select_between(source, start, end)`
 static std::pair<bool, std::string> SelectBetween_s( runtime* pruntime, const std::vector<value>& vectorArgument )
-{                                                                                                  assert(vectorArgument.size() > 0);
+{                                                                                                  assert(vectorArgument.size() > 2);
+   auto source_ = vectorArgument[2];                                                               assert(source_.is_pointer() == true);
+
+   ExpressionSource* psource = (ExpressionSource*)source_.get_pointer();                           assert( psource->file().empty() == false );
+   auto result_ = psource->GotoLine();
+   if( result_.first == false ) { return result_; } // error in goto line
 
    return { true, "" };
 }
@@ -38,44 +46,115 @@ static std::pair<bool, std::string> SelectBetween_s( runtime* pruntime, const st
 // Array of MethodInfo for visual studio operations
 const method pmethodSelect_g[] = {
    { (void*)&CountLines_s, "count_lines", 1, 0, method::eFlagRuntime },
-   { (void*)&SelectBetween_s, "select_between", 2, 0, method::eFlagRuntime },
+   { (void*)&SelectBetween_s, "select_between", 3, 0, method::eFlagRuntime },
    { (void*)&SelectLines_s, "select_lines", 1, 0, method::eFlagRuntime },
 };
 
 const size_t uMethodSelectSize_g = sizeof(pmethodSelect_g) / sizeof(gd::expression::method);
 
+// "args": [ "find", "--source", "target/TOOLS/FileCleaner", "-R", "--pattern", "@brief", "--segment", "comment", "--max", "30", "--context", "10", "-vs", "-verbose", "--rule", "\"select-between:@code,@endcode\"" ],
 
-// executes expression and takes callback to inject values to runtime
-/*
-std::pair<bool, std::string> ExecuteExpression_g(const std::string_view& stringExpression, 
-                                                 const std::vector<gd::expression::value>& vectorVariable
-   )   
+std::pair<bool, std::string> ExpressionSource::GotoLine()
 {
-   // ## convert string to tokens
-   std::vector<gd::expression::token> vectorToken;
-   std::pair<bool, std::string> result = gd::expression::token::parse_s(stringExpression, vectorToken, gd::expression::tag_formula{});
-   if( result.first == false ) { throw std::invalid_argument(result.second); }
+   std::string stringBuffer;
+   std::string stringInStateBuffer;
 
-   // ## compile tokens and that means to convert tokens to postfix, place them in correct order to be processed
-   std::vector<gd::expression::token> vectorPostfix;
-   result = gd::expression::token::compile_s(vectorToken, vectorPostfix, gd::expression::tag_postfix{});
-   if( result.first == false ) { throw std::invalid_argument(result.second); }
+   if( m_uCurrentLine == 0 || m_uCurrentLine > m_uGotoLine )
+   {
+      if( m_uCurrentLine > 0 )
+      { 
+         m_ifstream.clear();
+         m_ifstream.seekg(0);
+         Reset();
+      }
 
-   // ## calculate the result
-   // NOTE: vectorVariable is not defined in this scope. Assuming member variable or needs to be passed in.
-   gd::expression::runtime runtime_(vectorVariable);
+      auto uAvailable = m_line.available();
+      m_ifstream.read((char*)m_line.buffer(), uAvailable);
+      auto uReadSize = m_ifstream.gcount();                                   // get number of valid bytes read
+      m_line.update(uReadSize);                                               // Update valid size in line buffer
+   }
 
-   runtime_.add( { uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
-   runtime_.add( { uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
-   runtime_.add( { uMethodSelectSize_g, pmethodSelect_g, std::string("source")});
+   while( m_line.eof() == false )
+   {
+      auto [first_, last_] = m_line.range(gd::types::tag_pair{});             // get range of valid data in buffer
+      for( auto it = first_; it < last_; it++ ) 
+      {
+         if( m_state.in_state() == false )                                    // not in a state? that means we are reading source code
+         {
+            if( m_state[*it] != 0 && m_state.exists(it) == true )             // switch to state ?
+            {
+               unsigned uLength = (unsigned)m_state.activate(it);             // activate state
+               if( uLength > 1 ) it += ( uLength - 1 );                       // skip to end of state marker and if it is more than 1 character, skip to end of state
+               stringBuffer.clear();
+            }
+            else
+            {
+               stringBuffer.push_back(*it);                                   // add character to buffer
+            }
+         }
+         else
+         {
+            // ## check if we have found end of state
+            unsigned uLength;
+            if( m_state.deactivate( it, &uLength ) == true ) 
+            {
+               if( uLength > 1 ) it += (uLength - 1);                         // skip to end of state marker and if it is more than 1 character, skip to end of state
+               // check for ending linebreak 
+               stringBuffer.clear();
+            }
+            else
+            {
+               stringBuffer.push_back(*it);                                   // add character to buffer
+            }
+         }
 
-   gd::expression::value valueResult;
-   result = gd::expression::token::calculate_s(vectorPostfix, &valueResult, runtime_);
-   if( result.first == false ) { throw std::invalid_argument(result.second); }
+         if( *it == '\n' ) m_uCurrentLine++;                                  // increment current line number if we have found a line break
+      }
 
+      m_line.rotate();                                                        // rotate buffer
+
+      auto uAvailable = m_line.available();                                   // get available space in buffer to be filled
+      m_ifstream.read((char*)m_line.buffer(), m_line.available());            // read more data into available space in buffer
+      auto uSize = m_ifstream.gcount();
+      m_line.update(uSize);                                                   // update valid size in line buffer
+   }
+  
    return { true, "" };
 }
-*/
+
+/** ---------------------------------------------------------------------------
+ * @brief Attempts to open the file specified by m_stringFile, preparing internal state and returning the result.
+ * @return A std::pair where the first element is true if the file was opened successfully, or false if an error occurred; the second element is an error message if opening failed, or an empty string on success.
+ */
+std::pair<bool, std::string> ExpressionSource::OpenFile()
+{                                                                                                  assert( m_stringFile.empty() == false ); assert( std::filesystem::exists(m_stringFile) == true );
+// ## prepare state
+   m_state.clear();
+   auto result_ = CApplication::PrepareState_s( {{"source",m_stringFile}}, m_state);
+   if( result_.first == false ) return result_;                                // error in state preparation
+
+   // ## open file
+   CloseFile();
+   m_ifstream.open(m_stringFile);
+   if( !m_ifstream.is_open() ) return { false, "Failed to open the file" };
+
+   // ## initialize line window
+   if( m_line.capacity() == 0 )
+   {
+      m_line.create(8096 - 1024, 8096);
+   }
+
+    
+   // This function is a placeholder for opening a file.
+   // The actual implementation would depend on the context and requirements.
+   // For now, we return true indicating success and an empty string for the message.
+   return { true, "" };
+}
+
+void ExpressionSource::CloseFile()
+{
+   if(m_ifstream.is_open()) { m_ifstream.close(); }
+}
 
 
 NAMESPACE_AUTOMATION_END
