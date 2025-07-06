@@ -334,10 +334,10 @@ std::pair<bool, std::string> CreateTable_s(gd::table::dto::table& tableHistory, 
       std::string stringCommand = entry.child("command").text().get();
       std::string stringLine = entry.child("line").text().get();
       // Add the entry to the table  
-      tableHistory.row_add();
-      tableHistory.cell_set(tableHistory.get_row_count() - 1, "date", stringDate);
-      tableHistory.cell_set(tableHistory.get_row_count() - 1, "command", stringCommand);
-      tableHistory.cell_set(tableHistory.get_row_count() - 1, "line", stringLine);
+      auto uRow = tableHistory.row_add_one();
+      tableHistory.cell_set(uRow, "date", stringDate);
+      tableHistory.cell_set(uRow, "command", stringCommand);
+      tableHistory.cell_set(uRow, "line", stringLine);
    }
    return { true, "" };
 }
