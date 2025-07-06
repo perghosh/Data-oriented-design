@@ -191,11 +191,19 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
    return { true, "" };
 }
 
+std::unique_ptr<gd::table::dto::table> CreateTable02_s()
+{
+   auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+
+   return std::move(ptable);
+}
+
 std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint)
 {
    std::string stringFileName = argumentsPrint["file"].as_string();
                                                                                assert(!stringFileName.empty());
-   auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+   //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+   auto ptable = CreateTable02_s(); // Create a table to hold the history data                                                                               
 
    CreateTable_s(*ptable, argumentsPrint); // Create the table from the XML file
 

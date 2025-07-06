@@ -25,6 +25,12 @@ static std::pair<bool, std::string> CountLines_s( runtime* pruntime, const std::
    return { true, "" };
 }
 
+static std::pair<bool, std::string> SelectAll_s( runtime* pruntime, const std::vector<value>& vectorArgument )
+{                                                                                                  assert(vectorArgument.size() > 0);
+
+   return { true, "" };
+}
+
 
 static std::pair<bool, std::string> SelectLines_s( runtime* pruntime, const std::vector<value>& vectorArgument )
 {                                                                                                  assert(vectorArgument.size() > 0);
