@@ -3,6 +3,8 @@
 #include "gd/gd_variant_view.h"
 #include "gd/gd_table_aggregate.h"
 
+#include "gd/math/gd_math_string.h"
+
 #include "gd/expression/gd_expression_value.h"
 #include "gd/expression/gd_expression_token.h"
 #include "gd/expression/gd_expression_method_01.h"
@@ -38,6 +40,14 @@ static std::pair<bool, std::string> SelectBetween_s( runtime* pruntime, const st
    ExpressionSource* psource = (ExpressionSource*)source_.get_pointer();                           assert( psource->file().empty() == false );
    auto result_ = psource->GotoLine();
    if( result_.first == false ) { return result_; } // error in goto line
+
+   if( psource->source().empty() == false )
+   {
+      std::string from_ = vectorArgument[1].get_string();                                          assert(from_.empty() == false);
+      std::string to_ = vectorArgument[0].get_string();                                            assert(from_.empty() == false);
+
+      std::string stringResult = gd::math::string::select_between(psource->source(), from_, to_);  // select text between from_ and to_
+   }
 
    return { true, "" };
 }
