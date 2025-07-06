@@ -127,6 +127,8 @@ static std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::argu
 
 static std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments& argumentsEntry);
 
+static std::pair<bool, std::string> CreateTable_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable);
+
 static std::string CurrentTime_s();
 
 std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
@@ -195,26 +197,7 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
                                                                                assert(!stringFileName.empty());
    auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
 
-   pugi::xml_document xmldocument;
-   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
-   if( !result_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
-
-   // Check if entries exist
-   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
-   if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
-
-   // Iterate through each entry
-   for( auto entry : xmlnodeEntries.children("entry") )
-   {
-      std::string stringDate = entry.child("date").text().get();
-      std::string stringCommand = entry.child("command").text().get();
-      std::string stringLine = entry.child("line").text().get();
-      // Add the entry to the table
-      ptable->row_add();
-      ptable->cell_set(ptable->get_row_count() - 1, "date", stringDate);
-      ptable->cell_set(ptable->get_row_count() - 1, "command", stringCommand);
-      ptable->cell_set(ptable->get_row_count() - 1, "line", stringLine);
-   }
+   CreateTable_s(*ptable, argumentsPrint); // Create the table from the XML file
 
    std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
    std::cout << "\n" << stringTable << "\n";
@@ -319,6 +302,35 @@ std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments&
    xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default);
 
 
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CreateTable_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable)
+{
+   std::string stringFileName = argumentsTable["file"].as_string();
+   assert(!stringFileName.empty());
+   //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+
+   pugi::xml_document xmldocument;
+   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
+   if( !result_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
+
+   // Check if entries exist
+   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
+   if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
+
+   // Iterate through each entry  
+   for( auto entry : xmlnodeEntries.children("entry") )
+   {
+      std::string stringDate = entry.child("date").text().get();
+      std::string stringCommand = entry.child("command").text().get();
+      std::string stringLine = entry.child("line").text().get();
+      // Add the entry to the table  
+      tableHistory.row_add();
+      tableHistory.cell_set(tableHistory.get_row_count() - 1, "date", stringDate);
+      tableHistory.cell_set(tableHistory.get_row_count() - 1, "command", stringCommand);
+      tableHistory.cell_set(tableHistory.get_row_count() - 1, "line", stringLine);
+   }
    return { true, "" };
 }
 
