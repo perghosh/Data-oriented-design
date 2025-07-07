@@ -40,7 +40,9 @@ static std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::argu
 
 static std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments& argumentsEntry);
 
-static std::pair<bool, std::string> CreateTable_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable);
+static std::pair<bool, std::string> HistoryReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable);
+
+static std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s();
 
 static std::string CurrentTime_s();
 
@@ -104,7 +106,7 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
    return { true, "" };
 }
 
-std::unique_ptr<gd::table::dto::table> CreateTable02_s()
+std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s()
 {
    auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
 
@@ -116,9 +118,9 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
    std::string stringFileName = argumentsPrint["file"].as_string();
                                                                                assert(!stringFileName.empty());
    //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
-   auto ptable = CreateTable02_s(); // Create a table to hold the history data                                                                               
+   auto ptable = HistoryCreateTable_s(); // Create a table to hold the history data                                                                               
 
-   CreateTable_s(*ptable, argumentsPrint); // Create the table from the XML file
+   HistoryReadFile_s(*ptable, argumentsPrint); // Create the table from the XML file
 
    std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
    std::cout << "\n" << stringTable << "\n";
@@ -226,7 +228,7 @@ std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments&
    return { true, "" };
 }
 
-std::pair<bool, std::string> CreateTable_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable)
+std::pair<bool, std::string> HistoryReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable)
 {
    std::string stringFileName = argumentsTable["file"].as_string();
    assert(!stringFileName.empty());
