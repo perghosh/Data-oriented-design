@@ -597,8 +597,9 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
    std::stack<value> stackValue;
    std::string stringAssignVariable; // special case when we need to assign variable
 
-   for( const auto& token_ : vectorToken )
+   for( auto itToken = vectorToken.begin(); itToken != vectorToken.end(); ++itToken )
    {
+      const auto& token_ = *itToken; // current token
       switch( token_.get_token_type() )
       {
       case token::token_type_s("OPERATOR"):
@@ -652,13 +653,21 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                {
                   stackValue.push(value( variantValue ));
                }
-               else if( stringAssignVariable.empty() == true )
-               {
-                  stringAssignVariable.assign( stringVariable );              // prepare this for assign operator, only one assign value can be active at any given time
-               }
                else
                {
-                  return { false, "[calculate_s] - Variable not found: " + std::string(stringVariable) };
+                  // peek for assign operator
+                  auto itPeek = itToken;
+                  ++itPeek;                                                   // peek next token
+                  if( itPeek != vectorToken.end() && itPeek->get_token_type() == token::token_type_s("OPERATOR") && itPeek->get_name() == "=" )
+                  {
+                     // this is an assign operator, prepare variable for assignment
+                     stringAssignVariable.assign( stringVariable );          // prepare this for assign operator, only one assign value can be active at any given time
+                  }
+                  else
+                  {
+                     // push nullptr value to stack
+                     stackValue.push(value());                                   // push empty value to stack
+                  }
                }
             }
          }

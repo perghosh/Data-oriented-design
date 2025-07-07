@@ -98,6 +98,61 @@ std::string select_until(const std::string_view& stringText, const std::string_v
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Extracts a specific line from stringText based on the given line index.
+ *
+ * This function searches for the line at the specified index (0-based) in stringText.
+ * Lines are separated by newline characters ('\n'). If the index is 0, the first line
+ * is returned. If the index is out of bounds (negative or exceeds the number of lines),
+ * an empty string is returned. The returned line does not include the newline character.
+ *
+ * @param stringText The source string to search within.
+ * @param uLineIndex The 0-based index of the line to extract.
+ * @return std::string The line at the specified index, or an empty string if index is out of bounds.
+ * 
+ * @code
+ * std::string text = "Line 1\nLine 2\nLine 3";
+ * std::string line = select_line(text, 1, '\n');
+ * @endcode
+ */
+std::string select_line(const std::string_view& stringText, size_t uLineIndex, char iNewLine )
+{                                                                                                  assert(stringText.empty() == false);
+   size_t uCurrentLine = 0; // Current line index being processed
+   size_t uStart = 0; // Start position for searching
+   size_t uEnd = 0; // End position for the found line
+
+   // ## Handle first line (index 0)
+   if(uLineIndex == 0) 
+   {
+      uEnd = stringText.find(iNewLine);
+      if(uEnd == std::string_view::npos) { return std::string(stringText); }   // Single line, return entire string
+      return std::string(stringText.substr(0, uEnd));
+   }
+
+   // ## Search for the target line
+   while(uCurrentLine < uLineIndex) 
+   {
+      uStart = stringText.find(iNewLine, uStart);
+      if(uStart == std::string_view::npos) { return {}; }                      // Line index out of bounds
+      uStart++;                                                                // Move past the newline
+      uCurrentLine++;
+   }
+
+   // ## Find the end of the target line
+   uEnd = stringText.find(iNewLine, uStart);
+   if(uEnd == std::string_view::npos) 
+   {
+      // Last line in string
+      if(uStart < stringText.length()) 
+      {
+         return std::string(stringText.substr(uStart));
+      }
+      return {};                                                               // Empty line at end
+   }
+
+   return std::string(stringText.substr(uStart, uEnd - uStart));
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Extracts a substring from stringText that is located between `stringFrom` and `stringTo`.
  *
  * This function searches for the first occurrence of `stringFrom` in stringText and, if found,
