@@ -340,24 +340,42 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
 
    for( const auto& stringRule : vectorRule )
    {
+      std::string stringRuleName;
+
       std::string stringPattern = stringRule;
       auto uPosition = stringPattern.find(':');
-      if( uPosition == std::string::npos ) continue; // if the rule contains a colon, then it is not a valid pattern, so skip it
-      std::string stringRuleName = stringRule.substr(0, uPosition); // get rule name
+      if( uPosition == std::string::npos ) { stringRuleName = stringRule; } // if no colon is found, then the whole rule is the name
+      else
+      {
+         stringRuleName = stringRule.substr(0, uPosition); // get rule name
+         stringPattern = stringRule.substr(uPosition + 1); // get the pattern after the colon
+      }
 
-      if( stringRuleName == "select-between" )
+      if( stringRuleName == "select-all" )
+      {
+         std::string stringCode("source::select_all( source )");
+         gd::argument::shared::arguments argumentsPattern({}); // create arguments for the pattern
+         auto result_ = COMMAND_ReadSnippet_g(stringCode, argumentsPattern, ptableLineList, ptableSnippet); // read snippet from the source code using the pattern
+         if(result_.first == false) return result_;
+      }
+      else if( stringRuleName == "select-between" )
       {
          std::string stringArguments = stringRule.substr(uPosition + 1);      // get the pattern after the colon
          auto vector_ = gd::utf8::split(stringArguments, ',');                // split the arguments by comma
 
          std::string stringCode("source::select_between( source, from, to )");
          gd::argument::shared::arguments argumentsPattern({ {"from", vector_[0]}, {"to", vector_[1]} }); // create arguments for the pattern
-         COMMAND_ReadSnippet_g(stringCode, argumentsPattern, ptableLineList, ptableSnippet); // read snippet from the source code using the pattern
+         auto result_ = COMMAND_ReadSnippet_g(stringCode, argumentsPattern, ptableLineList, ptableSnippet); // read snippet from the source code using the pattern
+         if(result_.first == false) return result_;
+      }
+      else
+      {
+         std::string stringError = "Unknown rule: '" + stringRule + "'.";
+         return { false, stringError }; // if the rule is not recognized, return an error
       }
 
 
    }
-
 
    return { true, "" }; 
 }

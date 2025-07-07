@@ -19,27 +19,41 @@ NAMESPACE_AUTOMATION_BEGIN
 using namespace gd::expression;
 
 
-static std::pair<bool, std::string> CountLines_s( runtime* pruntime, const std::vector<value>& vectorArgument )
+static std::pair<bool, std::string> CountLines_s( const std::vector<value>& vectorArgument )
 {                                                                                                  assert(vectorArgument.size() > 0);
 
    return { true, "" };
 }
 
-static std::pair<bool, std::string> SelectAll_s( runtime* pruntime, const std::vector<value>& vectorArgument )
+static std::pair<bool, std::string> SelectAll_s( const std::vector<value>& vectorArgument, value* pvalueReturn )
 {                                                                                                  assert(vectorArgument.size() > 0);
+   auto source_ = vectorArgument[0];                                                               assert(source_.is_pointer() == true);
+
+   ExpressionSource* psource = (ExpressionSource*)source_.get_pointer();                           assert( psource->file().empty() == false );
+   auto result_ = psource->GotoLine();
+   if( result_.first == false ) { return result_; } // error in goto line
+
+   if( psource->source().empty() == false )
+   {
+      *pvalueReturn = psource->source();
+   }
+   else
+   {
+      *pvalueReturn = value(); // return empty value if source is empty
+   }
 
    return { true, "" };
 }
 
 
-static std::pair<bool, std::string> SelectLines_s( runtime* pruntime, const std::vector<value>& vectorArgument )
+static std::pair<bool, std::string> SelectLines_s( const std::vector<value>& vectorArgument )
 {                                                                                                  assert(vectorArgument.size() > 0);
 
    return { true, "" };
 }
 
 /// sample: `select_between(source, start, end)`
-static std::pair<bool, std::string> SelectBetween_s( runtime* pruntime, const std::vector<value>& vectorArgument, std::vector<value>* pvectorReturn )
+static std::pair<bool, std::string> SelectBetween_s( const std::vector<value>& vectorArgument, std::vector<value>* pvectorReturn )
 {                                                                                                  assert(vectorArgument.size() > 2);
    auto source_ = vectorArgument[2];                                                               assert(source_.is_pointer() == true);
 
@@ -66,9 +80,10 @@ static std::pair<bool, std::string> SelectBetween_s( runtime* pruntime, const st
 
 // Array of MethodInfo for visual studio operations
 const method pmethodSelect_g[] = {
-   { (void*)&CountLines_s, "count_lines", 1, 0, method::eFlagRuntime },
-   { (void*)&SelectBetween_s, "select_between", 3, 2, method::eFlagRuntime },
-   { (void*)&SelectLines_s, "select_lines", 1, 0, method::eFlagRuntime },
+   { (void*)&CountLines_s, "count_lines", 1, 0 },
+   { (void*)&SelectAll_s, "select_all", 1, 1 },
+   { (void*)&SelectBetween_s, "select_between", 3, 2 },
+   { (void*)&SelectLines_s, "select_lines", 1, 0 },
 };
 
 const size_t uMethodSelectSize_g = sizeof(pmethodSelect_g) / sizeof(gd::expression::method);
