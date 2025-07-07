@@ -4216,8 +4216,13 @@ std::string debug::print( const table_column_buffer& table, tag_columns )
       stringPrint += "[";
       stringPrint += "("; stringPrint += std::to_string( uIndex ); stringPrint += ") ";
       stringPrint += table.column_get_name( *it );
-      stringPrint += ",";
-      stringPrint += table.column_get_alias( *it );
+      auto alias_ = table.column_get_alias( *it );
+      if( alias_.empty() == false )
+      {
+         stringPrint += " (";
+         stringPrint += alias_;
+         stringPrint += ")";
+      }
       stringPrint += ",";
       stringPrint += gd::types::type_name_g( it->ctype() );
       if( it->is_reference() ) { stringPrint += "("; stringPrint += "reference"; stringPrint += ")"; }

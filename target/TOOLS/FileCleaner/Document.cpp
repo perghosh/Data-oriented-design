@@ -598,13 +598,10 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
 
-   auto default_ = gd::argument::shared::arguments();
-   gd::argument::shared::arguments& options_ = default_;
-   if( pargumentsFind != nullptr ) options_ = *pargumentsFind ;
-
    uint64_t uFileIndex = 0; // index for file table
    auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
-   uint64_t uMax = options_.get_argument<uint64_t>("max", 500u );             // @@TODO: Change solution to take default value for number of hits from applicaton property
+   uint64_t uMax = 500u; // Default maximum number of hits, can be overridden by options_
+   if( pargumentsFind != nullptr ) uMax = pargumentsFind->get_argument<uint64_t>("max", 500u ); // @@TODO: Change solution to take default value for number of hits from applicaton property
 
    std::string stringFileBuffer;
    stringFileBuffer.reserve( 64 * 64 );
@@ -879,10 +876,11 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
    { 
       ptable_ = std::make_unique<table>(table(uTableStyle,
          { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
-         {"string", 10, "format"}, {"rstring", 0, "snippet"} }, gd::table::tag_prepare{})
+         {"string", 10, "format"}, {"uint64", 0, "row"}, {"rstring", 0, "snippet"} }, gd::table::tag_prepare{})
       );
       ptable_->property_set("id", stringId);                                  // set id for table, used to identify table in cache
    }
+   else { assert(false); } // unknown cache table
 
    if( ptable != nullptr )
    {

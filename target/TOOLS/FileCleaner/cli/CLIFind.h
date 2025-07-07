@@ -39,8 +39,11 @@ NAMESPACE_CLI_BEGIN
 std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocument* pdocument);
 std::pair<bool, std::string> Find_g(const std::vector<std::string>& vectorSource, const gd::argument::arguments* pargumentsFind, CDocument* pdocument);
 
+std::pair<bool, std::string> MatchAllPatterns_g( const std::vector<std::string>& vectorPattern, CDocument* pdocument, int iMatchCount = -1);
+
 std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vectorRule, CDocument* pdocument );
 
 std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint );
+std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint );
 
 NAMESPACE_CLI_END

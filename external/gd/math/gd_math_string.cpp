@@ -227,7 +227,7 @@ std::string select_unwrap(const std::string_view& stringText, const std::string_
  * @param stringTo The ending delimiter.
  * @return std::vector<std::string> Vector containing all substrings found between delimiter pairs.
  */
-std::vector<std::string> select_all_between(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo) 
+std::vector<std::string> select_between_all(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo) 
 {                                                                                                  assert(stringText.empty() == false);
    std::vector<std::string> vectorResult;
    
