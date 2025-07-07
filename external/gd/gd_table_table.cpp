@@ -21,8 +21,10 @@
 
 #if defined( __clang__ )
    #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+   #pragma clang diagnostic ignored "-Winvalid-offsetof"
 #elif defined( __GNUC__ )
    #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+   #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 #elif defined( _MSC_VER )
 #endif
 
