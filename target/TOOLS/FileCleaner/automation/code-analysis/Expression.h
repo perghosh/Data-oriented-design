@@ -73,6 +73,8 @@ struct ExpressionSource
    void CloseFile(); ///< close file if it is open, this will free the resources used for reading source code from file
    void Seek(uint64_t uOffset = 0u) { assert( m_ifstream.is_open() == true ); m_ifstream.seekg(uOffset, std::ios::beg); } ///< seek to offset in file, this will set the current position in file to the specified offset
 
+   std::string GetGotoLineText() const;
+
    void AddResult(const std::string& stringResult) { m_vectorResult.push_back(stringResult); } ///< add result to vector of results, this will be used to store lines read from source code
 
    void Reset() { m_uCurrentLine = 0; m_uLineCount = 0; m_stringSource.clear(); m_line.reset(); } ///< reset positons in source code, this will reset current line number and total number of lines in source code

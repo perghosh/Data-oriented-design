@@ -95,7 +95,7 @@ struct value
    using value_type = variant_t; ///< value type
 
 // ## construction ------------------------------------------------------------
-   value(): m_value( int64_t{0} ) {}
+   value(): m_value( nullptr ) {}
    explicit value( int64_t iValue ): m_value( iValue ) {}
    explicit value( double dValue ): m_value( dValue ) {}
    explicit value( const std::string stringValue ): m_value( stringValue ) {}

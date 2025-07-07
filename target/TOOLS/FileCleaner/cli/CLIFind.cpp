@@ -22,7 +22,7 @@
 NAMESPACE_CLI_BEGIN
 
 
-/** --------------------------------------------------------------------------- @TAG #cli #find #ggggg
+/** --------------------------------------------------------------------------- @TAG #cli #find
  * @brief Processes the 'find' command and performs file searching based on provided options.
  *
  * @param poptionsFind Pointer to a gd::cli::options object containing command-line options.
@@ -342,8 +342,8 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
    {
       std::string stringRuleName;
 
-      std::string stringPattern = stringRule;
-      auto uPosition = stringPattern.find(':');
+      std::string stringPattern;
+      auto uPosition = stringRule.find(':');
       if( uPosition == std::string::npos ) { stringRuleName = stringRule; } // if no colon is found, then the whole rule is the name
       else
       {
@@ -365,6 +365,15 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
 
          std::string stringCode("source::select_between( source, from, to )");
          gd::argument::shared::arguments argumentsPattern({ {"from", vector_[0]}, {"to", vector_[1]} }); // create arguments for the pattern
+         auto result_ = COMMAND_ReadSnippet_g(stringCode, argumentsPattern, ptableLineList, ptableSnippet); // read snippet from the source code using the pattern
+         if(result_.first == false) return result_;
+      }
+      else if( stringRuleName == "select-line" )
+      {
+         std::string stringCode("source::select_line( source, from )"); // updated to use the correct function for select-line
+         gd::argument::shared::arguments argumentsPattern({}); // create arguments for the pattern
+         if( stringPattern.empty() == false ) { argumentsPattern.append("from", stringPattern); } // add the line number to the arguments
+         
          auto result_ = COMMAND_ReadSnippet_g(stringCode, argumentsPattern, ptableLineList, ptableSnippet); // read snippet from the source code using the pattern
          if(result_.first == false) return result_;
       }

@@ -31,6 +31,9 @@ std::string select_from(const std::string_view& stringText, const std::string_vi
 /// Extracts substring up to (not including) the first occurrence of stringTo.
 std::string select_until(const std::string_view& stringText, const std::string_view& stringTo);
 
+
+std::string select_line(const std::string_view& stringText, size_t uLineIndex, char iNewLine = '\n');
+
 /// Extracts substring between stringFrom and stringTo.
 std::string select_between(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo);
 
