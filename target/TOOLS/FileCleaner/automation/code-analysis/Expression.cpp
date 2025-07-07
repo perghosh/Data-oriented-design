@@ -39,7 +39,7 @@ static std::pair<bool, std::string> SelectLines_s( runtime* pruntime, const std:
 }
 
 /// sample: `select_between(source, start, end)`
-static std::pair<bool, std::string> SelectBetween_s( runtime* pruntime, const std::vector<value>& vectorArgument )
+static std::pair<bool, std::string> SelectBetween_s( runtime* pruntime, const std::vector<value>& vectorArgument, std::vector<value>* pvectorReturn )
 {                                                                                                  assert(vectorArgument.size() > 2);
    auto source_ = vectorArgument[2];                                                               assert(source_.is_pointer() == true);
 
@@ -52,7 +52,12 @@ static std::pair<bool, std::string> SelectBetween_s( runtime* pruntime, const st
       std::string from_ = vectorArgument[1].get_string();                                          assert(from_.empty() == false);
       std::string to_ = vectorArgument[0].get_string();                                            assert(from_.empty() == false);
 
-      std::string stringResult = gd::math::string::select_between(psource->source(), from_, to_);  // select text between from_ and to_
+      std::vector<std::string> vector_ = gd::math::string::select_between_all(psource->source(), from_, to_);  // select text between from_ and to_
+
+      for(auto it = vector_.rbegin(); it != vector_.rend(); ++it) // iterate over results but do it backwards
+      {
+         pvectorReturn->push_back(value(*it)); // add result to the return vector
+      }
    }
 
    return { true, "" };
@@ -62,13 +67,11 @@ static std::pair<bool, std::string> SelectBetween_s( runtime* pruntime, const st
 // Array of MethodInfo for visual studio operations
 const method pmethodSelect_g[] = {
    { (void*)&CountLines_s, "count_lines", 1, 0, method::eFlagRuntime },
-   { (void*)&SelectBetween_s, "select_between", 3, 0, method::eFlagRuntime },
+   { (void*)&SelectBetween_s, "select_between", 3, 2, method::eFlagRuntime },
    { (void*)&SelectLines_s, "select_lines", 1, 0, method::eFlagRuntime },
 };
 
 const size_t uMethodSelectSize_g = sizeof(pmethodSelect_g) / sizeof(gd::expression::method);
-
-// "args": [ "find", "--source", "target/TOOLS/FileCleaner", "-R", "--pattern", "@brief", "--segment", "comment", "--max", "30", "--context", "10", "-vs", "-verbose", "--rule", "\"select-between:@code,@endcode\"" ],
 
 std::pair<bool, std::string> ExpressionSource::GotoLine()
 {
@@ -84,7 +87,7 @@ std::pair<bool, std::string> ExpressionSource::GotoLine()
          Reset();
       }
 
-      auto uAvailable = m_line.available();
+      auto uAvailable = m_line.available();                                                        assert(uAvailable > 0);
       m_ifstream.read((char*)m_line.buffer(), uAvailable);
       auto uReadSize = m_ifstream.gcount();                                   // get number of valid bytes read
       m_line.update(uReadSize);                                               // Update valid size in line buffer
@@ -170,6 +173,7 @@ std::pair<bool, std::string> ExpressionSource::OpenFile()
    {
       m_line.create(8096 - 1024, 8096);
    }
+   else { m_line.reset(); } // reset line window if it was already created
 
     
    // This function is a placeholder for opening a file.

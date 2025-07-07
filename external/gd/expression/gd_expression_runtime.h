@@ -63,7 +63,7 @@ struct method
    /// @brief Function pointer type for a method that processes input values with runtime context and produces multiple output values.
    using method_runtime_1 = std::pair<bool, std::string>(*)( runtime*, const std::vector<value>&, value* );
    /// @brief Function pointer type for a method that processes input values with runtime context and produces multiple output values.
-   using method_runtime_2 = std::pair<bool, std::string>(*)( runtime*, const std::vector<value>&, std::vector<variant_t>& );
+   using method_runtime_2 = std::pair<bool, std::string>(*)( runtime*, const std::vector<value>&, std::vector<value>* );
 
    bool operator<(const std::string_view& stringName) const { return std::string_view(m_piName) < stringName; }
    bool operator==(const std::string_view& stringName) const { return std::string_view(m_piName) == stringName; }

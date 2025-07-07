@@ -41,7 +41,7 @@ std::string select_between_nth(const std::string_view& stringText, const std::st
 std::string select_unwrap(const std::string_view& stringText, const std::string_view& stringPrefix, const std::string_view& stringSuffix);
 
 /// Extracts all substrings between pairs of delimiters.
-std::vector<std::string> select_all_between(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo);
+std::vector<std::string> select_between_all(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo);
 
 
 _GD_MATH_STRING_END

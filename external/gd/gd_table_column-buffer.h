@@ -1689,7 +1689,24 @@ namespace serialize {
 }
 
 
+/** @TAG ##gd #table #debug #print
+ * 
+ * @code
+// Sample on how to collect column structure and print it to strings
+void RunExpression_g( const std::string_view& stringExpression, 
+                     const gd::argument::shared::arguments& argumentsCode, 
+                     const gd::table::dto::table* ptableLineList, 
+                     gd::table::dto::table* ptableSnippet)
+{
+   #ifndef NDEBUG
+   std::string stringTableList_d = gd::table::debug::print(ptableLineList, gd::table::tag_columns{});
+   std::string stringTableSnippet_d = gd::table::debug::print(ptableSnippet, gd::table::tag_columns{});
+   #endif
 
+   // ... rest of the code
+ * @endcode
+ * 
+ */
 
 namespace debug {
    std::string print( const table_column_buffer& table, uint64_t uCount );

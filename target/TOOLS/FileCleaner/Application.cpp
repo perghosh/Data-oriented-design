@@ -459,12 +459,10 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    {
       auto* pdocument = DOCUMENT_Get("find", true );
       auto result_ = CLI::Find_g( poptionsActive, pdocument );
-      //HistoryPrint_s();
    }
    else if( stringCommandName == "history" )
    {
       auto result_ = CLI::History_g( poptionsActive );
-      //HistoryPrint_s();
    }
    else if( stringCommandName == "list" )
    {
@@ -493,7 +491,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "version" )
    {
-      std::cout << "version 0.9.9" << "\n";
+      std::cout << "version 1.0.0" << "\n";
    }
    else
    {
@@ -1477,6 +1475,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "rule", "rules on what to do with matches"});
       optionsCommand.add({ "max", "Maximum number of results to return"});
       optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
+      optionsCommand.add_flag( {"match-all", "Require all specified patterns to match in each row"} );
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format"} );
       optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );

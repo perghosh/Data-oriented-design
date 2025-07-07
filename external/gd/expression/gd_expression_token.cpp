@@ -586,11 +586,11 @@ value evaluate_operator_g(const std::string_view& stringOperator, value& valueLe
  * - For variables: looks up value in runtime context and pushes to stack
  * 
  * @param vectorToken Vector of tokens in postfix notation
- * @param pvalueResult Pointer to store the resulting value
+ * @param pvectorReturn Pointer to store the resulting values from the calculation
  * @param runtime_ Runtime context for variable resolution
  * @return Pair of success flag and error message (if any)
  */
-std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_ )
+std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, std::vector<value>* pvectorReturn, runtime& runtime_ )
 {
    std::vector<value> vectorArguments;
    std::stack<value> stackValue;
@@ -724,6 +724,13 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                         if( result_.first == true ) { stackValue.push(valueResult); }
                         else { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
                      }
+                     else if( pmethod_->out_count() > 1 )
+                     {
+                        std::vector<value> vectorReturn;
+                        auto result_ = reinterpret_cast<method::method_runtime_2>(pmethod_->m_pmethod)( &runtime_, vectorArguments, &vectorReturn );
+                        if( result_.first == true ) { for( auto it: vectorReturn ) stackValue.push(it); }
+                        else { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
+                     }
                   }
                }
             }
@@ -752,10 +759,28 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
       
    }
 
-   if( stackValue.empty() == false )
+   if( stackValue.empty() == false && pvectorReturn != nullptr )
    {
-      *pvalueResult = stackValue.top();
-      stackValue.pop();
+      // loop from stack and put all values in vector
+      while( stackValue.empty() == false )
+      {
+         pvectorReturn->push_back(stackValue.top());
+         stackValue.pop();
+      }
+   }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_ )
+{
+   std::vector<value> vectorReturn;
+   auto result_ = calculate_s(vectorToken, &vectorReturn, runtime_);
+   if( result_.first == false ) { return result_; }
+   if( vectorReturn.empty() == false )
+   {
+      if( pvalueResult != nullptr ) { *pvalueResult = std::move(vectorReturn.back()); }
+      return { true, "" };
    }
 
    return { true, "" };
