@@ -42,7 +42,7 @@ static std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arg
 
 static std::pair<bool, std::string> HistoryReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable);
 
-static std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s();
+static std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s(const gd::argument::arguments& argumentsTable);
 
 static std::string CurrentTime_s();
 
@@ -70,7 +70,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
 
    std::string stringFilePath = (pathCurrentDirectory / stringName).string();
-   gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()} } );     // TODO: This is just temporary, we need to edit this later
+   gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()}, {"print", false}, } );     // TODO: This is just temporary, we need to edit this later
     // To create a string representing the full path to "history.xml" in pathCurrentDirectory:
 
    if( std::filesystem::exists(pathCurrentDirectory) == false )
@@ -106,11 +106,18 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
    return { true, "" };
 }
 
-std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s()
+std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s(const gd::argument::arguments& argumentsTable)
 {
-   auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
-
-   return std::move(ptable);
+   if( argumentsTable.exists("print") == true && argumentsTable["print"].as_bool() == true )
+   {
+      auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+      return std::move(ptable);
+   }
+   else
+   {
+      auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"int32", 0, "index"}, {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+      return std::move(ptable);
+   }
 }
 
 std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint)
@@ -118,7 +125,7 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
    std::string stringFileName = argumentsPrint["file"].as_string();
                                                                                assert(!stringFileName.empty());
    //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
-   auto ptable = HistoryCreateTable_s(); // Create a table to hold the history data                                                                               
+   auto ptable = HistoryCreateTable_s(argumentsPrint); // Create a table to hold the history data                                                                               
 
    HistoryReadFile_s(*ptable, argumentsPrint); // Create the table from the XML file
 
