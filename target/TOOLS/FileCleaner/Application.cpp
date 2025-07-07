@@ -459,6 +459,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    {
       auto* pdocument = DOCUMENT_Get("find", true );
       auto result_ = CLI::Find_g( poptionsActive, pdocument );
+      if( result_.first == false ) return result_;
    }
    else if( stringCommandName == "history" )
    {

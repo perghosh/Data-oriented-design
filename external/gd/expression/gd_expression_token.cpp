@@ -592,6 +592,7 @@ value evaluate_operator_g(const std::string_view& stringOperator, value& valueLe
  */
 std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, std::vector<value>* pvectorReturn, runtime& runtime_ )
 {
+   std::pair<bool, std::string> result_ = { true, "" }; // default result
    std::vector<value> vectorArguments;
    std::stack<value> stackValue;
    std::string stringAssignVariable; // special case when we need to assign variable
@@ -700,12 +701,23 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
 
                if( pmethod_->flags() == 0 )                                    // default methods, only use arguments and return value
                {
-                  if( pmethod_->out_count() == 1 )
+                  if( pmethod_->out_count() == 0 )
                   {
                      value valueResult;
-                     auto result_ = reinterpret_cast<method::method_1>(pmethod_->m_pmethod)( vectorArguments, &valueResult );
+                     result_ = reinterpret_cast<method::method_0>(pmethod_->m_pmethod)( vectorArguments );
                      if( result_.first == true ) { stackValue.push(valueResult); }
-                     else { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
+                  }
+                  else if( pmethod_->out_count() == 1 )
+                  {
+                     value valueResult;
+                     result_ = reinterpret_cast<method::method_1>(pmethod_->m_pmethod)( vectorArguments, &valueResult );
+                     if( result_.first == true ) { stackValue.push(valueResult); }
+                  }
+                  else if( pmethod_->out_count() > 1 )
+                  {
+                     std::vector<value> vectorReturn;
+                     result_ = reinterpret_cast<method::method_2>(pmethod_->m_pmethod)( vectorArguments, &vectorReturn );
+                     if( result_.first == true ) { for( auto it: vectorReturn ) stackValue.push(it); }
                   }
                }
                else
@@ -714,25 +726,24 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                   {
                      if( pmethod_->out_count() == 0 )
                      {
-                        auto result_ = reinterpret_cast<method::method_runtime_0>(pmethod_->m_pmethod)( &runtime_, vectorArguments );
-                        if( result_.first == false ) return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second };
+                        result_ = reinterpret_cast<method::method_runtime_0>(pmethod_->m_pmethod)( &runtime_, vectorArguments );
                      }
                      else if( pmethod_->out_count() == 1 )
                      {
                         value valueResult;
-                        auto result_ = reinterpret_cast<method::method_runtime_1>(pmethod_->m_pmethod)( &runtime_, vectorArguments, &valueResult );
+                        result_ = reinterpret_cast<method::method_runtime_1>(pmethod_->m_pmethod)( &runtime_, vectorArguments, &valueResult );
                         if( result_.first == true ) { stackValue.push(valueResult); }
-                        else { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
                      }
                      else if( pmethod_->out_count() > 1 )
                      {
                         std::vector<value> vectorReturn;
-                        auto result_ = reinterpret_cast<method::method_runtime_2>(pmethod_->m_pmethod)( &runtime_, vectorArguments, &vectorReturn );
+                        result_ = reinterpret_cast<method::method_runtime_2>(pmethod_->m_pmethod)( &runtime_, vectorArguments, &vectorReturn );
                         if( result_.first == true ) { for( auto it: vectorReturn ) stackValue.push(it); }
-                        else { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
                      }
                   }
                }
+
+               if( result_.first == false ) { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
             }
             else
             {                                                                                      assert(false);

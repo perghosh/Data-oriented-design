@@ -54,10 +54,11 @@ struct method
       eFlagVoid    = 0x02, ///< no return value
    };
 
+   using method_0 = std::pair<bool, std::string>(*)(const std::vector<value>&);
    /// @brief Function pointer type for a method that processes input values and produces none or single output value. 
    using method_1 = std::pair<bool, std::string>(*)(const std::vector<value>&, value*);
    /// @brief Function pointer type for a method that processes input values and produces multiple output values.
-   using method_2 = std::pair<bool, std::string>(*)(const std::vector<value>&, std::vector<variant_t>& );
+   using method_2 = std::pair<bool, std::string>(*)(const std::vector<value>&, std::vector<value>* );
    /// @brief Function pointer type for a method that processes input values with runtime context but no return values
    using method_runtime_0 = std::pair<bool, std::string>(*)( runtime*, const std::vector<value>& );
    /// @brief Function pointer type for a method that processes input values with runtime context and produces multiple output values.
