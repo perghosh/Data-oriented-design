@@ -12,7 +12,7 @@
 #include <type_traits>
 
 #include "../gd_types.h"
-#include "../gd_math.h"
+#include "../math/gd_math.h"
 
 
 #ifndef _GD_CONSOLE_BEGIN
