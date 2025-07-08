@@ -414,9 +414,9 @@ std::pair<bool, std::string> CVisualStudio::ExecuteExpression(const std::string_
    runtime_.add_global( "vs", this );
 
 
-   runtime_.add( { uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
-   runtime_.add( { uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
-   runtime_.add( { 2, pmethodVisualStudio_g, std::string("vs")});
+   runtime_.add( { (unsigned)uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
+   runtime_.add( { (unsigned)uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
+   runtime_.add( { (unsigned)2, pmethodVisualStudio_g, std::string("vs")});
 
    gd::expression::value valueResult;
    result = gd::expression::token::calculate_s(vectorPostfix, &valueResult, runtime_);

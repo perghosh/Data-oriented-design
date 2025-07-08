@@ -3,7 +3,7 @@
 
 #include "gd_table_arguments.h"
 
-#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+#if GD_COMPILER_HAS_CPP20_SUPPORT
 
 #if (defined(_M_X64) || (defined(_M_IX86) && defined(_M_IX86_FP) && _M_IX86_FP >= 2) || defined(__x86_64__))
 

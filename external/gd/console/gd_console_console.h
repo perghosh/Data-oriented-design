@@ -11,9 +11,11 @@
 #include <string_view>
 #include <type_traits>
 
+#include "../gd_compiler.h"
 #include "../gd_types.h"
 #include "../math/gd_math.h"
 
+#if GD_COMPILER_HAS_CPP20_SUPPORT
 
 #ifndef _GD_CONSOLE_BEGIN
 #define _GD_CONSOLE_BEGIN namespace gd { namespace console {
@@ -283,3 +285,5 @@ inline void console::set_buffer_size(int iBufferWidth, int iBufferHeight) {
 }
 
 _GD_CONSOLE_END
+
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT

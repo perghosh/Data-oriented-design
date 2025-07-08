@@ -24,7 +24,7 @@
 
 _GD_BEGIN
 
-#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+#if GD_COMPILER_HAS_CPP20_SUPPORT
 
 /// create rule for `variant_view` and `variant`
 template <typename VARIANT>

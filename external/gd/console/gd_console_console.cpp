@@ -18,6 +18,8 @@
 
 #include "gd_console_console.h"
 
+#if GD_COMPILER_HAS_CPP20_SUPPORT
+
 _GD_CONSOLE_BEGIN
 
 
@@ -566,5 +568,5 @@ std::pair<bool, std::string> console::read_text_s(int iStartX, int iStartY, int 
 
 _GD_CONSOLE_END
 
-
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT
 

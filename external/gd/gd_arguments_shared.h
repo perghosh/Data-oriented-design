@@ -42,7 +42,7 @@
 #include "gd_arguments_common.h"
 #include "gd_compiler.h"
 
-#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+#if GD_COMPILER_HAS_CPP20_SUPPORT
 
 /*
 | class | Description |

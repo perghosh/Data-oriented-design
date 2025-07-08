@@ -22,7 +22,7 @@
 
 #include "gd_arguments_shared.h"  
 
-#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+#if GD_COMPILER_HAS_CPP20_SUPPORT
 
 #if defined( __clang__ )
    #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
