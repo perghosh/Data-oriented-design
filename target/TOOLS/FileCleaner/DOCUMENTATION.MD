@@ -25,6 +25,7 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, ref
   - [history](#history)
   - [help](#help)
   - [version](#version)
+- [Scripting and Advanced Usage](#scripting-and-advanced-usage)
 - [Examples](#examples)
 - [Supported File Extensions](#supported-file-extensions-and-languages)
 - [Notes](#notes)
@@ -93,6 +94,7 @@ Also remember that code is stripped of comments and strings before searching. Fi
 - `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner list /home/username/dev/project/src/`.
 - `--ignore <match;match;match>`: Ignore files or folders matching the specified patterns. Multiple patterns are separated by `;`.
 - `--rpattern <regex>`: Regular expression pattern to search for. Use multiple `--rpattern` to find more than one pattern.
+- `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--context <lines>`: Show surrounding lines of a match, where `<lines>` is the number of lines to show before and after the match or if only one number is specified it will show that many lines after the match.
 - `--max <count>`: Limit the number of results.
@@ -165,6 +167,23 @@ Displays the version of the application.
 
 ---
 
+## Scripting and Advanced Usage
+
+### Rule and how to use rules
+Cleaner supports advanced scripting capabilities, allowing users to define custom rules and patterns for searching and manipulating code segments. This feature is particularly useful for complex searches or when integrating cleaner into larger workflows. Or format output to for different purposes.  
+Sample is to show code between `@code` and `@endcode` markers:
+```
+cleaner find -R --source "path/to/source" --pattern "@TAG;#database" -match-all --rule "select-between:@code,@endcode"
+```
+This will extract sample code between `@code` and `@endcode` markers in the source files, that are tagged with `@TAG` and `#database`.  
+
+Avalable rules are:
+- `select-between:<start>,<end>`: Selects text between specified start and end markers.
+- `select-line:<marker>`: Selects line at the specified line marker. If no marker is specified, it selects line where match was found.
+- `select-all`: Selects all text in the segment.
+
+---
+
 ## Examples
 
 ### Count lines in files found in active folder
@@ -197,6 +216,10 @@ Using `-R` to search recursively and `--source` to specify the folder:
 
 ### Find patterns in code logic
 `cleaner find -R --source "C:\dev\project" --rpattern "if\s*\([^\)]*\)\s*[^\s{][^\n;]*" --context 3 --max 10` - Finds `if` statements without `{}` conditions and shows 3 lines of context around each match.
+
+### Find code between markers
+`cleaner find -R --source "C:\dev\project\filename.cpp" --pattern "#database" --rule "select-between:@code,@endcode"`  
+Finds code between `@code` and `@endcode` markers in the selected source file were pattern `#database` is found.
 
 ---
 
