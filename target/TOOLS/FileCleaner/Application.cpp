@@ -569,9 +569,12 @@ std::pair<bool, std::string> CApplication::CreateDirectory()
       const char* pbszHome = std::getenv("HOME");                             // Get home directory
       if( pbszHome != nullptr ) 
       {
+         /* TODO: Uncomment if you want to use getpwuid as fallback, do no work with static linking
          struct passwd* pw = getpwuid(getuid());                              // Fallback to getpwuid if $HOME is not set
          if(!pw || !pw->pw_dir) { return { false, "Failed to retrieve home directory" }; }
          pbszHome = pw->pw_dir;
+         */
+         return { false, "Failed to retrieve home directory" }; // If HOME is not set, return error
       }
       stringConfigurationBase = std::string(pbszHome) + "/.config";
    }
