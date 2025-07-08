@@ -364,7 +364,7 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
          auto vector_ = gd::utf8::split(stringArguments, ',');                // split the arguments by comma
 
          std::string stringCode("source::select_between( source, from, to )");
-         gd::argument::shared::arguments argumentsPattern({ {"from", vector_[0]}, {"to", vector_[1]} }); // create arguments for the pattern
+         gd::argument::shared::arguments argumentsPattern({ {"from", gd::variant(vector_[0])}, {"to", gd::variant(vector_[1])} }); // create arguments for the pattern
          auto result_ = COMMAND_ReadSnippet_g(stringCode, argumentsPattern, ptableLineList, ptableSnippet); // read snippet from the source code using the pattern
          if(result_.first == false) return result_;
       }
