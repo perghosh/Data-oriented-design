@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "gd_math_string.h"
 
 _GD_MATH_STRING_BEGIN
