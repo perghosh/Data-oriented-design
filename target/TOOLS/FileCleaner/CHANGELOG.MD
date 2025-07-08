@@ -2,8 +2,11 @@
 
 ## v1.0.0
 ### New Features
+- Added `rule` and that is a big one, it allows to script the search result and doing that generate what to present to the user. Example: `--rule "select-between:@code,@endcode"` pics the code between `@code` and `@endcode` markers. Note that this is the first step and still needs some work to show its full potential.
 - Introduced `verbose` flag for all commands to enable detailed output. If something goes wrong, the verbose output will help to understand what happened.
 - `segment` added to find command. Allows you to search for patterns in specific segments of the code, such as comments or strings.
+- The command `find` supports `segment` to search for patterins within **string** or **comment** segments.
+- Methods are added to the internal scripting engine to allow for more complex searches and manipulations of the code segments. But it's not yet possible to write scripts that can be used in the cleaner.
 
 ## v0.9.9
 
