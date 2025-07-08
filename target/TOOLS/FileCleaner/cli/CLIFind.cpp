@@ -559,6 +559,7 @@ std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd:
             if( stringCliTable.empty() == false ) stringCliTable += "\n===\n"; // if the stringCliTable is not empty, add a newline before the next snippet   
             stringCliTable += ptableLineList->cell_get_variant_view(uRowLine, "filename").as_string_view(); // get the filename from the line list table
             uint64_t uLineNumber = ptableLineList->cell_get_variant_view(uRowLine, "row").as_uint64(); // get the line number from the line list table
+            uLineNumber++;                                                     // add one because lines in table are zero based
             stringCliTable += std::format("({})", uLineNumber );
             stringCliTable += "\n";                                            // add a newline after the filename
             bFound = true;                                                     // mark that we have found a snippet for this file key
