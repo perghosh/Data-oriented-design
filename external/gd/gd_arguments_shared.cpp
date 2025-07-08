@@ -22,7 +22,7 @@
 
 #include "gd_arguments_shared.h"  
 
-
+#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
 
 #if defined( __clang__ )
    #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
@@ -3956,3 +3956,5 @@ namespace debug {
 
 }
 _GD_ARGUMENT_SHARED_END
+
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT

@@ -40,6 +40,9 @@
 #include "gd_variant.h"
 #include "gd_variant_view.h"
 #include "gd_arguments_common.h"
+#include "gd_compiler.h"
+
+#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
 
 /*
 | class | Description |
@@ -1728,3 +1731,5 @@ _GD_ARGUMENT_SHARED_END
 #elif defined(_MSC_VER)
    #pragma warning(pop)
 #endif
+
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT

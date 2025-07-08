@@ -16,6 +16,9 @@
 #include "gd_table_column-buffer.h"
 #include "gd_types.h"
 #include "gd_variant_view.h"
+#include "gd_compiler.h"
+
+#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
 
 #if defined( __clang__ )
    #pragma clang diagnostic push
@@ -1547,3 +1550,5 @@ _GD_TABLE_ARGUMENTS_END
 #elif defined(_MSC_VER)
    #pragma warning(pop)
 #endif
+
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT
