@@ -289,7 +289,7 @@ public:
    variant( const variant_type::guid& v ): m_uType(variant_type::eTypeGuid|variant_type::eFlagAllocate), m_uSize(sizeof(variant_type::guid)) { m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, &v, m_uSize ); }
 
    variant( const std::string& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(v.length()) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize + 1u); }
-   explicit variant( const std::string_view& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(v.length()) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.data(), m_uSize + 1u); }
+   explicit variant( const std::string_view& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(v.length()) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.data(), m_uSize + 1u); m_V.pbsz[m_uSize] = '\0'; }
    variant( const std::string& v, unsigned int uType ): m_uType(uType|variant_type::eFlagAllocate), m_uSize(v.length()) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize + 1u); }
 
    variant(const char* v, bool) : m_uType(variant_type::eTypeString), m_uSize(strlen(v)) { m_V.pbsz_const = v; }

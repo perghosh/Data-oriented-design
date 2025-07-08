@@ -7,6 +7,7 @@
 - `segment` added to find command. Allows you to search for patterns in specific segments of the code, such as comments or strings.
 - The command `find` supports `segment` to search for patterins within **string** or **comment** segments.
 - Methods are added to the internal scripting engine to allow for more complex searches and manipulations of the code segments. But it's not yet possible to write scripts that can be used in the cleaner.
+- Configuration for `zig` added to handle zig files.
 
 ## v0.9.9
 
