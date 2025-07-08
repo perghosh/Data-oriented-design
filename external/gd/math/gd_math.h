@@ -17,7 +17,7 @@
 #include <utility>
 #include <type_traits>
 
-#include "gd_compiler.h"
+#include "../gd_compiler.h"
 
 #ifndef _GD_MATH_BEGIN
    #define _GD_MATH_BEGIN namespace gd { namespace math {
