@@ -1174,28 +1174,25 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
             unsigned uLength;
             if( state_.deactivate(it, &uLength, gd::expression::parse::state::tag_manual{}) == true ) // NOTE: this needs manual reset of internal state
             {
-               if( uFindInState != eStateCode && stringText.empty() == false )
-               {                                                                                            
-                  if( uFindInState & ( eStateComment | eStateString ) )        // if find text in comment or string
+               if( uFindInState & ( eStateComment | eStateString ) && stringText.empty() == false )        // if find text in comment or string
+               {
+                  if( ( state_.is_comment() == true && ( uFindInState & eStateComment ) ) ||
+                      ( state_.is_string() == true && ( uFindInState & eStateString ) ) )
                   {
-                     if( ( state_.is_comment() == true && ( uFindInState & eStateComment ) ) ||
-                         ( state_.is_string() == true && ( uFindInState & eStateString ) ) )
+                     uint64_t uColumn;
+                     int iPattern = patternsFind.find_pattern(stringText, &uColumn); // try to find pattern in string
+                     if( iPattern != -1 )                                           // did we find a pattern?
                      {
-                        uint64_t uColumn;
-                        int iPattern = patternsFind.find_pattern(stringText, &uColumn); // try to find pattern in string
-                        if( iPattern != -1 )                                           // did we find a pattern?
-                        {
-                           // ## figure ot row and column
-                           auto uRow = uCountNewLine; // row number for current buffer
-                           auto uPosition = it - first_;
-                           uRow -= lineBuffer.count('\n', uPosition);         // subtract number of new lines in buffer from current position to get the right row
+                        // ## figure ot row and column
+                        auto uRow = uCountNewLine; // row number for current buffer
+                        auto uPosition = it - first_;
+                        uRow -= lineBuffer.count('\n', uPosition);         // subtract number of new lines in buffer from current position to get the right row
 
-                           std::string_view stringPattern = patternsFind.get_pattern(iPattern);
-                           add_line_to_table_(iPattern, stringText, uRow, uColumn, stringPattern); // add line to table
-                        }
+                        std::string_view stringPattern = patternsFind.get_pattern(iPattern);
+                        add_line_to_table_(iPattern, stringText, uRow, uColumn, stringPattern); // add line to table
                      }
-                  } // if( uFindInState & ( eStateComment | eStateString ) )
-               } // if( stringText.empty() == false )
+                  }
+               } // if( uFindInState & ( eStateComment | eStateString ) && stringText.empty() == false )
 
                state_.clear_state();                                           // clear state
                stringText.clear();                                             // clear text for analysis
