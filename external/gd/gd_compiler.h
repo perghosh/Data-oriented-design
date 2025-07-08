@@ -1,33 +1,33 @@
 /**
- * @file gd_compiler.h
- * @brief This header file provides macros to identify the compiler and its support for the C++20 standard.
- *
- * It includes:
- * - Macros to detect the compiler being used (GCC, Clang, MSVC).
- * - Checks for C++20 standard support based on the compiler version.
- * - Platform-specific constants to identify the target platform.
- *
- * Supported compilers:
- * - GCC (GNU Compiler Collection) version 10 or higher for C++20 support.
- * - Clang version 10 or higher for C++20 support.
- * - MSVC (Microsoft Visual C++) version 1928 or higher for C++20 support.
- *
- * This file ensures compatibility and feature detection for projects targeting C++20.
- */
+* @file gd_compiler.h
+* @brief This header file provides macros to identify the compiler and its support for the C++20 and C++23 standards.
+*
+* It includes:
+* - Macros to detect the compiler being used (GCC, Clang, MSVC).
+* - Checks for C++20 and C++23 standard support based on the compiler version.
+* - Platform-specific constants to identify the target platform.
+*
+* Supported compilers:
+* - GCC (GNU Compiler Collection) version 10 or higher for C++20 support, version 11 or higher for C++23 support.
+* - Clang version 10 or higher for C++20 support, version 12 or higher for C++23 support.
+* - MSVC (Microsoft Visual C++) version 1928 or higher for C++20 support, version 1930 or higher for C++23 support.
+*
+* This file ensures compatibility and feature detection for projects targeting C++20 and C++23.
+*/
 
 
 #pragma once
 
 /**
- * Platform-specific constants to identify the target platform.
- * These macros define the platform on which the code is being compiled.
- * Supported platforms include:
- * - macOS
- * - iPhone
- * - Linux
- * - Windows
- * - PlayStation
- */
+* Platform-specific constants to identify the target platform.
+* These macros define the platform on which the code is being compiled.
+* Supported platforms include:
+* - macOS
+* - iPhone
+* - Linux
+* - Windows
+* - PlayStation
+*/
 #ifdef __APPLE__
 
 #  if (defined(TARGET_OS_OSX) && TARGET_OS_OSX == 1) || \
@@ -54,56 +54,75 @@
 
 
 /**
- * C++ Compiler Detection Macros
- *
- * This header defines macros to identify the compiler (GCC, Clang, MSVC) and check
- * for C++20 standard support. These macros allow conditional compilation based on
- * compiler type and C++20 compatibility, ensuring portable code across different
- * compilers and versions.
- *
- * Macro Descriptions:
- * - GD_COMPILER_IS_GCC: Identifies GNU Compiler Collection (GCC). Defined when
- *   __GNUC__ is present but neither __clang__ nor _MSC_VER are defined, ensuring
- *   exclusion of Clang (which also defines __GNUC__) and MSVC.
- * - GD_COMPILER_IS_CLANG: Identifies Clang compiler. Defined when __clang__ is
- *   present, as provided by Clang.
- * - GD_COMPILER_IS_MSVC: Identifies Microsoft Visual C++ (MSVC). Defined when
- *   _MSC_VER is present, as provided by MSVC.
- * - GD_COMPILER_IS_CPP20: Checks if the C++ standard is C++20 or later. True when
- *   __cplusplus >= 202002L, the standard value for C++20 as defined by the C++
- *   Standard.
- * - GD_COMPILER_GCC_CPP20_SUPPORT: Checks if GCC supports C++20. True when the
- *   compiler is GCC and the version (__GNUC__) is 10 or higher, as GCC 10 introduced
- *   full C++20 support.
- * - GD_COMPILER_CLANG_CPP20_SUPPORT: Checks if Clang supports C++20. True when the
- *   compiler is Clang and the major version (__clang_major__) is 10 or higher, as
- *   Clang 10 introduced full C++20 support.
- * - GD_COMPILER_MSVC_CPP20_SUPPORT: Checks if MSVC supports C++20. True when the
- *   compiler is MSVC and the version (_MSC_VER) is 1928 or higher, corresponding to
- *   Visual Studio 2019 version 16.8 or later, which introduced full C++20 support.
- * - GD_COMPILER_HAS_CPP20_SUPPORT: Combines checks to confirm C++20 support. True
- *   when the C++ standard is C++20 or later (GD_COMPILER_IS_CPP20) and the compiler
- *   version supports C++20 (GCC, Clang, or MSVC specific checks).
- * - GD_COMPILER_BELOW_CPP20: Indicates the compiler does not support C++20. True
- *   when GD_COMPILER_HAS_CPP20_SUPPORT is false, useful for fallback code paths.
- *
- * Why These Macros:
- * These macros ensure robust detection of the compiler and its C++20 support by
- * leveraging standard predefined macros (__GNUC__, __clang__, _MSC_VER, __cplusplus)
- * and version checks. The version thresholds (GCC 10, Clang 10, MSVC 1928) are chosen
- * based on when each compiler achieved full C++20 compliance. The prefix
- * "GD_COMPILER_" avoids naming conflicts in larger projects. These macros enable
- * conditional compilation to adapt code for C++20 features or provide fallbacks for
- * older standards, improving portability across GCC, Clang, and MSVC.
- *
- * Usage:
- * Include this header to use the macros in conditional compilation, e.g.:
- *   #if GD_COMPILER_HAS_CPP20_SUPPORT
- *       // Use C++20 features
- *   #elif GD_COMPILER_BELOW_CPP20
- *       // Fallback for older standards
- *   #endif
- */
+* C++ Compiler Detection Macros
+*
+* This header defines macros to identify the compiler (GCC, Clang, MSVC) and check
+* for C++20 and C++23 standard support. These macros allow conditional compilation based on
+* compiler type and C++20/C++23 compatibility, ensuring portable code across different
+* compilers and versions.
+*
+* Macro Descriptions:
+* - GD_COMPILER_IS_GCC: Identifies GNU Compiler Collection (GCC). Defined when
+*   __GNUC__ is present but neither __clang__ nor _MSC_VER are defined, ensuring
+*   exclusion of Clang (which also defines __GNUC__) and MSVC.
+* - GD_COMPILER_IS_CLANG: Identifies Clang compiler. Defined when __clang__ is
+*   present, as provided by Clang.
+* - GD_COMPILER_IS_MSVC: Identifies Microsoft Visual C++ (MSVC). Defined when
+*   _MSC_VER is present, as provided by MSVC.
+* - GD_COMPILER_IS_CPP20: Checks if the C++ standard is C++20 or later. True when
+*   __cplusplus >= 202002L, the standard value for C++20 as defined by the C++
+*   Standard.
+* - GD_COMPILER_IS_CPP23: Checks if the C++ standard is C++23 or later. True when
+*   __cplusplus >= 202302L, the standard value for C++23 as defined by the C++
+*   Standard.
+* - GD_COMPILER_GCC_CPP20_SUPPORT: Checks if GCC supports C++20. True when the
+*   compiler is GCC and the version (__GNUC__) is 10 or higher, as GCC 10 introduced
+*   full C++20 support.
+* - GD_COMPILER_GCC_CPP23_SUPPORT: Checks if GCC supports C++23. True when the
+*   compiler is GCC and the version (__GNUC__) is 11 or higher, as GCC 11 introduced
+*   substantial C++23 support.
+* - GD_COMPILER_CLANG_CPP20_SUPPORT: Checks if Clang supports C++20. True when the
+*   compiler is Clang and the major version (__clang_major__) is 10 or higher, as
+*   Clang 10 introduced full C++20 support.
+* - GD_COMPILER_CLANG_CPP23_SUPPORT: Checks if Clang supports C++23. True when the
+*   compiler is Clang and the major version (__clang_major__) is 12 or higher, as
+*   Clang 12 introduced substantial C++23 support.
+* - GD_COMPILER_MSVC_CPP20_SUPPORT: Checks if MSVC supports C++20. True when the
+*   compiler is MSVC and the version (_MSC_VER) is 1928 or higher, corresponding to
+*   Visual Studio 2019 version 16.8 or later, which introduced full C++20 support.
+* - GD_COMPILER_MSVC_CPP23_SUPPORT: Checks if MSVC supports C++23. True when the
+*   compiler is MSVC and the version (_MSC_VER) is 1930 or higher, corresponding to
+*   Visual Studio 2022 or later, which introduced substantial C++23 support.
+* - GD_COMPILER_HAS_CPP20_SUPPORT: Combines checks to confirm C++20 support. True
+*   when the C++ standard is C++20 or later (GD_COMPILER_IS_CPP20) and the compiler
+*   version supports C++20 (GCC, Clang, or MSVC specific checks).
+* - GD_COMPILER_HAS_CPP23_SUPPORT: Combines checks to confirm C++23 support. True
+*   when the C++ standard is C++23 or later (GD_COMPILER_IS_CPP23) and the compiler
+*   version supports C++23 (GCC, Clang, or MSVC specific checks).
+* - GD_COMPILER_BELOW_CPP20: Indicates the compiler does not support C++20. True
+*   when GD_COMPILER_HAS_CPP20_SUPPORT is false, useful for fallback code paths.
+* - GD_COMPILER_BELOW_CPP23: Indicates the compiler does not support C++23. True
+*   when GD_COMPILER_HAS_CPP23_SUPPORT is false, useful for fallback code paths.
+*
+* Why These Macros:
+* These macros ensure robust detection of the compiler and its C++20/C++23 support by
+* leveraging standard predefined macros (__GNUC__, __clang__, _MSC_VER, __cplusplus)
+* and version checks. The version thresholds (GCC 10/11, Clang 10/12, MSVC 1928/1930)
+* are chosen based on when each compiler achieved substantial C++20/C++23 compliance.
+* The prefix "GD_COMPILER_" avoids naming conflicts in larger projects. These macros
+* enable conditional compilation to adapt code for C++20/C++23 features or provide
+* fallbacks for older standards, improving portability across GCC, Clang, and MSVC.
+*
+* Usage:
+* Include this header to use the macros in conditional compilation, e.g.:
+*   #if GD_COMPILER_HAS_CPP23_SUPPORT
+*       // Use C++23 features
+*   #elif GD_COMPILER_HAS_CPP20_SUPPORT
+*       // Use C++20 features
+*   #elif GD_COMPILER_BELOW_CPP20
+*       // Fallback for older standards
+*   #endif
+*/
 
 
 // Compiler identification
@@ -111,16 +130,26 @@
 #define GD_COMPILER_IS_CLANG defined(__clang__)
 #define GD_COMPILER_IS_MSVC  defined(_MSC_VER)
 
-// C++20 standard check
+// C++20 and C++23 standard checks
 #define GD_COMPILER_IS_CPP20 (__cplusplus >= 202002L)
+#define GD_COMPILER_IS_CPP23 (__cplusplus >= 202302L)
 
 // Compiler version checks for C++20 support
-#define GD_COMPILER_GCC_CPP20_SUPPORT   (IS_GCC && __GNUC__ >= 10)
-#define GD_COMPILER_CLANG_CPP20_SUPPORT (IS_CLANG && __clang_major__ >= 10)
-#define GD_COMPILER_MSVC_CPP20_SUPPORT  (IS_MSVC && _MSC_VER >= 1928)
+#define GD_COMPILER_GCC_CPP20_SUPPORT   (GD_COMPILER_IS_GCC && __GNUC__ >= 10)
+#define GD_COMPILER_CLANG_CPP20_SUPPORT (GD_COMPILER_IS_CLANG && __clang_major__ >= 10)
+#define GD_COMPILER_MSVC_CPP20_SUPPORT  (GD_COMPILER_IS_MSVC && _MSC_VER >= 1928)
+
+// Compiler version checks for C++23 support
+#define GD_COMPILER_GCC_CPP23_SUPPORT   (GD_COMPILER_IS_GCC && __GNUC__ >= 11)
+#define GD_COMPILER_CLANG_CPP23_SUPPORT (GD_COMPILER_IS_CLANG && __clang_major__ >= 12)
+#define GD_COMPILER_MSVC_CPP23_SUPPORT  (GD_COMPILER_IS_MSVC && _MSC_VER >= 1930)
 
 // Check if the compiler supports C++20
-#define GD_COMPILER_HAS_CPP20_SUPPORT (IS_CPP20 && (GCC_CPP20_SUPPORT || CLANG_CPP20_SUPPORT || MSVC_CPP20_SUPPORT))
+#define GD_COMPILER_HAS_CPP20_SUPPORT (GD_COMPILER_IS_CPP20 && (GD_COMPILER_GCC_CPP20_SUPPORT || GD_COMPILER_CLANG_CPP20_SUPPORT || GD_COMPILER_MSVC_CPP20_SUPPORT))
 
-// Check if the compiler is below C++20
-#define GD_COMPILER_BELOW_CPP20 (!HAS_CPP20_SUPPORT)
+// Check if the compiler supports C++23
+#define GD_COMPILER_HAS_CPP23_SUPPORT (GD_COMPILER_IS_CPP23 && (GD_COMPILER_GCC_CPP23_SUPPORT || GD_COMPILER_CLANG_CPP23_SUPPORT || GD_COMPILER_MSVC_CPP23_SUPPORT))
+
+// Check if the compiler is below C++20 or C++23
+#define GD_COMPILER_BELOW_CPP20 (!GD_COMPILER_HAS_CPP20_SUPPORT)
+#define GD_COMPILER_BELOW_CPP23 (!GD_COMPILER_HAS_CPP23_SUPPORT)
