@@ -9,7 +9,7 @@
 
 #include <cassert>
 #include <cstring>
-#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+#if GD_COMPILER_HAS_CPP20_SUPPORT
 #  include <span>
 #endif
 #include <string>
@@ -178,7 +178,7 @@ public:
    int64_t find(const uint8_t* puData, uint64_t uSize, uint64_t uOffset = 0) const; ///< find data in buffer
    int64_t find(const std::string_view& stringData, uint64_t uOffset = 0) const { return find((const uint8_t*)stringData.data(), stringData.length(), uOffset); } ///< find data in buffer
    int64_t find(char iCharacter, uint64_t uOffset = 0) const;
-#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+#if GD_COMPILER_HAS_CPP20_SUPPORT
    int64_t find(const std::span<const uint8_t>& span256_, uint64_t uOffset = 0) const;
 #endif
 

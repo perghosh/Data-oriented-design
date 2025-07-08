@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 
@@ -502,6 +503,18 @@ consteval uint8_t color_g( const std::string_view& stringColor )
 
    return 0;
 }
+
+/// @brief Converts a color enum to a string representation for terminal output  @TAG #console #color
+inline std::string to_color( uint8_t uColor )
+{
+   std::string stringColor = "\033[38;5;";
+   stringColor += std::to_string( uColor );
+   stringColor += 'm';
+   return stringColor;
+}
+
+inline std::string to_color_reset() { return "\033[0m"; }
+
 
 
 _GD_CONSOLE_END

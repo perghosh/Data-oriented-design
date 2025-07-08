@@ -19,6 +19,8 @@
 
 #include "../gd_compiler.h"
 
+#if GD_COMPILER_HAS_CPP20_SUPPORT
+
 #ifndef _GD_MATH_BEGIN
    #define _GD_MATH_BEGIN namespace gd { namespace math {
    #define _GD_MATH_END } }
@@ -48,8 +50,6 @@ std::pair<TYPE2, TYPE2> increase_pair(TYPE1 increase_with_, const std::pair<TYPE
 _GD_GROUP_ALGEBRA_BEGIN
 
 // -------------------------------------------------------------------- ALGEBRA
-
-#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
 
 template <typename TYPE>
 struct point
@@ -211,8 +211,6 @@ private:
 template<typename T>
 line(std::pair<T, T>, std::pair<T, T>) -> line<T>;
 
-#endif // GD_COMPILER_HAS_CPP20_SUPPORT
-
 /** ---------------------------------------------------------------------------
  * @brief Split primitive value into pair and the number of bits decide how to split them
  * @param uFrom primitive value that is split
@@ -327,3 +325,5 @@ _GD_GROUP_AREA_END
 
 
 _GD_MATH_END
+
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT

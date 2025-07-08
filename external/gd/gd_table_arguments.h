@@ -18,7 +18,7 @@
 #include "gd_variant_view.h"
 #include "gd_compiler.h"
 
-#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+#if GD_COMPILER_HAS_CPP20_SUPPORT
 
 #if defined( __clang__ )
    #pragma clang diagnostic push

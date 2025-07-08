@@ -52,7 +52,7 @@ unset(FILES_)
 add_subdirectory("playground") # playground cleaner logic
 add_subdirectory("tests") # tests cleaner logic
 
-set(CMAKE_CXX_STANDARD 23)
+# set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

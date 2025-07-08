@@ -32,7 +32,7 @@ int64_t value::as_integer() const
    if( is_bool() == true ) return static_cast<int64_t>( std::get<bool>(m_value) );
    if( is_string() == true )
    {
-#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+#if GD_COMPILER_HAS_CPP20_SUPPORT
       try { return std::stoll(std::get<std::string>(m_value)); }
       catch( ... ) { return 0; }
 #else
@@ -130,7 +130,7 @@ bool value::to_integer()
    if( is_bool() ) { m_value = static_cast<int64_t>(std::get<bool>(m_value)); return true; }
    if( is_string() ) 
    {
-#ifdef GD_COMPILER_HAS_CPP20_SUPPORT
+#if GD_COMPILER_HAS_CPP20_SUPPORT
       try { m_value = std::stoll(std::get<std::string>(m_value)); return true; }
       catch( ... ) { return false; }
 #else
