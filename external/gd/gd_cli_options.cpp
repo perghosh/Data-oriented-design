@@ -536,9 +536,9 @@ void options::print_documentation( std::string& stringDocumentation, tag_documen
    {
       stringLine = "\n\n## ";
       stringLine += it.name();
-      stringLine += " *";
+      stringLine += "   *";
       stringLine += it.description();
-      stringLine += "*\n";
+      stringLine += "*\n- - - - - - - - - - - - - - - - - - - - - - - - -\n";
       stringDocumentation += stringLine;
       it.print_documentation( stringDocumentation, tag_documentation_table{});
    }
