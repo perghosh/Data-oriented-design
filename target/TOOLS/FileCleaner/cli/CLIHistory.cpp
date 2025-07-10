@@ -70,7 +70,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
 
    std::string stringFilePath = (pathCurrentDirectory / stringName).string();
-   gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()}, {"print", false}, } );     // TODO: This is just temporary, we need to edit this later
+   gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()}, { "print", false } , { "index", 0 } } );     // TODO: This is just temporary, we need to edit this later
     // To create a string representing the full path to "history.xml" in pathCurrentDirectory:
 
    if( std::filesystem::exists(pathCurrentDirectory) == false )
@@ -83,6 +83,8 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
       HistoryAppendEntry_s(argumentsFile); // TODO: This is just temporary, we need to remove this later
 
       HistoryPrint_g(argumentsFile); // Print the history file to console, this is just for debug purposes
+
+      HistoryGetRow_g(argumentsFile); // Get the first row of the history table, this is just for debug purposes
 
       HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
    }
@@ -124,6 +126,7 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
 {
    std::string stringFileName = argumentsPrint["file"].as_string();
                                                                                assert(!stringFileName.empty());
+
    //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
    auto ptable = HistoryCreateTable_s(argumentsPrint); // Create a table to hold the history data                                                                               
 
@@ -133,6 +136,22 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
    std::cout << "\n" << stringTable << "\n";
 
 
+   return { true, "" };
+}
+
+std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argumentsRow)
+{
+   std::string stringFileName = argumentsRow["file"].as_string();
+                                                                               assert(!stringFileName.empty());
+
+   auto ptable = HistoryCreateTable_s(argumentsRow);
+   HistoryReadFile_s(*ptable, argumentsRow); // Read the history file into the table
+
+   std::string stringCommand = ptable.get()->cell_get_variant_view(argumentsRow["index"].as_uint64(), "command").as_string();
+   std::string stringLine = ptable.get()->cell_get_variant_view(argumentsRow["index"].as_uint64(), "line").as_string();
+
+   std::cout << stringCommand << " " << stringLine << "\n";
+   
    return { true, "" };
 }
 
@@ -248,6 +267,8 @@ std::pair<bool, std::string> HistoryReadFile_s(gd::table::dto::table& tableHisto
    // Check if entries exist
    pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
    if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
+   
+   int iRowCount = 0;
 
    // Iterate through each entry  
    for( auto entry : xmlnodeEntries.children("entry") )
@@ -257,6 +278,14 @@ std::pair<bool, std::string> HistoryReadFile_s(gd::table::dto::table& tableHisto
       std::string stringLine = entry.child("line").text().get();
       // Add the entry to the table  
       auto uRow = tableHistory.row_add_one();
+
+      if( tableHistory.column_exists("index") == true )
+      {
+         //std::string stringRowIndex = std::to_string(uRowCount);
+         tableHistory.cell_set(uRow, "index", iRowCount); // Set the index column if it exists
+         iRowCount++;
+      }
+
       tableHistory.cell_set(uRow, "date", stringDate);
       tableHistory.cell_set(uRow, "command", stringCommand);
       tableHistory.cell_set(uRow, "line", stringLine);
