@@ -1,14 +1,14 @@
 # Cleaner.exe Documentation
 
-## Introducing cleaner – A Fast, Focused Code Search Tool
+## Introducing cleaner â€“ A Fast, Focused Code Search Tool
 
 `cleaner` is a lightweight console application that integrates seamlessly with popular editors and IDEs like Visual Studio, Visual Studio Code, etc.
 
 `cleaner` complements the search functionality in these tools and is built to be fast and efficient when it comes to searching through files and folders, counting lines, listing lines that match specific patterns, and handling file and directory operations.
 
-Searching effectively is powerful, but searching through everything—especially in large codebases—can be time-consuming and resource-intensive. cleaner is designed to handle these situations. It allows searching in parts, searching within sections of code, and presenting search results in a way that suits the intended purpose.
+Searching effectively is powerful, but searching through everythingâ€”especially in large codebasesâ€”can be time-consuming and resource-intensive. cleaner is designed to handle these situations. It allows searching in parts, searching within sections of code, and presenting search results in a way that suits the intended purpose.
 
-Why the name `cleaner`? Managing code often means cleaning—removing clutter, refactoring, or reorganizing. But first, you need to find what needs fixing. cleaner helps you search smarter, so you can clean better.
+Why the name `cleaner`? Managing code often means cleaningâ€”removing clutter, refactoring, or reorganizing. But first, you need to find what needs fixing. cleaner helps you search smarter, so you can clean better.
 
 
 ---
