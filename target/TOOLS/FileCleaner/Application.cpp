@@ -247,6 +247,15 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       std::tie(bOk, stringError) = Initialize(optionsApplication);
       if( bOk == false ) { return { false, stringError }; }
    }
+   else
+   {
+      gd::cli::options optionsApplication;
+      CApplication::Prepare_s(optionsApplication);                             // prepare command-line options
+
+      std::string stringHelp;
+      optionsApplication.print_documentation(stringHelp, gd::cli::options::tag_documentation_table{});// print if no arguments
+      PrintMessage( stringHelp, gd::argument::arguments() );
+   }
 
    return { true, "" };
 }
