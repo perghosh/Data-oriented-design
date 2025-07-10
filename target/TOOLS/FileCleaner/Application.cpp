@@ -1486,6 +1486,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
       optionsCommand.add({ "segment", "type of segment in code to search in"});
       optionsCommand.add({ "rule", "rules on what to do with matches"});
+      optionsCommand.add({ "script", "Pass script file for advanced processing" });
       optionsCommand.add({ "max", "Maximum number of results to return"});
       optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
       optionsCommand.add_flag( {"match-all", "Require all specified patterns to match in each row"} );
