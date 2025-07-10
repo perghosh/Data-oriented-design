@@ -37,6 +37,9 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 std::pair<bool, std::string> HistoryDelete_g( const gd::argument::arguments& argumentsDelete);
 
 /// \brief Print history file
-std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint);
+std::pair<bool, std::string> HistoryPrint_g( const gd::argument::arguments& argumentsPrint);
+
+/// \brief get row history table
+std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& argumentsRow);
 
 NAMESPACE_CLI_END
