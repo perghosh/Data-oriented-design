@@ -1504,6 +1504,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "Handle command history" );
       optionsCommand.add_flag( {"create", "Initialize history logic, creates folders and files needed to manage history, this also enables configuration settings"} );
+      optionsCommand.add_flag({ "delete", "Delete history, this will delete all history files and folders" });
+      optionsCommand.add({ "remove", "Remove history entries" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
