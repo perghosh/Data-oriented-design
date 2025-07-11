@@ -54,6 +54,11 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
       gd::argument::arguments argumentsCreate( {"create", options_["create"].as_string()} );
       auto result_ = HistoryCreate_g(argumentsCreate);
    }
+   else if( options_.exists("delete") == true )
+   {
+      gd::argument::arguments argumentsDelete( {"delete", options_["delete"].as_string()} );
+      auto result_ = HistoryDelete_g(argumentsDelete);
+   }
 
    return { true, "" };
 }
@@ -86,12 +91,12 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 
       HistoryGetRow_g(argumentsFile); // Get the first row of the history table, this is just for debug purposes
 
-      HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
+      //HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
    }
-   else
-   {
-      HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
-   }
+   //else
+   //{
+   //   HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
+   //}
 
    return { true, "" };
 }
