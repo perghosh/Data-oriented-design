@@ -1,4 +1,5 @@
 # build_cpp.ps1
+# remember to use ldd checking dependensies
 
 # `$currentDir = $PWD.Path`: Captures the current directory path in a Windows-compatible format.
 # `-v "${currentDir}:/app"`: Mounts the current directory (containing ranges_test.cpp) to /app in the container.
@@ -14,4 +15,5 @@ docker run --name alpine-gcc13 -it -v "${currentDir}:/app" -w /app alpine:3.19 /
 
 # Copy file into container
 # docker cp D:\temp\#install\cleaner\linux\cleaner alpine-gcc13:/app
+# docker cp champion alpine-gcc13:/app
 
