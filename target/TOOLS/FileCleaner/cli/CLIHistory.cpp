@@ -44,6 +44,8 @@ static std::pair<bool, std::string> HistoryReadFile_s(gd::table::dto::table& tab
 
 static std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s(const gd::argument::arguments& argumentsTable);
 
+static std::string FilePath();
+
 static std::string CurrentTime_s();
 
 std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
@@ -58,6 +60,11 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
    {
       gd::argument::arguments argumentsDelete( {"delete", options_["delete"].as_string()} );
       auto result_ = HistoryDelete_g(argumentsDelete);
+   }
+   else if( options_.exists("remove") == true )
+   {
+      gd::argument::arguments argumentsRemove({ "remove", options_["remove"].as_string() });
+      auto result_ = HistoryRemove_g(argumentsRemove);
    }
 
    return { true, "" };
@@ -113,6 +120,48 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
    return { true, "" };
 }
 
+std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argumentsRemove)
+{
+   std::string stringRemoveCommand = argumentsRemove["remove"].as_string();
+
+   /*std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
+
+   if( std::filesystem::exists(pathCurrentDirectory) == true )
+   {
+      //std::filesystem::remove_all(pathCurrentDirectory); // remove the history folder
+   }*/
+
+   int iIndex = std::stoi(stringRemoveCommand);
+
+   std::string stringFileName = FilePath();
+                                                                               assert(!stringFileName.empty());
+
+   pugi::xml_document xmldocument;
+   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
+   if( !result_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
+
+   // Check if entries exist
+   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
+   if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
+
+   int iRowCount = 0;
+
+   // Iterate through each entry  
+   for( auto entry : xmlnodeEntries.children("entry") )
+   {
+      if( iRowCount == iIndex )
+      {
+         xmlnodeEntries.remove_child(entry);
+         break;
+      }
+      ++iRowCount;
+   }
+
+   std::cout << stringRemoveCommand << "\n";
+
+   return {true, ""};
+}
+
 std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s(const gd::argument::arguments& argumentsTable)
 {
    if( argumentsTable.exists("print") == true && argumentsTable["print"].as_bool() == true )
@@ -125,6 +174,16 @@ std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s(const gd::argument::
       auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"int32", 0, "index"}, {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
       return std::move(ptable);
    }
+}
+
+std::string FilePath()
+{
+   std::string stringName = "history.xml";
+   std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
+
+   std::string stringFilePath = (pathCurrentDirectory / stringName).string();
+
+   return stringFilePath;
 }
 
 std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint)

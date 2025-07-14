@@ -36,6 +36,9 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 /// \brief Delete history file or folder
 std::pair<bool, std::string> HistoryDelete_g( const gd::argument::arguments& argumentsDelete);
 
+/// \brief Remove entry or entries in history file
+std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argumentsRemove);
+
 /// \brief Print history file
 std::pair<bool, std::string> HistoryPrint_g( const gd::argument::arguments& argumentsPrint);
 
