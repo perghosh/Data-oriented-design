@@ -137,7 +137,6 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
       }
    }
 
-
    return { true, "" }; 
 }
 

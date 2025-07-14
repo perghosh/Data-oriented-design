@@ -58,6 +58,7 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 #include "cli/CLIDir.h"
 #include "cli/CLIFind.h"
 #include "cli/CLIHistory.h"
+#include "cli/CLIKeyValue.h"
 #include "cli/CLIList.h"
 #include "cli/CLIRun.h"
 
@@ -473,6 +474,12 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    else if( stringCommandName == "history" )
    {
       auto result_ = CLI::History_g( poptionsActive );
+   }
+   else if( stringCommandName == "kv" )                                        // @TAG [tag: application, keyvalue, entry] [description: "process key-value command line operation based on arguments passed to application"]
+   {
+      auto* pdocument = DOCUMENT_Get("keyvalue", true );
+      auto result_ = CLI::KeyValue_g( poptionsActive, pdocument );
+      if( result_.first == false ) return result_;
    }
    else if( stringCommandName == "list" )
    {
@@ -1509,6 +1516,23 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
+   }
+
+   // ## 'kv' read key value pairs from file
+   {
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "kv", "Read key value pairs from file" );
+      optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
+      optionsCommand.add({ "pattern", 'p', "Patterns to search for (multiple values separated by commas or semicolons)"});
+      optionsCommand.add({ "pattern", 'p', "Patterns to search for (multiple values separated by commas or semicolons)"});
+      optionsCommand.add({ "source", 's', "File(s) or folder(s) to search"});
+      optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
+      optionsCommand.add({ "rpattern", "Regular expression pattern to search for"});
+      optionsCommand.add({ "segment", "Type of code segment to search within (code, comment, string or all)"});
+      optionsCommand.add_flag( {"R", "Enable recursive scanning of all subfolders (depth limit: 16)"} );
+      optionsCommand.add_flag( {"match-all", "Require all specified patterns to match in each row"} );
+
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsApplication.sub_add(std::move(optionsCommand));
    }
 
    // ## 'list' list rows with specified patterns

@@ -1607,6 +1607,21 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
    return { true, "" };                                                       // Return success if no matches found
 }
 
+
+/** ----------------------------------------------------------------------------
+ * @brief Finds patterns in a string and stores the results in a table.
+ *
+ * This function searches for specified regular expression patterns in the provided string code.
+ * It identifies matches, records their line numbers, and stores the results in a table.
+ *
+ * @param stringCode The source code as a string to search for patterns.
+ * @param vectorRegexPatterns A vector of pairs, each containing a boost::regex and its string representation, to search for in the code.
+ * @param argumentsFind Arguments containing arguments how to find and data to generate result.
+ * @param ptable_ Pointer to the table where matching lines will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode, const std::vector<std::pair<boost::regex, std::string>>& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_)
 {
    uint64_t uFileKey = argumentsFind["file-key"]; // key to file for main table holding activ files
