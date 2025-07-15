@@ -171,3 +171,5 @@ std::pair<bool, std::string> KeyValue_g(const std::vector<std::string>& vectorSo
 
    return { true, "" }; 
 }
+
+NAMESPACE_CLI_END

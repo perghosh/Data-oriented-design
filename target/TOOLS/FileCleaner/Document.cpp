@@ -606,6 +606,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    std::string stringFileBuffer;
    stringFileBuffer.reserve( 64 * 64 );
 
+   // ## Prepare the patterns for finding and searching in files
+
    for(const auto& itRowFile : *ptableFile)
    {
       // ## calculate percentage for progress message
@@ -630,6 +632,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
       gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
       if( pargumentsFind->exists("segment") == true ) arguments_.append("segment", (*pargumentsFind)["segment"].as_string() ); // Add segment if it exists in the arguments
       stringFileBuffer.clear();                                               // Clear the blob vector to reuse it for the next file
+
+      // ## Prepare file for finding patterns, file is loaded into stringFileBuffer
+
       auto result_ = CLEAN_File_g(stringFile, arguments_, stringFileBuffer);  // Load file into memory as a blob
       if( result_.first == false)
       {
@@ -639,13 +644,32 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
       if( stringFileBuffer.empty() == true ) continue;                        // Skip empty files
 
-      // ## Find patterns in the file blob
+      // ## Find patterns in the stringFileBuffer
+
       uint64_t uPatternOffset = ptableLineList->size();                       // Get the current row count in the "file-linelist" table
       result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorPattern, arguments_, ptableLineList ); // Find lines with patterns in the file blob
       if( result_.first == false )
       {
          ERROR_Add(result_.second); // Add error to the internal error list
          continue; // Skip to the next file if there was an error
+      }
+
+      if( pargumentsFind->exists("kv") == true )
+      {
+         auto vector_ = pargumentsFind->get_argument_all("kv");
+         std::vector<std::string> vectorKeyValue;
+         for( auto& rule : vector_ ) { vectorKeyValue.push_back(rule.as_string()); }
+
+         // Extract rows where to look for key-value pairs
+         std::vector<uint64_t> vectorRow;
+         for( auto itRow = uPatternOffset; itRow < ptableLineList->size(); itRow++ ) 
+         { 
+            uint64_t uRow = ptableLineList->cell_get_variant_view(itRow, "row");
+            vectorRow.push_back(uRow);                                       // add row number in file
+         } 
+
+
+         BUFFER_UpdateKeyValue(stringFileBuffer, vectorRow, vectorKeyValue);   // Update table from key-value pairs
       }
 
       if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
@@ -719,6 +743,12 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    }
 
    MESSAGE_Progress( "", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true} });
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const std::string_view& stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<std::string>& vectorKeyValue)
+{
 
    return { true, "" };
 }
