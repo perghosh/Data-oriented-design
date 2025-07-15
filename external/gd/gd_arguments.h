@@ -1109,7 +1109,7 @@ public:
    const_iterator erase(const_iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < cend() ? itPosition : cend(); }
    /// make sure internal buffer can hold specified number of bytes, buffer data is copied if increased
    bool reserve(unsigned int uCount);
-   bool reserve(uint64_t uCount) { assert( uCount < 0x1'0000'0000 ); return reserve(static_cast<unsigned int>(uCount)); }
+   //bool reserve(uint64_t uCount) { assert( uCount < 0x1'0000'0000 ); return reserve(static_cast<unsigned int>(uCount)); }
    /// Remove param starting at position, remember that if you are string positions in buffer they are invalidated with this method
    void remove( const std::string_view& stringName );
    /// Remove param at index

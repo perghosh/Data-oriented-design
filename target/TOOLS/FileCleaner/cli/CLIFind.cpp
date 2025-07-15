@@ -113,6 +113,7 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
 
    if( options_.exists("print") == false || options_["print"].is_true() == true )  // default is to print result
    {
+      bool bPrint = false;
       if( options_.exists("rule") == true )
       {
          gd::argument::shared::arguments argumentsPrint;
@@ -123,8 +124,11 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
             result_ = FindPrint_g(pdocument, argumentsPrint);                  // Print the results of the find operation
             if( result_.first == false ) return result_;                       // if print failed, return the error
          }
+         bPrint = true;                                                       // set print to true, we have printed the results
       }
-      else 
+
+
+      if( bPrint == false || options_.exists("print") == true )
       {
          gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uint64_t(2u) } }); // hardcode pattern count to 2 for printing results and allways print patterns
          if( options_.exists("context") == true ) argumentsPrint.append("context", options_["context"].as_string_view()); // if context is set, add it to the print arguments
@@ -290,6 +294,19 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
    return { true, "" }; 
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Matches all patterns in the vectorPattern against the lines in the file line list.
+ *
+ * This function iterates over all rows in the file line list and checks if all patterns in vectorPattern match the line text.
+ * If a line does not match all patterns, it is marked for deletion.
+ *
+ * @param vectorPattern A vector of patterns to match against the line text.
+ * @param pdocument Pointer to the CDocument instance containing the file line list.
+ * @param iMatchCount The number of patterns to match, if -1 then match all patterns.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> MatchAllPatterns_g(const std::vector<std::string>& vectorPattern, CDocument* pdocument, int iMatchCount )
 {                                                                                                  assert( pdocument != nullptr ); assert( vectorPattern.size() > 0 ); // at least one pattern must be specified
    std::vector<uint64_t> vectorRowDelete; // vector of row numbers to delete

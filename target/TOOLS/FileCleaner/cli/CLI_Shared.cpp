@@ -8,6 +8,7 @@
 
 #include "CLI_Shared.h"
 
+NAMESPACE_CLI_BEGIN
 
  /** --------------------------------------------------------------------------
  * @brief Retrieves and prepares a list of source file paths from the provided command-line options.
@@ -85,3 +86,5 @@ std::pair<bool, std::string> SHARED_MatchAllPatterns_g(const std::vector<std::st
 
    return { true, "" };
 }
+
+NAMESPACE_CLI_END // namespace CLI
