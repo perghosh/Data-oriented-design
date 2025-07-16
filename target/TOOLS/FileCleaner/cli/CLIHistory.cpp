@@ -36,13 +36,13 @@ NAMESPACE_CLI_BEGIN
 
 // ## Forward declarations
 
-static std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& argumentsXml);
+static std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumentsXml);
 
-static std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments& argumentsEntry);
+static std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argumentsEntry);
 
-static std::pair<bool, std::string> HistoryReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable);
+static std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable);
 
-static std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s(const gd::argument::arguments& argumentsTable);
+static std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::arguments& argumentsTable);
 
 static std::string FilePath();
 
@@ -90,9 +90,9 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
       std::filesystem::create_directory(pathCurrentDirectory); 
       std::ofstream ofstreamFile(pathCurrentDirectory / stringName);
       ofstreamFile.close();
-      HistoryPrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
+      PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
 
-      HistoryAppendEntry_s(argumentsFile); // TODO: This is just temporary, we need to remove this later
+      AppendEntry_s(argumentsFile); // TODO: This is just temporary, we need to remove this later
 
       HistoryPrint_g(argumentsFile); // Print the history file to console, this is just for debug purposes
 
@@ -162,7 +162,7 @@ std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argu
    return {true, ""};
 }
 
-std::unique_ptr<gd::table::dto::table> HistoryCreateTable_s(const gd::argument::arguments& argumentsTable)
+std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::arguments& argumentsTable)
 {
    if( argumentsTable.exists("print") == true && argumentsTable["print"].as_bool() == true )
    {
@@ -192,9 +192,9 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
                                                                                assert(!stringFileName.empty());
 
    //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
-   auto ptable = HistoryCreateTable_s(argumentsPrint); // Create a table to hold the history data                                                                               
+   auto ptable = CreateTable_s(argumentsPrint); // Create a table to hold the history data                                                                               
 
-   HistoryReadFile_s(*ptable, argumentsPrint); // Create the table from the XML file
+   ReadFile_s(*ptable, argumentsPrint); // Create the table from the XML file
 
    std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
    std::cout << "\n" << stringTable << "\n";
@@ -208,8 +208,8 @@ std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argu
    std::string stringFileName = argumentsRow["file"].as_string();
                                                                                assert(!stringFileName.empty());
 
-   auto ptable = HistoryCreateTable_s(argumentsRow);
-   HistoryReadFile_s(*ptable, argumentsRow); // Read the history file into the table
+   auto ptable = CreateTable_s(argumentsRow);
+   ReadFile_s(*ptable, argumentsRow); // Read the history file into the table
 
    std::string stringCommand = ptable.get()->cell_get_variant_view(argumentsRow["index"].as_uint64(), "command").as_string();
    std::string stringLine = ptable.get()->cell_get_variant_view(argumentsRow["index"].as_uint64(), "line").as_string();
@@ -230,14 +230,14 @@ std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argu
  * @return A pair containing a boolean indicating success or failure, and a string with an error message if applicable.
  * 
  * @code
- * // Example usage: HistoryPrepareXml_s
+ * // Example usage: PrepareXml_s
  * gd::argument::arguments argumentsXml({{"file", "history.xml"}});
- * auto [success, message] = HistoryPrepareXml_s(argumentsXml);
+ * auto [success, message] = PrepareXml_s(argumentsXml);
  * if (!success) { std::cerr << "Error: " << message << std::endl; } 
  * else { std::cout << "History XML prepared successfully." << std::endl; }
  * @endcode
  */
-std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& argumentsXml)
+std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumentsXml)
 { 
    std::string stringFileName = argumentsXml["file"].as_string();
    bool bCreate = argumentsXml["create"].is_true();                                      // TODO: What if create is not set? Default to false?
@@ -271,7 +271,7 @@ std::pair<bool, std::string> HistoryPrepareXml_s(const gd::argument::arguments& 
    return { true, "" };
 }
 
-std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments& argumentsEntry)
+std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argumentsEntry)
 {
    std::string stringFileName = argumentsEntry["file"].as_string();
                                                                                assert(!stringFileName.empty());
@@ -318,7 +318,7 @@ std::pair<bool, std::string> HistoryAppendEntry_s(const gd::argument::arguments&
    return { true, "" };
 }
 
-std::pair<bool, std::string> HistoryReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable)
+std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable)
 {
    std::string stringFileName = argumentsTable["file"].as_string();
    assert(!stringFileName.empty());
