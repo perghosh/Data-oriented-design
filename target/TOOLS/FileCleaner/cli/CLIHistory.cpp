@@ -61,6 +61,11 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
       gd::argument::arguments argumentsDelete( {"delete", options_["delete"].as_string()} );
       auto result_ = HistoryDelete_g(argumentsDelete);
    }
+   else if( options_.exists("print") == true )
+   {
+      gd::argument::arguments argumentsPrint({ "print", options_["print"].as_string() });
+      auto result_ = HistoryPrint_g(argumentsPrint);
+   }
    else if( options_.exists("remove") == true )
    {
       gd::argument::arguments argumentsRemove({ "remove", options_["remove"].as_string() });
@@ -131,7 +136,7 @@ std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argu
       //std::filesystem::remove_all(pathCurrentDirectory); // remove the history folder
    }*/
 
-   int iIndex = std::stoi(stringRemoveCommand);
+   int iIndex = std::stoi(stringRemoveCommand) - 1;
 
    std::string stringFileName = FilePath();
                                                                                assert(!stringFileName.empty());
@@ -149,6 +154,10 @@ std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argu
    // Iterate through each entry  
    for( auto entry : xmlnodeEntries.children("entry") )
    {
+      std::ostringstream oss;
+      entry.print(oss, "  ", pugi::format_default);
+      std::string entryXml = oss.str();
+      std::cout << entryXml << "\n";
       if( iRowCount == iIndex )
       {
          xmlnodeEntries.remove_child(entry);
@@ -156,6 +165,21 @@ std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argu
       }
       ++iRowCount;
    }
+
+   /*for( auto it = xmlnodeEntries.begin(); it != xmlnodeEntries.end(); ++it )
+   {
+      if( std::string(it->name()) == "entry" )
+      {
+         if(iRowCount == iIndex)
+         {
+            xmlnodeEntries.remove_child(*it); // Remove the entry with the specified index
+            break;
+         }
+         ++iRowCount;
+      }
+   }*/
+
+   xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default );
 
    std::cout << stringRemoveCommand << "\n";
 
@@ -188,7 +212,9 @@ std::string FilePath()
 
 std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint)
 {
-   std::string stringFileName = argumentsPrint["file"].as_string();
+   //std::string stringFileName = argumentsPrint["file"].as_string();
+
+   std::string stringFileName = FilePath();
                                                                                assert(!stringFileName.empty());
 
    //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
