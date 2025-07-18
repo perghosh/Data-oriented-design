@@ -475,7 +475,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    {
       auto result_ = CLI::History_g( poptionsActive );
    }
-   else if( stringCommandName == "kv" )                                        // @TAG [tag: application, keyvalue, entry] [description: "process key-value command line operation based on arguments passed to application"]
+   else if( stringCommandName == "kv" )                                        // @TAGG [tag: application, keyvalue, entry] [description: "process key-value command line operation based on arguments passed to application"]
    {
       auto* pdocument = DOCUMENT_Get("keyvalue", true );
       auto result_ = CLI::KeyValue_g( poptionsActive, pdocument );
@@ -1488,7 +1488,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, search for patterns in all found text files" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "rpattern", "Regular expression pattern to search for"});
-      optionsCommand.add({ "kvpattern", "Key value pattern, find key value or collect value from key"});
+      optionsCommand.add({ "kv", "Key value pattern, find key value or collect value from key"});
       optionsCommand.add({ "context", "Show information to put the result in context, normally code around"});
       optionsCommand.add({ "source", 's', "Directory to search in" });
       optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
