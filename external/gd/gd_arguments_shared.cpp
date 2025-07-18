@@ -992,7 +992,7 @@ arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>>
 *
 * appending key-value pairs from the provided initializer list, and appending all elements from another arguments object.
 * 
-* `´´{.cpp}
+* ```{.cpp}
 void print( const gd::argument::shared::arguments arguments_ )
 {
    std::cout << arguments_.print() << std::endl;
