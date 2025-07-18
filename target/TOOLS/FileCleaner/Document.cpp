@@ -654,6 +654,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
          continue; // Skip to the next file if there was an error
       }
 
+      // "args": [ "find", "--source", "C:\\dev\\home\\DOD\\target\\TOOLS\\FileCleaner\\Application.cpp", "--pattern", "@TAGG", "--kv", "description/[]", "--segment", "comment" ],
       if( pargumentsFind->exists("kv") == true )
       {
          auto vector_ = pargumentsFind->get_argument_all("kv");

@@ -184,6 +184,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
    }
 
    if( options_.exists("segment") == true ) { argumentsFind.append("segment", options_["segment"].as_string()); }
+   if( options_.exists("kv") == true ) { argumentsFind.append( "kv", options_.get_argument_all("kv", gd::types::tag_view{})); }
 
    // ## Harvest files from the source paths
    for( const auto& stringSource : vectorSource )
