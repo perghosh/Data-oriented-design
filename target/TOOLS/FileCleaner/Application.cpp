@@ -2481,9 +2481,20 @@ std::pair<bool, std::string> CApplication::ParseLeyValueRule_s(const std::string
    constexpr char iFormatDelimiter = '@';
    enum { eKey, eValue, ePattern, eUnknown  };
 
+   unsigned uState = eKey; // Start with key state
+
+   auto add_ = [pargumentsKVRule, uState](std::string_view& stringValue) -> void {
+      if( stringValue.empty() == true ) return;
+
+      if( uState == eKey ) pargumentsKVRule->append("key", stringValue);
+      else if( uState == eValue ) pargumentsKVRule->append("value", stringValue);
+      else pargumentsKVRule->append("format", stringValue);
+
+      stringValue.clear();
+   };
+
    std::string string_;
 
-   unsigned uState = eKey; // Start with key state
 
    // ## Parse value until we hit a delimiter
    
@@ -2493,14 +2504,12 @@ std::pair<bool, std::string> CApplication::ParseLeyValueRule_s(const std::string
       if( iCharacter > 'A' ) { string_ += iCharacter; }
       else if( iCharacter == iKeyDelimiter )
       {
-         if( uState == eKey && string_.empty() == false ) pargumentsKVRule->append("key", string_);
-         else if( uState == eValue && string_.empty() == false ) pargumentsKVRule->append("value", string_);
+         add_( string_ );
          uState++;
-         string_.clear();
-
       }
       else if( uState == eValue && iCharacter == iFormatDelimiter)
       {
+         add_( string_ );
          uState = ePattern;
       }
       else
@@ -2509,9 +2518,7 @@ std::pair<bool, std::string> CApplication::ParseLeyValueRule_s(const std::string
       }
    }
 
-   if( uState == eKey && string_.empty() == false ) pargumentsKVRule->append("key", string_);
-   else if( uState == eValue && string_.empty() == false ) pargumentsKVRule->append("value", string_);
-   else if( string_.empty() == false ) pargumentsKVRule->append("format", string_);
+   add_( string_ );
 
    if( uState != eUnknown ) return { true, "" };
 
