@@ -155,6 +155,180 @@ std::string select_line(const std::string_view& stringText, size_t uLineIndex, c
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Extracts all lines from the beginning of stringText up to and including the specified line index.
+ *
+ * This function returns a substring view containing all lines from the start of stringText
+ * up to and including the line at the specified index (0-based). Lines are separated by
+ * newline characters. If the index is 0, only the first line is returned. If the index
+ * is out of bounds (exceeds the number of lines), the entire string is returned.
+ * The returned view includes newline characters except for the final line if it doesn't
+ * end with a newline.
+ *
+ * @param stringText The source string to search within.
+ * @param uLineIndex The 0-based index of the target line (inclusive).
+ * @param iNewLine The character used to separate lines (default: '\n').
+ * @return std::string_view A view of the text from start to the specified line.
+ * 
+ * @code
+ * std::string text = "Line 1\nLine 2\nLine 3";
+ * std::string_view result = select_to_line(text, 1, '\n');
+ * // result contains "Line 1\nLine 2"
+ * @endcode
+ */
+std::string_view select_to_line( const std::string_view& stringText, size_t uLineIndex, char iNewLine )
+{                                                                                                  assert(stringText.empty() == false);
+   size_t uCurrentLine = 0; // Current line index being processed
+   size_t uStart = 0; // Start position for searching
+   size_t uEnd = 0; // End position for the found line
+   
+   // ## Handle first line (index 0)
+   if(uLineIndex == 0) 
+   {
+      uEnd = stringText.find(iNewLine);
+      if(uEnd == std::string_view::npos) { return stringText; }               // Single line, return entire string
+      return stringText.substr(0, uEnd);
+   }
+   
+   // ## Search for the target line
+   while(uCurrentLine < uLineIndex) 
+   {
+      uStart = stringText.find(iNewLine, uStart);
+      if(uStart == std::string_view::npos) { return stringText; }             // Line index out of bounds, return entire string
+      uStart++;                                                               // Move past the newline
+      uCurrentLine++;
+   }
+   
+   // ## Find the end of the target line
+   uEnd = stringText.find(iNewLine, uStart);
+   if(uEnd == std::string_view::npos) 
+   {
+      // Last line in string, return from beginning to end
+      return stringText;
+   }
+   
+   return stringText.substr(0, uEnd);
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Extracts all lines from the specified line index to the end of stringText.
+ *
+ * This function returns a substring view containing all lines from the specified
+ * index (0-based) to the end of stringText. Lines are separated by newline characters.
+ * If the index is 0, the entire string is returned. If the index is out of bounds
+ * (exceeds the number of lines), an empty string_view is returned. The returned view
+ * starts from the beginning of the target line (not including the preceding newline).
+ *
+ * @param stringText The source string to search within.
+ * @param uLineIndex The 0-based index of the starting line (inclusive).
+ * @param iNewLine The character used to separate lines (default: '\n').
+ * @return std::string_view A view of the text from the specified line to the end.
+ * 
+ * @code
+ * std::string text = "Line 1\nLine 2\nLine 3";
+ * std::string_view result = select_from_line(text, 1, '\n');
+ * // result contains "Line 2\nLine 3"
+ * @endcode
+ */
+std::string_view select_from_line( const std::string_view& stringText, size_t uLineIndex, char iNewLine )
+{                                                                                                  assert(stringText.empty() == false);
+   size_t uCurrentLine = 0; // Current line index being processed
+   size_t uStart = 0; // Start position for searching
+   
+   // ## Handle first line (index 0)
+   if(uLineIndex == 0) { return stringText; }                                 // Return entire string for first line
+   
+   // ## Search for the target line
+   while(uCurrentLine < uLineIndex) 
+   {
+      uStart = stringText.find(iNewLine, uStart);
+      if(uStart == std::string_view::npos) { return {}; }                     // Line index out of bounds
+      uStart++;                                                               // Move past the newline
+      uCurrentLine++;
+   }
+   
+   // ## Return from start of target line to end
+   if(uStart < stringText.length()) 
+   {
+      return stringText.substr(uStart);
+   }
+   
+   return {};                                                                 // Empty line at end
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Selects all consecutive lines with content from the start until reaching an empty line.
+ *
+ * This function returns a substring view containing all lines from the beginning of
+ * stringText that have content (non-whitespace characters) until it encounters the first
+ * line that is empty or contains only whitespace characters. The search stops at the
+ * first empty/whitespace-only line encountered. If all lines have content, the entire
+ * string is returned. If the first line is empty, an empty string_view is returned.
+ *
+ * @param stringText The source string to search within.
+ * @param iNewLine The character used to separate lines (default: '\n').
+ * @return std::string_view A view of all consecutive content lines from the start.
+ * 
+ * @code
+ * std::string text = "Line 1\nLine 2\n\nLine 4";
+ * std::string_view result = select_content_lines(text, '\n');
+ * // result contains "Line 1\nLine 2"
+ * @endcode
+ */
+std::string_view select_content_lines( const std::string_view& stringText, char iNewLine )
+{
+   // ## Handle empty string
+   if(stringText.empty()) { return stringText; }
+   
+   size_t uLineStart = 0; // Start position of current line
+   size_t uLineEnd = 0; // End position of current line
+   size_t uLastContentEnd = 0; // End position of last line with content
+   bool bFoundContent = false; // Flag to track if we've found any content
+   
+   while(uLineStart < stringText.length()) 
+   {
+      // ## Find the end of current line
+      uLineEnd = stringText.find(iNewLine, uLineStart);
+      if(uLineEnd == std::string_view::npos) 
+      {
+         uLineEnd = stringText.length(); // Last line without newline
+      }
+      
+      // ## Extract current line content
+      std::string_view currentLine = stringText.substr(uLineStart, uLineEnd - uLineStart);
+      
+      // ## Check if line has content (non-whitespace characters)
+      bool bLineHasContent = false;
+      for(char iCharacter : currentLine) 
+      {
+         if(iCharacter != ' ' && iCharacter != '\t' && iCharacter != '\r') { bLineHasContent = true; break; }
+      }
+      
+      // ## If line is empty/whitespace-only, stop here
+      if(bLineHasContent == false) 
+      {
+         if(bFoundContent == false) { return {}; }                            // No content found before this empty line 
+         break;
+      }
+      
+      // ## Line has content, update tracking variables
+      bFoundContent = true;
+      uLastContentEnd = uLineEnd;
+      
+      // ## Move to next line
+      if(uLineEnd < stringText.length() && stringText[uLineEnd] == iNewLine) {  uLineStart = uLineEnd + 1; }
+      else { break; }                                                          // Reached end of string
+   }
+   
+   // ## Return all content lines found
+   if(bFoundContent) 
+   {
+      return stringText.substr(0, uLastContentEnd);
+   }
+   
+   return {}; // No content found
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Extracts a substring from stringText that is located between `stringFrom` and `stringTo`.
  *
  * This function searches for the first occurrence of `stringFrom` in stringText and, if found,

@@ -16,6 +16,7 @@
 #include "gd/gd_file.h"
 #include "gd/gd_table_io.h"
 #include "gd/gd_utf8.h"
+#include "gd/math/gd_math_string.h"
 
 #include "Command.h"
 #include "Application.h"
@@ -594,7 +595,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
 }
 
 std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::string >& vectorPattern, const gd::argument::shared::arguments* pargumentsFind )
-{
+{                                                                                                  assert( pargumentsFind != nullptr );
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
 
@@ -605,6 +606,23 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
    std::string stringFileBuffer;
    stringFileBuffer.reserve( 64 * 64 );
+
+   // ## Prepare key value if used
+   std::vector<gd::argument::arguments> vectorKeyValue;
+   if( pargumentsFind->exists("kv") == true )
+   {
+      auto vector_ = pargumentsFind->get_argument_all("kv");
+      std::vector<std::string> vectorRule;
+      for( auto& rule : vector_ ) { vectorRule.push_back(rule.as_string()); }
+
+      for( const auto& stringRule : vectorRule )
+      {
+         gd::argument::arguments argumentsRule;
+         CApplication::ParseLeyValueRule_s( stringRule, &argumentsRule );
+         vectorKeyValue.push_back( std::move( argumentsRule ) );
+      }
+   }
+
 
    // ## Prepare the patterns for finding and searching in files
 
@@ -750,6 +768,18 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
 std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const std::string_view& stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<std::string>& vectorKeyValue)
 {
+   for( auto uRow : vectorRow )
+   {
+      std::string_view stringFrom = gd::math::string::select_from_line(stringFileBuffer, uRow); // Get the line from the file buffer
+      std::string_view stringContent = gd::math::string::select_content_lines(stringFrom); // Get the content of the line
+      if( stringContent.empty() == true ) continue; // Skip empty lines
+
+      // ## extract key-value pairs from string based on rules in vectorKeyValue
+      for(const auto& stringkeyValue : vectorKeyValue) 
+      {
+         // Logic to extract key-value pairs from stringContent based on keyValue
+      }
+   }
 
    return { true, "" };
 }
