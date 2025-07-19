@@ -33,6 +33,9 @@ std::string select_until(const std::string_view& stringText, const std::string_v
 
 
 std::string select_line(const std::string_view& stringText, size_t uLineIndex, char iNewLine = '\n');
+std::string_view select_to_line( const std::string_view& stringText, size_t uLineIndex, char iNewLine = '\n' );
+std::string_view select_from_line( const std::string_view& stringText, size_t uLineIndex, char iNewLine = '\n' );
+std::string_view select_content_lines( const std::string_view& stringText, char iNewLine = '\n' );
 
 /// Extracts substring between stringFrom and stringTo.
 std::string select_between(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo);
@@ -45,6 +48,8 @@ std::string select_unwrap(const std::string_view& stringText, const std::string_
 
 /// Extracts all substrings between pairs of delimiters.
 std::vector<std::string> select_between_all(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo);
+
+
 
 
 _GD_MATH_STRING_END

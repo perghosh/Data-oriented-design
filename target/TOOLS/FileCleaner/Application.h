@@ -377,6 +377,8 @@ public:
    /// Splits a string into vector of number string, it tries to figure out characters used to split numbers.
    static std::vector<std::string> SplitNumber_s(const std::string& stringText);
 
+   static std::pair<bool, std::string> ParseLeyValueRule_s( const std::string_view stringRule, gd::argument::arguments* pargumentsKVRule );
+
 
    static bool IsTextFile_s(const std::string_view& stringExtension);
    

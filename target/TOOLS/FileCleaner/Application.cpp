@@ -2475,6 +2475,49 @@ std::vector<std::string> CApplication::SplitNumber_s(const std::string& stringTe
    return vectorNumber;                                                       // Return the vector of numbers
 }
 
+std::pair<bool, std::string> CApplication::ParseLeyValueRule_s(const std::string_view stringRule, gd::argument::arguments* pargumentsKVRule)
+{
+   constexpr char iKeyDelimiter = ':';
+   constexpr char iFormatDelimiter = '@';
+   enum { eKey, eValue, ePattern, eUnknown  };
+
+   std::string string_;
+
+   unsigned uState = eKey; // Start with key state
+
+   // ## Parse value until we hit a delimiter
+   
+   for( auto it = std::begin( stringRule ); it != std::end( stringRule ); it++ )
+   {
+      const char iCharacter = *it;
+      if( iCharacter > 'A' ) { string_ += iCharacter; }
+      else if( iCharacter == iKeyDelimiter )
+      {
+         if( uState == eKey && string_.empty() == false ) pargumentsKVRule->append("key", string_);
+         else if( uState == eValue && string_.empty() == false ) pargumentsKVRule->append("value", string_);
+         uState++;
+         string_.clear();
+
+      }
+      else if( uState == eValue && iCharacter == iFormatDelimiter)
+      {
+         uState = ePattern;
+      }
+      else
+      { 
+         string_ += iCharacter; 
+      }
+   }
+
+   if( uState == eKey && string_.empty() == false ) pargumentsKVRule->append("key", string_);
+   else if( uState == eValue && string_.empty() == false ) pargumentsKVRule->append("value", string_);
+   else if( string_.empty() == false ) pargumentsKVRule->append("format", string_);
+
+   if( uState != eUnknown ) return { true, "" };
+
+   return { false, std::string("invalid rule: ") + stringRule.data()};
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Checks if the provided file extension is a known text file type.
  *
