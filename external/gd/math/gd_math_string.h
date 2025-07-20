@@ -40,6 +40,8 @@ std::string_view select_content_lines( const std::string_view& stringText, char 
 /// Extracts substring between stringFrom and stringTo.
 std::string select_between(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo);
 
+std::string select_between(const std::string_view& stringText, const std::vector<std::string>& vectorDelimiters);
+
 /// Extracts substring between the nth occurrence of stringFrom and the next stringTo.
 std::string select_between_nth(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo, size_t uOccurrence);
 

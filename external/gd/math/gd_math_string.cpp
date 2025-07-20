@@ -329,6 +329,94 @@ std::string_view select_content_lines( const std::string_view& stringText, char 
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Extracts a substring from stringText that is located between matching delimiters from vectorDelimiters.
+ *
+ * This function searches for the first occurrence of any delimiter from vectorDelimiters in stringText.
+ * Once found, it starts extracting after the end of that delimiter and searches for the next occurrence
+ * of the same delimiter. It extracts all characters between these matching delimiters. If no matching
+ * pair is found, or if the resulting substring would be empty or invalid, an empty string is returned.
+ *
+ * @param stringText The source string to search within.
+ * @param vectorDelimiters Vector of delimiter strings to search for. Must use same delimiter for start and end.
+ * @return std::string The substring found between matching delimiters, or an empty string if not found.
+ * 
+ * @code
+ * // Example 1: Basic usage with quotes
+ * std::string text = "The 'quick brown' fox";
+ * std::vector<std::string> delimiters = {"'", "\""};
+ * std::string result = select_between(text, delimiters);
+ * // result = "quick brown"
+ * 
+ * // Example 2: Multiple delimiter types, first one wins
+ * std::string text2 = "Start[content]more\"other\"end";
+ * std::vector<std::string> delimiters2 = {"[", "]", "\""};
+ * std::string result2 = select_between(text2, delimiters2);
+ * // result2 = "content" (found '[' first)
+ * 
+ * // Example 3: Delimiter at start of string
+ * std::string text3 = "*hello*world";
+ * std::vector<std::string> delimiters3 = {"*", "|"};
+ * std::string result3 = select_between(text3, delimiters3);
+ * // result3 = "hello"
+ * 
+ * // Example 4: No matching pair found
+ * std::string text4 = "No delimiters here";
+ * std::vector<std::string> delimiters4 = {"[", "]"};
+ * std::string result4 = select_between(text4, delimiters4);
+ * // result4 = "" (empty string)
+ * @endcode * 
+ */
+std::string select_between(const std::string_view& stringText, const std::vector<std::string>& vectorDelimiters)
+{                                                                                                  assert(stringText.empty() == false); assert(vectorDelimiters.empty() == false);
+   size_t uStart = std::string_view::npos;
+   std::string stringDelimiter;
+   size_t uDelimiterLength = 0;
+
+   // ## First try to find the first occurrence of any delimiter, check start of stringText
+   for(const auto& delimiter_ : vectorDelimiters)
+   {                                                                                               assert(delimiter_.empty() == false);
+      if(stringText.starts_with(delimiter_) )
+      {
+         uStart = 0;                                                           // Start position is at the beginning of the string
+         stringDelimiter = delimiter_;
+         uDelimiterLength = delimiter_.length();
+
+         break; // No need to check further, we found a match at the start
+      }
+   }
+   
+   if( uDelimiterLength == 0 )
+   {
+      // ## Find the first occurrence of any delimiter
+      for(const auto& delimiter_ : vectorDelimiters)
+      {                                                                                            assert(delimiter_.empty() == false);
+         size_t uFound = stringText.find(delimiter_);
+         if(uFound != std::string_view::npos && (uStart == std::string_view::npos || uFound < uStart))
+         {
+            uStart = uFound;
+            stringDelimiter = delimiter_;
+            uDelimiterLength = delimiter_.length();
+         }
+      }
+   }
+   
+   if(uStart == std::string_view::npos) { return {}; }                         // No delimiter found
+   
+   // Start position is after the first delimiter
+   uStart += uDelimiterLength;
+   
+   // Find the next occurrence of the same delimiter
+   size_t uEnd = stringText.find(stringDelimiter, uStart);
+   if(uEnd == std::string_view::npos) { return {}; }                           // Matching delimiter not found
+   
+   // Validate positions
+   if(uStart >= uEnd) { return {}; }
+   
+   // Extract substring
+   return std::string(stringText.substr(uStart, uEnd - uStart));
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Extracts a substring from stringText that is located between `stringFrom` and `stringTo`.
  *
  * This function searches for the first occurrence of `stringFrom` in stringText and, if found,

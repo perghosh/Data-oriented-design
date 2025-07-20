@@ -618,7 +618,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
       for( const auto& stringRule : vectorRule )
       {
          gd::argument::arguments argumentsRule;
-         CApplication::ParseLeyValueRule_s( stringRule, &argumentsRule );
+         CApplication::ParseKeyValueRule_s( stringRule, &argumentsRule );
          vectorKeyValue.push_back( std::move( argumentsRule ) );
       }
    }
@@ -675,10 +675,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
       // "args": [ "find", "--source", "C:\\dev\\home\\DOD\\target\\TOOLS\\FileCleaner\\Application.cpp", "--pattern", "@TAGG", "--kv", "description/[]", "--segment", "comment" ],
       if( pargumentsFind->exists("kv") == true )
       {
-         auto vector_ = pargumentsFind->get_argument_all("kv");
-         std::vector<std::string> vectorKeyValue;
-         for( auto& rule : vector_ ) { vectorKeyValue.push_back(rule.as_string()); }
-
          // Extract rows where to look for key-value pairs
          std::vector<uint64_t> vectorRow;
          for( auto itRow = uPatternOffset; itRow < ptableLineList->size(); itRow++ ) 
@@ -766,8 +762,10 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    return { true, "" };
 }
 
-std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const std::string_view& stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<std::string>& vectorKeyValue)
+std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const std::string_view& stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<gd::argument::arguments>& vectorRule)
 {
+   auto ptableKeyValue = CACHE_GetTableArguments("keyvalue", true); // Ensure the "keyvalue" table is in cache
+
    for( auto uRow : vectorRow )
    {
       std::string_view stringFrom = gd::math::string::select_from_line(stringFileBuffer, uRow); // Get the line from the file buffer
@@ -775,9 +773,23 @@ std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const std::string_
       if( stringContent.empty() == true ) continue; // Skip empty lines
 
       // ## extract key-value pairs from string based on rules in vectorKeyValue
-      for(const auto& stringkeyValue : vectorKeyValue) 
+      for(const auto& rule_ : vectorRule) 
       {
          // Logic to extract key-value pairs from stringContent based on keyValue
+         std::string stringKey = rule_["key"].as_string(); // Get the key from the rule
+         std::string stringValue = rule_["value"].as_string();
+         std::string stringPattern = rule_["pattern"].as_string();
+
+         auto stringSelect = gd::math::string::select_between(stringContent,{ {"\"\"\""}, {"`"}, {"\""} }); // Extract the value between key and value using the pattern
+
+         if( stringKey.empty() == false )
+         {
+
+         }
+         /*
+         if( stringKey.empty() == false )
+         { }
+         */
       }
    }
 
@@ -941,6 +953,18 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       );
       ptable_->property_set("id", stringId);                                  // set id for table, used to identify table in cache
    }
+   else if( stringId == "keyvalue" )
+   {
+      auto ptableKeys = std::make_unique<gd::table::arguments::table>( gd::table::tag_full_meta{} );
+      ptableKeys->column_prepare();
+      ptableKeys->column_add("uint64", 0, "key");                             // add key column
+      ptableKeys->column_add("uint64", 0, "file-key");                        // foreign key to file table
+      ptableKeys->column_add("uint64", 0, "row");                             // row number in file
+      ptableKeys->prepare();                                                  // prepare table
+      ptableKeys->property_set("id", stringId);                               // set id for table, used to identify table in cache
+      CACHE_Add( std::move(ptableKeys) );                                     // add table to cache
+      return;                                                                 // exit, table is already added to cache
+   }
    else { assert(false); } // unknown cache table
 
    if( ptable != nullptr )
@@ -1011,8 +1035,14 @@ bool CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view
    // ## There is a tiny chance table was added before this method was called, we need to check with exclusive lock
    for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
    {
-      auto argumentId = (*it)->property_get( "id" );
-      if( argumentId.is_string() && stringTableId == (const char *)argumentId ) return false; // found table, exit
+      // Use std::visit to check if the table has the same id
+      bool bFound = std::visit([&stringTableId](const auto& ptable_)
+      {
+         auto argumentId = ptable_->property_get("id");
+         return argumentId.is_string() && stringTableId == static_cast<const char*>(argumentId);
+      }, *it); // closing the visit lambda   
+
+      if(bFound) {  assert(false);  return false; }
    }
 
    /// Create unique_ptr with table and move table data to this table
@@ -1026,6 +1056,14 @@ bool CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view
 
    return true;
 }
+
+void CDocument::CACHE_Add( std::unique_ptr< gd::table::arguments::table > ptable_ )
+{
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );       // locks `m_vectorTableCache`
+
+   m_vectorTableCache.push_back( std::move( ptable_ ) );                        // insert table to vector
+}
+
 
 std::string CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId, gd::types::tag_temporary )
 {
@@ -1046,8 +1084,17 @@ std::string CDocument::CACHE_Add( gd::table::dto::table&& table, const std::stri
       // ## There is a tiny chance table was added before this method was called, we need to check with exclusive lock
       for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
       {
-         auto argumentId = (*it)->property_get( "id" );
-         if( argumentId.is_string() && stringTableId == (const char*)argumentId ) { assert(false ); return "Table with id already exists in cache"; } // found table, exit
+         // Use std::visit to check if the table has the same id
+         bool bFound = std::visit([&stringTableId](const auto& ptable_)
+         {
+            auto argumentId = ptable_->property_get("id");
+            return argumentId.is_string() && stringTableId == static_cast<const char*>(argumentId);
+         }, *it); // closing the visit lambda   
+
+         if( bFound == true ) 
+         { 
+            assert(false); return "Table with id already exists in cache"; // found table, exit
+         }
       }
    }
 #endif // NDEBUG
@@ -1077,8 +1124,12 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
 
       for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
       {
-         auto argumentId = (*it)->property_get( "id" );
-         if( argumentId.is_string() && stringId == ( const char* )argumentId ) return it->get();
+         if( std::holds_alternative< std::unique_ptr< gd::table::dto::table > >(*it) == true ) 
+         {
+            auto& ptable_ = std::get< std::unique_ptr< gd::table::dto::table > >(*it);
+            auto argumentId = ptable_->property_get("id");
+            if( argumentId.is_string() && stringId == ( const char* )argumentId ) return ptable_.get();
+         }
       }
    }
 
@@ -1090,6 +1141,32 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
    }
 
    return nullptr;
+}
+
+gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::string_view& stringId, bool bPrepare )
+{
+   {
+      std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
+
+      for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
+      {
+         if( std::holds_alternative< std::unique_ptr< gd::table::arguments::table > >(*it) == true ) 
+         {
+            auto& ptable_ = std::get< std::unique_ptr< gd::table::arguments::table > >(*it);
+            auto argumentId = ptable_->property_get("id");
+            if( argumentId.is_string() && stringId == ( const char* )argumentId ) return ptable_.get();
+         }
+      }
+   }
+
+   if( bPrepare == true )
+   {
+      CACHE_Prepare( stringId );
+      return CACHE_GetTableArguments(stringId, false);                        // Get the table after preparing it
+   }
+
+   return nullptr;
+
 }
 
 /** ---------------------------------------------------------------------------
@@ -1270,18 +1347,24 @@ void CDocument::CACHE_Erase(gd::types::tag_temporary)
 {
    std::unique_lock<std::shared_mutex> lock_(m_sharedmutexTableCache);
 
-   // Remove all tables with property "temporary" == true
+   // ## Remove all tables with property "temporary" == true
+
    auto itTable = m_vectorTableCache.begin();
-   while( itTable != m_vectorTableCache.end() )
+   while( itTable != m_vectorTableCache.end())
    {
-      auto argumentTemporary = (*itTable)->property_get("temporary");
-      if (argumentTemporary.is_bool() && argumentTemporary.as_bool())
+      bool bTemporary = std::visit([](const auto& ptable_)                     // Use std::visit to access the table's property
       {
-         itTable = m_vectorTableCache.erase(itTable);
-      }
-      else
+         auto argumentTemporary = ptable_->property_get("temporary");
+         return argumentTemporary.is_bool() && argumentTemporary.as_bool();
+      }, *itTable);
+
+      if( bTemporary == true ) 
       {
-         ++itTable;
+         itTable = m_vectorTableCache.erase(itTable); // Erase and get next iterator
+      } 
+      else 
+      {
+         ++itTable; // Move to next table
       }
    }
 }
@@ -1293,15 +1376,20 @@ void CDocument::CACHE_Erase(gd::types::tag_temporary)
  */
 void CDocument::CACHE_Erase( const std::string_view& stringId ) 
 {
-   if(CACHE_Get(stringId, false) != nullptr)
+   std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
+
+   if(CACHE_Exists(stringId) == true)
    {
-      std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
       for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
       {
-         auto argumentId = (*it)->property_get( "id" );
+         // Use std::visit to get argument id from table
+         auto argumentId = std::visit([](const auto& ptable_) {
+            return ptable_->property_get("id");
+         }, *it);
+
          if( argumentId.is_string() && stringId == ( const char* )argumentId )
          {
-            m_vectorTableCache.erase( it );
+            it = m_vectorTableCache.erase( it );
             break;
          }
       }
@@ -1319,14 +1407,29 @@ std::string CDocument::CACHE_Dump(const std::string_view& stringId)
    return stringCliTable;
 }
 
+bool CDocument::CACHE_Exists(const std::string_view& stringId) const
+{
+   for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
+   {
+      // Use std::visit to check if the table has the same id
+      auto argumentId = std::visit([](const auto& ptable_) {
+         return ptable_->property_get("id");
+      }, *it);
+      if( argumentId.is_string() && stringId == ( const char* )argumentId ) return true;
+   }
+   return false;
+}
+
 
 #ifndef NDEBUG
-/// For debug, check if chache with id exists
+/// For debug, check if cache with id exists
 bool CDocument::CACHE_Exists_d( const std::string_view& stringId )
 {
    for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
    {
-      auto argumentId = (*it)->property_get( "id" );
+      auto argumentId = std::visit([](const auto& ptable_) {
+         return ptable_->property_get("id");
+      }, *it);
       if( argumentId.is_string() && stringId == ( const char* )argumentId ) return true;
    }
    return false;

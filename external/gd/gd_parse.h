@@ -306,9 +306,37 @@ struct ascii
 
 
 /**
- * \brief csv rules on how to parse csv formated text
+ * \brief csv rules on how to parse csv formatted text
  *
+ * The `csv` struct defines parsing rules for CSV (Comma-Separated Values) formatted text.
+ * It allows customization of delimiter, line ending, and quote character.
  *
+ * ## Usage
+ * - Configure delimiter, line ending, and quote character via constructors.
+ * - Use `next_value` to move to the next value in a CSV line.
+ * - Use with parsing functions to extract values from CSV text.
+ *
+ * ## Members
+ * - `m_uDelimiter`: Delimiter character (default: ',').
+ * - `m_uLineEnd`: Line ending character (default: '\n').
+ * - `m_uQuote`: Quote character (default: '\"').
+ * - `m_uOptions`: Option flags for parsing behavior.
+ *
+ * ## Methods
+ * - `get_delimiter()`: Returns the delimiter character.
+ * - `get_lineend()`: Returns the line ending character.
+ * - `get_quote()`: Returns the quote character.
+ * - `is_delimiter_single_char()`: Checks if delimiter is a single character.
+ * - `is_quote(uint8_t)`: Checks if the given character is the quote character.
+ * - `next_value(const uint8_t*, const uint8_t*)`: Returns pointer to next value in CSV line.
+ * - `next_value(const char*, const char*)`: Overload for char pointers.
+ *
+ * ## Example
+ * @code
+ * gd::parse::csv csvRules(';'); // Use semicolon as delimiter
+ * std::vector<std::string> values;
+ * gd::parse::read_line_g(line.data(), line.data() + line.size(), values, csvRules);
+ * @endcode
  */
 struct csv
 {
@@ -343,6 +371,13 @@ struct csv
    uint8_t m_uLineEnd;           ///< line endings
    uint8_t m_uQuote;             ///< Quote character
 };
+
+/*
+[tag:application, keyvalue, entry] [key1:`this is text in backtics`][description:"process key-value command line operation based on arguments passed to application"]
+[key21: """tripple quote to avoid conflict with single quote"""]
+[tag_text: 'application, keyvalue, entry']
+*/
+
 
 // ----------------------------------------------------------------------------
 // ------------------------------------------------------------------------ sql
