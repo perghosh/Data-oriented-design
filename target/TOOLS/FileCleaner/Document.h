@@ -15,6 +15,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <boost/regex.hpp>
@@ -24,6 +25,7 @@
 #include "gd/gd_uuid.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
+#include "gd/gd_table_arguments.h"
 #include "gd/gd_table_column-buffer.h"
 
 
@@ -40,6 +42,10 @@ class CApplication;
  */
 class CDocument
 {
+public:
+   /// @brief Type alias for table, which can be either a `gd::table::dto::table` or a `gd::table::arguments::table`.
+   using table_t = std::variant< std::unique_ptr< gd::table::dto::table >, std::unique_ptr< gd::table::arguments::table > >;
+
 // ## construction -------------------------------------------------------------
 public: // 0TAG0construct.Document
    CDocument() {}
@@ -95,7 +101,7 @@ public:
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::string >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind );
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsList );
 
-   std::pair<bool, std::string> BUFFER_UpdateKeyValue(const std::string_view& stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<std::string>& vectorKeyValue);
+   std::pair<bool, std::string> BUFFER_UpdateKeyValue(const std::string_view& stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<gd::argument::arguments>& vectorRule);
       
 //@}
 
@@ -118,12 +124,15 @@ public:
    /// Load cache data
    std::pair<bool, std::string> CACHE_Load( const std::string_view& stringId );
    bool CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId );
+   void CACHE_Add( std::unique_ptr< gd::table::arguments::table > ptable_ );
    std::string CACHE_Add( gd::table::dto::table&& table, const std::string_view& stringId, gd::types::tag_temporary );
    bool CACHE_Add( gd::table::dto::table&& table ) { return CACHE_Add( std::forward<gd::table::dto::table>( table ), std::string_view{}); }
    void CACHE_Add( std::unique_ptr< gd::table::dto::table > ptableAdd );
    /// Return table with cache data
-   gd::table::dto::table* CACHE_Get( const std::string_view& stringId, bool bLoad );
+   gd::table::dto::table* CACHE_Get( const std::string_view& stringId, bool bPrepare );
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId ) { return CACHE_Get( stringId, true ); }
+   gd::table::arguments::table* CACHE_GetTableArguments( const std::string_view& stringId, bool bPrepare );
+
    /// Sort cached table for specified column
    std::pair<bool, std::string> CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_ );
 
@@ -135,6 +144,7 @@ public:
    void CACHE_Erase( gd::types::tag_temporary );
    /// Dump cache data to string
    std::string CACHE_Dump(const std::string_view& stringId);
+   bool CACHE_Exists(const std::string_view& stringId) const;
 #ifndef NDEBUG
    bool CACHE_Exists_d( const std::string_view& stringId );
 #endif // !NDEBUG
@@ -200,7 +210,8 @@ public:
    std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document
    std::string m_stringCacheConfiguration;      ///< file name for file with cache configuration information 
    /// vector of tables used to cache data
-   std::vector< std::unique_ptr< gd::table::dto::table > > m_vectorTableCache;
+   //std::vector< std::unique_ptr< gd::table::dto::table > > m_vectorTableCache;
+   std::vector< table_t > m_vectorTableCache;
 
    // ## Error information. Document are able to collect error information that may be usefull locating problems
    std::shared_mutex m_sharedmutexError;        ///< mutex used to manage errors in threaded environment

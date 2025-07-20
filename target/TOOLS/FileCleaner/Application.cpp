@@ -2475,15 +2475,16 @@ std::vector<std::string> CApplication::SplitNumber_s(const std::string& stringTe
    return vectorNumber;                                                       // Return the vector of numbers
 }
 
-std::pair<bool, std::string> CApplication::ParseLeyValueRule_s(const std::string_view stringRule, gd::argument::arguments* pargumentsKVRule)
+std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string_view stringRule, gd::argument::arguments* pargumentsKVRule)
 {
    constexpr char iKeyDelimiter = ':';
    constexpr char iFormatDelimiter = '@';
-   enum { eKey, eValue, ePattern, eUnknown  };
+   enum { eKey = 0, eValue = 1, ePattern = 2, eUnknown = 3 };
 
    unsigned uState = eKey; // Start with key state
 
-   auto add_ = [pargumentsKVRule, uState](std::string_view& stringValue) -> void {
+   auto add_ = [pargumentsKVRule, &uState](std::string& stringValue) -> void 
+   {
       if( stringValue.empty() == true ) return;
 
       if( uState == eKey ) pargumentsKVRule->append("key", stringValue);
@@ -2507,7 +2508,7 @@ std::pair<bool, std::string> CApplication::ParseLeyValueRule_s(const std::string
          add_( string_ );
          uState++;
       }
-      else if( uState == eValue && iCharacter == iFormatDelimiter)
+      else if( iCharacter == iFormatDelimiter)
       {
          add_( string_ );
          uState = ePattern;
@@ -2519,6 +2520,10 @@ std::pair<bool, std::string> CApplication::ParseLeyValueRule_s(const std::string
    }
 
    add_( string_ );
+
+#ifndef NDEBUG
+   std::string stringArguments_d = gd::argument::debug::print( *pargumentsKVRule );
+#endif // NDEBUG
 
    if( uState != eUnknown ) return { true, "" };
 
