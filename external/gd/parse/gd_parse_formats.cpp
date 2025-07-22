@@ -8,6 +8,32 @@
 
 _GD_PARSE_BEGIN
 
+
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Skips a quoted section in the input, handling escaped quotes and multi-quote delimiters.
+ * 
+ * Advances the pointer past a quoted value, supporting both single and multiple quote characters
+ * (e.g., "", '', """ 0 1 2 """,  ``). Handles escaped quotes (e.g., "" inside "") and sets the value range if requested.
+ * Returns a pointer to the position after the closing quote(s), or to puEnd if unterminated.
+ * 
+ * @param puPosition Pointer to the current position (must be at a quote character).
+ * @param puEnd Pointer to the end of the input.
+ * @param ppairValue Optional output pair to receive the start and length of the quoted value.
+ * @return Pointer to the position after the closing quote(s), or puEnd if unterminated.
+ * 
+ * @code
+ * // Example usage:
+ * const code codeParser();
+ * const uint8_t* input = ...;
+ * const uint8_t* end = ...;
+ * std::pair<const uint8_t*, size_t> value;
+ * const uint8_t* result = codeParser.skip_quoted(input, end, &value);
+ * 
+ * // Handle the result...
+ * @endcode
+ */
 const uint8_t* code::skip_quoted(const uint8_t* puPosition, const uint8_t* puEnd, std::pair<const uint8_t*, size_t>* ppairValue) const 
 {                                                                                                  assert( is_quote(*puPosition) == true );
    unsigned uQuoteCount = 1;
@@ -82,6 +108,18 @@ const uint8_t* code::skip_quoted(const uint8_t* puPosition, const uint8_t* puEnd
    return puPosition; // Unterminated quote
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Reads a value from the input, handling quoted and unquoted values.
+ * 
+ * This function reads a value from the input, skipping whitespace and handling
+ * quoted values. If the value is quoted, it skips to the closing quote and returns
+ * the value range. If unquoted, it reads until the end of the value or until a
+ * specified closing character (if applicable).
+ * 
+ * @param puPosition Pointer to the current position in the input.
+ * @param puEnd Pointer to the end of the input.
+ * @return A pair containing a pointer to the start of the value and its length.
+ */
 std::pair<const uint8_t*, size_t> code::read_value(const uint8_t* puPosition, const uint8_t* puEnd) const
 {                                                                                                  assert( puPosition <= puEnd );
    std::pair<const uint8_t*, size_t> pairValue = { nullptr, 0 }; // Initialize value pair
@@ -201,6 +239,23 @@ const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbsz
 }
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Reads a value from the input, handling quoted and unquoted values.
+ * 
+ * This function reads a value from the input, skipping whitespace and handling
+ * quoted values. If the value is quoted, it skips to the closing quote and returns
+ * the value range. If unquoted, it reads until the end of the value or until a
+ * specified closing character (if applicable).
+ * 
+ * @param piBegin Pointer to the current position in the input.
+ * @param piEnd Pointer to the end of the input.
+ * @param piFind Pointer to the substring to find.
+ * @param uLength Length of the substring to find.
+ * @param code Parsing rules for handling scopes and quotes.
+ * @param bScope If true, considers scope characters for searching.
+ * @param puLength Optional output for length of found value.
+ * @return A pair containing a boolean indicating success and a pointer to the position after the value.
+ */
 std::pair<bool, const char*> read_value_g(const char* piBegin, const char* piEnd, const char* piFind, unsigned uLength, const code& code, bool bScope, size_t* puLength)
 {                                                                                                  assert( piBegin <= piEnd );
    // ## Find value
