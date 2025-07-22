@@ -44,8 +44,10 @@ struct code
       eOptionsMAX = 1 << 4,
    };
 
+   code() : m_uOpenBracket(0), m_uCloseBracket(0), m_uKeySeparator(':'), m_stringQuoteChars("\"'"), m_uOptions(eTrimWhitespace | eAllowUnquoted) {}
    code(uint8_t uOpenBracket, uint8_t uCloseBracket) : m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(':'), m_stringQuoteChars("\"'`"), m_uOptions(eTrimWhitespace | eAllowUnquoted) {}
    code(uint8_t uOpenBracket, uint8_t uCloseBracket, uint8_t uKeySeparator) : m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(uKeySeparator), m_stringQuoteChars("\"'`"), m_uOptions(eTrimWhitespace | eAllowUnquoted) {}
+   code(const code& o): m_uOptions(o.m_uOptions), m_uOpenBracket(o.m_uOpenBracket), m_uCloseBracket(o.m_uCloseBracket), m_uKeySeparator(o.m_uKeySeparator), m_stringQuoteChars(o.m_stringQuoteChars) {}
 
    bool is_quote(uint8_t uChar) const { return m_stringQuoteChars.find(uChar) != std::string::npos; }
 
@@ -67,8 +69,6 @@ struct code
       auto pairValue = read_value(reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data() + stringText.size()));
       return std::string_view(reinterpret_cast<const char*>(pairValue.first), pairValue.second);
    }
-
-
 
 // ## attributes ---------------------------------------------------------------
    unsigned m_uOptions;           ///< flag options for parsing behavior
