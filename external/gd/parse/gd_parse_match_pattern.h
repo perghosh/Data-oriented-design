@@ -1,5 +1,8 @@
 /**
  * @file gd_parse_match_pattern.h
+ * 
+ * Logic for matching and comparing string patterns. Just plain patterns without
+ * need to think about the context of the text.
  */
 
 
@@ -31,11 +34,13 @@ _GD_PARSE_BEGIN
 
 /**
  * @class pattern
- * @brief A lightweight utility class for matching and comparing string patterns.
+ * @brief A lightweight utility class for matching and comparing string patterns where you need speed.
  *
  * The `pattern` class provides functionality to match and compare string 
  * patterns against input text. It maintains a collection of pattern rules and 
  * provides methods to check if input text matches any of the stored patterns.
+ * 
+ * It's very fast and efficient, designed for scenarios where you need to match multiple patterns against text quickly.
  *
  * ### Features:
  * - Simple pattern matching for strings
