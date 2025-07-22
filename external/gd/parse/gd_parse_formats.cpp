@@ -45,7 +45,7 @@ const uint8_t* code::skip_quoted(const uint8_t* puPosition, const uint8_t* puEnd
                if( ppairValue != nullptr ) 
                {
                   const auto* puValueStart = ppairValue->first;
-                  size_t uLength = puPosition - puValueStart - uQuoteCount;    // Calculate length of value
+                  size_t uLength = puPosition - puValueStart;    // Calculate length of value
                   ppairValue->second = uLength; 
                }
 
@@ -91,6 +91,12 @@ std::pair<const uint8_t*, size_t> code::read_value(const uint8_t* puPosition, co
 
    if( is_separator() == true )
    {
+      // ## Skip key and move to separator
+      while( puPosition < puEnd && is_separator(*puPosition) == false )
+      {
+         ++puPosition;
+      }
+
       if(is_separator(*puPosition) == true )
       {
          ++puPosition;
