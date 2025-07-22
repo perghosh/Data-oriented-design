@@ -39,5 +39,8 @@ TEST_CASE("[table] custom columns", "[strstr]")
       auto result_ = codeParser.read_value(piResult, piEnd);
       std::string_view stringValue(result_.first, result_.second);
       std::cout << "Found value: " << stringValue << std::endl;
+
+      auto result1_ = codeParser.read_value( std::string_view( piResult, piEnd ) );
+      std::cout << "Read value: " << result1_ << std::endl;
    }
 }
