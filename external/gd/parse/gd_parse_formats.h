@@ -63,6 +63,10 @@ struct code
       auto pairValue = read_value(reinterpret_cast<const uint8_t*>(piPosition), reinterpret_cast<const uint8_t*>(piEnd)); 
       return { reinterpret_cast<const char*>(pairValue.first), pairValue.second }; 
    }
+   std::string_view read_value(const std::string_view& stringText) const {
+      auto pairValue = read_value(reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data() + stringText.size()));
+      return std::string_view(reinterpret_cast<const char*>(pairValue.first), pairValue.second);
+   }
 
 
 
