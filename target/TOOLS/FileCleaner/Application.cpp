@@ -475,7 +475,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    {
       auto result_ = CLI::History_g( poptionsActive );
    }
-   else if( stringCommandName == "kv" )                                        // @TAGG [tag: application, keyvalue, entry] [description: "process key-value command line operation based on arguments passed to application"]
+   else if( stringCommandName == "kv" )
    {
       auto* pdocument = DOCUMENT_Get("keyvalue", true );
       auto result_ = CLI::KeyValue_g( poptionsActive, pdocument );
@@ -2475,6 +2475,9 @@ std::vector<std::string> CApplication::SplitNumber_s(const std::string& stringTe
    return vectorNumber;                                                       // Return the vector of numbers
 }
 
+// @TASK [date: 250723] [name: key-value] [description: "Extend key-value argument to simplify setting multiple keys to read"] [state: open]
+// @TASK [date: 250723] [name: key-value] [description: "write documentation"] [state: open]
+
 std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string_view stringRule, gd::argument::arguments* pargumentsKVRule)
 {
    constexpr char iKeyDelimiter = ':';
@@ -2489,7 +2492,7 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
 
       if( uState == eKey ) pargumentsKVRule->append("key", stringValue);
       else if( uState == eValue ) pargumentsKVRule->append("value", stringValue);
-      else pargumentsKVRule->append("format", stringValue);
+      else pargumentsKVRule->append("scope", stringValue);
 
       stringValue.clear();
    };

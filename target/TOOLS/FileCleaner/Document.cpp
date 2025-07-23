@@ -17,6 +17,7 @@
 #include "gd/gd_table_io.h"
 #include "gd/gd_utf8.h"
 #include "gd/math/gd_math_string.h"
+#include "gd/parse/gd_parse_formats.h"
 
 #include "Command.h"
 #include "Application.h"
@@ -672,7 +673,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
          continue; // Skip to the next file if there was an error
       }
 
-      // "args": [ "find", "--source", "C:\\dev\\home\\DOD\\target\\TOOLS\\FileCleaner\\Application.cpp", "--pattern", "@TAGG", "--kv", "description/[]", "--segment", "comment" ],
       if( pargumentsFind->exists("kv") == true )
       {
          // Extract rows where to look for key-value pairs
@@ -683,8 +683,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
             vectorRow.push_back(uRow);                                       // add row number in file
          } 
 
-
-         BUFFER_UpdateKeyValue(stringFileBuffer, vectorRow, vectorKeyValue);   // Update table from key-value pairs
+         BUFFER_UpdateKeyValue( stringFile, stringFileBuffer, vectorRow, vectorKeyValue);   // Update table from key-value pairs
       }
 
       if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
@@ -762,12 +761,17 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    return { true, "" };
 }
 
-std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const std::string_view& stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<gd::argument::arguments>& vectorRule)
+// @TASK [date: 250723] [name: key-value] [description: "test BUFFER_UpdateKeyValue method for different type of value combinations"] [state: todo] [priority: high]
+// @TASK [date: 250723] [name: key-value] [description: "write documentation"] [state: progress] [priority: low]
+
+std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(std::string_view stringFile, std::string_view stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<gd::argument::arguments>& vectorRule)
 {
    auto ptableKeyValue = CACHE_GetTableArguments("keyvalue", true); // Ensure the "keyvalue" table is in cache
 
    for( auto uRow : vectorRow )
    {
+      uint64_t uKeyValueRow = std::numeric_limits<uint64_t>::max();
+
       std::string_view stringFrom = gd::math::string::select_from_line(stringFileBuffer, uRow); // Get the line from the file buffer
       std::string_view stringContent = gd::math::string::select_content_lines(stringFrom); // Get the content of the line
       if( stringContent.empty() == true ) continue; // Skip empty lines
@@ -775,21 +779,29 @@ std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const std::string_
       // ## extract key-value pairs from string based on rules in vectorKeyValue
       for(const auto& rule_ : vectorRule) 
       {
-         // Logic to extract key-value pairs from stringContent based on keyValue
-         std::string stringKey = rule_["key"].as_string(); // Get the key from the rule
-         std::string stringValue = rule_["value"].as_string();
-         std::string stringPattern = rule_["pattern"].as_string();
+         std::string stringValue; // Variable to store the extracted value
+         // ## Logic to extract key-value pairs from stringContent based on keyValue
+         std::string stringKey = rule_["key"].as_string();                    // Get the key from the rule
+         //std::string stringValue = rule_["value"].as_string();
+         std::string stringScope = rule_["scope"].as_string();
 
-         auto stringSelect = gd::math::string::select_between(stringContent,{ {"\"\"\""}, {"`"}, {"\""} }); // Extract the value between key and value using the pattern
-
-         if( stringKey.empty() == false )
+         const gd::parse::code codeKeyValue(stringScope);
+         const char* piResult = gd::parse::strstr(stringContent, stringKey, codeKeyValue, codeKeyValue.is_bracket());
+         if( piResult == nullptr ) continue;                                   // Skip if the key is not found in the content
+         stringValue = codeKeyValue.read_value(piResult, stringContent.data() + stringContent.size(), gd::types::tag_view{});
+         if( stringValue.empty() == false )
          {
+            if( uKeyValueRow == std::numeric_limits<uint64_t>::max() )
+            {
+               uKeyValueRow = ptableKeyValue->row_add_one();                   // Add a new row to the key-value table
 
+               ptableKeyValue->cell_set(uKeyValueRow, "key", uint64_t(uKeyValueRow + 1)); // Set the key in the key-value table
+               ptableKeyValue->cell_set(uKeyValueRow, "filename", stringFile); // Set the file name in the key-value table
+               ptableKeyValue->cell_set(uKeyValueRow, "row", uRow);            // Set the key in the key-value table
+            }
+            // ## Add key-value pair to the table
+            ptableKeyValue->cell_set_argument(uKeyValueRow, stringKey, stringKey);
          }
-         /*
-         if( stringKey.empty() == false )
-         { }
-         */
       }
    }
 
@@ -959,6 +971,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       ptableKeys->column_prepare();
       ptableKeys->column_add("uint64", 0, "key");                             // add key column
       ptableKeys->column_add("uint64", 0, "file-key");                        // foreign key to file table
+      ptableKeys->column_add("rstring", 0, "filename");                       // name of file
       ptableKeys->column_add("uint64", 0, "row");                             // row number in file
       ptableKeys->prepare();                                                  // prepare table
       ptableKeys->property_set("id", stringId);                               // set id for table, used to identify table in cache
