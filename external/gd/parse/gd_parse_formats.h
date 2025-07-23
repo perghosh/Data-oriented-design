@@ -45,12 +45,22 @@ struct code
    };
 
    code() : m_uOpenBracket(0), m_uCloseBracket(0), m_uKeySeparator(':'), m_stringQuoteChars("\"'"), m_uOptions(eTrimWhitespace | eAllowUnquoted) {}
+   /// Construct with custom brackets
    code(uint8_t uOpenBracket, uint8_t uCloseBracket) : m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(':'), m_stringQuoteChars("\"'`"), m_uOptions(eTrimWhitespace | eAllowUnquoted) {}
+   /// Construct with custom brackets and key separator
    code(uint8_t uOpenBracket, uint8_t uCloseBracket, uint8_t uKeySeparator) : m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(uKeySeparator), m_stringQuoteChars("\"'`"), m_uOptions(eTrimWhitespace | eAllowUnquoted) {}
+   /// Construct with custom brackets
+   code( std::string_view stringBracket, std::string_view stringQuoteChars = "\"'", unsigned uOptions = eTrimWhitespace | eAllowUnquoted )
+      : m_uOpenBracket( stringBracket.empty() ? 0 : static_cast<uint8_t>(stringBracket[0]) ),
+        m_uCloseBracket( stringBracket.length() < 2 ? 0 : static_cast<uint8_t>(stringBracket[1]) ),
+        m_uKeySeparator(':'), m_stringQuoteChars(stringQuoteChars), m_uOptions(uOptions) { }
+
    code(const code& o): m_uOptions(o.m_uOptions), m_uOpenBracket(o.m_uOpenBracket), m_uCloseBracket(o.m_uCloseBracket), m_uKeySeparator(o.m_uKeySeparator), m_stringQuoteChars(o.m_stringQuoteChars) {}
 
    bool is_quote(uint8_t uChar) const { return m_stringQuoteChars.find(uChar) != std::string::npos; }
 
+   bool is_scope() const { return m_uOpenBracket != 0 && m_uCloseBracket != 0; }
+   bool is_bracket() const { return is_scope(); }
    bool is_open_scope(uint8_t uChar) const { return m_uOpenBracket == uChar; }
    bool is_close_scope(uint8_t uChar) const { return m_uCloseBracket == uChar; }
    bool is_separator() const { return m_uKeySeparator != 0; }
@@ -67,6 +77,14 @@ struct code
    }
    std::string_view read_value(const std::string_view& stringText) const {
       auto pairValue = read_value(reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data() + stringText.size()));
+      return std::string_view(reinterpret_cast<const char*>(pairValue.first), pairValue.second);
+   }
+   std::string_view read_value(const char* piText, const char* piEnd, gd::types::tag_view ) const {
+      auto pairValue = read_value(reinterpret_cast<const uint8_t*>(piText), reinterpret_cast<const uint8_t*>(piEnd));
+      return std::string_view(reinterpret_cast<const char*>(pairValue.first), pairValue.second);
+   }
+   std::string_view read_value(const char* piText, size_t uLength) const {
+      auto pairValue = read_value(reinterpret_cast<const uint8_t*>(piText), reinterpret_cast<const uint8_t*>(piText + uLength));
       return std::string_view(reinterpret_cast<const char*>(pairValue.first), pairValue.second);
    }
 

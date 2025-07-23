@@ -101,7 +101,7 @@ public:
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::string >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind );
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsList );
 
-   std::pair<bool, std::string> BUFFER_UpdateKeyValue(const std::string_view& stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<gd::argument::arguments>& vectorRule);
+   std::pair<bool, std::string> BUFFER_UpdateKeyValue( std::string_view stringFile, std::string_view stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<gd::argument::arguments>& vectorRule);
       
 //@}
 

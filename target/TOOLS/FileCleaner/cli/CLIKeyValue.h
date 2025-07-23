@@ -3,6 +3,29 @@
 *  
 */
 
+/* 
+@TASK[date:250723][name: task-list]
+[description:"""Decide a good state list for tasks:
+Sample one - todo, doing, stuck, done, canceled, etc.
+Sample two - backlog, ready, in development, waiting, in review, deployed, archived.
+"""] [state: todo] [priority:high]
+*/
+
+/*
+@TASK[date:250723][name: task-list]
+[description:"""Decide a good priority list for tasks:
+Sample one - critical, high, medium, low.
+Sample two - urgent, important, normal, low.
+"""] [state: todo] [priority:low]
+
+@TASK[date:250723][name: feature-list]
+[description:"""Decide a good feature list:
+Sample one - must, should, could.
+Sample two - high, medium, low.
+"""] [state: todo] [priority:low]
+
+*/
+
 #pragma once
 
 #include <cassert>
