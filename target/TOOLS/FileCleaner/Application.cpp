@@ -2490,7 +2490,11 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
    {
       if( stringValue.empty() == true ) return;
 
-      if( uState == eKey ) pargumentsKVRule->append("key", stringValue);
+      if( uState == eKey )
+      {
+         if( stringValue.find(',') != std::string::npos ) pargumentsKVRule->append("keys", stringValue);
+         else                                             pargumentsKVRule->append("key", stringValue);
+      }
       else if( uState == eValue ) pargumentsKVRule->append("value", stringValue);
       else pargumentsKVRule->append("scope", stringValue);
 
