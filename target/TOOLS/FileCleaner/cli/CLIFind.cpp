@@ -95,7 +95,9 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
       pdocument->GetApplication()->IGNORE_Add(vectorIgnore);                  // add ignore patterns to the application
    }
 
-   // ## Call the more generic Find_g function, this is to make it possible to call Find_g with different environments, like CLI or GUI
+   // ## FIND
+   // ## Call the more generic Find_g function
+   //    this is to make it possible to call Find_g with different environments, like CLI or GUI
 
    const gd::argument::arguments* pargumentsFind = &options_.get_arguments(); // get the arguments from the command line options
    auto result_ = Find_g(vectorSource, pargumentsFind, pdocument);            // find files in the source directory based on the find arguments
@@ -125,6 +127,12 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
             if( result_.first == false ) return result_;                       // if print failed, return the error
          }
          bPrint = true;                                                       // set print to true, we have printed the results
+      }
+
+      if( options_.exists("kv") == true )
+      {
+         result_ = FindPrintKeyValue_g(pdocument);                             // Print the key-value pairs found in the files
+         if( result_.first == false ) return result_;                          // if print failed, return the error
       }
 
 
@@ -590,6 +598,48 @@ std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd:
    }
 
    pdocument->MESSAGE_Display(stringCliTable);                                 // display the snippet table to the user
+   return { true, "" };                                                        // return success
+}
+
+std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
+{                                                                                                  assert(pdocument != nullptr);
+   auto* ptableKeyValue = pdocument->CACHE_GetTableArguments("keyvalue");     // get table for key-value pairs from the cache
+   if( ptableKeyValue->size() == 0 ) { pdocument->MESSAGE_Display("\nNo key-value pairs found."); return { true, "" }; } // if no key-value pairs found, return
+
+   unsigned uKeyMarginWidth = 0; // margin width for the key, used to align the keys in the output
+   std::string stringCliTable; // string to hold the CLI table output
+
+   // ## Calculate width of the longest key
+   const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(0);
+   for( auto it = std::begin( *pargumentsRow ); it != std::end( *pargumentsRow ); ++it ) // iterate over the arguments object
+   {
+      auto name_ = it.name();
+      if( name_.size() > uKeyMarginWidth ) uKeyMarginWidth = (unsigned)name_.size();// update the key width if the current key is longer
+   }
+
+   for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
+   {
+      std::string stringFilename = ptableKeyValue->cell_get_variant_view(uRow, "filename").as_string(); // get the filename from the key-value table
+      stringCliTable += std::format("\n{:->80}\n", "  " + stringFilename);  // add the filename to the stringCliTable, with a separator before it
+
+      // ## Get the arguments object from row
+      const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(uRow); // get the arguments object from the row
+      if( pargumentsRow == nullptr ) continue;                                  // if the arguments object is null, skip this row
+
+      // ### Iterator over values in the arguments object
+      for( auto it = std::begin( *pargumentsRow ); it != std::end( *pargumentsRow ); ++it ) // iterate over the arguments object
+      {
+         //stringCliTable += std::format("{}: {}", argument.name(), argument.as_string()); // format the key-value pair as "key: value"
+         auto name_ = it.name();
+         auto value_ = it.get_argument().as_string();                          // get the name and value of the argument
+
+         // Print name with padding
+         stringCliTable += std::format("{:>{}}: {}", name_, uKeyMarginWidth, value_); // format the key-value pair as "key: value" with padding
+         stringCliTable += "\n";
+      }
+   }
+
+   pdocument->MESSAGE_Display(stringCliTable);                                 // display the key-value pairs to the user
    return { true, "" };                                                        // return success
 }
 

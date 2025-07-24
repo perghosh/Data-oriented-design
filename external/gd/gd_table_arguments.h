@@ -675,6 +675,7 @@ public:
    void cell_set( const range& rangeSet, const gd::variant_view& variantviewValue, tag_convert );
 
    void cell_set_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue );
+   void cell_add_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue );
 
    // ## find methods
 
@@ -864,6 +865,15 @@ public:
    void erase( uint64_t uFrom, uint64_t uCount );
    /// Erase selected row
    void erase( uint64_t uRow ) { erase( uRow, 1 ); }
+   /// Erase selected rows
+   uint64_t erase(const uint64_t* puRowIndex, uint64_t uCount);
+   /// Erase selected rows, rows should be sorted in descending order
+   void erase(const uint64_t* puRowIndex, uint64_t uCount, tag_raw );
+   /// Erase selected rows
+   uint64_t erase(const std::vector<uint64_t>& vectorRowIndex) { return erase(vectorRowIndex.data(), (uint64_t)vectorRowIndex.size()); }
+   /// Erase selected rows, rows should be sorted in descending order
+   void erase(const std::vector<uint64_t>& vectorRowIndex, tag_raw) { erase(vectorRowIndex.data(), (uint64_t)vectorRowIndex.size(), tag_raw{}); }
+
 //@}
 
 
@@ -1156,12 +1166,12 @@ inline uint32_t* table::row_get_state( uint64_t uRow ) const noexcept { assert( 
 }
 
 /** ---------------------------------------------------------------------------
- * @brief get position in buffer to row state information for row at index
+ * @brief get position in buffer to row arguments object for row at index
  * @param uRow index to row where state is located
- * @return uint32_t* pointer to position in internal buffer for row state
-*/
+ * @return uint8_t* pointer to position in internal buffer for row state
+ */
 inline uint8_t* table::row_get_arguments_meta( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( is_rowarguments() == true ); 
-   // calculate number of bytes used to store flags for culumns marked as null (cant be over sizeof(uint32_t) * 2 or 8 bytes)
+   // calculate number of bytes used to store flags for columns marked as null (cant be over sizeof(uint32_t) * 2 or 8 bytes)
    // note that state cant be set to both 32 and 64 columns
    // calculate size for null values to know offset for state value
    unsigned uArgumentsOffset = (m_uFlags & (eTableFlagNull32|eTableFlagNull64));                   assert(( m_uFlags & ( eTableFlagNull32 | eTableFlagNull64 ) ) != 3); // cant be both 32 and 64

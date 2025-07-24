@@ -101,7 +101,7 @@ public:
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::string >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind );
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsList );
 
-   std::pair<bool, std::string> BUFFER_UpdateKeyValue( std::string_view stringFile, std::string_view stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<gd::argument::arguments>& vectorRule);
+   std::pair<bool, std::string> BUFFER_UpdateKeyValue( const gd::argument::shared::arguments& argumentsFile, std::string_view stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<gd::argument::arguments>& vectorRule);
       
 //@}
 
@@ -132,6 +132,8 @@ public:
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId, bool bPrepare );
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId ) { return CACHE_Get( stringId, true ); }
    gd::table::arguments::table* CACHE_GetTableArguments( const std::string_view& stringId, bool bPrepare );
+   gd::table::arguments::table* CACHE_GetTableArguments(const std::string_view& stringId) { return CACHE_GetTableArguments(stringId, false); }
+
 
    /// Sort cached table for specified column
    std::pair<bool, std::string> CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_ );

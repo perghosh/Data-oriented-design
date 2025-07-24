@@ -965,15 +965,21 @@ public:
    std::vector<table_column_buffer> split( uint64_t uRowCount );
    void split( uint64_t uRowCount, std::vector<table>& vectorSplit );
 
+/** \name ERASE
+* Erase parts in table
+*///@{
    /// Erase from row index and number of rows from that row
    void erase( uint64_t uFrom, uint64_t uCount );
    /// Erase selected row
    void erase( uint64_t uRow ) { erase( uRow, 1 ); }
    /// Erase selected rows
    uint64_t erase(const uint64_t* puRowIndex, uint64_t uCount);
+   /// Erase selected rows, rows should be sorted in descending order
+   void erase(const uint64_t* puRowIndex, uint64_t uCount, tag_raw );
    /// Erase selected rows
    uint64_t erase(const std::vector<uint64_t>& vectorRowIndex) { return erase(vectorRowIndex.data(), (uint64_t)vectorRowIndex.size()); }
-
+   /// Erase selected rows, rows should be sorted in descending order
+   void erase(const std::vector<uint64_t>& vectorRowIndex, tag_raw) { erase(vectorRowIndex.data(), (uint64_t)vectorRowIndex.size(), tag_raw{}); }
 //@}
 
 protected:

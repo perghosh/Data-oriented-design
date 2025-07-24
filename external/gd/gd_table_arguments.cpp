@@ -2170,6 +2170,9 @@ void table::cell_set( const range& rangeSet, const gd::variant_view& variantview
 
 /** --------------------------------------------------------------------------
  * @brief set cell value in table
+ * 
+ * This function is used to set value in row arguments object, if row arguments object is not created then it is created
+ * 
  * @param uRow index to row where cell value is set
  * @param stringName column name for cell value
  * @param variantviewValue value set to cell
@@ -2185,6 +2188,28 @@ void table::cell_set_argument( uint64_t uRow, const std::string_view& stringName
 
    parguments->set(stringName, variantviewValue);
 }
+
+/** --------------------------------------------------------------------------
+ * @brief add cell value in table
+ * 
+ * This function is used to add argument value to row arguments object, if row arguments object is not created then it is created
+ * 
+ * @param uRow index to row where cell value is set
+ * @param stringName column name for cell value
+ * @param variantviewValue value set to cell
+ */
+void table::cell_add_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue ) 
+{                                                                                                  assert(uRow < m_uReservedRowCount);
+   gd::argument::shared::arguments* parguments = row_get_arguments_pointer(uRow);
+   // ## Check if row hold any arguments object, if not then create one
+   if( parguments == nullptr )
+   {                                                                                               assert( is_rowarguments() == true ); // need flag that row arguments are used
+      parguments = row_create_arguments( uRow );
+   }
+
+   parguments->append_argument(stringName, variantviewValue);
+}
+
 
 
 
@@ -3829,6 +3854,16 @@ void table::erase( uint64_t uFrom, uint64_t uCount )
    // ## move meta data if meta is set
    if( m_puMetaData != nullptr )
    {
+      // ## erase arguments objects first
+      if( is_rowarguments() == true )
+      {
+         for( uint64_t u = uFrom; u < (uFrom + uCount); u++ )
+         {
+            gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(u);
+            if( pargumentsRow != nullptr ) pargumentsRow->release(); // release reference to arguments object
+         }
+      }
+
       // ### calculate position after meta block that is erased
       uint8_t* puStartOfMoveBlock = m_puMetaData + ((uFrom + uCount) * uMetaSize);// start of block that will be moved
       uint64_t uMoveSize = (m_puMetaData + (uRowCount * uMetaSize) - puStartOfMoveBlock);
@@ -3848,6 +3883,70 @@ void table::erase( uint64_t uFrom, uint64_t uCount )
 
    m_uRowCount -= uCount;
 }
+
+/** ---------------------------------------------------------------------------
+ * Erases multiple rows from the table column buffer by their indices.
+ * 
+ * This method handles duplicate indices and ensures rows are erased in descending order
+ * to prevent index invalidation problems that would occur with ascending order deletion.
+ * 
+ * @param puRowIndex Pointer to an array of row indices to be erased
+ * @param uCount Number of indices in the puRowIndex array
+ * @return The actual number of rows removed (may be less than uCount if there are duplicates or out-of-bounds indices)
+ */
+uint64_t table::erase(const uint64_t* puRowIndex, uint64_t uCount)
+{                                                                                                  assert( uCount > 0 ); assert( m_puData );
+   std::vector<uint64_t> vectorSorted(puRowIndex, puRowIndex + uCount);
+
+   // ## Remove duplicates
+   //    Sort the vector in descending order to ensure that we can safely erase rows without invalidating indices.
+   std::sort(vectorSorted.begin(), vectorSorted.end(), [](uint64_t uLeft, uint64_t uRight){ return uLeft > uRight; });
+
+   vectorSorted.erase( std::unique(vectorSorted.begin(), vectorSorted.end()), vectorSorted.end());
+
+   size_t uSize = size();
+   size_t uRemoved = 0;
+
+   // ## Process from highest to lowest index (prevents invalidation problems)
+   for(const uint64_t uIndex : vectorSorted)
+   {
+      if(uIndex < uSize)
+      {
+         erase(uIndex, 1);                                                     // Remove the row
+         uRemoved++;
+      }
+   }
+                                                                                                   assert(uRemoved <= uCount);
+   return uRemoved;                                                                                
+}
+
+/** ---------------------------------------------------------------------------
+ * Erases multiple rows from the table column buffer by their indices.
+ *
+ * Makes sure that the indices are valid and sorted in descending order.
+ * 
+ * @param puRowIndex Pointer to an array of row indices to be erased
+ * @param uCount Number of indices in the puRowIndex array
+ */
+void table::erase(const uint64_t* puRowIndex, uint64_t uCount, tag_raw )
+{                                                                                                  assert( uCount > 0 ); assert( m_puData );
+#ifndef NDEBUG
+   // ## Check that puRowIndex is not null and uCount is greater than 0
+   assert( puRowIndex != nullptr );
+   assert(uCount > 0);
+   // check that all indices are within bounds and sorted from highest to lowest
+   for( uint64_t u = 0; u < uCount; u++ ) assert( puRowIndex[u] < size() ); // check that index is within bounds
+
+   // check that indices are sorted from highest to lowest
+   for( uint64_t u = 1; u < uCount; u++ ) assert( puRowIndex[u] <= puRowIndex[u - 1] ); // check that indices are sorted from highest to lowest
+#endif
+
+   for( uint64_t u = 0; u < uCount; u++ )
+   {
+      erase(puRowIndex[u], 1);
+   }
+}
+
 
 
 /** ---------------------------------------------------------------------------

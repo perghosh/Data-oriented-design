@@ -4032,7 +4032,7 @@ uint64_t table_column_buffer::erase(const uint64_t* puRowIndex, uint64_t uCount)
    std::vector<uint64_t> vectorSorted(puRowIndex, puRowIndex + uCount);
 
    // ## Remove duplicates
-
+   //    Sort the vector in descending order to ensure that we can safely erase rows without invalidating indices.
    std::sort(vectorSorted.begin(), vectorSorted.end(), [](uint64_t uLeft, uint64_t uRight){ return uLeft > uRight; });
 
    vectorSorted.erase( std::unique(vectorSorted.begin(), vectorSorted.end()), vectorSorted.end());
@@ -4052,6 +4052,34 @@ uint64_t table_column_buffer::erase(const uint64_t* puRowIndex, uint64_t uCount)
                                                                                                    assert(uRemoved <= uCount);
    return uRemoved;                                                                                
 }
+
+/** ---------------------------------------------------------------------------
+ * Erases multiple rows from the table column buffer by their indices.
+ *
+ * Makes sure that the indices are valid and sorted in descending order.
+ * 
+ * @param puRowIndex Pointer to an array of row indices to be erased
+ * @param uCount Number of indices in the puRowIndex array
+ */
+void table_column_buffer::erase(const uint64_t* puRowIndex, uint64_t uCount, tag_raw )
+{                                                                                                  assert( uCount > 0 ); assert( m_puData );
+#ifndef NDEBUG
+   // ## Check that puRowIndex is not null and uCount is greater than 0
+   assert( puRowIndex != nullptr );
+   assert(uCount > 0);
+   // check that all indices are within bounds and sorted from highest to lowest
+   for( uint64_t u = 0; u < uCount; u++ ) assert( puRowIndex[u] < size() ); // check that index is within bounds
+
+   // check that indices are sorted from highest to lowest
+   for( uint64_t u = 1; u < uCount; u++ ) assert( puRowIndex[u] <= puRowIndex[u - 1] ); // check that indices are sorted from highest to lowest
+#endif
+
+   for( uint64_t u = 0; u < uCount; u++ )
+   {
+      erase(puRowIndex[u], 1);
+   }
+}
+
 
 
 /** ---------------------------------------------------------------------------
