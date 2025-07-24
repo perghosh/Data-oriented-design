@@ -52,6 +52,10 @@ std::string select_unwrap(const std::string_view& stringText, const std::string_
 std::vector<std::string> select_between_all(const std::string_view& stringText, const std::string_view& stringFrom, const std::string_view& stringTo);
 
 
+/// Indents text with specified number of spaces, with optional first line indentation.
+std::string format_indent(const std::string_view& stringText, size_t uIndentSpaces, bool bIndentFirstLine = true, char iNewLine = '\n');
+/// Formats text as a comment with specified marker, optionally placing the comment on the first line.
+std::string format_comment(const std::string_view& stringText, const std::string_view& stringCommentMarker, bool bCommentFirstLine = true, char iNewLine = '\n');
 
 
 _GD_MATH_STRING_END
