@@ -579,5 +579,134 @@ std::vector<std::string> select_between_all(const std::string_view& stringText, 
    return vectorResult;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Indents text with specified number of spaces, with optional first line indentation.
+ *
+ * This function adds the specified number of spaces at the beginning of each line in the text.
+ * The first line can optionally be excluded from indentation. This is useful for console output
+ * where you want to maintain visual hierarchy and show that multi-line content belongs together.
+ *
+ * @param stringText The source text to indent.
+ * @param uIndentSpaces Number of spaces to indent each line.
+ * @param bIndentFirstLine If true, indents the first line; if false, leaves first line unchanged.
+ * @param iNewLine The newline character to use for line detection (default: '\n').
+ * @return std::string The indented text.
+ * 
+ * @code
+ * // Example 1: Indent all lines including first
+ * std::string text = "First line\nSecond line\nThird line";
+ * std::string result = format_indent(text, 4, true);
+ * // result = "    First line\n    Second line\n    Third line"
+ * 
+ * // Example 2: Skip first line indentation (common for labeled content)
+ * std::string text2 = "Label: First line\nSecond line\nThird line";
+ * std::string result2 = format_indent(text2, 7, false);
+ * // result2 = "Label: First line\n       Second line\n       Third line"
+ * 
+ * // Example 3: Single line text
+ * std::string text3 = "Only one line";
+ * std::string result3 = format_indent(text3, 2, true);
+ * // result3 = "  Only one line"
+ * 
+ * // Example 4: Empty lines preserved
+ * std::string text4 = "Line 1\n\nLine 3";
+ * std::string result4 = format_indent(text4, 2, true);
+ * // result4 = "  Line 1\n  \n  Line 3"
+ * @endcode
+ */
+std::string format_indent(const std::string_view& stringText, size_t uIndentSpaces, bool bIndentFirstLine, char iNewLine )
+{                                                                                                  assert(stringText.empty() == false);
+   std::string stringIndent(uIndentSpaces, ' '); // indentation string with specified number of spaces
+   std::string stringResult; // Result string to hold the indented text
+   stringResult.reserve(stringText.size() + ( uIndentSpaces * 10 ));          // Rough estimate for performance
+
+   bool bFirstLine = true;
+   size_t uStart = 0;
+
+   while( uStart < stringText.size() )
+   {
+      size_t uEnd = stringText.find(iNewLine, uStart);                        // Find the end of current line
+      bool bHasNewline = ( uEnd != std::string_view::npos );
+
+      if( bHasNewline == false ) { uEnd = stringText.size(); }                // Last line without newline
+
+      if( bFirstLine == false || bIndentFirstLine == true ) { stringResult += stringIndent; } // Add indentation if needed
+
+      stringResult += stringText.substr(uStart, uEnd - uStart);               // Add the line content
+
+      if( bHasNewline == true )                                               // Add newline if it was present in original
+      {
+         stringResult += iNewLine;
+         uStart = uEnd + 1;
+      }
+      else { break; }
+
+      bFirstLine = false;
+   }
+
+   return stringResult;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Prepends comment marker to each line of text, with optional first line exclusion.
+ *
+ * This function adds the specified comment marker string at the beginning of each line in the text.
+ * The first line can optionally be excluded from commenting. This is useful for commenting out
+ * code blocks in editors or adding comment markers to documentation text.
+ *
+ * @param stringText The source text to add comment markers to.
+ * @param stringCommentMarker The comment marker string to prepend (e.g., "// ", "# ", "<!-- ").
+ * @param bCommentFirstLine If true, comments the first line; if false, leaves first line unchanged.
+ * @param iNewLine The newline character to use for line detection (default: '\n').
+ * @return std::string The text with comment markers prepended.
+ * 
+ * @code
+ * // Example 1: Comment all lines including first (C++ style)
+ * std::string text = "int main() {\n    return 0;\n}";
+ * std::string result = format_comment(text, "// ", true);
+ * // result = "// int main() {\n//     return 0;\n// }"
+ * 
+ * // Example 2: Skip first line commenting (for mixed content)
+ * std::string text2 = "Function description:\nint calculate() {\n    return 42;\n}";
+ * std::string result2 = format_comment(text2, "// ", false);
+ * // result2 = "Function description:\n// int calculate() {\n//     return 42;\n// }"
+ * 
+ * // Example 3: Python style comments
+ * std::string text3 = "def hello():\n    print('world')";
+ * std::string result3 = format_comment(text3, "# ", true);
+ * // result3 = "# def hello():\n#     print('world')"
+ * 
+ * // Example 4: Empty lines preserved with comment markers
+ * std::string text4 = "Line 1\n\nLine 3";
+ * std::string result4 = format_comment(text4, "// ", true);
+ * // result4 = "// Line 1\n// \n// Line 3"
+ * @endcode
+ */
+std::string format_comment(const std::string_view& stringText, const std::string_view& stringCommentMarker, bool bCommentFirstLine, char iNewLine)
+{                                                                                                  assert(stringText.empty() == false);
+   std::string stringResult; // Result string to hold the commented text
+   stringResult.reserve(stringText.size() + ( stringCommentMarker.size() * 10 )); // Rough estimate for performance
+   bool bFirstLine = true;
+   size_t uStart = 0;
+   while( uStart < stringText.size() )
+   {
+      size_t uEnd = stringText.find(iNewLine, uStart);                        // Find the end of current line
+      bool bHasNewline = ( uEnd != std::string_view::npos );
+      if( bHasNewline == false ) { uEnd = stringText.size(); }                // Last line without newline
+      if( bFirstLine == false || bCommentFirstLine == true ) { stringResult += stringCommentMarker; } // Add comment marker if needed
+      stringResult += stringText.substr(uStart, uEnd - uStart);               // Add the line content
+      if( bHasNewline == true )                                               // Add newline if it was present in original
+      {
+         stringResult += iNewLine;
+         uStart = uEnd + 1;
+      }
+      else { break; }
+      bFirstLine = false;
+   }
+   return stringResult;
+}
+
+
 
 _GD_MATH_STRING_END

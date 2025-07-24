@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <format>
 
+#include "gd/math/gd_math_string.h"
+
 #include "../Command.h"
 
 #ifdef _WIN32
@@ -126,13 +128,14 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
             result_ = FindPrint_g(pdocument, argumentsPrint);                  // Print the results of the find operation
             if( result_.first == false ) return result_;                       // if print failed, return the error
          }
-         bPrint = true;                                                       // set print to true, we have printed the results
+         bPrint = true;                                                        // set print to true, we have printed the results
       }
 
       if( options_.exists("kv") == true )
       {
          result_ = FindPrintKeyValue_g(pdocument);                             // Print the key-value pairs found in the files
          if( result_.first == false ) return result_;                          // if print failed, return the error
+         bPrint = true;                                                        // set print to true, we have printed the results
       }
 
 
@@ -619,8 +622,13 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
 
    for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
    {
+      // ## Prepare file name
+
       std::string stringFilename = ptableKeyValue->cell_get_variant_view(uRow, "filename").as_string(); // get the filename from the key-value table
-      stringCliTable += std::format("\n{:->80}\n", "  " + stringFilename);  // add the filename to the stringCliTable, with a separator before it
+      uint64_t uRowNumber = ptableKeyValue->cell_get_variant_view(uRow, "row").as_uint64(); // get the row number from the key-value table
+      uRowNumber++; // add one because rows in table are zero based
+      stringFilename += std::format("({})", uRowNumber); // add the row number to the filename
+      stringCliTable += std::format("\n{:-<80}\n", stringFilename + "  ");  // add the filename to the stringCliTable, with a separator before it
 
       // ## Get the arguments object from row
       const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(uRow); // get the arguments object from the row
@@ -631,10 +639,14 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
       {
          //stringCliTable += std::format("{}: {}", argument.name(), argument.as_string()); // format the key-value pair as "key: value"
          auto name_ = it.name();
-         auto value_ = it.get_argument().as_string();                          // get the name and value of the argument
+         auto stringValue_ = it.get_argument().as_string();                          // get the name and value of the argument
+         if( stringValue_.find('\n') != std::string::npos ) // if the value contains a newline, replace it with a space
+         {
+            stringValue_ = gd::math::string::format_indent(stringValue_, uKeyMarginWidth + 2, false); // indent the value with the key margin width + 2 spaces because adds for separator and space after that
+         }
 
          // Print name with padding
-         stringCliTable += std::format("{:>{}}: {}", name_, uKeyMarginWidth, value_); // format the key-value pair as "key: value" with padding
+         stringCliTable += std::format("{:>{}}: {}", name_, uKeyMarginWidth, stringValue_); // format the key-value pair as "key: value" with padding
          stringCliTable += "\n";
       }
    }
