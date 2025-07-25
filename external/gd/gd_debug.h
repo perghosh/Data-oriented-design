@@ -1,7 +1,7 @@
 /**
-* \file gd_debug.h
+* @file gd_debug.h
 * 
-* \brief 
+* @brief Debugging utilities
 * 
 * Information about console 
 * Format switching between different colors

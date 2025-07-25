@@ -1,7 +1,7 @@
 /**
- * \file gd_arguments.h
+ * @file gd_arguments.h
  * 
- * \brief Pack primitive and common derived values into a byte buffer for efficient storage and access.
+ * @brief Pack primitive and common derived values into a byte buffer for efficient storage and access with focus on memory size. Like key-value pairs in one single buffer.
  *
  * The `arguments` class is designed to manage a collection of named or unnamed values stored in a contiguous byte buffer,
  * optimized for minimal memory usage and fast access. It supports a variety of data types, including integers, floating-point
