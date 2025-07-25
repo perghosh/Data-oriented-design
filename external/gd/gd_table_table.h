@@ -43,7 +43,8 @@ namespace dto {
 
 
 /**
- * \brief  Manage table data store as a big block
+ * @class table
+ * @brief table optimized for use as member of other objects. Like composite object.
  * 
  * 
 

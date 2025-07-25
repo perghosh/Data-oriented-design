@@ -1,3 +1,15 @@
+/**
+ * @file gd_strings.h
+ *
+ * @brief Utility functions for string manipulation logic, particularly when handling multiple strings in specific file sections.
+ *
+ *
+ *
+ *
+ *
+ */
+
+
 #pragma once
 
 #include <cassert>
@@ -18,10 +30,9 @@
 #ifndef _GD_BEGIN
 #  define _GD_BEGIN namespace gd {
 #  define _GD_END } 
-_GD_BEGIN
-#else
-_GD_BEGIN
 #endif
+
+_GD_BEGIN
 
 namespace strings {
 
