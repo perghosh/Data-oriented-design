@@ -1,6 +1,6 @@
 /**
 * @file gd_compiler.h
-* @brief This header file provides macros to identify the compiler and its support for the C++20 and C++23 standards.
+* @brief Provide macros to identify the compiler and its support for the C++20 and C++23 standards.
 *
 * It includes:
 * - Macros to detect the compiler being used (GCC, Clang, MSVC).

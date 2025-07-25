@@ -1,12 +1,12 @@
 /**
- * \file gd_table.h
- * 
- * \brief General table code. Include this in all table related functionality.
- * 
- * 
- * 
- * 
- * 
+ * @file gd_table.h
+ *
+ * @brief Common table logic. Include this in all table related functionality.
+ *
+ *
+ *
+ *
+ *
  */
 
 #pragma once
