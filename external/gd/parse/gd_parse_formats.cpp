@@ -116,6 +116,9 @@ const uint8_t* code::skip_quoted(const uint8_t* puPosition, const uint8_t* puEnd
  * the value range. If unquoted, it reads until the end of the value or until a
  * specified closing character (if applicable).
  * 
+ * When separator is set, it expects a key-value pair format and skips until the separator.
+ * No separator means it reads until non space value is found or newline that means no value.
+ * 
  * @param puPosition Pointer to the current position in the input.
  * @param puEnd Pointer to the end of the input.
  * @return A pair containing a pointer to the start of the value and its length.
@@ -127,13 +130,10 @@ std::pair<const uint8_t*, size_t> code::read_value(const uint8_t* puPosition, co
    // ## move to value
    puPosition = (const uint8_t*)next_non_space_g(reinterpret_cast<const char*>(puPosition), reinterpret_cast<const char*>(puEnd) );
 
-   if( is_separator() == true )
+   if( is_separator() == true )                                                // is separator is used to split between key and value
    {
       // ## Skip key and move to separator
-      while( puPosition < puEnd && is_separator(*puPosition) == false )
-      {
-         ++puPosition;
-      }
+      while( puPosition < puEnd && is_separator(*puPosition) == false ) { puPosition++; }
 
       if(is_separator(*puPosition) == true )
       {
@@ -144,6 +144,21 @@ std::pair<const uint8_t*, size_t> code::read_value(const uint8_t* puPosition, co
       {
          // ## No separator found, return empty value
          return { nullptr, 0 }; // Skip empty key-value pairs
+      }
+   }
+   else
+   {
+      // ## Skip whitespace until separator
+      while( puPosition < puEnd && isspace(*puPosition) == 0 ) { ++puPosition; }
+
+      // Special case: if we find a newline or end of input, we assume _no_ value is present
+      while( puPosition < puEnd && isspace(*puPosition) != 0 )
+      {
+         if( *puPosition == '\n' || *puPosition == '\0' )
+         {
+            return { nullptr, 0 }; // Skip empty key-value pairs
+         }
+         puPosition++;
       }
    }
 
@@ -161,7 +176,15 @@ std::pair<const uint8_t*, size_t> code::read_value(const uint8_t* puPosition, co
       }
       else
       {
-         while( puPosition < puEnd && *puPosition != '\0' && isspace( *puPosition ) == 0 ) puPosition++;  // Find end of value
+         // End value with newline or double space
+         int iSpacePrevious = 0; // Previous character space state
+         while( puPosition < puEnd && *puPosition != '\n' )
+         {
+            auto iSpace = isspace(*puPosition);
+            if( iSpace != 0 && iSpacePrevious != 0 ) { break; }               // Stop reading value on double space
+            iSpacePrevious = iSpace;                                          // Update previous space state
+            puPosition++; // Find end of value
+         }
       }
 
       pairValue.first = puValueStart;

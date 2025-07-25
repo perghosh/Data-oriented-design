@@ -1,7 +1,7 @@
 /**
- * \file gd_arguments.h
- * 
- * \brief Pack primitive value and some common derived values in byte buffer. 
+ * @file gd_arguments.h
+ *
+ * @brief Pack primitive and common derived values into a byte buffer for efficient storage and access with focus on performance. Like key-value pairs in one single buffer.
  *
 **Type of methods**
 | method  | brief  | description |

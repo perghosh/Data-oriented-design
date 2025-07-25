@@ -2480,7 +2480,7 @@ std::vector<std::string> CApplication::SplitNumber_s(const std::string& stringTe
 
 std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string_view stringRule, gd::argument::arguments* pargumentsKVRule)
 {
-   constexpr char iKeyDelimiter = ':';
+   char iKeyDelimiter = ':';
    constexpr char iFormatDelimiter = '@';
    enum { eKey = 0, eValue = 1, ePattern = 2, eUnknown = 3 };
 
@@ -2517,6 +2517,7 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
       }
       else if( iCharacter == iFormatDelimiter)
       {
+         iKeyDelimiter = 0;                                                    // reset key delimiter to avoid further key-value parsing
          add_( string_ );
          uState = ePattern;
       }
