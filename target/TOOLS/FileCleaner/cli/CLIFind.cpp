@@ -131,7 +131,7 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
          bPrint = true;                                                        // set print to true, we have printed the results
       }
 
-      if( options_.exists("kv") == true )
+      if( options_.exists("keys") == true || options_.exists("kv") == true )
       {
          result_ = FindPrintKeyValue_g(pdocument);                             // Print the key-value pairs found in the files
          if( result_.first == false ) return result_;                          // if print failed, return the error
@@ -196,6 +196,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
    if( options_.exists("segment") == true ) { argumentsFind.append("segment", options_["segment"].as_string()); }
    if( options_.exists("kv") == true ) { argumentsFind.append( "kv", options_.get_argument_all("kv", gd::types::tag_view{})); }
+   if( options_.exists("keys") == true ) { argumentsFind.append("keys", options_.get_argument_all("keys", gd::types::tag_view{})); }
 
    // ## Harvest files from the source paths
    for( const auto& stringSource : vectorSource )
@@ -612,13 +613,16 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
    unsigned uKeyMarginWidth = 0; // margin width for the key, used to align the keys in the output
    std::string stringCliTable; // string to hold the CLI table output
 
-   // ## Calculate width of the longest key
+   // ## Calculate width of the longest key, this to format the output nicely
+
    const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(0);
    for( auto it = std::begin( *pargumentsRow ); it != std::end( *pargumentsRow ); ++it ) // iterate over the arguments object
    {
       auto name_ = it.name();
       if( name_.size() > uKeyMarginWidth ) uKeyMarginWidth = (unsigned)name_.size();// update the key width if the current key is longer
    }
+
+   // ## Print values in the key-value table
 
    for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
    {
