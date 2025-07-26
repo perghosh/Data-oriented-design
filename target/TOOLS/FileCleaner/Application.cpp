@@ -1484,23 +1484,25 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
    }
 
    { // ## 'find' command, list files @TAG #find.Application
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "find", "Find files in directory" );
-      optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, search for patterns in all found text files" });
-      optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
-      optionsCommand.add({ "rpattern", "Regular expression pattern to search for"});
-      optionsCommand.add({ "kv", "Key value pattern, find key value or collect value from key"});
-      optionsCommand.add({ "context", "Show information to put the result in context, normally code around"});
-      optionsCommand.add({ "source", 's', "Directory to search in" });
-      optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
-      optionsCommand.add({ "segment", "type of segment in code to search in"});
-      optionsCommand.add({ "rule", "rules on what to do with matches"});
-      optionsCommand.add({ "script", "Pass script file for advanced processing" });
-      optionsCommand.add({ "max", "Maximum number of results to return"});
-      optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
-      optionsCommand.add_flag( {"match-all", "Require all specified patterns to match in each row"} );
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "find", "Search for file content within directories." );
+      optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `image_*.jpg`) to apply when searching for files. Multiple filters are separated with ;. If no filter is provided, all found text files will be searched for patterns." });
+      optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
+      optionsCommand.add({ "rpattern", "Use a **regular expression pattern** to search for more complex text matches within file content."});
+      optionsCommand.add({ "kv", "A **shortcut** to define both the keys to search for and the rules for how to find their corresponding values. Use this for quick key-value pair extraction."});
+      optionsCommand.add({ "keys", "Specify individual **keys to search for** when collecting associated values. Useful when you need to extract specific data points."});
+      optionsCommand.add({ "kv-format", "Define the **scoping format** for how key-value pairs are identified and extracted. This helps the tool understand the structure of your key-value data."});
+      optionsCommand.add({ "context", "Display **surrounding code or text** to provide context for each search result. This helps you understand where the match occurred."});
+      optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations." });
+      optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the search. This helps narrow down your search and improve performance."});
+      optionsCommand.add({ "segment", "Limit the search to specific **types of code segments**, such as functions, classes, or comments. This refines your search to relevant code blocks. Valid segments are `code`, `string` or `comment`."});
+      optionsCommand.add({ "rule", "Define **rules for what actions to perform** on found matches. This could include formatting, outputting, or further processing."});
+      optionsCommand.add({ "script", "Execute an **external script file** for advanced and custom processing of search results. Ideal for complex automation." });
+      optionsCommand.add({ "max", "Set the **maximum number of results** to return. Use this to limit output and improve performance for large searches."});
+      optionsCommand.add_flag({ "R", "Enable **recursive search** in subfolders. Sets the recursion depth to 16, ensuring a thorough scan of all subdirectories." });
+      optionsCommand.add_flag( {"match-all", "Require **all specified patterns to match** within the same line or row for a result to be considered valid."} );
 #ifdef _WIN32
-      optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format"} );
-      optionsCommand.add_flag( {"win", "Windows specific functionality, logic might be using some special for adapting to features used for windows"} );
+      optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, making it easier to navigate results within the IDE."} );
+      optionsCommand.add_flag( {"win", "Activate **Windows-specific functionality**, adapting the tool's behavior and features to the Windows operating system."} );
 #endif
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsCommand.parent(&optionsApplication);

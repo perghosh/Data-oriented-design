@@ -517,6 +517,9 @@ public:
       void*        get_raw_pointer() const { return m_unionValue.p; }            ///< return raw pointer to value
       void*        get_value_buffer() const { return (void*)&m_unionValue; }     ///< return address pointer to value
 
+      /// get value as specified type, this is used to get value from argument
+      template<typename TYPE> TYPE get() const;
+
       // attributes
    public:
       arguments::enumType m_eType;      // type of value valid for m_unionValue 
@@ -1150,7 +1153,16 @@ public:
    [[nodiscard]] std::vector<argument> get_argument_all(const std::string_view& stringName) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName); }
    [[nodiscard]] std::vector<gd::variant_view> get_argument_all(const std::string_view& stringName, tag_view) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
    [[nodiscard]] std::vector<gd::variant_view> get_argument_section( const std::string_view& stringName, tag_view) const { return get_argument_section_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
-   
+
+   /// return all values for name or names as vector of type TYPE
+   template<typename TYPE>
+   [[nodiscard]] std::vector<TYPE> get_all(const std::string_view& stringName) const {
+      std::vector<TYPE> vectorValue;
+      auto vector_ = get_argument_all(stringName);
+      for( const auto& argument : vector_ ) { vectorValue.push_back(argument.get<TYPE>()); }
+      return vectorValue;
+   }
+
    void set_argument_section( const std::string_view& stringName, const std::vector<gd::variant_view>& vectorValue );
 
 
@@ -1423,6 +1435,68 @@ public:
    static size_type npos;
 
 };
+
+/// Return value as specified template type
+template<typename TYPE> 
+TYPE arguments::argument::get() const {
+   static_assert(std::is_arithmetic_v<TYPE> || 
+      std::is_same_v<TYPE, std::string> || 
+      std::is_same_v<TYPE, std::string_view> ||
+      std::is_same_v<TYPE, std::wstring> ||
+      std::is_same_v<TYPE, const char*> ||
+      std::is_same_v<TYPE, const wchar_t*>, 
+      "TYPE must be a primitive type or supported string type");
+
+   if constexpr (std::is_same_v<TYPE, bool>) {
+      return get_bool();
+   }
+   else if constexpr (std::is_same_v<TYPE, int8_t>) {
+      return static_cast<int8_t>(*this);
+   }
+   else if constexpr (std::is_same_v<TYPE, uint8_t>) {
+      return static_cast<uint8_t>(*this);
+   }
+   else if constexpr (std::is_same_v<TYPE, int16_t>) {
+      return static_cast<int16_t>(*this);
+   }
+   else if constexpr (std::is_same_v<TYPE, uint16_t>) {
+      return static_cast<uint16_t>(*this);
+   }
+   else if constexpr (std::is_same_v<TYPE, int32_t> || std::is_same_v<TYPE, int>) {
+      return get_int();
+   }
+   else if constexpr (std::is_same_v<TYPE, uint32_t> || std::is_same_v<TYPE, unsigned int>) {
+      return get_uint();
+   }
+   else if constexpr (std::is_same_v<TYPE, int64_t>) {
+      return get_int64();
+   }
+   else if constexpr (std::is_same_v<TYPE, uint64_t>) {
+      return get_uint64();
+   }
+   else if constexpr (std::is_same_v<TYPE, float>) {
+      return static_cast<float>(get_double());
+   }
+   else if constexpr (std::is_same_v<TYPE, double>) {
+      return get_double();
+   }
+   else if constexpr (std::is_same_v<TYPE, std::string>) {
+      return get_string();
+   }
+   else if constexpr (std::is_same_v<TYPE, std::string_view>) {
+      return get_string_view();
+   }
+   else if constexpr (std::is_same_v<TYPE, std::wstring>) {
+      return static_cast<std::wstring>(*this);
+   }
+   else if constexpr (std::is_same_v<TYPE, const char*>) {
+      return static_cast<const char*>(*this);
+   }
+   else if constexpr (std::is_same_v<TYPE, const wchar_t*>) {
+      return static_cast<const wchar_t*>(*this);
+   }
+}
+
 
 /// append values from vector with variant_view items
 inline arguments& arguments::append( const std::vector<gd::variant_view>& vectorValue ) {

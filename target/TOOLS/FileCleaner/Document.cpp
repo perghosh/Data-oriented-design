@@ -610,17 +610,42 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
    // ## Prepare key value if used
    std::vector<gd::argument::arguments> vectorKeyValue;
-   if( pargumentsFind->exists("kv") == true )                                  // Check if key-value pairs are provided @TAG #kv
+   if( pargumentsFind->exists("keys") == true || pargumentsFind->exists("kv") == true )                                  // Check if key-value pairs are provided @TAG #kv
    {
-      auto vector_ = pargumentsFind->get_argument_all("kv");
-      std::vector<std::string> vectorRule;
-      for( auto& rule : vector_ ) { vectorRule.push_back(rule.as_string()); }
-
-      for( const auto& stringRule : vectorRule )
+      std::string stringKVPattern;
+      if( pargumentsFind->exists("kv-pattern") == true )
       {
-         gd::argument::arguments argumentsRule;
-         CApplication::ParseKeyValueRule_s( stringRule, &argumentsRule );
-         vectorKeyValue.push_back( std::move( argumentsRule ) );
+         stringKVPattern = (*pargumentsFind)["kv-pattern"].as_string();
+      }
+
+      if( pargumentsFind->exists("keys") == true )
+      {
+         auto vector_ = pargumentsFind->get_all<std::string>("keys");
+         if( vector_.size() == 1 )
+         {
+            vector_ = CApplication::Split_s(vector_[0], ';'); 
+         }
+
+         for( const auto& key_ : vector_ )
+         {
+            gd::argument::arguments argumentsRule({ {"key", key_ } });
+            if( stringKVPattern.empty() == true ) { argumentsRule.append( "scope", stringKVPattern ); }
+            vectorKeyValue.push_back( argumentsRule );
+         }
+      }
+
+      if( pargumentsFind->exists("kv") == true )
+      {
+         auto vector_ = pargumentsFind->get_argument_all("kv");
+         std::vector<std::string> vectorRule;
+         for( auto& rule : vector_ ) { vectorRule.push_back(rule.as_string()); }
+
+         for( const auto& stringRule : vectorRule )
+         {
+            gd::argument::arguments argumentsRule;
+            CApplication::ParseKeyValueRule_s( stringRule, &argumentsRule );
+            vectorKeyValue.push_back( std::move( argumentsRule ) );
+         }
       }
    }
 
@@ -675,7 +700,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
       if( uRowOffset == ptableLineList->size() ) continue;                    // Skip if no patterns were found in the file 
 
-      if( pargumentsFind->exists("kv") == true )
+      // ## Update key-value pairs if provided, checks for any arguments associated with key value logic
+
+      if( pargumentsFind->exists("keys") == true || pargumentsFind->exists("kv") == true )
       {
          // Extract rows where to look for key-value pairs
          std::vector<uint64_t> vectorRow;
@@ -685,7 +712,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
             vectorRow.push_back(uRow);                                       // add row number in file
          } 
 
-         BUFFER_UpdateKeyValue( arguments_, stringFileBuffer, vectorRow, vectorKeyValue);   // Update table from key-value pairs
+         BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, vectorRow, vectorKeyValue);   // Update table from key-value pairs @TAG #kv
       }
 
       if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
