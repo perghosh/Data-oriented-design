@@ -1599,7 +1599,22 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
    return *this;
 }
 
-arguments& arguments::set(pointer pPosition , param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition)
+/** ---------------------------------------------------------------------------
+ * @brief Sets or updates a value at the specified position in the arguments buffer.
+ * 
+ * This method checks if the value at the given position matches the specified type and length. 
+ * If it does, it updates the value in place. If not, it resizes the buffer if necessary and replaces the value.
+ * 
+ * It's used by other methods to set values in the arguments buffer, methods that acts as wrappers for this method.
+ * 
+ * @param pPosition Pointer to the position in the arguments buffer where the value is set.
+ * @param uType Type of the value to set.
+ * @param pBuffer Pointer to the data buffer containing the new value.
+ * @param uLength Length of the new value in bytes.
+ * @param ppPosition Optional pointer to store the new position after setting the value.
+ * @return arguments& Reference to the current arguments object for chaining.
+ */
+arguments& arguments::set( pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition )
 {
    // get current argument
    argument argumentOld = arguments::get_argument_s(pPosition);
@@ -1614,19 +1629,25 @@ arguments& arguments::set(pointer pPosition , param_type uType, const_pointer pB
    }
    else
    {
-      unsigned uOldSize = 0;
-      unsigned uNewSize = 0;
+      unsigned uOldSize = 0; // size of old value, used to calculate if memory needs to be reserved
+      unsigned uNewSize = 0; // size of new value, used to calculate if memory needs to be reserved
+
+      // ## calculate name size if value is named
+
       if( is_name_s(pPosition) == true ) 
       {
          uOldSize = arguments::sizeof_name_s( pPosition );
          uOldSize = align32_g( uOldSize );
          uNewSize = uOldSize;
       }
+
+      // ## calculate size for old value and new value
       
       uOldSize += arguments::sizeof_s( argumentOld );
       uOldSize = align32_g( uOldSize );
-
       uNewSize += arguments::sizeof_s( 0, uType, uLength );                    // calculate total size for new value
+
+      // ## if old size is not equal to new size then we need to resize buffer
 
       if( uOldSize != uNewSize ) 
       { 

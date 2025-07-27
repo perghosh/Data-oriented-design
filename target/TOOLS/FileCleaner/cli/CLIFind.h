@@ -40,6 +40,7 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
 std::pair<bool, std::string> Find_g(const std::vector<std::string>& vectorSource, const gd::argument::arguments* pargumentsFind, CDocument* pdocument);
 
 std::pair<bool, std::string> MatchAllPatterns_g( const std::vector<std::string>& vectorPattern, CDocument* pdocument, int iMatchCount = -1);
+std::pair<bool, std::string> SynchronizeResult_g( CDocument* pdocument );
 
 std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vectorRule, CDocument* pdocument );
 

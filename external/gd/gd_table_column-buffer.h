@@ -1495,7 +1495,7 @@ inline void table_column_buffer::append( const table_column_buffer& tableFrom, c
  */
 inline int64_t table_column_buffer::find_variant_view(const std::string_view& stringName, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind) const noexcept {
    unsigned uColumn = column_get_index(stringName);
-   return find_variant_view( uColumn, uStartRow, uColumn, variantviewFind );
+   return find_variant_view( uColumn, uStartRow, uCount, variantviewFind );
 }
 
 /** ---------------------------------------------------------------------------
