@@ -712,6 +712,17 @@ const options* options::sub_find_active() const
    return nullptr;
 }
 
+/// Get pointer to active sub command if any, nullpointer is returned if no active sub command (non const version)
+options* options::sub_find_active()
+{
+   for(auto it = std::begin( m_vectorSubOption ), itEnd = std::end( m_vectorSubOption ); it != itEnd; it++)
+   {
+      if( it->is_active() ) return &(*it);
+   }
+   return nullptr;
+}
+
+
 /// Return name for active sub command if any active is found, no active sub command returns empty string
 std::string_view options::sub_find_active_name() const
 {

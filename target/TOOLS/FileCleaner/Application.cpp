@@ -357,7 +357,7 @@ std::pair<bool, std::string> CApplication::Exit()
  */
 std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& optionsApplication )
 {
-   const gd::cli::options* poptionsActive = optionsApplication.find_active();
+   gd::cli::options* poptionsActive = optionsApplication.find_active();
    if( poptionsActive == nullptr ) { return { false, "No active options found" }; }
 
    if( poptionsActive->exists("help") == true ) 
@@ -1382,7 +1382,7 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
 // 0TAG0Options.Application
 
 
-/** ---------------------------------------------------------------------------
+/** ---------------------------------------------------------------------------  @TAG #options.application [description: Prepares the application options for command-line usage]
  * @brief Prepares the application options for command-line usage.
  *
  * This method sets up the available command-line options for the application,
@@ -1412,7 +1412,7 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
  * - `help`     : Displays help information.
  * - `version`  : Displays the application version.
  */
-void CApplication::Prepare_s(gd::cli::options& optionsApplication)             // @TAG #options.Application
+void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
    optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
@@ -1428,7 +1428,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
    //optionsApplication.add({ "database", "Set folder where logger places log files"});
    //optionsApplication.add({ "statements", "file containing sql statements"});
 
-   {  // ## `count` command, copies file from source to target @TAG #count.Application
+   {  // ## `count` command, copies file from source to target 
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count lines in file" );
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
@@ -1452,7 +1452,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)             /
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
-   {  // ## `copy` command, count number of lines in file @TAG #copy.Application
+   {  // ## `copy` command, count number of lines in file 
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file from source to target" );
       optionsCommand.add({"source", 's', "File to copy"});
       optionsCommand.add({"destination", 'd', "Destination, where file is copied to"});

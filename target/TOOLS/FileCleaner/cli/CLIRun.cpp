@@ -2,7 +2,7 @@
 * @file CLIRun.cpp
 */
 
-// @TAG #cli
+// @TAG #ui.cli
 
 #include "CLIRun.h"
 

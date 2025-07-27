@@ -1891,7 +1891,7 @@ std::pair<bool, std::string> EXPRESSION_FilterOnColumn_g( gd::table::dto::table*
 }
 
 
-/** --------------------------------------------------------------------------- @TAG #clipboard #os
+/** --------------------------------------------------------------------------- @TAG #command.clipboard
  * @brief Reads the clipboard content and returns it as a UTF-8 encoded string.
  * 
  * This function attempts to read the clipboard content, first trying to retrieve
