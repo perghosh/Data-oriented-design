@@ -1,4 +1,4 @@
-/**
+/**                                                                            @TAG #ui.cli #command.find [description:declaration for methods used for find]
 * @file CLIFind.h
 *  
 * @brief Header file for CLI find operations.
@@ -7,8 +7,6 @@
 * Compare with `List` operations, which are more focused on finding in one single line. Line based and treat files as list of rows.
 * 
 */
-
-// @TAG #cli #find
 
 #pragma once
 
@@ -36,8 +34,8 @@ NAMESPACE_CLI_BEGIN
 
 // ## Dir operations
 
-std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocument* pdocument);
-std::pair<bool, std::string> Find_g(const std::vector<std::string>& vectorSource, const gd::argument::arguments* pargumentsFind, CDocument* pdocument);
+std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* pdocument);
+std::pair<bool, std::string> Find_g(const std::vector<std::string>& vectorSource, gd::argument::arguments* pargumentsFind, CDocument* pdocument);
 
 std::pair<bool, std::string> MatchAllPatterns_g( const std::vector<std::string>& vectorPattern, CDocument* pdocument, int iMatchCount = -1);
 std::pair<bool, std::string> SynchronizeResult_g( CDocument* pdocument );

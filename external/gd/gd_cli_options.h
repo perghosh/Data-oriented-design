@@ -235,6 +235,7 @@ public:
 /** \name GET/SET
 *///@{
    const gd::argument::arguments& get_arguments() const { return m_argumentsValue; }
+   gd::argument::arguments& get_arguments() { return m_argumentsValue; }
    const std::string& name() const { return m_stringName; }
    const std::string& description() const { return m_stringDescription; }
    void set_first( unsigned uFirst ) { m_uFirstToken = uFirst; }
@@ -296,6 +297,7 @@ public:
 
    /// find active option
    const options* find_active() const;
+   options* find_active();
 
    void set( const gd::argument::arguments& arguments_ ) { m_argumentsValue = arguments_; }
    void set( gd::argument::arguments&& arguments_ ) { m_argumentsValue = std::move( arguments_ ); }
@@ -368,6 +370,7 @@ public:
    std::size_t sub_size() const { return m_vectorSubOption.size(); }
    /// find active sub command
    const options* sub_find_active() const;
+   options* sub_find_active();
    /// find active sub command name
    std::string_view sub_find_active_name() const;
    /// find sub command for specified name
@@ -481,6 +484,14 @@ inline const options* options::find_active() const {
    if( poptionsActive != nullptr ) return poptionsActive;
    return this;
 }
+
+/// find the active options
+inline options* options::find_active() {
+   options* poptionsActive = sub_find_active();
+   if( poptionsActive != nullptr ) return poptionsActive;
+   return this;
+}
+
 
 /// clear data from all sub options and root options
 inline void options::clear_all() {

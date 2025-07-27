@@ -1,8 +1,12 @@
-/**
-* @file CLIFind.cpp
-*/
-
-// @TAG #cli #find
+/**                                                                            @TAG #ui.cli #command.find [description: definitions for find methods]
+ * @file CLIFind.cpp
+ * @brief This file contains the definitions methods used for the cli find command
+ * 
+ * The find command is used to search for patterns in files based on various options and arguments provided by the user.
+ * It supports searching in multiple source paths, applying ignore patterns, and printing results in different formats.
+ *
+ * 
+ */
 
 #include <cstdint>
 #include <format>
@@ -18,13 +22,9 @@
 
 #include "CLIFind.h"
 
-
-
-
 NAMESPACE_CLI_BEGIN
 
-
-/** --------------------------------------------------------------------------- @TAG #cli #find
+/** --------------------------------------------------------------------------- @TAG #ui.cli #command.find [description: Main find method, this is the start for all find related logic]
  * @brief Processes the 'find' command and performs file searching based on provided options.
  *
  * @param poptionsFind Pointer to a gd::cli::options object containing command-line options.
@@ -56,9 +56,9 @@ if( result_.first == false ) return result_;
  if( result_.first == false ) return result_;
  * @endcode
  */
-std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocument* pdocument)
+std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* pdocument)
 {                                                                                                  assert(pdocument != nullptr);assert(poptionsFind != nullptr);
-   const gd::cli::options& options_ = *poptionsFind; // get the options from the command line arguments
+   gd::cli::options& options_ = *poptionsFind; // get the options from the command line arguments
 
    auto vectorSourceToPrepare = options_.get_all("source");                            // get all source arguments, this is used to find files in the source directory
 
@@ -101,11 +101,11 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
    // ## Call the more generic Find_g function
    //    this is to make it possible to call Find_g with different environments, like CLI or GUI
 
-   const gd::argument::arguments* pargumentsFind = &options_.get_arguments(); // get the arguments from the command line options
+   gd::argument::arguments* pargumentsFind = &options_.get_arguments(); // get the arguments from the command line options
    auto result_ = Find_g(vectorSource, pargumentsFind, pdocument);            // find files in the source directory based on the find arguments
    if( result_.first == false ) return result_;                               // if find failed, return the error
 
-   if( pargumentsFind->exists("rule") == true )                                // @TAG #active
+   if( pargumentsFind->exists("rule") == true )                                
    {
       auto vector_ = pargumentsFind->get_argument_all("rule");
       std::vector<std::string> vectorRule;
@@ -168,7 +168,7 @@ std::pair<bool, std::string> Find_g(const gd::cli::options* poptionsFind, CDocum
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
-std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSource, const gd::argument::arguments* pargumentsFind, CDocument* pdocument)
+std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSource, gd::argument::arguments* pargumentsFind, CDocument* pdocument)
 {                                                                                                  assert(pdocument != nullptr);assert(pargumentsFind != nullptr);
    const gd::argument::arguments& options_ = *pargumentsFind; // get the options from the command line arguments
 
@@ -220,10 +220,24 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
       for( auto& pattern_ : vector_ ) {  vectorPattern.push_back(pattern_.as_string()); } // convert views to strings
 
+      const std::string_view stringPattern = vectorPattern[0];                // get the pattern as a string view
+      if( stringPattern.size() > sizeof("&c-") && stringPattern[2] == '-' )
+      {
+         // ## Special case for patterns starting with "&--", "&c-" or "&s-" or ohther combinations
+         //    this is a hack to allow users to specify patterns rules with special characters like '&' or 'c' or 's' and save typing
+
+         std::string_view string_( stringPattern.data(), 2);
+         if( string_.find( '&' ) != std::string_view::npos ) pargumentsFind->append("match-all", true); // found '&' at start then match all patterns. @TAG #ui.cli #command.find #hack [description: if first pattern character starts with & and then space, this will be like specify AND between all patterns]
+         if( string_.find( 'c' ) != std::string_view::npos ) argumentsFind.append("segment", "comment"); // found c then add set comment segment @TAG #ui.cli #command.find #hack [description: if c is found this is a short cut to --segment comment without typing that option]
+         if( string_.find( 's' ) != std::string_view::npos ) argumentsFind.append("segment", "string"); // found s then add set string segment @TAG #ui.cli #command.find #hack [description: if s is found this is a short cut to --segment string without typing that option]
+         vectorPattern[0] = stringPattern.substr(3);                          // remove the first 3 characters '&c-' from the pattern
+      }
+
       if( vectorPattern.size() == 1 )
       { 
          auto stringPattern = vectorPattern[0];
-         vectorPattern = CApplication::Split_s(stringPattern, ';'); }
+         vectorPattern = CApplication::Split_s(stringPattern, ';'); 
+      }
 
       for( auto& pattern_ : vectorPattern ) { vectorPatternString.push_back(pattern_); }
 
@@ -250,6 +264,8 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
       if( options_["match-all"].is_true() == true )
       {
+         // ## Match all patterns, remove all rows that do not match all patterns
+
          result_ = MatchAllPatterns_g( vectorPattern, pdocument );
          if (result_.first == false) return result_;
 
@@ -407,8 +423,23 @@ std::pair<bool, std::string> SynchronizeResult_g(CDocument* pdocument)
    
 }
 
-
-// @TAG #active
+/** --------------------------------------------------------------------------- @TAG #options.rule [description: Process rule for matched secton in file, rule is converted to scripting and script is executed]
+ * @brief Reads a snippet based on the file line where find did find the pattern.
+ *
+ * This function processes the rules to select/process specific lines or ranges from the matched position in file,
+ * and retrieves the corresponding code (snippets).
+ * 
+ * rules used are:
+ * - `select-line:<line_number>`: Select a specific line.
+ * - `select-between:<start_line>,<end_line>`: Select a range of lines.
+ * - `select-all`: Select all lines for that multiline comment/string/code.
+ *
+ * @param vectorRule A vector of rules to apply for selecting snippets.
+ * @param pdocument Pointer to the CDocument instance containing the file line list and snippet table.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vectorRule, CDocument* pdocument )
 {                                                                                                  assert( vectorRule.empty() == false ); assert(pdocument != nullptr); 
    auto* ptableLineList = pdocument->CACHE_Get("file-linelist", true);        // ensure the "file-linelist" table is in cache

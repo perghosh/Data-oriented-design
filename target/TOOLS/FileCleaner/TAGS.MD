@@ -1,3 +1,8 @@
+## Sample format for tags in code
+
+`cleaner list * --segment comment  -pattern "@TAG;#ui;#command.cli" -match-all` - row matching, tries to find all tags inside comments in code files.
+`cleaner find * --segment comment  -pattern "@TAG;#command.cli" -match-all` - source code search, tries to find all tags inside comments in code files. find treats source code as a single block of text.
+
 ### Main section tags
 
 | Tag         | Description                |
@@ -9,5 +14,10 @@
 
 | Search tag | Description |
 |-|-|
-| #per | User tag for per  |
-| #kevin | user tag for kevin |
+| #user | tag for mark user to find functionality. `#user.<subtag>` to mark user. <br>Adding user name will make it simple for user to search for like `#user.per` or `#user.kevin` |
+| #ui | tag for user interface related logic, some subtags are `#ui.cli` for terminal, `#ui.vs` for visual studio  |
+| #command | tag for command related logic, subtags to see what type of command. Sample `#command.history` for history command |
+| #options | tag for options related logic, subtags to see what type of options. Sample `#options.verbose` for verbose option |
+| #docs | tag for documentation. `#docs.sample` for sample code, `#docs.primer` for introduction.  |
+| #hack | solutions that are like hacks, they do not follow best practices or the core logic and need special handling |
+| #config | tag for configuration related logic.<br>`#config.<subtag>` as `#config.docker` for docker functionality |

@@ -1,11 +1,9 @@
-/**
-* @file CLIList.h
-*  
-* @brief Header file for CLI list operations.
-* 
-*/
-
-// @TAG #cli #list
+/**                                                                            @TAG #ui.cli #command.list [description:declaration for methods used for list command]
+ * @file CLIList.h
+ *  
+ * @brief Header file for CLI list operations.
+ *
+ */ 
 
 #pragma once
 
