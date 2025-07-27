@@ -612,10 +612,10 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    std::vector<gd::argument::arguments> vectorKeyValue;
    if( pargumentsFind->exists("keys") == true || pargumentsFind->exists("kv") == true )                                  // Check if key-value pairs are provided @TAG #kv
    {
-      std::string stringKVPattern;
-      if( pargumentsFind->exists("kv-pattern") == true )
+      std::string stringKVFormat;
+      if( pargumentsFind->exists("kv-format") == true )
       {
-         stringKVPattern = (*pargumentsFind)["kv-pattern"].as_string();
+         stringKVFormat = (*pargumentsFind)["kv-format"].as_string();
       }
 
       if( pargumentsFind->exists("keys") == true )
@@ -629,7 +629,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
          for( const auto& key_ : vector_ )
          {
             gd::argument::arguments argumentsRule({ {"key", key_ } });
-            if( stringKVPattern.empty() == true ) { argumentsRule.append( "scope", stringKVPattern ); }
+            if( stringKVFormat.empty() == true ) { argumentsRule.append( "scope", stringKVFormat ); }
             vectorKeyValue.push_back( argumentsRule );
          }
       }
