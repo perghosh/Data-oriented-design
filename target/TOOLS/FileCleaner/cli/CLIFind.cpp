@@ -704,6 +704,10 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
    }
 
    pdocument->MESSAGE_Display(stringCliTable);                                 // display the key-value pairs to the user
+
+   // ## print summary of key-value pairs
+   std::string stringSummary = std::format("\nFound {} areas with key-value pairs", ptableKeyValue->get_row_count());
+   pdocument->MESSAGE_Display(stringSummary);   
    return { true, "" };                                                        // return success
 }
 

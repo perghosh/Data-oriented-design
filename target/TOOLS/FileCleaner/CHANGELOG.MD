@@ -12,6 +12,8 @@ Things like tasks, features, bugs etc. Also bookmarks with descriptions and much
   For example, you can use `--kv-format "[]:"` and this means that each key value pair is formatted like this: `[ key: value]`.
   - `kv` option added to `find` command. This is a shortcut for both `keys` and `kv-format` options. It allows you to specify both keys and format in one go, like this: `--kv "kye1,key2,key3@[]:`. Trickier but to make it fast to type.
   - Improved help output do describe options used by cleaner better.
+  - Sumarized output when printing result to output.
+
 
 
 
