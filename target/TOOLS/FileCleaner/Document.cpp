@@ -629,7 +629,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
          for( const auto& key_ : vector_ )
          {
             gd::argument::arguments argumentsRule({ {"key", key_ } });
-            if( stringKVFormat.empty() == true ) { argumentsRule.append( "scope", stringKVFormat ); }
+            if( stringKVFormat.empty() == false ) { argumentsRule.append("scope", stringKVFormat); } // Add scope rules for key value items if provided
             vectorKeyValue.push_back( argumentsRule );
          }
       }

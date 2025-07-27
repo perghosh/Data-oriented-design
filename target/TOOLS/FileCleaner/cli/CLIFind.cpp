@@ -198,7 +198,11 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
    if( options_.exists("segment") == true ) { argumentsFind.append("segment", options_["segment"].as_string()); }
    if( options_.exists("kv") == true ) { argumentsFind.append( "kv", options_.get_argument_all("kv", gd::types::tag_view{})); bUseKeyValue = true; }
-   if( options_.exists("keys") == true ) { argumentsFind.append("keys", options_.get_argument_all("keys", gd::types::tag_view{})); bUseKeyValue = true; }
+   if( options_.exists("keys") == true ) 
+   { 
+      argumentsFind.append("keys", options_.get_argument_all("keys", gd::types::tag_view{})); bUseKeyValue = true; 
+      if( options_.exists("kv-format") == true ) argumentsFind.append("kv-format", options_.get_argument_all("kv-format", gd::types::tag_view{})); 
+   }
 
    // ## Harvest files from the source paths
    for( const auto& stringSource : vectorSource )
