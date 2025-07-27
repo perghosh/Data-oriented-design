@@ -653,6 +653,17 @@ std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd:
    return { true, "" };                                                        // return success
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Finds and prints key-value pairs from the table "keyvalue" in document.
+ *
+ * This function retrieves key-value pairs from the document's cached table "keyvalue", formats them into a string,
+ * and displays them to the user. It also handles the case where no key-value pairs are found.
+ *
+ * @param pdocument Pointer to a CDocument instance containing the key-value pairs.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
 {                                                                                                  assert(pdocument != nullptr);
    auto* ptableKeyValue = pdocument->CACHE_GetTableArguments("keyvalue");     // get table for key-value pairs from the cache
