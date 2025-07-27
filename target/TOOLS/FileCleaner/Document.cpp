@@ -706,13 +706,20 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
       {
          // Extract rows where to look for key-value pairs
          std::vector<uint64_t> vectorRow;
+         gd::table::dto::table tableRow(0u, { {"uint64", 0, "row"}, {"uint64", 0, "linelist-key"} }, gd::table::tag_prepare{}); // Prepare table for key-value pairs
+
          for( auto itRow = uRowOffset; itRow < ptableLineList->size(); itRow++ ) 
          { 
             uint64_t uRow = ptableLineList->cell_get_variant_view(itRow, "row");
+            uint64_t uKey = ptableLineList->cell_get_variant_view(itRow, "key");
             vectorRow.push_back(uRow);                                       // add row number in file
+
+            auto r_ = tableRow.row_add_one(); // Add a new row to the key-value table
+            tableRow.cell_set(r_, "row", uRow);                        // Set the row number in the key-value table
+            tableRow.cell_set(r_, "linelist-key", uKey);               // Set the line list key in the key-value table
          } 
 
-         BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, vectorRow, vectorKeyValue);   // Update table from key-value pairs @TAG #kv
+         BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);   // Update table from key-value pairs @TAG #kv
       }
 
       if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
@@ -793,15 +800,17 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 // @TASK [date: 250723] [name: key-value] [description: "test BUFFER_UpdateKeyValue method for different type of value combinations"] [state: todo] [priority: high]
 // @TASK [date: 250723] [name: key-value] [description: "write documentation"] [state: progress] [priority: low]
 
-std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const gd::argument::shared::arguments& argumentsFile, std::string_view stringFileBuffer, const std::vector<uint64_t>& vectorRow, const std::vector<gd::argument::arguments>& vectorRule)
+std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const gd::argument::shared::arguments& argumentsFile, std::string_view stringFileBuffer, gd::table::dto::table& tableRow, const std::vector<gd::argument::arguments>& vectorRule)
 {
    uint64_t uFileKey = argumentsFile["file-key"].as_uint64();                                      assert( uFileKey > 0 );
    std::string_view stringFile = argumentsFile["source"].as_string_view();                         assert( stringFile.empty() == false );
    auto ptableKeyValue = CACHE_GetTableArguments("keyvalue", true); // Ensure the "keyvalue" table is in cache
 
-   for( auto uRow : vectorRow )
+   //for( const auto& row_ : tableRow )
+   for( auto itRow = tableRow.begin(); itRow != tableRow.end(); ++itRow ) // Iterate through the rows in the table
    {
       uint64_t uKeyValueRow = std::numeric_limits<uint64_t>::max();
+      uint64_t uRow = itRow.cell_get_variant_view("row").as_uint64();
 
       std::string_view stringFrom = gd::math::string::select_from_line(stringFileBuffer, uRow); // Get the line from the file buffer
       std::string_view stringContent = gd::math::string::select_content_lines(stringFrom); // Get the content of the line
@@ -838,6 +847,8 @@ std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const gd::argument
                   ptableKeyValue->cell_set( uKeyValueRow, "file-key", uFileKey );// set foreign key to file table
                   ptableKeyValue->cell_set(uKeyValueRow, "filename", stringFile);// Set the file name in the key-value table
                   ptableKeyValue->cell_set(uKeyValueRow, "row", uRow);         // Set the key in the key-value table
+                  uint64_t uLineListKey = itRow.cell_get_variant_view("linelist-key").as_uint64(); assert(uLineListKey > 0);
+                  ptableKeyValue->cell_set(uKeyValueRow, "file-linelist-key", uLineListKey);
                }
                // ## Add key-value pair to the table
                ptableKeyValue->cell_add_argument(uKeyValueRow, stringKey, stringValue);
@@ -1012,6 +1023,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       ptableKeys->column_prepare();
       ptableKeys->column_add("uint64", 0, "key");                             // add key column
       ptableKeys->column_add("uint64", 0, "file-key");                        // foreign key to file table
+      ptableKeys->column_add("uint64", 0, "file-linelist-key");               // foreign key to file-linelist table
       ptableKeys->column_add("rstring", 0, "filename");                       // name of file
       ptableKeys->column_add("uint64", 0, "row");                             // row number in file
       ptableKeys->prepare();                                                  // prepare table

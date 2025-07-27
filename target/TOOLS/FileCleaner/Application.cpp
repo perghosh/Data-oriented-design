@@ -10,6 +10,12 @@
  * 
  */
 
+/*
+@TASK #per #todo [date: 250726] [name: key-value] [description: "Extend key-value argument to simplify setting multiple keys to read"] [state: open]
+@TASK #kevin #todo [date: 250726] [name: key-value] [description: "Implement key-value argument parsing"] [state: open]
+
+*/
+
 #include <filesystem>
 #include <format>
 #include <set>

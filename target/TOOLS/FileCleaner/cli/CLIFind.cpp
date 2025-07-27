@@ -194,9 +194,11 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       argumentsFind.append("max", uMax);                                      // set the maximum number of matches to find
    }
 
+   bool bUseKeyValue = false; // flag to indicate if key-value pairs should be used
+
    if( options_.exists("segment") == true ) { argumentsFind.append("segment", options_["segment"].as_string()); }
-   if( options_.exists("kv") == true ) { argumentsFind.append( "kv", options_.get_argument_all("kv", gd::types::tag_view{})); }
-   if( options_.exists("keys") == true ) { argumentsFind.append("keys", options_.get_argument_all("keys", gd::types::tag_view{})); }
+   if( options_.exists("kv") == true ) { argumentsFind.append( "kv", options_.get_argument_all("kv", gd::types::tag_view{})); bUseKeyValue = true; }
+   if( options_.exists("keys") == true ) { argumentsFind.append("keys", options_.get_argument_all("keys", gd::types::tag_view{})); bUseKeyValue = true; }
 
    // ## Harvest files from the source paths
    for( const auto& stringSource : vectorSource )
@@ -246,6 +248,12 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       {
          result_ = MatchAllPatterns_g( vectorPattern, pdocument );
          if (result_.first == false) return result_;
+
+         if( bUseKeyValue == true )
+         {
+            result_ = SynchronizeResult_g(pdocument);                         // Print the key-value pairs found in the files
+            if (result_.first == false) return result_;                       // if print failed, return the error
+         }
       }
 
    }
@@ -353,6 +361,46 @@ std::pair<bool, std::string> MatchAllPatterns_g(const std::vector<std::string>& 
    }
 
    return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Synchronizes tables used in find operation.
+ *
+ * Tables involved in the find operation is in this method checked and synchronized.
+ * The file-linelist table is the core and dependent tables are checked against it.
+ *
+ * @param pdocument Pointer to the CDocument instance containing the file line list and key-value table.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> SynchronizeResult_g(CDocument* pdocument)
+{                                                                                                  assert(pdocument != nullptr);
+   auto* ptableLineList = pdocument->CACHE_Get("file-linelist");                                   assert(ptableLineList != nullptr); // ensure the "file-linelist" table is in cache
+   auto* ptableKeyValue = pdocument->CACHE_GetTableArguments("keyvalue"); 
+
+   if( ptableKeyValue != nullptr )
+   {
+      std::vector<uint64_t> vectorRowDelete; // vector of row numbers to delete
+      for( size_t uRow = 0; uRow < ptableKeyValue->get_row_count(); ++uRow )
+      {
+         uint64_t uLineListKey = ptableKeyValue->cell_get_variant_view(uRow, "file-linelist-key");
+
+         // check if the key exists in the file line list
+         auto iRow = ptableLineList->find( "key", uLineListKey );
+         if( iRow == -1 ) { vectorRowDelete.push_back(uRow); }                 // if the key does not exist in the file line list, add row to delete vector
+      }
+
+      // ## delete all rows that do not match the file line list
+
+      if( vectorRowDelete.empty() == false )
+      {
+         ptableKeyValue->erase(vectorRowDelete);                              // delete all rows that do not match the file line list
+      }
+   }
+ 
+   return { true, "" };
+   
 }
 
 

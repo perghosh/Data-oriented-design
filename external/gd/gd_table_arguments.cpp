@@ -3844,7 +3844,7 @@ void table::split( uint64_t uRowCount, std::vector<table>& vectorSplit ) const
  * @param uCount number of rows that is removed
 */
 void table::erase( uint64_t uFrom, uint64_t uCount )
-{                                                                                                  assert( (uFrom + uCount) < get_row_count() ); assert( uFrom < get_row_count() );
+{                                                                                                  assert( (uFrom + uCount) <= get_row_count() ); assert( uFrom < get_row_count() );
    uint64_t uRowCount = get_row_count();           // number of rows in table
    uint64_t uMetaSize = size_row_meta();
 
