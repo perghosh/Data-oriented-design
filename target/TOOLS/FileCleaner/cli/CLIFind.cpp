@@ -226,10 +226,11 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
          // ## Special case for patterns starting with "&--", "&c-" or "&s-" or ohther combinations
          //    this is a hack to allow users to specify patterns rules with special characters like '&' or 'c' or 's' and save typing
 
+         // found '&', 'c', 's' at start then match all patterns. @TAG #ui.cli #command.find #hack [description: if first pattern character starts with & and then space, this will be like specify AND between all patterns, 'c' = comment segment and 's' = string segment]
          std::string_view string_( stringPattern.data(), 2);
-         if( string_.find( '&' ) != std::string_view::npos ) pargumentsFind->append("match-all", true); // found '&' at start then match all patterns. @TAG #ui.cli #command.find #hack [description: if first pattern character starts with & and then space, this will be like specify AND between all patterns]
-         if( string_.find( 'c' ) != std::string_view::npos ) argumentsFind.append("segment", "comment"); // found c then add set comment segment @TAG #ui.cli #command.find #hack [description: if c is found this is a short cut to --segment comment without typing that option]
-         if( string_.find( 's' ) != std::string_view::npos ) argumentsFind.append("segment", "string"); // found s then add set string segment @TAG #ui.cli #command.find #hack [description: if s is found this is a short cut to --segment string without typing that option]
+         if( string_.find( '&' ) != std::string_view::npos ) pargumentsFind->append("match-all", true); 
+         if( string_.find( 'c' ) != std::string_view::npos ) argumentsFind.append("segment", "comment"); 
+         if( string_.find( 's' ) != std::string_view::npos ) argumentsFind.append("segment", "string"); 
          vectorPattern[0] = stringPattern.substr(3);                          // remove the first 3 characters '&c-' from the pattern
       }
 
