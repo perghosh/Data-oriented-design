@@ -3,18 +3,17 @@
 ## v1.0.1
 ### New Features
 
-Added support for key value reading. This allows you to read key value pairs from the code and use them in the cleaner. Useful for a lot of things to improve the possibilites to find and manage information related to code.
+Added support for **key value** reading. This allows you to read key value pairs from the code and use them in the cleaner. Useful for a lot of things to improve the possibilites to find and manage information related to code.
 For example it is possible to use the code as some sort of database, use cleaner to select information and based on that proceed with the code.
 Things like tasks, features, bugs etc. Also bookmarks with descriptions and much more.
 
+- `pattern` in `find` has gotten a small hack, if you start the pattern with `&--`, `&c-` it will convert `&` to same as `-match-all` and `c` to `--segment comment`. This hack allows you to quickly set options without too much typing. If you work with key value pairs this is very useful.
 - `keys` option added to `find` command. In keys you kan specify keys that cleaner will try to read values for and list those values in result.
 - `kv-format` option added to `find` command. This allows you to specify how the key value pairs are formatted in code. 
   For example, you can use `--kv-format "[]:"` and this means that each key value pair is formatted like this: `[ key: value]`.
   - `kv` option added to `find` command. This is a shortcut for both `keys` and `kv-format` options. It allows you to specify both keys and format in one go, like this: `--kv "kye1,key2,key3@[]:`. Trickier but to make it fast to type.
   - Improved help output do describe options used by cleaner better.
   - Sumarized output when printing result to output.
-
-
 
 
 ## v1.0.0
