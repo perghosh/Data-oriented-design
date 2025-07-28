@@ -117,7 +117,7 @@ std::pair<bool, std::string> CVisualStudio::Connect()
 }
 
 
-/** --------------------------------------------------------------------------- @TAG #print #vs
+/** --------------------------------------------------------------------------- @TAG #ui.print #ui.vs
  * @brief Outputs the specified text to the "General" pane of the Visual Studio Output window.
  *
  * This method connects to the active Visual Studio instance, retrieves the Output window,
@@ -252,7 +252,7 @@ std::pair<bool, std::string> CVisualStudio::Open(const std::vector<std::string>&
    return { true, "" };
 }
 
-/** --------------------------------------------------------------------------- @TAG #bookmark #vs
+/** --------------------------------------------------------------------------- @TAG #command.bookmark #ui.vs
 * @brief Adds a bookmark at the specified line in a file in Visual Studio.
 *
 * This method connects to the active Visual Studio instance, opens the specified file if necessary,

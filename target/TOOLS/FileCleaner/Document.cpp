@@ -595,6 +595,31 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
    return {true, ""};
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Updates the pattern find results for files in the cache.
+ *
+ * This method processes a list of patterns and applies them to the files stored in the cache.
+ * It generates a list of lines in each file where the patterns are found and stores the results
+ * in the "file-linelist" cache table.
+ *
+ * @param vectorPattern A vector of strings representing the patterns to search for.
+ *                      The vector must not be empty and can contain a maximum of 64 patterns.
+ * @param pargumentsFind The arguments containing additional parameters such as segment and max hits.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @pre The `vectorPattern` must not be empty and must contain fewer than 64 patterns.
+ * @post The "file-linelist" cache table is updated with the lines where the patterns are found.
+ *
+ * @details
+ * - The method ensures that the "file-linelist" cache table is prepared and available.
+ * - For each file in the "file" cache table, it generates the full file path by combining
+ *   the "folder" and "filename" columns.
+ * - It then calls the `COMMAND_FindPattern_g` function to find the lines in the file
+ *   that match the patterns and updates the "file-linelist" table with the results.
+ * - If an error occurs during the process, it is added to the internal error list.
+ */
 std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::string >& vectorPattern, const gd::argument::shared::arguments* pargumentsFind )
 {                                                                                                  assert( pargumentsFind != nullptr );
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
@@ -610,21 +635,18 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
    // ## Prepare key value if used
    std::vector<gd::argument::arguments> vectorKeyValue;
-   if( pargumentsFind->exists("keys") == true || pargumentsFind->exists("kv") == true )                                  // Check if key-value pairs are provided @TAG #kv
+   if( pargumentsFind->exists("keys") == true || pargumentsFind->exists("kv") == true )                                  // Check if key-value pairs are provided 
    {
       std::string stringKVFormat;
       if( pargumentsFind->exists("kv-format") == true )
       {
-         stringKVFormat = (*pargumentsFind)["kv-format"].as_string();
+         stringKVFormat = ( *pargumentsFind )["kv-format"].as_string();        // Get the key-value format, if key-value pairs are scoped like {key=value}, [key:value] etc. "{}=" or "[]:" are used to read sample scope
       }
 
       if( pargumentsFind->exists("keys") == true )
       {
          auto vector_ = pargumentsFind->get_all<std::string>("keys");
-         if( vector_.size() == 1 )
-         {
-            vector_ = CApplication::Split_s(vector_[0], ';'); 
-         }
+         if( vector_.size() == 1 ) { vector_ = CApplication::Split_s(vector_[0], ';'); } // if only one key is provided, split it by ';' to get multiple keys
 
          for( const auto& key_ : vector_ )
          {
@@ -945,7 +967,7 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
  *  
  * @note This method assumes that the `CACHE_Add` function handles the ownership of the table.  
  */  
-void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<gd::table::dto::table>* ptable) // @TAG #cache.prepare
+void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<gd::table::dto::table>* ptable) // @TAG #data.cache
 {
    using namespace gd::table::dto;
    constexpr unsigned uTableStyle = ( table::eTableFlagNull32 | table::eTableFlagRowStatus );
@@ -1265,7 +1287,7 @@ gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::stri
 * @post The rows in the cache table are sorted based on the specified column.
 *
 */
-std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_)  // @TAG #cache.sort
+std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_)  // @TAG #data.cache #command.sort
 {
    bool bAscending = true;
    int iColumn = -1;

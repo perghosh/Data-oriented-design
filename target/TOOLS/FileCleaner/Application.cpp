@@ -1428,7 +1428,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    //optionsApplication.add({ "database", "Set folder where logger places log files"});
    //optionsApplication.add({ "statements", "file containing sql statements"});
 
-   {  // ## `count` command, copies file from source to target 
+   {  // ## `count` command, copies file from source to target @TAG #options.count
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count lines in file" );
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
@@ -1469,7 +1469,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
 
-   { // ## 'dir' command, list files @TAG #dir.Application
+   { // ## 'dir' command, list files @TAG #options.dir
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in a specified directory." );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
@@ -1488,7 +1488,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
-   { // ## 'find' command, list files @TAG #find.Application
+   { // ## 'find' command, list files @TAG #options.find
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "find", "Search for file content within directories." );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `*.cpp`) to apply when searching for files. Multiple filters are separated with ;. If no filter is provided, all found text files will be searched for patterns." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
@@ -1515,7 +1515,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
 
-   // ## 'history' handle history 
+   // ## 'history' handle history @TAG #options.history
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "Handle command history" );
       optionsCommand.add_flag( {"create", "Initialize history logic, creates folders and files needed to manage history, this also enables configuration settings"} );
@@ -1544,7 +1544,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
-   { // ## 'list' command, list rows with specified patterns @TAG #list.Application
+   { // ## 'list' command, list rows with specified patterns @TAG #options.list
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "Search and list rows in files that match specified patterns." );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `app*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all found files are processed." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with commas (`,`) or semicolons (`;`). Matches are reported per row." });
@@ -1577,7 +1577,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
 
-   {  // ## `help` print help about champion
+   {  // ## `help` print help about @TAG #options.help
       gd::cli::options optionsCommand( "help", "Print command line help" );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
@@ -1628,7 +1628,7 @@ void CApplication::PrepareLogging_s()
 
 
 
-/** --------------------------------------------------------------------------- @TAG #state #parse.Application
+/** --------------------------------------------------------------------------- @TAG #data.extension [description: Information about source code extensions, source code format]
  * @brief Prepares the state for parsing based on the file extension.
  * @param argumentsPath The arguments containing the source path for harvesting files.
  * @param state_ The state object to be prepared.
