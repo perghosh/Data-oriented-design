@@ -14,6 +14,7 @@ Things like tasks, features, bugs etc. Also bookmarks with descriptions and much
   - `kv` option added to `find` command. This is a shortcut for both `keys` and `kv-format` options. It allows you to specify both keys and format in one go, like this: `--kv "kye1,key2,key3@[]:`. Trickier but to make it fast to type.
   - Improved help output do describe options used by cleaner better.
   - Sumarized output when printing result to output.
+  - `segment` added to `dir` command. Not fully implemented yet, but allows you to search for patterns in specific segments of the code, such as comments or strings.
 
 
 ## v1.0.0
