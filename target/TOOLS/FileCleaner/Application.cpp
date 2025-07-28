@@ -1434,8 +1434,6 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "source", 's', "File(s) or folder(s) to count lines in"});
       optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
-      //optionsCommand.add({ "comment", "Pair of characters marking start and end for comments"});
-      //optionsCommand.add({ "string", "Pair of characters marking start and end for strings"});
       optionsCommand.add({ "segment", "type of segment in code to search in"});
       optionsCommand.add({ "page", "Index for page to print and if page-size is not set then default page-size is 10" });
       optionsCommand.add({ "page-size", "Max number of rows in each page" });
@@ -1477,6 +1475,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
       optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations. Multiple directories are separated with semicolons (`;`)" });
       optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the listing. Multiple folder names can be separated with semicolons (`;`). This helps exclude irrelevant directories." });
+      optionsCommand.add({ "segment", "Limit the search to specific **types of code segments**, such as functions, classes, or comments. This refines your search to relevant code blocks. Valid segments are `code`, `string` or `comment`."});
       optionsCommand.add({ "script", "Execute an **external script file** for advanced processing of the listed files. Useful for custom formatting or filtering." });
       optionsCommand.add({ "sort", "Sort the listed files based on a **specified column name** (e.g., name, size, date). This organizes the output for easier analysis." });
       optionsCommand.add_flag( {"R", "Enable **recursive listing** of files in subfolders. Sets the recursion depth to 16, ensuring all subdirectories are scanned."} );

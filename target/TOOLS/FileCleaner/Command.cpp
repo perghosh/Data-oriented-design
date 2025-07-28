@@ -730,7 +730,9 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
             if( state_[*it] != 0 && state_.exists( it ) == true )
             {
                stringSourceCode.clear();                                      // clear source code
-               state_.activate(it);                                           // activate state
+               auto uLength = state_.activate(it);                            // activate state
+               if( uLength > 1 ) it += ( uLength - 1 );                       // skip to end of state marker and if it is more than 1 character, skip to end of state
+
                
                // If multiline and `uRowCharacterCodeCount` is not 0 that means that there are characters in the code section before multiline
                if( uRowCharacterCodeCount > 0 && state_.is_multiline() == false ) 
@@ -834,13 +836,13 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
    unsigned uFindInState = eStateCode; // state of the parser
 
    // ## if state is sent than try to figure out from what state to find patterns
-   if( argumentsPath.exists("state") == true )
+   if( argumentsPath.exists("segment") == true )
    {
-      std::string stringState = argumentsPath["state"].as_string();
-      if( stringState == "comment" ) uFindInState = eStateComment;
-      else if( stringState == "string" ) uFindInState = eStateString;
-      else if( stringState == "code" ) uFindInState = eStateCode;
-      else if( stringState == "all" ) uFindInState = ( eStateComment | eStateString | eStateCode );
+      std::string stringSegment = argumentsPath["segment"].as_string();
+      if( stringSegment == "comment" ) uFindInState = eStateComment;
+      else if( stringSegment == "string" ) uFindInState = eStateString;
+      else if( stringSegment == "code" ) uFindInState = eStateCode;
+      else if( stringSegment == "all" ) uFindInState = ( eStateComment | eStateString | eStateCode );
    }
 
 
@@ -917,7 +919,9 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
             {
                if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) ) count_(stringSourceCode); // count patterns in source code
                stringSourceCode.clear();                                      // clear source code
-               state_.activate(it);                                           // activate state
+               auto uLength = state_.activate(it);                            // activate state
+               if( uLength > 1 ) it += ( uLength - 1 );                       // skip to end of state marker and if it is more than 1 character, skip to end of state
+
 
                // If multiline and `uRowCharacterCodeCount` is not 0 that means that there are characters in the code section before multiline
                if( uRowCharacterCodeCount > 0 && state_.is_multiline() == false ) 
