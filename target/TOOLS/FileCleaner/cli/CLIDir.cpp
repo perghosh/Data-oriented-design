@@ -54,7 +54,7 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 
    if( options_.exists("pattern") == true )                                    // 
    {
-      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", stringFilter }, { "pattern", options_["pattern"].as_string() }});
+      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", stringFilter }, { "pattern", options_["pattern"].as_string() }, { "segment", options_["segment"].as_string() } });
       auto result_ = DirPattern_g( stringSource, arguments_, pdocument );
    }
    else if( options_.exists("rpattern") == true )
@@ -104,13 +104,15 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
  */
 std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, const gd::argument::shared::arguments& arguments_, CDocument* pdocument )
 {                                                                                                  assert( stringSource != "" );
-   std::unique_ptr<gd::table::dto::table> ptable;
-   pdocument->CACHE_Prepare( "file-dir", &ptable );
+   //std::unique_ptr<gd::table::dto::table> ptable;
+   auto ptable = pdocument->CACHE_Get( "file-dir", true );
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
-   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth, true);        if( result_.first == false ) return result_;
+   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable, uDepth, true);        if( result_.first == false ) return result_;
 
-   gd::table::dto::table* ptableFile = ptable.get();                           // get the table pointer
+   std::string stringSegment = arguments_["segment"].as_string();
+
+   gd::table::dto::table* ptableFile = ptable;                                // get the table pointer
    std::vector<uint64_t> vectorCount; // vector storing results from COMMAND_CollectPatternStatistics
    std::vector<uint64_t> vectorDeleteRow; 
 
@@ -123,8 +125,10 @@ std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, cons
       std::string stringFile = itRowFile.cell_get_variant_view("path").as_string(); // get the file path
 
       // ## Match the pattern/patterns with the file
-
-      auto result_ = COMMAND_CollectPatternStatistics( {{"source", stringFile} }, vectorPattern, vectorCount );
+      
+      gd::argument::shared::arguments argumentsdir( {{"source", stringFile} } );
+      if( stringSegment.empty() == false ) argumentsdir.append("segment", stringSegment); // if segment is set, add it to the arguments
+      auto result_ = COMMAND_CollectPatternStatistics( argumentsdir, vectorPattern, vectorCount );
       if( result_.first == false ) { pdocument->ERROR_Add(result_.second); }
 
       // ## Check for pattern matches, vector contains the number of matches for each pattern
@@ -158,13 +162,12 @@ std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, cons
 
 std::pair<bool, std::string> DirFilter_g( const std::string& stringSource, const gd::argument::shared::arguments& arguments_, CDocument* pdocument )
 {                                                                                                  assert( stringSource != "" );
-   std::unique_ptr<gd::table::dto::table> ptable;
-   pdocument->CACHE_Prepare( "file-dir", &ptable );
+   auto ptable = pdocument->CACHE_Get( "file-dir", true );
 
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
 
-   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth, true);
+   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable, uDepth, true);
    if( result_.first == false ) return result_;
 
 #ifdef _WIN32
@@ -175,7 +178,7 @@ std::pair<bool, std::string> DirFilter_g( const std::string& stringSource, const
       result_ = visualstudio.Connect();
       if( result_.first == true )
       {
-         visualstudio.AddTable( ptable.get() );
+         visualstudio.AddTable( ptable );
          result_ = visualstudio.ExecuteExpression( stringScript );
       }
       if( result_.first == false ) return result_;
