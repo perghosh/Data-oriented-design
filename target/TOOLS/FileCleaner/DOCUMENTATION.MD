@@ -91,9 +91,13 @@ Also remember that code is stripped of comments and strings before searching. Fi
 **Options:**
 - `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;`.
 - `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
+- `--rpattern <regex>`: Regular expression pattern to search for. Use multiple `--rpattern` to find more than one pattern.
+- `--kv <keys@format>` : Key or keys to read values for and format how keys are found in code. This is a shortcut for `--keys` and `--kv-format` options. If keys contains `@` this doesn not work. 
+  Example: `--kv "key1,key2,key3@[]:"`
+- `--keys <key1;key2,...>`: Keys to read values for. This is used to extract key-value pairs from the code to produce a report from the code. When multiple keys are specified in `keys` option they are separated by `;` and the value for each key is printed on a separate line in the output. 
+- `--kv-format <format>`: Format how keys are found in code. 2 or 3 characters are expected, like `{}:` for `{key: value}`, `[]:` for `[key: """value with space and new line characters"""]` for  or `()=`. The key value logic tries to figure out how to read it and flexibilitye is the key. If format is not specified, it defaults to separate key with space character and read value until end of line or double space characters.
 - `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner list /home/username/dev/project/src/`.
 - `--ignore <match;match;match>`: Ignore files or folders matching the specified patterns. Multiple patterns are separated by `;`.
-- `--rpattern <regex>`: Regular expression pattern to search for. Use multiple `--rpattern` to find more than one pattern.
 - `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--context <lines>`: Show surrounding lines of a match, where `<lines>` is the number of lines to show before and after the match or if only one number is specified it will show that many lines after the match.
@@ -144,6 +148,7 @@ Dir differs from normal dir/ls in that it addapted to work for developers or peo
 - `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
 - `--source <path>`: Directory to list.
 - `--ignore <match;match;match>`: Ignore files or folders matching the specified patterns. Multiple patterns are separated by `;`.
+- `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
 - `--sort <column>`: Sort the output by column name when result is printed to console.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 
@@ -220,6 +225,14 @@ Using `-R` to search recursively and `--source` to specify the folder:
 ### Find code between markers
 `cleaner find -R --source "C:\dev\project\filename.cpp" --pattern "#database" --rule "select-between:@code,@endcode"`  
 Finds code between `@code` and `@endcode` markers in the selected source file were pattern `#database` is found.
+
+### Key value paris samples
+`cleaner find -R --source "C:\dev\project" --segment comment --pattern "@file" --keys "@file,@brief"` -Prints the doxygen @file and @brief values for files.  
+  
+if you have **TODO** markers in your code you could format them like this: `// TODO: [description: "Add logging to <file>"]`  
+`cleaner find -R --source "C:\dev\project" --segment comment --pattern "TODO:" --keys "description" --kv-format "[]:"` - This will find all TODO markers in comments and print the description value for each TODO marker.  
+*Same command as above*   
+`cleaner find -R --source "C:\dev\project" --pattern "c--TODO:" --kv "description@[]:"`
 
 ---
 

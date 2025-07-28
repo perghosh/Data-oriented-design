@@ -1,5 +1,7 @@
 /**
- * \file Application.h
+ * @file Application.h
+ * 
+ * @brief Main application class for FileCleaner tool. Acts as the entry point for the application, handling initialization, command line arguments, and application state.
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0construct.Application` - Represents a single argument in `arguments`.
