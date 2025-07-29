@@ -108,6 +108,13 @@ const uint8_t* code::skip_quoted(const uint8_t* puPosition, const uint8_t* puEnd
    return puPosition; // Unterminated quote
 }
 
+/* 
+@TODO #user.per[name:parse][description:"""
+Add support for trimming whitespace around values.
+If flag is set for trimming, trim whitespace from the start and end of the value.
+"""]
+*/
+
 /** ---------------------------------------------------------------------------
  * @brief Reads a value from the input, handling quoted and unquoted values.
  * 
