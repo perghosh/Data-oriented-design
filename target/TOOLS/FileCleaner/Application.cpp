@@ -362,6 +362,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
    if( poptionsActive->exists("help") == true ) 
    {
+      // @TODO #user.per [name: options] [description: improve format for help information, wrap lines, set indentation and site line width] [idea: add callback to format output ] [state: open] 
       std::string stringDocumentation;
       poptionsActive->print_documentation( stringDocumentation, gd::cli::options::tag_documentation_dense{});
       PrintMessage( stringDocumentation, gd::argument::arguments() );
@@ -1465,6 +1466,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({"file", 'f', "Where to place database file (used for sqlite databases)"});
       optionsCommand.add({"settings", "Where to write configuration file"});
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 

@@ -1,5 +1,6 @@
 /**
 * @file gd_parse_formats.h
+* @brief Parse logic for patterns that isn't as standard but useful in different contexts.
 * 
 * Parse logic for know formats
 */
@@ -37,26 +38,28 @@ struct code
 {
    enum enumOptions
    {
-      eTrimWhitespace = 1 << 0,     ///< Trim whitespace from keys and values
+      eTrim = 1 << 0,     ///< Trim whitespace from keys and values
       eAllowUnquoted = 1 << 1,      ///< Allow unquoted values
       eStrictQuoting = 1 << 2,      ///< Require matching quote types
       eSkipEmpty = 1 << 3,          ///< Skip empty key-value pairs
       eOptionsMAX = 1 << 4,
    };
 
-   code() : m_uOpenBracket(0), m_uCloseBracket(0), m_uKeySeparator(0), m_stringQuoteChars("\"'"), m_uOptions(eTrimWhitespace | eAllowUnquoted) {}
+   code() : m_uOpenBracket(0), m_uCloseBracket(0), m_uKeySeparator(0), m_stringQuoteChars("\"'"), m_uOptions(eTrim | eAllowUnquoted) {}
    /// Construct with custom brackets
-   code(uint8_t uOpenBracket, uint8_t uCloseBracket) : m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(':'), m_stringQuoteChars("\"'`"), m_uOptions(eTrimWhitespace | eAllowUnquoted) {}
+   code(uint8_t uOpenBracket, uint8_t uCloseBracket) : m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(':'), m_stringQuoteChars("\"'`"), m_uOptions(eTrim | eAllowUnquoted) {}
    /// Construct with custom brackets and key separator
-   code(uint8_t uOpenBracket, uint8_t uCloseBracket, uint8_t uKeySeparator) : m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(uKeySeparator), m_stringQuoteChars("\"'`"), m_uOptions(eTrimWhitespace | eAllowUnquoted) {}
+   code(uint8_t uOpenBracket, uint8_t uCloseBracket, uint8_t uKeySeparator) : m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(uKeySeparator), m_stringQuoteChars("\"'`"), m_uOptions(eTrim | eAllowUnquoted) {}
    /// Construct with custom brackets
-   code( std::string_view stringBracket, std::string_view stringQuoteChars = "\"'", unsigned uOptions = eTrimWhitespace | eAllowUnquoted )
+   code( std::string_view stringBracket, std::string_view stringQuoteChars = "\"'", unsigned uOptions = eTrim | eAllowUnquoted )
       : m_uOpenBracket( stringBracket.empty() ? 0 : static_cast<uint8_t>(stringBracket[0]) ),
         m_uCloseBracket( stringBracket.length() < 2 ? 0 : static_cast<uint8_t>(stringBracket[1]) ),
         m_uKeySeparator(stringBracket.length() < 3 ? 0 : static_cast<uint8_t>( stringBracket[2] )),
       m_stringQuoteChars(stringQuoteChars), m_uOptions(uOptions) { if( m_uOpenBracket != 0 && m_uCloseBracket == 0 ) { std::swap( m_uCloseBracket, m_uKeySeparator ); } }
 
    code(const code& o): m_uOptions(o.m_uOptions), m_uOpenBracket(o.m_uOpenBracket), m_uCloseBracket(o.m_uCloseBracket), m_uKeySeparator(o.m_uKeySeparator), m_stringQuoteChars(o.m_stringQuoteChars) {}
+
+   bool is_trim() const { return ( m_uOptions & eTrim ) != 0; }
 
    bool is_quote(uint8_t uChar) const { return m_stringQuoteChars.find(uChar) != std::string::npos; }
 

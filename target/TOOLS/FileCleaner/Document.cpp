@@ -646,7 +646,17 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
       if( pargumentsFind->exists("keys") == true )
       {
          auto vector_ = pargumentsFind->get_all<std::string>("keys");
-         if( vector_.size() == 1 ) { vector_ = CApplication::Split_s(vector_[0], ';'); } // if only one key is provided, split it by ';' to get multiple keys
+         
+         if( vector_.size() == 1 ) 
+         { 
+            char iSplit = ';';                                                // default separator for keys
+            std::string& stringKeys = vector_[0];
+            auto uPosition = stringKeys.find_first_of(",");   
+            if( uPosition != std::string::npos ) { iSplit = ','; }            // use the first separator found
+            vector_ = CApplication::Split_s(vector_[0], iSplit);              // split it by iSplit character to get multiple keys
+            // remove all empty keys
+            vector_.erase(std::remove_if(vector_.begin(), vector_.end(), [](const std::string& key) { return key.empty(); }), vector_.end());
+         } 
 
          for( const auto& key_ : vector_ )
          {

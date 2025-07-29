@@ -9,6 +9,23 @@
 
 #include <fstream>
 
+/*
+@TODO #user.per [id: T1234]
+[name: help]
+[description: """
+  The current help output is hard to read.
+  It needs line wrapping, consistent indentation,
+  and a configurable line width for better readability in terminals.
+  """]
+[ideas: """
+  - Implement a text wrapping utility function.
+  - Add a callback mechanism for custom formatting of output blocks.
+  - Allow configuration via a `configuration.json` file.
+  """ ]
+[priority: high] [status: open] [assigned_to: per]
+*/
+
+
 
 int main(int iArgumentCount, char** ppbszArgument)                             // @TAG #main
 {
@@ -75,3 +92,6 @@ int main(int iArgumentCount, char** ppbszArgument)                             /
 
    return 0;
 }
+
+// @TODO #user.per [name: output] [description: make sure that the color for error output matches background] [ideas: add color methods to produce better color] [priority: medium] [status: open]
+// @TODO #user.per [name: bug] [description: unable to find pattern on last line in file] [priority: high] [status: open]
