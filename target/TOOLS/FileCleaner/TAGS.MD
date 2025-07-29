@@ -1,8 +1,8 @@
 ## Sample format for tags in code
 
-`cleaner list * --segment comment  -pattern "@TAG;#ui;#command.cli" -match-all` - row matching, tries to find all tags inside comments in code files.
-`cleaner find * --segment comment  -pattern "@TAG;#command.cli" -match-all` - source code search, tries to find all tags inside comments in code files. find treats source code as a single block of text.
-`cleaner find --filter "*" -R --segment comment --pattern "@TODO"  --keys "name;description;idea;state" --kv-format "[]:"` - find @TODO in comments and extract name,description,idea,state values
+`cleaner list * --segment comment  -pattern "@TAG;#ui;#command.cli" -match-all` - row matching, tries to find all tags inside comments in code files.  
+`cleaner find * --segment comment  -pattern "@TAG;#command.cli" -match-all` - source code search, tries to find all tags inside comments in code files. find treats source code as a single block of text.  
+`cleaner find --filter "*" -R --segment comment --pattern "@TODO"  --keys "name;description;idea;state" --kv-format "[]:"` - find @TODO in comments and extract name,description,idea,state values  
 
 ### Main section tags
 
