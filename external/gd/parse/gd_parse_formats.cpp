@@ -36,6 +36,17 @@ _GD_PARSE_BEGIN
  */
 const uint8_t* code::skip_quoted(const uint8_t* puPosition, const uint8_t* puEnd, std::pair<const uint8_t*, size_t>* ppairValue) const 
 {                                                                                                  assert( is_quote(*puPosition) == true );
+   auto trim_ = [](auto* ppairValue) -> void {
+      const uint8_t* puStart = ppairValue->first;
+      const uint8_t* puEnd = ppairValue->first + ppairValue->second;
+
+      while(puStart < puEnd && isspace(*puStart)) ++puStart;
+      while( puEnd > puStart && isspace(*(puEnd - 1))) --puEnd;
+
+      ppairValue->first = puStart;
+      ppairValue->second = puEnd - puStart;
+   };
+
    unsigned uQuoteCount = 1;
    const uint8_t uQuote = *puPosition;
    ++puPosition; // Skip opening quote
@@ -59,7 +70,7 @@ const uint8_t* code::skip_quoted(const uint8_t* puPosition, const uint8_t* puEnd
    {
       if( *puPosition == uQuote ) 
       {
-         if( uQuoteCount == 1 )
+         if( uQuoteCount == 1 )                                               // check for single quote, this may be escaped with double quote
          {
             // Check for escaped quote (double quote)
             if( puPosition + 1 < puEnd && *(puPosition + 1) == uQuote)
@@ -73,12 +84,13 @@ const uint8_t* code::skip_quoted(const uint8_t* puPosition, const uint8_t* puEnd
                   const auto* puValueStart = ppairValue->first;
                   size_t uLength = puPosition - puValueStart;    // Calculate length of value
                   ppairValue->second = uLength; 
+                  if( is_trim() == true ) { trim_( ppairValue ); }            // Trim whitespace if enabled
                }
 
                return puPosition + 1; // Return pointer past closing quote
             }
          }
-         else
+         else                                                                 // tripple or more quotes
          {
             // ## Match number of quotes text start with
             auto uCount = uQuoteCount;
@@ -108,13 +120,6 @@ const uint8_t* code::skip_quoted(const uint8_t* puPosition, const uint8_t* puEnd
    return puPosition; // Unterminated quote
 }
 
-/* 
-@TODO #user.per[name:parse][description:"""
-Add support for trimming whitespace around values.
-If flag is set for trimming, trim whitespace from the start and end of the value.
-"""]
-*/
-
 /** ---------------------------------------------------------------------------
  * @brief Reads a value from the input, handling quoted and unquoted values.
  * 
@@ -122,6 +127,14 @@ If flag is set for trimming, trim whitespace from the start and end of the value
  * quoted values. If the value is quoted, it skips to the closing quote and returns
  * the value range. If unquoted, it reads until the end of the value or until a
  * specified closing character (if applicable).
+ * 
+ * Sample usage: it tries to move to value and return pair with value start and length.
+ * verbatim
+   [key=value]
+    ^...^
+   [key: value]
+    ^....^
+ * endverbatim
  * 
  * When separator is set, it expects a key-value pair format and skips until the separator.
  * No separator means it reads until non space value is found or newline that means no value.

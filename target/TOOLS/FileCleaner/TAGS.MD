@@ -72,12 +72,12 @@
 /*
 @TODO #user.per [id: T1234]
 [name: help]
-[description: """
+[description: "
   The current help output is hard to read.
   It needs line wrapping, consistent indentation,
   and a configurable line width for better readability in terminals.
-  """]
-[ideas: """
+  "]
+[ideas: """ ## Tasklist
   - Implement a text wrapping utility function.
   - Add a callback mechanism for custom formatting of output blocks.
   - Allow configuration via a `cli_options.json` file.
