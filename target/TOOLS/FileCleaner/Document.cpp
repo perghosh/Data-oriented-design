@@ -863,7 +863,7 @@ std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const gd::argument
 
          for( const auto& stringKey : vectorKey )
          {
-            const char* piResult = gd::parse::strstr(stringContent, stringKey, codeKeyValue, codeKeyValue.is_bracket());
+            const char* piResult = gd::parse::strstr(stringContent, stringKey, codeKeyValue, codeKeyValue.is_bracket(), gd::types::tag_name{});
             if( piResult == nullptr ) continue;                                   // Skip if the key is not found in the content
             stringValue = codeKeyValue.read_value(piResult, stringContent.data() + stringContent.size(), gd::types::tag_view{});
             if( stringValue.empty() == false )
