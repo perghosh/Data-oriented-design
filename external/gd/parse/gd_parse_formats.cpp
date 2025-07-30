@@ -279,6 +279,9 @@ const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbsz
 
 /** ---------------------------------------------------------------------------
  * @brief Find a substring in a text block that has non-alphabetical characters before and after
+ * 
+ * This function searches for a substring within a specified text range, ensuring that the substring is not part of a larger word.
+ * 
  * @param pbszBegin start of text to search within
  * @param pbszEnd end of text
  * @param pbszFind substring to find
@@ -288,7 +291,10 @@ const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbsz
  * @return pointer to found substring or nullptr if not found
  */
 const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbszFind, unsigned uLength, const code& code, bool bScope, gd::types::tag_name )
-{                                                                                                  assert( pbszBegin <= pbszEnd );
+{                                                                                                  assert( pbszBegin <= pbszEnd ); assert( pbszFind != nullptr ); assert( uLength < 0xFFFF );
+#ifndef NDEBUG
+   std::string_view stringFind_d( pbszFind, uLength );
+#endif
    const char* pbszPosition = pbszBegin;   // position in text
    char chFind = *pbszFind;                // first character in text to find
    unsigned uScope = 1;                    // scope of search, how many characters to compare after first character has been found
@@ -310,39 +316,39 @@ const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbsz
 
       if( uScope == 0 ) { pbszPosition++; continue; }
 
-      if( *pbszPosition != chFind )
+      if( *pbszPosition != chFind )                                           // not the first character?
       {
-         if( code.is_quote( *pbszPosition ) == false )
+         if( code.is_quote(*pbszPosition) == false )                          // not a quote, then just skip it
          {
             pbszPosition++;
             continue;
          }
          else
          {
-            pbszPosition = code.skip_quoted(pbszPosition, pbszEnd );
+            pbszPosition = code.skip_quoted(pbszPosition, pbszEnd);           // Skip quoted section
          }
       }
       else
       {
-         if( uLength == 1 || memcmp( pbszPosition + 1, pbszFind, uLength ) == 0 )
+         if( uLength == 0 || memcmp(pbszPosition + 1, pbszFind, uLength ) == 0 ) // found first character and rest of the text matches
          {
             // Check character before the match
             bool bValidBefore = false;
             if( pbszPosition == pbszBegin ) { bValidBefore = true; }           // Match is at the very beginning of the text
             else
             {
-               char chBefore = *(pbszPosition - 1);
-               bValidBefore = !((chBefore >= 'a' && chBefore <= 'z') || (chBefore >= 'A' && chBefore <= 'Z')); // Check if character before is NOT alphabetical (not a-z or A-Z)
+               char iBefore = *(pbszPosition - 1);
+               bValidBefore = !((iBefore >= 'a' && iBefore <= 'z') || (iBefore >= 'A' && iBefore <= 'Z')); // Check if character before is NOT alphabetical (not a-z or A-Z)
             }
             
             // Check character after the match
             bool bValidAfter = false;
-            const char* pbszAfterMatch = pbszPosition + uLength + 1; // +1 for the first character we skipped
-            if( pbszAfterMatch >= pbszEnd ) { bValidAfter = true; }           // Match extends to or beyond the end of the text
+            const char* piAfterMatch = pbszPosition + uLength + 1; // +1 for the first character we skipped
+            if( piAfterMatch >= pbszEnd ) { bValidAfter = true; }           // Match extends to or beyond the end of the text
             else
             {
-               char chAfter = *pbszAfterMatch;
-               bValidAfter = !((chAfter >= 'a' && chAfter <= 'z') || (chAfter >= 'A' && chAfter <= 'Z')); // Check if character after is NOT alphabetical (not a-z or A-Z)
+               char iAfter = *piAfterMatch;
+               bValidAfter = !((iAfter >= 'a' && iAfter <= 'z') || (iAfter >= 'A' && iAfter <= 'Z')); // Check if character after is NOT alphabetical (not a-z or A-Z)
             }
             
             // Return match only if both before and after characters are non-alphabetical
