@@ -2507,7 +2507,14 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
 
       if( uState == eKey )
       {
-         if( stringValue.find_first_of(";,") != std::string::npos ) pargumentsKVRule->append("keys", stringValue); // if ; or , there are multiple keys
+         if( stringValue.find(',') != std::string::npos ) pargumentsKVRule->append("keys", stringValue); // if ; or , there are multiple keys
+         else if( stringValue.find(';') != std::string::npos )
+         {
+            auto vector_ = gd::utf8::split(stringValue, ';', gd::utf8::tag_escape{}); // split by ; if it is used
+            // remove empty strings
+            vector_.erase(std::remove_if(vector_.begin(), vector_.end(), [](const std::string& s_) { return s_.empty(); }), vector_.end());
+            for( const auto& it : vector_ ) { pargumentsKVRule->append("key", it); }
+         }
          else                                                       pargumentsKVRule->append("key", stringValue);
       }
       else if( uState == eValue ) pargumentsKVRule->append("value", stringValue);
