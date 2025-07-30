@@ -853,15 +853,12 @@ std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const gd::argument
       {
          std::string stringValue; // Variable to store the extracted value
          // ## Logic to extract key-value pairs from stringContent based on keyValue
-         std::string stringKey = rule_["key"].as_string();                    // Get the key from the rule
-         std::string stringKeys = rule_["keys"].as_string();                  // Get the key from the rule
-         //std::string stringValue = rule_["value"].as_string();
-         std::string stringScope = rule_["scope"].as_string();
+         std::vector<std::string> vectorKey = rule_.get_all< std::string>("key"); // Get all keys from the rule, can be multiple keys
+         std::string stringKeys = rule_["keys"].as_string();                  // Get the keys from the rule, this can be a single key or multiple keys separated by ,
+         std::string stringScope = rule_["scope"].as_string();                // scope information is how key-value pairs are scoped, like {key=value}, [key:value] etc.
 
          const gd::parse::code codeKeyValue(stringScope);
 
-         std::vector<std::string> vectorKey;
-         if( stringKey.empty() == false ) vectorKey.push_back(stringKey);     // If a single key is provided, add it to the vector
          if( stringKeys.empty() == false ) { gd::utf8::split(stringKeys, ',', vectorKey); } // If multiple keys are provided, split them by comma and add to the vector
 
          for( const auto& stringKey : vectorKey )
