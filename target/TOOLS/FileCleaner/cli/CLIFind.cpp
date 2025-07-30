@@ -139,7 +139,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       }
 
 
-      if( bPrint == false || options_.exists("print") == true )
+      if( bPrint == false || options_.exists("print") == true || options_.exists("vs") == true )
       {
          gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uint64_t(2u) } }); // hardcode pattern count to 2 for printing results and allways print patterns
          if( options_.exists("context") == true ) argumentsPrint.append("context", options_["context"].as_string_view()); // if context is set, add it to the print arguments
