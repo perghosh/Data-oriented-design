@@ -2483,9 +2483,16 @@ std::vector<std::string> CApplication::SplitNumber_s(const std::string& stringTe
    return vectorNumber;                                                       // Return the vector of numbers
 }
 
-// @TASK [date: 250723] [name: key-value] [description: "Extend key-value argument to simplify setting multiple keys to read"] [state: open]
-// @TASK [date: 250723] [name: key-value] [description: "write documentation"] [state: open]
-
+/** --------------------------------------------------------------------------- @TAG #hack.keyvalue [description: Parse keys and format if specified, this is added to simplify adding key-value pairs to be read]
+ * @brief Parses a key-value rule from a string and populates the provided arguments object.
+ *
+ * This function takes a string rule in the format "key1,ke2,key3@pattern" and parses to extract key-value pairs.
+ * It supports multiple keys separated by commas or semicolon and can handle patterns for scoping.
+ *
+ * @param stringRule The string rule to parse, e.g., "key1,key2@p()=".
+ * @param pargumentsKVRule Pointer to an arguments object where the parsed key-value pairs will be stored.
+ * @return std::pair<bool, std::string> Returns true if parsing was successful, false with an error message if it failed.
+ */
 std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string_view stringRule, gd::argument::arguments* pargumentsKVRule)
 {
    char iKeyDelimiter = ':';
@@ -2500,8 +2507,8 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
 
       if( uState == eKey )
       {
-         if( stringValue.find(',') != std::string::npos ) pargumentsKVRule->append("keys", stringValue);
-         else                                             pargumentsKVRule->append("key", stringValue);
+         if( stringValue.find_first_of(";,") != std::string::npos ) pargumentsKVRule->append("keys", stringValue); // if ; or , there are multiple keys
+         else                                                       pargumentsKVRule->append("key", stringValue);
       }
       else if( uState == eValue ) pargumentsKVRule->append("value", stringValue);
       else pargumentsKVRule->append("scope", stringValue);
