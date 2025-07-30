@@ -93,5 +93,5 @@ int main(int iArgumentCount, char** ppbszArgument)                             /
    return 0;
 }
 
-// @TODO #user.per [name: output] [description: make sure that the color for error output matches background] [ideas: add color methods to produce better color] [priority: medium] [status: open]
+// @TODO #user.per [name: output] [description: make sure that the color for error output matches background] [idea: add color methods to produce better color] [priority: medium] [status: open]
 // @TODO #user.per [name: bug] [description: unable to find pattern on last line in file] [priority: high] [status: open]

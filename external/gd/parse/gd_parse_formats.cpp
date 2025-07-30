@@ -249,11 +249,7 @@ const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbsz
          }
       }
 
-      if( uScope == 0 )
-      {
-         pbszPosition++;
-         continue;
-      }
+      if( uScope == 0 ) { pbszPosition++; continue; }
       
       if( *pbszPosition != chFind )
       {
@@ -281,6 +277,85 @@ const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbsz
    return nullptr;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Find a substring in a text block that has non-alphabetical characters before and after
+ * @param pbszBegin start of text to search within
+ * @param pbszEnd end of text
+ * @param pbszFind substring to find
+ * @param uLength length of the substring to find
+ * @param code parsing rules for handling scopes and quotes
+ * @param bScope if true, considers scope characters for searching
+ * @return pointer to found substring or nullptr if not found
+ */
+const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbszFind, unsigned uLength, const code& code, bool bScope, gd::types::tag_name )
+{                                                                                                  assert( pbszBegin <= pbszEnd );
+   const char* pbszPosition = pbszBegin;   // position in text
+   char chFind = *pbszFind;                // first character in text to find
+   unsigned uScope = 1;                    // scope of search, how many characters to compare after first character has been found
+   if( bScope == true ) uScope = 0;                                            // if scope is true than we need to find scope character, otherwise we just compare first character
+   
+   pbszFind++;    // No need to compare first character
+   uLength--;     // decrease length that is used when we compare rest after first character has been found
+   
+   while( pbszPosition < pbszEnd )
+   {
+      if( bScope == true )
+      {
+         if( code.is_open_scope(*pbszPosition) == true ) uScope++;
+         else if( code.is_close_scope(*pbszPosition) == true )
+         {
+            if( uScope > 0 ) uScope--;
+         }
+      }
+
+      if( uScope == 0 ) { pbszPosition++; continue; }
+
+      if( *pbszPosition != chFind )
+      {
+         if( code.is_quote( *pbszPosition ) == false )
+         {
+            pbszPosition++;
+            continue;
+         }
+         else
+         {
+            pbszPosition = code.skip_quoted(pbszPosition, pbszEnd );
+         }
+      }
+      else
+      {
+         if( uLength == 1 || memcmp( pbszPosition + 1, pbszFind, uLength ) == 0 )
+         {
+            // Check character before the match
+            bool bValidBefore = false;
+            if( pbszPosition == pbszBegin ) { bValidBefore = true; }           // Match is at the very beginning of the text
+            else
+            {
+               char chBefore = *(pbszPosition - 1);
+               bValidBefore = !((chBefore >= 'a' && chBefore <= 'z') || (chBefore >= 'A' && chBefore <= 'Z')); // Check if character before is NOT alphabetical (not a-z or A-Z)
+            }
+            
+            // Check character after the match
+            bool bValidAfter = false;
+            const char* pbszAfterMatch = pbszPosition + uLength + 1; // +1 for the first character we skipped
+            if( pbszAfterMatch >= pbszEnd ) { bValidAfter = true; }           // Match extends to or beyond the end of the text
+            else
+            {
+               char chAfter = *pbszAfterMatch;
+               bValidAfter = !((chAfter >= 'a' && chAfter <= 'z') || (chAfter >= 'A' && chAfter <= 'Z')); // Check if character after is NOT alphabetical (not a-z or A-Z)
+            }
+            
+            // Return match only if both before and after characters are non-alphabetical
+            if( bValidBefore && bValidAfter )
+            {
+               return pbszPosition;                                           // found text with valid boundaries
+            }
+         }
+         pbszPosition++;
+      }
+   }
+   return nullptr;
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Reads a value from the input, handling quoted and unquoted values.

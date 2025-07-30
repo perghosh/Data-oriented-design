@@ -109,6 +109,14 @@ inline const char* strstr(const char* pbszBegin, const char* pbszEnd, char iChar
    return strstr(pbszBegin, pbszEnd, piFind, 1, code, bScope);
 }
 
+const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbszFind, unsigned uLength, const code& code, bool bScope, gd::types::tag_name );
+inline const char* strstr( const char* pbszBegin, const char* pbszEnd, const std::string_view& stringFind, const code& code, bool bScope, gd::types::tag_name ) { return strstr( pbszBegin, pbszEnd, stringFind.data(), (unsigned)stringFind.length(), code, bScope, gd::types::tag_name{}); }
+inline const char* strstr(const std::string_view& stringText, const std::string_view& stringFind, const code& code, bool bScope, gd::types::tag_name) { return strstr(stringText.data(), stringText.data() + stringText.length(), stringFind.data(), (unsigned)stringFind.length(), code, bScope, gd::types::tag_name{}); }
+inline const char* strstr(const char* pbszBegin, const char* pbszEnd, char iCharacter, const code& code, bool bScope, gd::types::tag_name) { 
+   char piFind[2] = { iCharacter, '\0' };
+   return strstr(pbszBegin, pbszEnd, piFind, 1, code, bScope, gd::types::tag_name{});
+}
+
 std::pair<bool, const char*> read_value_g( const char* piBegin, const char* piEnd, const char* piFind, unsigned uLength, const code& code, bool bScope, size_t* puLength );
 
 
