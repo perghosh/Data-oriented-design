@@ -226,7 +226,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
          // ## Special case for patterns starting with "&--", "&c-" or "&s-" or ohther combinations
          //    this is a hack to allow users to specify patterns rules with special characters like '&' or 'c' or 's' and save typing
 
-         // found '&', 'c', 's' at start then match all patterns. @TAG #ui.cli #command.find #hack [description: if first pattern character starts with & and then space, this will be like specify AND between all patterns, 'c' = comment segment and 's' = string segment]
+         // found '&', 'c', 's' at start then match all patterns.             @TAG #ui.cli #command.find #hack [description: if first pattern character starts with & and then space, this will be like specify AND between all patterns, 'c' = comment segment and 's' = string segment]
          std::string_view string_( stringPattern.data(), 2);
          if( string_.find( '&' ) != std::string_view::npos ) pargumentsFind->append("match-all", true); 
          if( string_.find( 'c' ) != std::string_view::npos ) argumentsFind.append("segment", "comment"); 
@@ -323,14 +323,6 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
       auto result_ = pdocument->FILE_UpdatePatternFind(vectorRegexPattern, &argumentsFind); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
-
-      /*
-      if( options_["match-all"].is_true() == true )
-      {
-         result_ = ListMatchAllPatterns_g( vectorRegexPattern, pdocument );
-         if (result_.first == false) return result_;
-      }
-      */
    }
 
    return { true, "" }; 
@@ -694,6 +686,8 @@ std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd:
  *
  * This function retrieves key-value pairs from the document's cached table "keyvalue", formats them into a string,
  * and displays them to the user. It also handles the case where no key-value pairs are found.
+ * 
+ * When used as terminal application, this function will print the key-value pairs in a column format where keys are aligned, values are indented,
  *
  * @param pdocument Pointer to a CDocument instance containing the key-value pairs.
  * @return A pair containing:
