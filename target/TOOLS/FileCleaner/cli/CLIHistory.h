@@ -47,10 +47,6 @@ std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& arg
 
 NAMESPACE_CLI_END
 
-For terminal application that is used to search in code finding information there are subcommand like 
-find, list, count, dir 
-
-One command should be used to take information in clipboard, what is good subcommand name for that
 
 /*
 @TASK #history.list #user.kevin
