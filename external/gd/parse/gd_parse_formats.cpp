@@ -219,58 +219,58 @@ std::pair<const uint8_t*, size_t> code::read_value(const uint8_t* puPosition, co
 
 /** ---------------------------------------------------------------------------
  * @brief Find a substring in a text block with optional scope handling
- * @param pbszBegin start of text to search within
- * @param pbszEnd end of text
- * @param pbszFind substring to find
+ * @param piBegin start of text to search within
+ * @param piEnd end of text
+ * @param piFind substring to find
  * @param uLength length of the substring to find
  * @param code parsing rules for handling scopes and quotes
  * @param bScope if true, considers scope characters for searching
  * @return pointer to found substring or nullptr if not found
  */
-const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbszFind, unsigned uLength, const code& code, bool bScope )
-{                                                                                                  assert( pbszBegin <= pbszEnd );
-   const char* pbszPosition = pbszBegin;   // position in text
-   char chFind = *pbszFind;                // first character in text to find
-   unsigned uScope = 1;                    // scope of search, how many characters to compare after first character has been found
+const char* strstr( const char* piBegin, const char* piEnd, const char* piFind, unsigned uLength, const code& code, bool bScope )
+{                                                                                                  assert( piBegin <= piEnd );
+   const char* piPosition = piBegin;   // position in text
+   char chFind = *piFind;              // first character in text to find
+   unsigned uScope = 1;                // scope of search, how many characters to compare after first character has been found
 
-   if( bScope == true ) uScope = 0;                                            // if scope is true than we need to find scope character, otherwise we just compare first character
+   if( bScope == true ) uScope = 0;                                           // if scope is true than we need to find scope character, otherwise we just compare first character
    
-   pbszFind++;    // No need to compare first character
-   uLength--;     // decrease length that is used when we compare rest after first character has been found
+   piFind++;                                                                  // No need to compare first character
+   uLength--;                                                                 // decrease length that is used when we compare rest after first character has been found
 
-   while( pbszPosition < pbszEnd )
+   while( piPosition < piEnd )
    {
       if( bScope == true )
       {
-         if( code.is_open_scope(*pbszPosition) == true ) uScope++;
-         else if( code.is_close_scope(*pbszPosition) == true )
+         if( code.is_open_scope(*piPosition) == true ) uScope++;
+         else if( code.is_close_scope(*piPosition) == true )
          {
             if( uScope > 0 ) uScope--;
          }
       }
 
-      if( uScope == 0 ) { pbszPosition++; continue; }
+      if( uScope == 0 ) { piPosition++; continue; }
       
-      if( *pbszPosition != chFind )
+      if( *piPosition != chFind )
       {
-         if( code.is_quote( *pbszPosition ) == false )
+         if( code.is_quote( *piPosition ) == false )
          {
-            pbszPosition++;
+            piPosition++;
             continue;
          }
          else
          {
-            pbszPosition = code.skip_quoted(pbszPosition, pbszEnd );
+            piPosition = code.skip_quoted(piPosition, piEnd );
          }
       }
       else
       {
-         if( uLength == 1 || memcmp( pbszPosition + 1, pbszFind, uLength ) == 0 )
+         if( uLength == 1 || memcmp( piPosition + 1, piFind, uLength ) == 0 )
          {
-            return pbszPosition;                                              // found text? return pointer to text
+            return piPosition;                                                // found text? return pointer to text
          }
 
-         pbszPosition++;
+         piPosition++;
       }
    }
 
@@ -282,82 +282,81 @@ const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbsz
  * 
  * This function searches for a substring within a specified text range, ensuring that the substring is not part of a larger word.
  * 
- * @param pbszBegin start of text to search within
- * @param pbszEnd end of text
- * @param pbszFind substring to find
+ * @param piBegin start of text to search within
+ * @param piEnd end of text
+ * @param piFind substring to find
  * @param uLength length of the substring to find
  * @param code parsing rules for handling scopes and quotes
  * @param bScope if true, considers scope characters for searching
  * @return pointer to found substring or nullptr if not found
  */
-const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbszFind, unsigned uLength, const code& code, bool bScope, gd::types::tag_name )
-{                                                                                                  assert( pbszBegin <= pbszEnd ); assert( pbszFind != nullptr ); assert( uLength < 0xFFFF );
+const char* strstr( const char* piBegin, const char* piEnd, const char* piFind, unsigned uLength, const code& code, bool bScope, gd::types::tag_name )
+{                                                                                                  assert( piBegin <= piEnd ); assert( piFind != nullptr ); assert( uLength < 0xFFFF );
 #ifndef NDEBUG
-   std::string_view stringFind_d( pbszFind, uLength );
+   std::string_view stringFind_d( piFind, uLength );
 #endif
-   const char* pbszPosition = pbszBegin;   // position in text
-   char chFind = *pbszFind;                // first character in text to find
-   unsigned uScope = 1;                    // scope of search, how many characters to compare after first character has been found
+   const char* piPosition = piBegin;     // position in text
+   char chFind = *piFind;                // first character in text to find
+   unsigned uScope = 1;                  // scope of search, how many characters to compare after first character has been found
    if( bScope == true ) uScope = 0;                                            // if scope is true than we need to find scope character, otherwise we just compare first character
    
-   pbszFind++;    // No need to compare first character
+   piFind++;    // No need to compare first character
    uLength--;     // decrease length that is used when we compare rest after first character has been found
    
-   while( pbszPosition < pbszEnd )
+   while( piPosition < piEnd )
    {
       if( bScope == true )
       {
-         if( code.is_open_scope(*pbszPosition) == true ) uScope++;
-         else if( code.is_close_scope(*pbszPosition) == true )
+         if( code.is_open_scope(*piPosition) == true ) uScope++;
+         else if( code.is_close_scope(*piPosition) == true )
          {
             if( uScope > 0 ) uScope--;
          }
       }
 
-      if( uScope == 0 ) { pbszPosition++; continue; }
+      if( uScope == 0 ) { piPosition++; continue; }
 
-      if( *pbszPosition != chFind )                                           // not the first character?
+      if( *piPosition != chFind )                                             // not the first character?
       {
-         if( code.is_quote(*pbszPosition) == false )                          // not a quote, then just skip it
+         if( code.is_quote(*piPosition) == false )                            // not a quote, then just skip it
          {
-            pbszPosition++;
+            piPosition++;
             continue;
          }
          else
          {
-            pbszPosition = code.skip_quoted(pbszPosition, pbszEnd);           // Skip quoted section
+            piPosition = code.skip_quoted(piPosition, piEnd);                 // Skip quoted section
          }
       }
       else
       {
-         if( uLength == 0 || memcmp(pbszPosition + 1, pbszFind, uLength ) == 0 ) // found first character and rest of the text matches
+         if( uLength == 0 || memcmp(piPosition + 1, piFind, uLength ) == 0 )  // found first character and rest of the text matches
          {
             // Check character before the match
             bool bValidBefore = false;
-            if( pbszPosition == pbszBegin ) { bValidBefore = true; }           // Match is at the very beginning of the text
+            if( piPosition == piBegin ) { bValidBefore = true; }              // Match is at the very beginning of the text
             else
             {
-               char iBefore = *(pbszPosition - 1);
+               char iBefore = *(piPosition - 1);
                bValidBefore = !((iBefore >= 'a' && iBefore <= 'z') || (iBefore >= 'A' && iBefore <= 'Z')); // Check if character before is NOT alphabetical (not a-z or A-Z)
             }
             
             // Check character after the match
             bool bValidAfter = false;
-            const char* piAfterMatch = pbszPosition + uLength + 1; // +1 for the first character we skipped
-            if( piAfterMatch >= pbszEnd ) { bValidAfter = true; }           // Match extends to or beyond the end of the text
+            const char* piAfterMatch = piPosition + uLength + 1; // +1 for the first character we skipped
+            if( piAfterMatch >= piEnd ) { bValidAfter = true; }               // Match extends to or beyond the end of the text
             else
             {
                char iAfter = *piAfterMatch;
                bValidAfter = !((iAfter >= 'a' && iAfter <= 'z') || (iAfter >= 'A' && iAfter <= 'Z')); // Check if character after is NOT alphabetical (not a-z or A-Z)
             }
             
-            // Return match only if both before and after characters are non-alphabetical
-            if( bValidBefore && bValidAfter )
+            if( bValidBefore == true && bValidAfter == true )                 // Return match only if both before and after characters are non-alphabetical
             {
-               return pbszPosition;                                           // found text with valid boundaries
+               return piPosition;                                             // found text with valid boundaries
             }
          }
-         pbszPosition++;
+         piPosition++;
       }
    }
    return nullptr;
