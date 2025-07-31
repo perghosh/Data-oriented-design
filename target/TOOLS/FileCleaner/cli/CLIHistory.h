@@ -46,3 +46,86 @@ std::pair<bool, std::string> HistoryPrint_g( const gd::argument::arguments& argu
 std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& argumentsRow);
 
 NAMESPACE_CLI_END
+
+For terminal application that is used to search in code finding information there are subcommand like 
+find, list, count, dir 
+
+One command should be used to take information in clipboard, what is good subcommand name for that
+
+/*
+@TASK #history.list #user.kevin
+[name: history] [priority: high] [state: open] [assigned_to: kevin]
+[description: "## list history items.
+Items in history are stored in a file, to make it possible to use previous commands.
+List history items is needed to view what has been done before, and to make it possible to repeat commands." ]
+[sample: '
+- `cleaner history -list` - lists all history items
+- `cleaner history -list --filter "count"` - lists all history "count" items
+- `cleaner history -list --filter "find"` - lists all history "find" items
+']
+[idea: "Main method for history is called `History_g'. If the flag `-list` is set, then call method `ReadHistory_s`into history table stored in document cache.
+When history is read, apply filter if any was sent and the print. Method to print should be called `HistoryPrint_g`"]
+*/
+
+/*
+@TASK #history.create #user.kevin
+[name: history] [priority: high] [state: open] [assigned_to: kevin]
+[description: "## create history file. 
+For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\history.xml`.
+For linux this file should be placed in `~/.local/share/cleaner/history.xml`.
+If history files exists then just print that it does exist and exit." ]
+[sample: """- `cleaner history -create` - Creates history file"""]
+[idea: "Call method `CreateHistory_s'. If the flag `-create` is set and create the history file"]
+*/
+
+/*
+@TASK #history.backup #user.kevin
+[name: history] [priority: high] [state: open] [assigned_to: kevin]
+[description: "## create backup of history file
+if No folder than place it it in same folder as the history file are located, if full path is given then place it in that folder." ]
+[sample: '
+- `cleaner history --backup "history-file-name"` - Creates backup of history file
+']
+[idea: "Call method `BackupHistory_s'. If the option `--backup` is set"]
+*/
+
+/*
+@TASK #history.prune #user.kevin
+[name: history] [priority: high] [state: open] [assigned_to: kevin]
+[description: "## Prune history file.
+This will remove entries from the history file based on a given filter.
+" ]
+[sample: '
+- `cleaner history --prune "50%"` - Prunes history file to keep only the last 50% of entries
+- `cleaner history --prune "100"` - Prunes history file to keep only the last 100 entries
+- `cleaner history --prune "list"` - Prunes all list entries from the history file
+']
+[idea: "Call method `HistoryPrune_g`. If the option `--prune` is set, prune is an advanced command so it will need some logic and filtering."]
+*/
+
+/*
+@TASK #history.run #user.kevin
+[name: history] [priority: high] [state: open] [assigned_to: kevin]
+[description: "## Run history command.
+This will execute a history command based on a given filter.
+" ]
+[sample: '
+- `cleaner history --run "23"` - Runs history command with number 23
+- `cleaner history --run "alias-name"` - Runs history that have alias name
+- `cleaner history --run "-"` - Runs last history command
+']
+*/
+
+/*
+@TASK #history.pin #user.kevin
+[name: history] [priority: high] [state: open] [assigned_to: kevin]
+[description: "## Pin history command.
+This will pin a history command based on a given filter. Pinning a command means that it will not be pruned or removed from the history file.
+" ]
+[sample: '
+- `cleaner history --pin "23"`- Pins history command with number 23
+- `cleaner history --pin "alias-name"` - Pins history that have alias name
+']
+*/
+
+
