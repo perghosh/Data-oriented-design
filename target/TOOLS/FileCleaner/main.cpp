@@ -9,8 +9,10 @@
 
 #include <fstream>
 
+
 /*
-/*
+ *** SAMPLE TODO 
+
 @TODO #user.per [id: T1234]
 [name: help]
 [description: "The current help output is hard to read.
@@ -22,7 +24,7 @@ and a configurable line width for better readability in terminals.
  - Add a callback mechanism for custom formatting of output blocks.
  - Allow configuration via a `cli_options.json` file.
   """ ]
-[priority: high] [status: open] [assigned_to: per]
+[priority: high] [state: open] [assigned_to: per]
 */
 
 
