@@ -9,6 +9,8 @@
     #include <sys/types.h>
 #endif
 
+#include "../Application.h"
+
 #include "CLIConfig.h"
 
 
@@ -21,6 +23,9 @@ std::pair<bool, std::string> Configuration_g(const gd::cli::options* poptionsCon
    if( options_["create"].is_true() == true )
    {
       auto result_ = CreateConfiguration();
+      if( result_.first == false ) { return result_; }
+
+      papplication_g->PrintMessage(result_.second, gd::argument::arguments() );
    }
 
    return {true, ""};
