@@ -60,6 +60,7 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 
 #include "configuration/Settings.h"
 
+#include "cli/CLIConfig.h"
 #include "cli/CLICount.h"
 #include "cli/CLIDir.h"
 #include "cli/CLIFind.h"
@@ -448,7 +449,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    auto* pdocument = DOCUMENT_Add(stringCommandName);
    if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
 
-   if( stringCommandName == "count" )                                          // command = "count"
+   if( stringCommandName == "config" )                                         // command = "config"
+   {
+      return CLI::Configuration_g(poptionsActive);                             // manage configuration
+   }
+   else if( stringCommandName == "count" )                                     // command = "count"
    {
       // Add a document for the "count" command
       auto* pdocument = DOCUMENT_Get("count", true);
@@ -1450,6 +1455,16 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+
+   {  // ## `config` command, manage configuration file @TAG #options.config
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "config", "Manage configuration" );
+      optionsCommand.add_flag({"create", "Create configuration file if it doesn't exist"});
+      optionsCommand.add_flag({"backup", "Create a backup copy of the configuration file"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.parent(&optionsApplication);
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
 
    {  // ## `copy` command, count number of lines in file 
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file from source to target" );
