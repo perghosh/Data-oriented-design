@@ -10,11 +10,6 @@
  * 
  */
 
-/*
-@TASK #per #todo [date: 250726] [name: key-value] [description: "Extend key-value argument to simplify setting multiple keys to read"] [state: open]
-@TASK #kevin #todo [date: 250726] [name: key-value] [description: "Implement key-value argument parsing"] [state: open]
-
-*/
 
 #include <filesystem>
 #include <format>
@@ -37,6 +32,7 @@
 #else
 #  include <unistd.h>
 #  include <sys/stat.h>
+#  include <sys/types.h>
 #  include <pwd.h>
 #  include <cstdlib>
 #endif
@@ -52,6 +48,9 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
    return fnmatch(piPattern, piPath, FNM_PATHNAME) == 0;
 }
 #endif
+
+#include "jsoncons/json.hpp"
+#include "jsoncons_ext/jsonpath/jsonpath.hpp"
 
 
 #ifdef _WIN32
@@ -86,6 +85,54 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 CApplication* papplication_g = nullptr;
 
 
+CApplication::CApplication()
+{
+   m_pjsonConfig = std::make_unique<jsoncons::json>();
+}
+
+// Copy constructor
+CApplication::CApplication(const CApplication& o) 
+{
+   common_construct(o);
+}
+
+// Move constructor
+CApplication::CApplication(CApplication&& o) noexcept 
+{
+   common_construct(std::move(o));
+}
+
+// Copy assignment operator
+CApplication& CApplication::operator=(const CApplication& o) 
+{
+   if( this != &o )
+   {
+      common_construct(o);
+   }
+   return *this;
+}
+
+// Move assignment operator
+CApplication& CApplication::operator=(CApplication&& o) noexcept 
+{
+   if( this != &o )
+   {
+      common_construct(std::move(o));
+   }
+   return *this;
+}
+
+
+CApplication::~CApplication()
+{
+   m_vectorDocument.clear();                                                  // Clear the document vector
+   m_vectorIgnore.clear();                                                    // Clear the ignore vector
+   m_vectorProperty.clear();                                                  // Clear the property vector
+   m_argumentsFolder.clear();                                                 // Clear the arguments folder
+   m_argumentsVersion.clear();                                                // Clear the arguments version
+   // Reset the global pointer
+   papplication_g = nullptr;
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Common construction logic for copy constructor and copy assignment operator.
@@ -278,11 +325,30 @@ std::pair<bool, std::string> CApplication::Initialize()
    if( result_.first == false ) return result_;
 #endif
 
-   // ## Configure current paths and ignore ifnormation
+   // ## Configure current paths 
 
-   std::filesystem::path pathCurrent = std::filesystem::current_path();
+   // ### Get the current working directory
+   std::filesystem::path pathCurrent = std::filesystem::current_path();        // Get the current working directory
    std::string stringCurrentPath = pathCurrent.string();
    PROPERTY_Add("folder-current", stringCurrentPath );
+
+   /// ## Set user home directory for cleaner
+   std::string stringHomePath;
+   result_ = FolderGetHome_s(stringHomePath);
+   if( result_.first == false ) { LOG_DEBUG_RAW( result_.second ); }
+   else { PROPERTY_Add("folder-home", stringHomePath); }                      // Add home folder to properties
+
+   // ## Read user configuration
+
+   result_ = SETTINGS_Load();                                                 // Read settings from XML file
+   if( result_.first == false )
+   {
+      // If settings file is not found, create a default one
+      //result_ = SETTINGS_CreateDefault();
+      //if( result_.first == false ) return result_;
+   }
+
+   // ## Try to find ignore information
 
    std::vector<ignore> vectorIgnore;
    result_ = ReadIgnoreFile_s( stringCurrentPath, vectorIgnore );
@@ -460,6 +526,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       if( bUseThreads == true ) { return execute_(CLI::Count_g, poptionsActive->clone_arguments(), pdocument); } // count lines in file or directory in its own thread
       else                      { return CLI::Count_g(poptionsActive, pdocument); }// count lines in file or directory
    }
+   /*
    else if( stringCommandName == "db" )
    {
       std::string stringDatabaseFile = (*poptionsActive)["file"].as_string();
@@ -471,6 +538,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          if( result_.first == false ) return result_;
       }
    }
+   */
    else if( stringCommandName == "dir" )
    {
       auto* pdocument = DOCUMENT_Get("dir", true );
@@ -1121,6 +1189,7 @@ bool CApplication::IGNORE_MatchFilename(const std::string_view& stringFileName) 
 
 // 0TAG0Database.Application
 
+#if 0
 /** ---------------------------------------------------------------------------
  * @brief Open a database connection
  *
@@ -1306,11 +1375,77 @@ void CApplication::DATABASE_CloseActive()
       m_pdatabase = nullptr;
    }
 }
+#endif // 0
 
 // 0TAG0Settings.Application @TAG #settings.Application
 
 std::pair<bool, std::string> CApplication::SETTINGS_Load(const std::string_view& stringFileName)
 {
+   using namespace jsoncons;
+   using namespace gd::table;
+   std::string stringFolder( stringFileName );
+   if( stringFolder.empty() == true )
+   { 
+      stringFolder = PROPERTY_Get("folder-home").as_string();                 // Get home folder from properties
+   }
+
+   if( stringFolder.empty() == true ) return { false, "No home folder set" }; // If no home folder is set, return error
+
+   // ## Prepare configuration path
+   gd::file::path pathConfiguration(stringFolder);
+   if( pathConfiguration.has_extension() == false ) { pathConfiguration += "configuration.json"; } // Add filename if not provided
+
+   if( std::filesystem::exists(pathConfiguration) == false ) { return { false, std::format("configuration file not found: {}", pathConfiguration.string()) }; } // Check if configuration file exists
+
+   // ## Load settings from file
+   try 
+   {
+      // Create a new config table with the path to the configuration file
+      m_ptableConfig = std::make_unique<table>( table( table::eTableFlagNull32, {{"rstring", 0, "group"}, {"rstring", 0, "name"}, {"rstring", 0, "value"}, {"string", 6, "type"} }, tag_prepare{} ) );
+      // Open the JSON file
+      std::ifstream ifstreamJson(pathConfiguration);
+      if( ifstreamJson.is_open() == false ) { return { false, std::format("Failed to open configuration file: {}", pathConfiguration.string()) }; } // Check if file opened successfully
+
+      // Parse JSON data from the file into a json object
+      json jsonDocument = json::parse( ifstreamJson );
+
+      // ## Iterate through the JSON object and populate the config table
+      for( const auto& keyvalueRoot : jsonDocument.object_range() ) 
+      {
+         if( keyvalueRoot.value().is_object() == false ) continue; // Skip if value is not an object
+
+         std::string stringKey = keyvalueRoot.key();
+
+         // ## split string between group and name, splitting by '.' and set stringGroup and stringName
+
+         auto vectorSplit = gd::utf8::split(stringKey, '.');                  // Split the string by '.'
+         if( vectorSplit.size() < 2 ) continue;                               // Skip if less than 2 parts after splitting
+
+         auto stringCleaner = vectorSplit[0]; // First part is the group
+
+         if( stringCleaner != "cleaner" ) continue;                           // Skip if group is not "cleaner"
+
+         auto stringGroup = vectorSplit[1]; // Second part is the name
+
+
+         for( const auto& subItem : keyvalueRoot.value().object_range() ) 
+         {
+            auto stringName = subItem.key();
+            auto stringValue = subItem.value().as_string(); // Convert JSON value to string
+            //m_ptableConfig->Append({ stringGroup, stringName, stringValue }); // Add to config table
+         }
+      }
+
+      // Use the json object (e.g., print it)
+      //std::cout << pretty_print(j) << std::endl;
+   }
+   catch (const std::exception& e) 
+   {
+      std::string stringError = std::format("Error: {}", e.what());
+      return { false, stringError };
+   }
+
+   /*
    gd::file::path pathSettings(stringFileName);
    std::string stringExtension = pathSettings.extension().string();
    
@@ -1325,6 +1460,7 @@ std::pair<bool, std::string> CApplication::SETTINGS_Load(const std::string_view&
          return { false, stringError }; 
       }
    }
+*/
 
    return { true, "" }; // Placeholder for settings loading logic
 }
@@ -1972,6 +2108,55 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
    return uPathCount;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Retrieves the home directory path for the application.
+ *
+ * This static method determines the home directory path based on the operating system.
+ * It sets the provided `stringHomePath` to the appropriate path and checks if the directory exists.
+ *
+ * @param stringHomePath A reference to a string where the home path will be stored.
+ * @return std::pair<bool, std::string> Returns a pair where the first element is true on success and false on failure,
+ *         and the second element contains an error message if applicable.
+ *
+ * Example usage:
+ * @@code @code
+ * std::string stringHomePath;
+ * auto result = CApplication::FolderGetHome_s(stringHomePath);
+ * if(!result.first) { std::cerr << "Error: " << result.second << std::endl; }
+ * @endcode
+ */
+std::pair<bool, std::string> CApplication::FolderGetHome_s(std::string& stringHomePath)
+{
+   std::string stringPath;
+
+#ifdef _WIN32
+   // Windows: C:\Users\<username>\AppData\Local\cleaner\configuration.json
+   char* piAppData = nullptr;
+   size_t uLength = 0;
+   if( _dupenv_s(&piAppData, &uLength, "LOCALAPPDATA") == 0 && piAppData != nullptr )
+   {
+      stringPath = std::string(piAppData) + "\\cleaner";
+      free(piAppData);
+   }
+   else { return { false, "Failed to get LOCALAPPDATA environment variable" }; }
+#else
+   // Linux: ~/.local/share/cleaner/configuration.json
+   const char* piDir = getenv("HOME");
+   if( piDir == nullptr ) {
+      struct passwd* pw = getpwuid(getuid());
+      if( pw == nullptr ) { return { false, "Failed to get home directory" }; }
+      piDir = pw->pw_dir;
+   }
+   stringPath = std::string(piDir) + "/.local/share/cleaner";
+#endif
+
+   if( std::filesystem::exists(stringPath) == false ) { return { false, "Configuration directory does not exist: " + stringPath }; }
+
+   stringHomePath = stringPath; // Set the home path
+
+   return { true, "" }; 
+}
+
 /** --------------------------------------------------------------------------- @TAG #ignore
  * @brief Reads ignore patterns from a specified file or directory and populates a vector of ignore rules.
  *
@@ -2214,6 +2399,7 @@ std::pair<bool, std::string> CApplication::SettingsRead_s(const std::string_view
    return { true, "" };
 }
 
+#if 0
 void CApplication::Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer )
 {
    for( unsigned u = 0, uMax = (unsigned)precord->size(); u < uMax; u++ )
@@ -2288,6 +2474,7 @@ void CApplication::Read_s( gd::database::cursor_i* pcursorSelect, gd::table::tab
       }
    }
 }
+#endif // 0
 
 /** ---------------------------------------------------------------------------
  * @brief Save command line arguments to history file
@@ -2655,6 +2842,14 @@ std::pair<bool, std::string> CApplication::ExitWindows_s()
 #endif
 
 
-
+/*
+@@code @code
+// ## core application properties
+CApplication::PROPERTY_Add("WINDOWS", true|false); // if windows
+CApplication::PROPERTY_Add("os", "windows|linux|wsl|mac"); // os running on
+CApplication::PROPERTY_Add("folder-current", "current active folder path");
+CApplication::PROPERTY_Add("folder-home", "user home director for cleaner");
+@endcode
+*/
 
 

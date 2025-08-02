@@ -18,9 +18,10 @@
 #include <utility>
 #include <vector>
 
-#include "gd/gd_database.h"
-#include "gd/gd_database_odbc.h"
-#include "gd/gd_database_sqlite.h"
+//#include "gd/gd_database.h"
+//#include "gd/gd_database_odbc.h"
+//#include "gd/gd_database_sqlite.h"
+#include "gd/gd_table_table.h"
 #include "gd/gd_arguments_shared.h"
 #include "gd/expression/gd_expression_parse_state.h"
 #include "gd/parse/gd_parse_match_pattern.h"
@@ -31,6 +32,8 @@
 
 #include "gd/console/gd_console_console.h"
 
+//#include "jsoncons/json.hpp"
+
 
 #include "application/database/Metadata_Statements.h"
 #include "Document.h"
@@ -38,8 +41,18 @@
 
 #include "application/ApplicationBasic.h"
 
+//namespace jsoncons { class json; }
 namespace gd { namespace cli { class options; } }
 namespace CONFIGURATION { class CSettings; }
+
+/// @brief Forward declaration using jsoncons library, this to avoid including the full jsoncons header here.
+namespace jsoncons {
+   struct sorted_policy;
+   template<typename CharT, typename Policy, typename Allocator>
+   class basic_json;
+
+   using json = basic_json<char, sorted_policy, std::allocator<char>>;  // Recreate the alias locally (must match exactly)   
+}
 
 /**
  * \brief
@@ -151,15 +164,15 @@ public:
 
 // ## construction -------------------------------------------------------------
 public:  // 0TAG0construct.Application
-   CApplication() {}
+   CApplication();
    // copy
-   CApplication(const CApplication& o) { common_construct(o); }
-   CApplication(CApplication&& o) noexcept { common_construct(std::move(o)); }
+   CApplication(const CApplication& o);
+   CApplication(CApplication&& o) noexcept;
    // assign
-   CApplication& operator=(const CApplication& o) { common_construct(o); return *this; }
-   CApplication& operator=(CApplication&& o) noexcept { common_construct(std::move(o)); return *this; }
+   CApplication& operator=(const CApplication& o);
+   CApplication& operator=(CApplication&& o) noexcept;
 
-   ~CApplication() {}
+   ~CApplication();
 private:
    // common copy
    void common_construct(const CApplication& o);
@@ -168,9 +181,9 @@ private:
 // ## operator -----------------------------------------------------------------
 public:
    /// interface operator to database
-   operator gd::database::database_i*() const { assert( m_pdatabase != nullptr ); return m_pdatabase;  }
+   //operator gd::database::database_i*() const { assert( m_pdatabase != nullptr ); return m_pdatabase;  }
    /// pointer to statements object
-   operator application::database::metadata::CStatements*() const { assert(m_pstatements != nullptr); return m_pstatements.get(); }
+   //operator application::database::metadata::CStatements*() const { assert(m_pstatements != nullptr); return m_pstatements.get(); }
 
 
 // ## methods ------------------------------------------------------------------
@@ -272,16 +285,19 @@ public:
 
 /** \name DATABASE
 *///@{
+   /*
    std::pair<bool, std::string> DATABASE_Open( const gd::argument::shared::arguments& argumentsOpen );
    std::pair<bool, std::string> DATABASE_Update();
    std::pair<bool, std::string> DATABASE_Upgrade( uint64_t uVersion );
    void DATABASE_Append( gd::database::database_i* pdatabase, bool bActivate );
    std::pair<bool, std::string> DATABASE_Connect( const std::string_view& stringConnect );
    void DATABASE_CloseActive();
+   */
 //@}
 
 /** \name DATABASE
 *///@{
+   std::pair<bool, std::string> SETTINGS_Load();
    std::pair<bool, std::string> SETTINGS_Load(const std::string_view& stringFileName );
 //@}
 
@@ -310,27 +326,30 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   enumMode m_eMode = eModeUnknown; ///< Mode of the application, e.g. review, stats, search, changes, audit, document
-   enumUIType m_eUIType = eUITypeUnknown; ///< Type of user interface
+   enumMode m_eMode = eModeUnknown;                ///< Mode of the application, e.g. review, stats, search, changes, audit, document
+   enumUIType m_eUIType = eUITypeUnknown;          ///< Type of user interface
    unsigned m_uApplicationState = eApplicationStateUnknown; ///< State of the application
 
-   std::shared_mutex m_sharedmutex;  ///< mutex used for application command that may be used by different threads
+   std::shared_mutex m_sharedmutex;                ///< mutex used for application command that may be used by different threads
    /// List of documents
    std::vector<std::unique_ptr<CDocument>> m_vectorDocument;
 
-   std::vector<ignore> m_vectorIgnore; ///< Strings with patterns for folders to ignore
+   std::vector<ignore> m_vectorIgnore;             ///< Strings with patterns for folders to ignore
 
-   std::vector< gd::database::database_i* > m_vectorDatabase; ///< list of connected databases
-   gd::database::database_i* m_pdatabase = nullptr;  ///< active database connection
+   //std::vector< gd::database::database_i* > m_vectorDatabase; ///< list of connected databases
+   //gd::database::database_i* m_pdatabase = nullptr;///< active database connection
 
    std::unique_ptr<application::database::metadata::CStatements> m_pstatements;   ///< pointer to statement object
 
-   std::shared_mutex m_sharedmutexError;        ///< mutex used to manage errors in threaded environment
+   std::shared_mutex m_sharedmutexError;           ///< mutex used to manage errors in threaded environment
    std::vector< gd::argument::arguments > m_vectorError; ///< vector storing internal errors
 
    CONFIGURATION::CSettings* m_psettings = nullptr;
 
-   gd::console::console m_console; ///< console used for printing formated messages to user
+   gd::console::console m_console;                 ///< console used for printing formated messages to user
+
+   std::unique_ptr<jsoncons::json> m_pjsonConfig;  ///< JSON configuration object
+   std::unique_ptr<gd::table::table> m_ptableConfig; ///< Table used to store configuration data
 
 // ## free functions ------------------------------------------------------------
 public:
@@ -353,6 +372,9 @@ public:
    static unsigned PreparePath_s( std::string& stringPath );
    static unsigned PreparePath_s( std::string& stringPath, char iSplitCharacter );
 
+   // ## Folder operations
+   static std::pair<bool, std::string> FolderGetHome_s(std::string& stringHomePath);
+
    // ## Configuration read functions
 
    /// Read folders to ignore from ignore file if found, otherwise return empty vector
@@ -362,8 +384,8 @@ public:
 
    // ## Read data from database
 
-   static void Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer );
-   static void Read_s( gd::database::cursor_i* pcursorSelect, gd::table::table_column_buffer* ptablecolumnbuffer );
+   //static void Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer );
+   //static void Read_s( gd::database::cursor_i* pcursorSelect, gd::table::table_column_buffer* ptablecolumnbuffer );
 
    // ## Utility functions
 
@@ -414,6 +436,10 @@ inline std::vector<std::unique_ptr<CDocument>>::const_iterator CApplication::DOC
 /// return const iterator to the end of the document list
 inline std::vector<std::unique_ptr<CDocument>>::const_iterator CApplication::DOCUMENT_End() const {
    return m_vectorDocument.cend();
+}
+
+inline std::pair<bool, std::string> CApplication::SETTINGS_Load() {
+   return SETTINGS_Load( std::string_view{} );
 }
 
 extern CApplication* papplication_g; ///< global pointer to application object

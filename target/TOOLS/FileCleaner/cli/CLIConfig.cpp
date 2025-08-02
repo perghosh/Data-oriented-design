@@ -60,11 +60,10 @@ std::pair<bool, std::string> CreateConfiguration()
 #else
       // Linux: ~/.local/share/cleaner/configuration.json
       const char* piDir = getenv("HOME");
-      if( piDir == nullptr ) {
+      if( piDir == nullptr ) 
+      {
          struct passwd* pw = getpwuid(getuid());
-         if( pw == nullptr ) {
-            return { false, "Failed to get home directory" };
-         }
+         if( pw == nullptr ) { return { false, "Failed to get home directory" }; }
          piDir = pw->pw_dir;
       }
       stringPath = std::string(piDir) + "/.local/share/cleaner";
@@ -85,16 +84,13 @@ std::pair<bool, std::string> CreateConfiguration()
 
       // Create default configuration content
       std::string defaultConfig = R"({
-    "version": "1.0",
-    "settings": {
-        "auto_clean": false,
-        "log_level": "info",
-        "cleanup_interval": 3600,
-        "temp_directories": [],
-        "excluded_files": [],
-        "max_file_age_days": 30
-    },
-    "created": ")" + std::to_string(std::time(nullptr)) + R"("
+"version": "1.0",
+"cleaner.color": {
+   "line": null,
+   "body": null,
+   "header": null,
+   "footer": null
+}
 })";
 
       // Write configuration file
