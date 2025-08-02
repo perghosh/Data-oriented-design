@@ -297,8 +297,8 @@ public:
 
 /** \name DATABASE
 *///@{
-   std::pair<bool, std::string> SETTINGS_Load();
-   std::pair<bool, std::string> SETTINGS_Load(const std::string_view& stringFileName );
+   std::pair<bool, std::string> CONFIG_Load();
+   std::pair<bool, std::string> CONFIG_Load(const std::string_view& stringFileName );
 //@}
 
 /** \name ERROR
@@ -438,8 +438,8 @@ inline std::vector<std::unique_ptr<CDocument>>::const_iterator CApplication::DOC
    return m_vectorDocument.cend();
 }
 
-inline std::pair<bool, std::string> CApplication::SETTINGS_Load() {
-   return SETTINGS_Load( std::string_view{} );
+inline std::pair<bool, std::string> CApplication::CONFIG_Load() {
+   return CONFIG_Load( std::string_view{} );
 }
 
 extern CApplication* papplication_g; ///< global pointer to application object
