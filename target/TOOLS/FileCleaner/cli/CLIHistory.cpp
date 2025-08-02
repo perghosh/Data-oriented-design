@@ -58,6 +58,8 @@ static std::string FilePath();
 
 static std::string CurrentTime_s();
 
+static std::filesystem::path GetHistoryPath_s();
+
 std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
 {
    const gd::cli::options& options_ = *poptionsHistory;
@@ -94,9 +96,9 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    //auto result_ = papplication_g->CreateDirectory();                                               if( result_.first == false ) { return result_; }
 
    std::string stringName = "history.xml";
-   std::filesystem::path pathDirectory;
+   std::filesystem::path pathDirectory = GetHistoryPath_s();
 
-#ifdef _WIN32
+/*#ifdef _WIN32
    //std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
 
    // Windows: C:\Users\<username>\AppData\Local\cleaner\history.xml
@@ -121,7 +123,9 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
       piDir = pw->pw_dir;
       pathDirectory = std::filesystem::path(piDir) / ".local" / "share" / "cleaner";
    }
-#endif
+#endif*/
+
+   
 
 
 
@@ -432,6 +436,41 @@ std::string CurrentTime_s()
    ostringstreamTime << std::put_time(&tm_, "%Y-%m-%d %H:%M:%S");
 
    return ostringstreamTime.str();
+}
+
+std::filesystem::path GetHistoryPath_s()
+{
+
+   std::filesystem::path pathDirectory;
+
+#ifdef _WIN32
+   //std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
+
+   // Windows: C:\Users\<username>\AppData\Local\cleaner\history.xml
+   char* piAppData = nullptr;
+   size_t uLength = 0;
+   if( _dupenv_s(&piAppData, &uLength, "LOCALAPPDATA") == 0 && piAppData != nullptr )
+   {
+      //stringPath = std::string(piAppData) + "\\cleaner";
+      pathDirectory = std::filesystem::path(piAppData) / "cleaner";
+      free(piAppData);
+   }
+   //else { return { false, "Failed to get LOCALAPPDATA environment variable" }; }
+#else
+   // Linux: ~/.local/share/cleaner/history.xml
+   const char* piDir = getenv("HOME");
+   if( piDir == nullptr )
+   {
+      struct passwd* pw = getpwuid(getuid());
+      if( pw == nullptr ) {
+         //return { false, "Failed to get home directory" };
+      }
+      piDir = pw->pw_dir;
+      pathDirectory = std::filesystem::path(piDir) / ".local" / "share" / "cleaner";
+   }
+#endif
+
+   return pathDirectory;
 }
 
 NAMESPACE_CLI_END
