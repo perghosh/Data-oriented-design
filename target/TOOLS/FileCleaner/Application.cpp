@@ -293,7 +293,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          std::string stringSettingsFile = optionsApplication.get_variant_view("settings", gd::types::tag_state_active{}).as_string();
          if( stringSettingsFile.empty() == false )
          {
-            auto result_ = SETTINGS_Load(stringSettingsFile);    // load configuration file
+            auto result_ = CONFIG_Load(stringSettingsFile);    // load configuration file
             if( result_.first == false ) { return result_; }
          }
       }
@@ -316,6 +316,20 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 }
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Initializes the application.
+ *
+ * This method performs the initial setup of the application, including setting up paths,
+ * loading configuration, and preparing the application state.
+ * 
+ * ## Steps:
+ * 1. Set up OS-specific settings.
+ * 2. Configure paths used by the application.
+ * 3. Load configuration. 
+ * 4. Read ignore information if found.
+ *
+ * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
+ */
 std::pair<bool, std::string> CApplication::Initialize()
 {
    std::pair<bool, std::string> result_;
@@ -340,12 +354,9 @@ std::pair<bool, std::string> CApplication::Initialize()
 
    // ## Read user configuration
 
-   result_ = SETTINGS_Load();                                                 // Read settings from XML file
+   result_ = CONFIG_Load();                                                   // Read configuration
    if( result_.first == false )
    {
-      // If settings file is not found, create a default one
-      //result_ = SETTINGS_CreateDefault();
-      //if( result_.first == false ) return result_;
    }
 
    // ## Try to find ignore information
@@ -1379,7 +1390,16 @@ void CApplication::DATABASE_CloseActive()
 
 // 0TAG0Settings.Application @TAG #settings.Application
 
-std::pair<bool, std::string> CApplication::SETTINGS_Load(const std::string_view& stringFileName)
+/*
+@TASK #configuration.load #user.per [name: config]
+--
+[description: "## Load application configuration file into table used to store configuration in application table used for this." ]
+[priority: high] [state: open] [assigned_to: per]
+[idea: "Method for loading configuration is called `SETTINGS_Load'."]
+*/
+
+
+std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& stringFileName)
 {
    using namespace jsoncons;
    using namespace gd::table;
@@ -1421,18 +1441,17 @@ std::pair<bool, std::string> CApplication::SETTINGS_Load(const std::string_view&
          auto vectorSplit = gd::utf8::split(stringKey, '.');                  // Split the string by '.'
          if( vectorSplit.size() < 2 ) continue;                               // Skip if less than 2 parts after splitting
 
-         auto stringCleaner = vectorSplit[0]; // First part is the group
+         auto stringCleaner = vectorSplit[0];                                 // First part is the 'cleaner'  marker, all config values belongs to key objects where first part is "cleaner"
 
          if( stringCleaner != "cleaner" ) continue;                           // Skip if group is not "cleaner"
 
-         auto stringGroup = vectorSplit[1]; // Second part is the name
-
-
+         auto stringGroup = vectorSplit[1];                                   // Second part is the group name
          for( const auto& subItem : keyvalueRoot.value().object_range() ) 
          {
             auto stringName = subItem.key();
             auto stringValue = subItem.value().as_string(); // Convert JSON value to string
-            //m_ptableConfig->Append({ stringGroup, stringName, stringValue }); // Add to config table
+            auto uRow = m_ptableConfig->row_add_one();
+            m_ptableConfig->row_set(uRow, { stringGroup, stringName, stringValue }); // Set value, each value is store as string and belongs to group and name
          }
       }
 

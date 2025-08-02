@@ -95,6 +95,9 @@ is copied to that block, old block is deleted.
  std::unique_ptr<gd::table::table> ptableConfig;
  ptableConfig = std::make_unique<table>( table( 0u, {{"rstring", 0, "group"}, {"rstring", 0, "name"}, {"rstring", 0, "value"}}, tag_prepare{} ) );
 
+ // Add rows with values to table
+ auto uRow = ptableConfig->row_add_one();
+
  \endcode
  */
 class table
