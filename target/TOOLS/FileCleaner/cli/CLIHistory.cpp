@@ -17,6 +17,16 @@
 // @TAG #cli #history
 
 #include <fstream>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <shlobj.h>
+#else
+#include <unistd.h>
+#include <pwd.h>
+#include <sys/types.h>
+#endif
+
 #include <pugixml/pugixml.hpp>
 
 #include "gd/expression/gd_expression_runtime.h"
@@ -84,16 +94,45 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    //auto result_ = papplication_g->CreateDirectory();                                               if( result_.first == false ) { return result_; }
 
    std::string stringName = "history.xml";
-   std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
+   std::filesystem::path pathDirectory;
 
-   std::string stringFilePath = (pathCurrentDirectory / stringName).string();
-   gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()}, { "print", false } , { "index", 0 } } );     // TODO: This is just temporary, we need to edit this later
-    // To create a string representing the full path to "history.xml" in pathCurrentDirectory:
+#ifdef _WIN32
+   //std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
 
-   if( std::filesystem::exists(pathCurrentDirectory) == false )
+   // Windows: C:\Users\<username>\AppData\Local\cleaner\history.xml
+   char* piAppData = nullptr;
+   size_t uLength = 0;
+   if( _dupenv_s(&piAppData, &uLength, "LOCALAPPDATA") == 0 && piAppData != nullptr )
    {
-      std::filesystem::create_directory(pathCurrentDirectory); 
-      std::ofstream ofstreamFile(pathCurrentDirectory / stringName);
+      //stringPath = std::string(piAppData) + "\\cleaner";
+      pathDirectory = std::filesystem::path(piAppData) / "cleaner";
+      free(piAppData);
+   }
+   else { return { false, "Failed to get LOCALAPPDATA environment variable" }; }
+#else
+   // Linux: ~/.local/share/cleaner/history.xml
+   const char* piDir = getenv("HOME");
+   if( piDir == nullptr )
+   {
+      struct passwd* pw = getpwuid(getuid());
+      if( pw == nullptr ) {
+         return { false, "Failed to get home directory" };
+      }
+      piDir = pw->pw_dir;
+      pathDirectory = std::filesystem::path(piDir) / ".local" / "share" / "cleaner";
+   }
+#endif
+
+
+
+   std::string stringFilePath = (pathDirectory / stringName).string();
+   gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()}, { "print", false } , { "index", 0 } } );     // TODO: This is just temporary, we need to edit this later
+    // To create a string representing the full path to "history.xml" in pathDirectory:
+
+   if( std::filesystem::exists(pathDirectory) == false )
+   {
+      std::filesystem::create_directory(pathDirectory); 
+      std::ofstream ofstreamFile(pathDirectory / stringName);
       ofstreamFile.close();
       PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
 
