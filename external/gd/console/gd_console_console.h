@@ -284,6 +284,25 @@ inline void console::set_buffer_size(int iBufferWidth, int iBufferHeight) {
    m_iBufferHeight = iBufferHeight;
 }
 
+
+
+
+_GD_CONSOLE_END
+
+
+// ----------------------------------------------------------------------------
+// ------------------------------------------------------------------------ rgb
+// ----------------------------------------------------------------------------
+
+_GD_CONSOLE_BEGIN
+
+namespace rgb
+{
+   bool print( std::string_view stringColor, std::string& stringTo, gd::types::tag_color );
+   std::string print(std::string_view stringColor, gd::types::tag_color);
+}
+
+
 _GD_CONSOLE_END
 
 #endif // GD_COMPILER_HAS_CPP20_SUPPORT

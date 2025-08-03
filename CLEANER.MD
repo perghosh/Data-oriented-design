@@ -15,13 +15,20 @@
 - `cleaner find * --pattern "&c-@TASK;#user.per" --kv "name;description@[]:" -vs` - *search for `@TASK` in comments*
 - `cleaner find * --pattern "&c-@TASK;#user.per" --kv "name;description;sample;idea;state;assigned_to@[]:" -vs`
 
+### Code sample search
+
+- `cleaner find * --pattern "@code" --segment comment --rule "select-between:@code,@endcode" - *search for `@code` sections in comments and list*
+
+- `cleaner find * --pattern "&c-@code" --rule "select-between:@code,@endcode" - *search for `@TASK` in comments*
+
+
 
 ## Templates
 
 ```
-@TASK #configuration.load #user.per [name: <name>] 
+@TASK #<task-area>.<detail> #user.per [name: <name>] 
 --
-[description: "## " ]
+[description: "## <description text>" ]
 
 [priority: low|medium|high] [state: open|ongoing|closed|resolved] [assigned_to: <user>]
 [idea: "<idea>"]

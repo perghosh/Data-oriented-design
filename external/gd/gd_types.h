@@ -100,6 +100,7 @@ struct tag_multiple {};       ///< multiple is used in some form
 // ## value related tag dispatchers
 struct tag_alias {};          ///< alias is used in some form
 struct tag_category {};       ///< category is used in some form, like type or group
+struct tag_color {};          ///< color used in some form
 struct tag_code {};           ///< code is used in some form, like a reference code
 struct tag_comment {};        ///< comment is used in some form, like user notes
 struct tag_date {};           ///< date is used in some form

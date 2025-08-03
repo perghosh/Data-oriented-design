@@ -162,6 +162,19 @@ void device::clear()
  * @brief render device to print
  * @param stringPrint string getting information to print
  * @return true if ok, false and error information on error
+ * 
+ * ```bash
+ # ## Example of rendering device to print
+
+ # 256-color foreground (e.g., orange, color 208)
+ echo -e "\033[38;5;208mHello, World!\033[0m"
+
+ # 256-color background (e.g., light gray, color 248)
+ echo -e "\033[48;5;248mHello, World!\033[0m"
+
+ # True color foreground (e.g., RGB orange)
+ echo -e "\033[38;2;255;128;0mHello, World!\033[0m" 
+ * ```
  */
 std::pair<bool, std::string> device::render(std::string& stringPrint) const
 {
@@ -199,8 +212,6 @@ std::pair<bool, std::string> device::render(std::string& stringPrint) const
       puRow++;
 
       size_t uLength = puRow - m_puRowBuffer;
-      //m_puRowBuffer[uLength] = '\0';
-      //stringPrint_ += (const char*)m_puRowBuffer;
       stringPrint_.append( (const char*)m_puRowBuffer, uLength );
    }
 

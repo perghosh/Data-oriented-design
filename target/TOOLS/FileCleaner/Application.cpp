@@ -1395,7 +1395,7 @@ void CApplication::DATABASE_CloseActive()
 --
 [description: "## Load application configuration file into table used to store configuration in application table used for this." ]
 [priority: high] [state: open] [assigned_to: per]
-[idea: "Method for loading configuration is called `SETTINGS_Load'."]
+[idea: "Method for loading configuration is called `CONFIG_Load'."]
 */
 
 
@@ -1432,7 +1432,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
       // ## Iterate through the JSON object and populate the config table
       for( const auto& keyvalueRoot : jsonDocument.object_range() ) 
       {
-         if( keyvalueRoot.value().is_object() == false ) continue; // Skip if value is not an object
+         if( keyvalueRoot.value().is_object() == false ) continue;            // Skip if value is not an object
 
          std::string stringKey = keyvalueRoot.key();
 
@@ -1446,10 +1446,11 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
          if( stringCleaner != "cleaner" ) continue;                           // Skip if group is not "cleaner"
 
          auto stringGroup = vectorSplit[1];                                   // Second part is the group name
-         for( const auto& subItem : keyvalueRoot.value().object_range() ) 
+         for( const auto& value_ : keyvalueRoot.value().object_range() ) 
          {
-            auto stringName = subItem.key();
-            auto stringValue = subItem.value().as_string(); // Convert JSON value to string
+            if( value_.value().is_null() ) continue;                          // Skip if value is null
+            auto stringName = value_.key();
+            auto stringValue = value_.value().as_string();                    // Convert JSON value to string
             auto uRow = m_ptableConfig->row_add_one();
             m_ptableConfig->row_set(uRow, { stringGroup, stringName, stringValue }); // Set value, each value is store as string and belongs to group and name
          }
@@ -1482,6 +1483,21 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
 */
 
    return { true, "" }; // Placeholder for settings loading logic
+}
+
+gd::variant_view CApplication::CONFIG_Get(std::string_view stringGroup, std::string_view stringName) const
+{
+   if( m_ptableConfig == nullptr ) return gd::variant_view(); // If no config table is set, return empty variant view
+
+   auto iRow = m_ptableConfig->find({ {"group", stringGroup }, {"name", stringName} }); // Find the row with the specified group and name
+
+   if( iRow != -1 )                                                           // If row is found
+   {
+      auto value_ = m_ptableConfig->cell_get_variant_view(iRow, "value");     // Return the value from the found row
+      return value_;
+   }
+
+   return gd::variant_view();
 }
 
 

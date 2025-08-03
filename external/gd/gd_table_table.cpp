@@ -2697,7 +2697,26 @@ int64_t table::find(uint64_t uStartRow, uint64_t uCount, const std::vector<gd::v
    return iRow;
 }
 
-/// find row with matching values
+/** ---------------------------------------------------------------------------
+ * @brief Searches for a row in the table that matches the specified criteria within a given range.
+ * @param uStartRow The index of the first row to search from.
+ * @param uCount The number of rows to include in the search.
+ * @param vectorFind A vector of pairs, each containing a column name and a value to match in that column.
+ * @return The index of the first matching row, or -1 if no match is found.
+ * 
+ * #find @code
+ // ## Example usage of find method in table
+ std::unique_ptr<gd::table::table> ptableConfig;
+ ptableConfig = std::make_unique<table>( table( table::eTableFlagNull32, {{"rstring", 0, "group"}, {"rstring", 0, "name"}, {"rstring", 0, "value"}, {"string", 6, "type"} }, tag_prepare{} ) );
+ // ... fill table with data, omitted ...
+ int64_t iRow = ptableConfig->find( 0, ptableConfig->get_row_count(), { {"group", "config"}, {"name", "version"} } );
+ if( iRow != -1 )
+ {
+    auto variantviewValue = ptableConfig->cell_get_variant_view( iRow, "value" );
+    // do something with value
+ }
+ * @endcode
+ */
 int64_t table::find(uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind) const
 {                                                                                                  assert( (uStartRow + uCount) <= get_row_count() );
    // ## convert to column index
