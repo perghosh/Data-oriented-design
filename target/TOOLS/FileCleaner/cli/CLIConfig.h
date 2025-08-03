@@ -60,3 +60,16 @@ For linux this file should be placed in `~/.local/share/cleaner/configuration.js
 " ]
 [idea: "In start, try to find configuration file and load it if found, this is done in the `CApplication` class'."]
 */
+
+/*
+@TASK #configuration.open #user.per [name: config] 
+--
+[description: "## Open configuration file if it exists.
+For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\configuration.json`.
+For linux this file should be placed in `~/.local/share/cleaner/configuration.json`.
+" ]
+
+[priority: medium] [state: open] [assigned_to: per]
+[idea: "check for how file is associated, windows is easy, investigate linux and mac"]
+
+*/

@@ -2,8 +2,10 @@
 * \file gd_console_console.cpp
 */
 
-
+#include <array>
 #include <cstring>
+#include <string>
+#include <cctype>
 #include <iostream>
 
 #ifdef _WIN32
@@ -563,6 +565,92 @@ std::pair<bool, std::string> console::read_text_s(int iStartX, int iStartY, int 
    assert(false && "POSIX console buffer reading not implemented yet");
 #endif
    return { false, "" };
+}
+
+
+_GD_CONSOLE_END
+
+// ----------------------------------------------------------------------------
+// ------------------------------------------------------------------------ rgb
+// ----------------------------------------------------------------------------
+
+_GD_CONSOLE_BEGIN
+
+namespace rgb
+{
+
+   /// hex digit lookup table (avoids function calls)
+   constexpr std::array<int8_t, 256> arrayHexTable_s = []() constexpr {
+      std::array<int8_t, 256> array_{};
+      // Initialize all to -1 (invalid)
+      for (int i = 0; i < 256; ++i) {
+         array_[i] = -1;
+      }
+      // Set valid hex digits
+      for (int i = 0; i < 10; ++i) {
+         array_['0' + i] = i;
+      }
+      for (int i = 0; i < 6; ++i) {
+         array_['A' + i] = 10 + i;
+         array_['a' + i] = 10 + i;
+      }
+      return array_;
+   }();
+
+   /// Function to parse hex color (e.g., "#FF8000" or "FF8000") to RGB values
+   static bool to_rgb_s(std::string_view stringHex, int& r, int& g, int& b) 
+   {
+      // Skip '#' if present
+      if( stringHex.empty() == false && stringHex[0] == '#') { stringHex.remove_prefix(1); }
+
+      if(stringHex.size() != 6) [[unlikely]] { return false; }                // Validate hex string (expect 6 characters)
+
+      // Fast conversion using lookup table
+      const auto* data = reinterpret_cast<const uint8_t*>(stringHex.data());
+
+      int8_t i0_ = arrayHexTable_s[data[0]];
+      int8_t i1_ = arrayHexTable_s[data[1]];
+      int8_t i2_ = arrayHexTable_s[data[2]];
+      int8_t i3_ = arrayHexTable_s[data[3]];
+      int8_t i4_ = arrayHexTable_s[data[4]];
+      int8_t i5_ = arrayHexTable_s[data[5]];
+
+      // Check for invalid hex digits
+      if( (i0_ | i1_ | i2_ | i3_ | i4_ | i5_) < 0 ) [[unlikely]] { return false; }
+
+      // Combine hex digits
+      r = (i0_ << 4) | i1_;
+      g = (i2_ << 4) | i3_;
+      b = (i4_ << 4) | i5_;
+
+      return true;
+   }
+
+   bool print( std::string_view stringColor, std::string& stringTo, gd::types::tag_color )
+   {
+      int iRed, iGreen, iBlue;
+      bool bSuccess = to_rgb_s(stringColor, iRed, iGreen, iBlue);             // Parse hex color to RGB values
+      if( bSuccess == false ) [[unlikely]] { return false; }                  // Return false if parsing failed
+
+      // Format the RGB values into a string
+      stringTo.clear();
+      stringTo.append("\033[38;2;");
+      stringTo.append(std::to_string(iRed));
+      stringTo.append(";");
+      stringTo.append(std::to_string(iGreen));
+      stringTo.append(";");
+      stringTo.append(std::to_string(iBlue));
+      stringTo.append("m");
+
+      return true;
+   }
+
+   std::string print(std::string_view stringColor, gd::types::tag_color)
+   {
+      std::string stringTo;
+      if( print(stringColor, stringTo, gd::types::tag_color{}) == false ) [[unlikely]] { return ""; } // Return empty string on failure
+      return stringTo; // Return the formatted color string
+   }
 }
 
 

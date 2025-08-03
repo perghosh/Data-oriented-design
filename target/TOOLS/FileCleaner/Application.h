@@ -299,6 +299,9 @@ public:
 *///@{
    std::pair<bool, std::string> CONFIG_Load();
    std::pair<bool, std::string> CONFIG_Load(const std::string_view& stringFileName );
+
+   gd::variant_view CONFIG_Get( std::string_view stringGroup, std::string_view stringName ) const;
+
 //@}
 
 /** \name ERROR
