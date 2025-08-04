@@ -257,7 +257,8 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
 {
    //std::string stringFileName = argumentsPrint["file"].as_string();
 
-   std::string stringFileName = FilePath();
+   std::filesystem::path pathDirectory = GetHistoryPath_s();
+   std::string stringFileName = ( pathDirectory / "history.xml" ).string();
                                                                                assert(!stringFileName.empty());
 
    //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
