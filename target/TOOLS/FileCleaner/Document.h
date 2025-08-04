@@ -176,6 +176,8 @@ public:
    void MESSAGE_Progress( const std::string_view& stringMessage );
    void MESSAGE_Progress( const std::string_view& stringMessage, const gd::argument::arguments& arguments_ );
 
+   //void MESSAGE
+
 //@}
 
 

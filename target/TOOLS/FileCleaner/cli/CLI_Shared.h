@@ -34,5 +34,8 @@ std::vector<std::string> SHARED_GetSourcePaths( const gd::cli::options& options_
 /// match all patterns in the vectorPattern against the file lines in the document
 std::pair<bool, std::string> SHARED_MatchAllPatterns_g(const std::vector<std::string>& vectorPattern, CDocument* pdocument, int iMatchCount = -1 );
 
+/// Open file with its associated application.
+std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFile);
+
 
 NAMESPACE_CLI_END

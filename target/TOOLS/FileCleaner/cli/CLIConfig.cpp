@@ -1,4 +1,13 @@
+/**
+ * @file CLIConfig.cpp
+ * @brief Implementation file for CLI configuration operations.
+ */
+
+
 #include <fstream>
+#include <filesystem>
+
+#include "gd/gd_file.h"
 
 #ifdef _WIN32
     #include <windows.h>
@@ -11,6 +20,8 @@
 
 #include "../Application.h"
 
+#include "CLI_Shared.h"
+
 #include "CLIConfig.h"
 
 
@@ -22,10 +33,24 @@ std::pair<bool, std::string> Configuration_g(const gd::cli::options* poptionsCon
 
    if( options_["create"].is_true() == true )
    {
-      auto result_ = CreateConfiguration();
+      auto result_ = ConfigurationCreate_g();
       if( result_.first == false ) { return result_; }
 
       papplication_g->PrintMessage(result_.second, gd::argument::arguments() );
+   }
+
+   if( options_["edit"].is_true() == true )
+   {
+      // Open the configuration file in the default text editor
+      auto result_ = ConfigurationEdit_g();
+      if( result_.first == false ) { return result_; }
+
+   }
+
+
+   if( options_["print"].is_true() == true )
+   {
+
    }
 
    return {true, ""};
@@ -42,7 +67,7 @@ std::pair<bool, std::string> Configuration_g(const gd::cli::options* poptionsCon
  *
  * @return A std::pair where the first element is a boolean indicating success (true if the configuration file exists or was created successfully, false otherwise).
  */
-std::pair<bool, std::string> CreateConfiguration()
+std::pair<bool, std::string> ConfigurationCreate_g()
 {
    try {
       std::string stringPath;
@@ -113,6 +138,30 @@ std::pair<bool, std::string> CreateConfiguration()
    {
       return { false, "Error creating configuration: " + std::string(e.what()) };
    }
+}
+
+/*
+@TASK #config.edit #user.per [name: config] 
+--
+[description: "## Edit configuration file"]
+
+[priority: medium] [state: open] [assigned_to: per]
+[idea: "Allow users to edit the configuration file directly from associated application"]
+[sample: "Open the configuration file in the default text editor."]
+
+*/
+
+std::pair<bool,std::string> ConfigurationEdit_g()
+{
+   std::string stringHomePath = papplication_g->PROPERTY_Get("folder-home").as_string();
+
+   if( stringHomePath.empty() == true ) return { false, "Home path is not set in the application properties." };
+
+   gd::file::path pathConfigFile(stringHomePath + "/configuration.json");
+                                                                      
+   if( std::filesystem::exists( pathConfigFile ) == false ) return { false, "Configuration file does not exist: " + pathConfigFile.string() };
+
+   return SHARED_OpenFile_g(pathConfigFile);
 }
 
 

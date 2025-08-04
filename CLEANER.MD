@@ -22,7 +22,7 @@
 - `cleaner find * --pattern "&c-@code" --rule "select-between:@code,@endcode" - *search for `@TASK` in comments*
 
 
-
+****
 ## Templates
 
 ```
@@ -35,3 +35,8 @@
 [sample: "<sample>"]
 
 ```
+
+```
+@TASK #<task-area>.<detail> #user.per [name: <name>] [description: "## <description text>" ]
+```
+
