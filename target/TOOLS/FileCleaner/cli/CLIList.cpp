@@ -57,6 +57,17 @@ std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocum
    return { true, "" };
 }
 
+/*
+@TASK #list.pattern #user.per
+[name: config] [priority: high] [state: open] [assigned_to: per]
+[description: "## Apply same special to pattern as in find to make it easer to type, setting segment and and operator" ]
+
+[sample: '
+- `cleaner list * --pattern "&c-@TASK;#user.per"` - find all tasks assigned to per in comment segments
+']
+*/
+
+
 /** ---------------------------------------------------------------------------
  * @brief Processes the 'list' command by harvesting files, applying filters, searching for patterns, and outputting results.
  *
@@ -118,15 +129,20 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    gd::argument::shared::arguments argumentsList({ {"max", uMax} });
    std::string stringSegment = options_["segment"].as_string(); // type of segment to search in, code, comment or string, maybe all
    if (stringSegment.empty() == false) argumentsList.set("state", stringSegment.c_str());
+   if( options_["match-all"].is_true() == true ) argumentsList.append("match-all", true); // if match-all is set, then we want to match all patterns
 
    // ## check for pattern that 
    if( options_.exists("pattern") == true )
    {
       std::vector<std::string> vectorPattern; // vector to store patterns
-      auto vector_ = options_.get_all("pattern"); // get all patterns from options and put them into argumentsList
-      if( vector_.size() == 1 )
+      //auto vector_ = options_.get_all("pattern"); // get all patterns from options and put them into argumentsList
+
+      vectorPattern = options_.get_arguments().get_all<std::string>("pattern"); // get all patterns from options and put them into vectorPattern
+
+
+      if( vectorPattern.size() == 1 )
       {
-         auto stringPattern = vector_[0].as_string();
+         auto stringPattern = vectorPattern[0];
          if( stringPattern.empty() == true )                                  // if pattern is empty, read from clipboard
          {
             OS_ReadClipboard_g( stringPattern );
@@ -135,8 +151,21 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          }
          else { vectorPattern = CApplication::Split_s(stringPattern, ';'); }
       }
-      // put all patterns into vectorPattern
-      else { for( auto& pattern : vector_ ) { vectorPattern.push_back(pattern.as_string()); } }
+
+      const std::string_view stringPattern = vectorPattern[0];                // get the pattern as a string view
+      if( stringPattern.size() > sizeof("&c-") && stringPattern[2] == '-' )
+      {
+         // ## Special case for patterns starting with "&--", "&c-" or "&s-" or ohther combinations
+         //    this is a hack to allow users to specify patterns rules with special characters like '&' or 'c' or 's' and save typing
+
+         // found '&', 'c', 's' at start then match all patterns.             @TAG #ui.cli #command.find #hack [description: if first pattern character starts with & and then space, this will be like specify AND between all patterns, 'c' = comment segment and 's' = string segment]
+         std::string_view string_( stringPattern.data(), 2);
+         if( string_.find( '&' ) != std::string_view::npos ) argumentsList.append("match-all", true); 
+         if( string_.find( 'c' ) != std::string_view::npos ) argumentsList.append("state", "comment"); 
+         if( string_.find( 's' ) != std::string_view::npos ) argumentsList.append("state", "string"); 
+         vectorPattern[0] = stringPattern.substr(3);                          // remove the first 3 characters '&c-' from the pattern
+      }
+
 
       // remove empty patterns
       vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());

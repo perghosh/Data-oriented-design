@@ -6,6 +6,9 @@
  * This file contains the implementation of functions shared across CLI tools.
  */
 
+#include "gd/gd_file.h"
+
+
 #include "CLI_Shared.h"
 
 NAMESPACE_CLI_BEGIN
@@ -85,6 +88,31 @@ std::pair<bool, std::string> SHARED_MatchAllPatterns_g(const std::vector<std::st
    }
 
    return { true, "" };
+}
+
+std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFile)
+{
+   gd::file::path pathFile(stringFile); // convert string to file path
+#ifdef _WIN32
+   std::wstring wstringConfigurationFile = gd::utf8::convert_ascii_to_unicode(pathFile.string());
+   HINSTANCE hResult = ShellExecuteW(nullptr, L"open", wstringConfigurationFile.c_str(), nullptr, nullptr, SW_SHOWNORMAL); 
+
+   auto bSuccess = ( hResult != nullptr && reinterpret_cast<intptr_t>( hResult ) > 32 );
+   if( bSuccess == false )
+   {
+      DWORD dwError = ::GetLastError();
+
+      return { false, "Failed to open configuration file. Error code: " + std::to_string(dwError) + " and file: " + pathFile.string() };
+   }
+   return { true, "" };
+#else
+
+   // Open the configuration file in the default text editor
+   std::string command = "xdg-open " + pathFile.string();
+   int result = system(command.c_str());
+
+   return { result == 0, result == 0 ? "" : "Failed to open configuration file." };
+#endif
 }
 
 NAMESPACE_CLI_END // namespace CLI

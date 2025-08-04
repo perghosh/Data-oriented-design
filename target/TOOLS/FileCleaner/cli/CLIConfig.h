@@ -1,6 +1,9 @@
 /**                                                                            @TAG #ui.cli #command.config [description:declaration for methods used for config command]
 * @file CLIConfig.h
-*  
+* @brief Implementation file for CLI configuration operations.
+*
+* This file contains the implementation of functions related to CLI configuration.
+* Configuration file is store in user folder for that os and in that a folder named `cleaner` should exist.
 */
 
 #pragma once
@@ -28,7 +31,8 @@ NAMESPACE_CLI_BEGIN
 
 std::pair<bool,std::string> Configuration_g(const gd::cli::options* poptionsConfiguration);
 
-std::pair<bool,std::string> CreateConfiguration();
+std::pair<bool,std::string> ConfigurationCreate_g();
+std::pair<bool,std::string> ConfigurationEdit_g();
 
 NAMESPACE_CLI_END
 
@@ -39,7 +43,7 @@ NAMESPACE_CLI_END
 
 /*
 @TASK #configuration.create #user.per
-[name: config] [priority: high] [state: open] [assigned_to: per]
+[name: config] [priority: high] [state: ongoing] [assigned_to: per] [todo: "test in linux"]
 [description: "## create configuration file if it doesn't exist.
 For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\configuration.json`.
 For linux this file should be placed in `~/.local/share/cleaner/configuration.json`.

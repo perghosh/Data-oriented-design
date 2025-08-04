@@ -1043,7 +1043,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    // ## if state is sent than try to figure out from what state to find patterns
    if( argumentsPath.exists("state") == true )
    {
-      std::string stringState = argumentsPath["state"].as_string();
+      std::string stringState = argumentsPath["state"].as_string();            // @TASK #parse.segment #user.per [name: code-segment] [description: "rename state to segment" ]
       if( stringState == "comment" ) uFindInState = eStateComment;
       else if( stringState == "string" ) uFindInState = eStateString;
       else if( stringState == "code" ) uFindInState = eStateCode;

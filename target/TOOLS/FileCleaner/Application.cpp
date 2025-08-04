@@ -160,7 +160,7 @@ void CApplication::common_construct(CApplication&& o) noexcept
    m_vectorDocument = std::move(o.m_vectorDocument);
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @TAG #type
  * @brief Returns the string representation of the current mode.
  */ 
 std::string CApplication::GetModeAsString() const
@@ -179,7 +179,7 @@ std::string CApplication::GetModeAsString() const
 }
 
 
-/** ---------------------------------------------------------------------------
+/** ---------------------------------------------------------------------------  @TAG #type
  * @brief Returns the string representation of the UI type.
  *
  * This method converts the enum value of the UI type to its corresponding string representation.
@@ -712,6 +712,16 @@ std::pair<bool, std::string> CApplication::CreateDirectory()
 }
 
 
+/** --------------------------------------------------------------------------- @TAG #print
+ * @brief Prints a message to the console or other output based on the UI type.
+ *
+ * This method handles printing messages to different output targets based on the application's UI type.
+ * It supports console, web, WIMP (Windows, macOS, Linux), Visual Studio Code, and Sublime Text.
+ *
+ * @param stringMessage The message to print.
+ * @param argumentsFormat Optional formatting arguments for the message.
+ * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
+ */
 std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat)
 {
    // Optionally extract formatting options from argumentsFormat
@@ -1605,7 +1615,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    //optionsApplication.add({ "database", "Set folder where logger places log files"});
    //optionsApplication.add({ "statements", "file containing sql statements"});
 
-   {  // ## `count` command, copies file from source to target @TAG #options.count
+   {  // ## `count` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count lines in file" );
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
@@ -1627,9 +1637,10 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
-   {  // ## `config` command, manage configuration file @TAG #options.config
+   {  // ## `config` command, manage configuration file
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "config", "Manage configuration" );
       optionsCommand.add_flag({"create", "Create configuration file if it doesn't exist"});
+      optionsCommand.add_flag({"edit", "Edit configuration file if it exists"});
       optionsCommand.add_flag({"backup", "Create a backup copy of the configuration file"});
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsCommand.parent(&optionsApplication);
@@ -1657,7 +1668,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
 
-   { // ## 'dir' command, list files @TAG #options.dir
+   { // ## 'dir' command, list files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in a specified directory." );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
@@ -1676,7 +1687,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
-   { // ## 'find' command, list files @TAG #options.find
+   { // ## 'find' command, list files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "find", "Search for file content within directories." );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `*.cpp`) to apply when searching for files. Multiple filters are separated with ;. If no filter is provided, all found text files will be searched for patterns." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
@@ -1703,7 +1714,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
 
-   // ## 'history' handle history @TAG #options.history
+   // ## 'history' handle history
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "Handle command history" );
       optionsCommand.add_flag( {"create", "Initialize history logic, creates folders and files needed to manage history, this also enables configuration settings"} );
@@ -1770,7 +1781,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
-   {  // ## `version` print current version
+   {  // ## `run` print current version
       gd::cli::options optionsCommand( "run", "Run command from loaded command templates" );
       optionsCommand.add({"name", "Name or index for command to execute"});
       optionsCommand.add({"list", "List command found in loaded settings"});
@@ -2143,7 +2154,7 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
    return uPathCount;
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @TAG #folder.home
  * @brief Retrieves the home directory path for the application.
  *
  * This static method determines the home directory path based on the operating system.
