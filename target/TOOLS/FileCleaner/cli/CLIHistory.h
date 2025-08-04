@@ -45,6 +45,9 @@ std::pair<bool, std::string> HistoryPrint_g( const gd::argument::arguments& argu
 /// \brief get row history table
 std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& argumentsRow);
 
+/// \brief Edit history file
+std::pair<bool, std::string> HistoryEdit_g();
+
 NAMESPACE_CLI_END
 
 

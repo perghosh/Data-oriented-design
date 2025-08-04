@@ -1720,6 +1720,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag( {"create", "Initialize history logic, creates folders and files needed to manage history, this also enables configuration settings"} );
       optionsCommand.add_flag({ "delete", "Delete history, this will delete all history files and folders" });
       optionsCommand.add_flag({ "print", "Print history, this will print all of the history entries" });
+      optionsCommand.add_flag({ "edit", "Edit history file if it exists" });
       optionsCommand.add({ "list", "Lists all history entries"});
       optionsCommand.add({ "remove", "Remove history entries" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
