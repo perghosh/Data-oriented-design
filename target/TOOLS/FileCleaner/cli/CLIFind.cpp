@@ -61,6 +61,8 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
 {                                                                                                  assert(pdocument != nullptr);assert(poptionsFind != nullptr);
    gd::cli::options& options_ = *poptionsFind; // get the options from the command line arguments
 
+   papplication_g->Print("background", gd::types::tag_background{} );
+
    auto vectorSourceToPrepare = options_.get_all("source");                            // get all source arguments, this is used to find files in the source directory
 
    std::vector<std::string> vectorSource; // vector of source paths
@@ -152,6 +154,8 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
          if( result_.first == false ) return result_;                          // if print failed, return the error
       }
    }
+
+   papplication_g->Print("", gd::types::tag_background{} );
 
    return { true, "" }; 
 }
@@ -712,12 +716,6 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
       if( name_.size() > uKeyMarginWidth ) uKeyMarginWidth = (unsigned)name_.size();// update the key width if the current key is longer
    }
 
-   std::string stringLineColor = papplication_g->CONFIG_Get("color", "line").as_string(); // get the line color from the application configuration
-   std::string stringBodyColor = papplication_g->CONFIG_Get("color", "body").as_string(); // get the body color from the application configuration
-
-   if( stringLineColor.empty() == false ) stringLineColor = gd::console::rgb::print(stringLineColor, gd::types::tag_color{}); // convert the line color to RGB format
-   if( stringBodyColor.empty() == false ) stringBodyColor = gd::console::rgb::print(stringBodyColor, gd::types::tag_color{}); // convert the body color to RGB format
-
    // ## Print values in the key-value table
 
    for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
@@ -728,8 +726,10 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
       uint64_t uRowNumber = ptableKeyValue->cell_get_variant_view(uRow, "row").as_uint64(); // get the row number from the key-value table
       uRowNumber++; // add one because rows in table are zero based
       stringFilename += std::format("({})", uRowNumber); // add the row number to the filename
-      stringCliTable += stringLineColor;                                      // set the line color for the filename
+      //stringCliTable += stringLineColor;                                      // set the line color for the filename
       stringCliTable += std::format("\n{:-<80}\n", stringFilename + "  ");    // add the filename to the stringCliTable, with a separator before it
+      pdocument->MESSAGE_Display(stringCliTable, {{"color", "line"}});
+      stringCliTable.clear();                                                 // clear the stringCliTable for the next row
 
       // ## Get the arguments object from row
       const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(uRow); // get the arguments object from the row
@@ -747,17 +747,19 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
          }
 
          // Print name with padding
-         stringCliTable += stringBodyColor;                                   // set the line color for the filename
+         //stringCliTable += stringBodyColor;                                   // set the line color for the filename
          stringCliTable += std::format("{:>{}}: {}", name_, uKeyMarginWidth, stringValue_); // format the key-value pair as "key: value" with padding
          stringCliTable += "\n";
       }
+      pdocument->MESSAGE_Display(stringCliTable, {{"color", "body"}});
+      stringCliTable.clear();                                                // clear the stringCliTable for the next row
    }
 
-   pdocument->MESSAGE_Display(stringCliTable);                                // display the key-value pairs to the user
+   //pdocument->MESSAGE_Display(stringCliTable);                                // display the key-value pairs to the user
 
    // ## print summary of key-value pairs
    std::string stringSummary = std::format("\nFound {} areas with key-value pairs", ptableKeyValue->get_row_count());
-   pdocument->MESSAGE_Display(stringSummary);   
+   pdocument->MESSAGE_Display(stringSummary, {{"color", "default"}});   
 
    pdocument->MESSAGE_Display("\033[0m");                                     // reset color to default
 

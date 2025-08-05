@@ -740,8 +740,21 @@ std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& 
 
    switch(eUIType)
    {
+   case eUITypeUnknown:
    case eUITypeConsole:
-      std::cout << stringMessage << std::endl;
+      {
+         if( argumentsFormat.exists("color") == true )
+         {
+            std::string stringColor = argumentsFormat["color"].as_string();
+            if( stringColor.empty() == false ) { stringColor = CONFIG_Get("color", stringColor).as_string(); }
+            if( stringColor.empty() == false )
+            {
+               stringColor = gd::console::rgb::print(stringColor, gd::types::tag_color{});
+               std::cout << stringColor;                                      // Print the color code before the message
+            }
+         }
+         std::cout << stringMessage << std::endl;
+      }
       break;
    case eUITypeWeb:
       // Implement web output logic here
@@ -909,6 +922,27 @@ std::pair<bool, std::string> CApplication::PrintError(const std::string_view& st
 {
    std::cout << "\n##\n## ERROR \n## ------\n" << stringMessage << std::flush;
    return {true, ""};
+}
+
+void CApplication::Print( std::string_view stringColor,  gd::types::tag_background )
+{
+   if( !(m_eUIType == eUITypeUnknown || m_eUIType == eUITypeConsole) ) return;
+
+   std::string stringColorCode = CONFIG_Get("color", stringColor).as_string();
+   if( stringColorCode.empty() == false )
+   {
+      stringColorCode = gd::console::rgb::print(stringColorCode, gd::types::tag_background{});
+      std::cout << stringColorCode;                                           // Print the color code before the message
+      std::cout << "\033[2J";
+      std::cout << "\033[H";
+   }
+   else
+   {
+      // ## Reset all attributes and clear the screen to return to the default state
+      std::cout << "\033[0m";
+      //std::cout << "\033[2J"; 
+      //std::cout << "\033[H";
+   }
 }
 
 

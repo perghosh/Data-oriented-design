@@ -6,8 +6,11 @@
 **Type of methods**
 | method  | brief  | description |
 |---|---|---| 
-| `append*` | appends value to arguments  | `append*` has variant to make it as flexible as possible.  |
+| `append*` | appends value to arguments  | `append*` has variant to make it as flexible as possible. Many variants  |
+| `get*` | retrieves value from arguments  | `get*` retrieves value from arguments |
+| `compare*` | compares values | `compare*` compares values in arguments |
 | `insert*` | inserts value before specified  | `insert` insert is used to insert value before specified |
+| `remove*` | removes value  | `remove*` removes value from arguments, if not found it does nothing. |
 | `set*` | set or appends value  | `set*` sets value for existing value or if not found it appends it.  |
 
  * 
@@ -904,7 +907,8 @@ public:
    arguments& append(const std::string_view& stringName, const std::vector<argument>& vectorArgument);
    arguments& append(const std::string_view& stringName, const std::vector<gd::variant_view>& vectorArgument);
 
-   
+   template<typename ARGUMENTS>
+   arguments& append( const ARGUMENTS& arguments_, const std::initializer_list<std::string_view>& list_ );
 
    std::pair<bool, std::string>  append( const std::string_view& stringValue, tag_parse );
 
@@ -1548,6 +1552,48 @@ inline arguments& arguments::append(const std::string_view& stringName, const st
    for( const auto& it : vectorArgument ) append_argument(stringName, it);
    return *this;
 }
+
+/**
+ * @brief Appends arguments from another arguments object whose names are present in the specified list.
+ * @tparam ARGUMENTS The type representing the arguments container.
+ * @param arguments_ The arguments object to extract and append arguments from.
+ * @param list_ A list of argument names to filter which arguments to append.
+ * @return A reference to the modified arguments object (*this) after appending the selected arguments.
+ * 
+ * @code
+// Example adding argument values from gd::argument::arguments to gd::argument::shared::arguments
+gd::argument::arguments arguments_;
+arguments_.append("arg1", 42);
+arguments_.append("arg2", "Hello");
+gd::argument::shared::arguments argumentsNew;
+argumentsNew.append(arguments_, { "arg1", "arg2" });
+ * @endcode
+ */
+template<typename ARGUMENTS>
+inline arguments& arguments::append(const ARGUMENTS& arguments_, const std::initializer_list<std::string_view>& list_) {
+   for( auto pPosition = arguments_.next(); pPosition != nullptr; pPosition = arguments_.next(pPosition) ) {
+      if( ARGUMENTS::is_name_s(pPosition) == true ) {                          // check if position is name
+         auto stringName = ARGUMENTS::get_name_s(pPosition);                   // get name from position
+         if( std::find(list_.begin(), list_.end(), stringName) != list_.end() ) {
+            auto value_ = ARGUMENTS::get_argument_s(pPosition);                // get argument value
+            append_argument(stringName, value_.as_variant_view());             // append argument value
+         }
+      }
+   }
+   return *this;
+}
+
+/// specialization for vector of pairs with string_view and variant_view
+template<>
+inline arguments& arguments::append<std::vector<std::pair<std::string_view, gd::variant_view>>>( const std::vector<std::pair<std::string_view, gd::variant_view>>& arguments_, const std::initializer_list<std::string_view>& list_) {
+   for(const auto& [name, value] : arguments_) {
+      if(std::find(list_.begin(), list_.end(), name) != list_.end()) {
+         append_argument(name, value);
+      }
+   }
+   return *this;
+}
+
 
 /// appends value if it is true (true, valid pointer, non 0 value for numbers, non empty strings)
 template<typename VALUE>

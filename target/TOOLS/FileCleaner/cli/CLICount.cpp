@@ -1,6 +1,7 @@
 /**
  * @file CLIHistory.cpp
- * @brief Command line interface for counting lines in files.
+ * @brief Implements the 'count' command used for pattern matching in lines.
+
  */
 
  // @TAG #cli #count
@@ -107,7 +108,7 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    {
       gd::argument::shared::arguments argumentsPattern;
       std::string stringSegment = options_["segment"].as_string(); // type of segment to search in, code, comment or string, maybe all
-      if(stringSegment.empty() == false) argumentsPattern.set("state", stringSegment.c_str());
+      if(stringSegment.empty() == false) argumentsPattern.set("segment", stringSegment.c_str());
 
       iReportType = patterncount_report_;                                     // set report type to pattern report
       std::string stringPattern = options_["pattern"].as_string();

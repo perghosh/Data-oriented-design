@@ -300,6 +300,9 @@ namespace rgb
 {
    bool print( std::string_view stringColor, std::string& stringTo, gd::types::tag_color );
    std::string print(std::string_view stringColor, gd::types::tag_color);
+
+   bool print( std::string_view stringColor, std::string& stringTo, gd::types::tag_background );
+   std::string print(std::string_view stringColor, gd::types::tag_background);
 }
 
 

@@ -1018,7 +1018,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
  * @param argumentsPath The arguments container containing the input parameters:
  *        - `source` (string): The source file path to search for patterns.
  *        - `file-key` (uint64_t): A unique key identifying the file in the main table.
- *        - `state` (string): The state to search for patterns in (e.g., "comment", "string", "code", "all").
+ *        - `segment` (string): The segment to search for patterns in (e.g., "comment", "string", "code", "all").
  * @param patternsFind The patterns to search for in the file.
  * @param ptable_ A pointer to the table where the matching lines will be stored.
  *        Each row in the table contains:
@@ -1041,13 +1041,13 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
    unsigned uFindInState = eStateCode; // state of the parser
 
    // ## if state is sent than try to figure out from what state to find patterns
-   if( argumentsPath.exists("state") == true )
+   if( argumentsPath.exists("segment") == true )
    {
-      std::string stringState = argumentsPath["state"].as_string();            // @TASK #parse.segment #user.per [name: code-segment] [description: "rename state to segment" ]
-      if( stringState == "comment" ) uFindInState = eStateComment;
-      else if( stringState == "string" ) uFindInState = eStateString;
-      else if( stringState == "code" ) uFindInState = eStateCode;
-      else if( stringState == "all" ) uFindInState = ( eStateComment | eStateString | eStateCode );
+      std::string stringSegment = argumentsPath["segment"].as_string();         // @TASK #parse.segment #user.per [name: code-segment] [description: "rename state to segment" ]
+      if( stringSegment == "comment" ) uFindInState = eStateComment;
+      else if( stringSegment == "string" ) uFindInState = eStateString;
+      else if( stringSegment == "code" ) uFindInState = eStateCode;
+      else if( stringSegment == "all" ) uFindInState = ( eStateComment | eStateString | eStateCode );
    }
 
    uint64_t uFileKey = argumentsPath["file-key"]; // key to file for main table holding activ files
@@ -1270,7 +1270,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
  * @param argumentsPath Arguments container with the following keys:
  *   - "source" (string): Path to the source file to search.
  *   - "file-key" (uint64_t): Unique key identifying the file.
- *   - "state" (string, optional): State to search in ("code", "comment", "string", or "all"). Defaults to "code".
+ *   - "segment" (string, optional): Segment to search in ("code", "comment", "string", or "all"). Defaults to "code".
  * @param vectorRegexPatterns Vector of pairs, each containing a std::regex and its string representation, to search for in the file.
  * @param ptable_ Pointer to the table where matching line details will be stored.
  * @return std::pair<bool, std::string> Returns {true, ""} on success, or {false, error message} on failure.
@@ -1286,20 +1286,20 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
  */
 std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_)
 {
-   enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
+   enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code (states are passed as "segment"), comment and string
 
    unsigned uFindInState = eStateCode; // state of the parser
 
    uint64_t uSaveRowCount = ptable_->get_row_count(); // save number of rows to fill in the full row for found rows at the end
 
-   // ## if state is sent than try to figure out from what state to find patterns
-   if( argumentsPath.exists("state") == true )
+   // ## if segment is sent than try to figure out from what segment to find patterns
+   if( argumentsPath.exists("segment") == true )
    {
-      std::string stringState = argumentsPath["state"].as_string();
-      if     ( stringState == "comment" ) uFindInState = eStateComment;
-      else if( stringState == "string"  ) uFindInState = eStateString;
-      else if( stringState == "code"    ) uFindInState = eStateCode;
-      else if( stringState == "all"     ) uFindInState = ( eStateComment | eStateString | eStateCode );
+      std::string stringSegment = argumentsPath["segment"].as_string();
+      if     ( stringSegment == "comment" ) uFindInState = eStateComment;
+      else if( stringSegment == "string"  ) uFindInState = eStateString;
+      else if( stringSegment == "code"    ) uFindInState = eStateCode;
+      else if( stringSegment == "all"     ) uFindInState = ( eStateComment | eStateString | eStateCode );
    }
 
    uint64_t uFileKey = argumentsPath["file-key"]; // key to file for main table holding activ files

@@ -428,7 +428,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
       ptableFilePattern->cell_set( uRow, "filename", itRowFile.cell_get_variant_view("filename") );
 
       gd::argument::shared::arguments argumentsPattern_({ {"source", stringFile} });
-      if( argumentsPattern.exists("state") == true ) { argumentsPattern_.set("state", argumentsPattern["state"].as_string_view()); } // set the state (code, comment, string) to search in
+      if( argumentsPattern.exists("segment") == true ) { argumentsPattern_.set("segment", argumentsPattern["segment"].as_string_view()); } // set the segment (code, comment, string) to search in
       auto result_ = COMMAND_CollectPatternStatistics( argumentsPattern_, vectorPattern, vectorCount );
       if( result_.first == false ) { ERROR_Add(result_.second); }
 
@@ -479,8 +479,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
                                                                                                    assert(ptableFile != nullptr);
-   std::string_view stringState;
-   if( argumentsList.exists("state") == true ) { stringState = argumentsList["state"].as_string_view(); } // Get the state (code, comment, string) to search in
+   std::string_view stringSegment;
+   if( argumentsList.exists("segment") == true ) { stringSegment = argumentsList["segment"].as_string_view(); } // Get the segment (code, comment, string) to search in
 
    uint64_t uFileIndex = 0; // index for file table
    auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
@@ -508,7 +508,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 
       // Find lines with patterns and update the "file-linelist" table
       gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
-      if( stringState.empty() == false ) arguments_.set("state", stringState.data()); // Set the state (code, comment, string) to search in
+      if( stringSegment.empty() == false ) arguments_.set("segment", stringSegment.data()); // Set the segment (code, comment, string) to search in
       auto result_ = COMMAND_ListLinesWithPattern( arguments_ , patternsFind, ptableLineList );
       if(result_.first == false)
       {
