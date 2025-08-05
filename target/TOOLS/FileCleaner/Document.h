@@ -172,6 +172,9 @@ public:
    /// Display message to user
    void MESSAGE_Display( const std::string_view& stringMessage );
    void MESSAGE_Display( const std::string_view& stringMessage, const gd::argument::arguments& arguments_ );
+   /// Reset message display, i.e. colors are restored to default
+   void MESSAGE_Display();
+   void MESSAGE_Background();
    /// Display message to user with progress information
    void MESSAGE_Progress( const std::string_view& stringMessage );
    void MESSAGE_Progress( const std::string_view& stringMessage, const gd::argument::arguments& arguments_ );
