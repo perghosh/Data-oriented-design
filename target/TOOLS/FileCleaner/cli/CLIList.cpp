@@ -1,6 +1,7 @@
 /**
-* @file CLIList.cpp
-*/
+ * @file CLIList.cpp
+ * @brief Implements the 'list' command used for pattern matching in lines.
+ */
 
 // @TAG #cli #list
 
@@ -123,13 +124,9 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       result_ = pdocument->FILE_Filter(stringFilter);                                              if( !result_.first ) { return result_; }
    }
 
-   uint64_t uMax = options_["max"].as_uint64(); // max number of lines to be printed
-   if (uMax == 0) uMax = 512; // default to 512 lines
-
-   gd::argument::shared::arguments argumentsList({ {"max", uMax} });
-   std::string stringSegment = options_["segment"].as_string(); // type of segment to search in, code, comment or string, maybe all
-   if (stringSegment.empty() == false) argumentsList.set("state", stringSegment.c_str());
-   if( options_["match-all"].is_true() == true ) argumentsList.append("match-all", true); // if match-all is set, then we want to match all patterns
+   gd::argument::shared::arguments argumentsList;
+   argumentsList.append( options_.get_arguments(), { "max", "segment", "match-all" });
+   if( argumentsList.exists("max") == false ) { argumentsList.set("max", 512); } // default to 512 lines
 
    // ## check for pattern that 
    if( options_.exists("pattern") == true )
@@ -161,8 +158,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
          // found '&', 'c', 's' at start then match all patterns.             @TAG #ui.cli #command.find #hack [description: if first pattern character starts with & and then space, this will be like specify AND between all patterns, 'c' = comment segment and 's' = string segment]
          std::string_view string_( stringPattern.data(), 2);
          if( string_.find( '&' ) != std::string_view::npos ) argumentsList.append("match-all", true); 
-         if( string_.find( 'c' ) != std::string_view::npos ) argumentsList.append("state", "comment"); 
-         if( string_.find( 's' ) != std::string_view::npos ) argumentsList.append("state", "string"); 
+         if( string_.find( 'c' ) != std::string_view::npos ) argumentsList.append("segment", "comment"); 
+         if( string_.find( 's' ) != std::string_view::npos ) argumentsList.append("segment", "string"); 
          vectorPattern[0] = stringPattern.substr(3);                          // remove the first 3 characters '&c-' from the pattern
       }
 
@@ -175,7 +172,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       result_ = pdocument->FILE_UpdatePatternList(vectorPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
 
-      if( options_["match-all"].is_true() == true )
+      if( argumentsList["match-all"].is_true() == true )
       {
          result_ = ListMatchAllPatterns_g( vectorPattern, pdocument );
          if (result_.first == false) return result_;

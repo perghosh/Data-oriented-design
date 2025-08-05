@@ -232,6 +232,8 @@ public:
    std::pair<bool, std::string> PrintProgress(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat);
    /// Print error message to user
    std::pair<bool, std::string> PrintError(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat);
+   ///
+   void Print( std::string_view stringColor, gd::types::tag_background );
 
 //@}
 

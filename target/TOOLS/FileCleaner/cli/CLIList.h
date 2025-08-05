@@ -1,7 +1,7 @@
 /**                                                                            @TAG #ui.cli #command.list [description:declaration for methods used for list command]
  * @file CLIList.h
  *  
- * @brief Header file for CLI list operations.
+ * @brief Header file for CLI list operations. "list" command passes arguments to these methods.
  *
  */ 
 

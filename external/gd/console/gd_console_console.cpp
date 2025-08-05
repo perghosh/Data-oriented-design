@@ -651,6 +651,34 @@ namespace rgb
       if( print(stringColor, stringTo, gd::types::tag_color{}) == false ) [[unlikely]] { return ""; } // Return empty string on failure
       return stringTo; // Return the formatted color string
    }
+
+   bool print( std::string_view stringColor, std::string& stringTo, gd::types::tag_background )
+   {
+      int iRed, iGreen, iBlue;
+      bool bSuccess = to_rgb_s(stringColor, iRed, iGreen, iBlue);             // Parse hex color to RGB values
+      if( bSuccess == false ) [[unlikely]] { return false; }                  // Return false if parsing failed
+
+      // Format the RGB values into a string
+      stringTo.clear();
+      stringTo.append("\033[48;2;");
+      stringTo.append(std::to_string(iRed));
+      stringTo.append(";");
+      stringTo.append(std::to_string(iGreen));
+      stringTo.append(";");
+      stringTo.append(std::to_string(iBlue));
+      stringTo.append("m");
+
+      return true;
+   }
+
+
+   std::string print(std::string_view stringColor, gd::types::tag_background)
+   {
+      std::string stringTo;
+      if( print(stringColor, stringTo, gd::types::tag_background{}) == false ) [[unlikely]] { return ""; } // Return empty string on failure
+      return stringTo; // Return the formatted background string
+   }
+
 }
 
 
