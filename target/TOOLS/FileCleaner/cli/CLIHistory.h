@@ -15,6 +15,7 @@
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
 
+#include "../Document.h"
 
 
 #ifndef NAMESPACE_CLI_BEGIN
@@ -28,10 +29,10 @@ NAMESPACE_CLI_BEGIN
 
 // ## History operations
 
-std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory);
+std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, CDocument* pdocument);
 
 /// \brief Create logic to manage hisory for cleaner, if windows or linux this differ some based on different filesystem
-std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& argumentsCreate );
+std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& argumentsCreate, CDocument* pdocument);
 
 /// \brief Delete history file or folder
 std::pair<bool, std::string> HistoryDelete_g( const gd::argument::arguments& argumentsDelete);
@@ -40,10 +41,12 @@ std::pair<bool, std::string> HistoryDelete_g( const gd::argument::arguments& arg
 std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argumentsRemove);
 
 /// \brief Print history file
-std::pair<bool, std::string> HistoryPrint_g( const gd::argument::arguments& argumentsPrint);
+std::pair<bool, std::string> HistoryPrint_g( const gd::argument::arguments& argumentsPrint, CDocument* pdocument);
 
 /// \brief get row history table
 std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& argumentsRow);
+
+std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argumentsSave, CDocument* pdocument);
 
 /// \brief Edit history file
 std::pair<bool, std::string> HistoryEdit_g();

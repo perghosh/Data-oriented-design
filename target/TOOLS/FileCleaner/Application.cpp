@@ -564,7 +564,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "history" )
    {
-      auto result_ = CLI::History_g( poptionsActive );
+      auto* pdocument = DOCUMENT_Get("history", true );
+      auto result_ = CLI::History_g( poptionsActive, pdocument );
    }
    else if( stringCommandName == "kv" )
    {
