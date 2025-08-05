@@ -36,6 +36,7 @@
 
 
 #include "../Application.h"
+#include "../Document.h"
 
 #include "CLI_Shared.h"
 
@@ -53,7 +54,7 @@ NAMESPACE_CLI_BEGIN
 
 static std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumentsXml);
 
-static std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argumentsEntry);
+static std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument);
 
 static std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable);
 
@@ -65,13 +66,13 @@ static std::string CurrentTime_s();
 
 static std::filesystem::path GetHistoryPath_s();
 
-std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
+std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, CDocument* pdocument)
 {
    const gd::cli::options& options_ = *poptionsHistory;
    if( options_.exists("create") == true )
    {
       gd::argument::arguments argumentsCreate( {"create", options_["create"].as_string()} );
-      auto result_ = HistoryCreate_g(argumentsCreate);
+      auto result_ = HistoryCreate_g(argumentsCreate, pdocument);
    }
    else if( options_.exists("delete") == true )
    {
@@ -81,7 +82,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
    else if( options_.exists("print") == true )
    {
       gd::argument::arguments argumentsPrint({ "print", options_["print"].as_string() });
-      auto result_ = HistoryPrint_g(argumentsPrint);
+      auto result_ = HistoryPrint_g(argumentsPrint, pdocument);
    }
    else if( options_.exists("remove") == true )
    {
@@ -101,7 +102,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
 /**
  * @brief Set up folders for cleaner and creates history file if not exists
  */
-std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& argumentsCreate )
+std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& argumentsCreate, CDocument* pdocument)
 {
    //auto result_ = papplication_g->CreateDirectory();                                               if( result_.first == false ) { return result_; }
 
@@ -150,9 +151,9 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
       ofstreamFile.close();
       PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
 
-      AppendEntry_s(argumentsFile); // TODO: This is just temporary, we need to remove this later
+      AppendEntry_s(argumentsFile, pdocument); // TODO: This is just temporary, we need to remove this later
 
-      HistoryPrint_g(argumentsFile); // Print the history file to console, this is just for debug purposes
+      HistoryPrint_g(argumentsFile, pdocument); // Print the history file to console, this is just for debug purposes
 
       HistoryGetRow_g(argumentsFile); // Get the first row of the history table, this is just for debug purposes
 
@@ -263,7 +264,7 @@ std::string FilePath()
    return stringFilePath;
 }
 
-std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint)
+std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint, CDocument* pdocument)
 {
    //std::string stringFileName = argumentsPrint["file"].as_string();
 
@@ -272,7 +273,15 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
                                                                                assert(!stringFileName.empty());
 
    //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
-   auto ptable = CreateTable_s(argumentsPrint); // Create a table to hold the history data                                                                               
+   //auto ptable = CreateTable_s(argumentsPrint); // Create a table to hold the history data                                                                               
+
+   //std::unique_ptr<gd::table::dto::table>* ptable;
+   //CDocument document;
+
+   //pdocument.CACHE_Prepare("history"); // Prepare the cache for history table
+
+   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+
 
    ReadFile_s(*ptable, argumentsPrint); // Create the table from the XML file
 
@@ -288,15 +297,22 @@ std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argu
    std::string stringFileName = argumentsRow["file"].as_string();
                                                                                assert(!stringFileName.empty());
 
-   auto ptable = CreateTable_s(argumentsRow);
+   //auto ptable = CreateTable_s(argumentsRow);
+   CDocument document;
+   auto ptable = document.CACHE_Get("history"); // Get the history table from the cache
    ReadFile_s(*ptable, argumentsRow); // Read the history file into the table
 
-   std::string stringCommand = ptable.get()->cell_get_variant_view(argumentsRow["index"].as_uint64(), "command").as_string();
-   std::string stringLine = ptable.get()->cell_get_variant_view(argumentsRow["index"].as_uint64(), "line").as_string();
+   std::string stringCommand = ptable->cell_get_variant_view(argumentsRow["index"].as_uint64(), "command").as_string();
+   std::string stringLine = ptable->cell_get_variant_view(argumentsRow["index"].as_uint64(), "line").as_string();
 
    std::cout << stringCommand << " " << stringLine << "\n";
    
    return { true, "" };
+}
+
+std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argumentsSave, CDocument* pdocument)
+{
+   return std::pair<bool, std::string>();
 }
 
 std::pair<bool, std::string> HistoryEdit_g()
@@ -365,7 +381,7 @@ std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumen
    return { true, "" };
 }
 
-std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argumentsEntry)
+std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument)
 {
    std::string stringFileName = argumentsEntry["file"].as_string();
                                                                                assert(!stringFileName.empty());
@@ -377,7 +393,7 @@ std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argume
 
    //if( std::filesystem::exists(stringFileName) == false ) { return { false, "History file does not exist: " + stringFileName }; }
 
-
+   /*
    pugi::xml_document xmldocument;
    pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
    if( !result_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
@@ -391,7 +407,8 @@ std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argume
 
    xmlnodeEntry.append_child("date").text().set(stringDate.c_str());
    xmlnodeEntry.append_child("command").text().set(stringCommand.c_str());
-   
+   */
+
    std::string stringLine;
 
    for( auto it : vectorLines )
@@ -401,13 +418,21 @@ std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argume
       //xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
    }
 
+   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+   auto uRow = ptable->row_add_one(); // Add a new row to the table
+   ptable->cell_set(uRow, "date", stringDate);
+   ptable->cell_set(uRow, "command", stringCommand);
+   ptable->cell_set(uRow, "line", stringLine);
+
+
+   /*
    xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
 
    //xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
 
    // save the modified XML document back to the file
    xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default);
-
+   */
 
    return { true, "" };
 }
