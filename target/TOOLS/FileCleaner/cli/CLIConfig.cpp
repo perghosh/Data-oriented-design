@@ -62,8 +62,8 @@ std::pair<bool, std::string> Configuration_g(const gd::cli::options* poptionsCon
  * @brief Creates a default configuration file for the application if it does not already exist, handling platform-specific paths and directory creation.
  * 
  * Create the configuration file if it doesn't exist
- * For Windows: C:\Users\<username>\AppData\Local\cleaner\configuration.json
- * For Linux: ~/.local/share/cleaner/configuration.json
+ * For Windows: C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json
+ * For Linux: ~/.local/share/cleaner/cleaner-configuration.json
  *
  * @return A std::pair where the first element is a boolean indicating success (true if the configuration file exists or was created successfully, false otherwise).
  */
@@ -73,7 +73,7 @@ std::pair<bool, std::string> ConfigurationCreate_g()
       std::string stringPath;
 
 #ifdef _WIN32
-      // Windows: C:\Users\<username>\AppData\Local\cleaner\configuration.json
+      // Windows: C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json
       char* piAppData = nullptr;
       size_t uLength = 0;
       if( _dupenv_s(&piAppData, &uLength, "LOCALAPPDATA") == 0 && piAppData != nullptr )
@@ -83,13 +83,16 @@ std::pair<bool, std::string> ConfigurationCreate_g()
       }
       else { return { false, "Failed to get LOCALAPPDATA environment variable" }; }
 #else
-      // Linux: ~/.local/share/cleaner/configuration.json
+      // Linux: ~/.local/share/cleaner/cleaner-configuration.json
       const char* piDir = getenv("HOME");
       if( piDir == nullptr ) 
       {
-         struct passwd* pw = getpwuid(getuid());
-         if( pw == nullptr ) { return { false, "Failed to get home directory" }; }
-         piDir = pw->pw_dir;
+         piDir = getenv("XDG_DATA_HOME");
+         if(piDir != nullptr) 
+         {
+            piDir = getenv("USERPROFILE"); // Windows compatibility
+            if(piDir == nullptr) { return { false, "Failed to get home directory" };}
+         }
       }
       stringPath = std::string(piDir) + "/.local/share/cleaner";
 #endif
@@ -102,7 +105,7 @@ std::pair<bool, std::string> ConfigurationCreate_g()
       }
 
       // Full path to configuration file
-      std::filesystem::path fullConfigPath = pathCleaner / "configuration.json";
+      std::filesystem::path fullConfigPath = pathCleaner / "cleaner-configuration.json";
 
       // Check if configuration file already exists
       if( std::filesystem::exists(fullConfigPath) ) { return { true, "Configuration file already exists at: " + fullConfigPath.string() }; }
@@ -111,10 +114,13 @@ std::pair<bool, std::string> ConfigurationCreate_g()
       std::string defaultConfig = R"({
 "version": "1.0",
 "cleaner.color": {
+   "background": null,
+   "default": null,
    "line": null,
    "body": null,
    "header": null,
-   "footer": null
+   "footer": null,
+   "warning": null
 }
 })";
 
@@ -157,7 +163,7 @@ std::pair<bool,std::string> ConfigurationEdit_g()
 
    if( stringHomePath.empty() == true ) return { false, "Home path is not set in the application properties." };
 
-   gd::file::path pathConfigFile(stringHomePath + "/configuration.json");
+   gd::file::path pathConfigFile(stringHomePath + "/cleaner-configuration.json");
                                                                       
    if( std::filesystem::exists( pathConfigFile ) == false ) return { false, "Configuration file does not exist: " + pathConfigFile.string() };
 
