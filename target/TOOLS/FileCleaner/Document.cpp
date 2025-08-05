@@ -553,8 +553,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
                                                                                                    assert(ptableFile != nullptr);
-   std::string_view stringState;
-   if( argumentsList.exists("state") == true ) { stringState = argumentsList["state"].as_string_view(); } // Get the state (code, comment, string) to search in
+   std::string_view stringSegment;
+   if( argumentsList.exists("segment") == true ) { stringSegment = argumentsList["segment"].as_string_view(); } // Get the segment (code, comment, string) to search in
 
    uint64_t uFileIndex = 0; // index for file table
    auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
@@ -581,7 +581,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vecto
 
       // Find lines with patterns and update the "file-linelist" table
       gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
-      if( stringState.empty() == false ) arguments_.set("state", stringState.data()); // Set the state (code, comment, string) to search in
+      if( stringSegment.empty() == false ) arguments_.set("segment", stringSegment.data()); // Set the segment (code, comment, string) to search in
       auto result_ = COMMAND_ListLinesWithPattern( arguments_, vectorRegexPatterns, ptableLineList );
       if(result_.first == false)
       {
@@ -1805,14 +1805,25 @@ void CDocument::MESSAGE_Display(const std::string_view& stringMessage, const gd:
    m_papplication->PrintMessage(stringMessage, argumentsMessage );             // display message in application window
 }
 
+/// Restore the message display to original state
+void CDocument::MESSAGE_Display()
+{
+   m_papplication->Print( "", gd::types::tag_background{});
+}
+
+void CDocument::MESSAGE_Background()
+{
+   m_papplication->Print( "background", gd::types::tag_background{} );        // restore background message
+}
+
 void CDocument::MESSAGE_Progress(const std::string_view& stringMessage)
 {
-   m_papplication->PrintProgress(stringMessage, gd::argument::arguments() );   // display progress message in application
+   m_papplication->PrintProgress(stringMessage, gd::argument::arguments() );  // display progress message in application
 }
 
 void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd::argument::arguments& argumentsMessage )
 {
-   m_papplication->PrintProgress(stringMessage, argumentsMessage );            // display progress message in application
+   m_papplication->PrintProgress(stringMessage, argumentsMessage );           // display progress message in application
 }
 
 

@@ -925,6 +925,26 @@ arguments::arguments(std::initializer_list<std::pair<std::string_view, gd::varia
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from a pointer buffer and size, and an initializer list of string-variant pairs.
+ * @param pBuffer Pointer to the buffer where the arguments will be stored.
+ * @param uSize Size of the buffer in bytes.
+ * @param listPair An initializer list of pairs containing string views and gd::variant values.
+ * Initializes the object by appending each pair from the list.
+ * 
+ * #construct @code
+ // construct arguments with using buffer avoid allocating of memory
+ std::array<std::byte, 64> array_;
+ arguments arguments_(array_.data(), array_.size(), { {"key1", 1}, {"key2", "value"} });
+ // Or
+ arguments arguments2_(array_, { {"key1", 1}, {"key2", "value"} });
+ * @endcode
+ */
+arguments::arguments(pointer pBuffer, unsigned int uSize, std::initializer_list<std::pair<std::string_view, gd::variant>> listPair) : arguments(pBuffer, uSize)
+{
+   for( auto it : listPair ) append_argument(it);
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Constructs an arguments object from an initializer list of string-variant_view pairs with a tag_view.
  * @param listPair An initializer list of pairs containing string views and gd::variant_view values.
  * @param tag_view A tag indicating the use of variant_view (distinguishes constructor overload).
@@ -936,6 +956,26 @@ arguments::arguments( std::initializer_list<std::pair<std::string_view, gd::vari
    for( auto it : listPair ) append_argument( it, tag_view{} );
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Constructs an arguments object from a pointer buffer and size, and an initializer list of string-variant_view pairs with a tag_view.
+ * @param pBuffer Pointer to the buffer where the arguments will be stored.
+ * @param uSize Size of the buffer in bytes.
+ * @param listPair An initializer list of pairs containing string views and gd::variant_view values.
+ * @param tag_view A tag indicating the use of variant_view (distinguishes constructor overload).
+ * Initializes the object by appending each pair from the list using the tag_view overload.
+ * 
+ * #construct @code
+ // construct arguments with using buffer
+ std::array<std::byte, 64> array_;
+ arguments arguments_(array_.data(), array_.size(), { {"key1", 1}, {"key2", "value"} }, gd::types::tag_view{});
+ // Or
+ arguments arguments2_(array_, { {"key1", 1}, {"key2", "value"} }, gd::types::tag_view{});
+ * @endcode
+ */
+arguments::arguments( pointer pBuffer, unsigned int uSize, std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ) : arguments(pBuffer, uSize)
+{
+   for( auto it : listPair ) append_argument( it, tag_view{} );
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Constructs an arguments object from a vector of string-variant_view pairs with a tag_view.
@@ -954,7 +994,7 @@ arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>>
  *
  * appending key-value pairs from the provided initializer list, and appending all elements from another arguments object.
  * 
- * `��{.cpp}
+ * ```{.cpp}
 void print( const gd::argument::arguments arguments_ )
 {
    std::cout << arguments_.print() << std::endl;

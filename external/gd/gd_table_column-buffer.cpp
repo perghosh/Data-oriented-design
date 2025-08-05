@@ -2238,6 +2238,16 @@ void table_column_buffer::cell_set( uint64_t uRow, unsigned uColumn, const gd::v
    }
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value in table, if type do not match or value do not fit adjust the value if column are not able to store everything
+ * 
+ * If value type do not match the type used in column then value is converted to proper type
+ * 
+ * @param uRow row index for cell
+ * @param uColumn column index for cell
+ * @param variantviewValue value set to cell and cell type need to match
+ * @param tag dispatch
+*/
 void table_column_buffer::cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_adjust )
 {                                                                                                  assert( uRow < m_uReservedRowCount ); assert( uColumn < m_vectorColumn.size() );
    auto& columnSet = m_vectorColumn[uColumn];                                                      assert( columnSet.position() < m_uRowSize );

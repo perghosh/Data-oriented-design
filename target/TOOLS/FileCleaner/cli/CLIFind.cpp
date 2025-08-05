@@ -701,6 +701,7 @@ std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd:
  */
 std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
 {                                                                                                  assert(pdocument != nullptr);
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
    auto* ptableKeyValue = pdocument->CACHE_GetTableArguments("keyvalue");     // get table for key-value pairs from the cache
    if( ptableKeyValue->size() == 0 ) { pdocument->MESSAGE_Display("\nNo key-value pairs found."); return { true, "" }; } // if no key-value pairs found, return
 
@@ -728,7 +729,7 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
       stringFilename += std::format("({})", uRowNumber); // add the row number to the filename
       //stringCliTable += stringLineColor;                                      // set the line color for the filename
       stringCliTable += std::format("\n{:-<80}\n", stringFilename + "  ");    // add the filename to the stringCliTable, with a separator before it
-      pdocument->MESSAGE_Display(stringCliTable, {{"color", "line"}});
+      pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "line"}}, gd::types::tag_view{} });
       stringCliTable.clear();                                                 // clear the stringCliTable for the next row
 
       // ## Get the arguments object from row
@@ -751,7 +752,7 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
          stringCliTable += std::format("{:>{}}: {}", name_, uKeyMarginWidth, stringValue_); // format the key-value pair as "key: value" with padding
          stringCliTable += "\n";
       }
-      pdocument->MESSAGE_Display(stringCliTable, {{"color", "body"}});
+      pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "body"}}, gd::types::tag_view{} });
       stringCliTable.clear();                                                // clear the stringCliTable for the next row
    }
 
@@ -759,9 +760,9 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
 
    // ## print summary of key-value pairs
    std::string stringSummary = std::format("\nFound {} areas with key-value pairs", ptableKeyValue->get_row_count());
-   pdocument->MESSAGE_Display(stringSummary, {{"color", "default"}});   
+   pdocument->MESSAGE_Display(stringSummary, { array_, {{"color", "default"}}, gd::types::tag_view{} });
 
-   pdocument->MESSAGE_Display("\033[0m");                                     // reset color to default
+   pdocument->MESSAGE_Display();                                              // reset color to default
 
    return { true, "" };                                                       // return success
 }

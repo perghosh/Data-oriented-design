@@ -37,4 +37,7 @@ std::pair<bool, std::string> ListMatchAllPatterns_g( const std::vector<std::stri
 std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPattern, CDocument* pdocument, int iMatchCount = -1);
 // std::pair<bool, std::string> ListRPattern_g(const gd::cli::options* poptionsList, CDocument* pdocument);
 
+/// Print found lines in list command
+std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument::arguments& argumentsPrint );
+
 NAMESPACE_CLI_END

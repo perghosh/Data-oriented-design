@@ -670,6 +670,16 @@ public: //0TAG0construct.arguments
    arguments( const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair, const arguments& arguments_ );
    arguments( const arguments& arguments_, const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair );
 
+   arguments( pointer pBuffer, unsigned int uSize, std::initializer_list<std::pair<std::string_view, gd::variant>> listPair);
+   template <size_t SIZE>
+   arguments( const std::array<std::byte, SIZE>& buffer, std::initializer_list<std::pair<std::string_view, gd::variant>> listPair ) :
+      arguments( (pointer)buffer.data(), (unsigned int)buffer.size(), listPair ) { static_assert(SIZE >= 8, "why less than 8?"); }
+
+   arguments( pointer pBuffer, unsigned int uSize, std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); 
+   template <size_t SIZE>
+   arguments( const std::array<std::byte, SIZE>& buffer, std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ) :
+      arguments( (pointer)buffer.data(), (unsigned int)buffer.size(), listPair, tag_view{} ) { static_assert(SIZE >= 8, "why less than 8?"); }
+
    // copy
    arguments(const arguments& o) { buffer_set(); common_construct(o); }
    arguments(arguments&& o) noexcept { common_construct((arguments&&)o); }

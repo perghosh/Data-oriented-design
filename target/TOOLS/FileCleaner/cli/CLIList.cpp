@@ -232,6 +232,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
 
    // ## context handling, if context is specified then we will bring some context to the found code
 
+   /*
    int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
 
    if( options_.exists("context") == true )
@@ -254,6 +255,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       iContextOffset = iContextOffset % 100;                                  // limit the offset to 100 lines, so we do not get too much context
       iContextCount = iContextCount % 1000;                                   // limit the count to 1000 lines, so we do not get too much context
    }
+   */
 
    auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
 
@@ -271,11 +273,18 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       }
    }
 
+   /*
    gd::argument::arguments argumentsOption( { { "pattern-count", (unsigned)uSearchPatternCount } } );
    if( iContextOffset != 0 || iContextCount != 0 ) { argumentsOption.append( "offset", iContextOffset ); argumentsOption.append( "count", iContextCount ); }
    auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsOption );// generate the result table for pattern line list
+   */
+
+   gd::argument::arguments argumentsPrint({ {"pattern-count", (unsigned)uSearchPatternCount} });
+   argumentsPrint.append( options_.get_arguments(), {"vs", "output", "context", "script"});
+   result_ = ListPrintLine_g(pdocument, argumentsPrint ); // print the result table
 
 
+/*
    std::string stringOutput = options_["output"].as_string();
    if (stringOutput.empty() == true)
    {
@@ -417,6 +426,8 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       if (result_.first == false) return result_;
    }
 
+   */
+
    return { true, "" }; // return success
 }
 
@@ -503,6 +514,188 @@ std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair
 }
 
 
+std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument::arguments& argumentsPrint )
+{                                                                                                  assert( pdocument != nullptr );
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
+   int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
+
+   if( argumentsPrint.exists("context") == true )
+   {
+      std::string stringContext = argumentsPrint["context"].as_string();      // context is in the format offset,count like -2,6 to get lines from 2 before and 6 lines
+
+      // parse context to numbers
+      auto vectorOffsetCount = CApplication::SplitNumber_s( stringContext );  // get offset value and count
+      size_t position_; // not used
+      if( vectorOffsetCount.size() == 1 ) { iContextCount = std::stoll(vectorOffsetCount[0].data(), &position_); }
+      else if( vectorOffsetCount.size() > 1 )
+      {
+         iContextOffset = std::stoll(vectorOffsetCount[0].data(), &position_);
+         iContextCount = std::stoll(vectorOffsetCount[1].data(), &position_);
+      }
+
+      iContextOffset = iContextOffset % 100;                                  // limit the offset to 100 lines, so we do not get too much context
+      iContextCount = iContextCount % 1000;                                   // limit the count to 1000 lines, so we do not get too much context
+      
+      if( iContextOffset != 0 || iContextCount != 0 ) 
+      { 
+         argumentsPrint.append( "offset", iContextOffset ); 
+         argumentsPrint.append( "count", iContextCount ); 
+      }
+   }
+
+   // ## Build tables for print
+
+   auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsPrint );// generate the result table for pattern line list
+
+   std::string stringOutput = argumentsPrint["output"].as_string();
+   if( stringOutput.empty() == true )
+   {
+      pdocument->MESSAGE_Background();
+      std::string stringCliTable;
+
+#ifdef _WIN32
+      if(argumentsPrint.exists("vs") == false)
+      {
+         if( iContextCount == 0 )
+         {
+            // ## Just print the "line" column 
+            gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+            table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
+            stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+            pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "line"}}, gd::types::tag_view{} });
+            stringCliTable.clear();
+         }
+         else
+         {
+            // ## Print the "line" with context
+            gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+            for( auto itRow : tableResultLineList )
+            {
+               std::string stringLine = itRow.cell_get_variant_view("line").as_string(); // get the line text
+               pdocument->MESSAGE_Display(stringLine, { array_, {{"color", "line"}}, gd::types::tag_view{} });
+               stringCliTable.clear();
+
+               stringLine += "\n";                                            // add a newline to the line text
+               std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
+               gd::utf8::indent(stringContext, "-- ");                         // indent the context code by 3 spaces
+               auto uRow = table_.row_add_one();
+
+               // ## mark the line with that has the matched pattern
+
+               auto uLeadingRow = itRow.cell_get_variant_view( "row-leading" ).as_uint();
+               auto piPosition = gd::ascii::strchr(stringContext, '\n', uLeadingRow);// find the leading row in the context code
+               if( piPosition != nullptr && piPosition[1] != 0 && piPosition[2] != 0 ) // if the leading row is found
+               {
+                  auto uIndex = piPosition - stringContext.data();            // get the index of the leading row
+                  if( uLeadingRow > 0 ) uIndex++;                             // if the leading row is greater than 0, then we have a leading row, so increment the index past new line character is needed
+                  stringContext[uIndex] = '>';                                // mark the leading row with a '>' character
+                  uIndex++;
+                  stringContext[uIndex] = '>';                                // mark the leading row with a '>' character
+               }
+
+               stringLine += stringContext;                                   // add the context code to the line text
+
+               table_.cell_set(uRow, "line", stringContext);                  // set the line text in the result table
+
+               pdocument->MESSAGE_Display(stringContext, { array_, {{"color", "body"}}, gd::types::tag_view{} });
+            }
+
+            stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+         }
+      }
+      else
+      {                                                                        // @TAG #script
+         if( argumentsPrint["script"].is_true() == true )                            
+         {
+            std::string stringScript = argumentsPrint["script"].as_string();
+            VS::CVisualStudio visualstudio;
+            auto result_ = visualstudio.Connect();
+            if( result_.first == true )
+            {
+               visualstudio.AddTable( &tableResultLineList );
+               result_ = visualstudio.ExecuteExpression( stringScript );
+            }
+            if( result_.first == false ) return result_;
+         }
+
+
+         //stringCliTable = "\n-- Result from search  --\n";
+         stringCliTable = "\n";
+         CDocument::RESULT_VisualStudio_s(tableResultLineList, stringCliTable);
+         VS::CVisualStudio visualstudio;
+         auto result_ = visualstudio.Connect();
+         if(result_.first == true) result_ = visualstudio.Print(stringCliTable, VS::tag_vs_output{});
+         if(result_.first == false)
+         {
+            std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
+            std::cerr << stringError << "\n";
+            return result_;
+         }
+         else
+         {
+            std::string stringPrint = std::format("Printed to Visual Studio output: {} rows", tableResultLineList.get_row_count());
+            std::cerr << stringPrint << "\n";
+         }
+      }
+#else
+      // ## Just print the "line" column 
+      gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+      table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
+
+      if( iContextCount == 0 )
+      {
+         // ## Just print the "line" column 
+         gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+         table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
+         stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+      }
+      else
+      {
+         // ## Print the "line" with context
+         gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+         for( auto itRow : tableResultLineList )
+         {
+            std::string stringLine = itRow.cell_get_variant_view("line").as_string(); // get the line text
+            stringLine += "\n";                                            // add a newline to the line text
+            std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
+            gd::utf8::indent(stringContext, "-- ");                         // indent the context code by 3 spaces
+            auto uRow = table_.row_add_one();
+
+            // ## mark the line with that has the matched pattern
+
+            auto uLeadingRow = itRow.cell_get_variant_view( "row-leading" ).as_uint();
+            auto piPosition = gd::ascii::strchr(stringContext, '\n', uLeadingRow);// find the leading row in the context code
+            if( piPosition != nullptr && piPosition[1] != 0 && piPosition[2] != 0 ) // if the leading row is found
+            {
+               auto uIndex = piPosition - stringContext.data();            // get the index of the leading row
+               if( uLeadingRow > 0 ) uIndex++;                             // if the leading row is greater than 0, then we have a leading row, so increment the index past new line character is needed
+               stringContext[uIndex] = '>';                                // mark the leading row with a '>' character
+               uIndex++;
+               stringContext[uIndex] = '>';                                // mark the leading row with a '>' character
+            }
+
+            stringLine += stringContext;                                   // add the context code to the line text
+
+            table_.cell_set(uRow, "line", stringLine);                     // set the line text in the result table
+         }
+
+         stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+      }
+      pdocument->MESSAGE_Display( stringCliTable );
+#endif // _WIN32
+
+      // Print number of lines found
+      std::string stringMessage = std::format("Found {} lines", tableResultLineList.get_row_count() );
+      pdocument->MESSAGE_Display(stringMessage);
+   }
+   else
+   {
+      auto result_ = pdocument->RESULT_Save({ {"type", "LIST"}, {"output", stringOutput} }, &tableResultLineList);
+      if (result_.first == false) return result_;
+   }
+
+   return { true, "" }; // return success
+}
 
 
 NAMESPACE_CLI_END
