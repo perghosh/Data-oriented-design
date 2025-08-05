@@ -1060,6 +1060,16 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       CACHE_Add( std::move(ptableKeys) );                                     // add table to cache
       return;                                                                 // exit, table is already added to cache
    }
+   else if( stringId == "history" )
+   {
+      auto p_ = CACHE_Get(stringId, false);
+      if( p_ == nullptr )
+      {
+         // file table: index | date | command | line 
+         ptable_ = std::make_unique<table>(table(uTableStyle, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+         ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
+      }
+   }
    else { assert(false); } // unknown cache table
 
    if( ptable != nullptr )
