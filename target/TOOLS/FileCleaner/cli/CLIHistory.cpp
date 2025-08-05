@@ -36,6 +36,7 @@
 
 
 #include "../Application.h"
+#include "../Document.h"
 
 #include "CLI_Shared.h"
 
@@ -272,7 +273,15 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
                                                                                assert(!stringFileName.empty());
 
    //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
-   auto ptable = CreateTable_s(argumentsPrint); // Create a table to hold the history data                                                                               
+   //auto ptable = CreateTable_s(argumentsPrint); // Create a table to hold the history data                                                                               
+
+   //std::unique_ptr<gd::table::dto::table>* ptable;
+   CDocument document;
+
+   document.CACHE_Prepare("history"); // Prepare the cache for history table
+
+   auto ptable = document.CACHE_Get("history"); // Get the history table from the cache
+
 
    ReadFile_s(*ptable, argumentsPrint); // Create the table from the XML file
 
@@ -288,7 +297,9 @@ std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argu
    std::string stringFileName = argumentsRow["file"].as_string();
                                                                                assert(!stringFileName.empty());
 
-   auto ptable = CreateTable_s(argumentsRow);
+   //auto ptable = CreateTable_s(argumentsRow);
+   CDocument document;
+   auto ptable = document.CACHE_Get("history"); // Get the history table from the cache
    ReadFile_s(*ptable, argumentsRow); // Read the history file into the table
 
    std::string stringCommand = ptable.get()->cell_get_variant_view(argumentsRow["index"].as_uint64(), "command").as_string();
