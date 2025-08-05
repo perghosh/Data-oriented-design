@@ -17,6 +17,9 @@
 // @TAG #cli #history
 
 #include <fstream>
+#include <filesystem>
+
+#include "gd/gd_file.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -33,6 +36,8 @@
 
 
 #include "../Application.h"
+
+#include "CLI_Shared.h"
 
 #include "CLIHistory.h"
 
@@ -82,6 +87,11 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory)
    {
       gd::argument::arguments argumentsRemove({ "remove", options_["remove"].as_string() });
       auto result_ = HistoryRemove_g(argumentsRemove);
+   }
+   else if( options_.exists("edit") == true )
+   {
+      gd::argument::arguments argumentsEdit({ "edit", options_["edit"].as_string() });
+      auto result_ = HistoryEdit_g();
    }
 
    return { true, "" };
@@ -287,6 +297,20 @@ std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argu
    std::cout << stringCommand << " " << stringLine << "\n";
    
    return { true, "" };
+}
+
+std::pair<bool, std::string> HistoryEdit_g()
+{
+
+   std::string stringHomePath = papplication_g->PROPERTY_Get("folder-home").as_string();
+
+   if( stringHomePath.empty() == true ) return { false, "Home path is not set in the application properties." };
+
+   gd::file::path pathHistoryFile(stringHomePath + "/history.xml");
+
+   if( std::filesystem::exists(pathHistoryFile) == false ) return { false, "History file does not exist: " + pathHistoryFile.string() };
+
+   return SHARED_OpenFile_g(pathHistoryFile);
 }
 
 /** ---------------------------------------------------------------------------
