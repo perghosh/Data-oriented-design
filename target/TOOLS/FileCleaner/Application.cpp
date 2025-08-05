@@ -396,7 +396,7 @@ std::pair<bool, std::string> CApplication::Exit()
    
    std::string stringArguments = PROPERTY_Get("arguments").as_string();
 
-   HistorySaveArguments_s(stringArguments);
+   //HistorySaveArguments_s(stringArguments);
 
 #ifdef _WIN32
    ExitWindows_s();
@@ -1458,7 +1458,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
 
    // ## Prepare configuration path
    gd::file::path pathConfiguration(stringFolder);
-   if( pathConfiguration.has_extension() == false ) { pathConfiguration += "configuration.json"; } // Add filename if not provided
+   if( pathConfiguration.has_extension() == false ) { pathConfiguration += "cleaner-configuration.json"; } // Add filename if not provided
 
    if( std::filesystem::exists(pathConfiguration) == false ) { return { false, std::format("configuration file not found: {}", pathConfiguration.string()) }; } // Check if configuration file exists
 
@@ -2213,7 +2213,7 @@ std::pair<bool, std::string> CApplication::FolderGetHome_s(std::string& stringHo
    std::string stringPath;
 
 #ifdef _WIN32
-   // Windows: C:\Users\<username>\AppData\Local\cleaner\configuration.json
+   // Windows: C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json
    char* piAppData = nullptr;
    size_t uLength = 0;
    if( _dupenv_s(&piAppData, &uLength, "LOCALAPPDATA") == 0 && piAppData != nullptr )
@@ -2223,12 +2223,16 @@ std::pair<bool, std::string> CApplication::FolderGetHome_s(std::string& stringHo
    }
    else { return { false, "Failed to get LOCALAPPDATA environment variable" }; }
 #else
-   // Linux: ~/.local/share/cleaner/configuration.json
+   // Linux: ~/.local/share/cleaner/cleaner-configuration.json
    const char* piDir = getenv("HOME");
-   if( piDir == nullptr ) {
-      struct passwd* pw = getpwuid(getuid());
-      if( pw == nullptr ) { return { false, "Failed to get home directory" }; }
-      piDir = pw->pw_dir;
+   if( piDir == nullptr ) 
+   {
+      piDir = getenv("XDG_DATA_HOME");
+      if(piDir != nullptr) 
+      {
+         piDir = getenv("USERPROFILE"); // Windows compatibility
+         if(piDir == nullptr) { return { false, "Failed to get home directory" };}
+      }
    }
    stringPath = std::string(piDir) + "/.local/share/cleaner";
 #endif

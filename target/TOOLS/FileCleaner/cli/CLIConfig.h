@@ -45,8 +45,8 @@ NAMESPACE_CLI_END
 @TASK #configuration.create #user.per
 [name: config] [priority: high] [state: ongoing] [assigned_to: per] [todo: "test in linux"]
 [description: "## create configuration file if it doesn't exist.
-For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\configuration.json`.
-For linux this file should be placed in `~/.local/share/cleaner/configuration.json`.
+For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json`.
+For linux this file should be placed in `~/.local/share/cleaner/cleaner-   configuration.json`.
 If configuration file exists then just print that it does exist and exit." ]
 
 [sample: '
@@ -59,8 +59,8 @@ If configuration file exists then just print that it does exist and exit." ]
 @TASK #configuration.load #user.per
 [name: config] [priority: high] [state: open] [assigned_to: per]
 [description: "## load configuration file if it exists.
-For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\configuration.json`.
-For linux this file should be placed in `~/.local/share/cleaner/configuration.json`.
+For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json`.
+For linux this file should be placed in `~/.local/share/cleaner/cleaner-configuration.json`.
 " ]
 [idea: "In start, try to find configuration file and load it if found, this is done in the `CApplication` class'."]
 */
@@ -69,8 +69,8 @@ For linux this file should be placed in `~/.local/share/cleaner/configuration.js
 @TASK #configuration.open #user.per [name: config] 
 --
 [description: "## Open configuration file if it exists.
-For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\configuration.json`.
-For linux this file should be placed in `~/.local/share/cleaner/configuration.json`.
+For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json`.
+For linux this file should be placed in `~/.local/share/cleaner/cleaner-configuration.json`.
 " ]
 
 [priority: medium] [state: open] [assigned_to: per]

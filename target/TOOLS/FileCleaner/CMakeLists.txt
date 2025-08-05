@@ -86,7 +86,7 @@ if( USE_TARGET_ )
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
    target_compile_definitions(${TARGET_NAME_} PRIVATE GD_LOG_SIMPLE)
-   target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
+   # target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 
    if(MSVC)
    else()

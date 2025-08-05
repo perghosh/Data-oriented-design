@@ -509,17 +509,20 @@ std::filesystem::path GetHistoryPath_s()
 #else
    // Linux: ~/.local/share/cleaner/history.xml
    const char* piDir = getenv("HOME");
-   if( piDir == nullptr )
+   if( piDir == nullptr ) 
    {
-      struct passwd* pw = getpwuid(getuid());
-      if( pw == nullptr ) {
-         //return { false, "Failed to get home directory" };
+      piDir = getenv("XDG_DATA_HOME");
+      if(piDir != nullptr) 
+      {
+         piDir = getenv("USERPROFILE"); // Windows compatibility
       }
-      piDir = pw->pw_dir;
+   }
+
+   if( piDir != nullptr )
+   {
       pathDirectory = std::filesystem::path(piDir) / ".local" / "share" / "cleaner";
    }
-#endif
-
+#endif   
    return pathDirectory;
 }
 
