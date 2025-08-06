@@ -105,10 +105,10 @@ std::pair<bool, std::string> ConfigurationCreate_g()
       }
 
       // Full path to configuration file
-      std::filesystem::path fullConfigPath = pathCleaner / "cleaner-configuration.json";
+      std::filesystem::path pathFull = pathCleaner / "cleaner-configuration.json";
 
       // Check if configuration file already exists
-      if( std::filesystem::exists(fullConfigPath) ) { return { true, "Configuration file already exists at: " + fullConfigPath.string() }; }
+      if( std::filesystem::exists(pathFull) ) { return { true, "Configuration file already exists at: " + pathFull.string() }; }
 
       // Create default configuration content
       std::string defaultConfig = R"({
@@ -125,15 +125,15 @@ std::pair<bool, std::string> ConfigurationCreate_g()
 })";
 
       // Write configuration file
-      std::ofstream ofstreamFile(fullConfigPath);
-      if( !ofstreamFile.is_open() ) { return { false, "Failed to create configuration file: " + fullConfigPath.string() }; }
+      std::ofstream ofstreamFile(pathFull);
+      if( !ofstreamFile.is_open() ) { return { false, "Failed to create configuration file: " + pathFull.string() }; }
 
       ofstreamFile << defaultConfig;
       ofstreamFile.close();
 
-      if( ofstreamFile.fail() ) { return { false, "Failed to write to configuration file: " + fullConfigPath.string() }; }
+      if( ofstreamFile.fail() ) { return { false, "Failed to write to configuration file: " + pathFull.string() }; }
 
-      return { true, "Configuration file created successfully at: " + fullConfigPath.string() };
+      return { true, "Configuration file created successfully at: " + pathFull.string() };
 
    }
    catch( const std::filesystem::filesystem_error& e )
