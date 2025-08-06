@@ -573,7 +573,6 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
             {
                std::string stringLine = itRow.cell_get_variant_view("line").as_string(); // get the line text
                pdocument->MESSAGE_Display(stringLine, { array_, {{"color", "line"}}, gd::types::tag_view{} });
-               stringCliTable.clear();
 
                stringLine += "\n";                                            // add a newline to the line text
                std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
@@ -600,7 +599,7 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
                pdocument->MESSAGE_Display(stringContext, { array_, {{"color", "body"}}, gd::types::tag_view{} });
             }
 
-            stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+            //stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
          }
       }
       else
@@ -656,6 +655,10 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
          for( auto itRow : tableResultLineList )
          {
             std::string stringLine = itRow.cell_get_variant_view("line").as_string(); // get the line text
+            pdocument->MESSAGE_Display(stringLine, { array_, {{"color", "line"}}, gd::types::tag_view{} });
+
+
+            pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "line"}}, gd::types::tag_view{} });
             stringLine += "\n";                                            // add a newline to the line text
             std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
             gd::utf8::indent(stringContext, "-- ");                         // indent the context code by 3 spaces
@@ -677,11 +680,12 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
             stringLine += stringContext;                                   // add the context code to the line text
 
             table_.cell_set(uRow, "line", stringLine);                     // set the line text in the result table
+            pdocument->MESSAGE_Display(stringContext, { array_, {{"color", "body"}}, gd::types::tag_view{} });
          }
 
-         stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+         //stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
       }
-      pdocument->MESSAGE_Display( stringCliTable );
+      //pdocument->MESSAGE_Display( stringCliTable );
 #endif // _WIN32
 
       // Print number of lines found
