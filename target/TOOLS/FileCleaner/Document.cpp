@@ -1772,6 +1772,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
       }
 
       std::string stringLine = ptableLineList->cell_get_variant_view(uRow, "line").as_string();
+      stringLine = gd::math::string::trim_repeated_chars(stringLine);          // trim line from characters that are repeated more than 2 times
       if( stringLine.length() > 120 ) stringLine = stringLine.substr(0, 120) + "..."; // limit line length to 120 characters  
       stringLine += "]";                                                       // close line with ]
 

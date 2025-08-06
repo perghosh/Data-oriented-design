@@ -707,6 +707,118 @@ std::string format_comment(const std::string_view& stringText, const std::string
    return stringResult;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Creates a formatted header line with specified characters and total length.
+ *
+ * This function generates a header line in the format: first_char + fill_char + " " + header_name + " " + fill_chars + last_char.
+ * The header name is padded with spaces and surrounded by fill characters to reach the specified total length.
+ * If the header name is too long to fit within the specified length, it will be truncated.
+ * Minimum length is 4 characters to accommodate the basic structure.
+ *
+ * @param stringHeaderName The header text to display in the center.
+ * @param iFirstChar The character to use at the beginning of the line (default: '+').
+ * @param iFillChar The character to use for padding (default: '-').
+ * @param iLastChar The character to use at the end of the line (default: '+').
+ * @param uTotalLength The total length of the generated line (default: 70).
+ * @return std::string The formatted header line.
+ * 
+ * @code
+ * std::string header = format_header_line("Configuration", '+', '-', '+', 60);
+ * // Result: "+- Configuration ---------------------------------------------+"
+ * 
+ * std::string header2 = format_header_line("Short", '[', '=', ']', 20);
+ * // Result: "[= Short ==========]"
+ * @endcode
+ */
+std::string format_header_line(const std::string_view& stringHeaderName, char iFirstChar, char iFillChar, char iLastChar, size_t uTotalLength)
+{
+   if(uTotalLength < 4) { uTotalLength = 4; }                                  // Handle minimum length requirements
+   
+   std::string stringResult;
+   stringResult.reserve(uTotalLength);
+   
+   // ## Calculate available space for header and fill characters
+   // Structure: first_char + fill_char + " " + header + " " + fill_chars + last_char
+   size_t uHeaderSpace = uTotalLength - 4; // Subtract: first_char + fill_char + 2 spaces + last_char
+   
+   std::string stringHeader(stringHeaderName);
+   
+   // ## Truncate header if it's too long to fit
+   if(stringHeader.length() > uHeaderSpace) 
+   {
+      stringHeader = stringHeader.substr(0, uHeaderSpace);
+   }
+   
+   // ## Calculate remaining fill characters needed
+   size_t uRemainingFill = uHeaderSpace - stringHeader.length();
+   
+   // ## Build the header line
+   stringResult += iFirstChar;           // First character
+   stringResult += iFillChar;            // Initial fill character
+   stringResult += ' ';                  // Space before header
+   stringResult += stringHeader;         // Header text
+   stringResult += ' ';                  // Space after header
+   
+   // ## Add remaining fill characters
+   for(size_t i = 0; i < uRemainingFill; ++i) 
+   {
+      stringResult += iFillChar;
+   }
+   
+   stringResult += iLastChar;            // Last character
+   
+   return stringResult;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Removes consecutive duplicate characters beyond a specified limit.
+ *
+ * This function processes the input string and removes consecutive occurrences
+ * of the same character that exceed the specified maximum count. For example,
+ * if uMaxRepeated is 2 and the string contains "aaaa", it will be trimmed
+ * to "aa". The function preserves the order of characters and only removes
+ * excess consecutive duplicates.
+ *
+ * @param stringText The source string to process.
+ * @param uMaxRepeated Maximum allowed consecutive occurrences of the same character (default: 2).
+ * @return std::string A new string with excess consecutive duplicates removed.
+ * 
+ * @code
+std::string text = "aaabbbccccdddd";
+std::string result = trim_repeated_chars(text, 2);
+// result contains "aabbccdd"
+ * @endcode
+ */
+std::string trim_repeated_chars(const std::string_view& stringText, size_t uMaxRepeated)
+{                                                                                                  assert( uMaxRepeated > 0 );
+   std::string stringResult;
+   stringResult.reserve(stringText.length()); // Reserve space to avoid reallocations
+
+   char iPreviousChar = '\0';     // Previous character processed
+   size_t uCount = 0;             // Count of repeated identical characters
+
+   for(char iCurrentChar : stringText) 
+   {
+      // ## Check if current character is the same as previous
+      if(iCurrentChar == iPreviousChar) 
+      {
+         uCount++;
+
+         if(uCount <= uMaxRepeated) { stringResult += iCurrentChar;  }         // Only add character if within the allowed limit
+      }
+      else 
+      {
+         // ### New character found, reset counter and add character
+         iPreviousChar = iCurrentChar;
+         uCount = 1;
+         stringResult += iCurrentChar;
+      }
+   }
+
+   return stringResult;
+}
+
 
 
 _GD_MATH_STRING_END
