@@ -39,3 +39,6 @@ std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFil
 
 
 NAMESPACE_CLI_END
+
+
+// @TASK #options.folder #user.per [name: options] [description: "## When cleaner is executed from root folder but only should search within some specific sub folders make sure that it is possible to find those folders even if is only the foler name"]

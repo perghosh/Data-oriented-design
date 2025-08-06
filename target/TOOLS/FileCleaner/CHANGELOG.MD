@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.2
+### New Features
+- `config` command added to manage cleaner configuration files. This allows you to create, edit, and delete configuration files for cleaner.
+- `config -create` creates a new configuration file and places it in user home directory under `~/.cleaner/`.
+- `config -edit` opens confguration file in the default editor for easy editing. Its a `json` file.
+- file with themes added to zipped cleaner package that can be downloaded among releases. This allows you to easily change the look and feel of the cleaner.
+- Generated results are colored based on the theme selected in the configuration file. This allows you to customize the look of the cleaner.
+- Color codes for 256 color mode or true RGB color can be used, what to select is up to you and the support terminal have for colors.
+- Output for key value pairs is now formated better, with each key value pair on a new line and indented for better readability.
+
 ## v1.0.1
 ### New Features
 
