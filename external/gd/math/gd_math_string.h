@@ -56,6 +56,10 @@ std::vector<std::string> select_between_all(const std::string_view& stringText, 
 std::string format_indent(const std::string_view& stringText, size_t uIndentSpaces, bool bIndentFirstLine = true, char iNewLine = '\n');
 /// Formats text as a comment with specified marker, optionally placing the comment on the first line.
 std::string format_comment(const std::string_view& stringText, const std::string_view& stringCommentMarker, bool bCommentFirstLine = true, char iNewLine = '\n');
+///
+std::string format_header_line(const std::string_view& stringHeaderName, char iFirstChar = '+', char iFillChar = '-', char iLastChar = '+', size_t uTotalLength = 70);
 
+/// Trims text by removing duplicate characters.
+std::string trim_repeated_chars(const std::string_view& stringText, size_t uMaxRepeated = 2);
 
 _GD_MATH_STRING_END
