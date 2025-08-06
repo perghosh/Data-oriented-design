@@ -8,6 +8,8 @@
 #include <cctype>
 #include <iostream>
 
+
+
 #ifdef _WIN32
 #  include <windows.h>
 #endif
@@ -21,6 +23,9 @@
 #include "gd_console_console.h"
 
 #if GD_COMPILER_HAS_CPP20_SUPPORT
+
+#include <format>
+
 
 _GD_CONSOLE_BEGIN
 
@@ -626,25 +631,44 @@ namespace rgb
       return true;
    }
 
+   /** ------------------------------------------------------------------------ @TAG #print
+    * @brief Prints an ANSI escape code for a specified color.
+    *
+    * This function generates an ANSI escape code for the given color and appends it to the output string.
+    * Formats generated: \033[38;2;R;G;Bm for true RGB colors and \033[38;5;N for indexed colors.
+    *
+    * @param stringColor The color to print (in hex format if true rgb) or byte number for byte color.
+    * @param stringTo The output string to append the ANSI code to.
+    * @param tag The color tag (foreground or background).
+    * @return True if the operation was successful, false otherwise.
+    */
    bool print( std::string_view stringColor, std::string& stringTo, gd::types::tag_color )
    {
-      int iRed, iGreen, iBlue;
-      bool bSuccess = to_rgb_s(stringColor, iRed, iGreen, iBlue);             // Parse hex color to RGB values
-      if( bSuccess == false ) [[unlikely]] { return false; }                  // Return false if parsing failed
+      if( stringColor.size() >= (sizeof("FFFFFF") - 1) )
+      {
+         // ## Generate ANSI escape code for RGB color
 
-      // Format the RGB values into a string
-      stringTo.clear();
-      stringTo.append("\033[38;2;");
-      stringTo.append(std::to_string(iRed));
-      stringTo.append(";");
-      stringTo.append(std::to_string(iGreen));
-      stringTo.append(";");
-      stringTo.append(std::to_string(iBlue));
-      stringTo.append("m");
+         int iRed, iGreen, iBlue;
+         bool bSuccess = to_rgb_s(stringColor, iRed, iGreen, iBlue);           // Parse hex color to RGB values
+         if( bSuccess == false ) [[unlikely]] { return false; }                // Return false if parsing failed
+
+         // Format the RGB values into a string
+         stringTo = std::format("\033[38;2;{};{};{}m", iRed, iGreen, iBlue);
+      }
+      else if( stringColor.empty() == false )
+      {
+         // ## Generate ANSI escape code for default color (no RGB)
+         stringTo = "\033[38;5;";
+         stringTo.append( stringColor );
+         stringTo += 'm';
+
+      }
+      else { return false; }                                                  // Return false if string is empty or too short
 
       return true;
    }
 
+   /// Print function for color tag returns a formatted string
    std::string print(std::string_view stringColor, gd::types::tag_color)
    {
       std::string stringTo;
@@ -652,26 +676,44 @@ namespace rgb
       return stringTo; // Return the formatted color string
    }
 
+   /** ------------------------------------------------------------------------
+    * @brief Prints an ANSI escape code for a specified background color.
+    *
+    * This function generates an ANSI escape code for the given background color and appends it to the output string.
+    * Formats generated: \033[48;2;R;G;Bm for true RGB colors and \033[48;5;N for indexed colors.
+    *
+    * @param stringColor The background color to print (in hex format if true rgb) or byte number for byte color.
+    * @param stringTo The output string to append the ANSI code to.
+    * @param tag The background color tag.
+    * @return True if the operation was successful, false otherwise.
+    */
    bool print( std::string_view stringColor, std::string& stringTo, gd::types::tag_background )
    {
-      int iRed, iGreen, iBlue;
-      bool bSuccess = to_rgb_s(stringColor, iRed, iGreen, iBlue);             // Parse hex color to RGB values
-      if( bSuccess == false ) [[unlikely]] { return false; }                  // Return false if parsing failed
+      if( stringColor.size() >= (sizeof("FFFFFF") - 1) )
+      {
+         // ## Generate ANSI escape code for RGB color
 
-      // Format the RGB values into a string
-      stringTo.clear();
-      stringTo.append("\033[48;2;");
-      stringTo.append(std::to_string(iRed));
-      stringTo.append(";");
-      stringTo.append(std::to_string(iGreen));
-      stringTo.append(";");
-      stringTo.append(std::to_string(iBlue));
-      stringTo.append("m");
+         int iRed, iGreen, iBlue;
+         bool bSuccess = to_rgb_s(stringColor, iRed, iGreen, iBlue);           // Parse hex color to RGB values
+         if( bSuccess == false ) [[unlikely]] { return false; }                // Return false if parsing failed
+
+         // Format the RGB values into a string
+         stringTo = std::format("\033[48;2;{};{};{}m", iRed, iGreen, iBlue);
+      }
+      else if( stringColor.empty() == false )
+      {
+         // ## Generate ANSI escape code for default color (no RGB)
+         stringTo = "\033[48;5;";
+         stringTo.append( stringColor );
+         stringTo += 'm';
+
+      }
+      else { return false; }                                                  // Return false if string is empty or too short
 
       return true;
    }
 
-
+   /// Print function for background tag returns a formatted string
    std::string print(std::string_view stringColor, gd::types::tag_background)
    {
       std::string stringTo;

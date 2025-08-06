@@ -355,9 +355,7 @@ std::pair<bool, std::string> CApplication::Initialize()
    // ## Read user configuration
 
    result_ = CONFIG_Load();                                                   // Read configuration
-   if( result_.first == false )
-   {
-   }
+   if( result_.first == false ) { PrintError("Failed to load configuration: " + result_.second, gd::argument::arguments()); }
 
    // ## Try to find ignore information
 
@@ -924,6 +922,8 @@ std::pair<bool, std::string> CApplication::PrintError(const std::string_view& st
    std::cout << "\n##\n## ERROR \n## ------\n" << stringMessage << std::flush;
    return {true, ""};
 }
+
+// @TASK #cli.color #user.per [name: color] [description: "## Add logic to support byte colors, colors store in one single byte." ]
 
 void CApplication::Print( std::string_view stringColor,  gd::types::tag_background )
 {
