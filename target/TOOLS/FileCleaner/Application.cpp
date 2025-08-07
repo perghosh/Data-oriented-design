@@ -287,6 +287,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       // ### Check if config file is used and should be loaded
 
+      bool bSetLogging = false;
       if( optionsApplication.exists("logging-severity", gd::types::tag_state_active{}) == true ) // if logging severity is set
       {
          std::string stringSeverity = optionsApplication.get_variant_view("logging-severity", gd::types::tag_state_active{}).as_string();
@@ -297,6 +298,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
             {                                                                                      
                gd::log::logger<0>* plogger = gd::log::get_s();
                plogger->set_severity( eSeverityNumber );                                           LOG_INFORMATION_RAW("== Set logging severity to: " & stringSeverity);
+               bSetLogging = true;                                                                 // set logging is set
             }
          }
       }
@@ -313,7 +315,21 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       else
       {
          result_ = CONFIG_Load();                                                                 LOG_WARNING_RAW_IF(result_.first == false, result_.second);
-      }  
+      }
+
+      if( bSetLogging == false )                                              // if logging is not set, check for logging set in configuration
+      {
+         std::string stringSeverity = CONFIG_Get("logging", {"severity"}).as_string();
+         if( stringSeverity.empty() == false )
+         {
+            auto eSeverityNumber = gd::log::severity_get_type_number_g(stringSeverity);
+            if( eSeverityNumber != gd::log::enumSeverityNumber::eSeverityNumberNone )
+            {                                                                                      
+               gd::log::logger<0>* plogger = gd::log::get_s();
+               plogger->set_severity( eSeverityNumber );                                           LOG_INFORMATION_RAW("== Set logging severity to: " & stringSeverity);
+            }
+         }
+      }
 
       // ## Process the command-line arguments
       std::tie(bOk, stringError) = Initialize(optionsApplication);
