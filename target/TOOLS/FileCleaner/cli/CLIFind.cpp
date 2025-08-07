@@ -136,7 +136,9 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
 
       if( options_.exists("keys") == true || options_.exists("kv") == true )
       {
-         result_ = FindPrintKeyValue_g(pdocument);                             // Print the key-value pairs found in the files
+         gd::argument::shared::arguments argumentsPrint;
+         argumentsPrint.append( options_.get_arguments(), { "header" } );
+         result_ = FindPrintKeyValue_g(pdocument, &argumentsPrint);                             // Print the key-value pairs found in the files
          if( result_.first == false ) return result_;                          // if print failed, return the error
          bPrint = true;                                                        // set print to true, we have printed the results
       }
@@ -695,11 +697,13 @@ std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd:
  * When used as terminal application, this function will print the key-value pairs in a column format where keys are aligned, values are indented,
  *
  * @param pdocument Pointer to a CDocument instance containing the key-value pairs.
+ * @param pargumentsPrint The arguments specifying how to generate the print output.
+ * @param pargumentsPrint.header Optional argument to specify which keys to include in the header of the output.
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
-std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
+std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint )
 {                                                                                                  assert(pdocument != nullptr);
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
    auto* ptableKeyValue = pdocument->CACHE_GetTableArguments("keyvalue");     // get table for key-value pairs from the cache
@@ -707,6 +711,12 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
 
    unsigned uKeyMarginWidth = 0; // margin width for the key, used to align the keys in the output
    std::string stringCliTable; // string to hold the CLI table output
+
+   stringCliTable += "\n\n"; 
+   stringCliTable += gd::math::string::format_header_line("RESULT", 80, '#', '=', '#');
+   stringCliTable += "\n"; 
+   pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "default"}}, gd::types::tag_view{} });
+   stringCliTable.clear(); 
 
    // ## Calculate width of the longest key, this to format the output nicely
 
@@ -717,23 +727,49 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
       if( name_.size() > uKeyMarginWidth ) uKeyMarginWidth = (unsigned)name_.size();// update the key width if the current key is longer
    }
 
+   // ## Extract header keys (if specified)
+
+   std::vector<std::string> vectorHeader;
+   if( pargumentsPrint != nullptr && pargumentsPrint->exists("header") == true )
+   {
+      vectorHeader = gd::utf8::split( pargumentsPrint->get_argument("header").as_string(), ';', gd::types::tag_string{});
+   }
+
    // ## Print values in the key-value table
 
    for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
    {
-      // ## Prepare file name
+      // ### Prepare header line if vectorHeader is not empty
+
+      const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(uRow); // get the arguments object from the row
+      if( vectorHeader.empty() == false )
+      {
+         std::string stringHeader;
+         for( const auto& key_ : vectorHeader ) 
+         { 
+            if( stringHeader.empty() == false ) stringHeader += ", ";         // add a separator if the stringHeader is not empty
+            stringHeader += pargumentsRow->get_argument( key_ ).as_string_view(); 
+         }
+
+         stringHeader = gd::math::string::format_header_line(stringHeader, 80); // format the header line to fit in 80 characters
+
+         pdocument->MESSAGE_Display(stringHeader, { array_, {{"color", "header"}}, gd::types::tag_view{} });
+      }
+
+      // ### Prepare file name
 
       std::string stringFilename = ptableKeyValue->cell_get_variant_view(uRow, "filename").as_string(); // get the filename from the key-value table
       uint64_t uRowNumber = ptableKeyValue->cell_get_variant_view(uRow, "row").as_uint64(); // get the row number from the key-value table
       uRowNumber++; // add one because rows in table are zero based
       stringFilename += std::format("({})", uRowNumber); // add the row number to the filename
-      //stringCliTable += stringLineColor;                                      // set the line color for the filename
-      stringCliTable += std::format("\n{:-<80}\n", stringFilename + "  ");    // add the filename to the stringCliTable, with a separator before it
+
+      if( vectorHeader.empty() == true ) { stringCliTable += std::format("{:-<80}", stringFilename + "  "); } // add the filename to the stringCliTable, with a separator before it
+      else stringCliTable += stringFilename;
+
       pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "line"}}, gd::types::tag_view{} });
       stringCliTable.clear();                                                 // clear the stringCliTable for the next row
 
       // ## Get the arguments object from row
-      const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(uRow); // get the arguments object from the row
       if( pargumentsRow == nullptr ) continue;                                  // if the arguments object is null, skip this row
 
       // ### Iterator over values in the arguments object
@@ -741,6 +777,10 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
       {
          //stringCliTable += std::format("{}: {}", argument.name(), argument.as_string()); // format the key-value pair as "key: value"
          auto name_ = it.name();
+
+         // if the name is in the header vector, skip this key-value pair
+         if( vectorHeader.empty() == false && std::find(vectorHeader.begin(), vectorHeader.end(), name_) != vectorHeader.end() ) { continue; } 
+
          auto stringValue_ = it.get_argument().as_string();                          // get the name and value of the argument
          if( stringValue_.find('\n') != std::string::npos ) // if the value contains a newline, replace it with a space
          {
@@ -748,7 +788,6 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
          }
 
          // Print name with padding
-         //stringCliTable += stringBodyColor;                                   // set the line color for the filename
          stringCliTable += std::format("{:>{}}: {}", name_, uKeyMarginWidth, stringValue_); // format the key-value pair as "key: value" with padding
          stringCliTable += "\n";
       }
@@ -756,10 +795,9 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument)
       stringCliTable.clear();                                                // clear the stringCliTable for the next row
    }
 
-   //pdocument->MESSAGE_Display(stringCliTable);                                // display the key-value pairs to the user
-
    // ## print summary of key-value pairs
-   std::string stringSummary = std::format("\nFound {} areas with key-value pairs", ptableKeyValue->get_row_count());
+   std::string stringSummary = std::format("Found {} sections with key-value pairs", ptableKeyValue->get_row_count());
+   stringSummary = gd::math::string::format_header_line(stringSummary, 80, '#', '=', '#');
    pdocument->MESSAGE_Display(stringSummary, { array_, {{"color", "default"}}, gd::types::tag_view{} });
 
    pdocument->MESSAGE_Display();                                              // reset color to default
