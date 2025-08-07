@@ -44,6 +44,6 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
 
 std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint );
 std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint );
-std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument);
+std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint = nullptr );
 
 NAMESPACE_CLI_END

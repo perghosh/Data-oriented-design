@@ -1,7 +1,11 @@
 # Changelog
 
 ## v1.0.2
+
+Enhanced results formatting to improve clarity and make the output more user-friendly and visually appealing.
+
 ### New Features
+- `header` option added to `find` command. This allows you to specify a header for the output of the find command. The header will be printed before the line result printing key value pairs.
 - Preview of result lines when clickable rows are trimed to simplify what is shown in the result.
 - `config` command added to manage cleaner configuration files. This allows you to create, edit, and delete configuration files for cleaner.
 - `config -create` creates a new configuration file and places it in user home directory under `~/.cleaner/`.

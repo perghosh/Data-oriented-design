@@ -716,21 +716,21 @@ std::string format_comment(const std::string_view& stringText, const std::string
  * Minimum length is 4 characters to accommodate the basic structure.
  *
  * @param stringHeaderName The header text to display in the center.
+ * @param uTotalLength The total length of the generated line (default: 70).
  * @param iFirstChar The character to use at the beginning of the line (default: '+').
  * @param iFillChar The character to use for padding (default: '-').
  * @param iLastChar The character to use at the end of the line (default: '+').
- * @param uTotalLength The total length of the generated line (default: 70).
  * @return std::string The formatted header line.
  * 
  * @code
- * std::string header = format_header_line("Configuration", '+', '-', '+', 60);
+ * std::string header = format_header_line("Configuration", 60, '+', '-', '+');
  * // Result: "+- Configuration ---------------------------------------------+"
- * 
- * std::string header2 = format_header_line("Short", '[', '=', ']', 20);
+ *
+ * std::string header2 = format_header_line("Short", 20, '[', '=', ']');
  * // Result: "[= Short ==========]"
  * @endcode
  */
-std::string format_header_line(const std::string_view& stringHeaderName, char iFirstChar, char iFillChar, char iLastChar, size_t uTotalLength)
+std::string format_header_line(const std::string_view& stringHeaderName, size_t uTotalLength, char iFirstChar, char iFillChar, char iLastChar)
 {
    if(uTotalLength < 4) { uTotalLength = 4; }                                  // Handle minimum length requirements
    
