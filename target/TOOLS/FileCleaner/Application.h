@@ -1,8 +1,24 @@
-/**
+/**                                                                            @TAG #application #document #config #ignore
  * @file Application.h
  * 
  * @brief Main application class for FileCleaner tool. Acts as the entry point for the application, handling initialization, command line arguments, and application state.
  * 
+ * CApplication is the main class for the FileCleaner tool, responsible for managing the application state.
+ * Through the application it is possible to acces all other parts of the application. CApplications is
+ * like a facade object that provides access to the application functionality.
+ *
+ * Parts in application:
+ * - DOCUMENT - manages and accesses documents, documents are used to handle data.
+ * - IGNORE - manages ignore patterns for files and folders. This is global for the application.
+ * - CONFIG - Configuration management, used to store and retrieve application settings.
+ *
+ * Application is also responsible to manage starting and stopping the application. What happens when
+ * the application is started or stopped is within the application responsibility.
+ * 
+ * ## Free functions
+ * There are a lot of free functions that acts as some type of utility functions for the application.
+ * Header file is included in the application to make it possible to use these functions.
+ *
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0construct.Application` - Represents a single argument in `arguments`.
  */
@@ -259,6 +275,12 @@ public:
    bool DOCUMENT_Empty() const;
    void DOCUMENT_Clear();
 
+   // ## iterator methods for documents
+   std::vector<std::unique_ptr<CDocument>>::iterator DOCUMENT_Begin();
+   std::vector<std::unique_ptr<CDocument>>::iterator DOCUMENT_End();
+   std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_Begin() const;
+   std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_End() const;
+
    // ## Add ignore pattern to list of ignored folders
 
    void IGNORE_Add( unsigned uType, const std::string_view& stringIgnore ) { m_vectorIgnore.push_back( { uType, std::string( stringIgnore ) } ); }
@@ -277,11 +299,6 @@ public:
    /// Clear ignore list
    void IGNORE_Clear() { m_vectorIgnore.clear(); }
 
-   // ## iterator methods for documents
-   std::vector<std::unique_ptr<CDocument>>::iterator DOCUMENT_Begin();
-   std::vector<std::unique_ptr<CDocument>>::iterator DOCUMENT_End();
-   std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_Begin() const;
-   std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_End() const;
 //@}
 
 
@@ -299,10 +316,15 @@ public:
 
 /** \name DATABASE
 *///@{
-   std::pair<bool, std::string> CONFIG_Load();
+   std::pair<bool, std::string> CONFIG_Load(); /// Load configuration from default file
+   /// Load configuration from specified file
    std::pair<bool, std::string> CONFIG_Load(const std::string_view& stringFileName );
 
    gd::variant_view CONFIG_Get( std::string_view stringGroup, std::string_view stringName ) const;
+   gd::variant_view CONFIG_Get( std::string_view stringGroup, const std::initializer_list<std::string_view> listName ) const;
+
+   /// Checks if configuration is not loaded, if pointer to configuration is null than it has not been loaded
+   bool CONFIG_Empty() const { return m_ptableConfig == nullptr; }
 
 //@}
 

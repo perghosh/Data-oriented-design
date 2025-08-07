@@ -17,6 +17,7 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, r
 - [Install](#install)
 - [Usage](#usage)
 - [Commands](#commands)
+  - [config](#config)
   - [count](#count)
   - [find](#find)
   - [list](#list)
@@ -59,6 +60,14 @@ The `*` (or `.`, `**` beacuse `*` is specific in linux) added after command mean
 
 ## Commands
 
+### config
+Manages configuration settings for cleaner.  
+`cleaner-configuration.json` file is used to store configuration settings for cleaner and is placed in the user's home directory under `~/.cleaner/` on Linux or `%USERPROFILE%\.cleaner\` on Windows.
+
+**Options:**
+- `-create`: Create a new configuration file in the user's home directory.
+- `-edit`: Edit the existing configuration file if any file is associated with the extension `json`.
+
 ### count
 Counts lines in files or folders, or counts pattern occurrences.
 
@@ -95,6 +104,7 @@ Also remember that code is stripped of comments and strings before searching. Fi
 - `--kv <keys@format>` : Key or keys to read values for and format how keys are found in code. This is a shortcut for `--keys` and `--kv-format` options. If keys contains `@` this doesn not work. 
   Example: `--kv "key1,key2,key3@[]:"`
 - `--keys <key1;key2,...>`: Keys to read values for. This is used to extract key-value pairs from the code to produce a report from the code. When multiple keys are specified in `keys` option they are separated by `;` and the value for each key is printed on a separate line in the output. 
+- `--header <key>`: Header to include in the output for key-value pairs. Key need to be within `keys` and value for that is put in header.
 - `--kv-format <format>`: Format how keys are found in code. 2 or 3 characters are expected, like `{}:` for `{key: value}`, `[]:` for `[key: """value with space and new line characters"""]` for  or `()=`. The key value logic tries to figure out how to read it and flexibilitye is the key. If format is not specified, it defaults to separate key with space character and read value until end of line or double space characters.
 - `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner list /home/username/dev/project/src/`.
 - `--ignore <match;match;match>`: Ignore files or folders matching the specified patterns. Multiple patterns are separated by `;`.
@@ -233,6 +243,17 @@ if you have **TODO** markers in your code you could format them like this: `// T
 `cleaner find -R --source "C:\dev\project" --segment comment --pattern "TODO:" --keys "description" --kv-format "[]:"` - This will find all TODO markers in comments and print the description value for each TODO marker.  
 *Same command as above*   
 `cleaner find -R --source "C:\dev\project" --pattern "c--TODO:" --kv "description@[]:"`
+
+*Produce output with header and where key value pairs are placed in columns, sample output under*   
+`cleaner find -R --source "C:\dev\project" --kv-format", "[]:" --pattern "@TASK" --kv "name;date;description;sample" --header "name"`  
+```
++- config ----------------------------------------------------------------------+
+C:\dev\home\DOD\target\TOOLS\FileCleaner\cli\CLIConfig.h(69)
+description: ## Open configuration file if it exists.
+             For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json`.
+             For linux this file should be placed in `~/.local/share/cleaner/cleaner-configuration.json`.
+```
+
 
 ---
 

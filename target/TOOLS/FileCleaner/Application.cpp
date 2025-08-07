@@ -258,7 +258,6 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    auto result_ = Initialize();
    if( result_.first == false ) { return result_; }
 
-
    if( iArgumentCount > 1 )
    {
       PROPERTY_Set("threads", true);                                           // activate threading
@@ -286,17 +285,35 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          return { false, stringError }; 
       }
 
-      // ### Check if settings file is used and should be loaded
+      // ### Check if config file is used and should be loaded
 
-      if( optionsApplication.exists("settings", gd::types::tag_state_active{}) == true )// if settings file is set
+      if( optionsApplication.exists("logging-severity", gd::types::tag_state_active{}) == true ) // if logging severity is set
       {
-         std::string stringSettingsFile = optionsApplication.get_variant_view("settings", gd::types::tag_state_active{}).as_string();
-         if( stringSettingsFile.empty() == false )
+         std::string stringSeverity = optionsApplication.get_variant_view("logging-severity", gd::types::tag_state_active{}).as_string();
+         if( stringSeverity.empty() == false )
          {
-            auto result_ = CONFIG_Load(stringSettingsFile);    // load configuration file
-            if( result_.first == false ) { return result_; }
+            auto eSeverityNumber = gd::log::severity_get_type_number_g(stringSeverity);
+            if( eSeverityNumber != gd::log::enumSeverityNumber::eSeverityNumberNone )
+            {                                                                                      
+               gd::log::logger<0>* plogger = gd::log::get_s();
+               plogger->set_severity( eSeverityNumber );                                           LOG_INFORMATION_RAW("== Set logging severity to: " & stringSeverity);
+            }
          }
       }
+
+      if( optionsApplication.exists("config", gd::types::tag_state_active{}) == true )// if config file is set
+      {
+         std::string stringConfigFile = optionsApplication.get_variant_view("config", gd::types::tag_state_active{}).as_string();
+         if( stringConfigFile.empty() == false )
+         {
+            auto result_ = CONFIG_Load(stringConfigFile);    // load configuration file
+            if( result_.first == false ) { PrintError( result_.second, gd::argument::arguments()); }
+         }
+      }
+      else
+      {
+         result_ = CONFIG_Load();                                                                 LOG_WARNING_RAW_IF(result_.first == false, result_.second);
+      }  
 
       // ## Process the command-line arguments
       std::tie(bOk, stringError) = Initialize(optionsApplication);
@@ -351,11 +368,6 @@ std::pair<bool, std::string> CApplication::Initialize()
    result_ = FolderGetHome_s(stringHomePath);
    if( result_.first == false ) { LOG_DEBUG_RAW( result_.second ); }
    else { PROPERTY_Add("folder-home", stringHomePath); }                      // Add home folder to properties
-
-   // ## Read user configuration
-
-   result_ = CONFIG_Load();                                                   // Read configuration
-   if( result_.first == false ) { PrintError("Failed to load configuration: " + result_.second, gd::argument::arguments()); }
 
    // ## Try to find ignore information
 
@@ -1530,6 +1542,13 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
    return { true, "" }; // Placeholder for settings loading logic
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Get configuration value from the config table
+ * 
+ * @param stringGroup The group name of the configuration
+ * @param stringName The name of the configuration
+ * @return gd::variant_view The value of the configuration, or an empty variant view if not found
+ */
 gd::variant_view CApplication::CONFIG_Get(std::string_view stringGroup, std::string_view stringName) const
 {
    if( m_ptableConfig == nullptr ) return gd::variant_view(); // If no config table is set, return empty variant view
@@ -1542,6 +1561,36 @@ gd::variant_view CApplication::CONFIG_Get(std::string_view stringGroup, std::str
       return value_;
    }
 
+   return gd::variant_view();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get configuration value from the config table using a list of names
+ * 
+ * This function searches for the specified configuration names within the given group
+ * and returns the value of the first found configuration.
+ *
+ * @param stringGroup The group name of the configuration
+ * @param listName A list of names to search for in the configuration
+ * @return gd::variant_view The value of the configuration, or an empty variant view if not found
+ * 
+ * @code
+ * auto value_ = application_.CONFIG_Get("color", { "header", "default" });
+ * @endcode
+ */
+gd::variant_view CApplication::CONFIG_Get( std::string_view stringGroup, const std::initializer_list<std::string_view> listName ) const
+{  
+   if( m_ptableConfig == nullptr ) return gd::variant_view(); // If no config table is set, return empty variant view
+
+   for( const auto& stringName : listName )
+   {
+      auto iRow = m_ptableConfig->find({ {"group", stringGroup }, {"name", stringName} }); // Find the row with the specified group and name
+      if( iRow != -1 )                                                           // If row is found
+      {
+         auto value_ = m_ptableConfig->cell_get_variant_view(iRow, "value");     // Return the value from the found row
+         return value_;
+      }
+   }
    return gd::variant_view();
 }
 
@@ -1642,11 +1691,12 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag( {"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
    optionsApplication.add_flag({ "help", "Prints help information about command" });
    optionsApplication.add_flag({ "verbose", "Write information about operations that might be useful for user" });
+   optionsApplication.add({ "config", "specify configuration file to use configuring cleaner" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "mode", "Specifies the operational mode of the tool, adapting its behavior for different code analysis purposes. Available modes: `review`, `stats`, `search`, `changes`, `audit`, `document`" });
-   optionsApplication.add({ "settings", "name of settings file" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
+   optionsApplication.add({ "logging-severity", "Set the logging severity level. Available levels: `verbose`, `debug`, `info`, `warning`, `error`, `fatal`."});
    //optionsApplication.add({ "database", "Set folder where logger places log files"});
    //optionsApplication.add({ "statements", "file containing sql statements"});
 
@@ -1857,7 +1907,7 @@ void CApplication::PrepareLogging_s()
    pprinter_console->set_margin( 8 );                                         // set log margin
    pprinter_console->set_margin_color( eColorBrightBlack );
 
-   unsigned uSeverity = unsigned(eSeverityNumberVerbose) | unsigned(eSeverityGroupDebug);
+   unsigned uSeverity = unsigned(eSeverityError);
    plogger->set_severity( uSeverity ); 
 
 #endif // GD_LOG_SIMPLE

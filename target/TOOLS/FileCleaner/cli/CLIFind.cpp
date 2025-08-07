@@ -118,8 +118,11 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       if( result_.first == false ) return result_;                            // if find failed, return the error
    }
 
+   // ## Print results
+
    if( options_.exists("print") == false || options_["print"].is_true() == true )  // default is to print result
    {
+      // ### Print results from rule
       bool bPrint = false;
       if( options_.exists("rule") == true )
       {
@@ -134,6 +137,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
          bPrint = true;                                                        // set print to true, we have printed the results
       }
 
+      // ### Print results from key-value pairs
       if( options_.exists("keys") == true || options_.exists("kv") == true )
       {
          gd::argument::shared::arguments argumentsPrint;
@@ -170,6 +174,10 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
  *
  * @param vectorSource A vector of source paths to search for files.
  * @param pargumentsFind The arguments containing options such as recursive search, filter, and regex patterns.
+ * @param pargumentsFind.pattern patterns to search for in the files.
+ * @param pargumentsFind.rpattern regex patterns to search for in the files.
+ * @param pargumentsFind.keys Used to specify for key-value pairs reading.
+ * @param pargumentsFind.* Lots of other options that can be used to control the find operation, like max, segment, kv, kv-format, etc.
  * @param pdocument Pointer to the CDocument instance where the results will be stored.
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
@@ -209,6 +217,12 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
    { 
       argumentsFind.append("keys", options_.get_argument_all("keys", gd::types::tag_view{})); bUseKeyValue = true; 
       if( options_.exists("kv-format") == true ) argumentsFind.append("kv-format", options_.get_argument_all("kv-format", gd::types::tag_view{})); 
+      else
+      {  // ## Get format for key-value pairs from configuration
+         auto format_ = papplication_g->CONFIG_Get("format", {"kv","keyvalue"});
+         if( format_.is_true() == true ) { argumentsFind.append("kv-format", format_.as_string_view()); } // if kv-format is set, use it
+      }
+                                                                                                   LOG_DEBUG_RAW( "== keyvalue format: " & argumentsFind["kv-format"].as_string() );
    }
 
    // ## Harvest files from the source paths
@@ -220,7 +234,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
    }
 
    if( options_.exists("pattern") == true )
-   {
+   {                                                                                               LOG_INFORMATION_RAW( "== search pattern: " & options_["pattern"].as_string() );
       auto vector_ = options_.get_argument_all("pattern", gd::types::tag_view{}); // get all patterns
       std::vector<std::string> vectorPattern; // store patterns as views
       std::vector<std::string> vectorPatternString;                           // store patterns as strings
@@ -283,7 +297,6 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
             if (result_.first == false) return result_;                       // if print failed, return the error
          }
       }
-
    }
    else if( options_.exists("rpattern") == true )
    {
