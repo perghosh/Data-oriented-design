@@ -155,7 +155,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 
       HistoryPrint_g(argumentsFile, pdocument); // Print the history file to console, this is just for debug purposes
 
-      HistoryGetRow_g(argumentsFile); // Get the first row of the history table, this is just for debug purposes
+      HistoryGetRow_g(argumentsFile, pdocument); // Get the first row of the history table, this is just for debug purposes
 
       //HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
    }
@@ -292,14 +292,14 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
    return { true, "" };
 }
 
-std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argumentsRow)
+std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argumentsRow, CDocument* pdocument)
 {
    std::string stringFileName = argumentsRow["file"].as_string();
                                                                                assert(!stringFileName.empty());
 
    //auto ptable = CreateTable_s(argumentsRow);
-   CDocument document;
-   auto ptable = document.CACHE_Get("history"); // Get the history table from the cache
+   //CDocument document;
+   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
    ReadFile_s(*ptable, argumentsRow); // Read the history file into the table
 
    std::string stringCommand = ptable->cell_get_variant_view(argumentsRow["index"].as_uint64(), "command").as_string();
@@ -312,7 +312,34 @@ std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argu
 
 std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argumentsSave, CDocument* pdocument)
 {
-   return std::pair<bool, std::string>();
+
+   auto ptable = pdocument->CACHE_Get("history"); // Ensure the history table is prepared in the cache
+   std::string stringFileName = argumentsSave["file"].as_string();
+
+   pugi::xml_document xmldocument;
+   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
+   if( !result_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
+
+   // Check if entries exist
+   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
+   if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
+
+   // Create a new entry node
+   pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");
+
+   auto uRowCount = ptable->size();
+
+   std::string stringDate = ptable->cell_get_variant_view(uRowCount - 1, "date").as_string();
+   std::string stringCommand = ptable->cell_get_variant_view(uRowCount - 1, "command").as_string();
+   std::string stringLine = ptable->cell_get_variant_view(uRowCount - 1, "line").as_string();
+
+   xmlnodeEntry.append_child("date").text().set(stringDate.c_str());
+   xmlnodeEntry.append_child("command").text().set(stringCommand.c_str());
+   xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
+
+   xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default);
+
+   return { true, "" };
 }
 
 std::pair<bool, std::string> HistoryEdit_g()
