@@ -110,7 +110,11 @@ std::pair<bool, std::string> ConfigurationCreate_g()
       // Check if configuration file already exists
       if( std::filesystem::exists(pathFull) ) { return { true, "Configuration file already exists at: " + pathFull.string() }; }
 
-      // Create default configuration content
+      // ## Create default configuration content
+      //    cleaner.color = colors for different elements
+      //    cleaner.format = format for key-value pairs
+      //    cleaner.logging = logging settings
+      //    cleaner.ignore = ignore patterns for folders and files
       std::string defaultConfig = R"({
 "version": "1.0",
 "cleaner.color": {
@@ -120,8 +124,24 @@ std::pair<bool, std::string> ConfigurationCreate_g()
    "body": null,
    "header": null,
    "footer": null,
-   "warning": null
+   "warning": null,
+   "error": null,
+   "success": null,
+   "info": null,
+   "disabled": null,
+   "border": null
+},
+"cleaner.format": {
+   "keyvalue": null
+},
+"cleaner.logging": {
+   "severity": null
+},
+"cleaner.ignore": {
+   "folder": null,
+   "file": null
 }
+
 })";
 
       // Write configuration file

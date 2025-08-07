@@ -1,8 +1,15 @@
 # Changelog
 
+## v1.0.3
+### New Features
+- Global `option` option argument added to specify a configuration file to use.
+- Global `logging-severity` to specify the logging level for cleaner. This allows you to control the verbosity of the output.
+- Extended configuration and make it possible to select different configuration files. Added more settings to configuration like ignore and logging settings.
+
 ## v1.0.2
 
 Enhanced results formatting to improve clarity and make the output more user-friendly and visually appealing.
+Enable configuration management for cleaner, user-defined settings for cleaner operations to make it easier to customize the cleaner behavior for personal preferences.
 
 ### New Features
 - `header` option added to `find` command. This allows you to specify a header for the output of the find command. The header will be printed before the line result printing key value pairs.
