@@ -44,7 +44,7 @@ std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argu
 std::pair<bool, std::string> HistoryPrint_g( const gd::argument::arguments& argumentsPrint, CDocument* pdocument);
 
 /// \brief get row history table
-std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& argumentsRow);
+std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& argumentsRow, CDocument* pdocument);
 
 std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argumentsSave, CDocument* pdocument);
 
