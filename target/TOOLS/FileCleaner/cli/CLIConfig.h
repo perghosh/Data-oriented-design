@@ -55,25 +55,3 @@ If configuration file exists then just print that it does exist and exit." ]
 [idea: "Main method for history is called `Configuration_g'."]
 */
 
-/*
-@TASK #configuration.load #user.per
-[name: config] [priority: high] [state: open] [assigned_to: per]
-[description: "## load configuration file if it exists.
-For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json`.
-For linux this file should be placed in `~/.local/share/cleaner/cleaner-configuration.json`.
-" ]
-[idea: "In start, try to find configuration file and load it if found, this is done in the `CApplication` class'."]
-*/
-
-/*
-@TASK #configuration.open #user.per [name: config] 
---
-[description: "## Open configuration file if it exists.
-For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json`.
-For linux this file should be placed in `~/.local/share/cleaner/cleaner-configuration.json`.
-" ]
-
-[priority: medium] [state: open] [assigned_to: per]
-[idea: "check for how file is associated, windows is easy, investigate linux and mac"]
-
-*/

@@ -166,16 +166,6 @@ std::pair<bool, std::string> ConfigurationCreate_g()
    }
 }
 
-/*
-@TASK #config.edit #user.per [name: config] 
---
-[description: "## Edit configuration file"]
-
-[priority: medium] [state: open] [assigned_to: per]
-[idea: "Allow users to edit the configuration file directly from associated application"]
-[sample: "Open the configuration file in the default text editor."]
-
-*/
 
 std::pair<bool,std::string> ConfigurationEdit_g()
 {
