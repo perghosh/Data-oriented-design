@@ -951,8 +951,6 @@ std::pair<bool, std::string> CApplication::PrintError(const std::string_view& st
    return {true, ""};
 }
 
-// @TASK #cli.color #user.per [name: color] [description: "## Add logic to support byte colors, colors store in one single byte." ]
-
 void CApplication::Print( std::string_view stringColor,  gd::types::tag_background )
 {
    if( !(m_eUIType == eUITypeUnknown || m_eUIType == eUITypeConsole) ) return;
