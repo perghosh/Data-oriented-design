@@ -962,8 +962,8 @@ void CApplication::Print( std::string_view stringColor,  gd::types::tag_backgrou
    {
       stringColorCode = gd::console::rgb::print(stringColorCode, gd::types::tag_background{});
       std::cout << stringColorCode;                                           // Print the color code before the message
-      //std::cout << "\033[2J";
-      //std::cout << "\033[H";
+      std::cout << "\033[2J";
+      std::cout << "\033[H";
    }
    else
    {

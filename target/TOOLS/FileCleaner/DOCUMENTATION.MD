@@ -26,6 +26,7 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, r
   - [history](#history)
   - [help](#help)
   - [version](#version)
+- [Global options](#global-options)
 - [Scripting and Advanced Usage](#scripting-and-advanced-usage)
 - [Examples](#examples)
 - [Supported File Extensions](#supported-file-extensions-and-languages)
@@ -181,7 +182,13 @@ Displays help information for the application.
 Displays the version of the application.
 
 ---
+## Global options
+These options can be used with any command to modify its behavior globally. Behaviour might be different depending on the command used.
+- `--logging-severity <severity>`: Specify severity level for logging. Valid values are: `trace`, `debug`, `info`, `warning`, `error`, `critical`.
+- `--config <file>`: Specify a configuration file to use. If not specified, the default configuration file is used if it exists.
 
+
+---
 ## Scripting and Advanced Usage
 
 ### Rule and how to use rules
@@ -196,6 +203,7 @@ Avalable rules are:
 - `select-between:<start>,<end>`: Selects text between specified start and end markers.
 - `select-line:<marker>`: Selects line at the specified line marker. If no marker is specified, it selects line where match was found.
 - `select-all`: Selects all text in the segment.
+
 
 ---
 
