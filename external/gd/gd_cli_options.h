@@ -281,8 +281,9 @@ public:
    std::pair<bool, std::string> parse( int iArgumentCount, const char* const* ppbszArgumentValue ) { return parse( iArgumentCount, ppbszArgumentValue, nullptr ); }
    
    /// parse single string, splits string into parts and parse as normal
-   std::pair<bool, std::string> parse( const std::string_view& stringArgument, const std::string_view& stringSplit );
+   std::pair<bool, std::string> parse( const std::string_view& stringArgument );
    std::pair<bool, std::string> parse( const std::vector<std::string>& vectorArgument );
+   
 
 
    template <typename VALUE>
@@ -426,6 +427,9 @@ public:
 public:
    /// convert argument values to string
    static std::string to_string_s(int iCount, const char* const* ppbszArgumentValue, int iOffset = 0);
+   /// convert argument values to string
+   static std::pair<bool, std::string> parse_s(const std::string_view& stringCommandLine, std::vector<std::string>& vectorArguments );
+   static std::vector<std::string> parse_s(const std::string_view& stringCommandLine );
    /// print error message and return it
    static std::pair<bool, std::string> error_s( std::initializer_list<gd::variant_view> listPrint );
 
