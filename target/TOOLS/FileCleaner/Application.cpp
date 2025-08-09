@@ -346,6 +346,13 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       PrintMessage( stringHelp, gd::argument::arguments() );
    }
 
+   /*
+   @TASK #user.kevin #area.options[name:save options to history][user: kevin]
+   [description:save the options to history file, so that user can see what options were used last time or select command from history
+   "store options in argument string, call historysave function for saving argument to file"]
+   [idea:add a command to save options to history file][state:open]
+   */
+
    return { true, "" };
 }
 

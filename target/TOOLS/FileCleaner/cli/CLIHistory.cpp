@@ -153,6 +153,8 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 
       AppendEntry_s(argumentsFile, pdocument); // TODO: This is just temporary, we need to remove this later
 
+      HistorySave_g(argumentsFile, pdocument); // Save the history entry to the XML file
+
       HistoryPrint_g(argumentsFile, pdocument); // Print the history file to console, this is just for debug purposes
 
       HistoryGetRow_g(argumentsFile, pdocument); // Get the first row of the history table, this is just for debug purposes
