@@ -3,7 +3,7 @@
 #
 cmake_minimum_required (VERSION 3.10)
 
-project("cleaner" LANGUAGES CXX C)
+project("cleaner" VERSION 1.0.2 LANGUAGES CXX C)
 
 include(include_external)
 
@@ -56,6 +56,8 @@ add_subdirectory("tests") # tests cleaner logic
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Option to control cleaner installation
+option(INSTALL_TARGET_ "Install cleaner executable and man page" OFF)
 
 set( USE_TARGET_ ON ) # ========================================================= ${cleaner}
 
@@ -132,5 +134,64 @@ if( USE_TARGET_ )
             -pthread               # Static link pthread
          )
       endif()
-   endif()   
+   endif()
+
+   # Installation rules for cleaner (only if INSTALL_TARGET_ is ON)
+   if(INSTALL_TARGET_)
+       if(WIN32)
+           # Windows installation: Install cleaner executable to a program directory
+           install(TARGETS ${TARGET_NAME_}
+               RUNTIME DESTINATION bin
+               COMPONENT cleaner
+               PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                           GROUP_EXECUTE GROUP_READ
+                           WORLD_EXECUTE WORLD_READ
+           )
+           # Optional: Install additional Windows files (e.g., README, LICENSE)
+           #[[
+           install(FILES ${CMAKE_SOURCE_DIR}/README.md ${CMAKE_SOURCE_DIR}/LICENSE
+               DESTINATION doc
+               COMPONENT cleaner
+               PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
+               OPTIONAL
+           )
+           ]]
+       else()
+           # Linux installation: Install cleaner executable and man page
+           install(TARGETS ${TARGET_NAME_}
+               RUNTIME DESTINATION bin
+               COMPONENT cleaner
+               PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                           GROUP_EXECUTE GROUP_READ
+                           WORLD_EXECUTE WORLD_READ
+           )
+           # Install man page (Linux only)
+           #[[
+           install(FILES ${CMAKE_SOURCE_DIR}/docs/cleaner.1
+               DESTINATION share/man/man1
+               COMPONENT cleaner
+               PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
+               OPTIONAL
+           )
+           ]]
+           # Compress man page if gzip is available
+           find_program(GZIP gzip)
+           if(GZIP)
+               # install(CODE "execute_process(COMMAND ${GZIP} -f ${CMAKE_INSTALL_PREFIX}/share/man/man1/cleaner.1)" COMPONENT cleaner)
+           endif()
+       endif()
+   endif()
+
+   # Custom target to install only cleaner
+   add_custom_target(install-cleaner
+       COMMAND ${CMAKE_COMMAND} --install . --component cleaner
+       DEPENDS ${TARGET_NAME_}
+       COMMENT "Installing cleaner executable and platform-specific files"
+   )
 endif()
+
+
+# Optional: CPack for creating installers
+include(CPack)
+cpack_add_component(cleaner DISPLAY_NAME "Cleaner Executable and Documentation")
+
