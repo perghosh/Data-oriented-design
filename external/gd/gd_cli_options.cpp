@@ -804,9 +804,9 @@ options options::sub_get( const std::string_view& stringName ) const
 }
 
 /** ---------------------------------------------------------------------------
- * @brief convert argument values to string
+ * @brief convert argument values to string, reconstruct command-line arguments into a string 
  * 
- * Convrt all arguments to string and add to stringArguments that is returned.
+ * Convert all arguments to string and add to stringArguments that is returned.
  * Useful for printing command line arguments to application
  * 
  * @param iCount number of arguments
@@ -822,13 +822,24 @@ std::string options::to_string_s(int iCount, const char* const* ppbszArgumentVal
    // ## Go through all arguments and add to string
    for( int iPosition = iOffset; iPosition < iCount; iPosition++ )
    {
+      if(ppbszArgumentValue[iPosition] == nullptr) continue;                  // Skip null pointers
+
       bool bQuote = false; // if space or special characters are found then add quotes
       auto uLength = (int)strlen(ppbszArgumentValue[iPosition]);
       const auto* pbszArgument = ppbszArgumentValue[iPosition];
+
+      // ## Check if argument needs to be quoted
       for( int i = 0; i != uLength; i++ )
       {
          char iCharacter = pbszArgument[i];
-         if( isspace(iCharacter) || iCharacter == '"' || iCharacter == '\'' || iCharacter == '\\' || iCharacter == '(' || iCharacter == ')' ) { bQuote = true; break; }
+         if(isspace(static_cast<unsigned char>(iCharacter)) || 
+            iCharacter == '"' || iCharacter == '\'' || iCharacter == '\\' || 
+            iCharacter == '(' || iCharacter == ')' || iCharacter == '|' || 
+            iCharacter == '&' || iCharacter == ';' || iCharacter == '<' || 
+            iCharacter == '>' || iCharacter == '*' || iCharacter == '?' || 
+            iCharacter == '[' || iCharacter == ']' || iCharacter == '{' || 
+            iCharacter == '}' || iCharacter == '$' || iCharacter == '`')
+         { bQuote = true; break; }
       }
 
       if( stringArguments.empty() == false ) stringArguments += " ";
@@ -836,7 +847,7 @@ std::string options::to_string_s(int iCount, const char* const* ppbszArgumentVal
       if( bQuote == true )                                                     // if space or special characters are found then add quotes
       {
          stringArguments += "\"";                                              // add quote
-         for( decltype( uLength) u = 0; u != uLength; u++ )
+         for( decltype(uLength) u = 0; u != uLength; u++ )
          {
             char iCharacter = ppbszArgumentValue[iPosition][u];
             if(iCharacter == '"' || iCharacter == '\\') 

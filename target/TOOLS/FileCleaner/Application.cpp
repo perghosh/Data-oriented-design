@@ -633,6 +633,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       //optionsApplication.print_documentation( stringDocumentation, gd::cli::options::tag_documentation_verbose{});
 
 
+      stringDocumentation += "\n\n"; 
+      stringDocumentation += gd::console::rgb::print(CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
+      std::string stringTemp =  "Global options and flags, works for all commands";
+      stringDocumentation += gd::math::string::format_header_line(stringTemp, 80); // format header line for command name
+      stringDocumentation += "\n\n"; 
 
       optionsApplication.print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_) -> void {
          if( uType == options::eOptionTypeCommand )
