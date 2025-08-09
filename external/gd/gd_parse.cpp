@@ -2207,78 +2207,63 @@ std::pair<bool, const char*> read_line_g(
  * @param vectorPart 
  * @param csv 
  */
-void split_g(const std::string_view &stringText,
-             const std::string_view &stringSplit,
-             std::vector<std::string> &vectorPart, const csv &csv) {
-    assert(stringSplit.length() > 0);
-    std::string stringPart;              // Store string parts added to vector
-    auto uLength = stringSplit.length(); // Split string lenght
-    const uint8_t *pubszSplitWith = reinterpret_cast<const uint8_t *>(
-        stringSplit.data()); // help compiler to optimize ?
+void split_g(const std::string_view& stringText, const std::string_view& stringSplit, std::vector<std::string>& vectorPart, const csv& csv) {
+   assert(stringSplit.length() > 0);
+   std::string stringPart;              // Store string parts added to vector
+   auto uLength = stringSplit.length(); // Split string lenght
+   const uint8_t* pubszSplitWith = reinterpret_cast<const uint8_t*>( stringSplit.data() ); // help compiler to optimize ?
 
-    const uint8_t *pubszPosition =
-        reinterpret_cast<const uint8_t *>(stringText.data()); // start of text
-    const uint8_t *pubszTextEnd = reinterpret_cast<const uint8_t *>(
-        stringText.data() + stringText.length()); // end of text
-    while (pubszPosition != pubszTextEnd) {
-        assert(pubszPosition < pubszTextEnd);
-        assert(*pubszPosition != 0);
-        // No split character?
-        if (*pubszPosition != *pubszSplitWith) {
-            if (csv.is_quote(*pubszPosition) == true) // check for csv quote
-            { // csv quote is found, read complete quoted value
-                std::string_view stringValue;
-                pubszPosition = (const uint8_t *)read_quoted_g(
-                    (char *)pubszPosition, (char *)pubszTextEnd, stringValue);
-                if (pubszPosition != pubszTextEnd) {
-                    pubszPosition++; // move past separator (otherwise it is
-                                     // some sort of format error)
-                    vectorPart.emplace_back(
-                        stringValue); // append value to vector
-                }
-            } else {
-                const char *pbegin_ = (const char *)pubszPosition;
-                while (pubszPosition != pubszTextEnd &&
-                       *pubszPosition != *pubszSplitWith)
-                    pubszPosition++;
+   const uint8_t* pubszPosition = reinterpret_cast<const uint8_t*>( stringText.data() ); // start of text
+   const uint8_t* pubszTextEnd = reinterpret_cast<const uint8_t*>( stringText.data() + stringText.length() ); // end of text
 
-                stringPart.append(
-                    pbegin_,
-                    pubszPosition -
-                        decltype(pubszPosition)(
-                            pbegin_)); // add value to string part that is added
-                                       // when splitter is found
-            }
-        }
-        // Compare if split text sequence is found
-        else if (*pubszPosition == *pubszSplitWith) {
-            bool bFoundSplitter = true;
-            // if only one character is used to split than skip all these
-            // characters if there are more than one
-            if (uLength == 1) {
-                while (pubszPosition != pubszTextEnd &&
-                       *pubszPosition == *pubszSplitWith)
-                    pubszPosition++;
-            } else if (memcmp((void *)pubszPosition, (void *)pubszSplitWith,
-                              uLength) == 0) {
-                pubszPosition += uLength;
-            } else {
-                bFoundSplitter = false;
-                stringPart += *pubszPosition;
-            }
-
-            if (bFoundSplitter == true) // if splitter is found then add string
-                                        // part to vector and clear it
+   while( pubszPosition != pubszTextEnd ) 
+   {                                                                          assert(pubszPosition < pubszTextEnd); assert(*pubszPosition != 0);
+      // No split character?
+      if( *pubszPosition != *pubszSplitWith ) 
+      {
+         if( csv.is_quote(*pubszPosition) == true ) // check for csv quote
+         { // csv quote is found, read complete quoted value
+            std::string_view stringValue;
+            pubszPosition = (const uint8_t*)read_quoted_g( (char*)pubszPosition, (char*)pubszTextEnd, stringValue);
+            if( pubszPosition != pubszTextEnd ) 
             {
-                vectorPart.emplace_back(stringPart);
-                stringPart.clear();
+               pubszPosition++;                                               // move past separator (otherwise it is // some sort of format error)
+               vectorPart.emplace_back(stringValue);                          // append value to vector
             }
-        }
-    }
+         }
+         else {
+            const char* pbegin_ = (const char*)pubszPosition;
+            while( pubszPosition != pubszTextEnd && *pubszPosition != *pubszSplitWith ) pubszPosition++;
 
-    if (stringPart.empty() == false) {
-        vectorPart.emplace_back(stringPart);
-    } // add last part if any
+            stringPart.append( pbegin_, pubszPosition - decltype( pubszPosition )( pbegin_ )); // add value to string part that is added // when splitter is found
+         }
+      }
+      // Compare if split text sequence is found
+      else if( *pubszPosition == *pubszSplitWith ) 
+      {
+         bool bFoundSplitter = true;
+         // if only one character is used to split than skip all these
+         // characters if there are more than one
+         if( uLength == 1 ) 
+         {
+            while( pubszPosition != pubszTextEnd && *pubszPosition == *pubszSplitWith ) pubszPosition++;
+         }
+         else if( memcmp((void*)pubszPosition, (void*)pubszSplitWith, uLength) == 0 ) {pubszPosition += uLength;  }
+         else 
+         {
+            bFoundSplitter = false;
+            stringPart += *pubszPosition;
+         }
+
+         if( bFoundSplitter == true ) // if splitter is found then add string part to vector and clear it
+         {
+            vectorPart.emplace_back(stringPart);
+            stringPart.clear();
+         }
+      }
+   }
+
+   if( stringPart.empty() == false ) { vectorPart.emplace_back(stringPart); } // add last part if any
 }
 
 /** ---------------------------------------------------------------------------

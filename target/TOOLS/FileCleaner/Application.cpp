@@ -264,6 +264,12 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       PROPERTY_Set("threads", true);                                           // activate threading
 
       std::string stringArgument = gd::cli::options::to_string_s(iArgumentCount, ppbszArgument, 1);
+#ifndef NDEBUG
+      // Debug: parse the arguments into a vector of strings to check if parsing works correctly
+      auto vectorArgument_d = gd::cli::options::parse_s(stringArgument);                           assert( vectorArgument_d.size() == (iArgumentCount - 1) );
+#endif
+
+
       PROPERTY_Add("arguments", stringArgument);                                                   LOG_INFORMATION_RAW("== Arguments: " & stringArgument);
 
       gd::cli::options optionsApplication;

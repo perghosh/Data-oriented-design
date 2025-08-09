@@ -267,13 +267,15 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
  * @param stringSplit string that splits arguments
  * @return true if ok, false and error information on error
  */
-std::pair<bool, std::string> options::parse(const std::string_view& stringArgument, const std::string_view& stringSplit)
+std::pair<bool, std::string> options::parse(const std::string_view& stringArgument)
 {
-   std::pair<bool, std::string> result_( true, "" );
-   const char** ppbszArgument = nullptr;
    std::vector< std::string > vectorArgument;
-   gd::parse::split_g( stringArgument, stringSplit, vectorArgument, gd::parse::csv{});
+   std::pair<bool, std::string> result_ = parse_s(stringArgument, vectorArgument); // parse string into vector of strings 
 
+   if( result_.first == false ) return result_;                               // if error then return error
+
+   const char** ppbszArgument = nullptr;
+   
    if(vectorArgument.empty() == false)
    {
       ppbszArgument = new const char*[vectorArgument.size()];                  // allocate pointer to pointer buffer to point to all found parts in string.
@@ -291,6 +293,110 @@ std::pair<bool, std::string> options::parse(const std::string_view& stringArgume
 
    return result_;
 }
+
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Parse command line argument string into vector of individual arguments
+ * 
+ * Handles quoted arguments, escaped characters, and whitespace separation.
+ * Supports both single and double quotes with proper escaping.
+ * 
+ * @param stringCommandLine The command line string to parse
+ * @param vectorArguments Vector to store parsed arguments
+ * @return std::pair<bool, std::string> indicating success or failure with error message if any
+ */
+std::pair<bool, std::string> options::parse_s(const std::string_view& stringCommandLine, std::vector<std::string>& vectorArguments )
+{
+   std::string stringCurrentArgument;
+
+   enum class StateType 
+   {
+      NORMAL,          // Outside quotes
+      DOUBLE_QUOTED,   // Inside double quotes
+      SINGLE_QUOTED    // Inside single quotes
+   };
+
+   StateType eState = StateType::NORMAL;
+   bool bEscapeNext = false;
+
+   // ## Parse the command line string character by character
+
+   for( auto uPosition = 0u; uPosition < stringCommandLine.length(); uPosition++ )
+   {
+      char iCharacter = stringCommandLine[uPosition];
+
+      // ## Handle escaped character
+      if( bEscapeNext == true )
+      {
+         stringCurrentArgument += iCharacter;
+         bEscapeNext = false;
+         continue;
+      }
+
+      switch( eState )
+      {
+      case StateType::NORMAL:
+         if( iCharacter == '\\' ) { bEscapeNext = true; }
+         else if( iCharacter == '"' ) { eState = StateType::DOUBLE_QUOTED; }
+         else if( iCharacter == '\'' ) { eState = StateType::SINGLE_QUOTED; }
+         else if( isspace(iCharacter) != 0 )
+         {
+            if( stringCurrentArgument.empty() == false )                      // End of current argument
+            {
+               vectorArguments.push_back(stringCurrentArgument);
+               stringCurrentArgument.clear();
+            }
+            // Skip consecutive whitespace
+            while( uPosition + 1 < stringCommandLine.length() && isspace(stringCommandLine[uPosition + 1]) != 0 ) { uPosition++; }
+         }
+         else { stringCurrentArgument += iCharacter; }
+         break;
+
+      case StateType::DOUBLE_QUOTED:
+         if( iCharacter == '\\' ) { bEscapeNext = true;  }
+         else if( iCharacter == '"' ) {eState = StateType::NORMAL; }
+         else { stringCurrentArgument += iCharacter; }
+         break;
+
+      case StateType::SINGLE_QUOTED:
+         if( iCharacter == '\'' ) { eState = StateType::NORMAL; }
+         else { stringCurrentArgument += iCharacter; }                        // In single quotes, everything is literal (no escaping)
+         break;
+      }
+   }
+
+   // Check for unmatched quotes
+   if( eState != StateType::NORMAL )
+   {
+      return { false, "Unmatched quotes in command line" };                   // Return error if quotes are unmatched
+   }
+
+   // Add final argument if any
+   if( stringCurrentArgument.empty() == false )
+   {
+      vectorArguments.push_back(stringCurrentArgument);
+   }
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief parse command line argument string into vector of individual arguments
+ * @param stringCommandLine The command line string to parse
+ * @return std::vector<std::string> vector with parsed arguments
+ */
+std::vector<std::string> options::parse_s(const std::string_view& stringCommandLine )
+{
+   std::vector<std::string> vectorArguments;
+   std::pair<bool, std::string> result_ = parse_s(stringCommandLine, vectorArguments); // parse string into vector of strings
+
+   if( result_.first == false ) return {};                                    // if error then return error
+
+   return vectorArguments;
+}
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief parse vector with string objects acting similar to parsing arguments passed to applications executed in console
