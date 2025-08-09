@@ -24,6 +24,7 @@
 #include "gd/gd_table_io.h"
 #include "gd/gd_file.h"
 #include "gd/parse/gd_parse_window_line.h"
+#include "gd/math/gd_math_string.h"
 
 
 #ifdef _WIN32
@@ -620,8 +621,64 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "help" )                                      // command = "help"
    {
-      std::string stringDocumentation;
-      optionsApplication.print_documentation( stringDocumentation, gd::cli::options::tag_documentation_verbose{});
+      using namespace gd::cli; // use namespace for options
+      std::string stringDocumentation, stringFlags;
+      //optionsApplication.print_documentation( stringDocumentation, gd::cli::options::tag_documentation_verbose{});
+
+
+
+      optionsApplication.print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_) -> void {
+         if( uType == options::eOptionTypeCommand )
+         {
+            if( stringFlags.empty() == false )
+            {
+               stringDocumentation += "\nFlags:\n";
+               stringDocumentation += stringFlags;
+               stringFlags.clear(); // clear flags for next command
+            }
+
+            if( stringName.empty() == true ) { return; } // skip empty command names
+
+            stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "header", "default" }).as_string(), gd::types::tag_color{});
+            stringDocumentation += "\n\n"; // add newline to description
+            stringDocumentation += gd::math::string::format_header_line(stringName, 80); // format header line for command name
+            stringDocumentation += "\n";
+            stringDocumentation += gd::math::string::format_indent(stringDescription, 2, true); // indent description
+            stringDocumentation += "\n\n";
+         }
+         else if( uType == options::eOptionTypeOption )
+         {
+            // pad to 18 characters
+            stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
+            std::string string_ = std::format("- {:.<16}: ", stringName );
+            stringDocumentation += string_;
+            string_ = gd::math::string::format_text_width( stringDescription, 60 );
+            string_ = gd::math::string::format_indent( string_, 20, false );
+            stringDocumentation += string_;
+            stringDocumentation += "\n";
+         }
+         else if( uType == options::eOptionTypeFlag )
+         {
+            // pad to 18 characters
+            stringFlags += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
+            std::string string_ = std::format("- {:.<16}: ", stringName );
+            stringFlags += string_;
+            string_ = gd::math::string::format_text_width( stringDescription, 60 );
+            string_ = gd::math::string::format_indent( string_, 20, false );
+            stringFlags += string_;
+            stringFlags += "\n";
+         }
+      });
+
+      if( stringFlags.empty() == false )
+      {
+         stringDocumentation += "\nFlags:\n";
+         stringDocumentation += stringFlags;
+         stringFlags.clear(); // clear flags for next command
+      }
+
+
+
       std::cout << stringDocumentation << "\n";
    }
    else if( stringCommandName == "version" )

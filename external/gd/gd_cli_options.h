@@ -113,6 +113,13 @@ public:
       eOptionFlagSingle    = 0b0000'0000'0000'0010,   ///< option is only allowed if alone
    };
 
+   enum enumOptionType
+   {
+      eOptionTypeCommand   = 1, ///< command type
+      eOptionTypeOption    = 2, ///< option type
+      eOptionTypeFlag      = 3, ///< flag type
+   };
+
    // 0TAG0option.options
 
    /**
@@ -334,6 +341,9 @@ public:
    void print_documentation( std::string& stringDocumentation, tag_documentation_dense ) const;
    void print_documentation( std::string& stringDocumentation, tag_documentation_verbose ) const;
    void print_suboption_options(const options& optionSub, std::string& stringDocumentation) const;
+
+   /// send documentation to callback function
+   void print_documentation( std::function<void(unsigned uType, const std::string_view, std::string_view, const option*)> callback_ ) const;
 
    /// get option at specified index
    option* at( size_t uIndex ) { return &m_vectorOption.at( uIndex ); }
