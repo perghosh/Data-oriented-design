@@ -422,6 +422,10 @@ public:
    static std::pair<bool, std::string> HistorySaveArguments_s(const std::string_view& stringArguments);
    /// Print history to console
    static std::pair<bool, std::string> HistoryPrint_s();
+   /// Get history location
+   static std::pair<bool, std::string> HistoryLocation_s(std::filesystem::path& pathLocation);
+   /// Save history table to file
+   static std::pair<bool, std::string> HistorySave_s(const std::string_view& stringFileName, const gd::table::dto::table* ptable);
 
    /// Split string into vector of strings, delimitier is ; or ,. It first tries to find ;, if not found then it tries to find ,
    static std::vector<std::string> Split_s(const std::string& stringText, char iCharacter = 0);

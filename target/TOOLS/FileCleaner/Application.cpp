@@ -70,6 +70,8 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 #include "cli/CLIRun.h"
 
 
+#include "Command.h"
+
 #include "Application.h"
 
 #if defined( __clang__ )
@@ -358,6 +360,41 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    "store options in argument string, call historysave function for saving argument to file"]
    [idea:add a command to save options to history file][state:open]
    */
+
+   /*
+   @TASK #user.kevin #area.options[name:save history no document][user: kevin]
+   [description:"   
+   -check if document exists
+   -if document doesn't exist, create it
+   -CACHE_Prepare history key
+   -take arguments from command line
+   -add arguments to history table
+   -save history file
+   "]
+   [state:open]   
+   */
+
+   std::filesystem::path pathHistoryLocation;
+   HistoryLocation_s(pathHistoryLocation); // Get the history location
+
+   if( std::filesystem::exists(pathHistoryLocation) == true )
+   {
+      std::string stringCommand = PROPERTY_Get("arguments").as_string();
+      std::string stringLine = PROPERTY_Get("command").as_string();
+
+ 
+      auto* pdocument = DOCUMENT_Get("history", true); // Pointer to the current document
+
+      if( pdocument->CACHE_Exists("history") == false )
+      {
+         pdocument->CACHE_Prepare("history");
+      }
+      auto* ptable = pdocument->CACHE_Get("history");
+
+      HISTORY_AddAndSave(stringCommand, stringLine, ptable);
+
+      HistorySave_s(pathHistoryLocation.string(), ptable); // Save the history table to file
+   }
 
    return { true, "" };
 }
@@ -2827,6 +2864,63 @@ std::pair<bool, std::string> CApplication::HistoryPrint_s()
 
 #else
 #endif
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CApplication::HistoryLocation_s(std::filesystem::path& pathLocation)
+{
+
+   std::string stringPath;
+
+   FolderGetHome_s(stringPath);
+
+   // check if Local/cleaner/history.xml exists
+   std::filesystem::path pathDirectory = std::filesystem::path(stringPath) / "history.xml";
+
+
+
+
+   if( std::filesystem::exists(pathDirectory) == false )
+   {
+      return { false, "History file does not exist: " + pathDirectory.string() };
+   }
+
+   pathLocation = pathDirectory; // Set the location to the history file path
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CApplication::HistorySave_s(const std::string_view& stringFileName, const gd::table::dto::table* ptable)
+{
+   pugi::xml_document xmldocument;
+   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.data());
+   //if( !result_ ) { return { false, std::string("Failed to load XML file: ") + stringFileName.data()}; }
+   if( !result_ ) { return { false, std::format("Failed to load XML file: {}", stringFileName) }; }
+
+   // Check if entries exist
+   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
+   if( xmlnodeEntries.empty() ) { return { false, std::format("No entries node found in XML file: {}", stringFileName) }; }
+
+   // Create a new entry node
+   pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");
+
+   auto uRowCount = ptable->size();
+
+   for( unsigned u = 0; u < uRowCount; ++u )
+   {
+      std::string stringDate = ptable->cell_get_variant_view(u, "date").as_string();
+      std::string stringCommand = ptable->cell_get_variant_view(u, "command").as_string();
+      std::string stringLine = ptable->cell_get_variant_view(u, "line").as_string();
+
+      xmlnodeEntry.append_child("date").text().set(stringDate.c_str());
+      xmlnodeEntry.append_child("command").text().set(stringCommand.c_str());
+      xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
+   }
+
+
+
+   xmldocument.save_file(stringFileName.data(), "  ", pugi::format_default);
 
    return { true, "" };
 }

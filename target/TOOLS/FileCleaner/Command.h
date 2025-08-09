@@ -81,4 +81,6 @@ std::pair<bool, std::string> EXPRESSION_FilterOnColumn_g( gd::table::dto::table*
 
 std::pair<bool, std::string> OS_ReadClipboard_g(std::string& stringClipboard);
 
+std::pair<bool, std::string> HISTORY_AddAndSave(std::string_view stringCommand, std::string_view stringLine, gd::table::dto::table* ptable_);
+
 

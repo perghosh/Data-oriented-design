@@ -1982,3 +1982,14 @@ std::pair<bool, std::string> OS_ReadClipboard_g(std::string& stringClipboard)
    stringClipboard = std::move(stringResult);                                  // Move the result to the output string
    return { true, "" };
 }
+
+std::pair<bool, std::string> HISTORY_AddAndSave(std::string_view stringCommand, std::string_view stringLine, gd::table::dto::table* ptable_)
+{
+   auto uRow = ptable_->row_add_one(); // add new row to table
+   //ptable_->cell_set(uRow, "date", gd::datetime::now_iso8601()); // set current date and time
+   ptable_->cell_set(uRow, "key", uRow + 1); // set key to row number
+   ptable_->cell_set(uRow, "command", stringCommand); // set command
+   ptable_->cell_set(uRow, "line", stringLine); // set line
+
+   return { true, "" };
+}
