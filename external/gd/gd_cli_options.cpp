@@ -617,6 +617,24 @@ void options::print_documentation( std::string& stringDocumentation, tag_documen
 
 }
 
+void options::print_documentation( std::function<void(unsigned uType, std::string_view, std::string_view, const option*)> callback_ ) const
+{
+   callback_( eOptionTypeCommand, m_stringName, m_stringDescription, nullptr );
+
+   for( auto it : m_vectorOption )
+   {
+      unsigned uType = eOptionTypeOption;
+      if( it.is_flag() == true ) { uType = eOptionTypeFlag; }                 // if flag then set type to flag
+
+      callback_( uType, it.name(), it.description(), &it );
+   }
+
+   for(const auto& it : m_vectorSubOption)
+   {
+      it.print_documentation( callback_ );
+   }
+}
+
 void options::print_documentation(std::string& stringDocumentation, tag_documentation_verbose) const
 {
    // ## Header

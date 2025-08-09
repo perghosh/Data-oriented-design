@@ -22,6 +22,12 @@
 
 _GD_MATH_STRING_BEGIN
 
+bool getline(std::string_view& stringText, std::string& stringLine, char iNewLine = '\n');
+bool getline(std::string_view& stringText, std::string_view& stringLine, char iNewLine = '\n');
+std::string_view getline(std::string_view& stringText, char iNewLine = '\n');
+
+
+
 /// Counts the number of occurrences of iCharacter in stringText.
 size_t count_character(const std::string_view& stringText, char iCharacter) noexcept;
 
@@ -58,6 +64,9 @@ std::string format_indent(const std::string_view& stringText, size_t uIndentSpac
 std::string format_comment(const std::string_view& stringText, const std::string_view& stringCommentMarker, bool bCommentFirstLine = true, char iNewLine = '\n');
 /// Formats text as a header line with specified characters and total length.
 std::string format_header_line(const std::string_view& stringHeaderName, size_t uTotalLength = 70, char iFirstChar = '+', char iFillChar = '-', char iLastChar = '+');
+std::string format_header_line(const std::string_view& stringHeaderName, size_t uTotalLength, std::string_view stringLine );
+/// Formats text to fit within a specified width, filling with a character if necessary.
+std::string format_text_width(std::string_view stringText, size_t uWidth, char iFillChar = ' ');
 
 /// Trims text by removing duplicate characters.
 std::string trim_repeated_chars(const std::string_view& stringText, size_t uMaxRepeated = 2);

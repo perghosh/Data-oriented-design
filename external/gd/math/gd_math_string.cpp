@@ -1,8 +1,85 @@
 #include <algorithm>
+#include <sstream>
 
 #include "gd_math_string.h"
 
 _GD_MATH_STRING_BEGIN
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Extracts a line from stringText based on the specified newline character.
+ *
+ * This function searches for the first occurrence of the newline character in stringText,
+ * extracts the line up to that point, and updates stringText to remove the processed line.
+ * If no newline character is found, it returns the entire string as a single line.
+ *
+ * @param stringText The source string to search within.
+ * @param stringLine The output string where the extracted line will be stored.
+ * @param iNewLine The character used to identify new lines (default: '\n').
+ * @return bool True if a line was successfully extracted, false if stringText is empty.
+ * 
+ * @code
+ * std::string_view text = "Hello\nWorld";
+ * std::string line;
+ * while(getline(text, line)) {
+ *     std::cout << "Extracted line: " << line << std::endl;
+ * }
+ * @endcode
+ */
+bool getline(std::string_view& stringText, std::string& stringLine, char iNewLine )
+{
+   if(stringText.empty()) { return false; }                                   // No text to process
+
+   size_t uPosition = stringText.find(iNewLine);
+   if(uPosition == std::string_view::npos) 
+   {
+      stringLine = std::string(stringText); // No newline found, return the whole string
+      stringText = {}; // Clear the original string
+      return true;
+   }
+
+   // ## Extract line and prepare for next read
+   stringLine = std::string(stringText.substr(0, uPosition));
+   stringText.remove_prefix(uPosition + 1);                                   // Remove processed part including the newline character
+
+   return true;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Extracts a line from stringText based on the specified newline character.
+ *
+ * This function searches for the first occurrence of the newline character in stringText,
+ * extracts the line up to that point, and updates stringText to remove the processed line.
+ * If no newline character is found, it returns the entire string as a single line.
+ *
+ * @param stringText The source string to search within.
+ * @param stringLine The output string_view where the extracted line will be stored.
+ * @param iNewLine The character used to identify new lines (default: '\n').
+ * @return bool True if a line was successfully extracted, false if stringText is empty.
+ */
+bool getline(std::string_view& stringText, std::string_view& stringLine, char iNewLine )
+{
+   if(stringText.empty()) { return false; }                                   // No text to process
+   size_t uPosition = stringText.find(iNewLine);
+   if(uPosition == std::string_view::npos) 
+   {
+      stringLine = stringText; // No newline found, return the whole string
+      stringText = {}; // Clear the original string
+      return true;
+   }
+   // ## Extract line and prepare for next read
+   stringLine = stringText.substr(0, uPosition);
+   stringText.remove_prefix(uPosition + 1);                                   // Remove processed part including the newline character
+   return true;
+}
+
+/// return line from stringText based on the specified newline character
+std::string_view getline(std::string_view& stringText, char iNewLine)
+{
+   std::string_view stringLine;
+   getline(stringText, stringLine, iNewLine);                                 // Use the overloaded getline function
+   return stringLine;
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Counts lines using vectorized operations for extremely large strings.
@@ -769,6 +846,125 @@ std::string format_header_line(const std::string_view& stringHeaderName, size_t 
    
    return stringResult;
 }
+
+/// Overloaded to format line from string
+std::string format_header_line(const std::string_view& stringHeaderName, size_t uTotalLength, std::string_view stringLine ) 
+{
+   char piLine[3] = { '+', '-', '+' }; // Default characters for first, fill, and last
+
+   if( stringLine.length() == 1 )                                              // same character for first, fill, and last
+   {
+      piLine[0] = stringLine[0]; // First character
+      piLine[1] = stringLine[0]; // Fill character
+      piLine[2] = stringLine[0]; // Last character
+   }
+   else if( stringLine.length() == 2 )                                         // two characters, first and last
+   {
+      piLine[0] = stringLine[0]; // First character
+      piLine[2] = stringLine[1]; // Last character
+   }
+   else if( stringLine.length() > 2 )
+   {
+      piLine[0] = stringLine[0]; // First character
+      piLine[1] = stringLine[1]; // Fill character
+      piLine[2] = stringLine[2]; // Last character
+   }
+
+   return format_header_line(stringHeaderName, uTotalLength, piLine[0], piLine[1], piLine[2]);
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Formats text to fit within a specified width, filling with a character.
+ *
+ * This function takes a string and formats it to fit within a specified width.
+ * If the text exceeds the width, it wraps to the next line. Each line is filled
+ * with a specified character until it reaches the desired width. Newlines in the
+ * original text are preserved, and the first line is treated specially if needed.
+ *
+ * @param stringText The source text to format.
+ * @param uWidth The desired width of each line (minimum 1).
+ * @param iFillChar The character used to fill remaining space in each line (default: ' ').
+ * @return std::string The formatted text with lines adjusted to the specified width.
+ * 
+ * @code
+ * std::string text = "This is a long text that needs to be wrapped and formatted.";
+ * std::string result = format_text_width(text, 20, '-');
+ * // result contains formatted lines with '-' filling up to 20 characters
+ * @endcode
+ */
+std::string format_text_width(std::string_view stringText, size_t uWidth, char iFillChar)
+{
+   assert(stringText.empty() == false); assert(uWidth > 0);
+
+   std::string stringResult;
+   stringResult.reserve(stringText.size() * 2); // More reasonable reserve size
+
+   std::string stringLine; // Current line being processed
+   bool bFirstLine = true; // Flag to track if we are processing the first line
+
+   // ## Process each line from the original text
+   while( getline(stringText, stringLine) == true ) 
+   {
+      if(bFirstLine == false) { stringResult += '\n'; }
+      bFirstLine = false;
+
+      // ### Handle empty lines
+      if( stringLine.empty() == true ) { stringResult.append(uWidth, iFillChar); continue; }
+
+      // ## Word wrap the current line
+      std::istringstream stringLineStream(stringLine);
+      std::string stringWord;
+      std::string stringCurrentLine;
+
+      while(stringLineStream >> stringWord) 
+      {
+         // ## Check if adding this word would exceed width
+         size_t uNeededSpace = stringWord.length();
+         if(stringCurrentLine.empty() == false) 
+         {
+            uNeededSpace += 1; // Space before word
+         }
+
+         if(stringCurrentLine.length() + uNeededSpace > uWidth) 
+         {
+            if(stringCurrentLine.empty() == false) 
+            {
+               // ## Pad current line and add to result
+               stringCurrentLine.append(uWidth - stringCurrentLine.length(), iFillChar);
+               stringResult += stringCurrentLine + '\n';
+               stringCurrentLine.clear();
+            }
+
+            // ## Handle words longer than width
+            while(stringWord.length() > uWidth) 
+            {
+               stringResult += stringWord.substr(0, uWidth) + '\n';
+               stringWord = stringWord.substr(uWidth);
+            }
+            stringCurrentLine = stringWord;
+         } 
+         else 
+         {
+            if(stringCurrentLine.empty() == false) 
+            {
+               stringCurrentLine += ' ';
+            }
+            stringCurrentLine += stringWord;
+         }
+      }
+
+      // ## Handle the last line segment
+      if(stringCurrentLine.empty() == false) 
+      {
+         stringCurrentLine.append(uWidth - stringCurrentLine.length(), iFillChar);
+         stringResult += stringCurrentLine;
+      }
+   }
+
+   return stringResult;
+}
+
 
 
 /** ---------------------------------------------------------------------------
