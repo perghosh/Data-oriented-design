@@ -1,3 +1,14 @@
+/**
+ * \file gd_table_aggregate.h
+ * 
+ * @brief If table may have extra columns, not just the fixed one then use `gd::table::arguments::table`. It not only stores declared columns but also store variable columns for each row.
+ * 
+ * Stores information about table, like columns, rows and cell values. It tries to keep all data in one 
+ * single memory block, so it is fast to access and modify.
+ * The `gd::table::arguments::table` is specialized in that it can store extra columns for each row, so it 
+ * can grow as needed. This makes it very flexible and powerful for dynamic data storage.
+ */
+
 #pragma once
 
 #include <algorithm>

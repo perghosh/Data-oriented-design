@@ -1,3 +1,10 @@
+/**
+ * \file gd_table_table.h
+ * 
+ * @brief Table used to store member data or data is fixed, like information about table columns do not change.
+ * 
+ */
+
 #pragma once
 
 #include <algorithm>
