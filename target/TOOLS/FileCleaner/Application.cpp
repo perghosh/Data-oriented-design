@@ -241,7 +241,7 @@ void CApplication::SetMode(const std::string_view& stringMode)
 -add arguments to history table
 -save history file
 "]
-[state:open]   
+[state:closed]   
 */
 
 

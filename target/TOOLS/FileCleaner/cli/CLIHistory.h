@@ -72,7 +72,10 @@ When history is read, apply filter if any was sent and the print. Method to prin
 /*
 @TASK #history.create #user.kevin
 [name: history] [priority: high] [state: open] [assigned_to: kevin]
-[description: "## create history file. 
+[description: 
+"## create history file. 
+- `cleaner history -create -local` create local history file in current folder. and name it to .cleaner-history.xml
+
    For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\history.xml`.
    For linux this file should be placed in `~/.local/share/cleaner/history.xml`.
    If history files exists then just print that it does exist and exit." ]
@@ -83,7 +86,7 @@ When history is read, apply filter if any was sent and the print. Method to prin
 /*
 @TASK #history.create #user.kevin [name:create local history file]
 [description:"   
-- `cleaner history -create -local
+- `cleaner history -create -local`
 - This will create a local history file in the current folder.
 "]
 */
