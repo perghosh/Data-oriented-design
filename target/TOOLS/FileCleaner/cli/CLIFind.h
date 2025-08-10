@@ -42,8 +42,11 @@ std::pair<bool, std::string> SynchronizeResult_g( CDocument* pdocument );
 
 std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vectorRule, CDocument* pdocument );
 
+/// @brief Core print method
 std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint );
+/// @brief Print method for snippets
 std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint );
+/// @brief Print method for key-value pairs
 std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint = nullptr );
 
 NAMESPACE_CLI_END

@@ -539,8 +539,11 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
  */
 std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint )
 {                                                                                                  assert(pdocument != nullptr);
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
    std::string stringCliTable; // string to hold the CLI table output
    size_t uSearchPatternCount = argumentsPrint.get_argument<uint64_t>("pattern-count", 1u); // count of patterns to search for
+
+   pdocument->MESSAGE_Display("\n");
 
    int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
 
@@ -578,6 +581,8 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
       gd::table::dto::table table_(0, { {"rstring", 0, "line"} }, gd::table::tag_prepare{});
       table_.plant(tableResultLineList, "line", 0, tableResultLineList.get_row_count() ); // plant the table into the result table
       stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
+      pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "default"}}, gd::types::tag_view{} });
+      stringCliTable.clear();
    }
    else
    {
@@ -612,7 +617,7 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
       stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
    }
 
-   pdocument->MESSAGE_Display( stringCliTable );                              // display the result table to the user
+   if( stringCliTable.empty() == false ) pdocument->MESSAGE_Display( stringCliTable );// display the result table to the user
    // Print number of lines found
    std::string stringMessage = std::format("\nFound {} lines", uRowCount);
    pdocument->MESSAGE_Display(stringMessage);                                 // display the number of lines found
@@ -637,6 +642,8 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
       }
    }
 #endif // _WIN32
+
+   pdocument->MESSAGE_Display();                                              // reset the message display
 
    return { true, "" }; 
 }
@@ -724,9 +731,15 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
 
    unsigned uKeyMarginWidth = 0; // margin width for the key, used to align the keys in the output
    std::string stringCliTable; // string to hold the CLI table output
+   std::string stringHeaderFormat = pdocument->GetApplication()->CONFIG_Get("format", "header-line").as_string(); // get the header line format from the configuration
+   if( stringHeaderFormat.empty() == false && stringHeaderFormat[0] == '0' && stringHeaderFormat[1] == 'x'  )
+   { 
+      // convert hex character codes to string characters for each hex code
+      stringHeaderFormat = gd::math::string::convert_hex_to_ascii(stringHeaderFormat.substr(2)); // remove the "0x" prefix and convert hex to string
+   } 
 
    stringCliTable += "\n\n"; 
-   stringCliTable += gd::math::string::format_header_line("RESULT", 80, '#', '=', '#');
+   stringCliTable += gd::math::string::format_header_line("RESULT", 80, '#', '=', '#');// add a header line to the output
    stringCliTable += "\n"; 
    pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "default"}}, gd::types::tag_view{} });
    stringCliTable.clear(); 
@@ -764,9 +777,10 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
             stringHeader += pargumentsRow->get_argument( key_ ).as_string_view(); 
          }
 
-         stringHeader = gd::math::string::format_header_line(stringHeader, 80); // format the header line to fit in 80 characters
+         if( stringHeaderFormat.empty() == true ) { stringHeader = gd::math::string::format_header_line(stringHeader, 80); }
+         else                                     { stringHeader = gd::math::string::format_header_line(stringHeader, 80, stringHeaderFormat); }
 
-         pdocument->MESSAGE_Display(stringHeader, { array_, {{"color", "header"}}, gd::types::tag_view{} });
+         pdocument->MESSAGE_Display(stringHeader, { array_, {{"color", "header-line"}}, gd::types::tag_view{} });
       }
 
       // ### Prepare file name

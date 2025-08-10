@@ -850,27 +850,27 @@ std::string format_header_line(const std::string_view& stringHeaderName, size_t 
 /// Overloaded to format line from string
 std::string format_header_line(const std::string_view& stringHeaderName, size_t uTotalLength, std::string_view stringLine ) 
 {
-   char piLine[3] = { '+', '-', '+' }; // Default characters for first, fill, and last
+   uint8_t puLine[3] = { '+', '-', '+' }; // Default characters for first, fill, and last
 
    if( stringLine.length() == 1 )                                              // same character for first, fill, and last
    {
-      piLine[0] = stringLine[0]; // First character
-      piLine[1] = stringLine[0]; // Fill character
-      piLine[2] = stringLine[0]; // Last character
+      puLine[0] = stringLine[0]; // First character
+      puLine[1] = stringLine[0]; // Fill character
+      puLine[2] = stringLine[0]; // Last character
    }
    else if( stringLine.length() == 2 )                                         // two characters, first and last
    {
-      piLine[0] = stringLine[0]; // First character
-      piLine[2] = stringLine[1]; // Last character
+      puLine[0] = stringLine[0]; // First character
+      puLine[2] = stringLine[1]; // Last character
    }
    else if( stringLine.length() > 2 )
    {
-      piLine[0] = stringLine[0]; // First character
-      piLine[1] = stringLine[1]; // Fill character
-      piLine[2] = stringLine[2]; // Last character
+      puLine[0] = stringLine[0]; // First character
+      puLine[1] = stringLine[1]; // Fill character
+      puLine[2] = stringLine[2]; // Last character
    }
 
-   return format_header_line(stringHeaderName, uTotalLength, piLine[0], piLine[1], piLine[2]);
+   return format_header_line(stringHeaderName, uTotalLength, puLine[0], puLine[1], puLine[2]);
 }
 
 
@@ -1009,6 +1009,50 @@ std::string trim_repeated_chars(const std::string_view& stringText, size_t uMaxR
          iPreviousChar = iCurrentChar;
          uCount = 1;
          stringResult += iCurrentChar;
+      }
+   }
+
+   return stringResult;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Converts a hexadecimal string to its ASCII representation.
+ *
+ * This function takes a string containing hexadecimal characters (0-9, A-F) and converts
+ * it to its ASCII representation. Each pair of hex characters is converted to a single ASCII character.
+ * If the input string length is not even, it asserts an error condition.
+ *
+ * @param stringHex The input hexadecimal string to convert.
+ * @return std::string The resulting ASCII string.
+ * 
+ * @code
+ * std::string hex = "48656c6c6f20576f726c64"; // "Hello World" in hex
+ * std::string ascii = convert_hex_to_ascii(hex);
+ * // ascii contains "Hello World"
+ * @endcode
+ */
+std::string convert_hex_to_ascii(const std::string_view& stringHex)
+{                                                                                   assert(stringHex.empty() == false); assert(stringHex.length() % 2 == 0);
+   char piszHex[3] = { '\0', '\0', '\0' }; // Buffer for 2 hex characters + null terminator
+   std::string stringResult;
+   stringResult.reserve(stringHex.length() / 2); // Reserve space for ASCII characters
+
+   for(size_t u = 0; u < stringHex.length(); u += 2) 
+   {
+      piszHex[0] = stringHex[u];
+      piszHex[1] = stringHex[u + 1];
+
+      try 
+      {
+         // Convert hex pair to unsigned char first to handle full 0-255 range
+         unsigned char uByte = static_cast<unsigned char>(std::stoi(piszHex, nullptr, 16));
+         stringResult += static_cast<char>(uByte);
+      }
+      catch(const std::exception&) 
+      {
+         assert(false && "Invalid hex character encountered");
+         return {}; // Return empty string on error
       }
    }
 
