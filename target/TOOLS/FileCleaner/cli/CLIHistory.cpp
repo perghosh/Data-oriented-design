@@ -109,37 +109,6 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    std::string stringName = "history.xml";
    std::filesystem::path pathDirectory = GetHistoryPath_s();
 
-/*#ifdef _WIN32
-   //std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
-
-   // Windows: C:\Users\<username>\AppData\Local\cleaner\history.xml
-   char* piAppData = nullptr;
-   size_t uLength = 0;
-   if( _dupenv_s(&piAppData, &uLength, "LOCALAPPDATA") == 0 && piAppData != nullptr )
-   {
-      //stringPath = std::string(piAppData) + "\\cleaner";
-      pathDirectory = std::filesystem::path(piAppData) / "cleaner";
-      free(piAppData);
-   }
-   else { return { false, "Failed to get LOCALAPPDATA environment variable" }; }
-#else
-   // Linux: ~/.local/share/cleaner/history.xml
-   const char* piDir = getenv("HOME");
-   if( piDir == nullptr )
-   {
-      struct passwd* pw = getpwuid(getuid());
-      if( pw == nullptr ) {
-         return { false, "Failed to get home directory" };
-      }
-      piDir = pw->pw_dir;
-      pathDirectory = std::filesystem::path(piDir) / ".local" / "share" / "cleaner";
-   }
-#endif*/
-
-   
-
-
-
    std::string stringFilePath = (pathDirectory / stringName).string();
    gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()}, { "print", false } , { "index", 0 } } );     // TODO: This is just temporary, we need to edit this later
     // To create a string representing the full path to "history.xml" in pathDirectory:
@@ -151,9 +120,9 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
       ofstreamFile.close();
       PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
 
-      AppendEntry_s(argumentsFile, pdocument); // TODO: This is just temporary, we need to remove this later
-
-      HistorySave_g(argumentsFile, pdocument); // Save the history entry to the XML file
+      //AppendEntry_s(argumentsFile, pdocument); // TODO: This is just temporary, we need to remove this later
+      
+      //HistorySave_g(argumentsFile, pdocument); // Save the history entry to the XML file
 
       HistoryPrint_g(argumentsFile, pdocument); // Print the history file to console, this is just for debug purposes
 
@@ -420,24 +389,6 @@ std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argume
 
    std::vector<gd::argument::arguments::argument> vectorLines = argumentsEntry.get_argument_all("line");
 
-   //if( std::filesystem::exists(stringFileName) == false ) { return { false, "History file does not exist: " + stringFileName }; }
-
-   /*
-   pugi::xml_document xmldocument;
-   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
-   if( !result_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
-
-   // Check if entries exist
-   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
-   if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
-
-   // Create a new entry node
-   pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");
-
-   xmlnodeEntry.append_child("date").text().set(stringDate.c_str());
-   xmlnodeEntry.append_child("command").text().set(stringCommand.c_str());
-   */
-
    std::string stringLine;
 
    for( auto it : vectorLines )
@@ -452,16 +403,6 @@ std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argume
    ptable->cell_set(uRow, "date", stringDate);
    ptable->cell_set(uRow, "command", stringCommand);
    ptable->cell_set(uRow, "line", stringLine);
-
-
-   /*
-   xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
-
-   //xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
-
-   // save the modified XML document back to the file
-   xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default);
-   */
 
    return { true, "" };
 }

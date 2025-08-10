@@ -1066,7 +1066,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       if( p_ == nullptr )
       {
          // file table: index | date | command | line 
-         ptable_ = std::make_unique<table>(table(uTableStyle, { {"int32", 0, "index"}, {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"int32", 0, "index"}, {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }
