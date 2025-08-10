@@ -119,20 +119,23 @@ std::pair<bool, std::string> ConfigurationCreate_g()
 "version": "1.0",
 "cleaner.color": {
    "background": null,
-   "default": null,
-   "line": null,
    "body": null,
-   "header": null,
-   "footer": null,
-   "warning": null,
-   "error": null,
-   "success": null,
-   "info": null,
+   "border": null,
+   "default": null,
    "disabled": null,
-   "border": null
-},
+   "error": null,
+   "even": null,
+   "footer": null,
+   "header": null,
+   "highlight": null,
+   "info": null,
+   "line": null,
+   "odd": null,
+   "success": null,
+   "warning": null
 "cleaner.format": {
-   "keyvalue": null
+   "keyvalue": null,
+   "header-line": null,
 },
 "cleaner.logging": {
    "severity": null
