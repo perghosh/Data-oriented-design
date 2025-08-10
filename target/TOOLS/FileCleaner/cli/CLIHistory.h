@@ -73,11 +73,40 @@ When history is read, apply filter if any was sent and the print. Method to prin
 @TASK #history.create #user.kevin
 [name: history] [priority: high] [state: open] [assigned_to: kevin]
 [description: "## create history file. 
-For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\history.xml`.
-For linux this file should be placed in `~/.local/share/cleaner/history.xml`.
-If history files exists then just print that it does exist and exit." ]
+   For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\history.xml`.
+   For linux this file should be placed in `~/.local/share/cleaner/history.xml`.
+   If history files exists then just print that it does exist and exit." ]
 [sample: """- `cleaner history -create` - Creates history file"""]
 [idea: "Call method `CreateHistory_s'. If the flag `-create` is set and create the history file"]
+*/
+
+/*
+@TASK #history.create #user.kevin [name:create local history file]
+[description:"   
+- `cleaner history -create -local
+- This will create a local history file in the current folder.
+"]
+*/
+
+
+
+/*
+@TASK #history.add #user.kevin [name:add command to history]
+[description:"   
+   - Add global option command called `--history` that marks if the command should be added to history.
+   - If `--history` is set then: save the command string to hisory file and the value set for --history is the alias name.
+"]
+[state:open]   
+*/
+
+/*
+@TASK #history.load #user.kevin [name:load history]
+[description:"   
+- Loading history should try to check if there are any history files in the current folder or parent folder to current folder.
+- - If local history file is found then load it into the document cache.
+- - If no local history file is found then try to load the global history file.
+"]
+[state:open]   
 */
 
 /*

@@ -224,6 +224,26 @@ void CApplication::SetMode(const std::string_view& stringMode)
 }
 
 
+/*
+@TASK #user.kevin #area.options[name:save options to history][user: kevin]
+[description:save the options to history file, so that user can see what options were used last time or select command from history
+"store options in argument string, call historysave function for saving argument to file"]
+[idea:add a command to save options to history file][state:open]
+*/
+
+/*
+@TASK #user.kevin #area.options[name:save history no document][user: kevin]
+[description:"   
+-check if document exists
+-if document doesn't exist, create it
+-CACHE_Prepare history key
+-take arguments from command line
+-add arguments to history table
+-save history file
+"]
+[state:open]   
+*/
+
 
 /** ---------------------------------------------------------------------------
  * @brief Prepares the application by setting up command-line options.
@@ -353,26 +373,6 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       optionsApplication.print_documentation(stringHelp, gd::cli::options::tag_documentation_table{});// print if no arguments
       PrintMessage( stringHelp, gd::argument::arguments() );
    }
-
-   /*
-   @TASK #user.kevin #area.options[name:save options to history][user: kevin]
-   [description:save the options to history file, so that user can see what options were used last time or select command from history
-   "store options in argument string, call historysave function for saving argument to file"]
-   [idea:add a command to save options to history file][state:open]
-   */
-
-   /*
-   @TASK #user.kevin #area.options[name:save history no document][user: kevin]
-   [description:"   
-   -check if document exists
-   -if document doesn't exist, create it
-   -CACHE_Prepare history key
-   -take arguments from command line
-   -add arguments to history table
-   -save history file
-   "]
-   [state:open]   
-   */
 
    std::filesystem::path pathHistoryLocation;
    HistoryLocation_s(pathHistoryLocation); // Get the history location
@@ -1831,6 +1831,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "source", 's', "File(s) or folder(s) to count lines in"});
+      optionsCommand.add({ "rpattern", "Use a **regular expression pattern** to search for more complex text matches within file content."});
       optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
       optionsCommand.add({ "segment", "type of segment in code to search in"});
       optionsCommand.add({ "page", "Index for page to print and if page-size is not set then default page-size is 10" });
@@ -1884,6 +1885,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
       optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations. Multiple directories are separated with semicolons (`;`)" });
+      optionsCommand.add({ "rpattern", "Use a **regular expression pattern** to search for more complex text matches within file content."});
       optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the listing. Multiple folder names can be separated with semicolons (`;`). This helps exclude irrelevant directories." });
       optionsCommand.add({ "segment", "Limit the search to specific **types of code segments**, such as functions, classes, or comments. This refines your search to relevant code blocks. Valid segments are `code`, `string` or `comment`."});
       optionsCommand.add({ "script", "Execute an **external script file** for advanced processing of the listed files. Useful for custom formatting or filtering." });
@@ -1902,13 +1904,13 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "find", "Search for file content within directories." );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `*.cpp`) to apply when searching for files. Multiple filters are separated with ;. If no filter is provided, all found text files will be searched for patterns." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
+      optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations. Multiple directories are separated with semicolons (`;`)" });
       optionsCommand.add({ "rpattern", "Use a **regular expression pattern** to search for more complex text matches within file content."});
       optionsCommand.add({ "kv", "A **shortcut** to define both the keys to search for and the rules for how to find their corresponding values. Use this for quick key-value pair extraction."});
       optionsCommand.add({ "keys", "Specify individual **keys to search for** when collecting associated values. Useful when you need to extract specific data points."});
       optionsCommand.add({ "header", "select columns or keys to include in the output as header."});
       optionsCommand.add({ "kv-format", "Define the **scoping format** for how key-value pairs are identified and extracted. This helps the tool understand the structure of your key-value data."});
       optionsCommand.add({ "context", "Display **surrounding code or text** to provide context for each search result. This helps you understand where the match occurred."});
-      optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations. Multiple directories are separated with semicolons (`;`)" });
       optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the search. This helps narrow down your search and improve performance."});
       optionsCommand.add({ "segment", "Limit the search to specific **types of code segments**, such as functions, classes, or comments. This refines your search to relevant code blocks. Valid segments are `code`, `string` or `comment`."});
       optionsCommand.add({ "rule", "Define **rules for what actions to perform** on found matches. This could include formatting, outputting, or further processing."});

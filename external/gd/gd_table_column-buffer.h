@@ -1,6 +1,9 @@
 ﻿/**
  * \file gd_table_column-buffer.h
  * 
+ * @brief Table used to transfer/move data, Use `gd::table::dto::table` class that is optimized for data transfer.
+ * 
+ * 
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0construct.table_column_buffer` - construct table_column_buffer
  * - `0TAG0add.table_column_buffer` - add columns to table
