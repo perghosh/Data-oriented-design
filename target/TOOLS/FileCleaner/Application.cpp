@@ -363,6 +363,11 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       // ## Process the command-line arguments
       std::tie(bOk, stringError) = Initialize(optionsApplication);
       if( bOk == false ) { return { false, stringError }; }
+
+      if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true )
+      {
+
+      }
    }
    else
    {
@@ -1823,6 +1828,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
    optionsApplication.add({ "logging-severity", "Set the logging severity level. Available levels: `verbose`, `debug`, `info`, `warning`, `error`, `fatal`."});
+   optionsApplication.add({ "history", "File to store command history, if not set then history is not stored" });
    //optionsApplication.add({ "database", "Set folder where logger places log files"});
    //optionsApplication.add({ "statements", "file containing sql statements"});
 
