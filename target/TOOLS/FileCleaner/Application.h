@@ -314,7 +314,7 @@ public:
    */
 //@}
 
-/** \name DATABASE
+/** \name CONFIG
 *///@{
    std::pair<bool, std::string> CONFIG_Load(); /// Load configuration from default file
    /// Load configuration from specified file
@@ -326,6 +326,11 @@ public:
    /// Checks if configuration is not loaded, if pointer to configuration is null than it has not been loaded
    bool CONFIG_Empty() const { return m_ptableConfig == nullptr; }
 
+//@}
+
+/** \name HISTORY
+*///@{
+   std::pair<bool, std::string> HISTORY_SaveCommand(const std::string_view& stringFileLocation);
 //@}
 
 /** \name ERROR
@@ -426,6 +431,8 @@ public:
    static std::pair<bool, std::string> HistoryLocation_s(std::filesystem::path& pathLocation);
    /// Save history table to file
    static std::pair<bool, std::string> HistorySave_s(const std::string_view& stringFileName, const gd::table::dto::table* ptable);
+
+
 
    /// Split string into vector of strings, delimitier is ; or ,. It first tries to find ;, if not found then it tries to find ,
    static std::vector<std::string> Split_s(const std::string& stringText, char iCharacter = 0);
