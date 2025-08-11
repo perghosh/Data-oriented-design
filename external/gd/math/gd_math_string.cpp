@@ -1,6 +1,10 @@
 #include <algorithm>
 #include <sstream>
 
+#include "gd/gd_compiler.h"
+#include "gd/gd_types.h"
+#include "gd/gd_utf8.h"
+
 #include "gd_math_string.h"
 
 _GD_MATH_STRING_BEGIN
@@ -1059,6 +1063,73 @@ std::string convert_hex_to_ascii(const std::string_view& stringHex)
    return stringResult;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Merges two delimited strings, removing duplicates and preserving the separator.
+ *
+ * This function combines two strings containing values separated by a delimiter character,
+ * removes duplicate values, and returns a single string with unique values using the same
+ * separator. The order of values is preserved from the first string, followed by unique
+ * values from the second string. Empty values are preserved if present in the input.
+ *
+ * @param stringFirst The first delimited string to merge.
+ * @param stringSecond The second delimited string to merge.
+ * @param iSeparator The delimiter character used to separate values (e.g., ';', ',').
+ * @return std::string The merged string containing unique values separated by the same delimiter.
+ * 
+ * @code
+ * // Example 1: Basic merge with semicolon separator
+ * std::string first = "apple;banana;cherry";
+ * std::string second = "banana;date;apple;elderberry";
+ * std::string result = merge_delimited(first, second, ';');
+ * // result = "apple;banana;cherry;date;elderberry"
+ * 
+ * // Example 2: Comma-separated values
+ * std::string list1 = "red,green,blue";
+ * std::string list2 = "blue,yellow,red,purple";
+ * std::string merged = merge_delimited(list1, list2, ',');
+ * // merged = "red,green,blue,yellow,purple"
+ * 
+ * // Example 3: With empty values preserved
+ * std::string str1 = "a;;b;c";
+ * std::string str2 = ";b;d;";
+ * std::string combined = merge_delimited(str1, str2, ';');
+ * // combined = "a;;b;c;d;"
+ * 
+ * // Example 4: No duplicates case
+ * std::string unique1 = "x;y;z";
+ * std::string unique2 = "a;b;c";
+ * std::string final = merge_delimited(unique1, unique2, ';');
+ * // final = "x;y;z;a;b;c"
+ * @endcode
+ */
+std::string merge_delimited(const std::string_view& stringFirst, const std::string_view& stringSecond, char iSeparator)
+{
+   std::vector<std::string_view> vectorFirst;                                 // Vector to hold first string values
+   std::vector<std::string_view> vectorSecond;                                // Vector to hold second string values
+   if( stringFirst.empty() == false ) vectorFirst = gd::utf8::split(stringFirst, iSeparator); // Split first string into vector
+   if( stringSecond.empty() == false ) vectorSecond = gd::utf8::split(stringSecond, iSeparator); // Split second string into vector
 
+   auto vectorUnique = vectorFirst;                                           // Copy first vector for unique processing
 
+   for( const auto& stringValue : vectorSecond )
+   {
+      if( std::find(vectorUnique.begin(), vectorUnique.end(), stringValue) == vectorUnique.end() )
+      {
+         vectorUnique.push_back(stringValue);
+      }
+   }
+
+   // ## Build the result string from the unique vector
+   std::string stringResult;
+   size_t uTotalSize = 0;
+   for( const auto& stringValue : vectorUnique ) { uTotalSize += stringValue.size() + 1; } // Estimate size including separators
+   stringResult.reserve(uTotalSize);                                            // Reserve estimated size for performance
+   for( size_t uIndex = 0; uIndex < vectorUnique.size(); ++uIndex )
+   {
+      stringResult += vectorUnique[uIndex];
+      if( uIndex < vectorUnique.size() - 1 ) { stringResult += iSeparator; } // Add separator except for last element
+   }
+   
+   return stringResult;
+}
 _GD_MATH_STRING_END

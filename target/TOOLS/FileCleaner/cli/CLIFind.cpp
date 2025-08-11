@@ -141,7 +141,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       if( options_.exists("keys") == true || options_.exists("kv") == true )
       {
          gd::argument::shared::arguments argumentsPrint;
-         argumentsPrint.append( options_.get_arguments(), { "header" } );
+         argumentsPrint.append( options_.get_arguments(), { "header", "brief" });
          result_ = FindPrintKeyValue_g(pdocument, &argumentsPrint);                             // Print the key-value pairs found in the files
          if( result_.first == false ) return result_;                          // if print failed, return the error
          bPrint = true;                                                        // set print to true, we have printed the results
@@ -171,6 +171,12 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
  *
  * This function searches for files in the specified source paths, applies regex patterns if provided,
  * and prints the results of the find operation.
+ * 
+ * *steps*
+ * 1. Update the global application state with `UpdateApplicationState()`
+ * 2. Harvest files with `FILE_Harvest()`
+ * 2.1 If keys or header are provided for key-value pairs, merge them into a unified list. Keys are separated by semicolons, so extract each key name between semicolons and combine them into the final merged keys string.
+ * 3. Based on the provided patterns, search for matches in the harvested files in `FILE_UpdatePatternFind`.
  *
  * @param vectorSource A vector of source paths to search for files.
  * @param pargumentsFind The arguments containing options such as recursive search, filter, and regex patterns.
@@ -185,7 +191,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
  */
 std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSource, gd::argument::arguments* pargumentsFind, CDocument* pdocument)
 {                                                                                                  assert(pdocument != nullptr);assert(pargumentsFind != nullptr);
-   const gd::argument::arguments& options_ = *pargumentsFind; // get the options from the command line arguments
+   gd::argument::arguments& options_ = *pargumentsFind; // get the options from the command line arguments
 
    uint64_t uPatternCount = 0; // count of patterns to search for
 
@@ -199,6 +205,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       if( iRecursive == 0 ) iRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
    }
 
+   // ## Prepare the application state
    pdocument->GetApplication()->UpdateApplicationState();                     // update the application state to reflect the current state of the application
 
    gd::argument::shared::arguments argumentsFind; // prepare arguments for the file update
@@ -213,13 +220,27 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
    if( options_.exists("segment") == true ) { argumentsFind.append("segment", options_["segment"].as_string()); }
    if( options_.exists("kv") == true ) { argumentsFind.append( "kv", options_.get_argument_all("kv", gd::types::tag_view{})); bUseKeyValue = true; }
-   if( options_.exists("keys") == true ) 
+   if( options_.exists("keys") == true || options_.exists("header") == true || options_.exists("brief") == true ) 
    { 
-      argumentsFind.append("keys", options_.get_argument_all("keys", gd::types::tag_view{})); bUseKeyValue = true; 
+      bUseKeyValue = true;                                                    // if keys are set, we want to use key-value pairs
+      // ## merge header and  keys with key-value pairs
+      if( options_.exists("header") == true || options_.exists("brief") == true )
+      {
+         std::string_view stringKeys = options_["keys"].as_string_view();
+         std::string_view stringHeader = options_["header"].as_string_view();
+         std::string_view stringBrief = options_["brief"].as_string_view();
+         char iSeparator = ';'; // separator for keys
+         if( stringKeys.find(',') != std::string_view::npos || stringHeader.find(',') != std::string_view::npos || stringBrief.find(',') != std::string_view::npos ) iSeparator = ','; // if comma is found, use it as separator
+         auto stringMergedKeys = gd::math::string::merge_delimited(stringKeys, stringHeader, iSeparator); // merge keys and header into the keys argument
+         stringMergedKeys = gd::math::string::merge_delimited(stringMergedKeys, stringBrief, iSeparator); // merge keys and brief into the keys argument
+         options_.set("keys", std::string_view( stringMergedKeys ));
+      }
+                                                                                                   LOG_DEBUG_RAW("== keys: " & argumentsFind["keys"].as_string());
+      argumentsFind.append("keys", options_.get_argument_all("keys", gd::types::tag_view{}));  
       if( options_.exists("kv-format") == true ) argumentsFind.append("kv-format", options_.get_argument_all("kv-format", gd::types::tag_view{})); 
       else
       {  // ## Get format for key-value pairs from configuration
-         auto format_ = papplication_g->CONFIG_Get("format", {"kv","keyvalue"});
+         auto format_ = papplication_g->CONFIG_Get("format", { "kv","keyvalue" }); // get the format for key-value pairs from application configuration
          if( format_.is_true() == true ) { argumentsFind.append("kv-format", format_.as_string_view()); } // if kv-format is set, use it
       }
                                                                                                    LOG_DEBUG_RAW( "== keyvalue format: " & argumentsFind["kv-format"].as_string() );
@@ -738,6 +759,14 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       stringHeaderFormat = gd::math::string::convert_hex_to_ascii(stringHeaderFormat.substr(2)); // remove the "0x" prefix and convert hex to string
    } 
 
+   std::string stringBriefFormat = pdocument->GetApplication()->CONFIG_Get("format", "brief").as_string(); // get the brief line format from the configuration
+   if( stringBriefFormat.empty() == false && stringBriefFormat[0] == '0' && stringBriefFormat[1] == 'x'  )
+   { 
+      // convert hex character codes to string characters for each hex code
+      stringBriefFormat = gd::math::string::convert_hex_to_ascii(stringBriefFormat.substr(2)); // remove the "0x" prefix and convert hex to string
+   } 
+
+
    stringCliTable += "\n\n"; 
    stringCliTable += gd::math::string::format_header_line("RESULT", 80, '#', '=', '#');// add a header line to the output
    stringCliTable += "\n"; 
@@ -761,6 +790,13 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       vectorHeader = gd::utf8::split( pargumentsPrint->get_argument("header").as_string(), ';', gd::types::tag_string{});
    }
 
+   std::vector<std::string> vectorBrief;
+   if( pargumentsPrint != nullptr && pargumentsPrint->exists("brief") == true )
+   {
+      vectorBrief = gd::utf8::split( pargumentsPrint->get_argument("brief").as_string(), ';', gd::types::tag_string{});
+   }
+
+
    // ## Print values in the key-value table
 
    for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
@@ -780,7 +816,23 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
          if( stringHeaderFormat.empty() == true ) { stringHeader = gd::math::string::format_header_line(stringHeader, 80); }
          else                                     { stringHeader = gd::math::string::format_header_line(stringHeader, 80, stringHeaderFormat); }
 
-         pdocument->MESSAGE_Display(stringHeader, { array_, {{"color", "header-line"}}, gd::types::tag_view{} });
+         pdocument->MESSAGE_Display(stringHeader, { array_, {{"color", "header"}}, gd::types::tag_view{} });
+      }
+
+      // ### Prepare brief line if vectorBrief is not empty
+      if( vectorBrief.empty() == false )
+      {
+         std::string stringBrief;
+         for( const auto& key_ : vectorBrief ) 
+         { 
+            if( stringBrief.empty() == false ) stringBrief += "\n";           // add a separator if the stringBrief is not empty
+            stringBrief += pargumentsRow->get_argument( key_ ).as_string_view(); 
+         }
+
+         if( stringBrief.empty() == false )
+         {
+            pdocument->MESSAGE_Display( stringBriefFormat + stringBrief, {array_, {{"color", "brief"}}, gd::types::tag_view{}});
+         }
       }
 
       // ### Prepare file name
@@ -802,7 +854,6 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       // ### Iterator over values in the arguments object
       for( auto it = std::begin( *pargumentsRow ); it != std::end( *pargumentsRow ); ++it ) // iterate over the arguments object
       {
-         //stringCliTable += std::format("{}: {}", argument.name(), argument.as_string()); // format the key-value pair as "key: value"
          auto name_ = it.name();
 
          // if the name is in the header vector, skip this key-value pair

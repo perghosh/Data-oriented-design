@@ -136,6 +136,13 @@ const uint8_t* code::skip_quoted(const uint8_t* puPosition, const uint8_t* puEnd
     ^....^
  * endverbatim
  * 
+ * *steps*
+ * 1. Skip whitespace and find the start of the value.
+ * 2. If a separator is set, skip to it.
+ * 3. If no separator is found, read until a non-space character or newline.
+ * 4. If the value is quoted, call skip_quoted to find the closing quote.
+ * 5. If unquoted, read until the end of the value or a specified closing character.
+ * 
  * When separator is set, it expects a key-value pair format and skips until the separator.
  * No separator means it reads until non space value is found or newline that means no value.
  * 

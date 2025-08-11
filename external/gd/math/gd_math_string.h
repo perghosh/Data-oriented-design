@@ -38,9 +38,13 @@ std::string select_from(const std::string_view& stringText, const std::string_vi
 std::string select_until(const std::string_view& stringText, const std::string_view& stringTo);
 
 
+/// Extracts a single line from stringText based on the specified line index (0-based).
 std::string select_line(const std::string_view& stringText, size_t uLineIndex, char iNewLine = '\n');
+/// Extracts all lines from the beginning of stringText up to and including the specified line index.
 std::string_view select_to_line( const std::string_view& stringText, size_t uLineIndex, char iNewLine = '\n' );
+/// Extracts all lines from stringText starting from the specified line index to the end.
 std::string_view select_from_line( const std::string_view& stringText, size_t uLineIndex, char iNewLine = '\n' );
+/// Extracts all lines from stringText with content, stopping at the first empty line.
 std::string_view select_content_lines( const std::string_view& stringText, char iNewLine = '\n' );
 
 /// Extracts substring between stringFrom and stringTo.
@@ -73,5 +77,8 @@ std::string trim_repeated_chars(const std::string_view& stringText, size_t uMaxR
 
 /// Converts a hexadecimal string to its ASCII representation.
 std::string convert_hex_to_ascii(const std::string_view& stringHex);
+
+/// Merges two delimited strings, removing duplicates and preserving the separator.
+std::string merge_delimited(const std::string_view& stringFirst, const std::string_view& stringSecond, char iSeparator = ';');
 
 _GD_MATH_STRING_END

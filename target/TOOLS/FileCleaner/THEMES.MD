@@ -1,17 +1,28 @@
 ```json
-
 /* volcanic-ash */
 {
     "version": "1.0",
     "cleaner.color": {
         "background": "#2C2C2C",
-        "default": "#E0E0E0",
-        "line": "#FF6B35",
         "body": "#F5F5F5",
-        "header": "#FFD700",
+        "brief": "#FFB366",
+        "default": "#E0E0E0",
+        "disabled": "#666666",
+        "error": "#FF4444",
+        "even": "#3A3A3A",
         "footer": "#FF8C00",
-        "warning": "#FF4444",
-        "highlight": "#FF6B35"
+        "header": "#FFD700",
+        "highlight": "#FF6B35",
+        "info": "#FF9500",
+        "line": "#FF6B35",
+        "odd": "#333333",
+        "success": "#4CAF50",
+        "warning": "#FF4444"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
@@ -20,13 +31,25 @@
     "version": "1.0",
     "cleaner.color": {
         "background": "#1A0F00",
-        "default": "#FFB000",
-        "line": "#FF8800",
         "body": "#FFCC00",
-        "header": "#FFA500",
+        "brief": "#FFA500",
+        "default": "#FFB000",
+        "disabled": "#664400",
+        "error": "#FF0000",
+        "even": "#2A1F10",
         "footer": "#FF9500",
-        "warning": "#FF0000",
-        "highlight": "#FFFF00"
+        "header": "#FFA500",
+        "highlight": "#FFFF00",
+        "info": "#FFB000",
+        "line": "#FF8800",
+        "odd": "#221A05",
+        "success": "#ADFF2F",
+        "warning": "#FF0000"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
@@ -35,13 +58,25 @@
     "version": "1.0",
     "cleaner.color": {
         "background": "#0F1419",
-        "default": "#B3D9FF",
-        "line": "#5DADE2",
         "body": "#E8F4FD",
-        "header": "#00D4FF",
+        "brief": "#87CEEB",
+        "default": "#B3D9FF",
+        "disabled": "#4A5568",
+        "error": "#FF4757",
+        "even": "#1A2332",
         "footer": "#3498DB",
-        "warning": "#FF5252",
-        "highlight": "#00FFFF"
+        "header": "#00D4FF",
+        "highlight": "#00FFFF",
+        "info": "#5DADE2",
+        "line": "#5DADE2",
+        "odd": "#243447",
+        "success": "#48CAE4",
+        "warning": "#FF5252"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
@@ -50,13 +85,25 @@
     "version": "1.0",
     "cleaner.color": {
         "background": "#1A0D00",
-        "default": "#FF9500",
-        "line": "#FF7700",
         "body": "#FFB366",
-        "header": "#FF6600",
+        "brief": "#FF8844",
+        "default": "#FF9500",
+        "disabled": "#663300",
+        "error": "#FF0033",
+        "even": "#2A1D10",
         "footer": "#CC5500",
-        "warning": "#FF0033",
-        "highlight": "#FFFF33"
+        "header": "#FF6600",
+        "highlight": "#FFFF33",
+        "info": "#FF8800",
+        "line": "#FF7700",
+        "odd": "#221605",
+        "success": "#32CD32",
+        "warning": "#FF0033"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
@@ -65,13 +112,25 @@
     "version": "1.0",
     "cleaner.color": {
         "background": "#0D1B0D",
-        "default": "#00FF41",
-        "line": "#39FF14",
         "body": "#00FF00",
-        "header": "#ADFF2F",
+        "brief": "#7FFF00",
+        "default": "#00FF41",
+        "disabled": "#004400",
+        "error": "#FF073A",
+        "even": "#1A2B1A",
         "footer": "#32CD32",
-        "warning": "#FF073A",
-        "highlight": "#00FFFF"
+        "header": "#ADFF2F",
+        "highlight": "#00FFFF",
+        "info": "#39FF14",
+        "line": "#39FF14",
+        "odd": "#152515",
+        "success": "#00FF41",
+        "warning": "#FF073A"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
@@ -80,16 +139,25 @@
     "version": "1.0",
     "cleaner.color": {
         "background": "#282A36",
-        "default": "#F8F8F2",
-        "line": "#6272A4",
         "body": "#F8F8F2",
-        "header": "#BD93F9",
+        "brief": "#FFB86C",
+        "default": "#F8F8F2",
+        "disabled": "#6272A4",
+        "error": "#FF5555",
+        "even": "#383A59",
         "footer": "#8BE9FD",
-        "warning": "#FF5555",
-        "highlight": "#50FA7B"
+        "header": "#BD93F9",
+        "highlight": "#50FA7B",
+        "info": "#8BE9FD",
+        "line": "#6272A4",
+        "odd": "#343746",
+        "success": "#50FA7B",
+        "warning": "#FF5555"
     },
     "cleaner.format": {
-        "keyvalue": "[]:"
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
@@ -98,16 +166,25 @@
     "version": "1.0",
     "cleaner.color": {
         "background": "#1A1B26",
-        "default": "#E8D5C8",
-        "line": "#7C7D89",
         "body": "#D4C5B9",
-        "header": "#F7E7CE",
+        "brief": "#C8B5A8",
+        "default": "#E8D5C8",
+        "disabled": "#555668",
+        "error": "#FF9BA8",
+        "even": "#2A2B36",
         "footer": "#A8A9B4",
-        "warning": "#FF9BA8",
-        "highlight": "#9BB5FF"
+        "header": "#F7E7CE",
+        "highlight": "#9BB5FF",
+        "info": "#B8C2CC",
+        "line": "#7C7D89",
+        "odd": "#222330",
+        "success": "#A8D8A8",
+        "warning": "#FF9BA8"
     },
     "cleaner.format": {
-        "keyvalue": "[]:"
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
@@ -116,13 +193,25 @@
     "version": "1.0",
     "cleaner.color": {
         "background": "#F5F5F5",
-        "default": "#2C2C2C",
-        "line": "#9C27B0",
         "body": "#333333",
-        "header": "#E91E63",
+        "brief": "#666666",
+        "default": "#2C2C2C",
+        "disabled": "#CCCCCC",
+        "error": "#D32F2F",
+        "even": "#EEEEEE",
         "footer": "#C2185B",
-        "warning": "#D32F2F",
-        "highlight": "#FF9800"
+        "header": "#E91E63",
+        "highlight": "#FF9800",
+        "info": "#9C27B0",
+        "line": "#9C27B0",
+        "odd": "#FAFAFA",
+        "success": "#388E3C",
+        "warning": "#D32F2F"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
@@ -131,13 +220,25 @@
     "version": "1.0",
     "cleaner.color": {
         "background": "#E8F4FD",
-        "default": "#1A1A1A",
-        "line": "#D50000",
         "body": "#333333",
-        "header": "#004B8D",
+        "brief": "#555555",
+        "default": "#1A1A1A",
+        "disabled": "#BBBBBB",
+        "error": "#B71C1C",
+        "even": "#F0F8FF",
         "footer": "#00569B",
-        "warning": "#B71C1C",
-        "highlight": "#FF6D00"
+        "header": "#004B8D",
+        "highlight": "#FF6D00",
+        "info": "#0277BD",
+        "line": "#D50000",
+        "odd": "#F8FBFF",
+        "success": "#2E7D32",
+        "warning": "#B71C1C"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
@@ -146,13 +247,25 @@
     "version": "1.0",
     "cleaner.color": {
         "background": "#F5F5F5",
-        "default": "#2C2C2C",
-        "line": "#9E9E9E",
         "body": "#444444",
-        "header": "#212121",
+        "brief": "#666666",
+        "default": "#2C2C2C",
+        "disabled": "#CCCCCC",
+        "error": "#D32F2F",
+        "even": "#EEEEEE",
         "footer": "#616161",
-        "warning": "#D32F2F",
-        "highlight": "#3498DB"
+        "header": "#212121",
+        "highlight": "#3498DB",
+        "info": "#757575",
+        "line": "#9E9E9E",
+        "odd": "#FAFAFA",
+        "success": "#388E3C",
+        "warning": "#D32F2F"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
@@ -161,32 +274,54 @@
     "version": "1.0",
     "cleaner.color": {
         "background": "#2D3A2D",
-        "default": "#D4C5A9",
-        "line": "#8B4513",
         "body": "#F5DEB3",
-        "header": "#DAA520",
+        "brief": "#DEB887",
+        "default": "#D4C5A9",
+        "disabled": "#556655",
+        "error": "#DC143C",
+        "even": "#3D4A3D",
         "footer": "#CD853F",
-        "warning": "#DC143C",
-        "highlight": "#90EE90"
+        "header": "#DAA520",
+        "highlight": "#90EE90",
+        "info": "#B8860B",
+        "line": "#8B4513",
+        "odd": "#354235",
+        "success": "#228B22",
+        "warning": "#DC143C"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
 
 /* neon-cyberpunk */
-
 {
     "version": "1.0",
     "cleaner.color": {
         "background": "#0A0A0F",
-        "default": "#E0E0E0",
-        "line": "#FF00FF",
         "body": "#F0F0F0",
-        "header": "#00FFFF",
+        "brief": "#FF69B4",
+        "default": "#E0E0E0",
+        "disabled": "#444449",
+        "error": "#FF073A",
+        "even": "#1A1A1F",
         "footer": "#FF1493",
-        "warning": "#FF073A",
-        "highlight": "#FFFF00"
+        "header": "#00FFFF",
+        "highlight": "#FFFF00",
+        "info": "#FF00FF",
+        "line": "#FF00FF",
+        "odd": "#151519",
+        "success": "#00FF7F",
+        "warning": "#FF073A"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "brief": "0xB33E3E20"
     }
 }
-
 
 /* - For terminals that do not support true color ------------------------------------------- */
 
