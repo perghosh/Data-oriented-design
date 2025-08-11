@@ -364,8 +364,27 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       std::tie(bOk, stringError) = Initialize(optionsApplication);
       if( bOk == false ) { return { false, stringError }; }
 
+      // @TASK #user.kevin [name: options history][brief: if history option is set then save last command line to history][user: kevin][created: 2025-08-11]
       if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true )
       {
+         /*
+            - Check if history is in current directory
+            - If not, check if history is in home directory
+         */
+
+         std::filesystem::path pathHistoryCurrent = std::filesystem::current_path() / ".cleaner-history.xml"; // Default history location in current directory
+         std::filesystem::path pathHistoryHome;
+         HistoryLocation_s(pathHistoryHome);
+
+         if( std::filesystem::exists(pathHistoryCurrent) == true )
+         {
+            HISTORY_SaveCommand(pathHistoryCurrent.string()); // Save the command to history in current directory
+         }
+         else if( std::filesystem::exists(pathHistoryHome) == true && !(std::filesystem::exists(pathHistoryCurrent) == true) )
+         {
+            HISTORY_SaveCommand(pathHistoryHome.string()); // Save the command to history in home directory
+         }
+         
 
       }
    }
@@ -379,27 +398,13 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       PrintMessage( stringHelp, gd::argument::arguments() );
    }
 
-   std::filesystem::path pathHistoryLocation;
+   /*std::filesystem::path pathHistoryLocation;
    HistoryLocation_s(pathHistoryLocation); // Get the history location
 
    if( std::filesystem::exists(pathHistoryLocation) == true )
    {
-      std::string stringCommand = PROPERTY_Get("arguments").as_string();
-      std::string stringLine = PROPERTY_Get("command").as_string();
-
- 
-      auto* pdocument = DOCUMENT_Get("history", true); // Pointer to the current document
-
-      if( pdocument->CACHE_Exists("history") == false )
-      {
-         pdocument->CACHE_Prepare("history");
-      }
-      auto* ptable = pdocument->CACHE_Get("history");
-
-      HISTORY_AddAndSave(stringCommand, stringLine, ptable);
-
-      HistorySave_s(pathHistoryLocation.string(), ptable); // Save the history table to file
-   }
+      HISTORY_SaveCommand(pathHistoryLocation.string());
+   }*/
 
    return { true, "" };
 }
@@ -2931,6 +2936,27 @@ std::pair<bool, std::string> CApplication::HistorySave_s(const std::string_view&
 
 
    xmldocument.save_file(stringFileName.data(), "  ", pugi::format_default);
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CApplication::HISTORY_SaveCommand(const std::string_view& stringFileLocation)
+{
+   std::string stringCommand = PROPERTY_Get("command").as_string();
+   std::string stringLine = PROPERTY_Get("arguments").as_string();
+
+
+   auto* pdocument = DOCUMENT_Get("history", true); // Pointer to the current document
+
+   if( pdocument->CACHE_Exists("history") == false )
+   {
+      pdocument->CACHE_Prepare("history");
+   }
+   auto* ptable = pdocument->CACHE_Get("history");
+
+   HISTORY_AddAndSave(stringCommand, stringLine, ptable);
+
+   HistorySave_s(stringFileLocation, ptable); // Save the history table to file
 
    return { true, "" };
 }
