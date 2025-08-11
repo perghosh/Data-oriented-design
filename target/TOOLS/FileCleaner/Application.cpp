@@ -1909,6 +1909,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "kv", "A **shortcut** to define both the keys to search for and the rules for how to find their corresponding values. Use this for quick key-value pair extraction."});
       optionsCommand.add({ "keys", "Specify individual **keys to search for** when collecting associated values. Useful when you need to extract specific data points."});
       optionsCommand.add({ "header", "select columns or keys to include in the output as header."});
+      optionsCommand.add({ "brief", "Enable brief output format for key-value pairs. Based on output format this varies but generally shows a condensed view to simplify understanding."});
       optionsCommand.add({ "kv-format", "Define the **scoping format** for how key-value pairs are identified and extracted. This helps the tool understand the structure of your key-value data."});
       optionsCommand.add({ "context", "Display **surrounding code or text** to provide context for each search result. This helps you understand where the match occurred."});
       optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the search. This helps narrow down your search and improve performance."});

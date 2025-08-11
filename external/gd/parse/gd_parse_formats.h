@@ -34,6 +34,19 @@ _GD_PARSE_BEGIN
 struct tag_code {};
 
 
+/**
+ * @brief Parse logic for key-value pairs and other formats.
+ *
+ * This structure defines the parsing options and methods for handling key-value pairs, and this parsing logic
+ * tries to be as flexible as possible to allow for different formats and styles.
+ * 
+ * If only one quote character is used text is trimmed, but more than one quote character is used, then the text is not trimmed.
+ * If separator is not set, then it assumes that value starts just after the key, so no separator is used.
+ * When brackets are used, it assumes that the key-value pairs are enclosed within those brackets.
+ * 
+ * *sample*
+ * 
+ */
 struct code
 {
    enum enumOptions

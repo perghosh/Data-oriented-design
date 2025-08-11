@@ -50,3 +50,16 @@ std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd:
 std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint = nullptr );
 
 NAMESPACE_CLI_END
+
+
+/*
+@TASK #find.brief #user.per [name: new option to find]
+[brief: "`--brief` to add keys for values presented in brief section"]
+[description:"   
+- Add global option command called `--brief` that enables brief key values.
+- If `--brief` is set to present information in a condensed format.
+- if brief is set remember to merge all keys that is read into the keys option.
+- Brief is printed just below the header information above line to click.
+"]
+[state:open]   
+*/
