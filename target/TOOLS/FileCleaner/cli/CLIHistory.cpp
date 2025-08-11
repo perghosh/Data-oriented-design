@@ -66,12 +66,16 @@ static std::string CurrentTime_s();
 
 static std::filesystem::path GetHistoryPath_s();
 
+static std::filesystem::path CurrentDirectory_s();
+
 std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, CDocument* pdocument)
 {
    const gd::cli::options& options_ = *poptionsHistory;
    if( options_.exists("create") == true )
    {
-      gd::argument::arguments argumentsCreate( {"create", options_["create"].as_string()} );
+      gd::argument::arguments argumentsCreate;
+      argumentsCreate.append( options_.get_arguments(), { "create", "current-directory"} );
+
       auto result_ = HistoryCreate_g(argumentsCreate, pdocument);
    }
    else if( options_.exists("delete") == true )
@@ -106,14 +110,32 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 {
    //auto result_ = papplication_g->CreateDirectory();                                               if( result_.first == false ) { return result_; }
 
-   std::string stringName = "history.xml";
-   std::filesystem::path pathDirectory = GetHistoryPath_s();
+   std::filesystem::path pathTemp = CurrentDirectory_s();
+   std::cout << pathTemp.string() << "\n";
+
+   std::string stringName;
+   std::filesystem::path pathDirectory;
+   bool bCurrentDirectory = argumentsCreate.exists("current-directory");
+
+   // Determine the path for the history file based on the arguments
+   if( bCurrentDirectory == true )
+   {
+      stringName = ".cleaner-history.xml";
+      pathDirectory = CurrentDirectory_s();                                 // Get the local history path based on the current directory
+   }
+   else
+   {
+      stringName = "history.xml";
+      pathDirectory = GetHistoryPath_s();                                      // Get the history path based on the operating system
+   }
+
+   
 
    std::string stringFilePath = (pathDirectory / stringName).string();
    gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()}, { "print", false } , { "index", 0 } } );     // TODO: This is just temporary, we need to edit this later
     // To create a string representing the full path to "history.xml" in pathDirectory:
 
-   if( std::filesystem::exists(pathDirectory) == false )
+   if( std::filesystem::exists(pathDirectory) == false && bCurrentDirectory == false )
    {
       std::filesystem::create_directory(pathDirectory); 
       std::ofstream ofstreamFile(pathDirectory / stringName);
@@ -124,11 +146,18 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
       
       //HistorySave_g(argumentsFile, pdocument); // Save the history entry to the XML file
 
-      HistoryPrint_g(argumentsFile, pdocument); // Print the history file to console, this is just for debug purposes
+      //HistoryPrint_g(argumentsFile, pdocument); // Print the history file to console, this is just for debug purposes
 
-      HistoryGetRow_g(argumentsFile, pdocument); // Get the first row of the history table, this is just for debug purposes
+      //HistoryGetRow_g(argumentsFile, pdocument); // Get the first row of the history table, this is just for debug purposes
 
       //HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
+   }
+   else if( bCurrentDirectory == true )
+   {
+      //std::filesystem::create_directory(pathDirectory); 
+      std::ofstream ofstreamFile(pathDirectory / stringName);
+      ofstreamFile.close();
+      PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
    }
    //else
    //{
@@ -493,6 +522,13 @@ std::filesystem::path GetHistoryPath_s()
       pathDirectory = std::filesystem::path(piDir) / ".local" / "share" / "cleaner";
    }
 #endif   
+   return pathDirectory;
+}
+
+std::filesystem::path CurrentDirectory_s()
+{
+   std::filesystem::path pathDirectory = std::filesystem::current_path();
+
    return pathDirectory;
 }
 

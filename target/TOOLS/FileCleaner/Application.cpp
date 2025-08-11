@@ -241,7 +241,7 @@ void CApplication::SetMode(const std::string_view& stringMode)
 -add arguments to history table
 -save history file
 "]
-[state:open]   
+[state:closed]   
 */
 
 
@@ -363,6 +363,11 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       // ## Process the command-line arguments
       std::tie(bOk, stringError) = Initialize(optionsApplication);
       if( bOk == false ) { return { false, stringError }; }
+
+      if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true )
+      {
+
+      }
    }
    else
    {
@@ -1823,6 +1828,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
    optionsApplication.add({ "logging-severity", "Set the logging severity level. Available levels: `verbose`, `debug`, `info`, `warning`, `error`, `fatal`."});
+   optionsApplication.add({ "history", "File to store command history, if not set then history is not stored" });
    //optionsApplication.add({ "database", "Set folder where logger places log files"});
    //optionsApplication.add({ "statements", "file containing sql statements"});
 
@@ -1936,6 +1942,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag({ "delete", "Delete history, this will delete all history files and folders" });
       optionsCommand.add_flag({ "print", "Print history, this will print all of the history entries" });
       optionsCommand.add_flag({ "edit", "Edit history file if it exists" });
+      optionsCommand.add_flag({ "current-directory", "Create history file in current directory" });
       optionsCommand.add({ "list", "Lists all history entries"});
       optionsCommand.add({ "remove", "Remove history entries" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
