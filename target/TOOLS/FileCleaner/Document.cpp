@@ -434,10 +434,75 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
 
       for( unsigned u = 0; u < vectorCount.size(); u++ )
       {
+         ptableFilePattern->cell_set(uRow, u + 4, vectorCount[u]);            // set pattern count in table
+      }
+
+      std::fill(vectorCount.begin(), vectorCount.end(), 0);                   // set counters to 0 in vector
+   }
+
+   return { true, "" };
+}
+
+// @TASK #user.per [name: count (add FILE_UpdatePatternCounters for regex)] [brief: add overloaded method that are similar to FILE_UpdatePatternCounters for non regex count searches][state: open][date: 2025-08-12]
+
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::argument::shared::arguments& argumentsPattern, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns)
+{                                                                                                  assert( vectorRegexPatterns.empty() == false ); assert( vectorRegexPatterns.size() < 64 ); // max 64 patterns
+   using namespace gd::table::dto;
+   constexpr unsigned uTableStyle = (table::eTableFlagNull64|table::eTableFlagRowStatus);
+   // file-count table: key | file-key | path | count
+   auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"} } ) );
+
+   std::vector<uint64_t> vectorCount; // vector storing results from COMMAND_CollectPatternStatistics
+
+   for( const auto& itPattern : vectorRegexPatterns )
+   {
+      std::string stringPattern = itPattern.second;
+      // ## shorten pattern to 15 characters
+      std::string stringName = stringPattern.substr(0, 15);
+      
+      ptable_->column_add("uint64", 0, stringName, stringPattern);
+   }
+
+   auto result_ = ptable_->prepare();                                                              assert( result_.first == true );
+
+   CACHE_Add(std::move(*ptable_), "file-pattern");                            // add it to internal application cache, table is called "file-pattern"
+
+   auto* ptableFilePattern = CACHE_Get("file-pattern", false);                // get it to make sure it is in cache
+
+   auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
+
+   // ## iterate through all files in file table and count patterns in each file
+
+   for( const auto& itRowFile : *ptableFile )
+   {
+      // ### generate full file path (folder + filename)
+
+      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
+      gd::file::path pathFile(string_);
+      string_ = itRowFile.cell_get_variant_view("filename").as_string();
+      pathFile += string_;
+      std::string stringFile = pathFile.string();
+
+      auto uRow = ptableFilePattern->get_row_count();
+      ptableFilePattern->row_add( gd::table::tag_null{} );
+      ptableFilePattern->cell_set( uRow, "key", uint64_t(uRow + 1));
+      ptableFilePattern->cell_set( uRow, "file-key", itRowFile.cell_get_variant_view("key") );
+      ptableFilePattern->cell_set( uRow, "folder", itRowFile.cell_get_variant_view("folder") );
+      ptableFilePattern->cell_set( uRow, "filename", itRowFile.cell_get_variant_view("filename") );
+
+      gd::argument::shared::arguments argumentsPattern_({ {"source", stringFile} });
+      if( argumentsPattern.exists("segment") == true ) { argumentsPattern_.set("segment", argumentsPattern["segment"].as_string_view()); } // set the segment (code, comment, string) to search in
+      auto result_ = COMMAND_CollectPatternStatistics( argumentsPattern_, vectorRegexPatterns, vectorCount );
+      if( result_.first == false ) { ERROR_Add(result_.second); }
+
+      // ### Update counters in the file-pattern table
+
+      for( unsigned u = 0; u < vectorCount.size(); u++ )
+      {
          ptableFilePattern->cell_set(uRow, u + 4, vectorCount[u]);             // set pattern count in table
       }
 
-      vectorCount.resize(vectorPattern.size(), 0);                             // set counters to 0 in vector
+      std::fill(vectorCount.begin(), vectorCount.end(), 0);
    }
 
    return { true, "" };
@@ -665,24 +730,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
             vectorKeyValue.push_back( argumentsRule );
          }
       }
-
-
-      /*
-      @TASK #user.per [name: keyvalue][brief: ParseKeyValueRule_s is no longer used, remove it?][state: open][date: 2025-08-12]
-      if( pargumentsFind->exists("kv") == true )
-      {
-         auto vector_ = pargumentsFind->get_argument_all("kv");
-         std::vector<std::string> vectorRule;
-         for( auto& rule : vector_ ) { vectorRule.push_back(rule.as_string()); }
-
-         for( const auto& stringRule : vectorRule )
-         {
-            gd::argument::arguments argumentsRule;
-            CApplication::ParseKeyValueRule_s( stringRule, &argumentsRule );
-            vectorKeyValue.push_back( std::move( argumentsRule ) );
-         }
-      }
-      */
    }
 
 

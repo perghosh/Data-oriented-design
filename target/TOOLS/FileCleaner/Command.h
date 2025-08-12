@@ -61,6 +61,7 @@ std::pair<bool, std::string> CLEAN_File_g( const std::string& stringPath, const 
 std::pair<bool, std::string> COMMAND_CountRows(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
 std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::shared::arguments& argumentsPath, gd::argument::shared::arguments& argumentsResult );
 std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector<std::string>& vectorPattern, std::vector<uint64_t>& vectorCount );
+std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, std::vector<uint64_t>& vectorCount );
 /// @brief Collects the number of lines in a file that match a specific pattern, this is case sensetive matching.
 std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::dto::table* ptable_ );
 /// @brief Collects the number of lines in a file that match a specific pattern, this use regex matching.

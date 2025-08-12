@@ -69,19 +69,7 @@ List history items is needed to view what has been done before, and to make it p
 When history is read, apply filter if any was sent and the print. Method to print should be called `HistoryPrint_g`"]
 */
 
-/*
-@TASK #history.create #user.kevin
-[name: history] [priority: high] [state: open] [assigned_to: kevin]
-[description: 
-"## create history file. 
-- `cleaner history -create -local` create local history file in current folder. and name it to .cleaner-history.xml
-
-   For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\history.xml`.
-   For linux this file should be placed in `~/.local/share/cleaner/history.xml`.
-   If history files exists then just print that it does exist and exit." ]
-[sample: """- `cleaner history -create` - Creates history file"""]
-[idea: "Call method `CreateHistory_s'. If the flag `-create` is set and create the history file"]
-*/
+// @TASK #history.create #user.per [name:create local history file][brief: test if local history file can be created][state: open]
 
 /*
 @TASK #history.create #user.kevin [name:create local history file]

@@ -220,7 +220,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
       }
 
       result_ = pdocument->FILE_UpdatePatternList(vectorRegexPattern, argumentsList); // Search for patterns in harvested files and place them into the result table
-      if (result_.first == false) return result_;
+      if( result_.first == false) return result_;
 
       if( options_["match-all"].is_true() == true )
       {

@@ -986,6 +986,146 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
    return { true, "" };
 }
 
+// @TASK #user.per [name: count (add rpattern)] [brief: COMMAND_CollectPatternStatistics for regex patterns][state: open][date: 2025-08-12]
+
+std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, std::vector<uint64_t>& vectorCount )
+{ 
+   enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
+
+   unsigned uFindInState = eStateCode; // state of the parser
+
+   // ## if state is sent than try to figure out from what state to find patterns
+   if( argumentsPath.exists("segment") == true )
+   {
+      std::string stringSegment = argumentsPath["segment"].as_string();
+      if( stringSegment == "comment" ) uFindInState = eStateComment;
+      else if( stringSegment == "string" ) uFindInState = eStateString;
+      else if( stringSegment == "code" ) uFindInState = eStateCode;
+      else if( stringSegment == "all" ) uFindInState = ( eStateComment | eStateString | eStateCode );
+   }
+
+   // ## Prepare source file
+   std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
+
+   // ### Open file
+   if( std::filesystem::is_regular_file(stringFile) == false ) return { false, "File not found: " + stringFile };
+   std::ifstream file_(stringFile, std::ios::binary);
+   if(file_.is_open() == false) return { false, "Failed to open file: " + stringFile };
+
+   gd::parse::window::line lineBuffer(48 * 64, 64 * 64, gd::types::tag_create{});  // create line buffer 64 * 64 = 4096 bytes = 64 cache lines
+
+   gd::expression::parse::state state_; // state is used to check what type of code part we are in
+   auto result_ = CApplication::PrepareState_s( {{"source",stringFile}}, state_);
+   if( result_.first == false ) return result_;                                // error in state preparation
+
+   // ## count occurrences of each pattern in the source code
+   auto count_pattern_ = [&vectorRegexPatterns, &vectorCount](const std::string& stringText) -> void {
+      for(size_t u = 0; u < vectorRegexPatterns.size(); ++u)
+      {
+         boost::smatch smatch_;
+         if(boost::regex_search(stringText, smatch_, vectorRegexPatterns[u].first)) 
+         {
+            vectorCount[u]++; // increment count for this regex pattern
+         }
+      }
+   };
+
+
+   // ## Initialize pattern counts
+
+   vectorCount.resize(vectorRegexPatterns.size(), 0);                         // clear counters for regex patterns 
+
+   std::string stringSourceCode; // gets source code for analysis
+   std::string stringText;       // gets text for analysis
+   uint64_t uRowCharacterCodeCount = 0; // number of characters of code in current row (helper variable)
+
+   // ## Read the file into the buffer
+   auto uAvailable = lineBuffer.available();
+   file_.read((char*)lineBuffer.buffer(), uAvailable);
+   auto uReadSize = file_.gcount();                                           // get number of valid bytes read
+   lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
+
+   // ## Process the file
+   while(lineBuffer.eof() == false)
+   {
+      auto [first_, last_] = lineBuffer.range(gd::types::tag_pair{});
+
+      for(auto it = first_; it < last_; it++ ) 
+      {
+         if( state_.in_state() == false )                                     // not in a state? that means we are reading source code
+         {
+            // ## check if we have found state
+            if( state_[*it] != 0 && state_.exists( it ) == true )
+            {
+               if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) ) count_pattern_(stringSourceCode); // count patterns in source code
+               stringSourceCode.clear();                                      // clear source code
+               auto uLength = state_.activate(it);                            // activate state
+               if( uLength > 1 ) it += ( uLength - 1 );                       // skip to end of state marker and if it is more than 1 character, skip to end of state
+
+
+               // If multiline and `uRowCharacterCodeCount` is not 0 that means that there are characters in the code section before multiline
+               if( uRowCharacterCodeCount > 0 && state_.is_multiline() == false ) 
+               { 
+                  if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) ) count_pattern_(stringSourceCode); // count patterns in source code
+                  stringSourceCode.clear();
+                  uRowCharacterCodeCount = 0;
+               }
+
+               continue;
+            }
+
+            stringSourceCode += *it;                                          // add character to source code
+            if( *it == '\n' ) 
+            { 
+               if( (uRowCharacterCodeCount > 0) && (uFindInState & eStateCode) ) count_pattern_(stringSourceCode); // count patterns in source code
+               stringSourceCode.clear();
+               uRowCharacterCodeCount = 0;                                    // reset code character count for next line
+            }
+            else if( gd::expression::is_code_g( *it ) != 0 ) 
+            { 
+               uRowCharacterCodeCount++;                                      // count all code characters in line
+            }
+         }
+         else
+         {
+            stringText += *it;                                                // add character to text for analysis
+            // ## check if we have found end of state
+            unsigned uLength;
+            if( state_.deactivate( it, &uLength, gd::expression::parse::state::tag_manual{}) == true ) 
+            {
+               if( uFindInState & (eStateComment|eStateString) )
+               {
+                  if( state_.is_comment() == true && (uFindInState & eStateComment) )
+                  {
+                     count_pattern_(stringText);                              // count in comment
+                  }
+                  else if( state_.is_string() == true && ( uFindInState & eStateString ) )
+                  {
+                     count_pattern_(stringText);                              // count in string
+                  }
+               }
+               state_.clear_state();                                          // clear state
+               stringText.clear();                                            // clear text for analysis
+
+               if( uLength > 1 ) it += ( uLength - 1 );                       // skip to end of state marker and if it is more than 1 character, skip to end of state
+               continue;
+            }
+         }
+      }
+
+      lineBuffer.rotate();                                                    // rotate buffer
+
+      if( uReadSize > 0 )                                                     // was it possible to read data last read, then more data is available
+      {
+         file_.read((char*)lineBuffer.buffer(), lineBuffer.available());      // read more data into available space in buffer
+         uReadSize = file_.gcount();
+         lineBuffer.update(uReadSize);                                        // update valid size in line buffer
+      }
+   }
+
+   return { true, "" };
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Lists lines in a file that match specified patterns.
