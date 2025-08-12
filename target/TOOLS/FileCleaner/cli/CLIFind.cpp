@@ -219,7 +219,6 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
    bool bUseKeyValue = false; // flag to indicate if key-value pairs should be used
 
    if( options_.exists("segment") == true ) { argumentsFind.append("segment", options_["segment"].as_string()); }
-   if( options_.exists("kv") == true ) { argumentsFind.append( "kv", options_.get_argument_all("kv", gd::types::tag_view{})); bUseKeyValue = true; }
    if( options_.exists_any({ "keys", "brief", "header", "footer"}) == true )
    {
       bUseKeyValue = true;                                                    // if keys are set, we want to use key-value pairs
@@ -252,6 +251,32 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       }
                                                                                                    LOG_DEBUG_RAW( "== keyvalue format: " & argumentsFind["kv-format"].as_string() );
    }
+
+   // ## Check if kv or keys are provided, this is special (hack) for quick editing sending arguments
+   if( options_.exists("kv") == true ) 
+   { 
+      std::string string_ = options_["kv"].as_string();
+      // Extract keys, they are before @ character
+      auto uPosition = string_.find('@');
+      if( uPosition != std::string::npos )
+      {
+         std::string stringKeys = string_.substr(0, uPosition);
+         argumentsFind.append("keys", stringKeys);
+         options_.set("keys", std::string_view( stringKeys ));
+         //options_.append("keys", stringKeys);
+         // add kv-format, characters after @ character are used as kv-format
+         std::string stringKVFormat = string_.substr(uPosition + 1);
+         argumentsFind.append("kv-format", stringKVFormat);
+         options_.set("kv-format", std::string_view( stringKVFormat ));
+         //options_.append("kv-format", stringKVFormat);
+      }
+      else
+      {
+         argumentsFind.append("keys", string_);                               // if no @ character is found, then use the whole string as keys
+      }
+      bUseKeyValue = true; 
+   }
+
 
    // ## Harvest files from the source paths
    for( const auto& stringSource : vectorSource )

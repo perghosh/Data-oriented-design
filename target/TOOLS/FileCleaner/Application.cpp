@@ -3062,6 +3062,9 @@ std::vector<std::string> CApplication::SplitNumber_s(const std::string& stringTe
    return vectorNumber;                                                       // Return the vector of numbers
 }
 
+
+// @TASK #user.per [name: keyvalue][brief: ParseKeyValueRule_s is no longer used, remove it?][state: open][date: 2025-08-12]
+
 /** --------------------------------------------------------------------------- @TAG #hack.keyvalue [description: Parse keys and format if specified, this is added to simplify adding key-value pairs to be read]
  * @brief Parses a key-value rule from a string and populates the provided arguments object.
  *
