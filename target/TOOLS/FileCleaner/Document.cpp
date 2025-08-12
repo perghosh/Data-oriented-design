@@ -666,6 +666,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
          }
       }
 
+
+      /*
+      @TASK #user.per [name: keyvalue][brief: ParseKeyValueRule_s is no longer used, remove it?][state: open][date: 2025-08-12]
       if( pargumentsFind->exists("kv") == true )
       {
          auto vector_ = pargumentsFind->get_argument_all("kv");
@@ -679,6 +682,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
             vectorKeyValue.push_back( std::move( argumentsRule ) );
          }
       }
+      */
    }
 
 
