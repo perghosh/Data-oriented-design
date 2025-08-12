@@ -9,6 +9,11 @@
 - `--brief` added to find command to enable brief output mode. This to enable reducing the amount of output and focus on the most important information.
 - Global `--history` option to save the last used command to a history file. This allows you to easily repeat the last command without having to type it again.
 - `--width` Added to find command to specify the width of the output. This allows you to control how wide the output is.
+- More colors and settings added to the configuration file to allow for more customization of the cleaner behavior. Things like how to draw headers, footers, and brief output.
+    - sample "cleaner.format": { "kv": "[]:", "header-line": "0xDAC4BF", "footer-line": "0xC0C4D9", "brief": ">>> ", "width": 100 }
+    - "cleaner.logging": { "severity": null },
+    - "cleaner.ignore": {"folder": null, "file": null }
+ - Added colors to `count` result, for now only one color
 
 ## v1.0.2
 
