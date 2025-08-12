@@ -1,4 +1,4 @@
-/**                                                                            @TAG #ui.cli #command.find [description: definitions for find methods]
+﻿/**                                                                            @TAG #ui.cli #command.find [description: definitions for find methods]
  * @file CLIFind.cpp
  * @brief This file contains the definitions methods used for the cli find command
  * 
@@ -141,7 +141,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       if( options_.exists("keys") == true || options_.exists("kv") == true )
       {
          gd::argument::shared::arguments argumentsPrint;
-         argumentsPrint.append( options_.get_arguments(), { "header", "brief" });
+         argumentsPrint.append( options_.get_arguments(), { "keys", "header", "footer", "brief", "width"});
          result_ = FindPrintKeyValue_g(pdocument, &argumentsPrint);                             // Print the key-value pairs found in the files
          if( result_.first == false ) return result_;                          // if print failed, return the error
          bPrint = true;                                                        // set print to true, we have printed the results
@@ -220,19 +220,26 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
    if( options_.exists("segment") == true ) { argumentsFind.append("segment", options_["segment"].as_string()); }
    if( options_.exists("kv") == true ) { argumentsFind.append( "kv", options_.get_argument_all("kv", gd::types::tag_view{})); bUseKeyValue = true; }
-   if( options_.exists("keys") == true || options_.exists("header") == true || options_.exists("brief") == true ) 
-   { 
+   if( options_.exists_any({ "keys", "brief", "header", "footer"}) == true )
+   {
       bUseKeyValue = true;                                                    // if keys are set, we want to use key-value pairs
-      // ## merge header and  keys with key-value pairs
-      if( options_.exists("header") == true || options_.exists("brief") == true )
+      // ## merge header, footer, brief and  keys with key-value pairs
+      if( options_.exists_any({ "header", "brief", "footer" }) == true )
       {
-         std::string_view stringKeys = options_["keys"].as_string_view();
-         std::string_view stringHeader = options_["header"].as_string_view();
-         std::string_view stringBrief = options_["brief"].as_string_view();
+         std::vector<std::string_view> vectorKeys;
+         vectorKeys.push_back(options_["keys"].as_string_view());             // add header to the keys
+         vectorKeys.push_back(options_["header"].as_string_view());           // add header to the keys
+         vectorKeys.push_back(options_["brief"].as_string_view());            // add brief to the keys
+         vectorKeys.push_back(options_["footer"].as_string_view());           // add footer to the keys
+
          char iSeparator = ';'; // separator for keys
-         if( stringKeys.find(',') != std::string_view::npos || stringHeader.find(',') != std::string_view::npos || stringBrief.find(',') != std::string_view::npos ) iSeparator = ','; // if comma is found, use it as separator
-         auto stringMergedKeys = gd::math::string::merge_delimited(stringKeys, stringHeader, iSeparator); // merge keys and header into the keys argument
-         stringMergedKeys = gd::math::string::merge_delimited(stringMergedKeys, stringBrief, iSeparator); // merge keys and brief into the keys argument
+         for( const auto& keys_ : vectorKeys )
+         {
+            if( keys_.find(',') != std::string_view::npos ) { iSeparator = ','; break; } // if comma is found, use it as separator
+            else if( keys_.find(';') != std::string_view::npos ) { iSeparator = ';'; break; } // if semicolon is found, use it as separator
+         }
+
+         auto stringMergedKeys = gd::math::string::merge_delimited(vectorKeys, iSeparator); // merge keys and header into the keys argument
          options_.set("keys", std::string_view( stringMergedKeys ));
       }
                                                                                                    LOG_DEBUG_RAW("== keys: " & argumentsFind["keys"].as_string());
@@ -743,15 +750,30 @@ std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd:
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
+ * 
+ * @verbatim
+ * Example output: Note that there are code in this method to enable this, read carefully.
+ ┌─ key-value ────────────────────────────────────────────────────────────────┐ header and header-line
+ │>> write documentation                                                        brief
+ C:\dev\home\DOD\target\TOOLS\FileCleaner\Document.cpp(833)
+ description: description how to write documentation                            keys
+ └────────────────────────────────────────────────────────────────────────────┘ footer and footer-line
+ * @endverbatim
  */
 std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint )
-{                                                                                                  assert(pdocument != nullptr);
+{                                                                                                  assert(pdocument != nullptr); assert(pargumentsPrint != nullptr);
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
    auto* ptableKeyValue = pdocument->CACHE_GetTableArguments("keyvalue");     // get table for key-value pairs from the cache
    if( ptableKeyValue->size() == 0 ) { pdocument->MESSAGE_Display("\nNo key-value pairs found."); return { true, "" }; } // if no key-value pairs found, return
 
+   unsigned uWidth = 80; // default width for the output, can be changed by configuration
+   unsigned uTextWidth = 0; // width of the text, used to align the text in the output
+   std::string stringPrint; // string to hold the formatted output, this is used to format the output for terminal application in rest of method
+
+   // ## Prepare some special output formats for parts in the output ..........
+   //    line and brief sections are formatted to simplify the output
+
    unsigned uKeyMarginWidth = 0; // margin width for the key, used to align the keys in the output
-   std::string stringCliTable; // string to hold the CLI table output
    std::string stringHeaderFormat = pdocument->GetApplication()->CONFIG_Get("format", "header-line").as_string(); // get the header line format from the configuration
    if( stringHeaderFormat.empty() == false && stringHeaderFormat[0] == '0' && stringHeaderFormat[1] == 'x'  )
    { 
@@ -766,12 +788,27 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       stringBriefFormat = gd::math::string::convert_hex_to_ascii(stringBriefFormat.substr(2)); // remove the "0x" prefix and convert hex to string
    } 
 
+   std::string stringFooterFormat = pdocument->GetApplication()->CONFIG_Get("format", "footer-line").as_string(); // get the footer line format from the configuration
+   if( stringFooterFormat.empty() == false && stringFooterFormat[0] == '0' && stringFooterFormat[1] == 'x'  )
+   { 
+      // convert hex character codes to string characters for each hex code
+      stringFooterFormat = gd::math::string::convert_hex_to_ascii(stringFooterFormat.substr(2)); // remove the "0x" prefix and convert hex to string
+   } 
 
-   stringCliTable += "\n\n"; 
-   stringCliTable += gd::math::string::format_header_line("RESULT", 80, '#', '=', '#');// add a header line to the output
-   stringCliTable += "\n"; 
-   pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "default"}}, gd::types::tag_view{} });
-   stringCliTable.clear(); 
+   if( pargumentsPrint->exists("width") == true ) { uWidth = pargumentsPrint->get_argument("width").as_uint(); uTextWidth = uWidth; }
+   else if( pdocument->GetApplication()->CONFIG_Exists("format", "width") == true )
+   {
+      uWidth = pdocument->GetApplication()->CONFIG_Get("format", "width").as_uint();
+      uTextWidth = uWidth;                                                    // use the same width for text
+   }
+
+   if( uWidth < 40 ) { uWidth = 40; uTextWidth = uWidth; }                    // ensure the width is at least 40 characters, this is to avoid too narrow output
+
+   stringPrint += "\n\n"; 
+   stringPrint += gd::math::string::format_header_line("RESULT", uWidth, '#', '=', '#');// add a header line to the output
+   stringPrint += "\n"; 
+   pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "default"}}, gd::types::tag_view{} });
+   stringPrint.clear(); 
 
    // ## Calculate width of the longest key, this to format the output nicely
 
@@ -782,100 +819,155 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       if( name_.size() > uKeyMarginWidth ) uKeyMarginWidth = (unsigned)name_.size();// update the key width if the current key is longer
    }
 
-   // ## Extract header keys (if specified)
+   // ## Extract keys ......................................................... 
 
+   std::vector<std::string> vectorBody;
    std::vector<std::string> vectorHeader;
-   if( pargumentsPrint != nullptr && pargumentsPrint->exists("header") == true )
-   {
-      vectorHeader = gd::utf8::split( pargumentsPrint->get_argument("header").as_string(), ';', gd::types::tag_string{});
-   }
-
    std::vector<std::string> vectorBrief;
-   if( pargumentsPrint != nullptr && pargumentsPrint->exists("brief") == true )
+   std::vector<std::string> vectorFooter;
+
+   char iSeparator = ';'; // separator used to split the keys
    {
-      vectorBrief = gd::utf8::split( pargumentsPrint->get_argument("brief").as_string(), ';', gd::types::tag_string{});
+      auto string_ = pargumentsPrint->get_argument("keys").as_string_view();
+      if( string_.find(',') != std::string::npos ) { iSeparator = ','; }      // if the keys are separated by commas, use comma as separator
    }
 
+   if( pargumentsPrint->exists("keys") == true ) { vectorBody =  gd::utf8::split( pargumentsPrint->get_argument("keys").as_string(), iSeparator, gd::types::tag_string{}); }
+   if( pargumentsPrint->exists("header") == true ) { vectorHeader = gd::utf8::split( pargumentsPrint->get_argument("header").as_string(), iSeparator, gd::types::tag_string{}); }
+   if( pargumentsPrint->exists("brief") == true ) { vectorBrief = gd::utf8::split( pargumentsPrint->get_argument("brief").as_string(), iSeparator, gd::types::tag_string{}); }
+   if( pargumentsPrint->exists("footer") == true ) { vectorFooter = gd::utf8::split( pargumentsPrint->get_argument("footer").as_string(), iSeparator, gd::types::tag_string{}); }
 
-   // ## Print values in the key-value table
+   // ### Remove keys from vectorBody found in other vectors
+   if( vectorHeader.empty() == false )
+   {
+      // remove keys from vectorBody that are in vectorHeader
+      vectorBody.erase(std::remove_if(vectorBody.begin(), vectorBody.end(), [&vectorHeader](const std::string& key_) {
+         return std::find(vectorHeader.begin(), vectorHeader.end(), key_) != vectorHeader.end();
+      }), vectorBody.end());
+   }
+   if( vectorBrief.empty() == false )
+   {
+      // remove keys from vectorBody that are in vectorBrief
+      vectorBody.erase(std::remove_if(vectorBody.begin(), vectorBody.end(), [&vectorBrief](const std::string& key_) {
+         return std::find(vectorBrief.begin(), vectorBrief.end(), key_) != vectorBrief.end();
+      }), vectorBody.end());
+   }
+   if( vectorFooter.empty() == false )
+   {
+      // remove keys from vectorBody that are in vectorFooter
+      vectorBody.erase(std::remove_if(vectorBody.begin(), vectorBody.end(), [&vectorFooter](const std::string& key_) {
+         return std::find(vectorFooter.begin(), vectorFooter.end(), key_) != vectorFooter.end();
+      }), vectorBody.end());
+   }
+
+   // ## Print values in the key-value table ..................................
+   //    Print order for each row is:
+   //    - header with header line
+   //    - brief with brief line 
+   //    - Source code file name with row number
+   //    - body with key-value pairs
+   //    - footer with footer line
 
    for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
    {
-      // ### Prepare header line if vectorHeader is not empty
+      // ### Prepare header and print line if vectorHeader is not empty
 
       const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(uRow); // get the arguments object from the row
       if( vectorHeader.empty() == false )
       {
-         std::string stringHeader;
+         stringPrint.clear();                                                // clear the stringPrint for the next row
          for( const auto& key_ : vectorHeader ) 
          { 
-            if( stringHeader.empty() == false ) stringHeader += ", ";         // add a separator if the stringHeader is not empty
-            stringHeader += pargumentsRow->get_argument( key_ ).as_string_view(); 
+            if( stringPrint.empty() == false ) stringPrint += ", ";         // add a separator if the stringPrint is not empty
+            stringPrint += pargumentsRow->get_argument( key_ ).as_string_view(); 
          }
 
-         if( stringHeaderFormat.empty() == true ) { stringHeader = gd::math::string::format_header_line(stringHeader, 80); }
-         else                                     { stringHeader = gd::math::string::format_header_line(stringHeader, 80, stringHeaderFormat); }
+         if( stringHeaderFormat.empty() == true ) { stringPrint = gd::math::string::format_header_line(stringPrint, uWidth); }
+         else                                     { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentLeft , uWidth, stringHeaderFormat); }
 
-         pdocument->MESSAGE_Display(stringHeader, { array_, {{"color", "header"}}, gd::types::tag_view{} });
+         pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "header"}}, gd::types::tag_view{} });
       }
 
-      // ### Prepare brief line if vectorBrief is not empty
+      // ### Prepare and print brief line if vectorBrief is not empty
+
       if( vectorBrief.empty() == false )
       {
-         std::string stringBrief;
+         stringPrint.clear();                                                // clear the stringPrint for the next row
          for( const auto& key_ : vectorBrief ) 
          { 
-            if( stringBrief.empty() == false ) stringBrief += "\n";           // add a separator if the stringBrief is not empty
-            stringBrief += pargumentsRow->get_argument( key_ ).as_string_view(); 
+            if( stringPrint.empty() == false ) stringPrint += "\n";           // add a separator if the stringPrint is not empty
+            stringPrint += pargumentsRow->get_argument( key_ ).as_string_view(); 
          }
 
-         if( stringBrief.empty() == false )
+         if( stringPrint.empty() == false )
          {
-            pdocument->MESSAGE_Display( stringBriefFormat + stringBrief, {array_, {{"color", "brief"}}, gd::types::tag_view{}});
+            pdocument->MESSAGE_Display( stringBriefFormat + stringPrint, {array_, {{"color", "brief"}}, gd::types::tag_view{}});
          }
       }
 
-      // ### Prepare file name
+      // ### Prepare and print file name
 
-      std::string stringFilename = ptableKeyValue->cell_get_variant_view(uRow, "filename").as_string(); // get the filename from the key-value table
+      stringPrint = ptableKeyValue->cell_get_variant_view(uRow, "filename").as_string(); // get the filename from the key-value table
       uint64_t uRowNumber = ptableKeyValue->cell_get_variant_view(uRow, "row").as_uint64(); // get the row number from the key-value table
-      uRowNumber++; // add one because rows in table are zero based
-      stringFilename += std::format("({})", uRowNumber); // add the row number to the filename
+      uRowNumber++;                                                           // add one because rows in table are zero based
+      stringPrint += std::format("({})", uRowNumber);                         // add the row number to the filename
 
-      if( vectorHeader.empty() == true ) { stringCliTable += std::format("{:-<80}", stringFilename + "  "); } // add the filename to the stringCliTable, with a separator before it
-      else stringCliTable += stringFilename;
+      // If no header line then line is used as header line
+      if( vectorHeader.empty() == true ) { stringPrint += std::format("{:-<80}", stringPrint + "  "); } // add the filename to the stringPrint, with a separator before it
 
-      pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "line"}}, gd::types::tag_view{} });
-      stringCliTable.clear();                                                 // clear the stringCliTable for the next row
+      pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "line"}}, gd::types::tag_view{} });
 
-      // ## Get the arguments object from row
-      if( pargumentsRow == nullptr ) continue;                                  // if the arguments object is null, skip this row
+      // ### Prepare and print body
 
-      // ### Iterator over values in the arguments object
-      for( auto it = std::begin( *pargumentsRow ); it != std::end( *pargumentsRow ); ++it ) // iterate over the arguments object
+      if( pargumentsRow != nullptr )
       {
-         auto name_ = it.name();
-
-         // if the name is in the header vector, skip this key-value pair
-         if( vectorHeader.empty() == false && std::find(vectorHeader.begin(), vectorHeader.end(), name_) != vectorHeader.end() ) { continue; } 
-
-         auto stringValue_ = it.get_argument().as_string();                          // get the name and value of the argument
-         if( stringValue_.find('\n') != std::string::npos ) // if the value contains a newline, replace it with a space
+         stringPrint.clear();
+         for( const auto& key_ : vectorBody )                                 // iterate over the keys in the vectorBody
          {
-            stringValue_ = gd::math::string::format_indent(stringValue_, uKeyMarginWidth + 2, false); // indent the value with the key margin width + 2 spaces because adds for separator and space after that
+            if( pargumentsRow->exists(key_) == false ) continue;              // if the key does not exist in the arguments object, skip this key-value pair
+
+            if( stringPrint.empty() == false ) stringPrint += '\n';
+
+            auto stringValue_ = pargumentsRow->get_argument(key_).as_string();// get the value of the argument
+
+            if( uTextWidth > 0 )
+            {
+               // format the value to fit in the width, with a margin for the key and separator
+               stringValue_ = gd::math::string::format_text_width(stringValue_, uTextWidth - uKeyMarginWidth - 2); 
+            }
+
+            if( stringValue_.find('\n') != std::string::npos ) // if the value contains a newline, indent it
+            {
+               stringValue_ = gd::math::string::format_indent(stringValue_, uKeyMarginWidth + 2, false); // indent the value with the key margin width + 2 spaces because adds for separator and space after that
+            }
+            // Print name with padding
+            stringPrint += std::format("{:>{}}: {}", key_, uKeyMarginWidth, stringValue_); // format the key-value pair as "key: value" with padding
          }
 
-         // Print name with padding
-         stringCliTable += std::format("{:>{}}: {}", name_, uKeyMarginWidth, stringValue_); // format the key-value pair as "key: value" with padding
-         stringCliTable += "\n";
+         if( stringPrint.empty() == false ) pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "body"}}, gd::types::tag_view{} });
       }
-      pdocument->MESSAGE_Display(stringCliTable, { array_, {{"color", "body"}}, gd::types::tag_view{} });
-      stringCliTable.clear();                                                // clear the stringCliTable for the next row
-   }
+
+      // ### Prepare and print footer
+
+      if( vectorFooter.empty() == false )
+      {
+          stringPrint.clear();                                                // clear the stringPrint for the next row
+         for( const auto& key_ : vectorFooter ) 
+         { 
+            if( stringPrint.empty() == false ) stringPrint += ", ";          // add a separator if the stringPrint is not empty
+            stringPrint += pargumentsRow->get_argument( key_ ).as_string_view(); 
+         }
+         if( stringFooterFormat.empty() == true ) { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentRight, uWidth); }
+         else                                     { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentRight, uWidth, stringFooterFormat); }
+         pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "footer"}}, gd::types::tag_view{} });
+      }
+
+      pdocument->MESSAGE_Display("");                                         // add a newline after each row to separate the key-value pairs
+   }// for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow ) {
 
    // ## print summary of key-value pairs
    std::string stringSummary = std::format("Found {} sections with key-value pairs", ptableKeyValue->get_row_count());
-   stringSummary = gd::math::string::format_header_line(stringSummary, 80, '#', '=', '#');
+   stringSummary = gd::math::string::format_header_line(stringSummary, uWidth, '#', '=', '#');
    pdocument->MESSAGE_Display(stringSummary, { array_, {{"color", "default"}}, gd::types::tag_view{} });
 
    pdocument->MESSAGE_Display();                                              // reset color to default

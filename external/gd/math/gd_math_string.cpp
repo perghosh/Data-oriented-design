@@ -788,6 +788,116 @@ std::string format_comment(const std::string_view& stringText, const std::string
    return stringResult;
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Creates a formatted header line with specified characters, total length, and text alignment.
+ *
+ * This function generates a header line with configurable alignment for the header text.
+ * The structure varies based on alignment:
+ * - LEFT: first_char + " " + header_name + " " + fill_chars + last_char
+ * - CENTER: first_char + fill_chars + " " + header_name + " " + fill_chars + last_char
+ * - RIGHT: first_char + fill_chars + " " + header_name + " " + last_char
+ * 
+ * If the header name is too long to fit within the specified length, it will be truncated.
+ * Minimum length is 4 characters to accommodate the basic structure.
+ *
+ * @param stringHeaderName The header text to display.
+ * @param eAlignment The text alignment (LEFT, CENTER, or RIGHT).
+ * @param uTotalLength The total length of the generated line (default: 70).
+ * @param iFirstChar The character to use at the beginning of the line (default: '+').
+ * @param iFillChar The character to use for padding (default: '-').
+ * @param iLastChar The character to use at the end of the line (default: '+').
+ * @return std::string The formatted header line.
+ * 
+ * @code
+ * // Center aligned (original behavior)
+ * std::string center = format_header_line("Configuration", TextAlignment::CENTER, 60, '+', '-', '+');
+ * // Result: "+----------- Configuration -----------+"
+ *
+ * // Left aligned
+ * std::string left = format_header_line("Configuration", TextAlignment::LEFT, 60, '+', '-', '+');
+ * // Result: "+- Configuration -----------------------+"
+ *
+ * // Right aligned
+ * std::string right = format_header_line("Configuration", TextAlignment::RIGHT, 60, '+', '-', '+');
+ * // Result: "+---------------------- Configuration -+"
+ * @endcode
+ */
+std::string format_header_line(const std::string_view& stringHeaderName, enumAlignment eAlignment, size_t uTotalLength, char iFirstChar, char iFillChar, char iLastChar)
+{
+    if(uTotalLength < 6) { uTotalLength = 6; }                                  // Handle minimum length requirements
+
+    auto add_text = [](std::string& s_, const std::string_view& text_, char iFillChar) {
+       if( text_.empty() == true ) { s_.append(4, iFillChar); return; }                                            // No text to add, return early
+       s_ += iFillChar; // Add fill character before text
+       s_ += ' '; 
+       s_ += text_;
+       s_ += ' ';
+       s_ += iFillChar; // Add fill character after text
+    };
+    
+    std::string stringResult;
+    stringResult.reserve(uTotalLength);
+    
+    // ## Calculate available space for header and fill characters
+    //    Structure varies by alignment, but we need: first_char + 2 spaces + last_char = 4 minimum
+    size_t uHeaderSpace = uTotalLength - 6; // Subtract: first_char + 2 spaces + last_char
+    
+    std::string stringHeader(stringHeaderName);
+    
+    if(stringHeader.length() > uHeaderSpace) { stringHeader = stringHeader.substr(0, uHeaderSpace); } // Truncate header if it's too long to fit
+    
+    // ## Calculate fill characters needed
+    size_t uTotalFill = uHeaderSpace - stringHeader.length();
+    
+    stringResult += iFirstChar;                                               // Add first character
+
+    switch(eAlignment)
+    {
+        case enumAlignment::eAlignmentLeft:
+        {
+            // Structure: first_char + " " + header + " " + fill_chars + last_char
+
+            add_text(stringResult, stringHeader, iFillChar);                  // Add header
+            
+            // Add all remaining fill characters
+            for(size_t u = 0; u < uTotalFill; ++u) { stringResult += iFillChar; }
+            break;
+        }
+
+        case enumAlignment::eAlignmentRight:
+        {
+            // Structure: first_char + fill_chars + " " + header + " " + last_char
+            // Add all fill characters first
+            for(size_t u = 0; u < uTotalFill; ++u) { stringResult += iFillChar; }
+            
+            add_text(stringResult, stringHeader, iFillChar);                  // Add header
+            break;
+        }
+
+        case enumAlignment::eAlignmentCenter:
+        default:
+        {
+            // Structure: first_char + fill_chars + " " + header + " " + fill_chars + last_char
+            // Split fill characters as evenly as possible
+            size_t uLeftFill = uTotalFill / 2;
+            size_t uRightFill = uTotalFill - uLeftFill;
+            
+            // Add left fill characters
+            for(size_t u = 0; u < uLeftFill; ++u) { stringResult += iFillChar; }
+
+            add_text(stringResult, stringHeader, iFillChar);                  // Add header
+            // Add right fill characters
+            for(size_t u = 0; u < uRightFill; ++u) { stringResult += iFillChar; }
+            break;
+        }
+    }
+    
+    stringResult += iLastChar; // Last character
+    
+    return stringResult;
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Creates a formatted header line with specified characters and total length.
  *
@@ -813,46 +923,11 @@ std::string format_comment(const std::string_view& stringText, const std::string
  */
 std::string format_header_line(const std::string_view& stringHeaderName, size_t uTotalLength, char iFirstChar, char iFillChar, char iLastChar)
 {
-   if(uTotalLength < 4) { uTotalLength = 4; }                                  // Handle minimum length requirements
-   
-   std::string stringResult;
-   stringResult.reserve(uTotalLength);
-   
-   // ## Calculate available space for header and fill characters
-   // Structure: first_char + fill_char + " " + header + " " + fill_chars + last_char
-   size_t uHeaderSpace = uTotalLength - 4; // Subtract: first_char + fill_char + 2 spaces + last_char
-   
-   std::string stringHeader(stringHeaderName);
-   
-   // ## Truncate header if it's too long to fit
-   if(stringHeader.length() > uHeaderSpace) 
-   {
-      stringHeader = stringHeader.substr(0, uHeaderSpace);
-   }
-   
-   // ## Calculate remaining fill characters needed
-   size_t uRemainingFill = uHeaderSpace - stringHeader.length();
-   
-   // ## Build the header line
-   stringResult += iFirstChar;           // First character
-   stringResult += iFillChar;            // Initial fill character
-   stringResult += ' ';                  // Space before header
-   stringResult += stringHeader;         // Header text
-   stringResult += ' ';                  // Space after header
-   
-   // ## Add remaining fill characters
-   for(size_t i = 0; i < uRemainingFill; ++i) 
-   {
-      stringResult += iFillChar;
-   }
-   
-   stringResult += iLastChar;            // Last character
-   
-   return stringResult;
+   return format_header_line(stringHeaderName, enumAlignment::eAlignmentLeft, uTotalLength, iFirstChar, iFillChar, iLastChar);
 }
 
 /// Overloaded to format line from string
-std::string format_header_line(const std::string_view& stringHeaderName, size_t uTotalLength, std::string_view stringLine ) 
+std::string format_header_line(const std::string_view& stringHeaderName, enumAlignment eAlignment, size_t uTotalLength, std::string_view stringLine ) 
 {
    uint8_t puLine[3] = { '+', '-', '+' }; // Default characters for first, fill, and last
 
@@ -874,7 +949,7 @@ std::string format_header_line(const std::string_view& stringHeaderName, size_t 
       puLine[2] = stringLine[2]; // Last character
    }
 
-   return format_header_line(stringHeaderName, uTotalLength, puLine[0], puLine[1], puLine[2]);
+   return format_header_line(stringHeaderName, eAlignment, uTotalLength, puLine[0], puLine[1], puLine[2]);
 }
 
 
@@ -1132,4 +1207,23 @@ std::string merge_delimited(const std::string_view& stringFirst, const std::stri
    
    return stringResult;
 }
+
+/// Overloaded to merge a vector of strings with a separator
+std::string merge_delimited(const std::vector<std::string_view> vectorString, char iSeparator)
+{
+   if( vectorString.empty() == true ) { return {}; }                          // Handle empty input case
+
+   std::string stringResult( vectorString[0] );
+
+   for( size_t uIndex = 1; uIndex < vectorString.size(); ++uIndex )
+   {
+      auto string_ = vectorString[uIndex]; // Current string to merge
+      if( string_.empty() == true ) { continue; }                             // Skip empty strings
+      stringResult = merge_delimited(stringResult, vectorString[uIndex], iSeparator); // Merge each string with the result
+   }
+   
+   return stringResult;
+}
+
+
 _GD_MATH_STRING_END

@@ -325,6 +325,7 @@ public:
 
    /// Checks if configuration is not loaded, if pointer to configuration is null than it has not been loaded
    bool CONFIG_Empty() const { return m_ptableConfig == nullptr; }
+   bool CONFIG_Exists( std::string_view stringGroup, std::string_view stringName ) const;
 
 //@}
 

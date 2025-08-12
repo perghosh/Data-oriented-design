@@ -743,7 +743,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "version" )
    {
-      std::cout << "version 1.0.2" << "\n";
+      std::cout << "version 1.0.3" << "\n";
    }
    else
    {
@@ -1696,6 +1696,24 @@ gd::variant_view CApplication::CONFIG_Get(std::string_view stringGroup, std::str
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Check if a configuration exists in the config table
+ * 
+ * @param stringGroup The group name of the configuration
+ * @param stringName The name of the configuration
+ * @return bool True if the configuration exists, false otherwise
+ */
+bool CApplication::CONFIG_Exists( std::string_view stringGroup, std::string_view stringName ) const
+{
+   if( m_ptableConfig == nullptr ) return false;
+
+   auto iRow = m_ptableConfig->find({ {"group", stringGroup }, {"name", stringName} }); // Find the row with the specified group and name
+   if( iRow != -1 ) { return true; }
+
+   return false;
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief Get configuration value from the config table using a list of names
  * 
  * This function searches for the specified configuration names within the given group
@@ -1915,6 +1933,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "kv", "A **shortcut** to define both the keys to search for and the rules for how to find their corresponding values. Use this for quick key-value pair extraction."});
       optionsCommand.add({ "keys", "Specify individual **keys to search for** when collecting associated values. Useful when you need to extract specific data points."});
       optionsCommand.add({ "header", "select columns or keys to include in the output as header."});
+      optionsCommand.add({ "footer", "select columns or keys to include in the output as footer."});
       optionsCommand.add({ "brief", "Enable brief output format for key-value pairs. Based on output format this varies but generally shows a condensed view to simplify understanding."});
       optionsCommand.add({ "kv-format", "Define the **scoping format** for how key-value pairs are identified and extracted. This helps the tool understand the structure of your key-value data."});
       optionsCommand.add({ "context", "Display **surrounding code or text** to provide context for each search result. This helps you understand where the match occurred."});
@@ -1923,6 +1942,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "rule", "Define **rules for what actions to perform** on found matches. This could include formatting, outputting, or further processing."});
       optionsCommand.add({ "script", "Execute an **external script file** for advanced and custom processing of search results. Ideal for complex automation." });
       optionsCommand.add({ "max", "Set the **maximum number of results** to return. Use this to limit output and improve performance for large searches."});
+      optionsCommand.add({ "width", "Width for output" });
       optionsCommand.add_flag({ "R", "Enable **recursive search** in subfolders. Sets the recursion depth to 16, ensuring a thorough scan of all subdirectories." });
       optionsCommand.add_flag( {"match-all", "Require **all specified patterns to match** within the same line or row for a result to be considered valid."} );
 #ifdef _WIN32

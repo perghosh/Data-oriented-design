@@ -22,6 +22,8 @@
 
 _GD_MATH_STRING_BEGIN
 
+enum class enumAlignment { eAlignmentLeft, eAlignmentCenter, eAlignmentRight };
+
 bool getline(std::string_view& stringText, std::string& stringLine, char iNewLine = '\n');
 bool getline(std::string_view& stringText, std::string_view& stringLine, char iNewLine = '\n');
 std::string_view getline(std::string_view& stringText, char iNewLine = '\n');
@@ -66,8 +68,9 @@ std::string format_indent(const std::string_view& stringText, size_t uIndentSpac
 /// Formats text as a comment with specified marker, optionally placing the comment on the first line.
 std::string format_comment(const std::string_view& stringText, const std::string_view& stringCommentMarker, bool bCommentFirstLine = true, char iNewLine = '\n');
 /// Formats text as a header line with specified characters and total length.
-std::string format_header_line(const std::string_view& stringHeaderName, size_t uTotalLength = 70, char iFirstChar = '+', char iFillChar = '-', char iLastChar = '+');
-std::string format_header_line(const std::string_view& stringHeaderName, size_t uTotalLength, std::string_view stringLine );
+std::string format_header_line(const std::string_view& stringHeaderName, enumAlignment eAlignment, size_t uTotalLength = 80, char iFirstChar = '+', char iFillChar = '-', char iLastChar = '+');
+std::string format_header_line(const std::string_view& stringHeaderName, size_t uTotalLength = 80, char iFirstChar = '+', char iFillChar = '-', char iLastChar = '+');
+std::string format_header_line(const std::string_view& stringHeaderName, enumAlignment eAlignment, size_t uTotalLength, std::string_view stringLine );
 /// Formats text to fit within a specified width, filling with a character if necessary.
 std::string format_text_width(std::string_view stringText, size_t uWidth, char iFillChar = ' ');
 
@@ -80,5 +83,6 @@ std::string convert_hex_to_ascii(const std::string_view& stringHex);
 
 /// Merges two delimited strings, removing duplicates and preserving the separator.
 std::string merge_delimited(const std::string_view& stringFirst, const std::string_view& stringSecond, char iSeparator = ';');
+std::string merge_delimited(const std::vector<std::string_view> vectorString, char iSeparator = ';');
 
 _GD_MATH_STRING_END
