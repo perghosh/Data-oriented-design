@@ -625,9 +625,7 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
                stringContext[uIndex] = '>';                                   // mark the leading row with a '>' character
             }
 
-            //stringLine += stringContext;                                      // add the context code to the line text
-
-            //table_.cell_set(uRow, "line", stringContext);                     // set the line text in the result table
+            // @TASK #ui.cli #user.per [name: list] [brief: set color to marked row to highlight] [status: open]
 
             pdocument->MESSAGE_Display(stringContext, { array_, {{"color", "body"}}, gd::types::tag_view{} });
          }
