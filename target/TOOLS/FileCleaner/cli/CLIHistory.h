@@ -126,19 +126,6 @@ This will remove entries from the history file based on a given filter.
 */
 
 /*
-@TASK #history.run #user.kevin
-[name: history] [priority: high] [state: open] [assigned_to: kevin]
-[description: "## Run history command.
-This will execute a history command based on a given filter.
-" ]
-[sample: '
-- `cleaner history --run "23"` - Runs history command with number 23
-- `cleaner history --run "alias-name"` - Runs history that have alias name
-- `cleaner history --run "-"` - Runs last history command
-']
-*/
-
-/*
 @TASK #history.pin #user.kevin
 [name: history] [priority: high] [state: open] [assigned_to: kevin]
 [description: "## Pin history command.

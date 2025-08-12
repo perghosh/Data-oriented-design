@@ -576,8 +576,6 @@ std::pair<bool, std::string> ReadSnippet_g( const std::vector<std::string>& vect
    return { true, "" }; 
 }
 
-// @TASK [date: 250723] [name: key-value] [description: "print result for key value logic, like harvested values for selected keys"] [state: open] [priority: 1]
-
 /** ---------------------------------------------------------------------------
  * @brief Prints the results of the find operation based on the provided arguments.
  *
