@@ -32,6 +32,7 @@ NAMESPACE_CLI_END
 /*
 @TASK #history.paste #user.per
 [name: history] [priority: high] [state: open] [assigned_to: per]
+[brief: "Paste command for history"]
 [description: "## paste to use clipboard and figure out command from that." ]
 [sample: '
 - `cleaner paste

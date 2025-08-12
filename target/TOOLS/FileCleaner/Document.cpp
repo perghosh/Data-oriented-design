@@ -833,9 +833,21 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    return { true, "" };
 }
 
-// @TASK [date: 250723] [name: key-value] [description: "test BUFFER_UpdateKeyValue method for different type of value combinations"] [state: todo] [priority: high]
-// @TASK [date: 250723] [name: key-value] [description: "write documentation"] [state: progress] [priority: low]
 
+/** ---------------------------------------------------------------------------
+ * @brief Updates key-value pairs in the cache keyvalue table from a file buffer.
+ *
+ * This method processes a file buffer and extracts key-value pairs based on the provided rules.
+ * It updates the "keyvalue" cache table with the extracted key-value pairs.
+ *
+ * @param argumentsFile The arguments containing the file key and source string.
+ * @param stringFileBuffer The file buffer containing the content of the file. From this buffer key-value pairs are extracted.
+ * @param tableRow The table containing rows to process with information where to find key-value extraction.
+ * @param vectorRule A vector of rules defining how to extract key-value pairs.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const gd::argument::shared::arguments& argumentsFile, std::string_view stringFileBuffer, gd::table::dto::table& tableRow, const std::vector<gd::argument::arguments>& vectorRule)
 {
    uint64_t uFileKey = argumentsFile["file-key"].as_uint64();                                      assert( uFileKey > 0 );
@@ -864,6 +876,9 @@ std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const gd::argument
          const gd::parse::code codeKeyValue(stringScope);
 
          if( stringKeys.empty() == false ) { gd::utf8::split(stringKeys, ',', vectorKey); } // If multiple keys are provided, split them by comma and add to the vector
+
+         // ## Read values for each key in vectorKey
+         //    Values read are placed in `keyvalue` table, table are able to store extra columns on each row
 
          for( const auto& stringKey : vectorKey )
          {
