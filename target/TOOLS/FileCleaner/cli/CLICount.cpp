@@ -67,6 +67,7 @@ std::pair<bool, std::string> Count_g( const gd::cli::options* poptionsCount, CDo
  */
 std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, CDocument* pdocument)
 {                                                                                                  assert( poptionsCount != nullptr );
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
    const gd::cli::options& options_ = *poptionsCount;
 
    enum { linecount_report_, patterncount_report_ };
@@ -265,8 +266,6 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
       tableResult = std::move(tableResultPage);                               // move the page result to the original table
    }  
 
-   // @TASK #user.per [name: list (print color)] [brief: apply color when print count result][state: open][date: 2025-08-12]
-
    if( bPrint || bOutput || !stringOutput.empty() )                            // Generate and handle results ?
    {
       if( bPrint == true ) 
@@ -275,8 +274,9 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
          std::string stringCliTable = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
          if( options_.exists("vs") == false )
          {
-            if( stringHeader.empty() == false  ) pdocument->MESSAGE_Display( stringHeader );
-            pdocument->MESSAGE_Display( stringCliTable );
+            pdocument->MESSAGE_Background();
+            if( stringHeader.empty() == false  ) { pdocument->MESSAGE_Display(stringHeader, { array_, {{"color", "info"}}, gd::types::tag_view{} }); }
+            pdocument->MESSAGE_Display( stringCliTable, { array_, {{"color", "default"}}, gd::types::tag_view{} });
          }
          else
          {
@@ -293,6 +293,8 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
          result_ = pdocument->RESULT_Save(argumentsResult, &tableResult);                          if( !result_.first ) { return result_; }
       }
    }
+
+   pdocument->MESSAGE_Display();                                              // reset the message display
 
    return { true, "" };
 }

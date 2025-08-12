@@ -986,8 +986,37 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
    return { true, "" };
 }
 
-// @TASK #user.per [name: count (add rpattern)] [brief: COMMAND_CollectPatternStatistics for regex patterns][state: open][date: 2025-08-12]
-
+/** ---------------------------------------------------------------------------
+ * @brief Collects pattern statistics from the specified source file using regex patterns.
+ *
+ * This method reads the specified file and counts occurrences of each regex pattern
+ * in the source code. The patterns are provided in the `vectorRegexPatterns` parameter.
+ * 
+ * ### Steps:
+ * 1. **Prepare the source file**:
+ *    - Validate the file path and ensure it exists.
+ *    - Open the file in binary mode for reading.
+ * 2. **Initialize the state**:
+ *    - Prepare the parsing state based on the file extension.
+ *    - Set up regex patterns to count occurrences in the source code.
+ * 3. **Read and process the file**:
+ *    - Read the file into a buffer.
+ *    - Iterate through the buffer to identify and count regex patterns.
+ *    - Handle different states (e.g., code, comments, strings) appropriately.
+ * 4. **Count occurrences**:
+ *    - For each regex pattern, count its occurrences in the relevant sections of the file.
+ *    - Store the counts in the `vectorCount` parameter.
+ * 5. **Return the result**:
+ *    - Return a success flag and an error message (if any).
+ *
+ * @param argumentsPath The arguments container containing the input parameters:
+ *        - `source` (string): The source file path to collect statistics from.
+ * @param vectorRegexPatterns A vector of pairs containing regex patterns and their names.
+ * @param vectorCount A reference to a vector where the counts of each pattern will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, std::vector<uint64_t>& vectorCount )
 { 
    enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
@@ -1033,7 +1062,8 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
 
    // ## Initialize pattern counts
 
-   vectorCount.resize(vectorRegexPatterns.size(), 0);                         // clear counters for regex patterns 
+   vectorCount.resize(vectorRegexPatterns.size(), 0); 
+   std::fill(vectorCount.begin(), vectorCount.end(), 0);                       // clear counters for regex patterns
 
    std::string stringSourceCode; // gets source code for analysis
    std::string stringText;       // gets text for analysis
