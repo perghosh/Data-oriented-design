@@ -2071,6 +2071,11 @@ void CApplication::PrepareLogging_s()
    unsigned uSeverity = unsigned(eSeverityError);
    plogger->set_severity( uSeverity ); 
 
+#ifndef NDEBUG
+   uSeverity = unsigned(eSeverityDebug);                                      // set debug severity
+   plogger->set_severity(uSeverity);                                          // set debug severity in debug mode
+#endif
+
 #endif // GD_LOG_SIMPLE
 }
 

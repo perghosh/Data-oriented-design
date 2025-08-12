@@ -104,12 +104,16 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    // Count rows in the harvested files
    result_ = pdocument->FILE_UpdateRowCounters();                                                  if( !result_.first ) { return result_; }
 
+   // ## Prepare arguments for pattern counting ...............................
+
+   gd::argument::shared::arguments argumentsPattern;
+   std::string stringSegment = options_["segment"].as_string();               // type of segment to search in, code, comment or string, maybe all
+   if(stringSegment.empty() == false) argumentsPattern.set("segment", stringSegment.c_str());
+
+   // ## Pattern counting .....................................................
+
    if( options_["pattern"].is_true() )                                        // Handle pattern matching if specified
    {
-      gd::argument::shared::arguments argumentsPattern;
-      std::string stringSegment = options_["segment"].as_string(); // type of segment to search in, code, comment or string, maybe all
-      if(stringSegment.empty() == false) argumentsPattern.set("segment", stringSegment.c_str());
-
       iReportType = patterncount_report_;                                     // set report type to pattern report
       std::string stringPattern = options_["pattern"].as_string();
       auto vectorPattern = CApplication::Split_s(stringPattern);
@@ -120,6 +124,51 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
          std::string stringSortColumn = options_["sort"].as_string();
          result_ = pdocument->CACHE_Sort( "file-pattern", stringSortColumn );                      if( !result_.first ) { return result_; }
       }
+   }
+   // @TASK #user.per [name: count (add rpattern)] [brief: count regex patterns in files][state: open][date: 2025-08-12]
+   else if( options_["rpattern"].is_true() )
+   {
+      iReportType = patterncount_report_;                                     // set report type to pattern report
+      auto vectorRPattern = options_.get_all("rpattern"); // get all regex patterns
+      std::vector<std::string> vectorPattern; // store regex patterns as strings
+      for( auto& rpattern : vectorRPattern ) { vectorPattern.push_back(rpattern.as_string()); }
+
+      if( vectorPattern.size() == 1 ) 
+      { 
+         // check for empty pattern, if empty then try to read from clipboard
+         if( vectorPattern[0].empty() == true )
+         {
+            std::string stringPattern;
+            OS_ReadClipboard_g( stringPattern );
+            if( stringPattern.empty() == true ) { pdocument->MESSAGE_Display( std::format( "Use clipboard: {}", stringPattern ) ); }
+            vectorPattern[0] = std::move(stringPattern);                // move the string from clipboard to the pattern vector
+         }
+      }
+
+      // remove empty patterns
+      vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
+      if( vectorPattern.size() == 0 ) return {false, "No regex patterns provided."}; // if no patterns are provided, return an error
+
+      auto uSearchPatternCount = vectorPattern.size(); // count the number of patterns to search for
+      std::vector< std::pair<boost::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
+
+      // ## convert string to regex and put it into vectorRegexPatterns
+
+      for( auto& stringPattern : vectorPattern )
+      {
+         try
+         {
+            boost::regex regexPattern(stringPattern);
+            vectorRegexPattern.push_back({ regexPattern, stringPattern });                         LOG_DEBUG_RAW("== Regex pattern: " & stringPattern);
+         }
+         catch (const boost::regex_error& e)
+         {                                                                      
+            std::string stringError = "Invalid regex pattern: '" + stringPattern + "'. Error: " + e.what();
+            return { false, stringError };
+         }
+      }
+
+      result_ = pdocument->FILE_UpdatePatternCounters(argumentsPattern, vectorRegexPattern);       if( !result_.first ) { return result_; }
    }
    else
    {
@@ -173,7 +222,7 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
             uFooterRowCount = 1;
          }
          else if( iReportType == patterncount_report_ )
-         {                                                                                         assert(options_["pattern"].is_true());
+         {                                                                                         assert(options_["pattern"].is_true() || options_["rpattern"].is_true());
             std::vector<unsigned> vectorColumn;
             for( auto u = 1u; u < tableResult.get_column_count(); u++ ) vectorColumn.push_back(u);// add sum columns
 
@@ -216,7 +265,8 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
       tableResult = std::move(tableResultPage);                               // move the page result to the original table
    }  
 
-   
+   // @TASK #user.per [name: list (print color)] [brief: apply color when print count result][state: open][date: 2025-08-12]
+
    if( bPrint || bOutput || !stringOutput.empty() )                            // Generate and handle results ?
    {
       if( bPrint == true ) 
@@ -265,8 +315,8 @@ Count lines in file/files.
       - count - Total number of lines in the file.
       - code - Number of lines containing actual code (excluding comments and whitespace).
       - characters - Total count of code characters (excluding comments and strings).
-      - comment - The number of comment segments (not lines—counts).
-      - string - The number of string segments (not lines—counts).
+      - comment - The number of comment segments (not linesï¿½counts).
+      - string - The number of string segments (not linesï¿½counts).
 
 )";
    }
