@@ -5,6 +5,10 @@
 - Global `option` option argument added to specify a configuration file to use.
 - Global `logging-severity` to specify the logging level for cleaner. This allows you to control the verbosity of the output.
 - Extended configuration and make it possible to select different configuration files. Added more settings to configuration like ignore and logging settings.
+- `--footer` added to find command to specify a footer for the output. This allows you to add custom text at the end of the output.
+- `--brief` added to find command to enable brief output mode. This to enable reducing the amount of output and focus on the most important information.
+- Global `--history` option to save the last used command to a history file. This allows you to easily repeat the last command without having to type it again.
+- `--width` Added to find command to specify the width of the output. This allows you to control how wide the output is.
 
 ## v1.0.2
 

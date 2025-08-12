@@ -1062,6 +1062,8 @@ public:
    [[nodiscard]] argument find_argument(const std::string_view& stringName, const_pointer pPosition) const;
 
    [[nodiscard]] bool exists( const std::string_view& stringName ) const;
+   [[nodiscard]] bool exists( const std::initializer_list<std::string_view>& listName ) const;
+   [[nodiscard]] bool exists_any( const std::initializer_list<std::string_view>& listName ) const;
    [[nodiscard]] std::pair<bool, std::string> exists( const std::initializer_list<std::string_view>& listName, tag_name ) const { return exists_s( *this, listName, tag_name{}); }
    [[nodiscard]] std::pair<bool, std::string> exists( const std::initializer_list<std::pair<std::string_view, std::string_view>>& listName, tag_description ) const { return exists_s( *this, listName, tag_description{}); }
    [[nodiscard]] std::pair<bool, std::string> exists_any_of( const std::initializer_list<std::string_view>& listName, tag_name ) const { return exists_any_of_s( *this, listName, tag_name{}); }
@@ -1767,6 +1769,23 @@ inline bool arguments::exists( const std::string_view& stringName ) const {
    const_pointer pPosition = find(stringName);
    return pPosition != nullptr;
 }
+
+/// check if all with name in list exists among values in arguments object, if not found return false
+inline bool arguments::exists( const std::initializer_list<std::string_view>& listName ) const {
+   for( const auto& stringName : listName ) {
+      if( exists(stringName) == false ) return false; // if one is not found return false
+   }
+   return true; // all names found
+}
+
+/// check if any of the names in list exists among values in arguments object, if one is found return true
+inline bool arguments::exists_any( const std::initializer_list<std::string_view>& listName ) const {
+   for( const auto& stringName : listName ) {
+      if( exists(stringName) == true ) return true; // if one is found return true
+   }
+   return false; // no names found
+}
+
 
 /// compare if value is equal for specified name
 /// comparing text is faster with this internal compare method because no object is created on heap holding argument value
