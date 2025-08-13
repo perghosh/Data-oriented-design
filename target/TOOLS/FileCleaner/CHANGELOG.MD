@@ -14,6 +14,7 @@
     - "cleaner.logging": { "severity": null },
     - "cleaner.ignore": {"folder": null, "file": null }
  - Added colors to `count` result, for now only one color
+ - Sort works on `count` tables.
 
 ## v1.0.2
 

@@ -22,7 +22,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -49,7 +50,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -76,7 +78,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -103,7 +106,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -130,7 +134,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -157,7 +162,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -184,7 +190,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -211,7 +218,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -238,7 +246,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -265,7 +274,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -292,7 +302,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 
@@ -319,7 +330,8 @@
     "cleaner.format": {
        "kv": "[]:",
        "header-line": "0xDAC4BF",
-       "brief": "0xB33E3E20"
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
     }
 }
 

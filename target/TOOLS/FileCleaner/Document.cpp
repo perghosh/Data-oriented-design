@@ -1353,6 +1353,8 @@ gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::stri
 *                  If the string starts with a '-', the sort order will be descending.
 *                - An integer to specify the column by index. A negative value indicates
 *                  descending order.
+* @param ptable_ A pointer to the cache table. If `nullptr`, the method will attempt
+*                to retrieve the table from the cache.
 *
 * @return A pair containing:
 *         - `bool`: `true` if the sorting was successful, `false` otherwise.
@@ -1370,12 +1372,12 @@ gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::stri
 * @post The rows in the cache table are sorted based on the specified column.
 *
 */
-std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_)  // @TAG #data.cache #command.sort
+std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_, gd::table::dto::table* ptable_)  // @TAG #data.cache #command.sort
 {
    bool bAscending = true;
    int iColumn = -1;
-   auto* ptable_ = CACHE_Get(stringId, false);                                                     assert(ptable_ != nullptr);
-
+   if( ptable_ == nullptr ) { ptable_ = CACHE_Get(stringId, false); }
+                                                                                                   assert(ptable_ != nullptr);
    if( column_.is_string() )
    {
       std::string stringColumn = column_.as_string();
