@@ -119,12 +119,6 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
       std::string stringPattern = options_["pattern"].as_string();
       auto vectorPattern = CApplication::Split_s(stringPattern);
       result_ = pdocument->FILE_UpdatePatternCounters(argumentsPattern, vectorPattern);            if( !result_.first ) { return result_; }
-
-      if( options_["sort"].is_true() == true )
-      {
-         std::string stringSortColumn = options_["sort"].as_string();
-         result_ = pdocument->CACHE_Sort( "file-pattern", stringSortColumn );                      if( !result_.first ) { return result_; }
-      }
    }
    // @TASK #user.per [name: count (add rpattern)] [brief: count regex patterns in files][state: open][date: 2025-08-12]
    else if( options_["rpattern"].is_true() )
@@ -171,14 +165,6 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
 
       result_ = pdocument->FILE_UpdatePatternCounters(argumentsPattern, vectorRegexPattern);       if( !result_.first ) { return result_; }
    }
-   else
-   {
-      if( options_["sort"].is_true() == true )
-      {
-         std::string stringSortColumn = options_["sort"].as_string();
-         result_ = pdocument->CACHE_Sort( "file-count", stringSortColumn );                        if( !result_.first ) { return result_; }
-      }
-   }
 
    // ## Determine statistics options
    if( options_["stats"].is_true() == true )
@@ -204,6 +190,13 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    gd::table::dto::table tableResult;
    if( iReportType == linecount_report_ ) { tableResult = pdocument->RESULT_RowCount(); }
    else                                   { tableResult = pdocument->RESULT_PatternCount(); }
+
+   if( options_["sort"].is_true() == true )
+   {
+      std::string stringSortColumn = options_["sort"].as_string();
+      result_ = pdocument->CACHE_Sort( "file-pattern", stringSortColumn, &tableResult );           if( !result_.first ) { return result_; }
+   }
+
 
    unsigned uFooterRowCount = 0;
    if( uStatistics != 0 )
