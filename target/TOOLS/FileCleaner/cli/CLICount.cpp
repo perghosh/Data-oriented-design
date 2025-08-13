@@ -6,6 +6,8 @@
 
  // @TAG #cli #count
 
+ #include <format>
+
 
 #include "../Command.h"
 #include "../Application.h"
