@@ -381,8 +381,8 @@ enum enumType
    eTypeUInt256      = eTypeNumberUInt256    | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize256,
    eTypeUInt512      = eTypeNumberUInt512    | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize512,
 
-   eTypeCFloat       = eTypeNumberFloat      | (eTypeGroupDecimal|eTypeGroupNumber)  | eTypeGroupSize32,
-   eTypeCDouble      = eTypeNumberDouble     | (eTypeGroupDecimal|eTypeGroupNumber)  | eTypeGroupSize64,
+   eTypeCFloat       = eTypeNumberFloat      | (eTypeGroupDecimal|eTypeGroupNumber)  | eTypeGroupSize32   | eTypeGroupSigned,
+   eTypeCDouble      = eTypeNumberDouble     | (eTypeGroupDecimal|eTypeGroupNumber)  | eTypeGroupSize64   | eTypeGroupSigned,
    eTypePointer      = eTypeNumberPointer,
    eTypeGuid         = eTypeNumberGuid       | eTypeGroupBinary                      | eTypeGroupSize128,
    eTypeBinary       = eTypeNumberBinary     | eTypeGroupBinary,
