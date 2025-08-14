@@ -1340,6 +1340,8 @@ gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::stri
 
 }
 
+// @TASK #user.per [name: sort] [brief: Find sort column by first match exact, then check for index and last try to find part of column name] [state: open] [date: 2025-08-13]
+
 /** ---------------------------------------------------------------------------
 * @brief Sorts a cached table by a specified column.
 *

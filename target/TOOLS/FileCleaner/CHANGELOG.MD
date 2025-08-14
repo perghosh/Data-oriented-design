@@ -2,7 +2,7 @@
 
 ## v1.0.3
 ### New Features
-- Global `option` option argument added to specify a configuration file to use.
+- Global `config` option argument added to specify a configuration file to use.
 - Global `logging-severity` to specify the logging level for cleaner. This allows you to control the verbosity of the output.
 - Extended configuration and make it possible to select different configuration files. Added more settings to configuration like ignore and logging settings.
 - `--footer` added to find command to specify a footer for the output. This allows you to add custom text at the end of the output.

@@ -197,6 +197,9 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    {
       std::string stringSortColumn = options_["sort"].as_string();
       result_ = pdocument->CACHE_Sort( "file-pattern", stringSortColumn, &tableResult );           if( !result_.first ) { return result_; }
+#ifndef NDEBUG
+      std::string stringCliTable_d = gd::table::to_string(tableResult, { {"verbose", true} }, gd::table::tag_io_cli{});
+#endif
    }
 
 
