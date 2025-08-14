@@ -72,11 +72,12 @@ When history is read, apply filter if any was sent and the print. Method to prin
 // @TASK #history.create #user.per [name:create local history file][brief: test if local history file can be created][state: open]
 
 /*
-@TASK #history.create #user.kevin [name:create local history file]
+@TASK #history.create #user.kevin [name:create local history file][state: closed]
 [description:"   
 - `cleaner history -create -local`
 - This will create a local history file in the current folder.
 "]
+[date:2025-08-01][priority: high]
 */
 
 
@@ -87,7 +88,7 @@ When history is read, apply filter if any was sent and the print. Method to prin
    - Add global option command called `--history` that marks if the command should be added to history.
    - If `--history` is set then: save the command string to hisory file and the value set for --history is the alias name.
 "]
-[state:open]   
+[state:open][date:2025-08-01][priority: high]
 */
 
 /*
@@ -97,7 +98,7 @@ When history is read, apply filter if any was sent and the print. Method to prin
 - - If local history file is found then load it into the document cache.
 - - If no local history file is found then try to load the global history file.
 "]
-[state:open]   
+[state:open][date:2025-08-01][priority: high]   
 */
 
 /*
@@ -123,6 +124,7 @@ This will remove entries from the history file based on a given filter.
 - `cleaner history --prune "list"` - Prunes all list entries from the history file
 ']
 [idea: "Call method `HistoryPrune_g`. If the option `--prune` is set, prune is an advanced command so it will need some logic and filtering."]
+[date:2025-08-03][priority: low]
 */
 
 /*

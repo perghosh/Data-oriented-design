@@ -354,34 +354,37 @@ enum enumTypeDetail
 /*-----------------------------------------*/ /**
    * \brief Combined information for type
    *
-   *
+   * Core type information used in gd code.
+   * This includes type numbers, groups, sizes, and other relevant information. Trying to
+   * fit all this information in 32 bits, so that we can use it in logic without
+   * any ambiguity.
    */
 enum enumType
 {
    eTypeUnknown      = eTypeNumberUnknown,
-   eTypeBool         = eTypeNumberBool       | eTypeGroupBoolean  | eTypeGroupSize08,
-   eTypeInt8         = eTypeNumberInt8       | eTypeGroupInteger  | eTypeGroupSize08   | eTypeGroupSigned,
-   eTypeInt16        = eTypeNumberInt16      | eTypeGroupInteger  | eTypeGroupSize16   | eTypeGroupSigned,
-   eTypeInt32        = eTypeNumberInt32      | eTypeGroupInteger  | eTypeGroupSize32   | eTypeGroupSigned,
-   eTypeInt64        = eTypeNumberInt64      | eTypeGroupInteger  | eTypeGroupSize64   | eTypeGroupSigned,
+   eTypeBool         = eTypeNumberBool       | eTypeGroupBoolean                     | eTypeGroupSize08,
+   eTypeInt8         = eTypeNumberInt8       | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize08   | eTypeGroupSigned,
+   eTypeInt16        = eTypeNumberInt16      | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize16   | eTypeGroupSigned,
+   eTypeInt32        = eTypeNumberInt32      | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize32   | eTypeGroupSigned,
+   eTypeInt64        = eTypeNumberInt64      | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize64   | eTypeGroupSigned,
 
-   eTypeInt128       = eTypeNumberInt128     | eTypeGroupInteger  | eTypeGroupSize128,
-   eTypeInt256       = eTypeNumberInt256     | eTypeGroupInteger  | eTypeGroupSize256,
-   eTypeInt512       = eTypeNumberInt512     | eTypeGroupInteger  | eTypeGroupSize512,
+   eTypeInt128       = eTypeNumberInt128     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize128,
+   eTypeInt256       = eTypeNumberInt256     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize256,
+   eTypeInt512       = eTypeNumberInt512     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize512,
 
-   eTypeUInt8        = eTypeNumberUInt8      | eTypeGroupInteger  | eTypeGroupSize08,
-   eTypeUInt16       = eTypeNumberUInt16     | eTypeGroupInteger  | eTypeGroupSize16,
-   eTypeUInt32       = eTypeNumberUInt32     | eTypeGroupInteger  | eTypeGroupSize32,
-   eTypeUInt64       = eTypeNumberUInt64     | eTypeGroupInteger  | eTypeGroupSize64,
+   eTypeUInt8        = eTypeNumberUInt8      | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize08,
+   eTypeUInt16       = eTypeNumberUInt16     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize16,
+   eTypeUInt32       = eTypeNumberUInt32     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize32,
+   eTypeUInt64       = eTypeNumberUInt64     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize64,
 
-   eTypeUInt128      = eTypeNumberUInt128    | eTypeGroupInteger  | eTypeGroupSize128,
-   eTypeUInt256      = eTypeNumberUInt256    | eTypeGroupInteger  | eTypeGroupSize256,
-   eTypeUInt512      = eTypeNumberUInt512    | eTypeGroupInteger  | eTypeGroupSize512,
+   eTypeUInt128      = eTypeNumberUInt128    | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize128,
+   eTypeUInt256      = eTypeNumberUInt256    | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize256,
+   eTypeUInt512      = eTypeNumberUInt512    | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize512,
 
-   eTypeCFloat       = eTypeNumberFloat      | eTypeGroupDecimal  | eTypeGroupSize32,
-   eTypeCDouble      = eTypeNumberDouble     | eTypeGroupDecimal  | eTypeGroupSize64,
+   eTypeCFloat       = eTypeNumberFloat      | (eTypeGroupDecimal|eTypeGroupNumber)  | eTypeGroupSize32,
+   eTypeCDouble      = eTypeNumberDouble     | (eTypeGroupDecimal|eTypeGroupNumber)  | eTypeGroupSize64,
    eTypePointer      = eTypeNumberPointer,
-   eTypeGuid         = eTypeNumberGuid       | eTypeGroupBinary   | eTypeGroupSize128,
+   eTypeGuid         = eTypeNumberGuid       | eTypeGroupBinary                      | eTypeGroupSize128,
    eTypeBinary       = eTypeNumberBinary     | eTypeGroupBinary,
    eTypeString       = eTypeNumberString     | eTypeGroupString,
    eTypeUtf8String   = eTypeNumberUtf8String | eTypeGroupString,
@@ -392,10 +395,10 @@ enum enumType
    eTypeVoid         = eTypeNumberVoid,
    eTypeBit          = eTypeNumberBit        | eTypeGroupBoolean,
 
-   eTypeRBinary      = eTypeNumberBinary     | eTypeGroupBinary  | eTypeDetailReference,
-   eTypeRString      = eTypeNumberString     | eTypeGroupString  | eTypeDetailReference,
-   eTypeRUtf8String  = eTypeNumberUtf8String | eTypeGroupString  | eTypeDetailReference,
-   eTypeRWString     = eTypeNumberUtf8String | eTypeGroupString  | eTypeDetailReference
+   eTypeRBinary      = eTypeNumberBinary     | eTypeGroupBinary                      | eTypeDetailReference,
+   eTypeRString      = eTypeNumberString     | eTypeGroupString                      | eTypeDetailReference,
+   eTypeRUtf8String  = eTypeNumberUtf8String | eTypeGroupString                      | eTypeDetailReference,
+   eTypeRWString     = eTypeNumberUtf8String | eTypeGroupString                      | eTypeDetailReference
 
 };
 

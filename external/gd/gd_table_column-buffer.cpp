@@ -3846,6 +3846,7 @@ void table_column_buffer::sort_null(unsigned uColumn, bool bAscending, uint64_t 
    if( gd::types::is_boolean_g(uColumnType) == true ) { variantNull = gd::variant(false); }
    else if( gd::types::is_number_g(uColumnType) == true ) { variantNull = gd::variant(0); variantNull.convert( uColumnType ); }
    else if( gd::types::is_string_g(uColumnType) == true ) { variantNull = gd::variant(""); variantNull.convert( uColumnType ); }
+   else { assert(false ); }
 
    if(bAscending == true)
    {
@@ -3860,7 +3861,7 @@ void table_column_buffer::sort_null(unsigned uColumn, bool bAscending, uint64_t 
             // check null values
             if( v1_.is_null() == true ) v1_ = variantNull.as_variant_view();
             if( v2_.is_null() == true ) v2_ = variantNull.as_variant_view();
-
+                                                                                                   assert( v1_.is_null() == false && v2_.is_null() == false );
             if(v2_ < v1_)
             {
                swap(u + 1, u);
@@ -3893,7 +3894,7 @@ void table_column_buffer::sort_null(unsigned uColumn, bool bAscending, uint64_t 
 
             if( v1_.is_null() == true ) v1_ = variantNull.as_variant_view();
             if( v2_.is_null() == true ) v2_ = variantNull.as_variant_view();
-
+                                                                                                   assert( v1_.is_null() == false && v2_.is_null() == false );
             if(v2_ < v1_)
             {
                swap(u - 1, u);
