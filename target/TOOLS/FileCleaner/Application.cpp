@@ -337,13 +337,31 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          std::string stringConfigFile = optionsApplication.get_variant_view("config", gd::types::tag_state_active{}).as_string();
          if( stringConfigFile.empty() == false )
          {
-            auto result_ = CONFIG_Load(stringConfigFile);    // load configuration file
+            auto result_ = CONFIG_Load(stringConfigFile);                     // load configuration file
             if( result_.first == false ) { PrintError( result_.second, gd::argument::arguments()); }
          }
       }
       else
       {
-         result_ = CONFIG_Load();                                                                 LOG_WARNING_RAW_IF(result_.first == false, result_.second);
+         // ## Load the default configuration file ............................
+         //    - try to find the configuration file in the current directory or parent directories
+         //    - if not found, try to find the configuration file in the home directory
+
+         std::filesystem::path pathConfigLocation; // path to the configuration file
+         result_ = ConfigurationFindFile_s(pathConfigLocation, 2);            // try to find the configuration file in the current directory or parent directories
+         if( result_.first == true )
+         {
+            if( std::filesystem::exists(pathConfigLocation) == true )         // if configuration file exists
+            {
+               result_ = CONFIG_Load(pathConfigLocation.string());                                LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
+            }
+            else
+            {
+               LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories.");
+            }
+         }
+
+         result_ = CONFIG_Load();                                                                 LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
       }
 
       if( bSetLogging == false )                                              // if logging is not set, check for logging set in configuration
@@ -375,7 +393,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
          std::filesystem::path pathHistoryCurrent; //= std::filesystem::current_path() / ".cleaner-history.xml"; // Default history location in current directory
          std::filesystem::path pathHistoryHome;
-         HistoryLocalLocation_s(pathHistoryCurrent, 2); // Get the local history location, 2 directory levels up
+         HistoryFindFile_s(pathHistoryCurrent, 2);                              // Get the local history location, 2 directory levels up
          HistoryLocation_s(pathHistoryHome);
 
          if( std::filesystem::exists(pathHistoryCurrent) == true )
@@ -1599,7 +1617,15 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
 {
    using namespace jsoncons;
    using namespace gd::table;
+
+   constexpr std::string_view stringConfigurationFileName = "cleaner-configuration.json"; // Default configuration file name
+
    std::string stringFolder( stringFileName );
+
+
+   // ## Try to find local configuration file
+
+
    if( stringFolder.empty() == true )
    { 
       stringFolder = PROPERTY_Get("folder-home").as_string();                 // Get home folder from properties
@@ -1609,7 +1635,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
 
    // ## Prepare configuration path
    gd::file::path pathConfiguration(stringFolder);
-   if( pathConfiguration.has_extension() == false ) { pathConfiguration += "cleaner-configuration.json"; } // Add filename if not provided
+   if( pathConfiguration.has_extension() == false ) { pathConfiguration += stringConfigurationFileName; } // Add filename if not provided
 
    if( std::filesystem::exists(pathConfiguration) == false ) { return { false, std::format("configuration file not found: {}", pathConfiguration.string()) }; } // Check if configuration file exists
 
@@ -1885,6 +1911,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "config", "Manage configuration" );
       optionsCommand.add_flag({"create", "Create configuration file if it doesn't exist"});
       optionsCommand.add_flag({"edit", "Edit configuration file if it exists"});
+      optionsCommand.add_flag({"local", "Create configuration file in current directory"});
       optionsCommand.add_flag({"backup", "Create a backup copy of the configuration file"});
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsCommand.parent(&optionsApplication);
@@ -2934,7 +2961,40 @@ std::pair<bool, std::string> CApplication::HistoryLocation_s(std::filesystem::pa
    return { true, "" };
 }
 
-std::pair<bool, std::string> CApplication::HistoryLocalLocation_s(std::filesystem::path& pathLocation, uint32_t uDirectoryLevels )             //what name should the variable be uint32
+/** ---------------------------------------------------------------------------
+ * @brief Finds the configuration file in the current directory or its parent directories.
+ *
+ * This static method searches for a configuration file named "cleaner-configuration.json" in the current directory
+ * and up to a specified number of parent directories. If found, it sets the provided pathLocation to the file's path.
+ *
+ * @param pathLocation A reference to a filesystem::path where the found configuration file's path will be stored.
+ * @param uDirectoryLevels The number of parent directories to search upwards.
+ * @return std::pair<bool, std::string> Returns a pair where the first element is true if the file was found,
+ *         false if not found, and the second element contains an error message if applicable.
+ */
+std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesystem::path& pathLocation, uint32_t uDirectoryLevels )
+{
+   constexpr std::string_view stringConfigurationName( ".cleaner-configuration.json" );
+   std::filesystem::path pathConfigurationCurrent = std::filesystem::current_path(); // Default configuration location in current directory
+   for( uint32_t u = 0; u < uDirectoryLevels; ++u )
+   {
+      std::filesystem::path pathConfigurationTemp = pathConfigurationCurrent / stringConfigurationName; // Create the path to the configuration file in the current directory
+      if( std::filesystem::exists(pathConfigurationTemp) == true )
+      {
+         pathLocation = pathConfigurationTemp;                                // Set the location to the configuration file path
+         return { true, "" };                                                 // Found the configuration file
+      }
+
+      if(pathConfigurationCurrent == pathConfigurationCurrent.root_path() )   // If we reached the root directory, stop searching
+      {
+         return { false, "Unable to find " + std::string(stringConfigurationName) };
+      }
+      pathConfigurationCurrent = pathConfigurationCurrent.parent_path(); // Go one directory up and check again
+   }
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CApplication::HistoryFindFile_s(std::filesystem::path& pathLocation, uint32_t uDirectoryLevels )
 {
    const std::string stringHistoryName =  ".cleaner-history.xml";
    std::filesystem::path pathHistoryCurrent = std::filesystem::current_path(); // Default history location in current directory

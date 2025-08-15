@@ -86,7 +86,7 @@ int to_precedence_g(char iOperator, tag_optimize )
 int is_code_g( char iCharacter )
 {
    // Static lookup table initialized once
-   // 1 = valid code character, 0 = whitespace or non-code character
+   // 1 = valid code character excluding space, 0 = whitespace or non-code character
    static const uint8_t puCodeLookup[256] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0-15 (control chars)
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 16-31 (control chars)

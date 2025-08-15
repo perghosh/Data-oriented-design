@@ -104,8 +104,6 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive}, {"filter", stringFilter} });
    auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);                            if( !result_.first ) { return result_; }
 
-   // Count rows in the harvested files
-   result_ = pdocument->FILE_UpdateRowCounters();                                                  if( !result_.first ) { return result_; }
 
    // ## Prepare arguments for pattern counting ...............................
 
@@ -167,6 +165,11 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
 
       result_ = pdocument->FILE_UpdatePatternCounters(argumentsPattern, vectorRegexPattern);       if( !result_.first ) { return result_; }
    }
+   else
+   {
+      // Count rows in the harvested files
+      result_ = pdocument->FILE_UpdateRowCounters();                                               if( !result_.first ) { return result_; }
+   }
 
    // ## Determine statistics options
    if( options_["stats"].is_true() == true )
@@ -187,7 +190,7 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    if( !bPrint && !bOutput && stringOutput.empty() ) { bPrint = true; }        // Default to printing if no output options are specified
    if( bPrint == true && uStatistics == 0 ) { uStatistics = stats_sum_; }      // set output to stdout if print is set
 
-   // ## prepare statistics
+   // ## prepare statistics, start count ......................................
 
    gd::table::dto::table tableResult;
    if( iReportType == linecount_report_ ) { tableResult = pdocument->RESULT_RowCount(); }
