@@ -369,22 +369,25 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       {
          /*
             - Check if history is in current directory
+            - Check 2x parent directory for history,
             - If not, check if history is in home directory
          */
 
-         std::filesystem::path pathHistoryCurrent = std::filesystem::current_path() / ".cleaner-history.xml"; // Default history location in current directory
+         std::filesystem::path pathHistoryCurrent; //= std::filesystem::current_path() / ".cleaner-history.xml"; // Default history location in current directory
          std::filesystem::path pathHistoryHome;
+         HistoryLocalLocation_s(pathHistoryCurrent, 2); // Get the local history location, 2 directory levels up
          HistoryLocation_s(pathHistoryHome);
 
          if( std::filesystem::exists(pathHistoryCurrent) == true )
          {
             HISTORY_SaveCommand(pathHistoryCurrent.string()); // Save the command to history in current directory
          }
-         else if( std::filesystem::exists(pathHistoryHome) == true && !(std::filesystem::exists(pathHistoryCurrent) == true) )
+         if( std::filesystem::exists(pathHistoryHome) == true && !(std::filesystem::exists(pathHistoryCurrent) == true) )
          {
             HISTORY_SaveCommand(pathHistoryHome.string()); // Save the command to history in home directory
          }
          
+
 
       }
    }
@@ -1967,7 +1970,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag({ "delete", "Delete history, this will delete all history files and folders" });
       optionsCommand.add_flag({ "print", "Print history, this will print all of the history entries" });
       optionsCommand.add_flag({ "edit", "Edit history file if it exists" });
-      optionsCommand.add_flag({ "current-directory", "Create history file in current directory" });
+      optionsCommand.add_flag({ "local", "Create history file in current directory" });
       optionsCommand.add({ "list", "Lists all history entries"});
       optionsCommand.add({ "remove", "Remove history entries" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
@@ -2927,6 +2930,32 @@ std::pair<bool, std::string> CApplication::HistoryLocation_s(std::filesystem::pa
    }
 
    pathLocation = pathDirectory; // Set the location to the history file path
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CApplication::HistoryLocalLocation_s(std::filesystem::path& pathLocation, uint32_t uDirectoryLevels )             //what name should the variable be uint32
+{
+   const std::string stringHistoryName =  ".cleaner-history.xml";
+   std::filesystem::path pathHistoryCurrent = std::filesystem::current_path(); // Default history location in current directory
+
+   for( uint32_t u = 0; u < uDirectoryLevels; ++u )
+   {
+      std::filesystem::path pathHistoryTemp = pathHistoryCurrent / stringHistoryName; // Create the path to the history file in the current directory
+
+      if( std::filesystem::exists(pathHistoryTemp) == true )
+      {
+         pathLocation = pathHistoryTemp; // Set the location to the history file path
+         return { true, "" }; // Found the history file
+      }
+
+      if(pathHistoryCurrent == pathHistoryCurrent.root_path() ) // If we reached the root directory, stop searching
+      {
+         return { false, "" };
+      }
+      pathHistoryCurrent = pathHistoryCurrent.parent_path(); // Go one directory up and check again
+
+   }
 
    return { true, "" };
 }

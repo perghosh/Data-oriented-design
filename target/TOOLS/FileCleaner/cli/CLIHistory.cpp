@@ -115,7 +115,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 
    std::string stringName;
    std::filesystem::path pathDirectory;
-   bool bCurrentDirectory = argumentsCreate.exists("current-directory");
+   bool bCurrentDirectory = argumentsCreate.exists("local");
 
    // Determine the path for the history file based on the arguments
    if( bCurrentDirectory == true )
