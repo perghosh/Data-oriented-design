@@ -31,6 +31,9 @@ NAMESPACE_CLI_BEGIN
 
 std::pair<bool,std::string> Configuration_g(const gd::cli::options* poptionsConfiguration);
 
+/// Creates a configuration file in the current working directory.
+std::pair<bool,std::string> ConfigurationCreateWorking_g();
+/// Creates a configuration file in the local user directory.
 std::pair<bool,std::string> ConfigurationCreate_g();
 std::pair<bool,std::string> ConfigurationEdit_g();
 
