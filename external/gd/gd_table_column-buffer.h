@@ -76,6 +76,9 @@ All is stored in one single memory block.
 If table need to grow memory block it creates a new block that is larger and data
 is copied to that block, old block is deleted.
 
+All table data is stored in one single memory block, this is done to speed up access times and improve cache locality.
+Information about each column is stored in `gd::table::dto::table::column` structure.
+
 *Sample data layout*
 
     ╔═══════╦════════════╦═════════════════════════╦════╗
