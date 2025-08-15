@@ -368,9 +368,9 @@ enum enumType
    eTypeInt32        = eTypeNumberInt32      | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize32   | eTypeGroupSigned,
    eTypeInt64        = eTypeNumberInt64      | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize64   | eTypeGroupSigned,
 
-   eTypeInt128       = eTypeNumberInt128     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize128,
-   eTypeInt256       = eTypeNumberInt256     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize256,
-   eTypeInt512       = eTypeNumberInt512     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize512,
+   eTypeInt128       = eTypeNumberInt128     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize128  | eTypeGroupSigned,
+   eTypeInt256       = eTypeNumberInt256     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize256  | eTypeGroupSigned,
+   eTypeInt512       = eTypeNumberInt512     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize512  | eTypeGroupSigned,
 
    eTypeUInt8        = eTypeNumberUInt8      | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize08,
    eTypeUInt16       = eTypeNumberUInt16     | (eTypeGroupInteger|eTypeGroupNumber)  | eTypeGroupSize16,
