@@ -411,6 +411,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
 
    if( iThreadCount <= 0 ) { iThreadCount = std::thread::hardware_concurrency(); } // Use hardware concurrency if no thread count is specified
    if(iThreadCount <= 0) { iThreadCount = 1; }                                 // Fallback to single thread if hardware_concurrency returns 0
+   if( iThreadCount > 8 ) { iThreadCount = 8; }                                // Limit to 8 threads for performance and resource management
 
    // Create and launch worker threads
    std::vector<std::thread> vectorCountThread;

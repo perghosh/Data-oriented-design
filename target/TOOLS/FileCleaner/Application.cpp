@@ -314,7 +314,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          return { false, stringError }; 
       }
 
-      // ### Check if config file is used and should be loaded
+      // ## Logging ...........................................................
 
       bool bSetLogging = false;
       if( optionsApplication.exists("logging-severity", gd::types::tag_state_active{}) == true ) // if logging severity is set
@@ -332,6 +332,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          }
       }
 
+      // ## Load configuration ................................................
+
       if( optionsApplication.exists("config", gd::types::tag_state_active{}) == true )// if config file is set
       {
          std::string stringConfigFile = optionsApplication.get_variant_view("config", gd::types::tag_state_active{}).as_string();
@@ -343,9 +345,9 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       }
       else
       {
-         // ## Load the default configuration file ............................
-         //    - try to find the configuration file in the current directory or parent directories
-         //    - if not found, try to find the configuration file in the home directory
+         // ### Load the default configuration file ............................
+         //     - try to find the configuration file in the current directory or parent directories
+         //     - if not found, try to find the configuration file in the home directory
 
          std::filesystem::path pathConfigLocation; // path to the configuration file
          result_ = ConfigurationFindFile_s(pathConfigLocation, 2);            // try to find the configuration file in the current directory or parent directories
@@ -377,6 +379,21 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
             }
          }
       }
+
+      // ## Configure hardware ................................................
+
+      { 
+         auto uThreadCount = std::thread::hardware_concurrency(); 
+         if( uThreadCount > 0 ) 
+         { 
+            PROPERTY_Add("threads", uThreadCount);                                                 LOG_INFORMATION_RAW("== Hardware concurrency: " & std::to_string(uThreadCount) & " threads");
+         }
+         else
+         {
+            PROPERTY_Add("threads", 1);                                                            LOG_INFORMATION_RAW("== Hardware concurrency: unknown, set to 1 thread");
+         }
+      } 
+
 
       // ## Process the command-line arguments
       std::tie(bOk, stringError) = Initialize(optionsApplication);

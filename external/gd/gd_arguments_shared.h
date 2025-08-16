@@ -3,16 +3,17 @@
  *
  * @brief Pack primitive and common derived values into a byte buffer for efficient storage and access with focus on performance. Like key-value pairs in one single buffer.
  *
-**Type of methods**
-| method  | brief  | description |
-|---|---|---| 
-| `append*` | appends value to arguments  | `append*` has variant to make it as flexible as possible. Many variants  |
-| `get*` | retrieves value from arguments  | `get*` retrieves value from arguments |
-| `compare*` | compares values | `compare*` compares values in arguments |
-| `insert*` | inserts value before specified  | `insert` insert is used to insert value before specified |
-| `remove*` | removes value  | `remove*` removes value from arguments, if not found it does nothing. |
-| `set*` | set or appends value  | `set*` sets value for existing value or if not found it appends it.  |
-
+ | Area                | Methods (Examples)                                                                 | Description                                                                                   |
+ |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ | Construction        | arguments(...), append_argument(...), operator=(...)                               | Constructors for creating arguments objects from pairs, lists, vectors, or other arguments.   |
+ | Value Management    | append(...), set(...), insert(...), merge(...), remove(...), clear(), shrink_to_fit() | Methods for adding, setting, inserting, merging, removing, clearing, and optimizing values.   |
+ | Access/Query        | get_argument(...), find(...), find_all(...), count(...), exists(...), exists_any_of_s(...) | Methods for retrieving arguments by name, index, or section, and checking existence/counts.   |
+ | Editing             | argument_edit, operator[](...), set_argument_section(...)                          | Methods for editing argument values in-place or by section.                                   |
+ | Conversion          | get_variant_s(...), get_variant_view_s(...), get_argument_s(...), get_argument_all_s(...) | Methods for converting arguments to variant/variant_view types and extracting all matches.    |
+ | Comparison          | compare_argument_s(...), compare_argument_group_s(...), compare_exists_s(...), compare_s(...) | Methods for comparing arguments and groups for equality or existence.                         |
+ | Iteration           | next_s(...), print(...), print_json(...), print_s(...), print_name_s(...), print_type_s(...), print_value_s(...) | Methods for iterating, printing, and formatting argument values and metadata.                 |
+ | Utility/Meta        | size(), buffer_data(), reserve(...), resize(...), sizeof_s(...), sizeof_name_s(...), get_total_param_length_s(...) | Utility methods for buffer management, size calculation, and memory layout.                   |
+ | Debug/Printing      | debug::print(...), debug::print(vector<arguments>&)                                | Methods for printing argument objects and collections for debugging purposes.                  |
  * 
  * 
  * ### 0TAG0 File navigation, mark and jump to often used parts

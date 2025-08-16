@@ -2,7 +2,7 @@
  * \file gd_arguments_shared.cpp
  * 
  * \brief Pack primitive and common derived values into a byte buffer for efficient storage and access.
- *
+ * 
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0construct.arguments` - Insert operations
