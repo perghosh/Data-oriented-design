@@ -168,7 +168,8 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    else
    {
       // Count rows in the harvested files
-      result_ = pdocument->FILE_UpdateRowCounters();                                               if( !result_.first ) { return result_; }
+      result_ = pdocument->FILE_UpdateRowCounters();
+      if( !result_.first ) { return result_; }
    }
 
    // ## Determine statistics options

@@ -430,7 +430,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
       {
          ERROR_Add(stringError);
       }
-      return {false, "Some files failed to process"};
    }
 
    return { true, "" };
