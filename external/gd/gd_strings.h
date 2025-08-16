@@ -4,7 +4,43 @@
  * @brief Utility functions for string manipulation logic, particularly when handling multiple strings in specific file sections.
  *
  *
- *
+ | **Object/Class**         | **Methods/Properties**                                                                                           | **Description/Section**                       |
+ |--------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
+ | `gd::strings::iterator`  | `operator*`, `operator++`, `operator+=`, `operator+`, `offset`, `get`, `as_string_view`, `as_string`, `==`, `!=` | Iterator for custom string container          |
+ |                          | **Construction/Assignment:**<br> `iterator()`, `iterator(STRINGS*, uint64_t)`, copy/move ctors, assignment ops   | Construction/Assignment                       |
+ |                          | **Access:**<br> `operator*`, `as_string_view`, `as_string`, `offset`, `get`                                      | Access/Conversion                             |
+ |                          | **Navigation:**<br> `operator++`, `operator++(int)`, `operator+=`, `operator+`                                   | Navigation                                    |
+ |                          | **Comparison:**<br> `operator==`, `operator!=`                                                                  | Comparison                                    |
+ |--------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
+ | `gd::strings32`          | `append`, `append_any`, `add`, `erase`, `replace`, `count`, `size`, `clear`, `reserve`, `advance`, `exists`,     | String buffer container                       |
+ |                          | `find`, `join`, `buffer`, `buffer_end`, `buffer_size`, `buffer_capacity`, `get_position`, `at`, `operator[]`,    |                                               |
+ |                          | `operator+=`, `operator<<`, `begin`, `end`, `cbegin`, `cend`                                                     |                                               |
+ |                          | **Construction/Assignment:**<br> ctors for string, string_view, std::vector, initializer_list, copy/move ops     | Construction/Assignment                       |
+ |                          | **Access:**<br> `operator[]`, `at`, `get_position`, `buffer`, `buffer_end`, `buffer_size`, `buffer_capacity`     | Access/Buffer                                 |
+ |                          | **Modification:**<br> `append`, `append_any`, `add`, `erase`, `replace`, `clear`, `reserve`, `reserve_add`       | Modification                                  |
+ |                          | **Iteration:**<br> `begin`, `end`, `cbegin`, `cend`                                                             | Iteration                                     |
+ |                          | **Search/Join:**<br> `find`, `exists`, `join`                                                                   | Search/Join                                   |
+ |                          | **Free Functions:**<br> `c_str_s`, `length_s`, `next_s`, `to_string_view_s`, `to_string_s`, `find_s`, `join_s`   | Static/Free Functions                         |
+ |--------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
+ | `gd::pointer::strings`   | `append`, `operator+=`, `operator[]`, `get_text`, `get_string_view`, `get_string`, `get_variant_view`,           | C-style string pointer list                   |
+ |                          | `get_variant`, `size`, `empty`, `exists`, `begin`, `end`, `cbegin`, `cend`, `is_owner`, `clone_s`                |                                               |
+ |                          | **Construction/Assignment:**<br> ctors for ownership, vector, array, copy/move ops                              | Construction/Assignment                       |
+ |                          | **Access:**<br> `operator[]`, `get_text`, `get_string_view`, `get_string`, `get_variant_view`, `get_variant`     | Access                                        |
+ |                          | **Modification:**<br> `append`, `operator+=`                                                                    | Modification                                  |
+ |                          | **Ownership:**<br> `is_owner`, `clone_s`                                                                        | Ownership                                     |
+ |                          | **Iteration:**<br> `begin`, `end`, `cbegin`, `cend`                                                             | Iteration                                     |
+ |                          | **Search:**<br> `exists`, `empty`, `size`                                                                       | Search/Info                                   |
+ |--------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
+ | `gd::view::strings`      | `append`, `operator+=`, `operator[]`, `get_string_view`, `get_string`, `size`, `empty`, `exists`,                | String view collection                        |
+ |                          | `begin`, `end`, `cbegin`, `cend`                                                                                 |                                               |
+ |                          | **Construction/Assignment:**<br> ctors for vector, array, copy/move ops                                         | Construction/Assignment                       |
+ |                          | **Access:**<br> `operator[]`, `get_string_view`, `get_string`                                                    | Access                                        |
+ |                          | **Modification:**<br> `append`, `operator+=`                                                                    | Modification                                  |
+ |                          | **Iteration:**<br> `begin`, `end`, `cbegin`, `cend`                                                             | Iteration                                     |
+ |                          | **Search:**<br> `exists`, `empty`, `size`                                                                       | Search/Info                                   |
+ |--------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
+ | **Free Function**        | `template<typename TYPE> get(const strings32&)`                                                                  | Convert strings32 to std::string, vector, etc.|
+ |--------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
  *
  *
  */
