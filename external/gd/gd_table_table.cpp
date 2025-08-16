@@ -1,3 +1,10 @@
+/**
+ * @file gd_table_table.cpp
+ * @brief Implementation of the table class
+ * 
+ *
+ */
+
 #include "gd_utf8.h"
 #include "gd_variant.h"
 

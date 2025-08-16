@@ -1,3 +1,13 @@
+/**
+ * @file gd_table_column-buffer.cpp
+ * @brief Implementation of the column buffer for tables
+ *
+ * This file contains the implementation of the column buffer for tables, which is responsible for managing the storage and retrieval of column data.
+ * 
+ * 
+ */
+
+
 #include "gd_utf8.h"
 #include "gd_utf8_2.h"
 #include "gd_variant.h"
@@ -1106,6 +1116,11 @@ void table_column_buffer::column_for_each( std::function<void( const column&, un
 /** ---------------------------------------------------------------------------
  * @brief convert columns in table to detail columns
  * @param columns reference to detail columns
+ * 
+ * @code
+ *   gd::table::detail::columns columns;
+ *   tableVariable.to_columns( columns );
+ * @endcode
 */
 void table_column_buffer::to_columns( gd::table::detail::columns& columns ) const
 {

@@ -182,9 +182,12 @@ public:
 // ============================================================================
 
 /**
- * \brief
+ * \brief Store information about columns in table
  *
- *
+ * This class holds all information about columns used a table. The reason behind
+ * storing columns in a separate class is that it is possible to create tables without
+ * the overhead of also create information about columns for each table. Columns
+ * are shared between tables and can be used to create similar tables with.
  *
  \code
  \endcode
