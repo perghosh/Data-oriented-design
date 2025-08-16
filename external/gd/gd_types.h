@@ -7,6 +7,21 @@
  * type system is vital for all gd code and with that type system different logic
  * within gd is able to communicate without knowing about code in different parts.
  * 
+ * # Overview
+ * 
+ * | Section                | Description                                                                 |
+ * |------------------------|-----------------------------------------------------------------------------|
+ * | Tag Dispatchers        | Zero-cost structs for command, type, state, value, STL, format, unit, etc.  |
+ * | Type Numbers           | `enumTypeNumber` - Unique numbers for primitive and derived types.           |
+ * | Type Groups            | `enumTypeGroup` - Bitmask flags for type categories (number, string, etc).  |
+ * | Type Details           | `enumTypeDetail` - Additional type flags (e.g., reference).                 |
+ * | Combined Type Info     | `enumType` - Combines number, group, size, and detail for each type.        |
+ * | Type Helpers           | Functions to extract type number/group/size, check type properties.         |
+ * | Character Types/Groups | Constants and helpers for character classification and fast lookup.         |
+ * | Type Name/Conversion   | Functions to convert between type names and type numbers.                   |
+ * | Alignment              | `enumAlign` and helpers for text alignment based on type.                   |
+ * | STL Type Traits        | Templates to detect std::list, std::vector, std::variant, etc.              |
+ * 
  */
 
 
