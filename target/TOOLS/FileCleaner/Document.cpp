@@ -1,4 +1,4 @@
-/**
+﻿/**
 * \file Document.cpp
 * 
 * ### 0TAG0 File navigation, mark and jump to common parts
@@ -295,69 +295,143 @@ std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
  * @note This method assumes that the `COUNT_Row` function is responsible for counting
  *       the rows (lines) in a file and returning the result in the `argumentsResult` object.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters()
+std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount )
 {
    auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
    auto* ptableFileCount = CACHE_Get("file-count");                                                assert( ptableFileCount != nullptr );
 
-   uint64_t uFileIndex = 0; // index for file table
-   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
+   auto uFileCount = ptableFile->get_row_count();                             // Total number of files to process
 
-   for( const auto& itRowFile : *ptableFile )
+   std::atomic<uint64_t> uAtomicFileIndex(0);  // Current file being processed
+   std::atomic<uint64_t> uAtomicProcessedCount(0); // Count of processed files
+   std::mutex mutexTableCount; // Mutex to protect access to file-count table
+   std::mutex mutexProgress; // Mutex to protect progress updates
+   std::vector<std::string> vectorErrors; // Collect errors from all threads
+   std::mutex mutexErrors;  // Mutex to protect access to vectorErrors
+
+   // ## Worker function to process files in parallel .........................
+   auto process_ = [&](int iThreadId) -> void
    {
-      uFileIndex++;                                                            // increment file index for each file, used for progress message
-
-      int64_t iRowIndexCount = -1;
-      uint64_t uFileKey = itRowFile.cell_get_variant_view("key");
-      for( auto itRowCount = ptableFileCount->begin(); itRowCount != ptableFileCount->end(); ++itRowCount )
+      while( true )
       {
-         uint64_t key_ = itRowCount.cell_get_variant_view("file-key");
-         if( key_ != uFileKey ) break;
-         iRowIndexCount = (int64_t)itRowCount.get_row();
-      }
+         // Get next file index to process
+         uint64_t uRowIndex = uAtomicFileIndex.fetch_add(1);                  // get thread safe current index and increment it
+         if(uRowIndex >= uFileCount) { break; }
+         
+         try
+         {
+            // STEP 1: Get file info (no mutex needed - ptableFile is read-only)
+            uint64_t uFileKey = ptableFile->cell_get_variant_view(uRowIndex, "key"); // Key for file
+            auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
+            auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
 
-      if( iRowIndexCount == -1 )
+            // STEP 2: Build full file path (no mutex needed)
+            gd::file::path pathFile(stringFolder);
+            pathFile += stringFilename;
+            std::string stringFile = pathFile.string();
+
+            // STEP 3: Process file statistics (SLOW operation - no mutex needed, thread-safe)
+            gd::argument::shared::arguments argumentsResult;
+            auto result_ = COMMAND_CollectFileStatistics({{"source", stringFile}}, argumentsResult);
+
+            if(result_.first == false)
+            {
+               std::lock_guard<std::mutex> lockErrors(mutexErrors);
+               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+
+               // Update progress even on failure
+               uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+               if(uProcessed % 10 == 0)
+               {
+                  std::lock_guard<std::mutex> lockProgress(mutexProgress);
+                  uint64_t uPercent = (uProcessed * 100) / uFileCount;
+                  MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Scan files"}, {"sticky", true}});
+               }
+               continue;                                                       // Skip to next file on error
+            }
+
+            // STEP 4: Update table (FAST operation - mutex needed due to potential reallocation)
+            {
+               std::lock_guard<std::mutex> lockFileCount(mutexTableCount);    // ✅ FIXED: Minimal mutex scope
+
+               int64_t iRowIndexCount = -1;                                   // Index for file-count table, -1 means not found
+
+               // Check if file key exists in file-count table
+               for(auto itRowCount = ptableFileCount->begin(); itRowCount != ptableFileCount->end(); ++itRowCount)
+               {
+                  uint64_t uFKFileKey = itRowCount.cell_get_variant_view("file-key");
+                  if(uFKFileKey == uFileKey) 
+                  { 
+                     iRowIndexCount = itRowCount.get_row(); 
+                     break;                                                   // Found matching key
+                  }
+               }
+
+               // Add new row if doesn't exist
+               if(iRowIndexCount == -1)
+               {
+                  iRowIndexCount = ptableFileCount->get_row_count();
+                  ptableFileCount->row_add(gd::table::tag_null{});           // Can cause reallocation
+                  ptableFileCount->cell_set(iRowIndexCount, "key", uint64_t(iRowIndexCount + 1));
+                  ptableFileCount->cell_set(iRowIndexCount, "file-key", uFileKey);
+                  ptableFileCount->cell_set(iRowIndexCount, "filename", stringFilename);
+               }
+
+               // Update the statistics in the file-count table
+               uint64_t uCount = argumentsResult["count"].as_uint64();
+               ptableFileCount->cell_set(iRowIndexCount, "count", uCount);
+
+               if(argumentsResult["code"].is_null() == false)                  // Update additional statistics if available
+               {
+                  ptableFileCount->cell_set(iRowIndexCount, "code", argumentsResult["code"].as_uint64());
+                  ptableFileCount->cell_set(iRowIndexCount, "characters", argumentsResult["characters"].as_uint64());
+                  ptableFileCount->cell_set(iRowIndexCount, "comment", argumentsResult["comment"].as_uint64());
+                  ptableFileCount->cell_set(iRowIndexCount, "string", argumentsResult["string"].as_uint64());
+               }
+            }
+
+            // Update progress (thread-safe)
+            uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+            if(uProcessed % 10 == 0)                                           // Show progress every 10 files
+            {
+               std::lock_guard<std::mutex> lockProgress(mutexProgress);
+               uint64_t uPercent = (uProcessed * 100) / uFileCount;
+               MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Scan files"}, {"sticky", true}});
+            }
+         }
+         catch(const std::exception& exception_)
+         {
+            std::lock_guard<std::mutex> lockErrors(mutexErrors);
+            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+         }      
+      }
+   };
+
+   // ## Prepare and run threads ..............................................
+
+   if( iThreadCount <= 0 ) { iThreadCount = std::thread::hardware_concurrency(); } // Use hardware concurrency if no thread count is specified
+   if(iThreadCount <= 0) { iThreadCount = 1; }                                 // Fallback to single thread if hardware_concurrency returns 0
+
+   // Create and launch worker threads
+   std::vector<std::thread> vectorCountThread;
+   vectorCountThread.reserve(iThreadCount);
+
+   for(int i = 0; i < iThreadCount; ++i) { vectorCountThread.emplace_back(process_, i); }
+
+   // Wait for all threads to complete
+   for(auto& threadWorker : vectorCountThread) { threadWorker.join(); }
+   
+   MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
+
+   // ### Handle any collected errors
+   if(!vectorErrors.empty())
+   {
+      for(const auto& stringError : vectorErrors)
       {
-         iRowIndexCount = ptableFileCount->get_row_count();
-         ptableFileCount->row_add( gd::table::tag_null{} );
-         ptableFileCount->cell_set( iRowIndexCount, "key", uint64_t(iRowIndexCount + 1));
-         ptableFileCount->cell_set( iRowIndexCount, "file-key", itRowFile.cell_get_variant_view("key") );
-         ptableFileCount->cell_set( iRowIndexCount, "filename", itRowFile.cell_get_variant_view("filename") );
+         ERROR_Add(stringError);
       }
-
-      // ## build full file path from table
-
-      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
-      gd::file::path pathFile(string_);
-      string_ = itRowFile.cell_get_variant_view("filename").as_string();
-      pathFile += string_;
-      std::string stringFile = pathFile.string();
-
-      // ## calculate percentage for progress message
-
-      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
-      {
-         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
-         MESSAGE_Progress("", { {"percent", uPercent}, {"label", "Scan files"}, {"sticky", true} });  // update progress message
-      }
-      
-      gd::argument::shared::arguments argumentsResult;
-
-      auto result_ = COMMAND_CollectFileStatistics( {{"source", stringFile} }, argumentsResult);
-      if( result_.first == false ) { ERROR_Add( result_.second ); }
-      
-      uint64_t uCount = argumentsResult["count"].as_uint64();
-      ptableFileCount->cell_set(iRowIndexCount, "count", uCount);
-      if( argumentsResult["code"].is_null() == false )
-      {
-         ptableFileCount->cell_set(iRowIndexCount, "code", argumentsResult["code"].as_uint64());
-         ptableFileCount->cell_set(iRowIndexCount, "characters", argumentsResult["characters"].as_uint64());
-         ptableFileCount->cell_set(iRowIndexCount, "comment", argumentsResult["comment"].as_uint64());
-         ptableFileCount->cell_set(iRowIndexCount, "string", argumentsResult["string"].as_uint64());
-      }
+      return {false, "Some files failed to process"};
    }
-
-   MESSAGE_Progress("", {{"clear", true}});
 
    return { true, "" };
 }
