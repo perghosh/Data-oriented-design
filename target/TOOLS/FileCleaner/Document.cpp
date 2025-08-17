@@ -10,6 +10,9 @@
 #include <format>
 #include <fstream>
 #include <memory>
+#include <mutex>
+#include <shared_mutex>
+#include <thread>
 
 #include "pugixml/pugixml.hpp"
 
