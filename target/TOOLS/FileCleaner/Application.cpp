@@ -3004,7 +3004,7 @@ std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesyst
 
       if(pathConfigurationCurrent == pathConfigurationCurrent.root_path() )   // If we reached the root directory, stop searching
       {
-         return { false, "Unable to find " + std::string(stringConfigurationName) };
+         return { true, "Unable to find " + std::string(stringConfigurationName) };
       }
       pathConfigurationCurrent = pathConfigurationCurrent.parent_path(); // Go one directory up and check again
    }
