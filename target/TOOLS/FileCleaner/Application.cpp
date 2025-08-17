@@ -2017,6 +2017,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag({ "local", "Create history file in current directory" });
       optionsCommand.add({ "list", "Lists all history entries"});
       optionsCommand.add({ "remove", "Remove history entries" });
+      optionsCommand.add({ "run", "Run history entry, this will run the command from history" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});
