@@ -94,8 +94,8 @@ public:
    std::pair<bool, std::string> FILE_Filter( const std::string_view& stringFilter );
    std::pair<bool, std::string> FILE_FilterBinaries();
    std::pair<bool, std::string> FILE_UpdateRowCounters( int iThreadCount = 0 );
-   std::pair<bool, std::string> FILE_UpdatePatternCounters( const gd::argument::shared::arguments& argumentsPattern, const std::vector<std::string>& vectorPattern );
-   std::pair<bool, std::string> FILE_UpdatePatternCounters( const gd::argument::shared::arguments& argumentsPattern, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns );
+   std::pair<bool, std::string> FILE_UpdatePatternCounters( const gd::argument::shared::arguments& argumentsPattern, const std::vector<std::string>& vectorPattern, int iThreadCount = 0 );
+   std::pair<bool, std::string> FILE_UpdatePatternCounters( const gd::argument::shared::arguments& argumentsPattern, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, int iThreadCount = 0 );
    std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList );
    std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList );
 
