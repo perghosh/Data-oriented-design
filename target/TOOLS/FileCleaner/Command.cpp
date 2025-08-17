@@ -62,7 +62,7 @@ namespace detail {
          if( ifstreamFile.is_open() == true )
          {
             std::streamsize uSize = ifstreamFile.tellg();
-            ptable_->cell_set(uRow, "size", uSize, gd::types::tag_convert{});
+            ptable_->cell_set(uRow, "size", (uint64_t)uSize, gd::types::tag_convert{});
          }
          ifstreamFile.close();
       }
@@ -125,7 +125,7 @@ namespace detail {
          if( ifstreamFile.is_open() == true )
          {
             std::streamsize uSize = ifstreamFile.tellg();
-            ptable_->cell_set(uRow, "size", uSize, gd::types::tag_convert{});
+            ptable_->cell_set(uRow, "size", (uint64_t)uSize, gd::types::tag_convert{});
          }
          ifstreamFile.close();
       }
