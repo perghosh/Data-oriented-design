@@ -1,5 +1,5 @@
 /**
- * @file gd_arguments.h
+ * @file gd_arguments_shared.h
  *
  * @brief Pack primitive and common derived values into a byte buffer for efficient storage and access with focus on performance. Like key-value pairs in one single buffer.
  *
@@ -977,7 +977,7 @@ public:
 
 
    // uuid
-   arguments& set(std::string_view stringName, std::string_view v) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length()); }
+   //arguments& set(std::string_view stringName, std::string_view v) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length()); }
 
    /*
    arguments& set(std::string_view stringName, const gd::variant_view& variantValue );

@@ -437,13 +437,16 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
 }
 
 /** ---------------------------------------------------------------------------
- * @brief Updates pattern counters for files in the cache.
+ * @brief Updates pattern counters for files in the cache using multithreading.
  *
  * This method processes a list of patterns and updates the "file-pattern" cache table
  * with the count of occurrences of each pattern in the files listed in the "file" cache table.
+ * The method uses multithreading to process files in parallel.
  *
+ * @param argumentsPattern Arguments for pattern collection (e.g., segment specification)
  * @param vectorPattern A vector of strings representing the patterns to search for.
  *                      The vector must not be empty and can contain a maximum of 64 patterns.
+ * @param iThreadCount Number of threads to use (0 = auto-detect)
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
@@ -451,19 +454,13 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
  * @pre The `vectorPattern` must not be empty and must contain fewer than 64 patterns.
  * @post The "file-pattern" cache table is updated with the pattern counts for each file.
  *
- * @details
- * - The method first creates a new "file-pattern" cache table with columns for each pattern.
- * - It iterates through the rows in the "file" cache table to generate the full file path
- *   by combining the "folder" and "filename" columns.
- * - For each file, it calls the `COMMAND_CollectPatternStatistics` function to count the
- *   occurrences of each pattern and updates the "file-pattern" table with the results.
- * - If an error occurs during the process, it is added to the internal error list.
+ * @note COMMAND_CollectPatternStatistics must be thread-safe.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::argument::shared::arguments& argumentsPattern, const std::vector<std::string>& vectorPattern)
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::argument::shared::arguments& argumentsPattern, const std::vector<std::string>& vectorPattern, int iThreadCount)
 {                                                                                                  assert( vectorPattern.empty() == false ); assert( vectorPattern.size() < 64 ); // max 64 patterns
    using namespace gd::table::dto;
    constexpr unsigned uTableStyle = (table::eTableFlagNull64|table::eTableFlagRowStatus);
-   // file-count table: key | file-key | path | count
+   // file-pattern table: key | file-key | folder | filename | pattern1 | pattern2 | ...
    auto ptable_ = std::make_unique<table>( table( uTableStyle, { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"} } ) );
 
    std::vector<uint64_t> vectorCount; // vector storing results from COMMAND_CollectPatternStatistics
@@ -480,46 +477,148 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    auto result_ = ptable_->prepare();                                                              assert( result_.first == true );
 
    CACHE_Add(std::move(*ptable_), "file-pattern");                            // add it to internal application cache, table is called "file-pattern"
-
    auto* ptableFilePattern = CACHE_Get("file-pattern", false);                // get it to make sure it is in cache
-
    auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
 
-   for( const auto& itRowFile : *ptableFile )
+   auto uFileCount = ptableFile->get_row_count();                             // Total number of files to process
+
+   // Pre-allocate all rows in file-pattern table to avoid reallocation during threading
+   for(uint64_t u = 0; u < uFileCount; u++ )
    {
-      // ## generate full file path (folder + filename)
-      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
-      gd::file::path pathFile(string_);
-      string_ = itRowFile.cell_get_variant_view("filename").as_string();
-      pathFile += string_;
-      std::string stringFile = pathFile.string();
-
-      auto uRow = ptableFilePattern->get_row_count();
       ptableFilePattern->row_add( gd::table::tag_null{} );
-      ptableFilePattern->cell_set( uRow, "key", uint64_t(uRow + 1));
-      ptableFilePattern->cell_set( uRow, "file-key", itRowFile.cell_get_variant_view("key") );
-      ptableFilePattern->cell_set( uRow, "folder", itRowFile.cell_get_variant_view("folder") );
-      ptableFilePattern->cell_set( uRow, "filename", itRowFile.cell_get_variant_view("filename") );
+      ptableFilePattern->cell_set( u, "key", uint64_t(u + 1));
 
-      gd::argument::shared::arguments argumentsPattern_({ {"source", stringFile} });
-      if( argumentsPattern.exists("segment") == true ) { argumentsPattern_.set("segment", argumentsPattern["segment"].as_string_view()); } // set the segment (code, comment, string) to search in
-      auto result_ = COMMAND_CollectPatternStatistics( argumentsPattern_, vectorPattern, vectorCount );
-      if( result_.first == false ) { ERROR_Add(result_.second); }
+      // Copy file info from file table to pattern table
+      ptableFilePattern->cell_set( u, "file-key", ptableFile->cell_get_variant_view(u, "key") );
+      ptableFilePattern->cell_set( u, "folder", ptableFile->cell_get_variant_view(u, "folder") );
+      ptableFilePattern->cell_set( u, "filename", ptableFile->cell_get_variant_view(u, "filename") );
+   }
 
-      for( unsigned u = 0; u < vectorCount.size(); u++ )
+   std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
+   std::atomic<uint64_t> uAtomicProcessedCount(0);                           // Count of processed files
+   std::mutex mutexProgress;                                                  // Mutex to protect progress updates
+   std::vector<std::string> vectorErrors;                                     // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorErrors
+
+   // ## Worker function to process files in parallel .........................
+   auto process_ = [&](int iThreadId) -> void
+   {
+      std::vector<uint64_t> vectorCount;                                      // Thread-local vector for pattern counts
+      
+      while( true )
       {
-         ptableFilePattern->cell_set(uRow, u + 4, vectorCount[u]);            // set pattern count in table
-      }
+         // Get next file index to process
+         uint64_t uRowIndex = uAtomicFileIndex.fetch_add(1);                  // get thread safe current index and increment it
+         if(uRowIndex >= uFileCount) { break; }
+         
+         try
+         {
+            // STEP 1: Get file info (no mutex needed - ptableFile is read-only)
+            auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
+            auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
 
-      std::fill(vectorCount.begin(), vectorCount.end(), 0);                   // set counters to 0 in vector
+            // STEP 2: Build full file path (no mutex needed)
+            gd::file::path pathFile(stringFolder);
+            pathFile += stringFilename;
+            std::string stringFile = pathFile.string();
+
+            // STEP 3: Process pattern statistics (SLOW operation - no mutex needed, thread-safe)
+            gd::argument::shared::arguments argumentsPattern_({ {"source", stringFile} });
+            if( argumentsPattern.exists("segment") == true ) { argumentsPattern_.set("segment", argumentsPattern["segment"].as_string_view()); } // set the segment (code, comment, string) to search in
+            
+            auto result_ = COMMAND_CollectPatternStatistics( argumentsPattern_, vectorPattern, vectorCount );
+
+            if(result_.first == false)
+            {
+               std::lock_guard<std::mutex> lockErrors(mutexErrors);
+               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+
+               // Update progress even on failure
+               uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+               if(uProcessed % 10 == 0)
+               {
+                  std::lock_guard<std::mutex> lockProgress(mutexProgress);
+                  uint64_t uPercent = (uProcessed * 100) / uFileCount;
+                  MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Pattern scan"}, {"sticky", true}});
+               }
+               continue;                                                       // Skip to next file on error
+            }
+
+            // STEP 4: Update table (FAST operation - no mutex needed, pre-allocated memory)
+            for( unsigned u = 0; u < vectorCount.size(); u++ )
+            {
+               ptableFilePattern->cell_set(uRowIndex, u + 4, vectorCount[u]); // set pattern count in table (columns 0-3 are key, file-key, folder, filename)
+            }
+
+            // Clear counts for next iteration
+            std::fill(vectorCount.begin(), vectorCount.end(), 0);
+
+            // Update progress (thread-safe)
+            uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+            if(uProcessed % 10 == 0)                                           // Show progress every 10 files
+            {
+               std::lock_guard<std::mutex> lockProgress(mutexProgress);
+               uint64_t uPercent = (uProcessed * 100) / uFileCount;
+               MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Pattern scan"}, {"sticky", true}});
+            }
+         }
+         catch(const std::exception& exception_)
+         {
+            std::lock_guard<std::mutex> lockErrors(mutexErrors);
+            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+         }      
+      }
+   };
+
+   // ## Prepare and run threads ..............................................
+
+   if( iThreadCount <= 0 ) { iThreadCount = std::thread::hardware_concurrency(); } // Use hardware concurrency if no thread count is specified
+   if(iThreadCount <= 0) { iThreadCount = 1; }                                 // Fallback to single thread if hardware_concurrency returns 0
+   if( iThreadCount > 8 ) { iThreadCount = 8; }                                // Limit to 8 threads for performance and resource management
+
+   // Create and launch worker threads
+   std::vector<std::thread> vectorPatternThread;
+   vectorPatternThread.reserve(iThreadCount);
+
+   for(int i = 0; i < iThreadCount; ++i) { vectorPatternThread.emplace_back(process_, i); }
+
+   // Wait for all threads to complete
+   for(auto& threadWorker : vectorPatternThread) { threadWorker.join(); }
+
+   MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
+
+   // ### Handle any collected errors
+   if(!vectorErrors.empty())
+   {
+      for(const auto& stringError : vectorErrors)
+      {
+         ERROR_Add(stringError);
+      }
    }
 
    return { true, "" };
 }
-
-// @TASK #user.per [name: count (add FILE_UpdatePatternCounters for regex)] [brief: add overloaded method that are similar to FILE_UpdatePatternCounters for non regex count searches][state: open][date: 2025-08-12]
-
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::argument::shared::arguments& argumentsPattern, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns)
+/** ---------------------------------------------------------------------------
+ * @brief Updates pattern counters for files in the cache using multithreading.
+ *
+ * This method processes all files in the `file` cache table and counts occurrences
+ * of specified regex patterns in each file. Results are stored in a new `file-pattern`
+ * cache table. The method uses multithreading to process files in parallel.
+ *
+ * @param argumentsPattern Arguments for pattern collection (e.g., segment specification)
+ * @param vectorRegexPatterns Vector of regex patterns to search for in files
+ * @param iThreadCount Number of threads to use (0 = auto-detect)
+ *
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @pre The `file` cache table must be prepared and available in the cache.
+ * @post The `file-pattern` table is created and populated with pattern counters.
+ *
+ * @note COMMAND_CollectPatternStatistics must be thread-safe.
+ */
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::argument::shared::arguments& argumentsPattern, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, int iThreadCount)
 {                                                                                                  assert( vectorRegexPatterns.empty() == false ); assert( vectorRegexPatterns.size() < 64 ); // max 64 patterns
    using namespace gd::table::dto;
    constexpr unsigned uTableStyle = (table::eTableFlagNull64|table::eTableFlagRowStatus);
@@ -531,52 +630,137 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    for( const auto& itPattern : vectorRegexPatterns )
    {
       std::string stringPattern = itPattern.second;
-      // ## shorten pattern to 15 characters
-      std::string stringName = stringPattern.substr(0, 15);
-      
+      std::string stringName = stringPattern;                    
+      if( stringName.length() > 15 ) { stringName = stringName.substr(15) +  "..."; } // shorten pattern to 15 characters
       ptable_->column_add("uint64", 0, stringName, stringPattern);
    }
 
    auto result_ = ptable_->prepare();                                                              assert( result_.first == true );
 
    CACHE_Add(std::move(*ptable_), "file-pattern");                            // add it to internal application cache, table is called "file-pattern"
-
    auto* ptableFilePattern = CACHE_Get("file-pattern", false);                // get it to make sure it is in cache
-
    auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
 
-   // ## iterate through all files in file table and count patterns in each file
+   auto uFileCount = ptableFile->get_row_count();                             // Total number of files to process
 
-   for( const auto& itRowFile : *ptableFile )
+   // Pre-allocate all rows in file-pattern table to avoid reallocation during threading
+   for(uint64_t u = 0; u < uFileCount; u++ )
    {
-      // ### generate full file path (folder + filename)
-
-      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
-      gd::file::path pathFile(string_);
-      string_ = itRowFile.cell_get_variant_view("filename").as_string();
-      pathFile += string_;
-      std::string stringFile = pathFile.string();
-
-      auto uRow = ptableFilePattern->get_row_count();
       ptableFilePattern->row_add( gd::table::tag_null{} );
-      ptableFilePattern->cell_set( uRow, "key", uint64_t(uRow + 1));
-      ptableFilePattern->cell_set( uRow, "file-key", itRowFile.cell_get_variant_view("key") );
-      ptableFilePattern->cell_set( uRow, "folder", itRowFile.cell_get_variant_view("folder") );
-      ptableFilePattern->cell_set( uRow, "filename", itRowFile.cell_get_variant_view("filename") );
+      ptableFilePattern->cell_set( u, "key", uint64_t(u + 1));
 
-      gd::argument::shared::arguments argumentsPattern_({ {"source", stringFile} });
-      if( argumentsPattern.exists("segment") == true ) { argumentsPattern_.set("segment", argumentsPattern["segment"].as_string_view()); } // set the segment (code, comment, string) to search in
-      auto result_ = COMMAND_CollectPatternStatistics( argumentsPattern_, vectorRegexPatterns, vectorCount );
-      if( result_.first == false ) { ERROR_Add(result_.second); }
+      // Copy file info from file table to pattern table
+      ptableFilePattern->cell_set( u, "file-key", ptableFile->cell_get_variant_view(u, "key") );
+      ptableFilePattern->cell_set( u, "folder", ptableFile->cell_get_variant_view(u, "folder") );
+      ptableFilePattern->cell_set( u, "filename", ptableFile->cell_get_variant_view(u, "filename") );
+   }
 
-      // ### Update counters in the file-pattern table
+   std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
+   std::atomic<uint64_t> uAtomicProcessedCount(0);                           // Count of processed files
+   //std::mutex mutexTablePattern;                                              // Mutex to protect access to file-pattern table
+   std::mutex mutexProgress;                                                  // Mutex to protect progress updates
+   std::vector<std::string> vectorErrors;                                     // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorErrors
 
-      for( unsigned u = 0; u < vectorCount.size(); u++ )
+   // ## Worker function to process files in parallel .........................
+   auto process_ = [&](int iThreadId) -> void
+   {
+      std::vector<uint64_t> vectorCount;                                      // Thread-local vector for pattern counts
+      
+      while( true )
       {
-         ptableFilePattern->cell_set(uRow, u + 4, vectorCount[u]);             // set pattern count in table
-      }
+         // Get next file index to process
+         uint64_t uRowIndex = uAtomicFileIndex.fetch_add(1);                  // get thread safe current index and increment it
+         if(uRowIndex >= uFileCount) { break; }
+         
+         try
+         {
+            // STEP 1: Get file info (no mutex needed - ptableFile is read-only)
+            auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
+            auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
 
-      std::fill(vectorCount.begin(), vectorCount.end(), 0);
+            // STEP 2: Build full file path (no mutex needed)
+            gd::file::path pathFile(stringFolder);
+            pathFile += stringFilename;
+            std::string stringFile = pathFile.string();
+
+            // STEP 3: Process pattern statistics (SLOW operation - no mutex needed, thread-safe)
+            gd::argument::shared::arguments argumentsPattern_(argumentsPattern);  // Copy base arguments
+            argumentsPattern_.set("source", stringFile);
+            
+            auto result_ = COMMAND_CollectPatternStatistics( argumentsPattern_, vectorRegexPatterns, vectorCount );
+
+            if(result_.first == false)
+            {
+               std::lock_guard<std::mutex> lockErrors(mutexErrors);
+               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+
+               // Update progress even on failure
+               uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+               if(uProcessed % 10 == 0)
+               {
+                  std::lock_guard<std::mutex> lockProgress(mutexProgress);
+                  uint64_t uPercent = (uProcessed * 100) / uFileCount;
+                  MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Pattern scan"}, {"sticky", true}});
+               }
+               continue;                                                       // Skip to next file on error
+            }
+
+            // STEP 4: Update table (FAST operation - mutex needed for thread safety)
+            {
+               //std::lock_guard<std::mutex> lockFilePattern(mutexTablePattern); // ✅ Minimal mutex scope
+
+               // Update pattern counters in the file-pattern table
+               for( unsigned u = 0; u < vectorCount.size(); u++ )
+               {
+                  ptableFilePattern->cell_set(uRowIndex, u + 4, vectorCount[u]); // set pattern count in table (columns 0-3 are key, file-key, folder, filename)
+               }
+            }
+
+            // Clear counts for next iteration
+            std::fill(vectorCount.begin(), vectorCount.end(), 0);
+
+            // Update progress (thread-safe)
+            uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+            if(uProcessed % 10 == 0)                                           // Show progress every 10 files
+            {
+               std::lock_guard<std::mutex> lockProgress(mutexProgress);
+               uint64_t uPercent = (uProcessed * 100) / uFileCount;
+               MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Pattern scan"}, {"sticky", true}});
+            }
+         }
+         catch(const std::exception& exception_)
+         {
+            std::lock_guard<std::mutex> lockErrors(mutexErrors);
+            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+         }      
+      }
+   };
+
+   // ## Prepare and run threads ..............................................
+
+   if( iThreadCount <= 0 ) { iThreadCount = std::thread::hardware_concurrency(); } // Use hardware concurrency if no thread count is specified
+   if(iThreadCount <= 0) { iThreadCount = 1; }                                 // Fallback to single thread if hardware_concurrency returns 0
+   if( iThreadCount > 8 ) { iThreadCount = 8; }                                // Limit to 8 threads for performance and resource management
+
+   // Create and launch worker threads
+   std::vector<std::thread> vectorPatternThread;
+   vectorPatternThread.reserve(iThreadCount);
+
+   for(int i = 0; i < iThreadCount; ++i) { vectorPatternThread.emplace_back(process_, i); }
+
+   // Wait for all threads to complete
+   for(auto& threadWorker : vectorPatternThread) { threadWorker.join(); }
+
+   MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
+
+   // ### Handle any collected errors
+   if(!vectorErrors.empty())
+   {
+      for(const auto& stringError : vectorErrors)
+      {
+         ERROR_Add(stringError);
+      }
    }
 
    return { true, "" };

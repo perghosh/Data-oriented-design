@@ -2,18 +2,21 @@
  * @file gd_arguments.h
  * 
  * @brief Pack primitive and common derived values into a byte buffer for efficient storage and access with focus on memory size. Like key-value pairs in one single buffer.
- *
- **Type of methods**
- | method  | brief  | description |
- |---|---|---| 
- | `append*` | appends value to arguments  | `append*` has variant to make it as flexible as possible. Many variants  |
- | `get*` | retrieves value from arguments  | `get*` retrieves value from arguments |
- | `compare*` | compares values | `compare*` compares values in arguments |
- | `insert*` | inserts value before specified  | `insert` insert is used to insert value before specified |
- | `remove*` | removes value  | `remove*` removes value from arguments, if not found it does nothing. |
- | `set*` | set or appends value  | `set*` sets value for existing value or if not found it appends it.  |
- *
  * 
+ * 
+ | Area                | Methods (Examples)                                                                 | Description                                                                                   |
+ |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ | Construction        | arguments(...), common_construct(...), zero(), buffer_set(...)                     | Constructors for various ways to create, copy, and initialize arguments buffers.              |
+ | Appending           | append(...), append_argument(...), append_if(...), append_object(...), operator+=  | Methods for adding values, named arguments, objects, and collections to the buffer.           |
+ | Setting             | set(...), set_uuid(...), set_argument(...), operator=                              | Methods for updating or replacing values by name, index, or pointer.                          |
+ | Insertion           | insert(...), reserve(...), reserve_no_copy(...)                                    | Methods for inserting values at specific positions and managing buffer capacity.              |
+ | Removal             | remove(...), erase(...), shrink_to_fit()                                           | Methods for removing arguments by name, index, or pointer, and optimizing buffer size.        |
+ | Retrieval           | get_argument(...), get_argument_all(...), find(...), exists(...), operator[]       | Methods for retrieving values by name, index, or pointer, including type conversion.          |
+ | Iteration           | iterator, begin(), end(), next(...), find_all(...), get_argument_section(...)      | Methods for traversing arguments using iterators or pointer-based navigation.                 |
+ | Comparison          | compare(...), compare_argument_s(...), compare_group(...), compare_exists(...)     | Methods for comparing argument values, types, and existence between buffers.                  |
+ | Printing/Debug      | print(...), print_json(), debug::print(...), print_s(...), print_type_s(...)       | Methods for formatting and printing argument values and buffer contents for debugging.        |
+ | Utility/Meta        | clear(), empty(), size(), capacity(), is_owner(), buffer_data(), type_name_s(...)  | Utility methods for clearing, checking, and querying buffer and argument metadata.            |
+ *
  * The `arguments` class is designed to manage a collection of named or unnamed values stored in a contiguous byte buffer,
  * optimized for minimal memory usage and fast access. It supports a variety of data types, including integers, floating-point
  * numbers, strings, and binary data, with a flexible memory layout. Each argument is stored as a sequence of bytes
