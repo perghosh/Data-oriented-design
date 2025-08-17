@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.4
+### New Features
+- Added support for multi-threaded operations to improve performance and responsiveness.
+- Introduced a new `--parallel` option to the `find` command to enable parallel processing of files.
+- All `count` searches are now performed in parallel, significantly speeding up the counting process for large codebases.
+- Local `config` option argument added to specify a configuration file to use for the cleaner. This allows you to have different configurations for different projects or tasks.
+
 ## v1.0.3
 ### New Features
 - Global `config` option argument added to specify a configuration file to use.
