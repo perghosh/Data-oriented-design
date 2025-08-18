@@ -355,7 +355,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          {
             if( std::filesystem::exists(pathConfigLocation) == true )         // if configuration file exists
             {
-               result_ = CONFIG_Load(pathConfigLocation.string());                                LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
+               result_ = CONFIG_Load(pathConfigLocation.string());                                LOG_WARNING_RAW_IF(result_.first == false, result_.second);
+                                                                                                  LOG_DEBUG_RAW_IF(result_.first == true, "== Loaded configuration file: " & pathConfigLocation.string());
             }
             else
             {
@@ -1703,24 +1704,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
       std::string stringError = std::format("Error: {}", e.what());
       return { false, stringError };
    }
-
-   /*
-   gd::file::path pathSettings(stringFileName);
-   std::string stringExtension = pathSettings.extension().string();
-   
-   std::transform(stringExtension.begin(), stringExtension.end(), stringExtension.begin(), ::tolower); // convert to loarer case for case-insensitive comparison
-
-   if( stringExtension == ".xml" )
-   {
-      auto result_ = SettingsRead_s( stringFileName, gd::types::tag_xml{});
-      if( result_.first == false ) 
-      { 
-         std::string stringError = std::format("Failed to load settings from XML file: {}", result_.second);
-         return { false, stringError }; 
-      }
-   }
-*/
-
+                                                                           
    return { true, "" }; // Placeholder for settings loading logic
 }
 
@@ -2501,7 +2485,7 @@ std::pair<bool, std::string> CApplication::FolderGetHome_s(std::string& stringHo
    stringPath = std::string(piDir) + "/.local/share/cleaner";
 #endif
 
-   if( std::filesystem::exists(stringPath) == false ) { return { false, "Configuration directory does not exist: " + stringPath }; }
+   if( std::filesystem::exists(stringPath) == false ) { return { false, "User configuration directory does not exist: " + stringPath }; }
 
    stringHomePath = stringPath; // Set the home path
 
@@ -2993,7 +2977,7 @@ std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesyst
 {
    constexpr std::string_view stringConfigurationName( ".cleaner-configuration.json" );
    std::filesystem::path pathConfigurationCurrent = std::filesystem::current_path(); // Default configuration location in current directory
-   for( uint32_t u = 0; u < uDirectoryLevels; ++u )
+   for( uint32_t u = 0; u <= uDirectoryLevels; ++u )
    {
       std::filesystem::path pathConfigurationTemp = pathConfigurationCurrent / stringConfigurationName; // Create the path to the configuration file in the current directory
       if( std::filesystem::exists(pathConfigurationTemp) == true )
@@ -3016,7 +3000,7 @@ std::pair<bool, std::string> CApplication::HistoryFindFile_s(std::filesystem::pa
    const std::string stringHistoryName =  ".cleaner-history.xml";
    std::filesystem::path pathHistoryCurrent = std::filesystem::current_path(); // Default history location in current directory
 
-   for( uint32_t u = 0; u < uDirectoryLevels; ++u )
+   for( uint32_t u = 0; u <= uDirectoryLevels; ++u )
    {
       std::filesystem::path pathHistoryTemp = pathHistoryCurrent / stringHistoryName; // Create the path to the history file in the current directory
 
