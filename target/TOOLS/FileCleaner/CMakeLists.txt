@@ -97,7 +97,41 @@ if( USE_TARGET_ )
    # target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 
    if(MSVC)
-      # Windows/MSVC specific settings
+      # Windows/MSVC specific settings with SIMD optimizations
+      if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+         # Debug build - minimal optimization but enable debugging
+         target_compile_options(${TARGET_NAME_} PRIVATE
+            /Od                    # Disable optimizations
+            /Zi                    # Generate debug information
+            /W3                    # Warning level 3
+            /RTC1                  # Runtime error checks
+            /MDd                   # Debug runtime library (or /MTd for static)
+         )
+      else()
+         # Release build - full optimization with SIMD
+         target_compile_options(${TARGET_NAME_} PRIVATE
+            /O2                    # Optimize for speed
+            /Oi                    # Enable intrinsic functions
+            /Ot                    # Favor fast code
+            /Oy                    # Omit frame pointers
+            /GL                    # Whole program optimization
+            /arch:AVX2             # Enable AVX2 SIMD instructions
+            /favor:INTEL64         # Optimize for Intel 64-bit
+            /fp:fast               # Fast floating-point model
+            /GS-                   # Disable security checks for performance
+            /Gy                    # Function-level linking
+            /DNDEBUG               # Define NDEBUG for release builds
+         )
+         
+         # Release linking with optimization
+         target_link_options(${TARGET_NAME_} PRIVATE
+            /LTCG                  # Link-time code generation
+            /OPT:REF               # Remove unreferenced functions/data
+            /OPT:ICF               # Enable COMDAT folding
+            /INCREMENTAL:NO        # Disable incremental linking
+         )
+      endif()
+      
    elseif(APPLE)
       # macOS specific settings - keep it simple
       if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -108,7 +142,7 @@ if( USE_TARGET_ )
          )
       else()
          target_compile_options(${TARGET_NAME_} PRIVATE
-            -O2                    # Moderate optimization (safe for all architectures)
+            -O3                    # optimization
             -DNDEBUG               # Define NDEBUG for release builds
          )
       endif()
