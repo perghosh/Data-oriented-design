@@ -309,8 +309,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
    std::atomic<uint64_t> uAtomicProcessedCount(0); // Count of processed files
    std::mutex mutexTableCount; // Mutex to protect access to file-count table
    std::mutex mutexProgress; // Mutex to protect progress updates
-   std::vector<std::string> vectorErrors; // Collect errors from all threads
-   std::mutex mutexErrors;  // Mutex to protect access to vectorErrors
+   std::vector<std::string> vectorError; // Collect errors from all threads
+   std::mutex mutexErrors;  // Mutex to protect access to vectorError
 
    // ## Worker function to process files in parallel .........................
    auto process_ = [&](int iThreadId) -> void
@@ -340,7 +340,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
             if(result_.first == false)
             {
                std::lock_guard<std::mutex> lockErrors(mutexErrors);
-               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+               vectorError.push_back("File: " + stringFile + " - " + result_.second);
 
                // Update progress even on failure
                uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
@@ -405,7 +405,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
          catch(const std::exception& exception_)
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
-            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
          }      
       }
    };
@@ -428,9 +428,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
    MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
 
    // ### Handle any collected errors
-   if(!vectorErrors.empty())
+   if(!vectorError.empty())
    {
-      for(const auto& stringError : vectorErrors)
+      for(const auto& stringError : vectorError)
       {
          ERROR_Add(stringError);
       }
@@ -498,10 +498,10 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    }
 
    std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
-   std::atomic<uint64_t> uAtomicProcessedCount(0);                           // Count of processed files
+   std::atomic<uint64_t> uAtomicProcessedCount(0);                            // Count of processed files
    std::mutex mutexProgress;                                                  // Mutex to protect progress updates
-   std::vector<std::string> vectorErrors;                                     // Collect errors from all threads
-   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorErrors
+   std::vector<std::string> vectorError;                                      // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
 
    // ## Worker function to process files in parallel .........................
    auto process_ = [&](int iThreadId) -> void
@@ -534,7 +534,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
             if(result_.first == false)
             {
                std::lock_guard<std::mutex> lockErrors(mutexErrors);
-               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+               vectorError.push_back("File: " + stringFile + " - " + result_.second);
 
                // Update progress even on failure
                uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
@@ -568,7 +568,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
          catch(const std::exception& exception_)
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
-            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
          }      
       }
    };
@@ -591,9 +591,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
 
    // ### Handle any collected errors
-   if(!vectorErrors.empty())
+   if(!vectorError.empty())
    {
-      for(const auto& stringError : vectorErrors)
+      for(const auto& stringError : vectorError)
       {
          ERROR_Add(stringError);
       }
@@ -663,8 +663,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    std::atomic<uint64_t> uAtomicProcessedCount(0);                           // Count of processed files
    //std::mutex mutexTablePattern;                                              // Mutex to protect access to file-pattern table
    std::mutex mutexProgress;                                                  // Mutex to protect progress updates
-   std::vector<std::string> vectorErrors;                                     // Collect errors from all threads
-   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorErrors
+   std::vector<std::string> vectorError;                                     // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
 
    // ## Worker function to process files in parallel .........................
    auto process_ = [&](int iThreadId) -> void
@@ -697,7 +697,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
             if(result_.first == false)
             {
                std::lock_guard<std::mutex> lockErrors(mutexErrors);
-               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+               vectorError.push_back("File: " + stringFile + " - " + result_.second);
 
                // Update progress even on failure
                uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
@@ -736,7 +736,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
          catch(const std::exception& exception_)
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
-            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
          }      
       }
    };
@@ -759,9 +759,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
 
    // ### Handle any collected errors
-   if(!vectorErrors.empty())
+   if(!vectorError.empty())
    {
-      for(const auto& stringError : vectorErrors)
+      for(const auto& stringError : vectorError)
       {
          ERROR_Add(stringError);
       }
@@ -815,8 +815,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    std::atomic<uint64_t> uAtomicTotalLines(0);                                // Total lines found across all threads
    std::mutex mutexProgress;                                                  // Mutex to protect progress updates
    std::mutex mutexLineList;                                                  // Mutex to protect ptableLineList access
-   std::vector<std::string> vectorErrors;                                     // Collect errors from all threads
-   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorErrors
+   std::vector<std::string> vectorError;                                     // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
 
    // ## Worker function to process files in parallel .........................
    auto process_ = [&](int iThreadId) -> void
@@ -854,7 +854,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
             if(result_.first == false)
             {
                std::lock_guard<std::mutex> lockErrors(mutexErrors);
-               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+               vectorError.push_back("File: " + stringFile + " - " + result_.second);
 
                // Update progress even on failure
                uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
@@ -894,7 +894,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
          catch(const std::exception& exception_)
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
-            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
          }      
       }
    };
@@ -918,9 +918,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
 
    // ### Handle any collected errors
-   if(!vectorErrors.empty())
+   if(!vectorError.empty())
    {
-      for(const auto& stringError : vectorErrors) { ERROR_Add(stringError); }
+      for(const auto& stringError : vectorError) { ERROR_Add(stringError); }
    }
 
    return {true, ""};
@@ -968,8 +968,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    std::atomic<uint64_t> uAtomicTotalLines(0);                                // Total lines found across all threads
    std::mutex mutexProgress;                                                  // Mutex to protect progress updates
    std::mutex mutexLineList;                                                  // Mutex to protect ptableLineList access
-   std::vector<std::string> vectorErrors;                                     // Collect errors from all threads
-   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorErrors
+   std::vector<std::string> vectorError;                                      // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
 
    // ## Worker function to process files in parallel .........................
    auto process_ = [&](int iThreadId) -> void
@@ -981,7 +981,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
       
       while( true )
       {
-         // Get next file index to process
          uint64_t uRowIndex = uAtomicFileIndex.fetch_add(1);                  // get thread safe current index and increment it
          if(uRowIndex >= uFileCount) { break; }
          
@@ -1007,10 +1006,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
             if(result_.first == false)
             {
                std::lock_guard<std::mutex> lockErrors(mutexErrors);
-               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+               vectorError.push_back("File: " + stringFile + " - " + result_.second);
 
-               // Update progress even on failure
-               uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+               uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;   // Update progress even on failure
                if(uProcessed % 10 == 0)
                {
                   std::lock_guard<std::mutex> lockProgress(mutexProgress);
@@ -1035,8 +1033,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
             
             ptableLineListLocal->row_clear();                                  // Clear local table rows for next iteration
 
-            // Update progress (thread-safe)
-            uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+            uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;      // Update progress (thread-safe)
             if(uProcessed % 10 == 0)                                           // Show progress every 10 files
             {
                std::lock_guard<std::mutex> lockProgress(mutexProgress);
@@ -1047,7 +1044,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
          catch(const std::exception& exception_)
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
-            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
          }      
       }
    };
@@ -1071,9 +1068,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
 
    // ### Handle any collected errors
-   if(!vectorErrors.empty())
+   if(!vectorError.empty())
    {
-      for(const auto& stringError : vectorErrors) { ERROR_Add(stringError); }
+      for(const auto& stringError : vectorError) { ERROR_Add(stringError); }
    }
 
    return {true, ""};
