@@ -53,6 +53,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
 std::pair<bool, std::string> FILES_ReadLines_g( const std::string& stringPath, uint64_t uRow, int64_t iOffset, uint64_t uCount, std::string& stringLines, int64_t* piLeadingLineCount = nullptr );
 /// Read the full line from source file into line column to get the full preview so user recognize the code
 std::pair<bool, std::string> FILES_ReadFullRow_g( std::ifstream* pfstream, gd::table::dto::table* ptable_, uint64_t uRowStartOffset );
+std::pair<bool, std::string> FILES_ReadFullRow_g( std::ifstream* pfstream, gd::table::table* ptable_, uint64_t uRowStartOffset );
 
 /// @brief Cleans a file by removing unwanted characters and patterns, and returns the cleaned content in a vector.
 std::pair<bool, std::string> CLEAN_File_g( const std::string& stringPath, const gd::argument::shared::arguments& argumentsOption, std::string& stringBuffer );
@@ -63,9 +64,9 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
 std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector<std::string>& vectorPattern, std::vector<uint64_t>& vectorCount );
 std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, std::vector<uint64_t>& vectorCount );
 /// @brief Collects the number of lines in a file that match a specific pattern, this is case sensetive matching.
-std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::dto::table* ptable_ );
+std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::table* ptable_ );
 /// @brief Collects the number of lines in a file that match a specific pattern, this use regex matching.
-std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_);
+std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, gd::table::table* ptable_);
 
 std::pair<bool, std::string> COMMAND_FindPattern_g( const std::string& stringCode, const std::vector<std::string>& vectorPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_ );
 std::pair<bool, std::string> COMMAND_FindPattern_g( const std::string& stringCode, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_ );

@@ -182,6 +182,31 @@ table::table( const std::vector<std::tuple<std::string_view, unsigned, std::stri
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief construct table with columns and prepare for adding rows
+ * @param pcolumns pointer to columns object, adds reference to columns
+ * @param uRowCount number of rows to reserve space for
+ * @param uFlags flags for table state, see eTableFlagNull32, eTableFlagNull64, eTableFlagRowStatus
+ * @param uGrowBy how many rows to grow by if table needs more space
+*/
+table::table(detail::columns* pcolumns, unsigned uRowCount, unsigned uFlags, unsigned uGrowBy)
+{                                                                                                  assert( pcolumns );
+   common_construct( pcolumns );
+
+   m_uFlags             = uFlags;
+   m_uRowSize           = 0;
+   m_uRowGrowBy         = uGrowBy;
+   m_uRowCount          = 0;
+   m_uReservedRowCount  = eSpaceFirstAllocate;
+
+   prepare();
+
+   if( uRowCount > 0 )
+   {
+      row_reserve_add( uRowCount );
+   }
+}
+
+/** ---------------------------------------------------------------------------
  * @brief construct from table_column_buffer and copy selected row into the constructed table
  * @param pcolumns pointer to columns object, adds reference to columns
  * @param ptable pointer to table rows are copied from
@@ -2014,6 +2039,67 @@ void table::cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& v
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Set cell value in table, if type do not match or value do not fit adjust the value if column are not able to store everything
+ * 
+ * If value type do not match the type used in column then value is converted to proper type
+ * 
+ * @param uRow row index for cell
+ * @param uColumn column index for cell
+ * @param variantviewValue value set to cell and cell type need to match
+ * @param tag dispatch
+*/
+void table::cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_adjust )
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( uColumn < m_pcolumns->size() ); 
+   auto& columnSet = *m_pcolumns->get( uColumn );                                                  assert( columnSet.position() < m_uRowSize );
+   auto uValueType = variantviewValue.type_number();
+   auto uColumnType = columnSet.ctype_number();
+
+   if( uValueType == uColumnType ) 
+   {  
+      if( columnSet.is_fixed() ) { cell_set(uRow, uColumn, variantviewValue); }
+      else
+      {
+         if( columnSet.is_length() == true )
+         {
+            unsigned uMaxSize = columnSet.size();
+            unsigned uLength = gd::types::value_size_g(variantviewValue.type(), variantviewValue.length()); // value size in bytes (remember that non fixed value types starts with length information before actual value)
+            if( uLength >= uMaxSize )
+            {
+               auto variantAdjust = variantviewValue;
+               variantAdjust.adjust(uMaxSize);                                // adjust size to max size for column
+               cell_set(uRow, uColumn, variantAdjust);
+            }
+            else
+            {
+               cell_set(uRow, uColumn, variantviewValue);
+            }
+         }
+         else if( columnSet.is_reference() == true )
+         {
+            cell_set(uRow, uColumn, variantviewValue);
+         }
+      }
+   }
+   else
+   {
+      gd::variant variantConvertTo;
+      bool bOk = variantviewValue.convert_to( uColumnType,  variantConvertTo );
+      if( bOk == true )
+      {
+         cell_set( uRow, uColumn, *(gd::variant_view*)&variantConvertTo, tag_adjust{}); // just cast to variant view, internal data is same just that varaiant view have different logic
+      }
+      else
+      {
+         if( variantviewValue.is_null() == true && is_null() == true )
+         {
+            cell_set_null( uRow, uColumn );
+         }
+      }
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief Set cell value
  * If value type do not match the type used in column then value is converted to proper type
  * @param uRow row index for cell
@@ -2021,9 +2107,22 @@ void table::cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& v
  * @param variantviewValue value set to cell and cell type need to match
 */
 void table::cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_convert )
-{                                                                                                  assert( uRow < m_uReservedRowCount );
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( m_pcolumns != nullptr );
    unsigned uColumnIndex = column_get_index( stringName );                                         assert( uColumnIndex != (unsigned)-1 );
    cell_set( uRow, uColumnIndex, variantviewValue, tag_convert{});
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value
+ * If value type do not match the type used in column then value is converted to proper type
+ * @param uRow row index for cell
+ * @param stringName column name (column has to have a name)
+ * @param variantviewValue value set to cell and cell type need to match
+*/
+void table::cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_adjust )
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( m_pcolumns != nullptr );
+   unsigned uColumnIndex = column_get_index( stringName );                                         assert( uColumnIndex != (unsigned)-1 );
+   cell_set( uRow, uColumnIndex, variantviewValue, tag_adjust{});
 }
 
 /** ---------------------------------------------------------------------------
