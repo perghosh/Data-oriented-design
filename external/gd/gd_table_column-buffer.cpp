@@ -3334,6 +3334,29 @@ void table_column_buffer::append( const table_column_buffer& tableFrom, uint64_t
 }
 
 
+void table_column_buffer::append( const table* ptable_ )
+{                                                                                                  assert(ptable_ != nullptr); 
+   if( ptable_->get_row_count() > 0 ) append(ptable_, 0, ptable_->get_row_count());
+}
+
+
+void table_column_buffer::append(const table* ptable_, uint64_t uFrom, uint64_t uCount)
+{                                                                                                  assert(ptable_ != nullptr); assert(uFrom < ptable_->get_row_count()); assert((uFrom + uCount) <= ptable_->get_row_count());
+   for( uint64_t uRow = uFrom; uRow < (uFrom + uCount); uRow++ )
+   {
+      uint64_t uLastRow = get_row_count();
+      row_add();
+
+      for( unsigned uColumn = 0; uColumn < ptable_->get_column_count(); uColumn++ )
+      {
+         auto v_ = ptable_->cell_get_variant_view(uRow, uColumn);
+         if( v_.is_null() == false ) cell_set(uLastRow, uColumn, v_);
+         else                        cell_set_null(uLastRow, uColumn);
+      }
+   }
+}
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief Clears all internal data and columns. 

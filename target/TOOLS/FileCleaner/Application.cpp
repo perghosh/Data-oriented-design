@@ -351,7 +351,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
          std::filesystem::path pathConfigLocation; // path to the configuration file
          result_ = ConfigurationFindFile_s(pathConfigLocation, 2);            // try to find the configuration file in the current directory or parent directories
-         if( result_.first == true )
+         if( result_.first == true && pathConfigLocation.empty() == false )
          {
             if( std::filesystem::exists(pathConfigLocation) == true )         // if configuration file exists
             {
@@ -363,8 +363,10 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
                LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories.");
             }
          }
-
-         result_ = CONFIG_Load();                                                                 LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
+         else
+         {
+            result_ = CONFIG_Load();                                                               LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
+         }
       }
 
       if( bSetLogging == false )                                              // if logging is not set, check for logging set in configuration
@@ -1632,9 +1634,11 @@ void CApplication::DATABASE_CloseActive()
 
 
 std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& stringFileName)
-{
+{                                                                                                 assert( (bool)m_ptableConfig == false );
    using namespace jsoncons;
    using namespace gd::table;
+
+   if( m_ptableConfig != nullptr ) return { true, "" }; // If config table is already set, return success   
 
    constexpr std::string_view stringConfigurationFileName = "cleaner-configuration.json"; // Default configuration file name
 

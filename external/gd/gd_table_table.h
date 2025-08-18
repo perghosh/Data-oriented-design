@@ -275,6 +275,7 @@ public:
 // copy
    table( const table& o ): m_puData(nullptr) { common_construct( o ); }
    table( table&& o ) noexcept : m_puData(nullptr) { common_construct( std::move( o ) ); }
+   table( detail::columns* pcolumns, unsigned uRowCount, unsigned uFlags, unsigned uGrowBy );
    table( detail::columns* pcolumns, const table_column_buffer* ptable, uint64_t uFrom, uint64_t uCount );
    table( detail::columns* pcolumns, const table* ptable, uint64_t uFrom, uint64_t uCount );
 // assign
@@ -653,7 +654,9 @@ public:
    void cell_set_null( uint64_t uRow, const std::string_view& stringName );
    void cell_set_not_null( uint64_t uRow, unsigned uColumn );
    void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert );
+   void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_adjust );
    void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_convert );
+   void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_adjust );
    void cell_set( uint64_t uRow, const std::string_view& stringAlias, const gd::variant_view& variantviewValue, tag_convert, tag_alias );
    void cell_set( uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue );
    void cell_set( uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue, tag_convert );

@@ -246,6 +246,9 @@ static std::string_view GetDefaultConfigData_s()
    "keyvalue": null,
    "header-line": null
 },
+"cleaner.result": {
+   "max-lines": 500
+},
 "cleaner.logging": {
    "severity": null
 },
