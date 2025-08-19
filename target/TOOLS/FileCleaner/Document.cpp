@@ -973,12 +973,15 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    std::vector<std::string> vectorError;                                      // Collect errors from all threads
    std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
 
+   // ## Prepare columns for line list table 
+   detail::columns* pcolumnsThread = new detail::columns{};
+   ptableLineList->to_columns( *pcolumnsThread );
+
+
    // ## Worker function to process files in parallel .........................
    auto process_ = [&](int iThreadId) -> void
    {
       // Create thread-local table for collecting results
-      detail::columns* pcolumnsThread = new detail::columns{};
-      ptableLineList->to_columns( *pcolumnsThread );
       std::unique_ptr<table> ptableLineListLocal = std::make_unique<table>(pcolumnsThread, 10, ptableLineList->get_flags(), 10); // Create local table with 10 rows pre-allocated
       
       while( true )
