@@ -292,7 +292,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 #endif
 
 
-      PROPERTY_Add("arguments", stringArgument);                                                   LOG_INFORMATION_RAW("== Arguments: " & stringArgument);
+      PROPERTY_Add("arguments", stringArgument);                                                   LOG_DEBUG_RAW("== Arguments: " & stringArgument);
 
       gd::cli::options optionsApplication;
       CApplication::Prepare_s(optionsApplication);                             // prepare command-line options
@@ -315,7 +315,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       }
 
       // ## Logging ...........................................................
-
+#ifdef GD_LOG_SIMPLE
       bool bSetLogging = false;
       if( optionsApplication.exists("logging-severity", gd::types::tag_state_active{}) == true ) // if logging severity is set
       {
@@ -330,7 +330,15 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
                bSetLogging = true;                                                                 // set logging is set
             }
          }
+
+         gd::log::logger<0>* plogger = gd::log::get_s();
+         if( plogger->is_severity_debug() == true )
+         {
+            std::string stringArguments = PROPERTY_Get("arguments").as_string();
+            LOG_DEBUG_RAW("== Arguments: " & stringArguments);
+         }
       }
+#endif // GD_LOG_SIMPLE
 
       // ## Load configuration ................................................
 
@@ -369,6 +377,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          }
       }
 
+#ifdef GD_LOG_SIMPLE
       if( bSetLogging == false )                                              // if logging is not set, check for logging set in configuration
       {
          std::string stringSeverity = CONFIG_Get("logging", {"severity"}).as_string();
@@ -382,6 +391,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
             }
          }
       }
+#endif // GD_LOG_SIMPLE
+
 
       // ## Configure hardware ................................................
 
