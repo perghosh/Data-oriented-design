@@ -67,6 +67,7 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 #include "cli/CLIHistory.h"
 #include "cli/CLIKeyValue.h"
 #include "cli/CLIList.h"
+#include "cli/CLIPaste.h"
 #include "cli/CLIRun.h"
 
 
@@ -260,6 +261,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    // ## Set OS-specific settings
 #ifdef _WIN32
    papplication_g->PROPERTY_Add("os", "windows");                              // set OS to windows
+#elif defined(__APPLE__)
+   papplication_g->PROPERTY_Add("os", "macos");                                // set OS to macOS/Darwin
 #else
    std::ifstream file_("/proc/version"); // open the file with os information to read the first line
    if( file_.is_open() == false ) { papplication_g->PROPERTY_Add("os", "linux"); }
@@ -292,7 +295,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 #endif
 
 
-      PROPERTY_Add("arguments", stringArgument);                                                   LOG_INFORMATION_RAW("== Arguments: " & stringArgument);
+      PROPERTY_Add("arguments", stringArgument);                                                   LOG_DEBUG_RAW("== Arguments: " & stringArgument);
 
       gd::cli::options optionsApplication;
       CApplication::Prepare_s(optionsApplication);                             // prepare command-line options
@@ -315,7 +318,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       }
 
       // ## Logging ...........................................................
-
+#ifdef GD_LOG_SIMPLE
       bool bSetLogging = false;
       if( optionsApplication.exists("logging-severity", gd::types::tag_state_active{}) == true ) // if logging severity is set
       {
@@ -330,7 +333,15 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
                bSetLogging = true;                                                                 // set logging is set
             }
          }
+
+         gd::log::logger<0>* plogger = gd::log::get_s();
+         if( plogger->is_severity_debug() == true )
+         {
+            std::string stringArguments = PROPERTY_Get("arguments").as_string();
+            LOG_DEBUG_RAW("== Arguments: " & stringArguments);
+         }
       }
+#endif // GD_LOG_SIMPLE
 
       // ## Load configuration ................................................
 
@@ -351,21 +362,25 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
          std::filesystem::path pathConfigLocation; // path to the configuration file
          result_ = ConfigurationFindFile_s(pathConfigLocation, 2);            // try to find the configuration file in the current directory or parent directories
-         if( result_.first == true )
+         if( result_.first == true && pathConfigLocation.empty() == false )
          {
             if( std::filesystem::exists(pathConfigLocation) == true )         // if configuration file exists
             {
-               result_ = CONFIG_Load(pathConfigLocation.string());                                LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
+               result_ = CONFIG_Load(pathConfigLocation.string());                                LOG_WARNING_RAW_IF(result_.first == false, result_.second);
+                                                                                                  LOG_DEBUG_RAW_IF(result_.first == true, "== Loaded configuration file: " & pathConfigLocation.string());
             }
             else
             {
                LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories.");
             }
          }
-
-         result_ = CONFIG_Load();                                                                 LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
+         else
+         {
+            result_ = CONFIG_Load();                                                               LOG_DEBUG_RAW_IF(result_.first == false, result_.second);
+         }
       }
 
+#ifdef GD_LOG_SIMPLE
       if( bSetLogging == false )                                              // if logging is not set, check for logging set in configuration
       {
          std::string stringSeverity = CONFIG_Get("logging", {"severity"}).as_string();
@@ -379,6 +394,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
             }
          }
       }
+#endif // GD_LOG_SIMPLE
+
 
       // ## Configure hardware ................................................
 
@@ -648,8 +665,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       if( result_.first == false ) return result_;
    }
 
-   auto* pdocument = DOCUMENT_Add(stringCommandName);
-   if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
+   //auto* pdocument = DOCUMENT_Add(stringCommandName);
+   //if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
 
    if( stringCommandName == "config" )                                         // command = "config"
    {
@@ -705,6 +722,10 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       if( bUseThreads == true ) { return execute_(CLI::List_g, poptionsActive->clone_arguments(), pdocument); } // list lines in file or directory with the matched pattern in its own thread
       else                      { return CLI::List_g(poptionsActive, pdocument); }// list lines in file or directory with the matched pattern
       if( pdocument->ERROR_Empty() == false ) { pdocument->ERROR_Print(); }
+   }
+   else if( stringCommandName == "paste" )
+   {
+      return CLI::Paste_g( poptionsActive, &optionsApplication );
    }
    else if( stringCommandName == "run" )
    { 
@@ -1631,9 +1652,11 @@ void CApplication::DATABASE_CloseActive()
 
 
 std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& stringFileName)
-{
+{                                                                                                 assert( (bool)m_ptableConfig == false );
    using namespace jsoncons;
    using namespace gd::table;
+
+   if( m_ptableConfig != nullptr ) return { true, "" }; // If config table is already set, return success   
 
    constexpr std::string_view stringConfigurationFileName = "cleaner-configuration.json"; // Default configuration file name
 
@@ -1703,24 +1726,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
       std::string stringError = std::format("Error: {}", e.what());
       return { false, stringError };
    }
-
-   /*
-   gd::file::path pathSettings(stringFileName);
-   std::string stringExtension = pathSettings.extension().string();
-   
-   std::transform(stringExtension.begin(), stringExtension.end(), stringExtension.begin(), ::tolower); // convert to loarer case for case-insensitive comparison
-
-   if( stringExtension == ".xml" )
-   {
-      auto result_ = SettingsRead_s( stringFileName, gd::types::tag_xml{});
-      if( result_.first == false ) 
-      { 
-         std::string stringError = std::format("Failed to load settings from XML file: {}", result_.second);
-         return { false, stringError }; 
-      }
-   }
-*/
-
+                                                                           
    return { true, "" }; // Placeholder for settings loading logic
 }
 
@@ -2071,6 +2077,14 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+
+   {  // ## `paste` checks the clipboard for text or input file reading arguments
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "paste", "Paste text from clipboard or read from input file" );
+      optionsCommand.add({"source", 's', "Files to join"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
 
 
    {  // ## `help` print help about @TAG #options.help
@@ -2502,7 +2516,7 @@ std::pair<bool, std::string> CApplication::FolderGetHome_s(std::string& stringHo
    stringPath = std::string(piDir) + "/.local/share/cleaner";
 #endif
 
-   if( std::filesystem::exists(stringPath) == false ) { return { false, "Configuration directory does not exist: " + stringPath }; }
+   if( std::filesystem::exists(stringPath) == false ) { return { false, "User configuration directory does not exist: " + stringPath }; }
 
    stringHomePath = stringPath; // Set the home path
 
@@ -2994,7 +3008,7 @@ std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesyst
 {
    constexpr std::string_view stringConfigurationName( ".cleaner-configuration.json" );
    std::filesystem::path pathConfigurationCurrent = std::filesystem::current_path(); // Default configuration location in current directory
-   for( uint32_t u = 0; u < uDirectoryLevels; ++u )
+   for( uint32_t u = 0; u <= uDirectoryLevels; ++u )
    {
       std::filesystem::path pathConfigurationTemp = pathConfigurationCurrent / stringConfigurationName; // Create the path to the configuration file in the current directory
       if( std::filesystem::exists(pathConfigurationTemp) == true )
@@ -3005,7 +3019,7 @@ std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesyst
 
       if(pathConfigurationCurrent == pathConfigurationCurrent.root_path() )   // If we reached the root directory, stop searching
       {
-         return { false, "Unable to find " + std::string(stringConfigurationName) };
+         return { true, "Unable to find " + std::string(stringConfigurationName) };
       }
       pathConfigurationCurrent = pathConfigurationCurrent.parent_path(); // Go one directory up and check again
    }
@@ -3017,7 +3031,7 @@ std::pair<bool, std::string> CApplication::HistoryFindFile_s(std::filesystem::pa
    const std::string stringHistoryName =  ".cleaner-history.xml";
    std::filesystem::path pathHistoryCurrent = std::filesystem::current_path(); // Default history location in current directory
 
-   for( uint32_t u = 0; u < uDirectoryLevels; ++u )
+   for( uint32_t u = 0; u <= uDirectoryLevels; ++u )
    {
       std::filesystem::path pathHistoryTemp = pathHistoryCurrent / stringHistoryName; // Create the path to the history file in the current directory
 

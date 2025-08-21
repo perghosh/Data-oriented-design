@@ -221,7 +221,7 @@ table::table( gd::table::detail::columns* pcolumns, const table* ptable, uint64_
 * @brief destruct table
 * Column information is stored in shared object, reference counter is decreased 
 */
-inline table::~table() 
+table::~table() 
 {
    // ## release arguments if set
    if( is_rowarguments() == true && get_row_count() > 0 )

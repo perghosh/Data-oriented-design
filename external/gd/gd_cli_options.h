@@ -283,6 +283,7 @@ public:
    /// parse single string, splits string into parts and parse as normal
    std::pair<bool, std::string> parse( const std::string_view& stringArgument );
    std::pair<bool, std::string> parse( const std::vector<std::string>& vectorArgument );
+   std::pair<bool, std::string> parse_terminal( const std::string_view& stringArgument );
    
 
 
@@ -429,6 +430,7 @@ public:
    static std::string to_string_s(int iCount, const char* const* ppbszArgumentValue, int iOffset = 0);
    /// convert argument values to string
    static std::pair<bool, std::string> parse_s(const std::string_view& stringCommandLine, std::vector<std::string>& vectorArguments );
+   static std::pair<bool, std::string> parse_terminal_s(const std::string_view& stringCommandLine, std::vector<std::string>& vectorArguments);
    static std::vector<std::string> parse_s(const std::string_view& stringCommandLine );
    /// print error message and return it
    static std::pair<bool, std::string> error_s( std::initializer_list<gd::variant_view> listPrint );

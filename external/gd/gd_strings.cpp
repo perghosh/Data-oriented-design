@@ -2,6 +2,7 @@
 
 _GD_BEGIN
 
+/*
 /// align to 4 byte boundary
 inline uint32_t align32_g( uint32_t uLength ) 
 {
@@ -14,6 +15,14 @@ inline uint64_t align32_g( uint64_t uLength )
 {
    if( uLength % 4 != 0 ) uLength = (uLength + 3) & ~3;
    return uLength;
+}
+*/
+
+template<typename TYPE>
+inline TYPE align32_g(TYPE uLength)
+{
+    if (uLength % 4 != 0) uLength = (uLength + 3) & ~3;
+    return uLength;
 }
 
 /// align to 64 byte cache line

@@ -31,7 +31,13 @@ if(WIN32)
    file(GLOB FILES_ "win/*.h" "win/*.cpp" )
    list(APPEND TARGET_FILES_ ${FILES_})
    unset(FILES_)
+elseif(APPLE)
+   # Add macOS specific code if needed
+   # file(GLOB FILES_ "mac/*.h" "mac/*.cpp" )
+   # list(APPEND TARGET_FILES_ ${FILES_})
+   # unset(FILES_)
 else()
+   # Linux specific code
 endif()
 
 file(GLOB FILES_ "cli/*.h" "cli/*.cpp" )
@@ -91,8 +97,61 @@ if( USE_TARGET_ )
    # target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
 
    if(MSVC)
+      # Windows/MSVC specific settings with SIMD optimizations
+      if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+         # Debug build - minimal optimization but enable debugging
+         target_compile_options(${TARGET_NAME_} PRIVATE
+            /Od                    # Disable optimizations
+            /Zi                    # Generate debug information
+            /W3                    # Warning level 3
+            /RTC1                  # Runtime error checks
+            /MDd                   # Debug runtime library (or /MTd for static)
+         )
+      else()
+         # Release build - full optimization with SIMD
+         target_compile_options(${TARGET_NAME_} PRIVATE
+            /O2                    # Optimize for speed
+            /Oi                    # Enable intrinsic functions
+            /Ot                    # Favor fast code
+            /Oy                    # Omit frame pointers
+            /GL                    # Whole program optimization
+            /arch:AVX2             # Enable AVX2 SIMD instructions
+            /favor:INTEL64         # Optimize for Intel 64-bit
+            /fp:fast               # Fast floating-point model
+            /GS-                   # Disable security checks for performance
+            /Gy                    # Function-level linking
+            /DNDEBUG               # Define NDEBUG for release builds
+         )
+         
+         # Release linking with optimization
+         target_link_options(${TARGET_NAME_} PRIVATE
+            /LTCG                  # Link-time code generation
+            /OPT:REF               # Remove unreferenced functions/data
+            /OPT:ICF               # Enable COMDAT folding
+            /INCREMENTAL:NO        # Disable incremental linking
+         )
+      endif()
+      
+   elseif(APPLE)
+      # macOS specific settings - keep it simple
+      if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+         target_compile_options(${TARGET_NAME_} PRIVATE
+            -g                     # Generate debug info
+            -O0                    # No optimization
+            -Wall                  # Enable warnings
+         )
+      else()
+         target_compile_options(${TARGET_NAME_} PRIVATE
+            -O3                    # optimization
+            -DNDEBUG               # Define NDEBUG for release builds
+         )
+      endif()
+      
+      # Link required system frameworks/libraries on macOS
+      target_link_libraries(${TARGET_NAME_} PRIVATE pthread)
+      
    else()
-
+      # Linux/other Unix systems
       if(CMAKE_BUILD_TYPE STREQUAL "Debug")
          # Debug build - prioritize debugging over optimization
          target_compile_options(${TARGET_NAME_} PRIVATE
@@ -156,6 +215,24 @@ if( USE_TARGET_ )
                OPTIONAL
            )
            ]]
+       elseif(APPLE)
+           # macOS installation: Install cleaner executable
+           install(TARGETS ${TARGET_NAME_}
+               RUNTIME DESTINATION bin
+               COMPONENT cleaner
+               PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                           GROUP_EXECUTE GROUP_READ
+                           WORLD_EXECUTE WORLD_READ
+           )
+           # Optional: Install additional macOS files
+           #[[
+           install(FILES ${CMAKE_SOURCE_DIR}/README.md ${CMAKE_SOURCE_DIR}/LICENSE
+               DESTINATION doc
+               COMPONENT cleaner
+               PERMISSIONS OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ
+               OPTIONAL
+           )
+           ]]
        else()
            # Linux installation: Install cleaner executable and man page
            install(TARGETS ${TARGET_NAME_}
@@ -194,4 +271,3 @@ endif()
 # Optional: CPack for creating installers
 include(CPack)
 cpack_add_component(cleaner DISPLAY_NAME "Cleaner Executable and Documentation")
-

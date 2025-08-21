@@ -62,7 +62,7 @@ namespace detail {
          if( ifstreamFile.is_open() == true )
          {
             std::streamsize uSize = ifstreamFile.tellg();
-            ptable_->cell_set(uRow, "size", uSize, gd::types::tag_convert{});
+            ptable_->cell_set(uRow, "size", (uint64_t)uSize, gd::types::tag_convert{});
          }
          ifstreamFile.close();
       }
@@ -125,7 +125,7 @@ namespace detail {
          if( ifstreamFile.is_open() == true )
          {
             std::streamsize uSize = ifstreamFile.tellg();
-            ptable_->cell_set(uRow, "size", uSize, gd::types::tag_convert{});
+            ptable_->cell_set(uRow, "size", (uint64_t)uSize, gd::types::tag_convert{});
          }
          ifstreamFile.close();
       }
@@ -350,6 +350,86 @@ std::pair<bool, std::string> FILES_ReadLines_g(const std::string& stringPath, ui
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
 std::pair<bool, std::string> FILES_ReadFullRow_g(std::ifstream* pifstream, gd::table::dto::table* ptable_, uint64_t uRowStartOffset)
+{                                                                                                  assert(ptable_ != nullptr); assert(uRowStartOffset < ptable_->get_row_count() ); assert( pifstream != nullptr );
+   unsigned uColumnRow = ptable_->column_get_index("row");                     // get column index for row
+   unsigned uColumnLine = ptable_->column_get_index("line");                   // get column index for line
+
+   uint64_t uFileReadLine = 0;                                                 // read line counter, this is used to count lines read from file and match with row in table
+   gd::parse::window::line windowLine_(8192 - 512, 8192, gd::types::tag_create{});// create line buffer
+
+   auto uAvailable = windowLine_.available();
+   pifstream->read((char*)windowLine_.buffer(), uAvailable);
+   auto uReadSize = pifstream->gcount();                                        // get number of valid bytes read
+   windowLine_.update(uReadSize);                                              // Update valid size in line buffer
+
+   std::string stringLine;                                                     // string to hold line read from file
+
+   auto uRow = uRowStartOffset;
+   uint64_t uReadRow = ptable_->cell_get<uint64_t>(uRow, uColumnRow);          // get row from table
+
+   // ## Scan file and read lines found in table
+   while( windowLine_.eof() == false )
+   {
+      auto [first_, last_] = windowLine_.range(gd::types::tag_pair{});         // get range of valid data in buffer
+      for( auto it = first_; it < last_; it++ ) 
+      {
+         if( *it == '\n' )                                                     // count lines read from file
+         {
+            if( uFileReadLine == uReadRow )                                    // is we at the line we want to read
+            {
+               stringLine = gd::utf8::trim_to_string(stringLine);              // trim line
+               ptable_->cell_set(uRow, uColumnLine, stringLine);               // set line in table
+
+               // ## read next row from table and make sure it is larger than the previous row
+               auto uReadRowOld = uReadRow;
+               do{
+                  uRow++;
+                  if( uRow >= ptable_->get_row_count() ) { return { true, "" }; } // if we reached end of table, return success
+                  uReadRow = ptable_->cell_get<uint64_t>(uRow, uColumnRow);    // get row from table
+               } while( uReadRow == uReadRowOld );
+            }
+
+            stringLine.clear();
+            uFileReadLine++;                                 
+         }
+         else if( uFileReadLine == uReadRow )                                  // found line to read
+         {
+            stringLine += *it;
+         }
+      }
+
+      windowLine_.rotate();                                                   // rotate buffer
+
+      if( uReadSize > 0 )                                                     // was it possible to read data last read, then more data is available
+      {
+         auto uAvailable = windowLine_.available();                           // get available space in buffer to be filled
+         pifstream->read((char*)windowLine_.buffer(), windowLine_.available());// read more data into available space in buffer
+         uReadSize = pifstream->gcount();
+         windowLine_.update(uReadSize);                                       // update valid size in line buffer
+      }
+   }
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Reads a full row from a file and populates the corresponding line in the table.
+ *
+ * This method reads lines from the specified file starting at the given row offset in table,
+ * and populates the corresponding line in the table. It uses a window buffer to read
+ * lines efficiently and handles line breaks correctly.
+ * 
+ * When parsing the file for matching patterns it only reads parts of lines that are relevant and that is not the same as what the user likes to see when results are displayed.
+ * Users what to see the full line from source code, so this method reads the full line from the file and places it in the table.
+ *
+ * @param pifstream A pointer to an input file stream from which to read lines.
+ * @param ptable_ A pointer to the table where the lines will be stored.
+ * @param uRowStartOffset The starting row offset in the table from which to begin reading lines.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> FILES_ReadFullRow_g(std::ifstream* pifstream, gd::table::table* ptable_, uint64_t uRowStartOffset)
 {                                                                                                  assert(ptable_ != nullptr); assert(uRowStartOffset < ptable_->get_row_count() ); assert( pifstream != nullptr );
    unsigned uColumnRow = ptable_->column_get_index("row");                     // get column index for row
    unsigned uColumnLine = ptable_->column_get_index("line");                   // get column index for line
@@ -692,7 +772,7 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
    // ## counters
    //    Lots of counters to count different things in the file, this is not easy to follow so be careful
 
-   uint64_t uCountNewLine = 0;      // counts all new lines in file (all '\n' characters)
+   uint64_t uCountNewLine = 0;      // counts all new lines in file (all '\n' characters), start with 1 based on last line
    uint64_t uCountCodeLines = 0;    // counts all code lines in file (if there are visible characters in the line)
    uint64_t uCountCodeCharacters = 0; // counts all code characters in file
    uint64_t uCountComment = 0;      // counts all comment sections
@@ -715,6 +795,8 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
    auto uReadSize = file_.gcount();                                           // get number of valid bytes read
    lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
 
+   uint8_t uCharacter = 0;                                                    // character to hold current character
+
    // ## Process the file
    while(lineBuffer.eof() == false)
    {
@@ -724,10 +806,12 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
 
       for(auto it = first_; it < last_; it++ ) 
       {
+         uCharacter = *it;                                                    // get current character
+
          if( state_.in_state() == false )                                     // not in a state? that means we are reading source code
          {
             // ## check if we have found state
-            if( state_[*it] != 0 && state_.exists( it ) == true )
+            if( state_[uCharacter] != 0 && state_.exists( it ) == true )
             {
                stringSourceCode.clear();                                      // clear source code
                auto uLength = state_.activate(it);                            // activate state
@@ -753,13 +837,13 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
                continue;
             }
 
-            stringSourceCode += *it;                                          // add character to source code
-            if( *it == '\n' ) 
+            stringSourceCode += uCharacter;                                   // add character to source code
+            if( uCharacter == '\n' ) 
             { 
                if( uRowCharacterCodeCount ) uCountCodeLines++;                // count code lines if there are characters in the line
                uRowCharacterCodeCount = 0;                                    // reset code character count for next line
             }
-            else if( gd::expression::is_code_g( *it ) != 0 ) 
+            else if( gd::expression::is_code_g( uCharacter ) != 0 ) 
             { 
                uRowCharacterCodeCount++;                                      // count all code characters in line
                uCountCodeCharacters++;                                        // count all code characters in file
@@ -788,6 +872,8 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
       }
 
    }
+
+   if( uCharacter != 0 && uCharacter != '\n' ) uCountNewLine++;               // if last character is not newline, count it as code line
 
    argumentsResult.set("count", uCountNewLine);                               // set count of new lines in result
    argumentsResult.set("code", uCountCodeLines);                              // set count of code lines in result
@@ -1202,7 +1288,7 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
-std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::dto::table* ptable_)
+std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const gd::parse::patterns& patternsFind, gd::table::table* ptable_)
 {
    enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code, comment and string
 
@@ -1454,7 +1540,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
  *   - "column": The column number where the match starts.
  *   - "pattern": The matched pattern as a string.
  */
-std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, gd::table::dto::table* ptable_)
+std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::shared::arguments& argumentsPath, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, gd::table::table* ptable_)
 {
    enum { eStateCode = 0x01, eStateComment = 0x02, eStateString = 0x04 }; // states for code (states are passed as "segment"), comment and string
 
@@ -2129,7 +2215,7 @@ std::pair<bool, std::string> OS_ReadClipboard_g(std::string& stringClipboard)
       {
          stringResult += piBuffer;
       }
-      pclose(pfile);                                                              // Close the pipe to the clipboard command
+      pclose(pfile);                                                           // Close the pipe to the clipboard command
    }
    else if( stringOS == "wsl" )
    {
@@ -2141,7 +2227,20 @@ std::pair<bool, std::string> OS_ReadClipboard_g(std::string& stringClipboard)
       {
          stringResult += piBuffer;
       }
-      pclose(pfile);                                                              // Close the pipe to the clipboard command
+      pclose(pfile);                                                           // Close the pipe to the clipboard command
+   }
+   else if( stringOS == "macos" || stringOS == "darwin" )
+   {
+      // Use pbpaste command on macOS
+      FILE* pfile = popen("pbpaste", "r");
+      if( pfile == nullptr ) { return { false, "Failed to access macOS clipboard" }; }
+
+      char piBuffer[1024];
+      while( fgets(piBuffer, sizeof(piBuffer), pfile) ) 
+      {
+         stringResult += piBuffer;
+      }
+      pclose(pfile);                                                           // Close the pipe to the clipboard command
    }
    else
    {
