@@ -426,154 +426,145 @@ std::pair<bool, std::string> options::parse_s(const std::string_view& stringComm
  */
 std::pair<bool, std::string> options::parse_terminal_s(const std::string_view& stringCommandLine, std::vector<std::string>& vectorArguments)
 {
-    vectorArguments.clear(); // Clear existing arguments
-    
-    if(stringCommandLine.empty() == true ) {  return { true, "" }; }
-    
-    std::string stringCurrentArgument;
-    enum class StateType 
-    {
-        NORMAL,          // Outside quotes
-        DOUBLE_QUOTED,   // Inside double quotes
-        SINGLE_QUOTED    // Inside single quotes
-    };
-    
-    StateType eState = StateType::NORMAL;
-    bool bEscapeNext = false;
-    
-    // Parse the command line string character by character
-    for(size_t uPosition = 0; uPosition < stringCommandLine.length(); ++uPosition)
-    {
-        char cCharacter = stringCommandLine[uPosition];
-        
-        // Handle escaped character
-        if(bEscapeNext)
-        {
-            // In terminal, some escape sequences have special meaning
-            switch(cCharacter)
+   vectorArguments.clear(); // Clear existing arguments
+
+   if( stringCommandLine.empty() == true ) { return { true, "" }; }
+
+   std::string stringCurrentArgument;
+   enum class StateType
+   {
+      NORMAL,          // Outside quotes
+      DOUBLE_QUOTED,   // Inside double quotes
+      SINGLE_QUOTED    // Inside single quotes
+   };
+
+   StateType eState = StateType::NORMAL;
+   bool bEscapeNext = false;
+
+   // Parse the command line string character by character
+   for( size_t uPosition = 0; uPosition < stringCommandLine.length(); ++uPosition )
+   {
+      char iCharacter = stringCommandLine[uPosition];
+
+      // Handle escaped character
+      if( bEscapeNext )
+      {
+         // In terminal, some escape sequences have special meaning
+         switch( iCharacter )
+         {
+         case 'n':  stringCurrentArgument += '\n'; break;
+         case 't':  stringCurrentArgument += '\t'; break;
+         case 'r':  stringCurrentArgument += '\r'; break;
+         case '\\': stringCurrentArgument += '\\'; break;
+         case '"':  stringCurrentArgument += '"'; break;
+         case '\'': stringCurrentArgument += '\''; break;
+         case ' ':  stringCurrentArgument += ' '; break;
+         default:
+            // For other characters, include the backslash (terminal behavior)
+            stringCurrentArgument += '\\';
+            stringCurrentArgument += iCharacter;
+            break;
+         }
+         bEscapeNext = false;
+         continue;
+      }
+
+      switch( eState )
+      {
+      case StateType::NORMAL:
+         if( iCharacter == '\\' ) { bEscapeNext = true; }
+         else if( iCharacter == '"' ) { eState = StateType::DOUBLE_QUOTED; }
+         else if( iCharacter == '\'' ) { eState = StateType::SINGLE_QUOTED; }
+         else if( std::isspace(static_cast<unsigned char>( iCharacter )) )
+         {
+            if( !stringCurrentArgument.empty() )
             {
-                case 'n':  stringCurrentArgument += '\n'; break;
-                case 't':  stringCurrentArgument += '\t'; break;
-                case 'r':  stringCurrentArgument += '\r'; break;
-                case '\\': stringCurrentArgument += '\\'; break;
-                case '"':  stringCurrentArgument += '"'; break;
-                case '\'': stringCurrentArgument += '\''; break;
-                case ' ':  stringCurrentArgument += ' '; break;
-                default:   
-                    // For other characters, include the backslash (terminal behavior)
-                    stringCurrentArgument += '\\';
-                    stringCurrentArgument += cCharacter;
-                    break;
+               vectorArguments.push_back(stringCurrentArgument);
+               stringCurrentArgument.clear();
             }
-            bEscapeNext = false;
-            continue;
-        }
-        
-        switch(eState)
-        {
-            case StateType::NORMAL:
-                if(cCharacter == '\\')
-                {
-                    bEscapeNext = true;
-                }
-                else if(cCharacter == '"')
-                {
-                    eState = StateType::DOUBLE_QUOTED;
-                }
-                else if(cCharacter == '\'')
-                {
-                    eState = StateType::SINGLE_QUOTED;
-                }
-                else if(std::isspace(static_cast<unsigned char>(cCharacter)))
-                {
-                    if(!stringCurrentArgument.empty())
-                    {
-                        vectorArguments.push_back(stringCurrentArgument);
-                        stringCurrentArgument.clear();
-                    }
-                    // Skip consecutive whitespace
-                    while (uPosition + 1 < stringCommandLine.length() && 
-                           std::isspace(static_cast<unsigned char>(stringCommandLine[uPosition + 1])))
-                    {
-                        ++uPosition;
-                    }
-                }
-                else
-                {
-                    stringCurrentArgument += cCharacter;
-                }
-                break;
-                
-            case StateType::DOUBLE_QUOTED:
-                if(cCharacter == '\\')
-                {
-                    // In double quotes, only certain characters can be escaped
-                    if(uPosition + 1 < stringCommandLine.length())
-                    {
-                        char cNextChar = stringCommandLine[uPosition + 1];
-                        if(cNextChar == '"' || cNextChar == '\\' || cNextChar == '$' || 
-                            cNextChar == '`' || cNextChar == '\n')
-                        {
-                            bEscapeNext = true;
-                        }
-                        else
-                        {
-                            // Backslash is literal if not followed by escapable character
-                            stringCurrentArgument += cCharacter;
-                        }
-                    }
-                    else
-                    {
-                        // Backslash at end of string is literal
-                        stringCurrentArgument += cCharacter;
-                    }
-                }
-                else if(cCharacter == '"')
-                {
-                    eState = StateType::NORMAL;
-                }
-                else
-                {
-                    stringCurrentArgument += cCharacter;
-                }
-                break;
-                
-            case StateType::SINGLE_QUOTED:
-                if(cCharacter == '\'')
-                {
-                    eState = StateType::NORMAL;
-                }
-                else
-                {
-                    // In single quotes, everything is literal (no escaping possible)
-                    stringCurrentArgument += cCharacter;
-                }
-                break;
-        }
-    }
-    
-    // Check for unmatched quotes
-    if(eState != StateType::NORMAL)
-    {
-        std::string errorMsg = (eState == StateType::DOUBLE_QUOTED) ? 
-            "Unmatched double quote in command line" : 
-            "Unmatched single quote in command line";
-        return { false, errorMsg };
-    }
-    
-    // Check for trailing escape
-    if(bEscapeNext)
-    {
-        return { false, "Trailing escape character in command line" };
-    }
-    
-    // Add final argument if any
-    if(!stringCurrentArgument.empty())
-    {
-        vectorArguments.push_back(stringCurrentArgument);
-    }
-    
-    return { true, "" };
+            // Skip consecutive whitespace
+            while( uPosition + 1 < stringCommandLine.length() &&
+               std::isspace(static_cast<unsigned char>( stringCommandLine[uPosition + 1] )) )
+            {
+               ++uPosition;
+            }
+         }
+         else
+         {
+            stringCurrentArgument += iCharacter;
+         }
+         break;
+
+      case StateType::DOUBLE_QUOTED:
+         if( iCharacter == '\\' )
+         {
+            // In double quotes, only certain characters can be escaped
+            if( uPosition + 1 < stringCommandLine.length() )
+            {
+               char iNextChar = stringCommandLine[uPosition + 1];
+               if( iNextChar == '"' || iNextChar == '\\' || iNextChar == '$' ||
+                   iNextChar == '`' || iNextChar == '\n' )
+               {
+                  bEscapeNext = true;
+               }
+               else
+               {
+                  // Backslash is literal if not followed by escapable character
+                  stringCurrentArgument += iCharacter;
+               }
+            }
+            else
+            {
+               // Backslash at end of string is literal
+               stringCurrentArgument += iCharacter;
+            }
+         }
+         else if( iCharacter == '"' )
+         {
+            eState = StateType::NORMAL;
+         }
+         else
+         {
+            stringCurrentArgument += iCharacter;
+         }
+         break;
+
+      case StateType::SINGLE_QUOTED:
+         if( iCharacter == '\'' )
+         {
+            eState = StateType::NORMAL;
+         }
+         else
+         {
+            // In single quotes, everything is literal (no escaping possible)
+            stringCurrentArgument += iCharacter;
+         }
+         break;
+      }
+   }
+
+   // Check for unmatched quotes
+   if( eState != StateType::NORMAL )
+   {
+      std::string errorMsg = ( eState == StateType::DOUBLE_QUOTED ) ?
+         "Unmatched double quote in command line" :
+         "Unmatched single quote in command line";
+      return { false, errorMsg };
+   }
+
+   // Check for trailing escape
+   if( bEscapeNext )
+   {
+      return { false, "Trailing escape character in command line" };
+   }
+
+   // Add final argument if any
+   if( !stringCurrentArgument.empty() )
+   {
+      vectorArguments.push_back(stringCurrentArgument);
+   }
+
+   return { true, "" };
 }
 
 /** ---------------------------------------------------------------------------
