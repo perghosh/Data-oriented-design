@@ -772,7 +772,7 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
    // ## counters
    //    Lots of counters to count different things in the file, this is not easy to follow so be careful
 
-   uint64_t uCountNewLine = 0;      // counts all new lines in file (all '\n' characters)
+   uint64_t uCountNewLine = 0;      // counts all new lines in file (all '\n' characters), start with 1 based on last line
    uint64_t uCountCodeLines = 0;    // counts all code lines in file (if there are visible characters in the line)
    uint64_t uCountCodeCharacters = 0; // counts all code characters in file
    uint64_t uCountComment = 0;      // counts all comment sections
@@ -795,6 +795,8 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
    auto uReadSize = file_.gcount();                                           // get number of valid bytes read
    lineBuffer.update(uReadSize);                                              // Update valid size in line buffer
 
+   uint8_t uCharacter = 0;                                                    // character to hold current character
+
    // ## Process the file
    while(lineBuffer.eof() == false)
    {
@@ -804,10 +806,12 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
 
       for(auto it = first_; it < last_; it++ ) 
       {
+         uCharacter = *it;                                                    // get current character
+
          if( state_.in_state() == false )                                     // not in a state? that means we are reading source code
          {
             // ## check if we have found state
-            if( state_[*it] != 0 && state_.exists( it ) == true )
+            if( state_[uCharacter] != 0 && state_.exists( it ) == true )
             {
                stringSourceCode.clear();                                      // clear source code
                auto uLength = state_.activate(it);                            // activate state
@@ -833,13 +837,13 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
                continue;
             }
 
-            stringSourceCode += *it;                                          // add character to source code
-            if( *it == '\n' ) 
+            stringSourceCode += uCharacter;                                   // add character to source code
+            if( uCharacter == '\n' ) 
             { 
                if( uRowCharacterCodeCount ) uCountCodeLines++;                // count code lines if there are characters in the line
                uRowCharacterCodeCount = 0;                                    // reset code character count for next line
             }
-            else if( gd::expression::is_code_g( *it ) != 0 ) 
+            else if( gd::expression::is_code_g( uCharacter ) != 0 ) 
             { 
                uRowCharacterCodeCount++;                                      // count all code characters in line
                uCountCodeCharacters++;                                        // count all code characters in file
@@ -868,6 +872,8 @@ std::pair<bool, std::string> COMMAND_CollectFileStatistics(const gd::argument::s
       }
 
    }
+
+   if( uCharacter != 0 && uCharacter != '\n' ) uCountNewLine++;               // if last character is not newline, count it as code line
 
    argumentsResult.set("count", uCountNewLine);                               // set count of new lines in result
    argumentsResult.set("code", uCountCodeLines);                              // set count of code lines in result

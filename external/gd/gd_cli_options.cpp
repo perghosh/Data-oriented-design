@@ -342,14 +342,14 @@ std::pair<bool, std::string> options::parse_s(const std::string_view& stringComm
 {
    std::string stringCurrentArgument;
 
-   enum class StateType 
+   enum class enumState 
    {
-      NORMAL,          // Outside quotes
-      DOUBLE_QUOTED,   // Inside double quotes
-      SINGLE_QUOTED    // Inside single quotes
+      eStateNormal,          // Outside quotes
+      eStateDoubleQuoted,   // Inside double quotes
+      eStateSingleQuoted    // Inside single quotes
    };
 
-   StateType eState = StateType::NORMAL;
+   enumState eState = enumState::eStateNormal;
    bool bEscapeNext = false;
 
    // ## Parse the command line string character by character
@@ -368,10 +368,10 @@ std::pair<bool, std::string> options::parse_s(const std::string_view& stringComm
 
       switch( eState )
       {
-      case StateType::NORMAL:
+      case enumState::eStateNormal:
          if( iCharacter == '\\' ) { bEscapeNext = true; }
-         else if( iCharacter == '"' ) { eState = StateType::DOUBLE_QUOTED; }
-         else if( iCharacter == '\'' ) { eState = StateType::SINGLE_QUOTED; }
+         else if( iCharacter == '"' ) { eState = enumState::eStateDoubleQuoted; }
+         else if( iCharacter == '\'' ) { eState = enumState::eStateSingleQuoted; }
          else if( isspace(iCharacter) != 0 )
          {
             if( stringCurrentArgument.empty() == false )                      // End of current argument
@@ -385,21 +385,21 @@ std::pair<bool, std::string> options::parse_s(const std::string_view& stringComm
          else { stringCurrentArgument += iCharacter; }
          break;
 
-      case StateType::DOUBLE_QUOTED:
+      case enumState::eStateDoubleQuoted:
          if( iCharacter == '\\' ) { bEscapeNext = true;  }
-         else if( iCharacter == '"' ) {eState = StateType::NORMAL; }
+         else if( iCharacter == '"' ) {eState = enumState::eStateNormal; }
          else { stringCurrentArgument += iCharacter; }
          break;
 
-      case StateType::SINGLE_QUOTED:
-         if( iCharacter == '\'' ) { eState = StateType::NORMAL; }
+      case enumState::eStateSingleQuoted:
+         if( iCharacter == '\'' ) { eState = enumState::eStateNormal; }
          else { stringCurrentArgument += iCharacter; }                        // In single quotes, everything is literal (no escaping)
          break;
       }
    }
 
    // Check for unmatched quotes
-   if( eState != StateType::NORMAL )
+   if( eState != enumState::eStateNormal )
    {
       return { false, "Unmatched quotes in command line" };                   // Return error if quotes are unmatched
    }
@@ -431,14 +431,14 @@ std::pair<bool, std::string> options::parse_terminal_s(const std::string_view& s
    if( stringCommandLine.empty() == true ) { return { true, "" }; }
 
    std::string stringCurrentArgument;
-   enum class StateType
+   enum class enumState
    {
-      NORMAL,          // Outside quotes
-      DOUBLE_QUOTED,   // Inside double quotes
-      SINGLE_QUOTED    // Inside single quotes
+      eStateNormal,          // Outside quotes
+      eStateDoubleQuoted,   // Inside double quotes
+      eStateSingleQuoted    // Inside single quotes
    };
 
-   StateType eState = StateType::NORMAL;
+   enumState eState = enumState::eStateNormal;
    bool bEscapeNext = false;
 
    // Parse the command line string character by character
@@ -471,10 +471,10 @@ std::pair<bool, std::string> options::parse_terminal_s(const std::string_view& s
 
       switch( eState )
       {
-      case StateType::NORMAL:
+      case enumState::eStateNormal:
          if( iCharacter == '\\' ) { bEscapeNext = true; }
-         else if( iCharacter == '"' ) { eState = StateType::DOUBLE_QUOTED; }
-         else if( iCharacter == '\'' ) { eState = StateType::SINGLE_QUOTED; }
+         else if( iCharacter == '"' ) { eState = enumState::eStateDoubleQuoted; }
+         else if( iCharacter == '\'' ) { eState = enumState::eStateSingleQuoted; }
          else if( std::isspace(static_cast<unsigned char>( iCharacter )) )
          {
             if( !stringCurrentArgument.empty() )
@@ -495,7 +495,7 @@ std::pair<bool, std::string> options::parse_terminal_s(const std::string_view& s
          }
          break;
 
-      case StateType::DOUBLE_QUOTED:
+      case enumState::eStateDoubleQuoted:
          if( iCharacter == '\\' )
          {
             // In double quotes, only certain characters can be escaped
@@ -521,7 +521,7 @@ std::pair<bool, std::string> options::parse_terminal_s(const std::string_view& s
          }
          else if( iCharacter == '"' )
          {
-            eState = StateType::NORMAL;
+            eState = enumState::eStateNormal;
          }
          else
          {
@@ -529,10 +529,10 @@ std::pair<bool, std::string> options::parse_terminal_s(const std::string_view& s
          }
          break;
 
-      case StateType::SINGLE_QUOTED:
+      case enumState::eStateSingleQuoted:
          if( iCharacter == '\'' )
          {
-            eState = StateType::NORMAL;
+            eState = enumState::eStateNormal;
          }
          else
          {
@@ -544,25 +544,19 @@ std::pair<bool, std::string> options::parse_terminal_s(const std::string_view& s
    }
 
    // Check for unmatched quotes
-   if( eState != StateType::NORMAL )
+   if( eState != enumState::eStateNormal )
    {
-      std::string errorMsg = ( eState == StateType::DOUBLE_QUOTED ) ?
+      std::string stringError = ( eState == enumState::eStateDoubleQuoted ) ?
          "Unmatched double quote in command line" :
          "Unmatched single quote in command line";
-      return { false, errorMsg };
+      return { false, stringError };
    }
 
    // Check for trailing escape
-   if( bEscapeNext )
-   {
-      return { false, "Trailing escape character in command line" };
-   }
+   if( bEscapeNext ) { return { false, "Trailing escape character in command line" }; }
 
    // Add final argument if any
-   if( !stringCurrentArgument.empty() )
-   {
-      vectorArguments.push_back(stringCurrentArgument);
-   }
+   if( stringCurrentArgument.empty() == false ) { vectorArguments.push_back(stringCurrentArgument); }
 
    return { true, "" };
 }
