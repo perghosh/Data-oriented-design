@@ -186,13 +186,27 @@ std::pair<bool, std::string> ConfigurationCreate_g()
 
 std::pair<bool,std::string> ConfigurationEdit_g()
 {
-   std::string stringHomePath = papplication_g->PROPERTY_Get("folder-home").as_string();
+   // ## Try to find local configuration file
+   std::filesystem::path pathLocation;
+   gd::file::path pathConfigFile;
+   uint32_t uDirectoryLevels = 2;                                             // Default to 2 directory levels up
+   auto result_ = CApplication::ConfigurationFindFile_s(pathLocation, uDirectoryLevels);
 
-   if( stringHomePath.empty() == true ) return { false, "Home path is not set in the application properties." };
+   if( pathLocation.empty() == true )
+   {
+      std::string stringHomePath = papplication_g->PROPERTY_Get("folder-home").as_string();
+      if( stringHomePath.empty() == true ) return { false, "Unable to find configuration." };
 
-   gd::file::path pathConfigFile(stringHomePath + "/cleaner-configuration.json");
-                                                                      
-   if( std::filesystem::exists( pathConfigFile ) == false ) return { false, "Configuration file does not exist: " + pathConfigFile.string() };
+      gd::file::path path_(stringHomePath + "/cleaner-configuration.json");
+      if( std::filesystem::exists( path_ ) == false ) return { false, "Configuration file does not exist: " + path_.string() };
+      pathConfigFile = path_;
+   }
+   else
+   {
+      pathConfigFile = pathLocation;
+   }
+
+   papplication_g->PrintMessage("Opening configuration file: " + pathConfigFile.string(), gd::argument::arguments());
 
    return SHARED_OpenFile_g(pathConfigFile);
 }
@@ -231,6 +245,9 @@ static std::string_view GetDefaultConfigData_s()
 "cleaner.format": {
    "keyvalue": null,
    "header-line": null
+},
+"cleaner.result": {
+   "max-lines": 500
 },
 "cleaner.logging": {
    "severity": null

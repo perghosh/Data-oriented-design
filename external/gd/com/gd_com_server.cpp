@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <array>
 #include <variant>
+#include <vector>
 
 #include "gd/gd_utf8.h"
 #include "gd_com_server.h"

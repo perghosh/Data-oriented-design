@@ -873,6 +873,9 @@ public:
    void append( const table_column_buffer& tableFrom, tag_name, tag_convert );
    void append( const table_column_buffer& tableFrom, uint64_t uFrom, uint64_t uCount );
    void append( const table_column_buffer& tableFrom, uint64_t uFrom, uint64_t uCount, std::vector< unsigned > vectorColumn );
+
+   void append( const table* ptable_ );
+   void append( const table* ptable_, uint64_t uFrom, uint64_t uCount );
    ///@}
 
    /// @brief size is same as `get_row_count and returns number of rows

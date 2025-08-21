@@ -309,8 +309,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
    std::atomic<uint64_t> uAtomicProcessedCount(0); // Count of processed files
    std::mutex mutexTableCount; // Mutex to protect access to file-count table
    std::mutex mutexProgress; // Mutex to protect progress updates
-   std::vector<std::string> vectorErrors; // Collect errors from all threads
-   std::mutex mutexErrors;  // Mutex to protect access to vectorErrors
+   std::vector<std::string> vectorError; // Collect errors from all threads
+   std::mutex mutexErrors;  // Mutex to protect access to vectorError
 
    // ## Worker function to process files in parallel .........................
    auto process_ = [&](int iThreadId) -> void
@@ -340,7 +340,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
             if(result_.first == false)
             {
                std::lock_guard<std::mutex> lockErrors(mutexErrors);
-               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+               vectorError.push_back("File: " + stringFile + " - " + result_.second);
 
                // Update progress even on failure
                uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
@@ -405,7 +405,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
          catch(const std::exception& exception_)
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
-            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
          }      
       }
    };
@@ -428,9 +428,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
    MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
 
    // ### Handle any collected errors
-   if(!vectorErrors.empty())
+   if(!vectorError.empty())
    {
-      for(const auto& stringError : vectorErrors)
+      for(const auto& stringError : vectorError)
       {
          ERROR_Add(stringError);
       }
@@ -498,10 +498,10 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    }
 
    std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
-   std::atomic<uint64_t> uAtomicProcessedCount(0);                           // Count of processed files
+   std::atomic<uint64_t> uAtomicProcessedCount(0);                            // Count of processed files
    std::mutex mutexProgress;                                                  // Mutex to protect progress updates
-   std::vector<std::string> vectorErrors;                                     // Collect errors from all threads
-   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorErrors
+   std::vector<std::string> vectorError;                                      // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
 
    // ## Worker function to process files in parallel .........................
    auto process_ = [&](int iThreadId) -> void
@@ -534,7 +534,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
             if(result_.first == false)
             {
                std::lock_guard<std::mutex> lockErrors(mutexErrors);
-               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+               vectorError.push_back("File: " + stringFile + " - " + result_.second);
 
                // Update progress even on failure
                uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
@@ -568,7 +568,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
          catch(const std::exception& exception_)
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
-            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
          }      
       }
    };
@@ -591,9 +591,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
 
    // ### Handle any collected errors
-   if(!vectorErrors.empty())
+   if(!vectorError.empty())
    {
-      for(const auto& stringError : vectorErrors)
+      for(const auto& stringError : vectorError)
       {
          ERROR_Add(stringError);
       }
@@ -601,6 +601,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
 
    return { true, "" };
 }
+
 /** ---------------------------------------------------------------------------
  * @brief Updates pattern counters for files in the cache using multithreading.
  *
@@ -662,8 +663,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    std::atomic<uint64_t> uAtomicProcessedCount(0);                           // Count of processed files
    //std::mutex mutexTablePattern;                                              // Mutex to protect access to file-pattern table
    std::mutex mutexProgress;                                                  // Mutex to protect progress updates
-   std::vector<std::string> vectorErrors;                                     // Collect errors from all threads
-   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorErrors
+   std::vector<std::string> vectorError;                                     // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
 
    // ## Worker function to process files in parallel .........................
    auto process_ = [&](int iThreadId) -> void
@@ -696,7 +697,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
             if(result_.first == false)
             {
                std::lock_guard<std::mutex> lockErrors(mutexErrors);
-               vectorErrors.push_back("File: " + stringFile + " - " + result_.second);
+               vectorError.push_back("File: " + stringFile + " - " + result_.second);
 
                // Update progress even on failure
                uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
@@ -735,7 +736,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
          catch(const std::exception& exception_)
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
-            vectorErrors.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
          }      
       }
    };
@@ -758,9 +759,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
 
    // ### Handle any collected errors
-   if(!vectorErrors.empty())
+   if(!vectorError.empty())
    {
-      for(const auto& stringError : vectorErrors)
+      for(const auto& stringError : vectorError)
       {
          ERROR_Add(stringError);
       }
@@ -771,14 +772,16 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
 
 
 /** ---------------------------------------------------------------------------
- * @brief Updates the pattern list for files in the cache.
+ * @brief Updates the pattern list for files in the cache using multithreading.
  *
  * This method processes a list of patterns and applies them to the files stored in the cache.
  * It generates a list of lines in each file where the patterns are found and stores the results
- * in the "file-linelist" cache table.
+ * in the "file-linelist" cache table. The method uses multithreading to process files in parallel.
  *
  * @param vectorPattern A vector of strings representing the patterns to search for.
  *                      The vector must not be empty and can contain a maximum of 64 patterns.
+ * @param argumentsList Arguments for pattern processing (e.g., segment specification, max lines)
+ * @param iThreadCount Number of threads to use (0 = auto-detect)
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
@@ -786,79 +789,157 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
  * @pre The `vectorPattern` must not be empty and must contain fewer than 64 patterns.
  * @post The "file-linelist" cache table is updated with the lines where the patterns are found.
  *
- * @details
- * - The method first initializes a `gd::parse::patterns` object with the provided patterns
- *   and sorts them by length (longest first).
- * - It ensures that the "file-linelist" cache table is prepared and available.
- * - For each file in the "file" cache table, it generates the full file path by combining
- *   the "folder" and "filename" columns.
- * - It then calls the `COMMAND_ListLinesWithPattern` function to find the lines in the file
- *   that match the patterns and updates the "file-linelist" table with the results.
- * - If an error occurs during the process, it is added to the internal error list.
+ * @note COMMAND_ListLinesWithPattern must be thread-safe.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList ) // $TAG #list
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList, int iThreadCount)
 {                                                                                                  assert(vectorPattern.empty() == false); // Ensure the pattern list is not empty
                                                                                                    assert(vectorPattern.size() < 64);      // Ensure the pattern list contains fewer than 64 patterns
+   using namespace gd::table;
    gd::parse::patterns patternsFind(vectorPattern);
    patternsFind.sort();                                                       // Sort patterns by length, longest first (important for pattern matching)
 
-   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
-                                                                                                   assert(ptableFile != nullptr);
+   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
+                                                                                                   assert(ptableFile != nullptr); assert(ptableLineList != nullptr);
+
    std::string_view stringSegment;
    if( argumentsList.exists("segment") == true ) { stringSegment = argumentsList["segment"].as_string_view(); } // Get the segment (code, comment, string) to search in
 
-   uint64_t uFileIndex = 0; // index for file table
-   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
-   uint64_t uMax = argumentsList["max"].as_uint64(); // Get the maximum number of lines to be printed
+   uint64_t uMax = argumentsList["max"].as_uint64();                          // Get the maximum number of lines to process
+   auto uFileCount = ptableFile->get_row_count();                             // Total number of files to process
 
-   for(const auto& itRowFile : *ptableFile)
+   // ## Thread synchronization variables
+
+   std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
+   std::atomic<uint64_t> uAtomicProcessedCount(0);                            // Count of processed files
+   std::atomic<uint64_t> uAtomicTotalLines(0);                                // Total lines found across all threads
+   std::mutex mutexProgress;                                                  // Mutex to protect progress updates
+   std::mutex mutexLineList;                                                  // Mutex to protect ptableLineList access
+   std::vector<std::string> vectorError;                                      // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
+
+   // ## Prepare columns for line list table 
+   detail::columns* pcolumnsThread = new detail::columns{};
+   ptableLineList->to_columns( *pcolumnsThread );
+
+   // ## Worker function to process files in parallel .........................
+   auto process_ = [&](int iThreadId) -> void
    {
-      // ## calculate percentage for progress message
-
-      uFileIndex++;                                                            // increment file index for each file, used for progress message
-      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
+      // Create thread-local table for collecting results
+      std::unique_ptr<table> ptableLineListLocal = std::make_unique<table>(pcolumnsThread, 10, ptableLineList->get_flags(), 10); // Create local table with 10 rows pre-allocated
+      
+      while( true )
       {
-         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
-         MESSAGE_Progress( "", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true} });
+         // Get next file index to process
+         uint64_t uRowIndex = uAtomicFileIndex.fetch_add(1);                  // get thread safe current index and increment it
+         if(uRowIndex >= uFileCount) { break; }
+         
+         try
+         {
+            // STEP 1: Get file info (ptableFile is read-only so no mutex needed)
+            auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
+            auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
+
+            // STEP 2: Build full file path
+            gd::file::path pathFile(stringFolder);
+            pathFile += stringFilename;
+            std::string stringFile = pathFile.string();
+
+            auto uKey = ptableFile->cell_get_variant_view(uRowIndex, "key").as_uint64();
+
+            // STEP 3: Find lines with patterns 
+            gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+            if( stringSegment.empty() == false ) arguments_.set("segment", stringSegment.data()); // Set the segment (code, comment, string) to search in
+            
+            auto result_ = COMMAND_ListLinesWithPattern(arguments_, patternsFind, ptableLineListLocal.get()); // Find lines with patterns and update the local table, ptableLineListLocal is thread-local
+
+            if(result_.first == false)
+            {
+               std::lock_guard<std::mutex> lockErrors(mutexErrors);
+               vectorError.push_back("File: " + stringFile + " - " + result_.second);
+
+               // Update progress even on failure
+               uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+               if(uProcessed % 10 == 0)
+               {
+                  std::lock_guard<std::mutex> lockProgress(mutexProgress);
+                  uint64_t uPercent = (uProcessed * 100) / uFileCount;
+                  MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true}});
+               }
+               continue;                                                       // Skip to next file on error
+            }
+
+            // STEP 4: Append results to main table (FAST operation - mutex needed for thread safety)
+            {
+               std::lock_guard<std::mutex> lockLineList(mutexLineList);
+               ptableLineList->append(ptableLineListLocal.get());              // Append the results from the local table to the main table
+
+               // Update total line count and check if we've exceeded the maximum
+               uint64_t uCurrentLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count()) + ptableLineListLocal->get_row_count();
+               if( uCurrentLines > uMax ) 
+               {
+                  uAtomicFileIndex.store(uFileCount);                          // Signal other threads to stop by setting file index to max
+               }
+            }
+            
+            ptableLineListLocal->row_clear();                                  // Clear local table rows for next iteration
+
+            // Update progress (thread-safe)
+            uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+            if(uProcessed % 10 == 0)                                           // Show progress every 10 files
+            {
+               std::lock_guard<std::mutex> lockProgress(mutexProgress);
+               uint64_t uPercent = (uProcessed * 100) / uFileCount;
+               MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true}});
+            }
+         }
+         catch(const std::exception& exception_)
+         {
+            std::lock_guard<std::mutex> lockErrors(mutexErrors);
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+         }      
       }
+   };
 
-      // ## Generate the full file path (folder + filename)
-      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
-      gd::file::path pathFile(string_);
-      string_ = itRowFile.cell_get_variant_view("filename").as_string();
-      pathFile += string_;
-      std::string stringFile = pathFile.string();
+   // ## Prepare and run threads ..............................................
 
-      auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
+   if( iThreadCount <= 0 ) { iThreadCount = std::thread::hardware_concurrency(); } // Use hardware concurrency if no thread count is specified
+   if(iThreadCount <= 0) { iThreadCount = 1; }                                 // Fallback to single thread if hardware_concurrency returns 0
+   if( iThreadCount > 8 ) { iThreadCount = 8; }                                // Limit to 8 threads for performance and resource management
+   if( ptableFile->size() < iThreadCount ) { iThreadCount = (int)ptableFile->size(); } // Limit threads to number of files
 
-      // Find lines with patterns and update the "file-linelist" table
-      gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
-      if( stringSegment.empty() == false ) arguments_.set("segment", stringSegment.data()); // Set the segment (code, comment, string) to search in
-      auto result_ = COMMAND_ListLinesWithPattern( arguments_ , patternsFind, ptableLineList );
-      if(result_.first == false)
-      {
-         ERROR_Add(result_.second); // Add error to the internal error list
-      }
+   // Create and launch worker threads
+   std::vector<std::thread> vectorPatternThread;
+   vectorPatternThread.reserve(iThreadCount);
 
-      if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
+   for(int i = 0; i < iThreadCount; ++i) { vectorPatternThread.emplace_back(process_, i); }
+
+   // Wait for all threads to complete
+   for(auto& threadWorker : vectorPatternThread) { threadWorker.join(); }
+
+   MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
+
+   // ### Handle any collected errors
+   if(!vectorError.empty())
+   {
+      for(const auto& stringError : vectorError) { ERROR_Add(stringError); }
    }
-
-   MESSAGE_Progress("", {{"clear", true}});
 
    return {true, ""};
 }
 
+
 /** ---------------------------------------------------------------------------
- * @brief Updates the pattern list for files in the cache using regex patterns.
+ * @brief Updates the pattern list for files in the cache using regex patterns and multithreading.
  *
  * This method processes a list of regex patterns and applies them to the files stored in the cache.
  * It generates a list of lines in each file where the patterns are found and stores the results
- * in the "file-linelist" cache table.
+ * in the "file-linelist" cache table. The method uses multithreading to process files in parallel.
  *
  * @param vectorRegexPatterns A vector of pairs containing regex patterns and their names.
  *                            The vector must not be empty.
- * @param argumentsList The arguments containing additional parameters such as state and max lines.
+ * @param argumentsList Arguments for pattern processing (e.g., segment specification, max lines)
+ * @param iThreadCount Number of threads to use (0 = auto-detect)
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
@@ -866,57 +947,136 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
  * @pre The `vectorRegexPatterns` must not be empty.
  * @post The "file-linelist" cache table is updated with the lines where the patterns are found.
  *
- * @details
- * - The method ensures that the "file-linelist" cache table is prepared and available.
- * - For each file in the "file" cache table, it generates the full file path by combining
- *   the "folder" and "filename" columns.
- * - It then calls the `COMMAND_ListLinesWithPattern` function to find the lines in the file
- *   that match the regex patterns and updates the "file-linelist" table with the results.
- * - If an error occurs during the process, it is added to the internal error list.
+ * @note COMMAND_ListLinesWithPattern must be thread-safe.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternList( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList )
-{                                                                                                  assert(vectorRegexPatterns.empty() == false); // Ensure the rpattern list is not empty
-   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector<std::pair<boost::regex, std::string>>& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList, int iThreadCount)
+{                                                                                                  assert(vectorRegexPatterns.empty() == false); // Ensure the regex pattern list is not empty
+   using namespace gd::table;
+   
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
-                                                                                                   assert(ptableFile != nullptr);
+   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
+                                                                                                   assert(ptableFile != nullptr); assert(ptableLineList != nullptr);
+
    std::string_view stringSegment;
    if( argumentsList.exists("segment") == true ) { stringSegment = argumentsList["segment"].as_string_view(); } // Get the segment (code, comment, string) to search in
 
-   uint64_t uFileIndex = 0; // index for file table
-   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
-   uint64_t uMax = argumentsList["max"].as_uint64(); // Get the maximum number of lines to be printed
-   for(const auto& itRowFile : *ptableFile)
+   uint64_t uMax = argumentsList["max"].as_uint64();                          // Get the maximum number of lines to be printed
+   auto uFileCount = ptableFile->get_row_count();                             // Total number of files to process
+
+   // ## Thread synchronization variables
+
+   std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
+   std::atomic<uint64_t> uAtomicProcessedCount(0);                            // Count of processed files
+   std::atomic<uint64_t> uAtomicTotalLines(0);                                // Total lines found across all threads
+   //std::mutex mutexProgress;                                                  // Mutex to protect progress updates
+   std::mutex mutexLineList;                                                  // Mutex to protect ptableLineList access
+   std::vector<std::string> vectorError;                                      // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
+
+   // ## Prepare columns for line list table 
+   detail::columns* pcolumnsThread = new detail::columns{};
+   ptableLineList->to_columns( *pcolumnsThread );
+
+
+   // ## Worker function to process files in parallel .........................
+   auto process_ = [&](int iThreadId) -> void
    {
-      // ## calculate percentage for progress message
-
-      uFileIndex++;                                                            // increment file index for each file, used for progress message
-      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
+      // Create thread-local table for collecting results
+      std::unique_ptr<table> ptableLineListLocal = std::make_unique<table>(pcolumnsThread, 10, ptableLineList->get_flags(), 10); // Create local table with 10 rows pre-allocated
+      
+      while( true )
       {
-         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
-         MESSAGE_Progress( "", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true} });
+         uint64_t uRowIndex = uAtomicFileIndex.fetch_add(1);                  // get thread safe current index and increment it
+         if(uRowIndex >= uFileCount) { break; }
+         
+         try
+         {
+            // STEP 1: Get file info (ptableFile is read-only so no mutex needed)
+            auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
+            auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
+
+            // STEP 2: Build full file path
+            gd::file::path pathFile(stringFolder);
+            pathFile += stringFilename;
+            std::string stringFile = pathFile.string();
+
+            auto uKey = ptableFile->cell_get_variant_view(uRowIndex, "key").as_uint64();
+
+            // STEP 3: Find lines with regex patterns 
+            gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+            if( stringSegment.empty() == false ) arguments_.set("segment", stringSegment.data()); // Set the segment (code, comment, string) to search in
+            
+            auto result_ = COMMAND_ListLinesWithPattern(arguments_, vectorRegexPatterns, ptableLineListLocal.get()); // Find lines with regex patterns and update the local table
+
+            if(result_.first == false)
+            {
+               std::lock_guard<std::mutex> lockErrors(mutexErrors);
+               vectorError.push_back("File: " + stringFile + " - " + result_.second);
+
+               uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;   // Update progress even on failure
+               if(uProcessed % 10 == 0)
+               {
+                  //std::lock_guard<std::mutex> lockProgress(mutexProgress);
+                  uint64_t uPercent = (uProcessed * 100) / uFileCount;
+                  MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true}});
+               }
+               continue;                                                       // Skip to next file on error
+            }
+
+            // STEP 4: Append results to main table (FAST operation - mutex needed for thread safety)
+            {
+               std::lock_guard<std::mutex> lockLineList(mutexLineList);
+               ptableLineList->append(ptableLineListLocal.get());              // Append the results from the local table to the main table
+
+               // Update total line count and check if we've exceeded the maximum
+               uint64_t uCurrentLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count()) + ptableLineListLocal->get_row_count();
+               if( uCurrentLines > uMax ) 
+               {
+                  uAtomicFileIndex.store(uFileCount);                          // Signal other threads to stop by setting file index to max
+               }
+            }
+            
+            ptableLineListLocal->row_clear();                                  // Clear local table rows for next iteration
+
+            uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;      // Update progress (thread-safe)
+            if(uProcessed % 10 == 0)                                           // Show progress every 10 files
+            {
+               //std::lock_guard<std::mutex> lockProgress(mutexProgress);
+               uint64_t uPercent = (uProcessed * 100) / uFileCount;
+               MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true}});
+            }
+         }
+         catch(const std::exception& exception_)
+         {
+            std::lock_guard<std::mutex> lockErrors(mutexErrors);
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+         }      
       }
+   };
 
-      // ## Generate the full file path (folder + filename)
-      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
-      gd::file::path pathFile(string_);
-      string_ = itRowFile.cell_get_variant_view("filename").as_string();
-      pathFile += string_;
-      std::string stringFile = pathFile.string();
+   // ## Prepare and run threads ..............................................
 
-      auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
+   if( iThreadCount <= 0 ) { iThreadCount = std::thread::hardware_concurrency(); } // Use hardware concurrency if no thread count is specified
+   if(iThreadCount <= 0) { iThreadCount = 1; }                                 // Fallback to single thread if hardware_concurrency returns 0
+   if( iThreadCount > 8 ) { iThreadCount = 8; }                                // Limit to 8 threads for performance and resource management
+   if( ptableFile->size() < iThreadCount ) { iThreadCount = (int)ptableFile->size(); } // Limit threads to number of files
 
-      // Find lines with patterns and update the "file-linelist" table
-      gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
-      if( stringSegment.empty() == false ) arguments_.set("segment", stringSegment.data()); // Set the segment (code, comment, string) to search in
-      auto result_ = COMMAND_ListLinesWithPattern( arguments_, vectorRegexPatterns, ptableLineList );
-      if(result_.first == false)
-      {
-         ERROR_Add(result_.second); // Add error to the internal error list
-      }
-      if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
+   // Create and launch worker threads
+   std::vector<std::thread> vectorPatternThread;
+   vectorPatternThread.reserve(iThreadCount);
+
+   for(int i = 0; i < iThreadCount; ++i) { vectorPatternThread.emplace_back(process_, i); }
+
+   // Wait for all threads to complete
+   for(auto& threadWorker : vectorPatternThread) { threadWorker.join(); }
+
+   MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
+
+   // ### Handle any collected errors
+   if(!vectorError.empty())
+   {
+      for(const auto& stringError : vectorError) { ERROR_Add(stringError); }
    }
-
-   MESSAGE_Progress("", {{"clear", true}});
 
    return {true, ""};
 }

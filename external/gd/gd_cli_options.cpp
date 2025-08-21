@@ -264,7 +264,6 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
 /** ---------------------------------------------------------------------------
  * @brief parse complete string similar to parsing arguments passed to applications executed in console
  * @param stringArgument string with arguments passed
- * @param stringSplit string that splits arguments
  * @return true if ok, false and error information on error
  */
 std::pair<bool, std::string> options::parse(const std::string_view& stringArgument)
@@ -276,6 +275,39 @@ std::pair<bool, std::string> options::parse(const std::string_view& stringArgume
 
    const char** ppbszArgument = nullptr;
    
+   if(vectorArgument.empty() == false)
+   {
+      ppbszArgument = new const char*[vectorArgument.size()];                  // allocate pointer to pointer buffer to point to all found parts in string.
+
+      for(auto it = std::begin(vectorArgument), itEnd = std::end(vectorArgument); it != itEnd; it++)
+      {
+         ppbszArgument[std::distance( std::begin(vectorArgument), it )] = it->c_str();
+      }
+
+      result_ = parse( (int)vectorArgument.size(), ppbszArgument, nullptr );
+
+
+      delete [] ppbszArgument;
+   }
+
+   return result_;
+}
+
+
+/** ---------------------------------------------------------------------------
+* @brief parse complete string similar to parsing arguments passed to applications executed in console
+* @param stringArgument string with arguments passed, formatted like command line arguments
+* @return true if ok, false and error information on error
+*/
+std::pair<bool, std::string> options::parse_terminal(const std::string_view& stringArgument)
+{
+   std::vector< std::string > vectorArgument;
+   std::pair<bool, std::string> result_ = parse_terminal_s(stringArgument, vectorArgument); // parse string into vector of strings 
+
+   if( result_.first == false ) return result_;                               // if error then return error
+
+   const char** ppbszArgument = nullptr;
+
    if(vectorArgument.empty() == false)
    {
       ppbszArgument = new const char*[vectorArgument.size()];                  // allocate pointer to pointer buffer to point to all found parts in string.
@@ -310,14 +342,14 @@ std::pair<bool, std::string> options::parse_s(const std::string_view& stringComm
 {
    std::string stringCurrentArgument;
 
-   enum class StateType 
+   enum class enumState 
    {
-      NORMAL,          // Outside quotes
-      DOUBLE_QUOTED,   // Inside double quotes
-      SINGLE_QUOTED    // Inside single quotes
+      eStateNormal,          // Outside quotes
+      eStateDoubleQuoted,   // Inside double quotes
+      eStateSingleQuoted    // Inside single quotes
    };
 
-   StateType eState = StateType::NORMAL;
+   enumState eState = enumState::eStateNormal;
    bool bEscapeNext = false;
 
    // ## Parse the command line string character by character
@@ -336,10 +368,10 @@ std::pair<bool, std::string> options::parse_s(const std::string_view& stringComm
 
       switch( eState )
       {
-      case StateType::NORMAL:
+      case enumState::eStateNormal:
          if( iCharacter == '\\' ) { bEscapeNext = true; }
-         else if( iCharacter == '"' ) { eState = StateType::DOUBLE_QUOTED; }
-         else if( iCharacter == '\'' ) { eState = StateType::SINGLE_QUOTED; }
+         else if( iCharacter == '"' ) { eState = enumState::eStateDoubleQuoted; }
+         else if( iCharacter == '\'' ) { eState = enumState::eStateSingleQuoted; }
          else if( isspace(iCharacter) != 0 )
          {
             if( stringCurrentArgument.empty() == false )                      // End of current argument
@@ -353,21 +385,21 @@ std::pair<bool, std::string> options::parse_s(const std::string_view& stringComm
          else { stringCurrentArgument += iCharacter; }
          break;
 
-      case StateType::DOUBLE_QUOTED:
+      case enumState::eStateDoubleQuoted:
          if( iCharacter == '\\' ) { bEscapeNext = true;  }
-         else if( iCharacter == '"' ) {eState = StateType::NORMAL; }
+         else if( iCharacter == '"' ) {eState = enumState::eStateNormal; }
          else { stringCurrentArgument += iCharacter; }
          break;
 
-      case StateType::SINGLE_QUOTED:
-         if( iCharacter == '\'' ) { eState = StateType::NORMAL; }
+      case enumState::eStateSingleQuoted:
+         if( iCharacter == '\'' ) { eState = enumState::eStateNormal; }
          else { stringCurrentArgument += iCharacter; }                        // In single quotes, everything is literal (no escaping)
          break;
       }
    }
 
    // Check for unmatched quotes
-   if( eState != StateType::NORMAL )
+   if( eState != enumState::eStateNormal )
    {
       return { false, "Unmatched quotes in command line" };                   // Return error if quotes are unmatched
    }
@@ -377,6 +409,154 @@ std::pair<bool, std::string> options::parse_s(const std::string_view& stringComm
    {
       vectorArguments.push_back(stringCurrentArgument);
    }
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Parse command line argument string into vector of individual arguments
+ * 
+ * Handles quoted arguments, escaped characters, and whitespace separation following
+ * POSIX shell parsing rules more closely. Supports both single and double quotes
+ * with proper escaping behavior that matches terminal shells.
+ * 
+ * @param stringCommandLine The command line string to parse
+ * @param vectorArguments Vector to store parsed arguments (will be cleared first)
+ * @return std::pair<bool, std::string> indicating success or failure with error message if any
+ */
+std::pair<bool, std::string> options::parse_terminal_s(const std::string_view& stringCommandLine, std::vector<std::string>& vectorArguments)
+{
+   vectorArguments.clear(); // Clear existing arguments
+
+   if( stringCommandLine.empty() == true ) { return { true, "" }; }
+
+   std::string stringCurrentArgument;
+   enum class enumState
+   {
+      eStateNormal,          // Outside quotes
+      eStateDoubleQuoted,   // Inside double quotes
+      eStateSingleQuoted    // Inside single quotes
+   };
+
+   enumState eState = enumState::eStateNormal;
+   bool bEscapeNext = false;
+
+   // Parse the command line string character by character
+   for( size_t uPosition = 0; uPosition < stringCommandLine.length(); ++uPosition )
+   {
+      char iCharacter = stringCommandLine[uPosition];
+
+      // Handle escaped character
+      if( bEscapeNext )
+      {
+         // In terminal, some escape sequences have special meaning
+         switch( iCharacter )
+         {
+         case 'n':  stringCurrentArgument += '\n'; break;
+         case 't':  stringCurrentArgument += '\t'; break;
+         case 'r':  stringCurrentArgument += '\r'; break;
+         case '\\': stringCurrentArgument += '\\'; break;
+         case '"':  stringCurrentArgument += '"'; break;
+         case '\'': stringCurrentArgument += '\''; break;
+         case ' ':  stringCurrentArgument += ' '; break;
+         default:
+            // For other characters, include the backslash (terminal behavior)
+            stringCurrentArgument += '\\';
+            stringCurrentArgument += iCharacter;
+            break;
+         }
+         bEscapeNext = false;
+         continue;
+      }
+
+      switch( eState )
+      {
+      case enumState::eStateNormal:
+         if( iCharacter == '\\' ) { bEscapeNext = true; }
+         else if( iCharacter == '"' ) { eState = enumState::eStateDoubleQuoted; }
+         else if( iCharacter == '\'' ) { eState = enumState::eStateSingleQuoted; }
+         else if( std::isspace(static_cast<unsigned char>( iCharacter )) )
+         {
+            if( !stringCurrentArgument.empty() )
+            {
+               vectorArguments.push_back(stringCurrentArgument);
+               stringCurrentArgument.clear();
+            }
+            // Skip consecutive whitespace
+            while( uPosition + 1 < stringCommandLine.length() &&
+               std::isspace(static_cast<unsigned char>( stringCommandLine[uPosition + 1] )) )
+            {
+               ++uPosition;
+            }
+         }
+         else
+         {
+            stringCurrentArgument += iCharacter;
+         }
+         break;
+
+      case enumState::eStateDoubleQuoted:
+         if( iCharacter == '\\' )
+         {
+            // In double quotes, only certain characters can be escaped
+            if( uPosition + 1 < stringCommandLine.length() )
+            {
+               char iNextChar = stringCommandLine[uPosition + 1];
+               if( iNextChar == '"' || iNextChar == '\\' || iNextChar == '$' ||
+                   iNextChar == '`' || iNextChar == '\n' )
+               {
+                  bEscapeNext = true;
+               }
+               else
+               {
+                  // Backslash is literal if not followed by escapable character
+                  stringCurrentArgument += iCharacter;
+               }
+            }
+            else
+            {
+               // Backslash at end of string is literal
+               stringCurrentArgument += iCharacter;
+            }
+         }
+         else if( iCharacter == '"' )
+         {
+            eState = enumState::eStateNormal;
+         }
+         else
+         {
+            stringCurrentArgument += iCharacter;
+         }
+         break;
+
+      case enumState::eStateSingleQuoted:
+         if( iCharacter == '\'' )
+         {
+            eState = enumState::eStateNormal;
+         }
+         else
+         {
+            // In single quotes, everything is literal (no escaping possible)
+            stringCurrentArgument += iCharacter;
+         }
+         break;
+      }
+   }
+
+   // Check for unmatched quotes
+   if( eState != enumState::eStateNormal )
+   {
+      std::string stringError = ( eState == enumState::eStateDoubleQuoted ) ?
+         "Unmatched double quote in command line" :
+         "Unmatched single quote in command line";
+      return { false, stringError };
+   }
+
+   // Check for trailing escape
+   if( bEscapeNext ) { return { false, "Trailing escape character in command line" }; }
+
+   // Add final argument if any
+   if( stringCurrentArgument.empty() == false ) { vectorArguments.push_back(stringCurrentArgument); }
 
    return { true, "" };
 }
@@ -589,10 +769,10 @@ void options::iif( const std::string_view& stringName, std::function< void( cons
  * 
  * // Parse command-line arguments
  * auto [ok, err] = cli_options.parse(argc, argv);
- * if (!ok) { std::cerr << err << std::endl; return 1; }
+ * if(!ok) { std::cerr << err << std::endl; return 1; }
  * 
  * // Check if "input" option exists (is set)
- * if (cli_options.exists("input", gd::types::tag_state_active{})) {
+ * if(cli_options.exists("input", gd::types::tag_state_active{})) {
  *     std::cout << "Input option is set." << std::endl;
  * }
  * @endcode

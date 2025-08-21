@@ -1117,10 +1117,25 @@ public:
    void set_flags( unsigned uSet, unsigned uClear ) { m_uFlags |= uSet; m_uFlags &= ~uClear; }
    unsigned get_flags() const { return m_uFlags; }
    unsigned get_severity() const { return m_uSeverity;  }
+   unsigned get_severity_level() const { return (m_uSeverity & 0xFF);  }
    void set_severity( unsigned uSeverity ) { m_uSeverity = uSeverity;  }
    /// Set severity level only (not touching severity group)
    /// Level is the one to use i 99 cases of 100. Level is the lower byte in `m_uSeverity` member
    void set_severity_Level( unsigned uSeverity ) { assert( uSeverity < eSeverityNumberMAX ); m_uSeverity = (m_uSeverity & 0xFFFF'FF00) + uSeverity; }
+
+   // ## severity methods, used to check if message is of specific severity level
+   //    These methods are used to check if message is of specific severity level and remember that 
+   //    severity is a bit mask, so it is possible to check if message is of specific severity level
+   //    or equal or above severity level below e.g. eSeverityError is on if eSeverityNumberDebug is set
+
+   bool is_severity_debug() const { return check_severity( eSeverityDebug ); }
+   bool is_severity_info() const { return check_severity(eSeverityInformation); }
+   bool is_severity_warning() const { return check_severity(eSeverityWarning); }
+   bool is_severity_error() const { return check_severity(eSeverityError); }
+   bool is_severity_fatal() const { return check_severity(eSeverityFatal); }
+   bool is_severity_none() const { return check_severity(eSeverityNone); }
+
+
 //@}
 
 /** \name OPERATION
