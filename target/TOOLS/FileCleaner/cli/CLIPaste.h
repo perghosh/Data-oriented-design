@@ -26,6 +26,8 @@
 
 NAMESPACE_CLI_BEGIN
 
+std::pair<bool,std::string> Paste_g( const gd::cli::options* poptionsCount, gd::cli::options* poptionsRoot );
+
 NAMESPACE_CLI_END
 
 
