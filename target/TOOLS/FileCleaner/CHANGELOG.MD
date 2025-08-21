@@ -6,6 +6,8 @@
 - Introduced a new `--parallel` option to the `find` command to enable parallel processing of files.
 - All `count` searches are now performed in parallel, significantly speeding up the counting process for large codebases.
 - Local `config` option argument added to specify a configuration file to use for the cleaner. This allows you to have different configurations for different projects or tasks.
+- New `paste` command that reads clipboard content and pastes it into the cleaner. This allows you to quickly add content from the clipboard to the cleaner without having to type it in manually.
+- `list` command is parallelized, which means that it can now process multiple files at the same time, improving performance for large codebases.
 
 ## v1.0.3
 ### New Features

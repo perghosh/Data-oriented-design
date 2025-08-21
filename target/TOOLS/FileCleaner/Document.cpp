@@ -968,7 +968,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
    std::atomic<uint64_t> uAtomicProcessedCount(0);                            // Count of processed files
    std::atomic<uint64_t> uAtomicTotalLines(0);                                // Total lines found across all threads
-   std::mutex mutexProgress;                                                  // Mutex to protect progress updates
+   //std::mutex mutexProgress;                                                  // Mutex to protect progress updates
    std::mutex mutexLineList;                                                  // Mutex to protect ptableLineList access
    std::vector<std::string> vectorError;                                      // Collect errors from all threads
    std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
@@ -1016,7 +1016,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
                uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;   // Update progress even on failure
                if(uProcessed % 10 == 0)
                {
-                  std::lock_guard<std::mutex> lockProgress(mutexProgress);
+                  //std::lock_guard<std::mutex> lockProgress(mutexProgress);
                   uint64_t uPercent = (uProcessed * 100) / uFileCount;
                   MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true}});
                }
@@ -1041,7 +1041,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
             uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;      // Update progress (thread-safe)
             if(uProcessed % 10 == 0)                                           // Show progress every 10 files
             {
-               std::lock_guard<std::mutex> lockProgress(mutexProgress);
+               //std::lock_guard<std::mutex> lockProgress(mutexProgress);
                uint64_t uPercent = (uProcessed * 100) / uFileCount;
                MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true}});
             }
