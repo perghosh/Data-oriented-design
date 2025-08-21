@@ -2209,7 +2209,7 @@ std::pair<bool, std::string> OS_ReadClipboard_g(std::string& stringClipboard)
       {
          stringResult += piBuffer;
       }
-      pclose(pfile);                                                              // Close the pipe to the clipboard command
+      pclose(pfile);                                                           // Close the pipe to the clipboard command
    }
    else if( stringOS == "wsl" )
    {
@@ -2221,7 +2221,20 @@ std::pair<bool, std::string> OS_ReadClipboard_g(std::string& stringClipboard)
       {
          stringResult += piBuffer;
       }
-      pclose(pfile);                                                              // Close the pipe to the clipboard command
+      pclose(pfile);                                                           // Close the pipe to the clipboard command
+   }
+   else if( stringOS == "macos" || stringOS == "darwin" )
+   {
+      // Use pbpaste command on macOS
+      FILE* pfile = popen("pbpaste", "r");
+      if( pfile == nullptr ) { return { false, "Failed to access macOS clipboard" }; }
+
+      char piBuffer[1024];
+      while( fgets(piBuffer, sizeof(piBuffer), pfile) ) 
+      {
+         stringResult += piBuffer;
+      }
+      pclose(pfile);                                                           // Close the pipe to the clipboard command
    }
    else
    {

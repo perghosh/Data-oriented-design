@@ -67,6 +67,7 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 #include "cli/CLIHistory.h"
 #include "cli/CLIKeyValue.h"
 #include "cli/CLIList.h"
+#include "cli/CLIPaste.h"
 #include "cli/CLIRun.h"
 
 
@@ -260,6 +261,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    // ## Set OS-specific settings
 #ifdef _WIN32
    papplication_g->PROPERTY_Add("os", "windows");                              // set OS to windows
+#elif defined(__APPLE__)
+   papplication_g->PROPERTY_Add("os", "macos");                                // set OS to macOS/Darwin
 #else
    std::ifstream file_("/proc/version"); // open the file with os information to read the first line
    if( file_.is_open() == false ) { papplication_g->PROPERTY_Add("os", "linux"); }
@@ -662,8 +665,8 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       if( result_.first == false ) return result_;
    }
 
-   auto* pdocument = DOCUMENT_Add(stringCommandName);
-   if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
+   //auto* pdocument = DOCUMENT_Add(stringCommandName);
+   //if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
 
    if( stringCommandName == "config" )                                         // command = "config"
    {
@@ -719,6 +722,10 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       if( bUseThreads == true ) { return execute_(CLI::List_g, poptionsActive->clone_arguments(), pdocument); } // list lines in file or directory with the matched pattern in its own thread
       else                      { return CLI::List_g(poptionsActive, pdocument); }// list lines in file or directory with the matched pattern
       if( pdocument->ERROR_Empty() == false ) { pdocument->ERROR_Print(); }
+   }
+   else if( stringCommandName == "paste" )
+   {
+      return CLI::Paste_g( poptionsActive, &optionsApplication );
    }
    else if( stringCommandName == "run" )
    { 
@@ -2069,6 +2076,14 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+
+   {  // ## `paste` checks the clipboard for text or input file reading arguments
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "paste", "Paste text from clipboard or read from input file" );
+      optionsCommand.add({"source", 's', "Files to join"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
+
 
 
    {  // ## `help` print help about @TAG #options.help
