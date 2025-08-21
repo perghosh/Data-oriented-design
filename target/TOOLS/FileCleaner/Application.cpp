@@ -434,7 +434,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          {
             HISTORY_SaveCommand(pathHistoryCurrent.string()); // Save the command to history in current directory
          }
-         if( std::filesystem::exists(pathHistoryHome) == true && !(std::filesystem::exists(pathHistoryCurrent) == true) )
+         if( std::filesystem::exists(pathHistoryHome) == true && std::filesystem::exists(pathHistoryCurrent) == false )
          {
             HISTORY_SaveCommand(pathHistoryHome.string()); // Save the command to history in home directory
          }
@@ -707,7 +707,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    else if( stringCommandName == "history" )
    {
       auto* pdocument = DOCUMENT_Get("history", true );
-      auto result_ = CLI::History_g( poptionsActive, pdocument );
+      auto result_ = CLI::History_g( poptionsActive, &optionsApplication, pdocument );
    }
    else if( stringCommandName == "kv" )
    {
