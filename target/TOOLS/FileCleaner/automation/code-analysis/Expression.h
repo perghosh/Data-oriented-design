@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "gd/expression/gd_expression_runtime.h"
 #include "gd/expression/gd_expression_parse_state.h"
 #include "gd/parse/gd_parse_window_line.h"
 

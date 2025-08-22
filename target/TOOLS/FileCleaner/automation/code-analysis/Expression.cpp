@@ -1,6 +1,7 @@
 #include <filesystem>
 
 #include "gd/gd_variant_view.h"
+#include "gd/gd_arguments_shared.h"
 #include "gd/gd_table_aggregate.h"
 
 #include "gd/math/gd_math_string.h"
@@ -9,6 +10,8 @@
 #include "gd/expression/gd_expression_token.h"
 #include "gd/expression/gd_expression_method_01.h"
 #include "gd/expression/gd_expression_runtime.h"
+
+#include "gd/expression/gd_expression_glue_to_gd.h"
 
 #include "../../Application.h"
 
@@ -23,6 +26,26 @@ static std::pair<bool, std::string> CountLines_s( const std::vector<value>& vect
 {                                                                                                  assert(vectorArgument.size() > 0);
 
    return { true, "" };
+}
+
+
+static std::pair<bool, std::string> GetArgument_s( const std::vector<value>& vectorArgument, value* pvalueReturn )
+{                                                                                                  assert(vectorArgument.size() > 1);
+   auto object_ = vectorArgument[1];                                                               assert(object_.is_pointer() == true);
+   gd::argument::shared::arguments* parguments_ = (gd::argument::shared::arguments*)object_.get_pointer();
+
+   auto& name_ = vectorArgument[0];
+   if( name_.is_string() == true )
+   {
+      std::string stringName( name_.as_string() );
+      if( stringName.empty() == true ) { return { false, "Argument name cannot be empty." }; }
+      auto variantview_ = ( *parguments_ )[stringName].as_variant_view();
+      *pvalueReturn = to_value_g( variantview_ );
+
+      return { true, "" };
+   }
+
+   return { false, "Invalid argument name type, expected string." };
 }
 
 static std::pair<bool, std::string> SelectAll_s( const std::vector<value>& vectorArgument, value* pvalueReturn )
@@ -121,10 +144,12 @@ static std::pair<bool, std::string> SelectBetween_s( const std::vector<value>& v
 // Array of MethodInfo for visual studio operations
 const method pmethodSelect_g[] = {
    { (void*)&CountLines_s, "count_lines", 1, 0 },
+   { (void*)&GetArgument_s, "get_argument", 2, 1 },
    { (void*)&SelectAll_s, "select_all", 1, 1 },
    { (void*)&SelectBetween_s, "select_between", 3, 2 },
    { (void*)&SelectLine_s, "select_line", 2, 1 },
    { (void*)&SelectLines_s, "select_lines", 3, 1 },
+   //{ (void*)&SetArgument_s, "set_argument", 3, 0 },
 };
 
 const size_t uMethodSelectSize_g = sizeof(pmethodSelect_g) / sizeof(gd::expression::method);

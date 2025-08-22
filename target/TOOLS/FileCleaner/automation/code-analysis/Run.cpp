@@ -117,3 +117,43 @@ std::pair<bool, std::string> RunExpression_g(const std::string_view& stringExpre
 
    return { true, "" }; // Placeholder for actual implementation
 }
+
+
+
+std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& stringExpression, gd::table::arguments::table* ptableKeyValue)
+{
+   // ## convert string to tokens
+
+   std::vector<gd::expression::token> vectorToken;
+   std::pair<bool, std::string> result_ = gd::expression::token::parse_s(stringExpression, vectorToken, gd::expression::tag_formula{});
+   if( result_.first == false ) { return result_; }
+
+   // ## compile tokens and that means to convert tokens to postfix, place them in correct order to be processed
+
+   std::vector<gd::expression::token> vectorPostfix;
+   result_ = gd::expression::token::compile_s(vectorToken, vectorPostfix, gd::expression::tag_postfix{});
+   if( result_.first == false ) { return result_; }
+
+   // ## create runtime and add methods for operations
+
+   gd::expression::runtime runtime_;
+   runtime_.add( { (unsigned)uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
+   runtime_.add( { (unsigned)uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
+   runtime_.add( { (unsigned)uMethodSelectSize_g, pmethodSelect_g, std::string("source")});
+
+   for( uint64_t uRow = 0; uRow < ptableKeyValue->size(); uRow++ )
+   {
+      auto* parguments_ = ptableKeyValue->row_get_arguments_pointer(uRow);
+      if( parguments_ == nullptr ) { continue; }                              // if there are no arguments, we cannot evaluate the expression
+
+      runtime_.set_variable( "args", std::pair<const char*, void*>("args", parguments_)); // set source variable to the expression source
+
+      gd::expression::value valueResult;
+      std::vector<gd::expression::value> vectorReturn;
+      result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_);
+      if( result_.first == false ) { return result_; }
+   }
+
+   
+   return { true, "" };
+}

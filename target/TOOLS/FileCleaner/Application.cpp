@@ -295,7 +295,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 #endif
 
 
-      PROPERTY_Add("arguments", stringArgument);                                                   LOG_DEBUG_RAW("== Arguments: " & stringArgument);
+      PROPERTY_Add("arguments", stringArgument);
 
       gd::cli::options optionsApplication;
       CApplication::Prepare_s(optionsApplication);                             // prepare command-line options
@@ -1994,6 +1994,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "footer", "select columns or keys to include in the output as footer."});
       optionsCommand.add({ "brief", "Enable brief output format for key-value pairs. Based on output format this varies but generally shows a condensed view to simplify understanding."});
       optionsCommand.add({ "kv-format", "Define the **scoping format** for how key-value pairs are identified and extracted. This helps the tool understand the structure of your key-value data."});
+      optionsCommand.add({ "kv-where", "Specify conditions for filtering key-value pairs. This allows for more precise extraction based on specific criteria." });
       optionsCommand.add({ "context", "Display **surrounding code or text** to provide context for each search result. This helps you understand where the match occurred."});
       optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the search. This helps narrow down your search and improve performance."});
       optionsCommand.add({ "segment", "Limit the search to specific **types of code segments**, such as functions, classes, or comments. This refines your search to relevant code blocks. Valid segments are `code`, `string` or `comment`."});

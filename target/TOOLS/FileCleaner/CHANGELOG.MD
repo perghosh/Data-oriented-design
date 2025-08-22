@@ -8,6 +8,7 @@
 - Local `config` option argument added to specify a configuration file to use for the cleaner. This allows you to have different configurations for different projects or tasks.
 - New `paste` command that reads clipboard content and pastes it into the cleaner. This allows you to quickly add content from the clipboard to the cleaner without having to type it in manually.
 - `list` command is parallelized, which means that it can now process multiple files at the same time, improving performance for large codebases.
+- `kv-where` filter for key value pairs added to the `find` command. This allows you to filter results based on specific key value pairs, making it easier to find relevant information.
 
 ## v1.0.3
 ### New Features
