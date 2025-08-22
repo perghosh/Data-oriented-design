@@ -68,9 +68,10 @@ static std::filesystem::path GetHistoryPath_s();
 
 static std::filesystem::path CurrentDirectory_s();
 
-std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, CDocument* pdocument)
+std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, gd::cli::options* poptionsApplication, CDocument* pdocument)
 {
    const gd::cli::options& options_ = *poptionsHistory;
+   //const gd::cli::options& optionsApplication = *poptionsApplication;
    if( options_.exists("create") == true )
    {
       gd::argument::arguments argumentsCreate;
@@ -97,6 +98,11 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    {
       gd::argument::arguments argumentsEdit({ "edit", options_["edit"].as_string() });
       auto result_ = HistoryEdit_g();
+   }
+   else if( options_.exists("run") == true )
+   {
+      gd::argument::arguments argumentsRun({ "run", options_["run"].as_string() });
+      auto result_ = HistoryRun_g(argumentsRun, poptionsApplication, pdocument);
    }
 
    return { true, "" };
@@ -342,6 +348,34 @@ std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argume
    return { true, "" };
 }
 
+std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument)
+{
+   //std::string stringFileName = argumentsRun["file"].as_string();
+   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+   ReadFile_s(*ptable, argumentsRun); // Read the history file into the table
+
+   std::string stringCommand;
+   std::string stringRun = argumentsRun["run"].as_string();
+   int iRow = std::stoi(stringRun) - 1;
+
+   stringCommand = ptable->cell_get_variant_view(iRow, "line").as_string();
+
+   if( stringCommand.empty() == false )
+   {
+      poptionsApplication->clear();
+      poptionsApplication->set_first(0);
+
+      auto result_ = poptionsApplication->parse_terminal(stringCommand); // Parse the command line from the history entry
+      if( result_.first = false ) { return result_; }
+
+      result_ = papplication_g->Initialize(*poptionsApplication); // Initialize the application with parsed options
+      if( result_.first == false ) { return result_; }
+   }
+
+
+   return { true, "" };
+}
+
 std::pair<bool, std::string> HistoryEdit_g()
 {
 
@@ -438,7 +472,23 @@ std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argume
 
 std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable)
 {
-   std::string stringFileName = argumentsTable["file"].as_string();
+   std::string stringFileName; //= argumentsTable["file"].as_string();
+
+   std::filesystem::path pathHistoryCurrent; //= std::filesystem::current_path() / ".cleaner-history.xml"; // Default history location in current directory
+   std::filesystem::path pathHistoryHome;
+
+   CApplication::HistoryFindFile_s(pathHistoryCurrent, 2);                              // Get the local history location, 2 directory levels up
+   CApplication::HistoryLocation_s(pathHistoryHome);
+
+   if( std::filesystem::exists(pathHistoryCurrent) == true )
+   {
+      stringFileName = pathHistoryCurrent.string(); // Use the current directory history file if it exists
+   }
+   if( std::filesystem::exists(pathHistoryHome) == true && std::filesystem::exists(pathHistoryCurrent) == false )
+   {
+      stringFileName = pathHistoryHome.string(); // Use the home directory history file if it exists
+   }
+
    assert(!stringFileName.empty());
    //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
 
