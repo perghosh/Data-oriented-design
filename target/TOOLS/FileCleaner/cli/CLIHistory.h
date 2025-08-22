@@ -29,7 +29,7 @@ NAMESPACE_CLI_BEGIN
 
 // ## History operations
 
-std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, CDocument* pdocument);
+std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, gd::cli::options* poptionsApplication, CDocument* pdocument);
 
 /// \brief Create logic to manage hisory for cleaner, if windows or linux this differ some based on different filesystem
 std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& argumentsCreate, CDocument* pdocument);
@@ -46,7 +46,10 @@ std::pair<bool, std::string> HistoryPrint_g( const gd::argument::arguments& argu
 /// \brief get row history table
 std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& argumentsRow, CDocument* pdocument);
 
+/// \brief Save XML file for history
 std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argumentsSave, CDocument* pdocument);
+
+std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument);
 
 /// \brief Edit history file
 std::pair<bool, std::string> HistoryEdit_g();
