@@ -348,6 +348,14 @@ std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argume
    return { true, "" };
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Executes a command from the history table based on the specified row index.
+ * @param argumentsRun The set of arguments containing the row index and other parameters.
+ * @param poptionsApplication Pointer to the application's CLI options, which will be configured and used for command execution.
+ * @param pdocument Pointer to the document object, used to access the cached history table.
+ * @return A pair where the first element is a boolean indicating success or failure, and the second element is a string containing an error message if the operation failed.
+ */
 std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument)
 {
    //std::string stringFileName = argumentsRun["file"].as_string();
@@ -356,7 +364,11 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
 
    std::string stringCommand;
    std::string stringRun = argumentsRun["run"].as_string();
-   int iRow = std::stoi(stringRun) - 1;
+   int64_t iRow = std::stoi(stringRun) - 1;
+
+   if( iRow < 0 || iRow >= ptable->size() ) { return { false, "Invalid row index: " + stringRun }; } // Ensure the row index is valid
+
+   // ## Get the command from the specified row and execute it
 
    stringCommand = ptable->cell_get_variant_view(iRow, "line").as_string();
 
@@ -365,13 +377,12 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
       poptionsApplication->clear();
       poptionsApplication->set_first(0);
 
-      auto result_ = poptionsApplication->parse_terminal(stringCommand); // Parse the command line from the history entry
+      auto result_ = poptionsApplication->parse_terminal(stringCommand);      // Parse the command line from the history entry
       if( result_.first = false ) { return result_; }
 
-      result_ = papplication_g->Initialize(*poptionsApplication); // Initialize the application with parsed options
+      result_ = papplication_g->Initialize(*poptionsApplication);             // Initialize the application with parsed options
       if( result_.first == false ) { return result_; }
    }
-
 
    return { true, "" };
 }
