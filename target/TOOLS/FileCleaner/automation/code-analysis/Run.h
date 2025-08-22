@@ -14,7 +14,9 @@
 #include "gd/gd_types.h"
 #include "gd/gd_arguments_shared.h"
 #include "gd/gd_table_column-buffer.h"
+#include "gd/gd_table_arguments.h"
 
 
 
 std::pair<bool, std::string> RunExpression_g(const std::string_view& stringExpression, const gd::argument::shared::arguments& argumentsCode, const gd::table::dto::table* ptableLineList, gd::table::dto::table* ptableSnippet );
+std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& stringExpression, gd::table::arguments::table* ptableKeyValue);

@@ -8,6 +8,10 @@
 
 #include "gd/gd_file.h"
 
+#include "gd/expression/gd_expression_value.h"
+#include "gd/expression/gd_expression_token.h"
+#include "gd/expression/gd_expression_method_01.h"
+#include "gd/expression/gd_expression_runtime.h"
 
 #include "CLI_Shared.h"
 
@@ -114,5 +118,6 @@ std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFil
    return { result == 0, result == 0 ? "" : "Failed to open configuration file." };
 #endif
 }
+
 
 NAMESPACE_CLI_END // namespace CLI

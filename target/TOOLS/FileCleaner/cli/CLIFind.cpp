@@ -20,6 +20,7 @@
 #  include "../win/VS_Command.h"
 #endif
 
+#include "../automation/code-analysis/Run.h"
 
 #include "CLIFind.h"
 
@@ -142,6 +143,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       {
          gd::argument::shared::arguments argumentsPrint;
          argumentsPrint.append( options_.get_arguments(), { "keys", "header", "footer", "brief", "width"});
+         if( options_.exists("kv-where") == true ) argumentsPrint.append("where", options_["kv-where"].as_string_view()); // if kv-where is set, add it to the print arguments
          result_ = FindPrintKeyValue_g(pdocument, &argumentsPrint);                             // Print the key-value pairs found in the files
          if( result_.first == false ) return result_;                          // if print failed, return the error
          bPrint = true;                                                        // set print to true, we have printed the results
@@ -787,7 +789,7 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
 {                                                                                                  assert(pdocument != nullptr); assert(pargumentsPrint != nullptr);
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
    auto* ptableKeyValue = pdocument->CACHE_GetTableArguments("keyvalue");     // get table for key-value pairs from the cache
-   if( ptableKeyValue->size() == 0 ) { pdocument->MESSAGE_Display("\nNo key-value pairs found."); return { true, "" }; } // if no key-value pairs found, return
+   if( ptableKeyValue == nullptr || ptableKeyValue->size() == 0 ) { pdocument->MESSAGE_Display("\nNo key-value pairs found."); return { true, "" }; } // if no key-value pairs found, return
 
    unsigned uWidth = 80; // default width for the output, can be changed by configuration
    unsigned uTextWidth = 0; // width of the text, used to align the text in the output
@@ -841,6 +843,20 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       auto name_ = it.name();
       if( name_.size() > uKeyMarginWidth ) uKeyMarginWidth = (unsigned)name_.size();// update the key width if the current key is longer
    }
+   // @TASK #keyvalue #user.per [name: keyvalue] [brief: filter key value information]
+
+   // ## check for where filter in argumentsPrint, if exists then filter the key-value pairs
+   if( pargumentsPrint->exists("where") == true )
+   {
+      std::string stringWhere = pargumentsPrint->get_argument("where").as_string();   // get the where filter from the arguments
+
+      auto result_ = RunExpression_Where_g( stringWhere, ptableKeyValue );
+      if( result_.first == false )
+      {
+         return result_; // return the error
+      }
+   }
+
 
    // ## Extract keys ......................................................... 
 

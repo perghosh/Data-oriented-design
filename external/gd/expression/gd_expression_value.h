@@ -114,6 +114,8 @@ struct value
    value& operator=(const std::string& stringValue) { m_value = stringValue; return *this; }
    value& operator=(const value& o) { common_construct(o); return *this; }
    value& operator=(value&& o) noexcept { common_construct(std::move(o)); return *this; }
+   value& operator=(const variant_t& value_) noexcept { m_value = value_; return *this; }
+   value& operator=(variant_t&& value_) noexcept { m_value = std::move(value_); return *this; }
 
    ~value() {}
    // common copy
