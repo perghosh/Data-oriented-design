@@ -75,7 +75,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    if( options_.exists("create") == true )
    {
       gd::argument::arguments argumentsCreate;
-      argumentsCreate.append( options_.get_arguments(), { "create", "current-directory"} );
+      argumentsCreate.append( options_.get_arguments(), { "create", "local"} );
 
       auto result_ = HistoryCreate_g(argumentsCreate, pdocument);
    }
