@@ -131,7 +131,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    }
    else
    {
-      stringName = "history.xml";
+      stringName = "cleaner-history.xml";
       pathDirectory = GetHistoryPath_s();                                      // Get the history path based on the operating system
    }
 
@@ -141,15 +141,43 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()}, { "print", false } , { "index", 0 } } );     // TODO: This is just temporary, we need to edit this later
     // To create a string representing the full path to "history.xml" in pathDirectory:
 
-   if( std::filesystem::exists(pathDirectory) == false && bCurrentDirectory == false )
+   if( bCurrentDirectory == true )
+   {
+      //std::filesystem::create_directory(pathDirectory); 
+      std::ofstream ofstreamFile(pathDirectory / stringName);
+      if( ofstreamFile.is_open() == false )
+      {
+         return { false, "Failed to create history file in current directory: " + (pathDirectory / stringName).string() };
+      }
+      ofstreamFile.close();
+
+      auto result_ = PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
+      if( result_.first == false ) { return result_; }
+
+      pdocument->MESSAGE_Display( "History file created: " + ( pathDirectory / stringName ).string() );
+
+   }
+   else if( std::filesystem::exists(pathDirectory) == false )
    {
       std::filesystem::create_directory(pathDirectory); 
       std::ofstream ofstreamFile(pathDirectory / stringName);
-      ofstreamFile.close();
+      /*ofstreamFile.close();
       PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
+      */
+
+      if( ofstreamFile.is_open() == false )
+      {
+         return { false, "Failed to create history file in current directory: " + (pathDirectory / stringName).string() };
+      }
+      ofstreamFile.close();
+
+      auto result_ = PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
+      if( result_.first == false ) { return result_; }
+
+      pdocument->MESSAGE_Display( "History file created: " + ( pathDirectory / stringName ).string() );
 
       //AppendEntry_s(argumentsFile, pdocument); // TODO: This is just temporary, we need to remove this later
-      
+
       //HistorySave_g(argumentsFile, pdocument); // Save the history entry to the XML file
 
       //HistoryPrint_g(argumentsFile, pdocument); // Print the history file to console, this is just for debug purposes
@@ -158,13 +186,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 
       //HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
    }
-   else if( bCurrentDirectory == true )
-   {
-      //std::filesystem::create_directory(pathDirectory); 
-      std::ofstream ofstreamFile(pathDirectory / stringName);
-      ofstreamFile.close();
-      PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
-   }
+
    //else
    //{
    //   HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
