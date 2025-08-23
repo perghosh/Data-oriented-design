@@ -91,7 +91,7 @@ When history is read, apply filter if any was sent and the print. Method to prin
    - Add global option command called `--history` that marks if the command should be added to history.
    - If `--history` is set then: save the command string to hisory file and the value set for --history is the alias name.
 "]
-[state:open][date:2025-08-01][priority: high]
+[state:closed][date:2025-08-01][priority: high]
 */
 
 /*
@@ -101,7 +101,7 @@ When history is read, apply filter if any was sent and the print. Method to prin
 - - If local history file is found then load it into the document cache.
 - - If no local history file is found then try to load the global history file.
 "]
-[state:open][date:2025-08-01][priority: high]   
+[state:closed][date:2025-08-01][priority: high]
 */
 
 /*
