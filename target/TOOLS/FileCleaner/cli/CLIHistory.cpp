@@ -52,6 +52,7 @@ NAMESPACE_CLI_BEGIN
 
 // ## Forward declarations
 
+static std::pair<bool, std::string> PrepareEmptyXml_s(std::string_view stringHistoryFile); // Prepare an empty XML file with root element
 static std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumentsXml);
 
 static std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument);
@@ -109,92 +110,65 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
 }
 
 
-/**
- * @brief Set up folders for cleaner and creates history file if not exists
- */
+
+
+/**/
 std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& argumentsCreate, CDocument* pdocument)
 {
-   //auto result_ = papplication_g->CreateDirectory();                                               if( result_.first == false ) { return result_; }
-
-   std::filesystem::path pathTemp = CurrentDirectory_s();
-   std::cout << pathTemp.string() << "\n";
-
-   std::string stringName;
+   std::string_view stringHistoryFileName;
    std::filesystem::path pathDirectory;
-   bool bCurrentDirectory = argumentsCreate.exists("local");
+   bool bCurrentDirectory = argumentsCreate.exists("local"); // If true, use current directory for history file, otherwise user local app data folder
 
-   // Determine the path for the history file based on the arguments
+
+   // ## Prepare folder for history file ......................................
+
    if( bCurrentDirectory == true )
    {
-      stringName = ".cleaner-history.xml";
-      pathDirectory = CurrentDirectory_s();                                 // Get the local history path based on the current directory
+      stringHistoryFileName = ".cleaner-history.xml";                         // Local history file name, note that it is hidden file on Unix systems
+      pathDirectory = CurrentDirectory_s();                                   // Get the local history path based on the current directory
    }
    else
    {
-      stringName = "cleaner-history.xml";
-      pathDirectory = GetHistoryPath_s();                                      // Get the history path based on the operating system
+      stringHistoryFileName = "cleaner-history.xml";                          // Default history file name
+      pathDirectory = GetHistoryPath_s();                                     // Get the history path based on the operating system
+   }
+                                                                                                   LOG_DEBUG_RAW( "==> History file path: " + (pathDirectory / stringHistoryFileName).string() );
+
+   std::string stringHistoryFile = ( pathDirectory / stringHistoryFileName ).string(); // Full path to the history file
+
+   // ## Check if history file exists .........................................
+
+   if( std::filesystem::exists(stringHistoryFile) == true )
+   {                                                                           // No need to create the folder if it already exists, inform the user
+      pdocument->MESSAGE_Display("History folder already exists: " + pathDirectory.string());
+      return { true, "" };
    }
 
-   
 
-   std::string stringFilePath = (pathDirectory / stringName).string();
-   gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()}, { "print", false } , { "index", 0 } } );     // TODO: This is just temporary, we need to edit this later
-    // To create a string representing the full path to "history.xml" in pathDirectory:
+   // ## Prepare history file .................................................
 
-   if( bCurrentDirectory == true && std::filesystem::exists(pathDirectory / stringName) == false )
+   if( bCurrentDirectory == false )
    {
-      //std::filesystem::create_directory(pathDirectory); 
-      std::ofstream ofstreamFile(pathDirectory / stringName);
-      if( ofstreamFile.is_open() == false )
-      {
-         return { false, "Failed to create history file in current directory: " + (pathDirectory / stringName).string() };
+      // ### Create the cleaner user folder if it does not exist
+      if( std::filesystem::exists(pathDirectory) == false )
+      {  
+         std::filesystem::create_directories(pathDirectory);                   // Create the cleaner folder if it does not exist
+         pdocument->MESSAGE_Display("Cleaner folder created: " + pathDirectory.string());
       }
-      ofstreamFile.close();
-
-      auto result_ = PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
-      if( result_.first == false ) { return result_; }
-
-      pdocument->MESSAGE_Display( "History file created: " + ( pathDirectory / stringName ).string() );
-
    }
-   else if( std::filesystem::exists(pathDirectory / stringName) == false )
-   {
-      std::filesystem::create_directory(pathDirectory); 
-      std::ofstream ofstreamFile(pathDirectory / stringName);
-      /*ofstreamFile.close();
-      PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
-      */
 
-      if( ofstreamFile.is_open() == false )
-      {
-         return { false, "Failed to create history file in current directory: " + (pathDirectory / stringName).string() };
-      }
-      ofstreamFile.close();
-
-      auto result_ = PrepareXml_s(argumentsFile); // Prepare the XML file if it does not exist
-      if( result_.first == false ) { return result_; }
-
-      pdocument->MESSAGE_Display( "History file created: " + ( pathDirectory / stringName ).string() );
-
-      //AppendEntry_s(argumentsFile, pdocument); // TODO: This is just temporary, we need to remove this later
-
-      //HistorySave_g(argumentsFile, pdocument); // Save the history entry to the XML file
-
-      //HistoryPrint_g(argumentsFile, pdocument); // Print the history file to console, this is just for debug purposes
-
-      //HistoryGetRow_g(argumentsFile, pdocument); // Get the first row of the history table, this is just for debug purposes
-
-      //HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
-   }
+   std::ofstream ofstreamFile(stringHistoryFile);
+   if( ofstreamFile.is_open() == false ) {  return { false, "Failed to create history file in current directory: " + stringHistoryFile }; }
    else
    {
-      pdocument->MESSAGE_Display("History file already exists: " + (pathDirectory / stringName).string());
+      ofstreamFile.close();
+      pdocument->MESSAGE_Display("History file created: " + stringHistoryFile);
    }
 
-   //else
-   //{
-   //   HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
-   //}
+   // ### Prepare the XML in the history file
+
+   auto result_ = PrepareEmptyXml_s( stringHistoryFile );                     // Prepare the XML file if it does not exist
+   if( result_.first == false ) { return result_; }
 
    return { true, "" };
 }
@@ -425,6 +399,41 @@ std::pair<bool, std::string> HistoryEdit_g()
    if( std::filesystem::exists(pathHistoryFile) == false ) return { false, "History file does not exist: " + pathHistoryFile.string() };
 
    return SHARED_OpenFile_g(pathHistoryFile);
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Prepare an empty XML file for history
+ * 
+ * This function creates a new XML document with a root node "history" and a child node "entries".
+ * It saves the XML document to the specified file.
+ * 
+ * @param stringHistoryFile The file name of the XML document to prepare.
+ * @return A pair containing a boolean indicating success or failure, and a string with an error message if applicable.
+ * 
+ * @code
+ * // Example usage: PrepareEmptyXml_s
+ * auto [bOk, stringError] = PrepareEmptyXml_s("cleaner-history.xml");
+ * if (!bOk) { std::cerr << "Error: " << stringError << std::endl; } 
+ * else { std::cout << "Empty history XML prepared successfully." << std::endl; }
+ * @endcode
+ */
+std::pair<bool, std::string> PrepareEmptyXml_s( std::string_view stringHistoryFile )
+{                                                                                                  assert( std::filesystem::exists(stringHistoryFile) == true ); // Ensure the file does not already exist
+   pugi::xml_document xmldocument; // Create a new XML document
+
+   // ## Prepare the XML structure ............................................
+
+   pugi::xml_node xmlnodeRoot = xmldocument.append_child("history");           // "history" = root
+
+   xmlnodeRoot.append_child("pinned");                                         // "pinned" = child and used to pin important entries
+   xmlnodeRoot.append_child("saved");                                          // "saved" = child and used to save important entries
+   xmlnodeRoot.append_child("recent");                                         // "recent" = child and used for recent entries
+
+   // Save the XML document to the specified file
+   bool bSucceeded = xmldocument.save_file(stringHistoryFile.data(), "  ", pugi::format_default);
+   if( bSucceeded == false ) { return { false, "Failed to save XML file: " + std::string(stringHistoryFile) }; }
+
+   return { true, "" };
 }
 
 /** ---------------------------------------------------------------------------
