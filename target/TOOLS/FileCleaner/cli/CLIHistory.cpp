@@ -141,7 +141,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    gd::argument::arguments argumentsFile({ {"file", stringFilePath} , {"create", true}, {"command", "command1"}, {"line", "line1"}, {"line", "line2"}, {"date", CurrentTime_s()}, { "print", false } , { "index", 0 } } );     // TODO: This is just temporary, we need to edit this later
     // To create a string representing the full path to "history.xml" in pathDirectory:
 
-   if( bCurrentDirectory == true )
+   if( bCurrentDirectory == true && std::filesystem::exists(pathDirectory / stringName) == false )
    {
       //std::filesystem::create_directory(pathDirectory); 
       std::ofstream ofstreamFile(pathDirectory / stringName);
@@ -157,7 +157,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
       pdocument->MESSAGE_Display( "History file created: " + ( pathDirectory / stringName ).string() );
 
    }
-   else if( std::filesystem::exists(pathDirectory) == false )
+   else if( std::filesystem::exists(pathDirectory / stringName) == false )
    {
       std::filesystem::create_directory(pathDirectory); 
       std::ofstream ofstreamFile(pathDirectory / stringName);
@@ -185,6 +185,10 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
       //HistoryGetRow_g(argumentsFile, pdocument); // Get the first row of the history table, this is just for debug purposes
 
       //HistoryDelete_g(argumentsCreate); // TODO: This is just temporary, we need to remove this later
+   }
+   else
+   {
+      pdocument->MESSAGE_Display("History file already exists: " + (pathDirectory / stringName).string());
    }
 
    //else
