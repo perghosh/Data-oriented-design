@@ -22,6 +22,7 @@
 
 #include "../automation/code-analysis/Run.h"
 
+#include "CLI_Shared.h"
 #include "CLIFind.h"
 
 NAMESPACE_CLI_BEGIN
@@ -850,11 +851,10 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    {
       std::string stringWhere = pargumentsPrint->get_argument("where").as_string();   // get the where filter from the arguments
 
-      auto result_ = RunExpression_Where_g( stringWhere, ptableKeyValue );
-      if( result_.first == false )
-      {
-         return result_; // return the error
-      }
+      std::string stringExpression;                                             // string to hold the expression for filtering
+      auto result_ = SHARED_SqlToExpression_g(stringWhere, stringExpression);                      if( result_.first == false ) { return result_; }
+
+      result_ = RunExpression_Where_g( stringExpression, ptableKeyValue );                         if( result_.first == false ) { return result_;  }
    }
 
 

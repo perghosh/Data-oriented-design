@@ -2031,6 +2031,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
    // ## 'kv' read key value pairs from file
+   /*
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "kv", "Read key value pairs from file" );
       optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
@@ -2046,6 +2047,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
    }
+   */
 
    { // ## 'list' command, list rows with specified patterns @TAG #options.list
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "Search and list rows in files that match specified patterns." );
