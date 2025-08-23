@@ -1,3 +1,13 @@
+/**
+ * \file Run.cpp
+ * \brief Contains the implementation of expression methods used for cleaner
+ * 
+ [description: "## Expession methods
+  Methods converts expressions from strings to logic and perform operations on table data.
+  What they do is to iterate through table data and perform operations on each line."]
+ [tags: "gd::expression, gd::table"]
+ */
+
 // ## convert string to tokens
 #include "gd/expression/gd_expression_value.h"
 // ## convert string to tokens
@@ -6,6 +16,9 @@
 #include "gd/expression/gd_expression_runtime.h"
 
 #include "gd/expression/gd_expression_glue_to_gd.h"
+
+#include "gd/gd_log_logger.h"
+#include "gd/gd_log_logger_define.h"
 
 #include "Expression.h"
 
@@ -120,6 +133,21 @@ std::pair<bool, std::string> RunExpression_g(const std::string_view& stringExpre
 
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Executes a "where" expression on a table, filtering rows based on the expression.
+ * 
+ * - configure runtime with methods for default operations
+ * - iterate through the table lines to process the expression
+ * 
+ * This function parses the expression string into tokens, compiles them into postfix notation,
+ * and then evaluates the expression for each row in the provided table. Rows that do not satisfy
+ * the expression are marked for deletion and removed from the table.
+ * 
+ * @param stringExpression The "where" expression to be evaluated.
+ * @param ptableKeyValue Pointer to a table containing key-value data to be filtered.
+ * 
+ * @return A pair containing a boolean indicating success or failure, and a string with the result or error message.
+ */
 std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& stringExpression, gd::table::arguments::table* ptableKeyValue)
 {
    // ## convert string to tokens
@@ -141,6 +169,8 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
    runtime_.add( { (unsigned)uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
    runtime_.add( { (unsigned)uMethodSelectSize_g, pmethodSelect_g, std::string("source")});
 
+   std::vector<uint64_t> vectorDeleteRow; // rows to delete
+
    for( uint64_t uRow = 0; uRow < ptableKeyValue->size(); uRow++ )
    {
       auto* parguments_ = ptableKeyValue->row_get_arguments_pointer(uRow);
@@ -150,10 +180,25 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
 
       gd::expression::value valueResult;
       std::vector<gd::expression::value> vectorReturn;
-      result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_);
+      result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_); // calculate the expression
+
+      bool bWhere = false;
+      for( const auto& value_ : vectorReturn )
+      {
+         if( value_.is_bool() == true )
+         {
+            bool bResult = value_.get_bool();
+            if( bResult == true ) { bWhere = true; break; }
+         }
+      }
+
+      if( bWhere == false ) { vectorDeleteRow.push_back(uRow); } // mark row for deletion
+
       if( result_.first == false ) { return result_; }
    }
+                                                                                                   LOG_VERBOSE_RAW("== Keep Rows: " & (ptableKeyValue->size() - vectorDeleteRow.size()));
 
-   
+    ptableKeyValue->erase(vectorDeleteRow);                                    // erase rows that did not match the where condition
+
    return { true, "" };
 }

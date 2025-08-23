@@ -755,7 +755,7 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                if( result_.first == false ) { return { false, "[calculate_s] - Method call failed: " + std::string(stringMethod) + " - " + result_.second }; }
             }
             else
-            {                                                                                      assert(false);
+            {
                return { false, "[calculate_s] - Method not found: " + std::string(stringMethod) };
             }
          }

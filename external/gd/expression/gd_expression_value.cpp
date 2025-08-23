@@ -188,6 +188,14 @@ bool value::to_bool()
    return false;
 }
 
+/// @brief convert to nullptr
+bool value::to_nullptr()
+{
+   if( is_null() ) return true;
+   m_value = nullptr;
+   return true;
+}
+
 bool value::synchronize( value& value_, void* )
 {
    if( m_value.index() == value_.index() ) return true;
@@ -209,7 +217,7 @@ bool value::synchronize( value& value_, void* )
       bOk = value_.to_bool();
       break;
    default:
-      assert(false);
+      value_.to_nullptr();
       bOk = false;
    }
 
