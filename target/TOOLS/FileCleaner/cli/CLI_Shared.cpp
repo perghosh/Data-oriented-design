@@ -6,6 +6,8 @@
  * This file contains the implementation of functions shared across CLI tools.
  */
 
+#include <boost/regex.hpp>
+
 #include "gd/gd_file.h"
 
 #include "gd/expression/gd_expression_value.h"
@@ -117,6 +119,39 @@ std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFil
 
    return { result == 0, result == 0 ? "" : "Failed to open configuration file." };
 #endif
+}
+
+
+std::pair<bool, std::string> SHARED_SqlToExpression_g(std::string_view stringSql, std::string& stringExpression )
+{
+   // ## Check for markers for internal raw expression format
+   if( stringSql.find("source::") != std::string_view::npos ) { stringExpression = stringSql; return { true, "" }; } // if source:: is found, then it is already in internal format
+
+   // ## Convert SQL-like syntax to internal expression format
+
+   // sample 1 "assigned_to = 'per'" -> "(source::get_argument(args,'assigned_to') == 'per')"
+   // sample 2 "(assigned_to = 'per' OR assigned_to = 'kevin') AND status = 'open'" -> "((source::get_argument(args,'assigned_to') == 'per') || (source::get_argument(args,'assigned_to') == 'kevin')) && (source::get_argument(args,'status') == 'open')"
+   // sample 3 "status <> 'open' and assigned_to = 'per'" -> "(source::get_argument(args,'status') != 'open') && (source::get_argument(args,'assigned_to') == 'per')"
+
+   std::string stringResult;
+
+   // Convert SQL-like syntax to internal expression format
+   stringResult = stringSql;
+   // ## convert SQL operators to internal operators
+
+   // ### Convert operators first (before column conversions)
+
+   stringResult = boost::regex_replace(stringResult, boost::regex("\\b(OR|or)\\b"), "||");
+   stringResult = boost::regex_replace(stringResult, boost::regex("\\b(AND|and)\\b"), "&&");
+
+   // ### Convert column comparisons
+
+   stringResult = boost::regex_replace(stringResult, boost::regex("([a-zA-Z_][a-zA-Z0-9_]*) = '([^']*)'"), "(source::get_argument(args,'$1') == '$2')");
+   stringResult = boost::regex_replace(stringResult, boost::regex("([a-zA-Z_][a-zA-Z0-9_]*) <> '([^']*)'"), "(source::get_argument(args,'$1') != '$2')");
+
+   stringExpression = stringResult;                         
+
+   return { true, "" };
 }
 
 

@@ -38,6 +38,9 @@ std::pair<bool, std::string> SHARED_MatchAllPatterns_g(const std::vector<std::st
 std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFile);
 
 
+/// Convert a SQL-like query string into an expression string.
+std::pair<bool, std::string> SHARED_SqlToExpression_g(std::string_view stringSql, std::string& stringExpression );
+
 NAMESPACE_CLI_END
 
 

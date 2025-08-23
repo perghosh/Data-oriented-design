@@ -147,6 +147,12 @@ std::pair<bool, std::string> RunExpression_g(const std::string_view& stringExpre
  * @param ptableKeyValue Pointer to a table containing key-value data to be filtered.
  * 
  * @return A pair containing a boolean indicating success or failure, and a string with the result or error message.
+ * 
+ * @code
+ * // Example usage: Filtering a table based on a "where" expression
+   std::string stringExpression("(str::toupper( source::get_argument(args,'assigned_to') ) == 'PER') || (source::get_argument(args,'assigned_to') == 'kevin')");
+   auto result_ = RunExpression_Where_g(stringExpression, &tableKeyValue);
+   @endcode
  */
 std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& stringExpression, gd::table::arguments::table* ptableKeyValue)
 {
