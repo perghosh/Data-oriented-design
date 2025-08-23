@@ -366,7 +366,7 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
    std::string stringRun = argumentsRun["run"].as_string();
    int64_t iRow = std::stoi(stringRun) - 1;
 
-   if( iRow < 0 || iRow >= ptable->size() ) { return { false, "Invalid row index: " + stringRun }; } // Ensure the row index is valid
+   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, "Invalid row index: " + stringRun }; } // Ensure the row index is valid
 
    // ## Get the command from the specified row and execute it
 
