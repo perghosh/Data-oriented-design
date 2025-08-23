@@ -111,7 +111,15 @@ std::pair<bool, std::string> sum_g(const std::vector<value>& vectorArgument, val
 std::pair<bool, std::string> tolower_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 0);                       
    const auto& v_ = vectorArgument[0];
-   if( v_.is_string() == false ) { return {false, "tolower_g - Invalid argument type"}; }
+   if( v_.is_string() == false ) 
+   { 
+      if( v_.is_null() == true ) 
+      {
+         *pvalueResult = v_;                                                  // do nothing for null values
+         return { true, "" };
+      }
+      return {false, "tolower_g - Invalid argument type"}; 
+   }
 
    std::string stringResult = v_.as_string();
    std::transform(stringResult.begin(), stringResult.end(), stringResult.begin(), [](unsigned char i) { return std::tolower(i); });
@@ -125,7 +133,15 @@ std::pair<bool, std::string> tolower_g(const std::vector<value>& vectorArgument,
 std::pair<bool, std::string> toupper_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 0);                       
    const auto& v_ = vectorArgument[0];
-   if( v_.is_string() == false ) { return {false, "tolower_g - Invalid argument type"}; }
+   if( v_.is_string() == false ) 
+   { 
+      if( v_.is_null() == true ) 
+      {
+         *pvalueResult = v_;                                                  // do nothing for null values
+         return { true, "" };
+      }
+      return {false, "toupper_g - Invalid argument type"}; 
+   }
 
    std::string stringResult = v_.as_string();
    std::transform(stringResult.begin(), stringResult.end(), stringResult.begin(), [](unsigned char i) { return std::toupper(i); });

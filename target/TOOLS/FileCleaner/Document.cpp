@@ -1459,7 +1459,7 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
  * @note This method assumes that the `CACHE_Add` function handles the ownership of the table.  
  */  
 void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<gd::table::dto::table>* ptable) // @TAG #data.cache
-{
+{                                                                                                  LOG_VERBOSE_RAW("== Prepare table:" << stringId << "CDocument::CACHE_Prepare");
    using namespace gd::table::dto;
    constexpr unsigned uTableStyle = ( table::eTableFlagNull32 | table::eTableFlagRowStatus );
 

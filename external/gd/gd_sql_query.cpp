@@ -1100,13 +1100,13 @@ std::pair<bool, std::string> query::values_get_s( const std::vector< std::pair<s
  * @code
 using namespace gd::sql;
 gd::sql::query querySelect;
-querySelect.add( "TBodyType", "body_type", tag_table{} );
-querySelect.add( "TBodyType", "FId", tag_field{});
-querySelect.add( "TBodyType", { {"FName", "name"}, {"FMass", "mass 1"}, {"FCharge", "charge"}, {"FRadius", "radius"}, {"GraphK", "graph_id"}, {"FSmiles", "smiles"}  }, tag_field{});
+querySelect.add( "TAddress", "address_type", tag_table{} );
+querySelect.add( "TAddress", "FId", tag_field{});
+querySelect.add( "TAddress", { {"FStreet", "street"}, {"FCity", "city"}, {"FZipCode", "zip_code"}, {"FState", "state"}, {"FCountry", "country"}, {"FCoordinates", "coordinates"}  }, tag_field{});
 
 gd::sql::query queryAdd;
-queryAdd.add( "TBodyType", "body_type", tag_table{} );
-queryAdd.add( "TBodyType", "FLevel = ?", tag_condition{} );
+queryAdd.add( "TAddress", "address_type", tag_table{} );
+queryAdd.add( "TAddress", "FRegion = ?", tag_condition{} );
 
 querySelect += queryAdd; // <- operator that use `add_s`
 

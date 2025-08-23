@@ -40,6 +40,7 @@ static std::pair<bool, std::string> GetArgument_s( const std::vector<value>& vec
       std::string stringName( name_.as_string() );
       if( stringName.empty() == true ) { return { false, "Argument name cannot be empty." }; }
       auto variantview_ = ( *parguments_ )[stringName].as_variant_view();
+      //if( variantview_.is_null() == true ) variantview_ = "";                 // if argument not found, return empty string
       *pvalueReturn = to_value_g( variantview_ );
 
       return { true, "" };

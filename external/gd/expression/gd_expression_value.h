@@ -208,6 +208,8 @@ struct value
    bool to_string();
    /// @brief attempt to convert current value to boolean
    bool to_bool();
+   /// @brief convert to nullptr
+   bool to_nullptr();
    /// @brief attempt to convert current value to same type as this
    bool synchronize( value& value_, void* );
 //@}

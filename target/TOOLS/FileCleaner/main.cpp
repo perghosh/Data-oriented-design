@@ -32,17 +32,6 @@ and a configurable line width for better readability in terminals.
 int main(int iArgumentCount, char** ppbszArgument)                             // @TAG #main
 {
    using namespace gd::console;
-#ifndef NDEBUG
-   if( iArgumentCount > 1 )
-   {
-      for( auto i = 0; i < iArgumentCount; i++ )
-      {
-         std::cout << "Argument: " <<  ppbszArgument[i] << "\n";
-      }
-   }
-#endif // NDEBUG
-
-   CApplication application;
 
    try
    {

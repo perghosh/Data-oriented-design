@@ -35,13 +35,13 @@ _GD_EXPRESSION_BEGIN
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Result of addition, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE add(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE add(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true) 
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() + r_.get_integer());
@@ -49,7 +49,7 @@ VALUE add(VALUE& l_, VALUE& r_, RUNTIME* pr_)
       if( l_.is_string() == true ) return VALUE(l_.get_string() + r_.get_string());
    }
 
-   if(pr_ != nullptr) pr_->add("[add] - Invalid addition operation", tag_error{});
+   if(pruntime != nullptr) pruntime->add("[add] - Invalid addition operation", tag_error{});
 
    return VALUE();
 }
@@ -64,19 +64,19 @@ VALUE add(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand (minuend)
  * @param r_ Right operand (subtrahend)
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Result of subtraction, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE subtract(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE subtract(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true)
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() - r_.get_integer());
       if( l_.is_double() == true ) return VALUE(l_.get_double() - r_.get_double());
    }
-   if(pr_ != nullptr) pr_->add("[subtract] - Invalid subtract operation", tag_error{});
+   if(pruntime != nullptr) pruntime->add("[subtract] - Invalid subtract operation", tag_error{});
    return VALUE();
 }
 
@@ -90,19 +90,19 @@ VALUE subtract(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand (multiplicand)
  * @param r_ Right operand (multiplier)
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Result of multiplication, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE multiply(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE multiply(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true)
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() * r_.get_integer());
       if( l_.is_double() == true ) return VALUE(l_.get_double() * r_.get_double());
    }
-   if(pr_ != nullptr) pr_->add("[multiply] - Invalid multiply operation", tag_error{});
+   if(pruntime != nullptr) pruntime->add("[multiply] - Invalid multiply operation", tag_error{});
    return VALUE();
 }
 
@@ -118,19 +118,19 @@ VALUE multiply(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand (dividend)
  * @param r_ Right operand (divisor)
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Result of division, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE divide(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE divide(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true)
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() / r_.get_integer());
       if( l_.is_double() == true ) return VALUE(l_.get_double() / r_.get_double());
    }
-   if(pr_ != nullptr) pr_->add("[divide] - Invalid divide operation", tag_error{});
+   if(pruntime != nullptr) pruntime->add("[divide] - Invalid divide operation", tag_error{});
    return VALUE();
 }
 
@@ -146,18 +146,18 @@ VALUE divide(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand (dividend)
  * @param r_ Right operand (divisor)
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Result of modulo operation, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE modulo(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE modulo(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true)
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() % r_.get_integer());
    }
-   if(pr_ != nullptr) pr_->add("[modulo] - Invalid modulo operation", tag_error{});
+   if(pruntime != nullptr) pruntime->add("[modulo] - Invalid modulo operation", tag_error{});
    return VALUE();
 }
 
@@ -171,20 +171,20 @@ VALUE modulo(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Boolean result of comparison, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE greater(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE greater(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true)
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() > r_.get_integer());
       if( l_.is_double() == true ) return VALUE(l_.get_double() > r_.get_double());
       if( l_.is_string() == true ) return VALUE(l_.get_string() > r_.get_string());
    }
-   if(pr_ != nullptr) pr_->add("[greater] - Invalid greater operation", tag_error{});
+   if(pruntime != nullptr) pruntime->add("[greater] - Invalid greater operation", tag_error{});
    return VALUE();
 }
 
@@ -198,20 +198,20 @@ VALUE greater(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Boolean result of comparison, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE less(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE less(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true)
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() < r_.get_integer());
       if( l_.is_double() == true ) return VALUE(l_.get_double() < r_.get_double());
       if( l_.is_string() == true ) return VALUE(l_.get_string() < r_.get_string());
    }
-   if(pr_ != nullptr) pr_->add("[less] - Invalid less operation", tag_error{});
+   if(pruntime != nullptr) pruntime->add("[less] - Invalid less operation", tag_error{});
    return VALUE();
 }
 
@@ -225,20 +225,20 @@ VALUE less(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Boolean result of comparison, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE greater_equal(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE greater_equal(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true)
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() >= r_.get_integer());
       if( l_.is_double() == true ) return VALUE(l_.get_double() >= r_.get_double());
       if( l_.is_string() == true ) return VALUE(l_.get_string() >= r_.get_string());
    }
-   if(pr_ != nullptr) pr_->add("[greater_equal] - Invalid greater_equal operation", tag_error{});
+   if(pruntime != nullptr) pruntime->add("[greater_equal] - Invalid greater_equal operation", tag_error{});
    return VALUE();
 }
 
@@ -252,20 +252,20 @@ VALUE greater_equal(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Boolean result of comparison, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE less_equal(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE less_equal(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true)
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() <= r_.get_integer());
       if( l_.is_double() == true ) return VALUE(l_.get_double() <= r_.get_double());
       if( l_.is_string() == true ) return VALUE(l_.get_string() <= r_.get_string());
    }
-   if(pr_ != nullptr) pr_->add("[less_equal] - Invalid less_equal operation", tag_error{});
+   if(pruntime != nullptr) pruntime->add("[less_equal] - Invalid less_equal operation", tag_error{});
    return VALUE();
 }
 
@@ -279,20 +279,24 @@ VALUE less_equal(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Boolean result of comparison, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE equal(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE equal(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true)
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() == r_.get_integer());
       if( l_.is_double() == true ) return VALUE(l_.get_double() == r_.get_double());
       if( l_.is_string() == true ) return VALUE(l_.get_string() == r_.get_string());
    }
-   if(pr_ != nullptr) pr_->add("[equal] - Invalid equal operation", tag_error{});
+   else
+   {
+      if( l_.is_null() == true && r_.is_null() == true ) return VALUE(false); // null are always false on equality
+   }
+   if(pruntime != nullptr) pruntime->add("[equal] - Invalid equal operation", tag_error{});
    return VALUE();
 }
 
@@ -306,20 +310,20 @@ VALUE equal(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Boolean result of comparison, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE not_equal(VALUE& l_, VALUE& r_, RUNTIME* pr_)
+VALUE not_equal(VALUE& l_, VALUE& r_, RUNTIME* pruntime)
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if(bOk == true)
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() != r_.get_integer());
       if( l_.is_double() == true ) return VALUE(l_.get_double() != r_.get_double());
       if( l_.is_string() == true ) return VALUE(l_.get_string() != r_.get_string());
    }
-   if(pr_ != nullptr) pr_->add("[equal] - Invalid equal operation", tag_error{});
+   if(pruntime != nullptr) pruntime->add("[equal] - Invalid equal operation", tag_error{});
    return VALUE();
 }
 
@@ -332,18 +336,18 @@ VALUE not_equal(VALUE& l_, VALUE& r_, RUNTIME* pr_)
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Result of bitwise AND, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE bitwise_and( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
+VALUE bitwise_and( VALUE& l_, VALUE& r_, RUNTIME* pruntime )
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if( bOk == true )
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() & r_.get_integer());
    }
-   if( pr_ != nullptr ) pr_->add("[and] - Invalid and operation", tag_error{});
+   if( pruntime != nullptr ) pruntime->add("[and] - Invalid and operation", tag_error{});
    return VALUE();
 }
 
@@ -356,13 +360,13 @@ VALUE bitwise_and( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Result of logical AND, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE logical_and( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
+VALUE logical_and( VALUE& l_, VALUE& r_, RUNTIME* pruntime )
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if( bOk == true )
    {
       if( l_.is_bool() == true ) return VALUE(l_.get_bool() && r_.get_bool());
@@ -370,7 +374,7 @@ VALUE logical_and( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
       if( l_.is_double() == true ) return VALUE(l_.get_double() && r_.get_double());
       if( l_.is_string() == true ) return VALUE(l_.get_string().empty() == false && r_.get_string().empty() == false );
    }
-   if( pr_ != nullptr ) pr_->add("[and] - Invalid and operation", tag_error{});
+   if( pruntime != nullptr ) pruntime->add("[and] - Invalid and operation", tag_error{});
    return VALUE();
 }
 
@@ -383,18 +387,18 @@ VALUE logical_and( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Result of bitwise OR, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE bitwise_or( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
+VALUE bitwise_or( VALUE& l_, VALUE& r_, RUNTIME* pruntime )
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if( bOk == true )
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() | r_.get_integer());
    }
-   if( pr_ != nullptr ) pr_->add("[and] - Invalid and operation", tag_error{});
+   if( pruntime != nullptr ) pruntime->add("[and] - Invalid and operation", tag_error{});
    return VALUE();
 }
 
@@ -407,13 +411,13 @@ VALUE bitwise_or( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Result of logical OR, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE logical_or( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
+VALUE logical_or( VALUE& l_, VALUE& r_, RUNTIME* pruntime )
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if( bOk == true )
    {
       if( l_.is_bool() == true ) return VALUE(l_.get_bool() || r_.get_bool());
@@ -421,7 +425,7 @@ VALUE logical_or( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
       if( l_.is_double() == true ) return VALUE(l_.get_double() || r_.get_double());
       if( l_.is_string() == true ) return VALUE(l_.get_string().empty() == false || r_.get_string().empty() == false );
    }
-   if( pr_ != nullptr ) pr_->add("[and] - Invalid and operation", tag_error{});
+   if( pruntime != nullptr ) pruntime->add("[and] - Invalid and operation", tag_error{});
    return VALUE();
 }
 
@@ -434,18 +438,18 @@ VALUE logical_or( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
  * @tparam RUNTIME Runtime environment type for error reporting
  * @param l_ Left operand
  * @param r_ Right operand
- * @param pr_ Pointer to runtime environment for error reporting (can be nullptr)
+ * @param pruntime Pointer to runtime environment for error reporting (can be nullptr)
  * @return VALUE Result of bitwise XOR, or empty VALUE on error
  */
 template<typename VALUE, typename RUNTIME>
-VALUE bitwise_xor( VALUE& l_, VALUE& r_, RUNTIME* pr_ )
+VALUE bitwise_xor( VALUE& l_, VALUE& r_, RUNTIME* pruntime )
 {
-   bool bOk = l_.synchronize(r_, pr_);
+   bool bOk = l_.synchronize(r_, pruntime);
    if( bOk == true )
    {
       if( l_.is_integer() == true ) return VALUE(l_.get_integer() ^ r_.get_integer());
    }
-   if( pr_ != nullptr ) pr_->add("[and] - Invalid and operation", tag_error{});
+   if( pruntime != nullptr ) pruntime->add("[and] - Invalid and operation", tag_error{});
    return VALUE();
 }
 
