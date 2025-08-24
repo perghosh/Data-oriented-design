@@ -19,6 +19,8 @@
 
 #include <fstream>
 #include <filesystem>
+#include <format>
+#include <chrono>
 
 #include "gd/gd_file.h"
 
