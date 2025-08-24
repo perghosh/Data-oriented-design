@@ -112,7 +112,12 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
 
 
 
-/**/
+/** ---------------------------------------------------------------------------
+ * @brief Creates a history file in either the current directory or the user's local application data folder, preparing the necessary folder and initializing the file with empty XML if needed.
+ * @param argumentsCreate The argument list used to determine the location for the history file (checks for the 'local' key).
+ * @param pdocument Pointer to a CDocument object used for displaying messages to the user.
+ * @return A pair where the first element is true if the history file was successfully created or already exists, and false otherwise; the second element is an error message if creation failed, or an empty string on success.
+ */
 std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& argumentsCreate, CDocument* pdocument)
 {
    std::string_view stringHistoryFileName;
@@ -169,6 +174,39 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 
    auto result_ = PrepareEmptyXml_s( stringHistoryFile );                     // Prepare the XML file if it does not exist
    if( result_.first == false ) { return result_; }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::cli::options* poptionsHistory, std::string_view stringSection )
+{                                                                                                  assert( std::filesystem::exists(stringFile) == true );
+   gd::cli::options* poptionsActive = poptionsHistory->find_active();
+
+   poptionsActive->remove("history");   
+
+   auto stringCommand = poptionsActive->to_string();
+
+   // ## Open xml document and append to save entry
+   if( std::filesystem::exists(stringFile) == true )
+   {
+      pugi::xml_document xmldocument;
+      pugi::xml_parse_result result_ = xmldocument.load_file(stringFile.data());                  if( !result_ ) { return { false, std::format("Failed to load XML file: {}", stringFile) }; }
+
+      // ### Append node to "save"
+      pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("saved");
+      if( xmlnodeEntries.empty() ) { return { false, std::format("No save node found in XML file: {}", stringFile) }; }
+      pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");
+      xmlnodeEntry.append_child("name").text().set( poptionsHistory->name() );
+      xmlnodeEntry.append_child("command").text().set(stringCommand.c_str());
+
+      // ### Save the XML document back to the file
+      xmldocument.save_file(stringFile.data(), "  ", pugi::format_default);
+   }
+   else
+   {
+      return { false, "History file does not exist: " + std::string(stringFile) };
+   }
+   
 
    return { true, "" };
 }

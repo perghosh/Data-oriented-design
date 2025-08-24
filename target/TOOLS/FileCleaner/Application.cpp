@@ -419,12 +419,21 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       // @TASK #user.kevin [name: options history][brief: if history option is set then save last command line to history][user: kevin][created: 2025-08-11]
       if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true )
       {
+         std::string stringHistory;
+         std::filesystem::path pathHistory;
+         auto result_ = HistoryFindFile_s(pathHistory, 2);                     // Get the local history location, 2 directory levels up
+         if( result_.first == true ) { stringHistory = pathHistory.string(); }
+
+         CLI::HistoryAppend_g( stringHistory, &optionsApplication );
+
+
+
          /*
             - Check if history is in current directory
             - Check 2x parent directory for history,
             - If not, check if history is in home directory
          */
-
+         /*
          std::filesystem::path pathHistoryCurrent; //= std::filesystem::current_path() / ".cleaner-history.xml"; // Default history location in current directory
          std::filesystem::path pathHistoryHome;
          HistoryFindFile_s(pathHistoryCurrent, 2);                              // Get the local history location, 2 directory levels up
@@ -438,7 +447,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          {
             HISTORY_SaveCommand(pathHistoryHome.string()); // Save the command to history in home directory
          }
-         
+         */
 
 
       }

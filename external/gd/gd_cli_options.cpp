@@ -605,8 +605,46 @@ std::pair<bool, std::string> options::parse(const std::vector<std::string>& vect
    return result_;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief convert current options and values to string that can be used to start application with same options
+ * @return std::string with options and values
+ */
+std::string options::to_string() const
+{
+   using namespace gd::argument;
+   std::string stringResult;
+
+   // ## convert all options and values to string .............................
+
+   std::vector<std::string> vectorOption;
+   for( auto it = m_argumentsValue.named_begin(), itEnd = m_argumentsValue.named_end(); it != itEnd; it++ )
+   {
+      auto [stringName, argument_] = *it;
+      if( argument_.is_bool() == false )
+      {
+         vectorOption.push_back(std::string("--") + std::string(stringName)); // add option name
+         vectorOption.push_back(argument_.to_string());                      // add option value
+      }
+      else                                                                    // only add boolean options that are true
+      {
+         vectorOption.push_back(std::string("-") + std::string(stringName));  // add flag
+      }
+   }
+
+   // ## get pointers to simulate char* const* argv ...........................
+
+   std::vector<const char*> vectorOptionPointer;
+   for( const auto& it : vectorOption )
+   {
+      vectorOptionPointer.push_back( it.c_str() );
+   }
+
+   stringResult = to_string_s( (unsigned)vectorOptionPointer.size(), vectorOptionPointer.data() );
+   return stringResult;
+}
 
 
+/// return option value if found as variant
 gd::variant options::get_variant( const std::string_view& stringName ) const 
 {                                                                                                  assert( stringName.empty() == false );
    auto value_ = m_argumentsValue[stringName].get_variant();
@@ -1153,6 +1191,13 @@ std::string options::to_string_s(int iCount, const char* const* ppbszArgumentVal
 
    return stringArguments;
 }
+
+std::string options::to_string_s(const options* poptions_, int iOffset)
+{
+   std::string stringArguments; // generated string with arguments
+   return stringArguments;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Generate error message and return a pair that works for other methods
