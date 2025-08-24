@@ -53,10 +53,14 @@ NAMESPACE_CLI_BEGIN
 
 // ## Forward declarations
 
-static std::pair<bool, std::string> PrepareEmptyXml_s(std::string_view stringHistoryFile); // Prepare an empty XML file with root element
+/// Prepare an empty XML file with root element
+static std::pair<bool, std::string> PrepareEmptyXml_s(std::string_view stringHistoryFile); 
+
 static std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumentsXml);
 
-static std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument);
+
+static std::pair<bool, std::string> XML_AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument);
+bool XML_EntryExists_s( const pugi::xml_node* pxmlnodeEntries, std::string_view stringCommand );
 
 static std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable);
 
@@ -64,7 +68,7 @@ static std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::
 
 static std::string FilePath();
 
-static std::string CurrentTime_s();
+static std::string DATE_CurrentTime_s();
 
 static std::filesystem::path GetHistoryPath_s();
 
@@ -179,15 +183,27 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Appends a new command entry to the history section of an XML file, excluding the 'history' option from the saved command.
+ *
+ * The function first checks if the specified XML file exists, then loads it and appends a new `<entry>` node under the specified section or `<saved>` that is default.
+ *
+ * @param stringFile The path to the XML history file.
+ * @param poptionsHistory Pointer to the options object representing the history; used to find the active command options.
+ * @param stringSection The section name in the XML file (not directly used in the function body).
+ * @return A pair where the first element is true if the entry was successfully appended, and false otherwise; the second element is an error message if the operation failed, or an empty string on success.
+ */
 std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::cli::options* poptionsHistory, std::string_view stringSection )
 {                                                                                                  assert( std::filesystem::exists(stringFile) == true );
    gd::cli::options* poptionsActive = poptionsHistory->find_active();
 
-   poptionsActive->remove("history");   
+   poptionsActive->remove("history");                                         // remove history option if it exists, we do not want to save this in history
+   auto stringCommand = poptionsActive->to_string(); // get the full command line for the active command
+   
+   std::string stringDateTime = DATE_CurrentTime_s(); // Generate date string
 
-   auto stringCommand = poptionsActive->to_string();
+   // ## Open xml document and append to save entry ...........................
 
-   // ## Open xml document and append to save entry
    if( std::filesystem::exists(stringFile) == true )
    {
       pugi::xml_document xmldocument;
@@ -196,9 +212,14 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::c
       // ### Append node to "save"
       pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("saved");
       if( xmlnodeEntries.empty() ) { return { false, std::format("No save node found in XML file: {}", stringFile) }; }
-      pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");
-      xmlnodeEntry.append_child("name").text().set( poptionsHistory->name() );
-      xmlnodeEntry.append_child("command").text().set(stringCommand.c_str());
+      pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");                          assert( poptionsActive->name().empty() == false );
+
+      // ### Check if command already exists
+      if( XML_EntryExists_s(&xmlnodeEntries, stringCommand) == true ) { return { false, "Command already exists in history, command: " + stringCommand }; }
+
+      xmlnodeEntry.append_child("name").text().set( poptionsActive->name() ); // save command name
+      xmlnodeEntry.append_child("command").text().set(stringCommand.c_str()); // save command line
+      xmlnodeEntry.append_child("date").text().set( stringDateTime );         // save date
 
       // ### Save the XML document back to the file
       xmldocument.save_file(stringFile.data(), "  ", pugi::format_default);
@@ -208,7 +229,6 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::c
       return { false, "History file does not exist: " + std::string(stringFile) };
    }
    
-
    return { true, "" };
 }
 
@@ -527,7 +547,7 @@ std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumen
    return { true, "" };
 }
 
-std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument)
+std::pair<bool, std::string> XML_AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument)
 {
    std::string stringFileName = argumentsEntry["file"].as_string();
                                                                                assert(!stringFileName.empty());
@@ -555,6 +575,22 @@ std::pair<bool, std::string> AppendEntry_s(const gd::argument::arguments& argume
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Checks if an XML node contains an entry with a specified command.
+ * @param pxmlnodeEntries Pointer to the XML node containing entry children to search.
+ * @param stringCommand The command string to look for among the entries.
+ * @return True if an entry with the specified command exists; otherwise, false.
+ */
+bool XML_EntryExists_s( const pugi::xml_node* pxmlnodeEntries, std::string_view stringCommand )
+{
+   for( auto entry : pxmlnodeEntries->children("entry") )
+   {
+      std::string stringExistingCommand = entry.child("command").text().get();
+      if( stringExistingCommand == stringCommand ) { return true; } // Entry with the same command already exists
+   }
+   return false;
+}
+
 std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable)
 {
    std::string stringFileName; //= argumentsTable["file"].as_string();
@@ -562,7 +598,7 @@ std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, con
    std::filesystem::path pathHistoryCurrent; //= std::filesystem::current_path() / ".cleaner-history.xml"; // Default history location in current directory
    std::filesystem::path pathHistoryHome;
 
-   CApplication::HistoryFindFile_s(pathHistoryCurrent, 2);                              // Get the local history location, 2 directory levels up
+   CApplication::HistoryFindFile_s(pathHistoryCurrent );                     // Get the local history location
    CApplication::HistoryLocation_s(pathHistoryHome);
 
    if( std::filesystem::exists(pathHistoryCurrent) == true )
@@ -610,16 +646,13 @@ std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, con
    return { true, "" };
 }
 
-std::string CurrentTime_s()
+/// ---------------------------------------------------------------------------
+/// Generate time string in format "YYYY-MM-DD HH:MM:SS"
+std::string DATE_CurrentTime_s()
 {
    auto now_ = std::chrono::system_clock::now();
-   auto nowTime_ = std::chrono::system_clock::to_time_t(now_);
-   auto tm_ = *std::localtime(&nowTime_);
-
-   std::ostringstream ostringstreamTime;
-   ostringstreamTime << std::put_time(&tm_, "%Y-%m-%d %H:%M:%S");
-
-   return ostringstreamTime.str();
+   auto local_time_ = std::chrono::zoned_time{std::chrono::current_zone(), now_};
+   return std::format("{:%Y-%m-%d %H:%M:%S}", local_time_);
 }
 
 std::filesystem::path GetHistoryPath_s()

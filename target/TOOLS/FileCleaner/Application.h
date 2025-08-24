@@ -437,7 +437,7 @@ public:
    /// Get history location
    static std::pair<bool, std::string> HistoryLocation_s(std::filesystem::path& pathLocation);
    /// Get local history location
-   static std::pair<bool, std::string> HistoryFindFile_s(std::filesystem::path& pathLocation, uint32_t uDirectoryLevels );
+   static std::pair<bool, std::string> HistoryFindFile_s(std::filesystem::path& pathLocation );
    /// Save history table to file
    static std::pair<bool, std::string> HistorySave_s(const std::string_view& stringFileName, const gd::table::dto::table* ptable);
    /// Get active history file
