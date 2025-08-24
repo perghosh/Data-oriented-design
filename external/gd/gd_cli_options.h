@@ -1,7 +1,22 @@
 /**
  * \file gd_cli_options.h
+ * @brief Header file for command-line interface (CLI) options management.
  * 
- * ### 0TAG0 File navigation, mark and jump to common parts * 
+ * 
+ | Area                | Methods (Examples)                                                                                                 | Description                                                                                                   |
+ |---------------------|-----------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+ | Construction        | options(...), common_construct(...), set_parent(...), parent(...), clone_arguments()                            | Constructors and copy/assignment for creating, copying, and initializing CLI options and subcommands.         |
+ | Appending           | add(...), add_flag(...), add_global(...), sub_add(...), add_value(...)                                          | Methods for adding options, flags, global options, subcommands, and argument values.                          |
+ | Setting             | set(...), set_first(...), set_flag(...), set_active(), set_name(...), set_type(...), set_letter(...)            | Methods for updating option values, flags, types, names, and activation state.                                |
+ | Removal             | clear(...), clear_all(), remove(...)                                                                            | Methods for removing argument values by name, clearing all values, and clearing subcommand values.            |
+ | Retrieval           | find(...), find_active(), find_active(), find_sub(...), get_variant(...), get_variant_view(...), exists(...)    | Methods for retrieving options, active options, subcommands, argument values, and checking existence.         |
+ | Iteration           | begin(), end(), option_begin(), option_end(), sub_size(), sub_count_active(), sub_find_active(), sub_find(...)  | Methods for traversing options and subcommands using iterators and search functions.                          |
+ | Comparison          | is_flag(...), is_active(), is_parent(), is_sub(), is_single_dash(), sub_is_active(...), sub_exists(...)         | Methods for checking flags, activation, parent/subcommand status, and single-dash option allowance.           |
+ | Printing/Debug      | print_documentation(...), print_suboption_options(...), to_string(), to_string_s(...), error_s(...)             | Methods for formatting, printing, and converting options and argument values for documentation and debugging. |
+ | Utility/Meta        | empty(), size(), at(...), get_parent(), name(), description(), flag_s(...), type(...), flags(...), sub_get(...) | Utility methods for clearing, checking, querying metadata, and accessing option/subcommand properties.        |
+ * 
+ *
+ * ### 0TAG0 File navigation, mark and jump to common parts *
  * - `0TAG0option.options` - option object, manage each option value
  * - `0TAG0construct.options` - construct options
  * - `0TAG0sub.options` - methods to access sub options
