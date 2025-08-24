@@ -34,6 +34,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
 /// \brief Create logic to manage hisory for cleaner, if windows or linux this differ some based on different filesystem
 std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& argumentsCreate, CDocument* pdocument);
 
+/// \brief Append entry to history file
 std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::cli::options* poptionsHistory, std::string_view stringSection );
 inline std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::cli::options* poptionsHistory) { return HistoryAppend_g(stringFile, poptionsHistory, ""); }
 

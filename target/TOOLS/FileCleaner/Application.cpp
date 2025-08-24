@@ -287,6 +287,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    if( iArgumentCount > 1 )
    {
       PROPERTY_Set("threads", true);                                           // activate threading
+      PROPERTY_Set("history-levels", uint64_t(2));                             // set history levels to 2
 
       std::string stringArgument = gd::cli::options::to_string_s(iArgumentCount, ppbszArgument, 1);
 #ifndef NDEBUG
@@ -421,10 +422,11 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       {
          std::string stringHistory;
          std::filesystem::path pathHistory;
-         auto result_ = HistoryFindFile_s(pathHistory, 2);                     // Get the local history location, 2 directory levels up
+         auto result_ = HistoryFindFile_s(pathHistory);                       // Get the local history location, 2 directory levels up
          if( result_.first == true ) { stringHistory = pathHistory.string(); }
 
-         CLI::HistoryAppend_g( stringHistory, &optionsApplication );
+         result_ = CLI::HistoryAppend_g(stringHistory, &optionsApplication);  // Append the command to history
+         if( result_.first == false ) { return result_; }
 
 
 
@@ -3038,26 +3040,28 @@ std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesyst
    return { true, "" };
 }
 
-std::pair<bool, std::string> CApplication::HistoryFindFile_s(std::filesystem::path& pathLocation, uint32_t uDirectoryLevels )
+std::pair<bool, std::string> CApplication::HistoryFindFile_s(std::filesystem::path& pathLocation )
 {
+   uint64_t uHistoryLevels = papplication_g->PROPERTY_Get("history-levels");
+
    const std::string stringHistoryName =  ".cleaner-history.xml";
    std::filesystem::path pathHistoryCurrent = std::filesystem::current_path(); // Default history location in current directory
 
-   for( uint32_t u = 0; u <= uDirectoryLevels; ++u )
+   for( uint64_t u = 0; u <= uHistoryLevels; ++u )
    {
       std::filesystem::path pathHistoryTemp = pathHistoryCurrent / stringHistoryName; // Create the path to the history file in the current directory
 
       if( std::filesystem::exists(pathHistoryTemp) == true )
       {
          pathLocation = pathHistoryTemp; // Set the location to the history file path
-         return { true, "" }; // Found the history file
+         return { true, "" };                                                 // Found the history file
       }
 
-      if(pathHistoryCurrent == pathHistoryCurrent.root_path() ) // If we reached the root directory, stop searching
+      if(pathHistoryCurrent == pathHistoryCurrent.root_path() )               // If we reached the root directory, stop searching
       {
          return { false, "" };
       }
-      pathHistoryCurrent = pathHistoryCurrent.parent_path(); // Go one directory up and check again
+      pathHistoryCurrent = pathHistoryCurrent.parent_path();                  // Go one directory up and check again
 
    }
 

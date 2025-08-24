@@ -41,7 +41,7 @@ int main(int iArgumentCount, char** ppbszArgument)                             /
 
 
       auto result_ =  papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
-      if( result_.first == false ) { std::cout << to_color( enumColor::eColorRed1 ) << "\nERROR: " << result_.second << "\n"; return -1; } // @TAG #error
+      if( result_.first == false ) { std::cout << to_color( enumColor::eColorRed1 ) << "\nERROR: " << result_.second << "\n"; } // @TAG #error
 
 
       std::string stringError = papplication_g->ERROR_Report();
