@@ -3098,6 +3098,18 @@ std::pair<bool, std::string> CApplication::HistorySave_s(const std::string_view&
    return { true, "" };
 }
 
+std::pair<bool, std::string> CApplication::HistoryGetActive(uint32_t uDirectoryLevels)
+{
+   /*
+      - Check if local history file is in range
+      - If not found, check in user home directory
+      - If no file is found, return false+
+   */
+
+
+   return { true, "" };
+}
+
 std::pair<bool, std::string> CApplication::HISTORY_SaveCommand(const std::string_view& stringFileLocation)
 {
    std::string stringCommand = PROPERTY_Get("command").as_string();
