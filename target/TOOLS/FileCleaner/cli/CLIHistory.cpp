@@ -2,16 +2,17 @@
 * @file CLIHistory.cpp
 * @brief Implements history management for the cleaner console application.
 *
-* @section history_file_format History File Format
-*
-* The history information for the cleaner console application is stored in either XML or JSON format.
-* Each entry records an operation performed by the cleaner, including a timestamp, operation type, and optional details.
-*
-*
-* @section history_file_fields Fields
-* - @b timestamp: ISO 8601 formatted date and time of the operation.
-* - @b operation: The type of operation performed (e.g., "delete", "scan").
-* - @b details: (Optional) Additional information about the operation.
+* Fileformat for history file is XML, with root element `<history>` and multiple `<entry>` child elements.
+* @verbatim
+* <history>
+*   <entry>
+*     <pinned>...</pinned>
+*     <saved>...</saved>
+*     <history>...</history>
+*   </entry>
+* </history>
+* @endverbatim
+* 
 */
 
 // @TAG #cli #history
