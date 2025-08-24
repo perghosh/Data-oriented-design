@@ -284,6 +284,8 @@ public:
    std::pair<bool, std::string> parse( const std::string_view& stringArgument );
    std::pair<bool, std::string> parse( const std::vector<std::string>& vectorArgument );
    std::pair<bool, std::string> parse_terminal( const std::string_view& stringArgument );
+
+   std::string to_string() const;
    
 
 
@@ -355,6 +357,8 @@ public:
    bool exists( const std::string_view stringName ) const noexcept { return m_argumentsValue.exists( stringName ); }
    /// Check if arguments exists in active options
    bool exists( const std::string_view stringName, gd::types::tag_state_active ) const noexcept;
+
+   void remove(const std::string_view& stringName) { m_argumentsValue.remove(stringName); }
 
    // ## Iterators, default name and one version that specifically names option
 
@@ -428,6 +432,7 @@ public:
 public:
    /// convert argument values to string
    static std::string to_string_s(int iCount, const char* const* ppbszArgumentValue, int iOffset = 0);
+   static std::string to_string_s(const options* poptions_, int iOffset = 0);
    /// convert argument values to string
    static std::pair<bool, std::string> parse_s(const std::string_view& stringCommandLine, std::vector<std::string>& vectorArguments );
    static std::pair<bool, std::string> parse_terminal_s(const std::string_view& stringCommandLine, std::vector<std::string>& vectorArguments);
