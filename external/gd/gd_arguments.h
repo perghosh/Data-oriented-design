@@ -1897,9 +1897,9 @@ struct iterator_named
     }
 
     // Convenience methods for common value types
-    template<typename T>
-    T get() const {
-        return value().get<T>();
+    template<typename TYPE>
+    TYPE get() const {
+        return value().template get<TYPE>();
     }
 
     bool as_bool() const { return value().as_bool(); }
