@@ -1337,6 +1337,7 @@ std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const gd::argument
          std::vector<std::string> vectorKey = rule_.get_all< std::string>("key"); // Get all keys from the rule, can be multiple keys
          std::string stringKeys = rule_["keys"].as_string();                  // Get the keys from the rule, this can be a single key or multiple keys separated by ,
          std::string stringScope = rule_["scope"].as_string();                // scope information is how key-value pairs are scoped, like {key=value}, [key:value] etc.
+         if( stringScope == "!" ) stringScope.clear();
 
          const gd::parse::code codeKeyValue(stringScope);
 
@@ -1550,7 +1551,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       if( p_ == nullptr )
       {
          // file table: index | date | command | line 
-         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"int32", 0, "index"}, {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"int32", 0, "index"}, {"string", 30, "date"}, {"string", 20, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }

@@ -218,7 +218,7 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::c
       if( XML_EntryExists_s(&xmlnodeEntries, stringCommand) == true ) { return { false, "Command already exists in history, command: " + stringCommand }; }
 
       xmlnodeEntry.append_child("name").text().set( poptionsActive->name() ); // save command name
-      xmlnodeEntry.append_child("command").text().set(stringCommand.c_str()); // save command line
+      xmlnodeEntry.append_child("line").text().set(stringCommand.c_str()); // save command line
       xmlnodeEntry.append_child("date").text().set( stringDateTime );         // save date
 
       // ### Save the XML document back to the file
@@ -309,12 +309,12 @@ std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::argumen
 {
    if( argumentsTable.exists("print") == true && argumentsTable["print"].as_bool() == true )
    {
-      auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+      auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
       return std::move(ptable);
    }
    else
    {
-      auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"int32", 0, "index"}, {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+      auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"int32", 0, "index"}, {"rstring", 0, "date"}, {"rstring", 0, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
       return std::move(ptable);
    }
 }
@@ -337,7 +337,7 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
    std::string stringFileName = ( pathDirectory / "history.xml" ).string();
                                                                                assert(!stringFileName.empty());
 
-   //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+   //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
    //auto ptable = CreateTable_s(argumentsPrint); // Create a table to hold the history data                                                                               
 
    //std::unique_ptr<gd::table::dto::table>* ptable;
@@ -367,7 +367,7 @@ std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argu
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
    ReadFile_s(*ptable, argumentsRow); // Read the history file into the table
 
-   std::string stringCommand = ptable->cell_get_variant_view(argumentsRow["index"].as_uint64(), "command").as_string();
+   std::string stringCommand = ptable->cell_get_variant_view(argumentsRow["index"].as_uint64(), "name").as_string();
    std::string stringLine = ptable->cell_get_variant_view(argumentsRow["index"].as_uint64(), "line").as_string();
 
    std::cout << stringCommand << " " << stringLine << "\n";
@@ -429,10 +429,13 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
 
    // ## Get the command from the specified row and execute it
 
-   stringCommand = ptable->cell_get_variant_view(iRow, "line").as_string();
+   std::string stringName = ptable->cell_get_variant_view(iRow, "name").as_string();
+   std::string stringLine = ptable->cell_get_variant_view(iRow, "line").as_string();
+
+   stringCommand = stringName + " " + stringLine; // Construct the full command line
 
    if( stringCommand.empty() == false )
-   {
+   {                                                                                               LOG_DEBUG_RAW( "==> Running history command: " + stringCommand );
       poptionsApplication->clear();
       poptionsApplication->set_first(0);
 
@@ -552,7 +555,7 @@ std::pair<bool, std::string> XML_AppendEntry_s(const gd::argument::arguments& ar
    std::string stringFileName = argumentsEntry["file"].as_string();
                                                                                assert(!stringFileName.empty());
    std::string stringDate = argumentsEntry["date"].as_string();
-   std::string stringCommand = argumentsEntry["command"].as_string();
+   std::string stringName = argumentsEntry["name"].as_string();
    //std::string stringLine = argumentsEntry["line"].as_string();
 
    std::vector<gd::argument::arguments::argument> vectorLines = argumentsEntry.get_argument_all("line");
@@ -569,7 +572,7 @@ std::pair<bool, std::string> XML_AppendEntry_s(const gd::argument::arguments& ar
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
    auto uRow = ptable->row_add_one(); // Add a new row to the table
    ptable->cell_set(uRow, "date", stringDate);
-   ptable->cell_set(uRow, "command", stringCommand);
+   ptable->cell_set(uRow, "name", stringName);
    ptable->cell_set(uRow, "line", stringLine);
 
    return { true, "" };
@@ -595,30 +598,33 @@ std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, con
 {
    std::string stringFileName; //= argumentsTable["file"].as_string();
 
-   std::filesystem::path pathHistoryCurrent; //= std::filesystem::current_path() / ".cleaner-history.xml"; // Default history location in current directory
-   std::filesystem::path pathHistoryHome;
+   std::filesystem::path pathLocal;
+   std::filesystem::path pathHome;
 
-   CApplication::HistoryFindFile_s(pathHistoryCurrent );                     // Get the local history location
-   CApplication::HistoryLocation_s(pathHistoryHome);
-
-   if( std::filesystem::exists(pathHistoryCurrent) == true )
+   auto result_ = CApplication::HistoryFindFile_s(pathLocal);          // Get the local history location
+   if( result_.first == false )
    {
-      stringFileName = pathHistoryCurrent.string(); // Use the current directory history file if it exists
+      result_ = CApplication::HistoryLocation_s(pathHome);
    }
-   if( std::filesystem::exists(pathHistoryHome) == true && std::filesystem::exists(pathHistoryCurrent) == false )
+
+   if( std::filesystem::exists(pathLocal) == true )
    {
-      stringFileName = pathHistoryHome.string(); // Use the home directory history file if it exists
+      stringFileName = pathLocal.string(); // Use the current directory history file if it exists
+   }
+   else if( std::filesystem::exists(pathHome) == true )
+   {
+      stringFileName = pathHome.string(); // Use the home directory history file if it exists
    }
 
    assert(!stringFileName.empty());
    //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
 
    pugi::xml_document xmldocument;
-   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
-   if( !result_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
+   pugi::xml_parse_result xmlparseresult_ = xmldocument.load_file(stringFileName.c_str());
+   if( !xmlparseresult_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
 
    // Check if entries exist
-   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
+   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("saved");
    if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
    
    int iRowCount = 0;
@@ -627,7 +633,7 @@ std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, con
    for( auto entry : xmlnodeEntries.children("entry") )
    {
       std::string stringDate = entry.child("date").text().get();
-      std::string stringCommand = entry.child("command").text().get();
+      std::string stringName = entry.child("name").text().get();
       std::string stringLine = entry.child("line").text().get();
       // Add the entry to the table  
       auto uRow = tableHistory.row_add_one();
@@ -640,7 +646,7 @@ std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, con
       }
 
       tableHistory.cell_set(uRow, "date", stringDate);
-      tableHistory.cell_set(uRow, "command", stringCommand);
+      tableHistory.cell_set(uRow, "name", stringName);
       tableHistory.cell_set(uRow, "line", stringLine);
    }
    return { true, "" };
