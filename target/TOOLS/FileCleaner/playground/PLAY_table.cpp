@@ -77,8 +77,15 @@ TEST_CASE("[table] custom columns", "[table]")
 
 }
 
-TEST_CASE("[table] custom columns", "[table]") 
+TEST_CASE("[table] custom columns 1", "[table]") 
 {
    gd::table::arguments::table table_( gd::table::tag_full_meta{} );
+
+   gd::argument::shared::arguments argumentsTest({{ "one", 1 },{ "one", 1 },{ "one", 1 },{ "one", 1 },{ "one", 1 },{ "one", 1 } });
+
+   for( auto it = argumentsTest.named_begin(); it != argumentsTest.named_end(); ++it )
+   {
+      std::cout << "Name: " << it->first << " Value: " << it->second.as_string() << "\n";
+   }
 }
 

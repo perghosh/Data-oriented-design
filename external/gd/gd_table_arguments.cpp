@@ -224,7 +224,7 @@ table::table( gd::table::detail::columns* pcolumns, const table* ptable, uint64_
 table::~table() 
 {
    // ## release arguments if set
-   if( is_rowarguments() == true && get_row_count() > 0 )
+   if( empty() == false && is_rowarguments() == true && get_row_count() > 0 )
    {
       auto* puPosition = m_puMetaData; 
       // Calculate offset to arguments object in metadata for each row
