@@ -442,7 +442,7 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
       poptionsApplication->set_first(0);
 
       auto result_ = poptionsApplication->parse_terminal(stringCommand);      // Parse the command line from the history entry
-      if( result_.first = false ) { return result_; }
+      if( result_.first == false ) { return result_; }
 
       result_ = papplication_g->Initialize(*poptionsApplication);             // Initialize the application with parsed options
       if( result_.first == false ) { return result_; }
