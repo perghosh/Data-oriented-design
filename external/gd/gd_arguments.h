@@ -115,14 +115,14 @@ _GD_ARGUMENT_BEGIN
 _GD_ARGUMENT_BEGIN
 #endif
 
-// ================================================================================================
-// ====================================================================================== arguments
-// ================================================================================================
-
 // Forward declaration before the arguments class
 template<typename ARGUMENTS>
 struct iterator_named;
 
+
+// ================================================================================================
+// ====================================================================================== arguments
+// ================================================================================================
 
 /**
  * \brief  arguments focus on memory size, to tricks to align and speed up memory access
@@ -1785,160 +1785,154 @@ inline bool arguments::compare(const std::string_view& stringName, const argumen
 template<typename ARGUMENTS>
 struct iterator_named
 {
-    using value_type = std::pair<std::string_view, arguments::argument>;
-    using iterator_category = std::forward_iterator_tag;
-    using self = iterator_named;
-    using difference_type = std::ptrdiff_t;
-    using pointer = const value_type*;
-    using reference = const value_type&;
+   using value_type = std::pair<std::string_view, arguments::argument>;
+   using iterator_category = std::forward_iterator_tag;
+   using self = iterator_named;
+   using difference_type = std::ptrdiff_t;
+   using pointer = const value_type*;
+   using reference = const value_type&;
 
-    // Constructors
-    iterator_named() : m_parguments(nullptr), m_uPosition(0) {}
-    iterator_named(const ARGUMENTS* parguments) : m_parguments(parguments), m_uPosition(0) {}
-    iterator_named(const ARGUMENTS* parguments, size_t uPosition) : m_parguments(parguments), m_uPosition(uPosition) {}
-    iterator_named(const iterator_named& o) : m_parguments(o.m_parguments), m_uPosition(o.m_uPosition) {}
-    
-    // Assignment
-    iterator_named& operator=(const iterator_named& o) {
-        m_parguments = o.m_parguments;
-        m_uPosition = o.m_uPosition;
-        return *this;
-    }
+   // Constructors
+   iterator_named() : m_parguments(nullptr), m_uPosition(0) {}
+   iterator_named(const ARGUMENTS* parguments) : m_parguments(parguments), m_uPosition(0) {}
+   iterator_named(const ARGUMENTS* parguments, size_t uPosition) : m_parguments(parguments), m_uPosition(uPosition) {}
+   iterator_named(const iterator_named& o) : m_parguments(o.m_parguments), m_uPosition(o.m_uPosition) {}
 
-    // Comparison operators
-    bool operator==(const self& o) const {
-        assert(m_parguments == o.m_parguments);
-        return m_uPosition == o.m_uPosition;
-    }
-    bool operator!=(const self& o) const { return !(*this == o); }
-    bool operator>(const self& o) const { return m_uPosition > o.m_uPosition; }
-    bool operator<(const self& o) const { return m_uPosition < o.m_uPosition; }
+   // Assignment
+   iterator_named& operator=(const iterator_named& o) {
+      m_parguments = o.m_parguments;
+      m_uPosition = o.m_uPosition;
+      return *this;
+   }
 
-    // Conversion operators
-    operator const ARGUMENTS*() const { return m_parguments; }
-    operator arguments::const_pointer() const { return buffer_offset(); }
+   // Comparison operators
+   bool operator==(const self& o) const {                                                          assert(m_parguments == o.m_parguments);
+      return m_uPosition == o.m_uPosition;
+   }
+   bool operator!=(const self& o) const { return !( *this == o ); }
+   bool operator>(const self& o) const { return m_uPosition > o.m_uPosition; }
+   bool operator<(const self& o) const { return m_uPosition < o.m_uPosition; }
 
-    // Dereference operators - returns name-value pair
-    value_type operator*() const {                                                                 assert(m_parguments->verify_d(buffer_offset()));
-        auto position_ = buffer_offset();
-        auto name = ARGUMENTS::is_name_s(position_) ? ARGUMENTS::get_name_s(position_) : std::string_view{};
-        auto arg = ARGUMENTS::get_argument_s(position_);
-        return std::make_pair(name, arg);
-    }
+   // Conversion operators
+   operator const ARGUMENTS* () const { return m_parguments; }
+   operator arguments::const_pointer() const { return buffer_offset(); }
 
-    // For pointer-like access
-    struct proxy {
-        value_type pair;
-        proxy(value_type p) : pair(std::move(p)) {}
-        const value_type* operator->() const { return &pair; }
-    };
-    
-    proxy operator->() const { return proxy(operator*()); }
+   // Dereference operators - returns name-value pair
+   value_type operator*() const {                                                                  assert(m_parguments->verify_d(buffer_offset()));
+      auto position_ = buffer_offset();
+      auto name = ARGUMENTS::is_name_s(position_) ? ARGUMENTS::get_name_s(position_) : std::string_view{};
+      auto arg = ARGUMENTS::get_argument_s(position_);
+      return std::make_pair(name, arg);
+   }
 
-    // Increment operators
-    self& operator++() {                                                                           assert(m_parguments->verify_d(buffer_offset()));
-        m_uPosition = arguments::next_s(m_parguments->buffer_data(), m_uPosition);                 assert(m_parguments->verify_d(buffer_offset()));
-        return *this;
-    }
-    
-    self operator++(int) {
-        assert(m_parguments->verify_d(buffer_offset()));
-        iterator_named it = *this;
-        ++(*this);
-        return it;
-    }
+   // For pointer-like access
+   struct proxy {
+      value_type pair;
+      proxy(value_type p) : pair(std::move(p)) {}
+      const value_type* operator->() const { return &pair; }
+   };
 
-    // Compound assignment operator
-    self& operator+=(size_t uCount) {
-        for(size_t i = 0; i < uCount; ++i) { ++(*this); }
-        return *this;
-    }
+   proxy operator->() const { return proxy(operator*()); }
 
-    // Addition operator
-    self operator+(size_t uCount) const {
-        iterator_named it = *this;
-        for(size_t i = 0; i < uCount; ++i) ++it;
-        return it;
-    }
+   // Increment operators
+   self& operator++() {
+      assert(m_parguments->verify_d(buffer_offset()));
+      m_uPosition = arguments::next_s(m_parguments->buffer_data(), m_uPosition);                   assert(m_parguments->verify_d(buffer_offset()));
+      return *this;
+   }
 
-    // Name access methods
-    bool is_name() const {
-        assert(m_parguments->verify_d(buffer_offset()));
-        return ARGUMENTS::is_name_s(buffer_offset());
-    }
+   self operator++(int) {                                                                          assert(m_parguments->verify_d(buffer_offset()));
+      iterator_named it = *this;
+      ++( *this );
+      return it;
+   }
 
-    std::string_view name() const {
-        assert(m_parguments->verify_d(buffer_offset()));
-        if (ARGUMENTS::is_name_s(buffer_offset())) {
-            return ARGUMENTS::get_name_s(buffer_offset());
-        }
-        return std::string_view{};
-    }
+   // Compound assignment operator
+   self& operator+=(size_t uCount) {
+      for( size_t i = 0; i < uCount; ++i ) { ++( *this ); }
+      return *this;
+   }
 
-    std::string name_string() const {
-        auto n = name();
-        return std::string(n);
-    }
+   // Addition operator
+   self operator+(size_t uCount) const {
+      iterator_named it = *this;
+      for( size_t i = 0; i < uCount; ++i ) ++it;
+      return it;
+   }
 
-    bool compare_name(const std::string_view& stringName) const {
-        if (ARGUMENTS::is_name_s(buffer_offset())) {
-            return ARGUMENTS::get_name_s(buffer_offset()) == stringName;
-        }
-        return false;
-    }
+   // Name access methods
+   bool is_name() const {                                                                          assert(m_parguments->verify_d(buffer_offset()));
+      return ARGUMENTS::is_name_s(buffer_offset());
+   }
 
-    // Value access methods
-    arguments::argument value() const {                                                            assert(m_parguments->verify_d(buffer_offset()));
-        return ARGUMENTS::get_argument_s(buffer_offset());
-    }
+   std::string_view name() const {                                                                 assert(m_parguments->verify_d(buffer_offset()));
+      if( ARGUMENTS::is_name_s(buffer_offset()) ) {
+         return ARGUMENTS::get_name_s(buffer_offset());
+      }
+      return std::string_view{};
+   }
 
-    arguments::argument get_argument() const {
-        return value();
-    }
+   /// Get name as std::string
+   std::string name_string() const { auto name_ = name(); return std::string(name_); }
 
-    // Convenience methods for common value types
-    template<typename TYPE>
-    TYPE get() const {
-        return value().template get<TYPE>();
-    }
+   bool compare_name(const std::string_view& stringName) const {
+      if( ARGUMENTS::is_name_s(buffer_offset()) ) {
+         return ARGUMENTS::get_name_s(buffer_offset()) == stringName;
+      }
+      return false;
+   }
 
-    bool as_bool() const { return value().as_bool(); }
-    int as_int() const { return value().as_int(); }
-    uint32_t as_uint() const { return value().as_uint(); }
-    int64_t as_int64() const { return value().as_int64(); }
-    uint64_t as_uint64() const { return value().as_uint64(); }
-    double as_double() const { return value().get_double(); }
-    std::string as_string() const { return value().as_string(); }
-    gd::variant_view as_variant_view() const { return value().as_variant_view(); }
+   // Value access methods
+   arguments::argument value() const {
+      assert(m_parguments->verify_d(buffer_offset()));
+      return ARGUMENTS::get_argument_s(buffer_offset());
+   }
 
-    // Structured binding support (for C++17 and later)
-    template<std::size_t uIndex>
-    auto get() const {
-        static_assert(uIndex < 2, "Index must be 0 (name) or 1 (value)");
-        if constexpr (uIndex == 0) return name();
-        if constexpr (uIndex == 1) return value();
-    }
+   arguments::argument get_argument() const {
+      return value();
+   }
 
-    // Helper methods
-    arguments::const_pointer buffer_offset() const {
-       arguments::const_pointer pposition_ = m_parguments->buffer_offset( m_uPosition );
-       return pposition_;
-    }
+   // Convenience methods for common value types
+   template<typename TYPE>
+   TYPE get() const {
+      return value().template get<TYPE>();
+   }
 
-    size_t position() const { return m_uPosition; }
-    const ARGUMENTS* container() const { return m_parguments; }
+   bool as_bool() const { return value().as_bool(); }
+   int as_int() const { return value().as_int(); }
+   uint32_t as_uint() const { return value().as_uint(); }
+   int64_t as_int64() const { return value().as_int64(); }
+   uint64_t as_uint64() const { return value().as_uint64(); }
+   double as_double() const { return value().get_double(); }
+   std::string as_string() const { return value().as_string(); }
+   gd::variant_view as_variant_view() const { return value().as_variant_view(); }
 
-    // Validation
-    bool is_valid() const {
-        return m_parguments != nullptr && 
-               m_uPosition <= m_parguments->buffer_size() &&
-               (m_uPosition == m_parguments->buffer_size() || 
-                m_parguments->verify_d(buffer_offset()));
-    }
+   // Structured binding support (for C++17 and later)
+   template<std::size_t uIndex>
+   auto get() const {
+      static_assert( uIndex < 2, "Index must be 0 (name) or 1 (value)" );
+      if constexpr( uIndex == 0 ) return name();
+      if constexpr( uIndex == 1 ) return value();
+   }
+
+   /// Internal buffer access
+   arguments::const_pointer buffer_offset() const { arguments::const_pointer pposition_ = m_parguments->buffer_offset(m_uPosition); return pposition_; }
+   /// Get current position in buffer
+   size_t position() const { return m_uPosition; }
+   /// Get pointer to arguments container
+   const ARGUMENTS* container() const { return m_parguments; }
+
+   // Validation
+   bool is_valid() const {
+      return m_parguments != nullptr &&
+         m_uPosition <= m_parguments->buffer_size() &&
+         ( m_uPosition == m_parguments->buffer_size() ||
+            m_parguments->verify_d(buffer_offset()) );
+   }
 
 public:
-    const ARGUMENTS* m_parguments;
-    size_t m_uPosition;
+   const ARGUMENTS* m_parguments; ///< Pointer to the arguments container
+   size_t m_uPosition; ///< Current position in the buffer
 };
 
 // Type aliases for convenience
@@ -1947,13 +1941,13 @@ using const_named_iterator = iterator_named<const arguments>;
 
 // Helper functions to create named iterators
 template<typename ARGUMENTS>
-iterator_named<ARGUMENTS> make_named_iterator(const ARGUMENTS* arguments_) { return iterator_named<ARGUMENTS>(arguments_); }
+iterator_named<ARGUMENTS> make_iterator_named(const ARGUMENTS* arguments_) { return iterator_named<ARGUMENTS>(arguments_); }
 
 template<typename ARGUMENTS>
-iterator_named<ARGUMENTS> make_named_iterator(const ARGUMENTS* args, size_t position) { return iterator_named<ARGUMENTS>(args, position); }
+iterator_named<ARGUMENTS> make_iterator_named(const ARGUMENTS* args, size_t position) { return iterator_named<ARGUMENTS>(args, position); }
 
+// ## named iterator methods
 
-// Now define the methods after the template is fully defined
 inline arguments::named_iterator_t arguments::named_begin() { 
    return named_iterator_t(this); 
 }
