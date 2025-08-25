@@ -441,7 +441,8 @@ public:
    /// Save history table to file
    static std::pair<bool, std::string> HistorySave_s(const std::string_view& stringFileName, const gd::table::dto::table* ptable);
    /// Get active history file
-   static std::pair<bool, std::string> HistoryGetActive( uint32_t uDirectoryLevels );
+   static std::pair<bool, std::string> HistoryFindActive_s(std::filesystem::path& pathLocation);
+   // @TASK [name: history] [status: open] [type: feature] [priority: 3] [tags: #history #file #save] [assigned_to: kevin] [description: Add method to finds both local history or global, just one method to check if history is enabled and the active one.]
 
 
 
