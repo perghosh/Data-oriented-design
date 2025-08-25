@@ -3110,7 +3110,11 @@ std::pair<bool, std::string> CApplication::HistoryFindActive_s(std::filesystem::
       - If no file is found, return false+
    */
    
+   HistoryFindFile_s(pathLocation); // Check in current directory and parent directories
 
+   if( pathLocation.empty() == true ) { HistoryLocation_s(pathLocation); } // Check in user home directory
+
+   if( pathLocation.empty() == true ) { return { false, "No history file found" }; }
 
    return { true, "" };
 }
