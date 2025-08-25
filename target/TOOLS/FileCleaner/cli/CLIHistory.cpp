@@ -657,8 +657,17 @@ std::pair<bool, std::string> ReadFile_s(gd::table::dto::table& tableHistory, con
 std::string DATE_CurrentTime_s()
 {
    auto now_ = std::chrono::system_clock::now();
-   auto local_time_ = std::chrono::zoned_time{std::chrono::current_zone(), now_};
-   return std::format("{:%Y-%m-%d %H:%M:%S}", local_time_);
+   std::time_t time_ = std::chrono::system_clock::to_time_t(now_);
+#if defined(_WIN32)
+   std::tm tm_;
+   localtime_s(&tm_, &time_);
+#else
+   std::tm tm_;
+   localtime_r(&time_, &tm_);
+#endif
+   char buffer[20];
+   std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm_);
+   return std::string(buffer);
 }
 
 std::filesystem::path GetHistoryPath_s()
