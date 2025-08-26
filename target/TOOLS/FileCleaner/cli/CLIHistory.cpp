@@ -605,12 +605,25 @@ bool XML_EntryExists_s( const pugi::xml_node* pxmlnodeEntries, std::string_view 
    return false;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Reads history entries from an XML file and populates a table with the data.
+ * 
+ * This function loads an XML file containing history entries, parses the entries, and populates a provided table with the data.
+ * Each entry in the XML file is expected to have child nodes for "date", "name", and "line".
+ * 
+ * @note The function checks for the existence of the history file in both the local directory and the user's home directory.
+ * 
+ * @param tableHistory Reference to a table object where the history entries will be stored.
+ * @param argumentsTable The arguments containing options for reading the history, such as the file name.
+ * @param callback_ Optional callback function to receive status messages during the reading process.
+ * @return A pair containing a boolean indicating success or failure, and a string with an error message if applicable.
+ */
 std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable, std::function<void(std::string_view)> callback_)
 {
-   std::string stringFileName; //= argumentsTable["file"].as_string();
-
    std::filesystem::path pathLocal;
    std::filesystem::path pathHome;
+
+   std::string stringFileName; // The history file to read
 
    auto result_ = CApplication::HistoryFindFile_s(pathLocal);          // Get the local history location
    if( result_.first == false )

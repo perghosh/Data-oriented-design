@@ -255,7 +255,7 @@ public:
 
    /**
     * @brief iterator to move trough rows in table
-   */
+    */
    struct iterator_row
    {
       iterator_row(): m_uRow(0), m_ptablecolumnbuffer(nullptr) {}
@@ -268,6 +268,12 @@ public:
 
       bool operator==( const iterator_row& o ) const { assert( o.m_ptablecolumnbuffer == m_ptablecolumnbuffer ); return o.m_uRow == m_uRow; }
       bool operator!=( const iterator_row& o ) const { assert( o.m_ptablecolumnbuffer == m_ptablecolumnbuffer ); return o.m_uRow != m_uRow; }
+
+      bool operator<(const iterator_row& o) const noexcept { assert(m_ptablecolumnbuffer == o.m_ptablecolumnbuffer && "Comparing iterators from different tables"); return m_uRow < o.m_uRow; }
+      bool operator<=(const iterator_row& o) const noexcept { return !(o < *this); }
+      bool operator>(const iterator_row& o) const noexcept { return o < *this; }
+      bool operator>=(const iterator_row& o) const noexcept { return !(*this < o); }
+
 
       iterator_row& operator++() { m_uRow++; return *this; }
       iterator_row operator++(int) { iterator_row it_ = *this; ++(*this); return it_; }
@@ -301,7 +307,13 @@ public:
 
       bool operator==( const const_iterator_row& o ) const { assert( o.m_ptablecolumnbuffer == m_ptablecolumnbuffer ); return o.m_uRow == m_uRow; }
       bool operator!=( const const_iterator_row& o ) const { assert( o.m_ptablecolumnbuffer == m_ptablecolumnbuffer ); return o.m_uRow != m_uRow; }
-      operator uint64_t() const { return m_uRow; }
+
+      bool operator<(const const_iterator_row& o) const noexcept { assert(m_ptablecolumnbuffer == o.m_ptablecolumnbuffer && "Comparing iterators from different tables"); return m_uRow < o.m_uRow; }
+      bool operator<=(const const_iterator_row& o) const noexcept { return !(o < *this); }
+      bool operator>(const const_iterator_row& o) const noexcept { return o < *this; }
+      bool operator>=(const const_iterator_row& o) const noexcept { return !(*this < o); }
+
+      operator uint64_t() const  noexcept  { return m_uRow; }
       uint64_t get_row() const noexcept { return m_uRow; }
       int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
 
@@ -762,6 +774,9 @@ public:
    gd::table::rows<table_column_buffer> rows() { return gd::table::rows<gd::table::table_column_buffer>( this ); }
 
    // ## cell methods, cell related functionality  0TAG0cell.table_column_buffer
+
+   uint64_t cell_offset( uint64_t uRow, unsigned uColumn ) noexcept;
+   uint64_t cell_offset(uint64_t uRow, const std::string_view& stringName) noexcept;
 
    uint8_t* cell_get( uint64_t uRow, unsigned uColumn ) noexcept;
    const uint8_t* cell_get( uint64_t uRow, unsigned uColumn ) const noexcept;
