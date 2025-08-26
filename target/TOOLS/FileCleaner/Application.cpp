@@ -287,7 +287,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    if( iArgumentCount > 1 )
    {
       PROPERTY_Set("threads", true);                                           // activate threading
-      PROPERTY_Set("history-levels", uint64_t(2));                             // set history levels to 2
+      PROPERTY_Set("history-levels", uint64_t(3));                             // set history levels to 2
 
       std::string stringArgument = gd::cli::options::to_string_s(iArgumentCount, ppbszArgument, 1);
 #ifndef NDEBUG
@@ -3103,14 +3103,19 @@ std::pair<bool, std::string> CApplication::HistorySave_s(const std::string_view&
    return { true, "" };
 }
 
-std::pair<bool, std::string> CApplication::HistoryGetActive(uint32_t uDirectoryLevels)
+std::pair<bool, std::string> CApplication::HistoryFindActive_s(std::filesystem::path& pathLocation)
 {
    /*
       - Check if local history file is in range
       - If not found, check in user home directory
       - If no file is found, return false+
    */
+   
+   HistoryFindFile_s(pathLocation); // Check in current directory and parent directories
 
+   if( pathLocation.empty() == true ) { HistoryLocation_s(pathLocation); } // Check in user home directory
+
+   if( pathLocation.empty() == true ) { return { false, "No history file found" }; }
 
    return { true, "" };
 }
