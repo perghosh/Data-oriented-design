@@ -3041,6 +3041,16 @@ std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesyst
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Finds the local history file
+ *
+ * This static method searches for a history file named ".cleaner-history.xml" in the current directory
+ * and up to a specified number of parent directories. If found, it sets the provided pathLocation to the file's path.
+ *
+ * @param pathLocation A reference to a filesystem::path where the found history file's path will be stored.
+ * @return std::pair<bool, std::string> Returns a pair where the first element is true if the file was found,
+ *         false if not found, and the second element contains an error message if applicable.
+ */
 std::pair<bool, std::string> CApplication::HistoryFindFile_s(std::filesystem::path& pathLocation )
 {
    uint64_t uHistoryLevels = papplication_g->PROPERTY_Get("history-levels");

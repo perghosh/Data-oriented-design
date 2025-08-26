@@ -1808,6 +1808,30 @@ void table_column_buffer::row_reserve_add( uint64_t uCount )
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Get offset to cell in memory block table use to store values
+ * @param uRow row where cell value is
+ * @param uColumn column for cell
+ * @return offset to memory buffer cell stores its value
+ */
+uint64_t table_column_buffer::cell_offset( uint64_t uRow, unsigned uColumn ) noexcept
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( uColumn < m_vectorColumn.size() ); assert( m_puData );
+   auto& columnSet = m_vectorColumn[uColumn];
+   return (uRow * m_uRowSize) + columnSet.position();
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get offset to cell in memory block table use to store values
+ * @param uRow row where cell value is
+ * @param stringName name for column cell is found at
+ * @return offset to memory buffer cell stores its value
+ */
+uint64_t table_column_buffer::cell_offset( uint64_t uRow, const std::string_view& stringName ) noexcept
+{                                                                                                  assert( uRow < m_uReservedRowCount ); assert( m_namesColumn.empty() == false );
+   unsigned uColumnIndex = column_get_index( stringName );
+   return cell_offset( uRow, uColumnIndex );
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Get position to cell in memory block table use to store values
  * @param uRow row where cell value is
  * @param uColumn column for cell

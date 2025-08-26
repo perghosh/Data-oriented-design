@@ -619,6 +619,9 @@ public:
 
    // ## cell methods, cell related functionality
 
+   uint64_t cell_offset( uint64_t uRow, unsigned uColumn ) noexcept;
+   uint64_t cell_offset(uint64_t uRow, const std::string_view& stringName) noexcept;
+
    uint8_t* cell_get( uint64_t uRow, unsigned uColumn ) noexcept;
    const uint8_t* cell_get( uint64_t uRow, unsigned uColumn ) const noexcept;
    uint8_t* cell_get( uint64_t uRow, const std::string_view& stringName ) noexcept;
