@@ -60,90 +60,20 @@ std::pair<bool, std::string> HistoryEdit_g();
 
 NAMESPACE_CLI_END
 
-
 /*
-@TASK #history.list #user.kevin
-[name: history] [priority: high] [state: open] [assigned_to: kevin]
-[description: "## list history items.
-Items in history are stored in a file, to make it possible to use previous commands.
-List history items is needed to view what has been done before, and to make it possible to repeat commands." ]
-[sample: '
-- `cleaner history -list` - lists all history items
-- `cleaner history -list --filter "count"` - lists all history "count" items
-- `cleaner history -list --filter "find"` - lists all history "find" items
-']
-[idea: "Main method for history is called `History_g'. If the flag `-list` is set, then call method `ReadHistory_s`into history table stored in document cache.
-When history is read, apply filter if any was sent and the print. Method to print should be called `HistoryPrint_g`"]
-*/
-
-// @TASK #history.create #user.per [name:create local history file][brief: test if local history file can be created][state: open]
-
-/*
-@TASK #history.create #user.kevin [name:create local history file][state: closed]
-[description:"   
-- `cleaner history -create -local`
-- This will create a local history file in the current folder.
-"]
-[date:2025-08-01][priority: high]
-*/
-
-
-
-/*
-@TASK #history.add #user.kevin [name:add command to history]
-[description:"   
-   - Add global option command called `--history` that marks if the command should be added to history.
-   - If `--history` is set then: save the command string to hisory file and the value set for --history is the alias name.
-"]
-[state:closed][date:2025-08-01][priority: high]
+@TASK [name: history] [task: delete row] [priority: high] [state: open] [assigned_to: kevin] [description: Delete history row, with row index]
+[sample: 'cleaner history --delete 5 ']
 */
 
 /*
-@TASK #history.load #user.kevin [name:load history]
-[description:"   
-- Loading history should try to check if there are any history files in the current folder or parent folder to current folder.
-- - If local history file is found then load it into the document cache.
-- - If no local history file is found then try to load the global history file.
-"]
-[state:closed][date:2025-08-01][priority: high]
+@TASK [name: history] [task: prune] [priority: high] [state: open] [assigned_to: kevin] [description: Shrink number of history items in save, add option "prune"]
+[sample: 'cleaner history --prune "50%" ']
 */
 
 /*
-@TASK #history.backup #user.kevin
-[name: history] [priority: high] [state: open] [assigned_to: kevin]
-[description: "## create backup of history file
-if No folder than place it it in same folder as the history file are located, if full path is given then place it in that folder." ]
-[sample: '
-- `cleaner history --backup "history-file-name"` - Creates backup of history file
-']
-[idea: "Call method `BackupHistory_s'. If the option `--backup` is set"]
+@TASK [name: history] [task: pin] [priority: high] [state: open] [assigned_to: kevin] [description: Pin history command, copy command from save to pinned]
+[sample: "cleaner history --pin 23" - Pin history command with number 23 in save]
 */
 
-/*
-@TASK #history.prune #user.kevin
-[name: history] [priority: high] [state: open] [assigned_to: kevin]
-[description: "## Prune history file.
-This will remove entries from the history file based on a given filter.
-" ]
-[sample: '
-- `cleaner history --prune "50%"` - Prunes history file to keep only the last 50% of entries
-- `cleaner history --prune "100"` - Prunes history file to keep only the last 100 entries
-- `cleaner history --prune "list"` - Prunes all list entries from the history file
-']
-[idea: "Call method `HistoryPrune_g`. If the option `--prune` is set, prune is an advanced command so it will need some logic and filtering."]
-[date:2025-08-03][priority: low]
-*/
-
-/*
-@TASK #history.pin #user.kevin
-[name: history] [priority: high] [state: open] [assigned_to: kevin]
-[description: "## Pin history command.
-This will pin a history command based on a given filter. Pinning a command means that it will not be pruned or removed from the history file.
-" ]
-[sample: '
-- `cleaner history --pin "23"`- Pins history command with number 23
-- `cleaner history --pin "alias-name"` - Pins history that have alias name
-']
-*/
 
 
