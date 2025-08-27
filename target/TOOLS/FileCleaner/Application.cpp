@@ -2062,25 +2062,6 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       //optionsCommand.add({});
    }
 
-   // ## 'kv' read key value pairs from file
-   /*
-   {
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "kv", "Read key value pairs from file" );
-      optionsCommand.add({ "filter", "Filter to use, if empty then all found files are counted, filter format is wildcard file name matching" });
-      optionsCommand.add({ "pattern", 'p', "Patterns to search for (multiple values separated by commas or semicolons)"});
-      optionsCommand.add({ "pattern", 'p', "Patterns to search for (multiple values separated by commas or semicolons)"});
-      optionsCommand.add({ "source", 's', "File(s) or folder(s) to search"});
-      optionsCommand.add({ "ignore", "Folder(s) to ignore searching for files"});
-      optionsCommand.add({ "rpattern", "Regular expression pattern to search for"});
-      optionsCommand.add({ "segment", "Type of code segment to search within (code, comment, string or all)"});
-      optionsCommand.add_flag( {"R", "Enable recursive scanning of all subfolders (depth limit: 16)"} );
-      optionsCommand.add_flag( {"match-all", "Require all specified patterns to match in each row"} );
-
-      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
-      optionsApplication.sub_add(std::move(optionsCommand));
-   }
-   */
-
    { // ## 'list' command, list rows with specified patterns @TAG #options.list
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "Search and list rows in files that match specified patterns." );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `app*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all found files are processed." });

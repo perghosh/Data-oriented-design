@@ -10,7 +10,6 @@ Searching effectively is powerful, but searching through everything—especially
 
 Why the name `cleaner`? Managing code often means cleaning—removing clutter, refactoring, or reorganizing. But first, you need to find what needs fixing. cleaner helps you search smarter, so you can clean better.
 
-
 ---
 
 ## Table of Contents
@@ -23,7 +22,9 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, r
   - [list](#list)
   - [copy](#copy)
   - [dir](#dir)
+  - [paste](#paste)
   - [history](#history)
+  - [run](#run)
   - [help](#help)
   - [version](#version)
 - [Global options](#global-options)
@@ -58,7 +59,6 @@ The `*` (or `.`, `**` beacuse `*` is specific in linux) added after command mean
 - `cleaner list * assert` lists all rows matching pattern "assert" in all files in current folder and subfolders.`
 - `cleaner dir *` lists all files in current folder and subfolders.
 
-
 ## Commands
 
 ### config
@@ -66,8 +66,10 @@ Manages configuration settings for cleaner.
 `cleaner-configuration.json` file is used to store configuration settings for cleaner and is placed in the user's home directory under `~/.cleaner/` on Linux or `%USERPROFILE%\.cleaner\` on Windows.
 
 **Options:**
-- `-create`: Create a new configuration file in the user's home directory.
-- `-edit`: Edit the existing configuration file if any file is associated with the extension `json`.
+- `--create`: Create a new configuration file in the user's home directory.
+- `--edit`: Edit the existing configuration file if any file is associated with the extension `json`.
+- `--local`: Create configuration file in current directory.
+- `--backup`: Create a backup copy of the configuration file.
 
 ### count
 Counts lines in files or folders, or counts pattern occurrences.
@@ -78,6 +80,7 @@ Counts lines in files or folders, or counts pattern occurrences.
 - `--source <path;path>`: File or folder to count lines in. If not specified, the current directory is used. Cleaner supports positional arguments for source path, so you can use `cleaner count /home/username/dev/project/src/`. Multiple sources are separated by `;`.
 - `--ignore <match;match;match>`: Ignore files or folders matching the specified patterns. Multiple patterns are separated by `;`.
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
+- `--rpattern <regex>`: Use a regular expression pattern to search for more complex text matches within file content.
 - `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
 - `--output <file>`: Save the output to a file.
 - `--page <index>`: Print the output to the console from slected page, default page size is 10 lines.
@@ -105,14 +108,21 @@ Also remember that code is stripped of comments and strings before searching. Fi
 - `--kv <keys@format>` : Key or keys to read values for and format how keys are found in code. This is a shortcut for `--keys` and `--kv-format` options. If keys contains `@` this doesn not work. 
   Example: `--kv "key1,key2,key3@[]:"`
 - `--keys <key1;key2,...>`: Keys to read values for. This is used to extract key-value pairs from the code to produce a report from the code. When multiple keys are specified in `keys` option they are separated by `;` and the value for each key is printed on a separate line in the output. 
-- `--header <key>`: Header to include in the output for key-value pairs. Key need to be within `keys` and value for that is put in header.
+- `--header <key>`: Select columns or keys to include in the output as header.
+- `--footer <key>`: Select columns or keys to include in the output as footer.
+- `--brief`: Enable brief output format for key-value pairs. Based on output format this varies but generally shows a condensed view to simplify understanding.
 - `--kv-format <format>`: Format how keys are found in code. 2 or 3 characters are expected, like `{}:` for `{key: value}`, `[]:` for `[key: """value with space and new line characters"""]` for  or `()=`. The key value logic tries to figure out how to read it and flexibilitye is the key. If format is not specified, it defaults to separate key with space character and read value until end of line or double space characters.
-- `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner list /home/username/dev/project/src/`.
+- `--kv-where <condition>`: Specify conditions for filtering key-value pairs. This allows for more precise extraction based on specific criteria.
+- `--source <path>`: File or folder to search for patterns. If not specified, the current directory is used. Cleaner support positional arguments for source path, so you can use `cleaner find /home/username/dev/project/src/`.
 - `--ignore <match;match;match>`: Ignore files or folders matching the specified patterns. Multiple patterns are separated by `;`.
 - `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--context <lines>`: Show surrounding lines of a match, where `<lines>` is the number of lines to show before and after the match or if only one number is specified it will show that many lines after the match.
+- `--rule <rule>`: Define rules for what actions to perform on found matches. This could include formatting, outputting, or further processing.
+- `--script <file>`: Execute an external script file for advanced and custom processing of search results. Ideal for complex automation.
 - `--max <count>`: Limit the number of results.
+- `--width <size>`: Width for output formatting.
+- `--match-all`: Require all specified patterns to match within the same line or row for a result to be considered valid.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 - `--vs`: Adapt to Visual Studio output window format, making files clickable.
 - `--win`: Windows-specific functionality, adapting to features specific to Windows.
@@ -131,16 +141,18 @@ Lists rows matching specified patterns in files or folders.
 - `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--context <lines>`: Show surrounding lines of a match, where `<lines>` is the number of lines to show before and after the match or if only one number is specified it will show that many lines after the match.
-- `--script <pattern>`: Additional filter for script files.
+- `--expression <expr>`: Provide an inline script expression for advanced customization of search results. This enables non-standard functionality and complex processing.
+- `--script <pattern>`: Execute an external script file for advanced and custom processing of matched rows. Ideal for complex automation tasks.
 - `--max <count>`: Limit the number of results.
 - `--segment <type>`: Segment in code to find patterns. Valid segments are: code, **comment**, **string**, and **all** (all = all code).
+- `--match-all`: Require all specified patterns to match within the same row for it to be included in the results.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 - `--vs`: Adapt to Visual Studio output window format, making files clickable.
 - `--win`: Windows-specific functionality, adapting to features specific to Windows.
 
 ---
 
-### copy (not ready yet)
+### copy
 Copies files from source to destination.
 
 **Options:**
@@ -159,17 +171,45 @@ Dir differs from normal dir/ls in that it addapted to work for developers or peo
 - `--pattern <patterns>`: Patterns to search for, separated by `,` or `;`.
 - `--source <path>`: Directory to list.
 - `--ignore <match;match;match>`: Ignore files or folders matching the specified patterns. Multiple patterns are separated by `;`.
+- `--rpattern <regex>`: Use a regular expression pattern to search for more complex text matches within file content.
 - `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
+- `--script <file>`: Execute an external script file for advanced processing of the listed files. Useful for custom formatting or filtering.
 - `--sort <column>`: Sort the output by column name when result is printed to console.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
+- `--vs`: Format the output to be compatible with the Visual Studio Output window, enabling seamless integration with the IDE.
+- `--win`: Enable Windows-specific functionality, adapting the listing behavior to leverage Windows operating system features.
 
 ---
 
-### history (not ready yet)
-Handles command history.
+### paste
+Paste text from clipboard or read from input file.
+
+**Options:**
+- `--source <files>`: Files to read from instead of clipboard.
+
+---
+
+### history
+Handles command history functionality.
 
 **Options:**
 - `--create`: Initialize history logic, creates folders and files needed to manage history, also enables configuration settings.
+- `--delete`: Delete history, this will delete all history files and folders.
+- `--print`: Print history, this will print all of the history entries.
+- `--edit`: Edit history file if it exists.
+- `--local`: Create history file in current directory.
+- `--list <criteria>`: Lists all history entries.
+- `--remove <entries>`: Remove specific history entries.
+- `--run <entry>`: Run history entry, this will run the command from history.
+
+---
+
+### run
+Run command from loaded command templates.
+
+**Options:**
+- `--name <name>`: Name or index for command to execute.
+- `--list`: List commands found in loaded settings.
 
 ---
 
@@ -182,13 +222,27 @@ Displays help information for the application.
 Displays the version of the application.
 
 ---
+
 ## Global options
 These options can be used with any command to modify its behavior globally. Behaviour might be different depending on the command used.
-- `--logging-severity <severity>`: Specify severity level for logging. Valid values are: `trace`, `debug`, `info`, `warning`, `error`, `critical`.
-- `--config <file>`: Specify a configuration file to use. If not specified, the default configuration file is used if it exists.
 
+- `--logging`: Turn on logging functionality.
+- `--logging-csv`: Add csv logger, prints log information using the csv format.
+- `--logging-severity <severity>`: Specify severity level for logging. Valid values are: `verbose`, `debug`, `info`, `warning`, `error`, `fatal`.
+- `--config <file>`: Specify a configuration file to use. If not specified, the default configuration file is used if it exists.
+- `--editor <type>`: Type of editor integration. `vs` (Visual Studio) or `vscode` (Visual Studio Code) are currently supported.
+- `--history <file>`: File to store command history. If not set, history is not stored.
+- `--mode <mode>`: Specifies the operational mode of the tool, adapting its behavior for different code analysis purposes. Available modes: `review`, `stats`, `search`, `changes`, `audit`, `document`.
+- `--recursive <depth>`: Operation should be recursive, by setting number decide the depth.
+- `--output <file>`: Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set.
+- `--prompt <values>`: Prompts for values that are typed before executing expression. These values will be asked for.
+- `--print`: Results from command should be printed to console.
+- `--explain`: Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding.
+- `--help`: Prints help information about command.
+- `--verbose`: Write information about operations that might be useful for user.
 
 ---
+
 ## Scripting and Advanced Usage
 
 ### Rule and how to use rules
@@ -203,7 +257,6 @@ Avalable rules are:
 - `select-between:<start>,<end>`: Selects text between specified start and end markers.
 - `select-line:<marker>`: Selects line at the specified line marker. If no marker is specified, it selects line where match was found.
 - `select-all`: Selects all text in the segment.
-
 
 ---
 
@@ -244,12 +297,12 @@ Using `-R` to search recursively and `--source` to specify the folder:
 `cleaner find -R --source "C:\dev\project\filename.cpp" --pattern "#database" --rule "select-between:@code,@endcode"`  
 Finds code between `@code` and `@endcode` markers in the selected source file were pattern `#database` is found.
 
-### Key value paris samples
-`cleaner find -R --source "C:\dev\project" --segment comment --pattern "@file" --keys "@file,@brief"` -Prints the doxygen @file and @brief values for files.  
-  
-if you have **TODO** markers in your code you could format them like this: `// TODO: [description: "Add logging to <file>"]`  
-`cleaner find -R --source "C:\dev\project" --segment comment --pattern "TODO:" --keys "description" --kv-format "[]:"` - This will find all TODO markers in comments and print the description value for each TODO marker.  
-*Same command as above*   
+### Key value pairs samples
+`cleaner find -R --source "C:\dev\project" --segment comment --pattern "@file" --keys "@file,@brief"` -Prints the doxygen @file and @brief values for files.
+
+if you have **TODO** markers in your code you could format them like this: `// TODO: [description: "Add logging to <file>"]`
+`cleaner find -R --source "C:\dev\project" --segment comment --pattern "TODO:" --keys "description" --kv-format "[]:"` - This will find all TODO markers in comments and print the description value for each TODO marker.
+*Same command as above*
 `cleaner find -R --source "C:\dev\project" --pattern "c--TODO:" --kv "description@[]:"`
 
 *Produce output with header and where key value pairs are placed in columns, sample output under*   
@@ -262,6 +315,17 @@ description: ## Open configuration file if it exists.
              For linux this file should be placed in `~/.local/share/cleaner/cleaner-configuration.json`.
 ```
 
+### Join multiple files
+`cleaner join --source "file1.txt;file2.txt;file3.txt" --destination "combined.txt" --backup`
+
+### Use history functionality
+`cleaner history --create` - Initialize history tracking
+`cleaner history --list` - Show all previous commands
+`cleaner history --run 5` - Run the 5th command from history
+
+### Run predefined commands
+`cleaner run --list` - Show available command templates
+`cleaner run --name "search-todos"` - Execute a predefined command template
 
 ---
 
@@ -311,6 +375,8 @@ description: ## Open configuration file if it exists.
 - SQL-related commands require a valid table name and database configuration.
 - Visual Studio integration is available with the `--vs` option for clickable file paths.
 - Command history can be enabled and configured for persistent command tracking.
+- The tool supports various operational modes for different code analysis purposes.
+- Advanced scripting capabilities allow for custom rules and complex automation tasks.
 
 ---
 
