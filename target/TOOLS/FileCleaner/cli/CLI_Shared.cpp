@@ -122,6 +122,69 @@ std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFil
 }
 
 
+/**
+ * @brief Converts SQL-like filter syntax to internal expression format
+ * 
+ * This function transforms SQL WHERE clause syntax into an internal expression format
+ * that uses source::get_argument() calls. It handles automatic value quoting, operator
+ * conversion, and preserves expressions already in internal format.
+ * 
+ * @param stringSql Input SQL-like filter expression (read-only string view)
+ * @param stringExpression Output parameter that receives the converted expression
+ * 
+ * @return std::pair<bool, std::string> where:
+ *         - first: true if conversion succeeded, false otherwise
+ *         - second: error message (empty string on success)
+ * 
+ * @details
+ * The function performs the following transformations:
+ * 1. Detects expressions already in internal format (containing "source::")
+ * 2. Auto-quotes unquoted values after = and <> operators
+ * 3. Converts SQL logical operators (AND/OR) to C++ operators (&&/||)
+ * 4. Wraps column references in source::get_argument(args, 'column') calls
+ * 5. Converts SQL comparison operators (= becomes ==, <> becomes !=)
+ * 
+ * Supported SQL operators:
+ * - = (equality, converted to ==)
+ * - <> (not equal, converted to !=)  
+ * - AND/and (converted to &&)
+ * - OR/or (converted to ||)
+ * - Parentheses for grouping (preserved)
+ * 
+ * @note The function automatically quotes unquoted values but preserves
+ *       already quoted strings. Column names must follow identifier rules
+ *       (alphanumeric plus underscore, starting with letter or underscore).
+ * 
+ * @example
+ * // Simple equality
+ * Input:  "assigned_to = 'per'"
+ * Output: "(source::get_argument(args,'assigned_to') == 'per')"
+ * 
+ * @example  
+ * // Complex expression with logical operators
+ * Input:  "(assigned_to = 'per' OR assigned_to = 'kevin') AND status = 'open'"
+ * Output: "((source::get_argument(args,'assigned_to') == 'per') || (source::get_argument(args,'assigned_to') == 'kevin')) && (source::get_argument(args,'status') == 'open')"
+ * 
+ * @example
+ * // Not equal operator
+ * Input:  "status <> 'open' and assigned_to = 'per'" 
+ * Output: "(source::get_argument(args,'status') != 'open') && (source::get_argument(args,'assigned_to') == 'per')"
+ * 
+ * @example
+ * // Auto-quoting unquoted values
+ * Input:  "assigned_to = per"
+ * Output: "(source::get_argument(args,'assigned_to') == 'per')"
+ * 
+ * @example
+ * // Already in internal format (passthrough)
+ * Input:  "(source::get_argument(args,'status') == 'active')"
+ * Output: "(source::get_argument(args,'status') == 'active')"
+ * 
+ * @example
+ * // Multiple conditions with mixed case operators
+ * Input:  "priority = high AND status <> closed OR assigned_to = admin"
+ * Output: "(source::get_argument(args,'priority') == 'high') && (source::get_argument(args,'status') != 'closed') || (source::get_argument(args,'assigned_to') == 'admin')"
+ */
 std::pair<bool, std::string> SHARED_SqlToExpression_g(std::string_view stringSql, std::string& stringExpression)
 {
    // ## Check for markers for internal raw expression format
