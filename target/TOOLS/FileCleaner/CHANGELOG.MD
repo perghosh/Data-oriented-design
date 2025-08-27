@@ -8,7 +8,7 @@
 - Local `config` option argument added to specify a configuration file to use for the cleaner. This allows you to have different configurations for different projects or tasks.
 - New `paste` command that reads clipboard content and pastes it into the cleaner. This allows you to quickly add content from the clipboard to the cleaner without having to type it in manually.
 - `list` command is parallelized, which means that it can now process multiple files at the same time, improving performance for large codebases.
-- `kv-where` filter for key value pairs added to the `find` command. This allows you to filter results based on specific key value pairs, making it easier to find relevant information.
+- `kv-where` filter for key value pairs added to the `find` command. This allows you to filter results based on specific key value pairs, making it easier to find relevant information. This is what makes key value pairs really useful.
 - `kv-where` tries to figure out in what format condition is written in and converts it internally to the right one
 - header and footer values that is not found will not add , character
 - `kv-format` added fix to remove format by settng "!" as format. This allows you to read key value without format even if format is set in configuration file.
