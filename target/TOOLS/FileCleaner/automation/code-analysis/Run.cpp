@@ -203,8 +203,7 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
       if( result_.first == false ) { return result_; }
    }
                                                                                                    LOG_VERBOSE_RAW("== Keep Rows: " & (ptableKeyValue->size() - vectorDeleteRow.size()));
-
-    ptableKeyValue->erase(vectorDeleteRow);                                    // erase rows that did not match the where condition
+   if( vectorDeleteRow.empty() == false ) { ptableKeyValue->erase(vectorDeleteRow); }  // erase rows that did not match the where condition
 
    return { true, "" };
 }

@@ -309,6 +309,7 @@ public:
    void add_value( const std::string_view& stringName, const char* pbszValue ) { m_argumentsValue.append( stringName, pbszValue ); }
    template <typename VALUE>
    void add_value( const std::string_view& stringName, const VALUE& v ) { m_argumentsValue.append( stringName, v ); }
+   void set_value( const std::string_view& stringName, std::string_view v ) { m_argumentsValue.set( stringName, v ); }
 
    std::vector<gd::variant_view> get_all(const std::string_view& stringName) const;
 

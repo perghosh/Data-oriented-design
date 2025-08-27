@@ -1782,17 +1782,3 @@ _GD_TABLE_END
    #pragma warning(pop)
 #endif
 
-
-/*
-@PROJECT [name: serialize]
-
-@TASK [title: save columns] [project:serialize] [assignee : per] [status:open] [created: 250827]
-[summary : Save column information for table with serialization]
-
-@TASK [title: save references] [project:serialize] [assignee : per] [status:open] [created: 250827]
-[summary : Save reference data for table, this is values that have different lengths]
-
-@TASK [title: save offset to data] [project:serialize] [assignee : per] [status:open] [created: 250827]
-[summary : Save offset data for table to get direct access]
-[description: When saving table data we need to save offset to data for each row, this makes it possible to read cell values directly from the disk]
-*/
