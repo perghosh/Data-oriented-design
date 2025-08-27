@@ -183,6 +183,13 @@ public:
     *
     * `column` has information needed to work with data for each column in record.
     * Each column has a type, size, position (offset in buffer for row)
+    * 
+    * Each column can have different types, one type and one ctype.
+    * The ctype is the C type used to to know how to handle the value in code.
+    * The type is the native type used to store the value. Often type and ctype are the same.
+    *
+    * column also has name and alias, both are stored as offset position in buffer.
+    * names m_namesColumn; in table_column_buffer is used to store names and aliases.
     *
     */
    struct column
@@ -193,12 +200,12 @@ public:
       column( unsigned uCType, unsigned uType, unsigned uSize ): m_uCType(uCType), m_uType(uType), m_uState(0), m_uPosition(0), m_uSize(uSize), m_uPrimitiveSize( gd::types::value_size_g(uCType) ), m_uNameOffset(0), m_uAliasOffset(0) {}
       column( const column* pcolumn ) { memcpy( this, pcolumn, sizeof(column) ); }
 
-      void state( unsigned uState ) { m_uState = uState; }
-      [[nodiscard]] unsigned state() const noexcept { return m_uState; }
-      void type( unsigned uType ) { m_uType = uType; }
+      void state( unsigned uState ) { m_uState = uState; }                     ///< Set column state flags
+      [[nodiscard]] unsigned state() const noexcept { return m_uState; }       ///< Get column state
+      void type( unsigned uType ) { m_uType = uType; }                         ///< Set native type
       [[nodiscard]] unsigned type() const noexcept { return m_uType; }
-      void ctype( unsigned uCType ) { m_uCType = uCType; }
-      [[nodiscard]] unsigned ctype() const noexcept { return m_uCType; }
+      void ctype( unsigned uCType ) { m_uCType = uCType; }                     ///< Set C type
+      [[nodiscard]] unsigned ctype() const noexcept { return m_uCType; }       ///< Get C type
       /// extract the number type part from ctype
       [[nodiscard]] unsigned ctype_number() const noexcept { return m_uCType & 0x0000'00ff; }
       [[nodiscard]] unsigned ctype_group() const noexcept { return m_uCType & 0x0000'ff00; }
@@ -1044,7 +1051,7 @@ public:
    uint64_t m_uReservedRowCount;       ///< reserved row count, max number of rows that can be placed in allocated memory
    gd::argument::arguments m_argumentsProperty; ///< table properties
    references m_references;            ///< Stores blob data
-   names m_namesColumn;                ///< names for columns in table. this works like a data store for const text values
+   names m_namesColumn;                ///< names for columns in table. this works like a data store for const text values used to store column names and aliases
    std::vector<column> m_vectorColumn; ///< information about each column in table
 
 #ifndef NDEBUG
@@ -1774,3 +1781,18 @@ _GD_TABLE_END
 #elif defined(_MSC_VER)
    #pragma warning(pop)
 #endif
+
+
+/*
+@PROJECT [name: serialize]
+
+@TASK [title: save columns] [project:serialize] [assignee : per] [status:open] [created: 250827]
+[summary : Save column information for table with serialization]
+
+@TASK [title: save references] [project:serialize] [assignee : per] [status:open] [created: 250827]
+[summary : Save reference data for table, this is values that have different lengths]
+
+@TASK [title: save offset to data] [project:serialize] [assignee : per] [status:open] [created: 250827]
+[summary : Save offset data for table to get direct access]
+[description: When saving table data we need to save offset to data for each row, this makes it possible to read cell values directly from the disk]
+*/
