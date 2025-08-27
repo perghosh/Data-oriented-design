@@ -447,7 +447,7 @@ std::pair<bool, std::string> options::parse_terminal_s(const std::string_view& s
       char iCharacter = stringCommandLine[uPosition];
 
       // Handle escaped character
-      if( bEscapeNext )
+      if( bEscapeNext == true )
       {
          // In terminal, some escape sequences have special meaning
          switch( iCharacter )

@@ -318,6 +318,25 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          return { false, stringError }; 
       }
 
+      if( optionsApplication.exists("prompt", gd::types::tag_state_active{}) == true )
+      {
+         // If prompt option is active, we can use it
+         auto stringOptions = optionsApplication.get_variant_view("prompt", gd::types::tag_state_active{}).as_string();
+         if( stringOptions.empty() == false )
+         {
+            gd::cli::options* poptionsActive = optionsApplication.find_active();
+            auto vector_ = gd::utf8::split(stringOptions, ';');                // Split prompt values by ; and add them to options
+            for( const auto& argument_ : vector_ )
+            {
+               std::cout << "Set " << argument_ << ": ";
+               std::string stringValue;
+               std::getline(std::cin, stringValue);
+
+               poptionsActive->set_value( argument_, stringValue );
+            }
+         }
+      }
+
       // ## Logging ...........................................................
 #ifdef GD_LOG_SIMPLE
       bool bSetLogging = false;
@@ -1911,11 +1930,12 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag({ "verbose", "Write information about operations that might be useful for user" });
    optionsApplication.add({ "config", "specify configuration file to use configuring cleaner" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
+   optionsApplication.add({ "history", "File to store command history, if not set then history is not stored" });
+   optionsApplication.add({ "logging-severity", "Set the logging severity level. Available levels: `verbose`, `debug`, `info`, `warning`, `error`, `fatal`."});
    optionsApplication.add({ "mode", "Specifies the operational mode of the tool, adapting its behavior for different code analysis purposes. Available modes: `review`, `stats`, `search`, `changes`, `audit`, `document`" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
-   optionsApplication.add({ "output", 'o', "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
-   optionsApplication.add({ "logging-severity", "Set the logging severity level. Available levels: `verbose`, `debug`, `info`, `warning`, `error`, `fatal`."});
-   optionsApplication.add({ "history", "File to store command history, if not set then history is not stored" });
+   optionsApplication.add({ "output", "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
+   optionsApplication.add({ "prompt", "Prompts for values that is typed before execute expression, these values will be asked for"});
    //optionsApplication.add({ "database", "Set folder where logger places log files"});
    //optionsApplication.add({ "statements", "file containing sql statements"});
 
