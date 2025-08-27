@@ -785,7 +785,6 @@ struct references
 
 
    // ## attributes
-   //std::vector<std::unique_ptr< reference, decltype(&reference::delete_reference_s) > > m_vectorReference;
    std::vector< std::unique_ptr<uint8_t[]> > m_vectorReference;
 
    static void copy_data_s( reference* preference, const uint8_t* puData, unsigned uSize );

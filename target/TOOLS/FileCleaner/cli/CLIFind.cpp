@@ -836,14 +836,6 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "default"}}, gd::types::tag_view{} });
    stringPrint.clear(); 
 
-   // ## Calculate width of the longest key, this to format the output nicely
-
-   const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(0);
-   for( auto it = std::begin( *pargumentsRow ); it != std::end( *pargumentsRow ); ++it ) // iterate over the arguments object
-   {
-      auto name_ = it.name();
-      if( name_.size() > uKeyMarginWidth ) uKeyMarginWidth = (unsigned)name_.size();// update the key width if the current key is longer
-   }
    // @TASK #keyvalue #user.per [name: keyvalue] [brief: filter key value information]
 
    // ## check for where filter in argumentsPrint, if exists then filter the key-value pairs
@@ -898,6 +890,14 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
          return std::find(vectorFooter.begin(), vectorFooter.end(), key_) != vectorFooter.end();
       }), vectorBody.end());
    }
+
+   // ## Calculate width of the longest key used in body, this to format the output nicely
+
+   for( const auto& it : vectorBody ) // iterate over body keys
+   {
+      if( it.size() > uKeyMarginWidth ) uKeyMarginWidth = (unsigned)it.size();// update the key width if the current key is longer
+   }
+
 
    // ## Print values in the key-value table ..................................
    //    Print order for each row is:
