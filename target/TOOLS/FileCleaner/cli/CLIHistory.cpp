@@ -358,21 +358,19 @@ std::string FilePath()
    return stringFilePath;
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Prints the history table from a cached XML file associated with the given document and arguments.
+ * @param argumentsPrint The arguments used for printing the history table.
+ * @param pdocument Pointer to the document object containing the cache and history data.
+ * @return A pair where the first element is true if the history was printed successfully, and false otherwise; the second element is an error message if unsuccessful, or an empty string if successful.
+ */
 std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint, CDocument* pdocument)
 {
-   //std::string stringFileName = argumentsPrint["file"].as_string();
+   //std::filesystem::path pathHistory;
+   //auto result_ = CApplication::HistoryFindActive_s(pathHistory);                                  if( result_.first == false ) { return result_; }
 
-   std::filesystem::path pathDirectory = GetHistoryPath_s();
-   std::string stringFileName = ( pathDirectory / "history.xml" ).string();
-                                                                               assert(!stringFileName.empty());
-
-   //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
-   //auto ptable = CreateTable_s(argumentsPrint); // Create a table to hold the history data                                                                               
-
-   //std::unique_ptr<gd::table::dto::table>* ptable;
-   //CDocument document;
-
-   //pdocument.CACHE_Prepare("history"); // Prepare the cache for history table
+   //std::string stringFileName = ( pathHistory ).string();                                          assert(!stringFileName.empty());
 
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
@@ -381,7 +379,6 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
 
    std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
    std::cout << "\n" << stringTable << "\n";
-
 
    return { true, "" };
 }
