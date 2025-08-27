@@ -26,7 +26,23 @@ inline const void* find_aligned( const void* p_) noexcept
 
 
 
-/// piBase64Value_s contains the value for base64 digit
+/**
+ * @brief Lookup table for Base64 character values.
+ *
+ * The piBase64Value_s array maps each possible byte value (0-255) to its corresponding
+ * Base64 digit value (0-63), or -1 if the byte is not a valid Base64 character.
+ * This table is used for fast decoding of Base64-encoded data.
+ *
+ * Base64 is a binary-to-text encoding scheme that represents binary data in an ASCII string format
+ * by translating it into a radix-64 representation. It uses 64 different ASCII characters (A-Z, a-z, 0-9, +, /)
+ * to encode arbitrary binary data, making it suitable for transmission over text-based protocols.
+ * Each group of 3 bytes is encoded as 4 Base64 characters, and padding '=' is used when the input
+ * is not a multiple of 3 bytes.
+ *
+ * Example usage:
+ *   - Encoding: Converts binary data to a Base64 string.
+ *   - Decoding: Converts a Base64 string back to binary data.
+ */
 static int8_t constexpr piBase64Value_s[] = {
    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x00-0x0F
    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x10-0x1F
