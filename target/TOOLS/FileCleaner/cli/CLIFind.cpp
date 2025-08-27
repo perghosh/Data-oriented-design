@@ -836,9 +836,7 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "default"}}, gd::types::tag_view{} });
    stringPrint.clear(); 
 
-   // @TASK #keyvalue #user.per [name: keyvalue] [brief: filter key value information]
-
-   // ## check for where filter in argumentsPrint, if exists then filter the key-value pairs
+   // ## check for where filter in argumentsPrint, if exists then filter the key-value pairs       @TAG #expression.where
    if( pargumentsPrint->exists("where") == true )
    {
       std::string stringWhere = pargumentsPrint->get_argument("where").as_string();   // get the where filter from the arguments
@@ -917,8 +915,10 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
          stringPrint.clear();                                                // clear the stringPrint for the next row
          for( const auto& key_ : vectorHeader ) 
          { 
-            if( stringPrint.empty() == false ) stringPrint += ", ";         // add a separator if the stringPrint is not empty
-            stringPrint += pargumentsRow->get_argument( key_ ).as_string_view(); 
+            auto stingValue = pargumentsRow->get_argument( key_ ).as_string_view(); 
+            if( stringPrint.empty() == false && stingValue.empty() == false ) stringPrint += ", "; // add a separator if the stringPrint is not empty
+
+            stringPrint += stingValue; 
          }
 
          if( stringHeaderFormat.empty() == true ) { stringPrint = gd::math::string::format_header_line(stringPrint, uWidth); }
@@ -993,8 +993,10 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
           stringPrint.clear();                                                // clear the stringPrint for the next row
          for( const auto& key_ : vectorFooter ) 
          { 
-            if( stringPrint.empty() == false ) stringPrint += ", ";          // add a separator if the stringPrint is not empty
-            stringPrint += pargumentsRow->get_argument( key_ ).as_string_view(); 
+            auto stingValue = pargumentsRow->get_argument( key_ ).as_string_view(); 
+            if( stringPrint.empty() == false && stingValue.empty() == false ) stringPrint += ", "; // add a separator if the stringPrint is not empty
+
+            stringPrint += stingValue; 
          }
          if( stringFooterFormat.empty() == true ) { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentRight, uWidth); }
          else                                     { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentRight, uWidth, stringFooterFormat); }
