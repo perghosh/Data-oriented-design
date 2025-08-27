@@ -1,4 +1,10 @@
 /*
+Searches for tasks in the file and lists them here.
+cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "description;sample;idea" --header "project;title;id" --brief "summary" --footer "created;assignee;status"  --prompt "kv-where"
+
+*/
+
+/*
 @PROJECT [name: prompt]
 
 @TASK [title: add prompt option to options class] [project:prompt] [assignee: per] [status:open] [created: 250828]
@@ -48,5 +54,18 @@
 
 @TASK [title: format command help] [project:help] [assignee: per] [status:open] [created: 250828]
 [summary : printing command help is not wrapped, that should be wraped as full help is wrapped]
+
+*/
+
+/*
+@PROJECT [name: kv] [description: Key value operations]
+
+@TASK [title: figure out key value pairs] [project:kv] [assignee: per] [status:open] [created: 250828]
+[summary : , is added even if key value is missing, remove that]
+
+@TASK [title: ] [project:kv] [assignee: per] [status:ongoing] [created: 250828]
+[summary : , is added even if key value is missing, remove that]
+[code: `CLIFind.cpp` ]
+
 
 */
