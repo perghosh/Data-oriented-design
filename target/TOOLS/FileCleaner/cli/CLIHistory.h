@@ -42,7 +42,7 @@ inline std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile
 std::pair<bool, std::string> HistoryDelete_g( const gd::argument::arguments& argumentsDelete);
 
 /// \brief Remove entry or entries in history file
-std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argumentsRemove);
+std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argumentsRemove, CDocument* pdocument);
 
 /// \brief Print history file
 std::pair<bool, std::string> HistoryPrint_g( const gd::argument::arguments& argumentsPrint, CDocument* pdocument);

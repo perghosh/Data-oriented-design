@@ -441,7 +441,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       {
          std::string stringHistory;
          std::filesystem::path pathHistory;
-         auto result_ = HistoryFindFile_s(pathHistory);                       // Get the local history location, 2 directory levels up
+         auto result_ = HistoryFindActive_s(pathHistory);                       // Get the local history location, 2 directory levels up
          if( result_.first == true ) { stringHistory = pathHistory.string(); }
 
          result_ = CLI::HistoryAppend_g(stringHistory, &optionsApplication);  // Append the command to history
@@ -3013,7 +3013,7 @@ std::pair<bool, std::string> CApplication::HistoryLocation_s(std::filesystem::pa
    FolderGetHome_s(stringPath);
 
    // check if Local/cleaner/history.xml exists
-   std::filesystem::path pathDirectory = std::filesystem::path(stringPath) / "history.xml";
+   std::filesystem::path pathDirectory = std::filesystem::path(stringPath) / "cleaner-history.xml";
 
 
 
@@ -3096,7 +3096,7 @@ std::pair<bool, std::string> CApplication::HistoryFindFile_s(std::filesystem::pa
 
    }
 
-   return { true, "" };
+   return { false, "" };
 }
 
 std::pair<bool, std::string> CApplication::HistorySave_s(const std::string_view& stringFileName, const gd::table::dto::table* ptable)
