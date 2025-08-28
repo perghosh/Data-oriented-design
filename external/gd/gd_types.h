@@ -184,6 +184,7 @@ struct tag_csv {};            ///< data is in csv format
 struct tag_hex {};            ///< data is in hex format
 struct tag_json {};           ///< data is in json format
 struct tag_path {};           ///< data is in path format
+struct tag_text {};           ///< data is in text format
 struct tag_uri {};            ///< data is in uri format (url encoded)
 struct tag_url {};            ///< data is in url format
 struct tag_utf8 {};           ///< data is in utf8 format

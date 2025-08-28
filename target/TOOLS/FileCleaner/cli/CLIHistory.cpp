@@ -24,6 +24,7 @@
 #include <functional>
 
 #include "gd/gd_file.h"
+#include "gd/math/gd_math_string.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -61,6 +62,7 @@ static std::pair<bool, std::string> PrepareEmptyXml_s(std::string_view stringHis
 
 static std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumentsXml);
 
+// ## XML* methods work on XML nodes and XML documents
 
 static std::pair<bool, std::string> XML_AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument);
 bool XML_EntryExists_s( const pugi::xml_node* pxmlnodeEntries, std::string_view stringCommand );
@@ -358,7 +360,6 @@ std::string FilePath()
    return stringFilePath;
 }
 
-
 /** ---------------------------------------------------------------------------
  * @brief Prints the history table from a cached XML file associated with the given document and arguments.
  * @param argumentsPrint The arguments used for printing the history table.
@@ -367,17 +368,32 @@ std::string FilePath()
  */
 std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint, CDocument* pdocument)
 {
-   //std::filesystem::path pathHistory;
-   //auto result_ = CApplication::HistoryFindActive_s(pathHistory);                                  if( result_.first == false ) { return result_; }
-
-   //std::string stringFileName = ( pathHistory ).string();                                          assert(!stringFileName.empty());
-
+   constexpr size_t uMaxLineLength = 70; // Maximum length of a line before it is cut
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
 
    XML_ReadFile_s(*ptable, argumentsPrint); // Create the table from the XML file
 
-   std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
+   // ## Move to table that is used for printing ..............................
+
+   gd::table::dto::table tablePrint(0u, { {"int32", 0, "index"}, {"rstring", 0, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{});
+
+   for( size_t i = 0; i < ptable->size(); ++i )
+   {
+      auto variantName = ptable->cell_get_variant_view(i, "name");
+      auto variantLine = ptable->cell_get_variant_view(i, "line");
+
+      std::string stringLine = variantLine.as_string();
+
+      stringLine = gd::math::string::format_text_width(stringLine, uMaxLineLength);// cut long lines
+
+      tablePrint.row_add({ (int32_t)( i + 1 ), variantName, stringLine });
+   }
+
+
+
+   //std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
+   std::string stringTable = gd::table::to_string(tablePrint, gd::table::tag_io_cli{}, gd::table::tag_text{});
    std::cout << "\n" << stringTable << "\n";
 
    return { true, "" };

@@ -90,6 +90,9 @@ public:
    void max( std::vector<unsigned>& vectorLength, tag_length ) { max( vectorLength, 0, m_ptable->get_row_count(), tag_length{} ); }
    void max( std::vector<unsigned>& vectorLength, uint64_t uBeginRow, uint64_t uCount, const std::vector<unsigned>& vectorColumn, tag_length );
 
+   void max( std::vector<unsigned>& vectorLength, tag_length, tag_text) { max(vectorLength, 0, m_ptable->get_row_count(), tag_length{}, tag_text{}); }
+   void max( std::vector<unsigned>& vectorLength, uint64_t uBeginRow, uint64_t uCount, tag_length, tag_text );
+
    template<typename TYPE>
    TYPE sum( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
    template<typename TYPE>
@@ -173,6 +176,24 @@ unsigned aggregate<TABLE>::max( unsigned uColumn, uint64_t uBeginRow, uint64_t u
    return uLength;
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Calculates the maximum length of values in all columns for table or valid entries in vector.
+ * 
+ * This method iterates through the specified range of rows and columns in the table,
+ * determining the maximum length of the values found. It updates the provided
+ * vectorLength with the maximum lengths for each column.
+ * 
+ * @tparam TABLE The table type being aggregated.
+ * @param vectorLength A reference to a vector that will hold the maximum lengths for each column.
+ *                     If empty, it will be resized to match the number of columns in the table.
+ * @param uBeginRow The starting row index for the range to check.
+ * @param uCount The number of rows to include in the range.
+ * @param tag_length A tag indicating that this is a length operation.
+ * 
+ * @note If the range exceeds the number of rows in the table, it is truncated
+ *       to the valid range. Null values are ignored during length calculation.
+ */
 template <typename TABLE>
 void aggregate<TABLE>::max( std::vector<unsigned>& vectorLength, uint64_t uBeginRow, uint64_t uCount, tag_length ) { assert( m_ptable != nullptr );
    if( vectorLength.empty() == true ) vectorLength.resize( m_ptable->get_column_count(), 0 );
@@ -214,6 +235,73 @@ void aggregate<TABLE>::max( std::vector<unsigned>& vectorLength, uint64_t uBegin
       }
    }
 }
+
+/** ---------------------------------------------------------------------------
+* @brief Calculates the maximum length of values in all columns and adapts for text format (newline etc.).
+* 
+* This method iterates through the specified range of rows and columns in the table,
+* determining the maximum length of the values found and adjusting for text format.
+* This means that text-specific considerations (like newline characters) are taken into account.
+* vectorLength with the maximum lengths for each column.
+* 
+* @tparam TABLE The table type being aggregated.
+* @param vectorLength A reference to a vector that will hold the maximum lengths for each column.
+*                     If empty, it will be resized to match the number of columns in the table.
+* @param uBeginRow The starting row index for the range to check.
+* @param uCount The number of rows to include in the range.
+* 
+* @note If the range exceeds the number of rows in the table, it is truncated
+*       to the valid range. Null values are ignored during length calculation.
+*/
+template <typename TABLE>
+void aggregate<TABLE>::max(std::vector<unsigned>& vectorLength, uint64_t uBeginRow, uint64_t uCount, tag_length, tag_text) {
+   assert(m_ptable != nullptr);
+   if( vectorLength.empty() == true ) vectorLength.resize(m_ptable->get_column_count(), 0);
+
+   uint64_t uEndRow = uBeginRow + uCount; // last row where value is checked
+   // ## iterate rows to check max length for values found in column
+   if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
+
+   bool bHasNull = m_ptable->is_null(); // get if table has null values
+   unsigned uColumnCount = (unsigned)vectorLength.size() < m_ptable->get_column_count() ? (unsigned)vectorLength.size() : m_ptable->get_column_count(); // number of columns to check
+   for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
+      for( unsigned uColumn = 0; uColumn < uColumnCount; uColumn++ ) {
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue; // skip null values
+
+         bool bText = gd::types::detail::is_string( m_ptable->column_get_type( uColumn ) );
+
+         if( bText == true ) 
+         {
+            // ### text column - need to check for newline characters etc and not just take length of string
+            auto stringText = m_ptable->cell_get_variant_view( uRow, uColumn ).as_string_view();
+
+            // ### calculate length for longest row
+            unsigned uMaxLength = 0;
+            unsigned uLineLength = 0;
+            for( const char& c : stringText ) {
+               if( c == '\n' ) 
+               {
+                  if( uLineLength > uMaxLength ) uMaxLength = uLineLength;
+                  uLineLength = 0;
+               }
+               uLineLength++;
+            }
+
+            if( uLineLength > uMaxLength ) uMaxLength = uLineLength; // last line
+
+            unsigned uValueLength = uMaxLength;
+            unsigned uLength = vectorLength[uColumn];
+            if( uLength < uValueLength ) vectorLength[uColumn] = uValueLength;
+            continue;
+         }
+
+         unsigned uValueLength = m_ptable->cell_get_length(uRow, uColumn);
+         unsigned uLength = vectorLength[uColumn];
+         if( uLength < uValueLength ) vectorLength[uColumn] = uValueLength;
+      }
+   }
+}
+
 
 
 template<typename TABLE>
