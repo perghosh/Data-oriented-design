@@ -1,5 +1,16 @@
 /**
- * @fil
+ * @file gd_expression_token.h
+ * @brief Token item struct, definitions for expression parsing and evaluation using tokens
+ * 
+ * | Area                | Methods (Examples)                                                                 | Description                                                                                   |
+ * |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ * | Construction        | token(), token(uint32_t, const std::string_view&), operator=(...), common_construct(...) | Constructors and assignment operators for creating and copying token objects.                 |
+ * | Value Management    | set_type(...), set_name(...)                                                       | Methods for setting token type and name.                                                      |
+ * | Access/Query        | get_token_type(), get_value_type(), get_function_type(), get_token_part(), get_token_group(), get_type(), get_name() | Methods for retrieving token type, value type, function type, part, group, and name.          |
+ * | Conversion          | as_value()                                                                         | Converts token to value type for evaluation.                                                  |
+ * | Parsing/Compilation | parse_s(...), compile_s(...)                                                       | Methods for parsing expressions into tokens and compiling to postfix notation.                |
+ * | Calculation         | calculate_s(...)                                                                   | Methods for evaluating tokenized expressions and returning results.                           |
+ * | Utility             | skip_whitespace_s(...), read_number_s(...), read_string_s(...), read_variable_and_s(...), type_s(...), to_type_s(...), token_type_s(...) | Utility methods for whitespace skipping, reading numbers/strings/variables, and type handling.|
  */
 
 #pragma once
