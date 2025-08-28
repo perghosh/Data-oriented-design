@@ -72,6 +72,8 @@ inline std::pair<bool, std::string>  XML_ReadFile_s(gd::table::dto::table& table
    return XML_ReadFile_s( tableHistory, argumentsTable, [](std::string_view){ } ); 
 }
 
+static std::pair<bool, std::string> XML_ClearFile_s(const gd::argument::arguments& argumentsClear);
+
 static std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::arguments& argumentsTable);
 
 static std::string FilePath();
@@ -333,6 +335,11 @@ std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argu
 
    //std::cout << stringRemoveCommand << "\n";
 
+   return { true, "" };
+}
+
+std::pair<bool, std::string> XML_ClearFile_s(const gd::argument::arguments& argumentsClear)
+{
    return { true, "" };
 }
 
