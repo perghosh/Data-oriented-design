@@ -970,6 +970,440 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
    stringOut += stringResult;
 }
 
+/*
+template <typename TABLE>
+void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut )
+{
+   if( argumentOption.exists("count") == true ) { uCount = argumentOption["count"].as_uint64(); }  // set max count if argument for count is found
+
+   unsigned uMax = (unsigned)-1;                // max column width
+   auto uEnd = uBegin + uCount;                 // last row to print to string
+   std::string stringHeader;                    // Column headers
+   std::string stringLineDivide;                // Line to divied rows, default is to add it as before first and after last row
+   std::string stringResult;                    // result string with table data
+   std::string stringValue;                     // value as string added to result
+   std::vector<gd::variant_view> vectorValue;   // used to fetch values from table
+
+   bool bNr = argumentOption["nr"].is_true();   // should rows be numbered?
+   bool bVerbose = argumentOption["verbose"].is_true(); // try to fit as much as possible
+   bool bRaw = true; // argumentOption["raw"].is_true(); // dont add quotes around text?
+
+   if( argumentOption.exists("max_column_width") == true )                     // check for max column width and shrink if above
+   { 
+      uMax = argumentOption["max_column_width"].as_uint(); 
+      std::for_each( std::begin( vectorWidth ), std::end( vectorWidth ), [uMax]( auto& uWidth ) { if( uWidth > uMax ) uWidth = uMax; });
+   }
+
+   if( bNr == true )                                                           // are rows numbered ?
+   {
+      auto uRowCount = table.get_row_count();
+      unsigned uLength = gd::variant::compute_digit_count_s( uRowCount );
+      vectorWidth.insert( vectorWidth.begin(), uLength);
+   }
+
+   // ## calculate total length needed for each row in characters
+   unsigned uTotalLength = std::accumulate( std::begin(vectorWidth), std::end(vectorWidth), 0u );
+   uTotalLength += 2 * (sizeof(" |") - 1);
+   uTotalLength += ((unsigned)vectorWidth.size() - 1) * (sizeof(" | ") - 1);
+
+
+   // ## Generate line divider
+   // ### Create a line with total length
+   stringLineDivide += '+';
+   stringLineDivide.insert( stringLineDivide.end(), uTotalLength - 2, '-' );
+   stringLineDivide.append( std::string_view{"+\n"});
+
+   // ### Place markers for each column
+   unsigned uOffset = 2;                                                       // start at position two beqause first characters on row is "+-"
+   for( auto it : vectorWidth )
+   {
+      uOffset += (it + 1);                                                     // add width of the column
+      if( uOffset < stringLineDivide.length() ) stringLineDivide[uOffset] = '+';// set column marker `+` if not the last ending marker
+      uOffset += 2;                                                            // move offset to next column
+   }
+
+   // ## Check for prepend string
+   if( argumentOption.exists("prepend") == true ) stringResult += argumentOption["prepend"].as_string();
+
+   // ## Print column names
+   {
+      unsigned uColumn = 0;
+      auto it = std::begin(vectorWidth);
+      if( bNr == true ) 
+      { 
+         it++; 
+         stringHeader += '#';
+         stringHeader.insert( stringHeader.begin() + 1, 2 + vectorWidth.at( 0 ), ' '); 
+      };
+
+      // ## iterate over witdh vector and add column names
+      //    abbreviate or wrap if needed
+
+      for( auto itEnd = std::end(vectorWidth); it != itEnd; it++, uColumn++ )
+      {
+         if( bVerbose == false )
+         {
+            std::string stringName( table.column_get_name(uColumn) );
+            if( (*it + 3) < stringName.length() ) stringName = stringName.substr( 0, *it + 2 );
+
+            unsigned uTotal = *it + 3;
+            if( uTotal >= stringName.length() ) stringName.insert( stringName.end(), uTotal - stringName.length(), ' ' );
+
+            stringHeader += stringName;
+         }
+         else
+         {
+            std::string stringName( table.column_get_name(uColumn) );
+
+            // ## if name do not fit in column and it is not the last column then we need to wrap (3 is spaces for ` | `)
+
+            if( *it < stringName.length() && uColumn < table.get_column_count() )
+            {
+               stringHeader += stringName;
+               if( uColumn >= (table.get_column_count() - 1) ) break;          // break if last column
+
+               // column name is too long and we need to wrap row to continue with next colun on next row.
+               // To do this fill row with spaces based on where we are in vectorWidth
+
+               stringHeader += '\n';
+               for( auto itWidth = std::begin(vectorWidth); itWidth != (it + 1); itWidth++ )
+               {
+                  unsigned uOffset = ( *itWidth + 3 );                                // add width of the column separator
+                  stringHeader.insert(stringHeader.end(), uOffset, ' ');
+                  uOffset += 2;
+               }
+            }
+            else
+            {
+               unsigned uTotal = *it + 3;
+               if( uTotal >= stringName.length() ) stringName.insert( stringName.end(), uTotal - stringName.length(), ' ' );
+               stringHeader += stringName;
+            }
+         }
+      }
+
+      stringHeader += '\n';
+   }
+
+   stringResult += stringHeader;
+   stringResult += stringLineDivide;                                           // add divide line
+   
+   for( auto uRow = uBegin; uRow < uEnd; uRow++ )
+   {
+      stringResult += "| ";
+
+      vectorValue.clear();
+      table.row_get_variant_view( uRow, vectorValue );
+
+      if( bNr == true ) vectorValue.insert( vectorValue.begin(), uRow );
+
+      unsigned uColumn = 0;
+                                                                                                   assert( vectorValue.size() == vectorWidth.size());
+      auto itWidth = std::begin( vectorWidth );
+      for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it < itEnd; it++, itWidth++ )
+      {
+         if( uColumn > 0 ) stringResult.append(std::string_view{" | "});                           // add ` | ` to separate columns
+         auto value_ = *it;
+
+         if( value_.is_null() == true )
+         {
+            stringValue = "";
+         }
+         else if( value_.is_string() == true )
+         {
+            const std::string_view text_ = value_.as_string_view();
+            stringValue += text_;
+         }
+         else
+         {
+            stringValue = value_.as_string();
+         }
+
+         if(stringValue.length() > uMax)
+         {
+            stringValue = stringValue.substr( 0, uMax - 3 );
+            stringValue += std::string_view{"..."};
+         }
+
+         auto uValueLength = stringValue.length();
+         if( *itWidth > uValueLength )
+         {
+            unsigned uAlign = gd::types::align_g( value_.type_number() );
+            if( uAlign == 0 ) gd::utf8::format::pad_right( stringValue, *itWidth, ' ' );
+            else              gd::utf8::format::pad_left( stringValue, *itWidth, ' ' );
+         }
+
+         stringResult += stringValue;
+         stringValue.clear();
+
+         uColumn++;
+      }
+
+      stringResult.append( std::string_view{" |\n"});
+   }
+
+   stringResult += stringLineDivide;                                           // add divide line
+
+   stringOut += stringResult;
+}
+*/
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Converts a table to a formatted string with support for multi-line cell values.
+ * 
+ * This function prints the table in a human-readable format, suitable for console output.
+ * Each cell is wrapped to fit the specified column width and supports embedded newlines.
+ * The output includes column headers, row dividers, and optionally row numbers.
+ * 
+ * @tparam TABLE Type of the table (must support required interface).
+ * @param table Table to print.
+ * @param uBegin Index of the first row to print.
+ * @param uCount Number of rows to print.
+ * @param vectorWidth Vector specifying the maximum width for each column.
+ * @param argumentOption Options for formatting output (e.g., "nr" for row numbers, "verbose" for wrapping headers, "max_column_width" to limit column width, "prepend" to add a string before output).
+ * @param stringOut Output string receiving the formatted table.
+ * 
+ * @details
+ * - Each cell is split into lines based on embedded newlines and column width.
+ * - Cells with more lines than others in the same row will cause the row to expand vertically.
+ * - Column headers are wrapped or abbreviated based on the "verbose" option.
+ * - Row numbers are included if the "nr" option is set.
+ * - The function automatically pads cell contents for alignment.
+ * - The output includes a divider line before and after the table body.
+ */
+template <typename TABLE>
+void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut )
+{
+   if( argumentOption.exists("count") == true ) { uCount = argumentOption["count"].as_uint64(); }  // set max count if argument for count is found
+
+   unsigned uMax = (unsigned)-1;                // max column width
+   auto uEnd = uBegin + uCount;                 // last row to print to string
+   std::string stringHeader;                    // Column headers
+   std::string stringLineDivide;                // Line to divied rows, default is to add it as before first and after last row
+   std::string stringResult;                    // result string with table data
+   std::string stringValue;                     // value as string added to result
+   std::vector<gd::variant_view> vectorValue;   // used to fetch values from table
+
+   bool bNr = argumentOption["nr"].is_true();   // should rows be numbered?
+   bool bVerbose = argumentOption["verbose"].is_true(); // try to fit as much as possible
+   bool bRaw = true; // argumentOption["raw"].is_true(); // dont add quotes around text?
+
+   if( argumentOption.exists("max_column_width") == true )                     // check for max column width and shrink if above
+   { 
+      uMax = argumentOption["max_column_width"].as_uint(); 
+      std::for_each( std::begin( vectorWidth ), std::end( vectorWidth ), [uMax]( auto& uWidth ) { if( uWidth > uMax ) uWidth = uMax; });
+   }
+
+   if( bNr == true )                                                           // are rows numbered ?
+   {
+      auto uRowCount = table.get_row_count();
+      unsigned uLength = gd::variant::compute_digit_count_s( uRowCount );
+      vectorWidth.insert( vectorWidth.begin(), uLength);
+   }
+
+   // ## calculate total length needed for each row in characters
+   unsigned uTotalLength = std::accumulate( std::begin(vectorWidth), std::end(vectorWidth), 0u );
+   uTotalLength += 2 * (sizeof(" |") - 1);
+   uTotalLength += ((unsigned)vectorWidth.size() - 1) * (sizeof(" | ") - 1);
+
+   // ## Generate line divider
+   // ### Create a line with total length
+   stringLineDivide += '+';
+   stringLineDivide.insert( stringLineDivide.end(), uTotalLength - 2, '-' );
+   stringLineDivide.append( std::string_view{"+\n"});
+
+   // ### Place markers for each column
+   unsigned uOffset = 2;                                                       // start at position two beqause first characters on row is "+-"
+   for( auto it : vectorWidth )
+   {
+      uOffset += (it + 1);                                                     // add width of the column
+      if( uOffset < stringLineDivide.length() ) stringLineDivide[uOffset] = '+';// set column marker `+` if not the last ending marker
+      uOffset += 2;                                                            // move offset to next column
+   }
+
+   // ## Helper function to split text into lines based on newlines and column width
+   //    Returns a vector of strings, each representing a line
+   auto split_text_to_lines_ = [&](const std::string& stringText, unsigned uMaxWidth) -> std::vector<std::string> {
+      std::vector<std::string> vectorLine;
+      
+      // ## First split by existing newlines
+      std::string stringRemainingText = stringText;
+      size_t uPosition = 0;
+      while((uPosition = stringRemainingText.find('\n')) != std::string::npos) 
+      {
+         std::string stringLine = stringRemainingText.substr(0, uPosition);
+         stringRemainingText = stringRemainingText.substr(uPosition + 1);
+
+         while (stringLine.length() > uMaxWidth)                               // Further split this line if it's too long
+         {
+            vectorLine.push_back(stringLine.substr(0, uMaxWidth));
+            stringLine = stringLine.substr(uMaxWidth);
+         }
+         if(stringLine.empty() == false) { vectorLine.push_back(stringLine); }
+      }
+      
+      // Handle remaining text (no newlines)
+      while(stringRemainingText.length() > uMaxWidth) 
+      {
+         vectorLine.push_back(stringRemainingText.substr(0, uMaxWidth));
+         stringRemainingText = stringRemainingText.substr(uMaxWidth);
+      }
+
+      if(stringRemainingText.empty() == false) { vectorLine.push_back(stringRemainingText); }
+
+      if(vectorLine.empty()) { vectorLine.push_back(""); }                     // At least one empty line
+
+      return vectorLine;
+   };
+
+   // ## Check for prepend string
+   if( argumentOption.exists("prepend") == true ) stringResult += argumentOption["prepend"].as_string();
+
+   // ## Print column names
+   {
+      unsigned uColumn = 0;
+      auto it = std::begin(vectorWidth);
+      if( bNr == true ) 
+      { 
+         it++; 
+         stringHeader += '#';
+         stringHeader.insert( stringHeader.begin() + 1, 2 + vectorWidth.at( 0 ), ' '); 
+      };
+
+      // ## iterate over witdh vector and add column names
+      //    abbreviate or wrap if needed
+
+      for( auto itEnd = std::end(vectorWidth); it != itEnd; it++, uColumn++ )
+      {
+         if( bVerbose == false )
+         {
+            std::string stringName( table.column_get_name(uColumn) );
+            if( (*it + 3) < stringName.length() ) stringName = stringName.substr( 0, *it + 2 );
+
+            unsigned uTotal = *it + 3;
+            if( uTotal >= stringName.length() ) stringName.insert( stringName.end(), uTotal - stringName.length(), ' ' );
+
+            stringHeader += stringName;
+         }
+         else
+         {
+            std::string stringName( table.column_get_name(uColumn) );
+
+            // ## if name do not fit in column and it is not the last column then we need to wrap (3 is spaces for ` | `)
+
+            if( *it < stringName.length() && uColumn < table.get_column_count() )
+            {
+               stringHeader += stringName;
+               if( uColumn >= (table.get_column_count() - 1) ) break;          // break if last column
+
+               // column name is too long and we need to wrap row to continue with next colun on next row.
+               // To do this fill row with spaces based on where we are in vectorWidth
+
+               stringHeader += '\n';
+               for( auto itWidth = std::begin(vectorWidth); itWidth != (it + 1); itWidth++ )
+               {
+                  unsigned uOffset = ( *itWidth + 3 );                                // add width of the column separator
+                  stringHeader.insert(stringHeader.end(), uOffset, ' ');
+                  uOffset += 2;
+               }
+            }
+            else
+            {
+               unsigned uTotal = *it + 3;
+               if( uTotal >= stringName.length() ) stringName.insert( stringName.end(), uTotal - stringName.length(), ' ' );
+               stringHeader += stringName;
+            }
+         }
+      }
+
+      stringHeader += '\n';
+   }
+
+   stringResult += stringHeader;
+   stringResult += stringLineDivide;                                           // add divide line
+
+   // ## Process each row
+   
+   for( auto uRow = uBegin; uRow < uEnd; uRow++ )
+   {
+      vectorValue.clear();
+      table.row_get_variant_view( uRow, vectorValue );
+
+      if( bNr == true ) vectorValue.insert( vectorValue.begin(), uRow );
+
+      // ### Process each cell and split into lines
+      std::vector<std::vector<std::string>> vectorCellLines; // Each cell's lines (advanced !!)
+      unsigned uMaxLinesInRow = 1;
+      
+      unsigned uColumn = 0;
+      auto itWidth = std::begin( vectorWidth );
+      for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it < itEnd; it++, itWidth++, uColumn++ )
+      {
+         auto value_ = *it;
+         std::string stringCell; // Cell content as string
+
+         if( value_.is_null() == true )
+         {
+            stringCell = "";
+         }
+         else if( value_.is_string() == true )
+         {
+            const std::string_view text_ = value_.as_string_view();
+            stringCell = std::string(text_);
+         }
+         else { stringCell = value_.as_string(); }
+
+         // ## Split cell text into lines considering column width
+         unsigned uCellWidth = std::min(*itWidth, uMax);
+         std::vector<std::string> vectorLine = split_text_to_lines_(stringCell, uCellWidth);
+
+         // ### Pad each line to column width and apply alignment
+         for (auto& line_ : vectorLine) 
+         {
+            if(line_.length() > uCellWidth) { line_ = line_.substr(0, uCellWidth); }
+
+            if(*itWidth > line_.length()) 
+            {
+               unsigned uAlign = gd::types::align_g( value_.type_number() );
+               if( uAlign == 0 ) { gd::utf8::format::pad_right( line_, *itWidth, ' ' ); } 
+               else { gd::utf8::format::pad_left( line_, *itWidth, ' ' ); }
+            }
+         }
+
+         vectorCellLines.push_back(vectorLine);
+         uMaxLinesInRow = std::max(uMaxLinesInRow, (unsigned)vectorLine.size());
+      }
+
+      // ## Render the row with proper multi-line support
+      for(unsigned uLineIndex = 0; uLineIndex < uMaxLinesInRow; uLineIndex++) 
+      {
+         stringResult += "| ";
+
+         for(unsigned uColumnIndex = 0; uColumnIndex < vectorCellLines.size(); uColumnIndex++) 
+         {
+            if(uColumnIndex > 0) {
+               stringResult.append(std::string_view{" | "});
+            }
+            
+            // Get the line for this cell, or empty string if this cell has fewer lines
+            std::string cellLine;
+            if(uLineIndex < vectorCellLines[uColumnIndex].size()) { cellLine = vectorCellLines[uColumnIndex][uLineIndex]; } 
+            else { cellLine.assign(vectorWidth[uColumnIndex], ' '); }           // Pad with spaces to maintain column width
+
+            stringResult += cellLine;
+         }
+         
+         stringResult.append(std::string_view{" |\n"});
+      }
+   }// for( auto uRow = uBegin; uRow < uEnd; uRow++ ) {
+
+   stringResult += stringLineDivide;                                           // add divide line
+
+   stringOut += stringResult;
+}
+
+
 
 /** ---------------------------------------------------------------------------
 * @brief print table with nicer format, sutable for console printing
@@ -1357,6 +1791,12 @@ void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const 
 {
    to_string_s( table, uBegin, uCount, argumentOption, stringOut );
 }
+
+void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, std::vector<unsigned> vectorWidth, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_cli, tag_text)
+{
+   to_string_newlines_s( table, uBegin, uCount, vectorWidth, argumentOption, stringOut );
+}
+
 
 
 
