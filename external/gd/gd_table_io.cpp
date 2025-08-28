@@ -983,7 +983,7 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
  * @param uBegin Index of the first row to print.
  * @param uCount Number of rows to print.
  * @param vectorWidth Vector specifying the maximum width for each column.
- * @param argumentOption Options for formatting output (e.g., "nr" for row numbers, "verbose" for wrapping headers, "max_column_width" to limit column width, "prepend" to add a string before output).
+ * @param argumentOption Options for formatting output (e.g., "nr" for row numbers, "verbose" for wrapping headers, "max_column_width" to limit column width, "prepend" to add a string before output, "divide" to add dividers).
  * @param stringOut Output string receiving the formatted table.
  * 
  * @details
@@ -1009,6 +1009,7 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
 
    bool bNr = argumentOption["nr"].is_true();   // should rows be numbered?
    bool bVerbose = argumentOption["verbose"].is_true(); // try to fit as much as possible
+   bool bDivide = argumentOption["divide"].is_true(); // add line divide before and after table body
    bool bRaw = true; // argumentOption["raw"].is_true(); // dont add quotes around text?
 
    if( argumentOption.exists("max_column_width") == true )                     // check for max column width and shrink if above
@@ -1149,6 +1150,8 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
    
    for( auto uRow = uBegin; uRow < uEnd; uRow++ )
    {
+      if( bDivide == true && uRow > uBegin ) stringResult += stringLineDivide; // add divide line before first row if option is set and not first row in table
+
       vectorValue.clear();
       table.row_get_variant_view(uRow, vectorValue);                           // get all values for the row
 

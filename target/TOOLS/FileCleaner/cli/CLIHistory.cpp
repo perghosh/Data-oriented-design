@@ -393,7 +393,7 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
 
 
    //std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
-   std::string stringTable = gd::table::to_string(tablePrint, gd::table::tag_io_cli{}, gd::table::tag_text{});
+   std::string stringTable = gd::table::to_string(tablePrint, {{"divide", true}}, gd::table::tag_io_cli{}, gd::table::tag_text{});
    std::cout << "\n" << stringTable << "\n";
 
    return { true, "" };

@@ -304,6 +304,18 @@ inline std::string to_string( const dto::table& table, tag_io_cli, tag_text ) {
    return stringResult;
 }
 
+/// convert table to string in grid format formated with proper column withds
+inline std::string to_string( const dto::table& table, const gd::argument::arguments& argumentOption, tag_io_cli, tag_text ) {
+   std::vector<unsigned> vectorWidth;
+   gd::table::aggregate aggregate_( &table );
+   aggregate_.max( vectorWidth, tag_length{}, tag_text{});
+   aggregate_.fix( vectorWidth, tag_text{} );
+   std::string stringResult;
+   to_string( table, 0, table.get_row_count(), vectorWidth, argumentOption, stringResult, tag_io_cli{}, tag_text{});
+   return stringResult;
+}
+
+
 
 /// convert table to string in grid format formated with proper column withds
 inline std::string to_string( const dto::table& table, uint32_t uMax, tag_io_cli ) {
