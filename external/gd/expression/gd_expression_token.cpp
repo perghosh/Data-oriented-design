@@ -1,3 +1,8 @@
+/**
+ * @file gd_expression_token.cpp
+ * @brief Token implementations for expression parsing and evaluation
+ */
+
 #include <stack>
 
 #include "gd_expression_operator.h"
@@ -792,6 +797,16 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
    return { true, "" };
 }
 
+/** -----------------------------------------------------------------------------
+ * @brief Calculates the result of an expression from postfix tokens using runtime context
+ * 
+ * Wrapper around the main calculate_s function to return only the last value.
+ * 
+ * @param vectorToken Vector of tokens in postfix notation
+ * @param pvalueResult Pointer to store the resulting value from the calculation
+ * @param runtime_ Runtime context for variable resolution
+ * @return Pair of success flag and error message (if any)
+ */
 std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_ )
 {
    std::vector<value> vectorReturn;

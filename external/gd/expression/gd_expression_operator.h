@@ -1,8 +1,9 @@
 /**
-* @file gd_expression_value.h
-* 
-* @brief 
-* 
+* @file gd_expression_operator.h
+* @brief Operator overloads for VALUE objects
+*
+* This file contains operator overloads for the VALUE class, allowing for
+* intuitive arithmetic operations between VALUE objects.
 */
 
 #pragma once
