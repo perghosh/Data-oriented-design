@@ -1150,13 +1150,13 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
    for( auto uRow = uBegin; uRow < uEnd; uRow++ )
    {
       vectorValue.clear();
-      table.row_get_variant_view( uRow, vectorValue );
+      table.row_get_variant_view(uRow, vectorValue);                           // get all values for the row
 
-      if( bNr == true ) vectorValue.insert( vectorValue.begin(), uRow );
+      if( bNr == true ) vectorValue.insert(vectorValue.begin(), uRow);         // need to insert row number as first column if numbering is enabled
 
       // ### Process each cell and split into lines
       std::vector<std::vector<std::string>> vectorCellLines; // Each cell's lines (advanced !!)
-      unsigned uMaxLinesInRow = 1;
+      unsigned uMaxLinesInRow = 1; // max number of lines in any cell in this row
       
       unsigned uColumn = 0;
       auto itWidth = std::begin( vectorWidth );
@@ -1194,26 +1194,25 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
          }
 
          vectorCellLines.push_back(vectorLine);
-         uMaxLinesInRow = std::max(uMaxLinesInRow, (unsigned)vectorLine.size());
+         uMaxLinesInRow = std::max(uMaxLinesInRow, (unsigned)vectorLine.size());// Track max lines in this row
       }
 
       // ## Render the row with proper multi-line support
+
       for(unsigned uLineIndex = 0; uLineIndex < uMaxLinesInRow; uLineIndex++) 
       {
          stringResult += "| ";
 
          for(unsigned uColumnIndex = 0; uColumnIndex < vectorCellLines.size(); uColumnIndex++) 
          {
-            if(uColumnIndex > 0) {
-               stringResult.append(std::string_view{" | "});
-            }
+            if(uColumnIndex > 0) { stringResult.append(std::string_view{" | "}); }
             
             // Get the line for this cell, or empty string if this cell has fewer lines
-            std::string cellLine;
-            if(uLineIndex < vectorCellLines[uColumnIndex].size()) { cellLine = vectorCellLines[uColumnIndex][uLineIndex]; } 
-            else { cellLine.assign(vectorWidth[uColumnIndex], ' '); }           // Pad with spaces to maintain column width
+            std::string stringLine;
+            if(uLineIndex < vectorCellLines[uColumnIndex].size()) { stringLine = vectorCellLines[uColumnIndex][uLineIndex]; } 
+            else { stringLine.assign(vectorWidth[uColumnIndex], ' '); }           // Pad with spaces to maintain column width
 
-            stringResult += cellLine;
+            stringResult += stringLine;
          }
          
          stringResult.append(std::string_view{" |\n"});
