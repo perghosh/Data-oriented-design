@@ -449,9 +449,12 @@ public:
    /// convert argument values to string
    static std::string to_string_s(int iCount, const char* const* ppbszArgumentValue, int iOffset = 0);
    static std::string to_string_s(const options* poptions_, int iOffset = 0);
-   /// convert argument values to string
+   static std::string to_string_s( const gd::argument::arguments& arguments_ );
+   /// Parse string into command line arguments, this do not have specific rules more than it can handle quoted strings
    static std::pair<bool, std::string> parse_s(const std::string_view& stringCommandLine, std::vector<std::string>& vectorArguments );
+   /// parse terminal formated command line into vector of strings
    static std::pair<bool, std::string> parse_terminal_s(const std::string_view& stringCommandLine, std::vector<std::string>& vectorArguments);
+   /// parse terminal formated command line into vector of strings
    static std::vector<std::string> parse_s(const std::string_view& stringCommandLine );
    /// print error message and return it
    static std::pair<bool, std::string> error_s( std::initializer_list<gd::variant_view> listPrint );

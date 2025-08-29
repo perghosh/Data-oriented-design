@@ -281,6 +281,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
    PrepareLogging_s();
 
+   gd::argument::arguments argumentsHistory; // if history is enabled, this will hold the history arguments that is saved to history file when all is done
+
    auto result_ = Initialize();
    if( result_.first == false ) { return result_; }
 
@@ -318,6 +320,13 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          }
          
          return { false, stringError }; 
+      }
+
+      if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true )
+      {
+         // If command should be saved to history, we copy the arguments that is saved to history when application is done
+         // This is done to make sure that any changes to arguments during application run is not saved to history
+         argumentsHistory = optionsApplication.find_active()->get_arguments(); // get the arguments from the active options
       }
 
       if( optionsApplication.exists("prompt", gd::types::tag_state_active{}) == true )
@@ -443,36 +452,12 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       {
          std::string stringHistory;
          std::filesystem::path pathHistory;
-         auto result_ = HistoryFindActive_s(pathHistory);                       // Get the local history location, 2 directory levels up
+         auto result_ = HistoryFindActive_s(pathHistory);                       // Get the local history location
          if( result_.first == true ) { stringHistory = pathHistory.string(); }
 
-         result_ = CLI::HistoryAppend_g(stringHistory, &optionsApplication);  // Append the command to history
+         gd::cli::options* poptionsActive = optionsApplication.find_active();
+         result_ = CLI::HistoryAppend_g(stringHistory, poptionsActive->name(), &argumentsHistory, "");  // Append the command to history
          if( result_.first == false ) { return result_; }
-
-
-
-         /*
-            - Check if history is in current directory
-            - Check 2x parent directory for history,
-            - If not, check if history is in home directory
-         */
-         /*
-         std::filesystem::path pathHistoryCurrent; //= std::filesystem::current_path() / ".cleaner-history.xml"; // Default history location in current directory
-         std::filesystem::path pathHistoryHome;
-         HistoryFindFile_s(pathHistoryCurrent, 2);                              // Get the local history location, 2 directory levels up
-         HistoryLocation_s(pathHistoryHome);
-
-         if( std::filesystem::exists(pathHistoryCurrent) == true )
-         {
-            HISTORY_SaveCommand(pathHistoryCurrent.string()); // Save the command to history in current directory
-         }
-         if( std::filesystem::exists(pathHistoryHome) == true && std::filesystem::exists(pathHistoryCurrent) == false )
-         {
-            HISTORY_SaveCommand(pathHistoryHome.string()); // Save the command to history in home directory
-         }
-         */
-
-
       }
    }
    else
