@@ -76,7 +76,7 @@ static std::pair<bool, std::string> XML_ClearFile_s(const gd::argument::argument
 
 static std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::arguments& argumentsTable);
 
-static std::string FilePath();
+static std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ );
 
 static std::string DATE_CurrentTime_s();
 
@@ -113,8 +113,9 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    }
    else if( options_.exists("edit") == true )
    {
-      gd::argument::arguments argumentsEdit({ "edit", options_["edit"].as_string() });
-      auto result_ = HistoryEdit_g();
+      gd::argument::arguments argumentsEdit;
+      argumentsEdit.append( options_.get_arguments(), { "edit", "local"} );
+      result_ = HistoryEdit_g( argumentsEdit );
    }
    else if( options_.exists("run") == true )
    {
@@ -357,14 +358,40 @@ std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::argumen
    }
 }
 
-std::string FilePath()
+/** ---------------------------------------------------------------------------
+ * @brief Retrieves the full path to the history file based on the provided arguments, checking for its existence.
+ * @param arguments_ The argument list used to determine the location for the history file (checks for the 'local' key).
+ * @return The full path to the history file if it exists; otherwise, an empty string.
+ */
+std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
 {
-   std::string stringName = "history.xml";
-   std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
+   std::string_view stringHistoryFileName;
+   std::filesystem::path pathDirectory;
+   bool bCurrentDirectory = arguments_.exists("local"); // If true, use current directory for history file, otherwise user local app data folder
 
-   std::string stringFilePath = (pathCurrentDirectory / stringName).string();
 
-   return stringFilePath;
+   // ## Prepare folder for history file ......................................
+
+   if( bCurrentDirectory == true )
+   {
+      stringHistoryFileName = ".cleaner-history.xml";                         // Local history file name, note that it is hidden file on Unix systems
+      pathDirectory = CurrentDirectory_s();                                   // Get the local history path based on the current directory
+   }
+   else
+   {
+      stringHistoryFileName = "cleaner-history.xml";                          // Default history file name
+      pathDirectory = GetHistoryPath_s();                                     // Get the history path based on the operating system
+   }
+                                                                                                   LOG_DEBUG_RAW( "==> History file path: " + (pathDirectory / stringHistoryFileName).string() );
+
+   std::string stringHistoryFile = ( pathDirectory / stringHistoryFileName ).string(); // Full path to the history file
+
+   if( std::filesystem::exists(stringHistoryFile) == false )
+   {
+      return "";
+   }
+
+   return stringHistoryFile;
 }
 
 /** ---------------------------------------------------------------------------
@@ -502,18 +529,15 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
    return { true, "" };
 }
 
-std::pair<bool, std::string> HistoryEdit_g()
+/* ---------------------------------------------------------------------------
+ * @brief Edit a command in the history
+ */
+std::pair<bool, std::string> HistoryEdit_g( const gd::argument::arguments& argumentsEdit )
 {
+   std::string stringHistoryFile = FILE_GetHistoryFile_s( argumentsEdit );
+   if( stringHistoryFile.empty() == true ) return { false, "Failed to get history file path." };   
 
-   std::string stringHomePath = papplication_g->PROPERTY_Get("folder-home").as_string();
-
-   if( stringHomePath.empty() == true ) return { false, "Home path is not set in the application properties." };
-
-   gd::file::path pathHistoryFile(stringHomePath + "/history.xml");
-
-   if( std::filesystem::exists(pathHistoryFile) == false ) return { false, "History file does not exist: " + pathHistoryFile.string() };
-
-   return SHARED_OpenFile_g(pathHistoryFile);
+   return SHARED_OpenFile_g(stringHistoryFile);
 }
 
 /** ---------------------------------------------------------------------------

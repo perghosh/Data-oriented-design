@@ -56,7 +56,7 @@ std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argume
 std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument);
 
 /// \brief Edit history file
-std::pair<bool, std::string> HistoryEdit_g();
+std::pair<bool, std::string> HistoryEdit_g( const gd::argument::arguments& argumentsSave );
 
 NAMESPACE_CLI_END
 
