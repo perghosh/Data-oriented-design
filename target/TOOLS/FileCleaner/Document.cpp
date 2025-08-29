@@ -1547,13 +1547,9 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
    }
    else if( stringId == "history" )
    {
-      auto p_ = CACHE_Get(stringId, false);
-      if( p_ == nullptr )
-      {
-         // file table: index | date | command | line 
-         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"int32", 0, "index"}, {"string", 30, "date"}, {"string", 20, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
-         ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
-      }
+      // file table: index | date | command | line 
+      ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"int32", 0, "index"}, {"string", 30, "date"}, {"string", 20, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
+      ptable_->property_set("id", stringId);                                  // set id for table, used to identify table in cache
    }
    else { assert(false); } // unknown cache table
 
@@ -1717,8 +1713,11 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
          if( std::holds_alternative< std::unique_ptr< gd::table::dto::table > >(*it) == true ) 
          {
             auto& ptable_ = std::get< std::unique_ptr< gd::table::dto::table > >(*it);
-            auto argumentId = ptable_->property_get("id");
-            if( argumentId.is_string() && stringId == ( const char* )argumentId ) return ptable_.get();
+            auto argumentId = ptable_->property_get("id");                                         assert( argumentId.is_string() == true );
+#ifndef NDEBUG
+            auto stringId_d = argumentId.as_string_view();
+#endif
+            if( argumentId.is_string() && stringId == argumentId.as_string_view() ) return ptable_.get();
          }
       }
    }

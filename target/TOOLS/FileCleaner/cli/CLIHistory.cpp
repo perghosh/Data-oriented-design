@@ -72,7 +72,7 @@ inline std::pair<bool, std::string>  XML_ReadFile_s(gd::table::dto::table& table
    return XML_ReadFile_s( tableHistory, argumentsTable, [](std::string_view){ } ); 
 }
 
-static std::pair<bool, std::string> XML_ClearFile_s(const gd::argument::arguments& argumentsClear);
+static std::pair<bool, std::string> XML_Write_s(std::string_view stringHistoryFile, const gd::table::dto::table& tableHistory, std::string_view stringSection);
 
 static std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::arguments& argumentsTable);
 
@@ -112,8 +112,16 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    }
    else if( options_.exists("remove") == true )
    {
-      gd::argument::arguments argumentsRemove({ "remove", options_["remove"].as_string() });
+      gd::argument::arguments argumentsRemove;
+      argumentsRemove.append( options_.get_arguments(), { "remove", "local"} );
       result_ = HistoryRemove_g(argumentsRemove, pdocument);
+      auto stringHistoryFile = FILE_GetHistoryFile_s( argumentsRemove );
+      if( result_.first == true && std::filesystem::exists(stringHistoryFile) == true )
+      {
+         const auto* ptable_ = pdocument->CACHE_Get("history", false );                             assert( ptable_ != nullptr );
+         result_ = XML_Write_s(stringHistoryFile, *ptable_, "");               // Write an empty history table to the file
+         if( result_.first == false ) { return result_; }
+      }
    }
    else if( options_.exists("edit") == true )
    {
@@ -271,23 +279,24 @@ std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argu
    int64_t iRow = std::stoi(stringRemoveCommand) - 1;
 
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
-   auto result_ = XML_ReadFile_s(*ptable, argumentsRemove, [pdocument](std::string_view message) {
-      if( pdocument ) { pdocument->MESSAGE_Display(message); }
+   auto result_ = XML_ReadFile_s(*ptable, argumentsRemove, [pdocument](std::string_view message_) {
+      if( pdocument ) { pdocument->MESSAGE_Display(message_); }
    }); // Read the history file into the table
 
    if( result_.first == false ) { return result_; }
 
-   std::filesystem::path pathDirectory;
-   CApplication::HistoryFindActive_s(pathDirectory);
-
    if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, "Invalid row index: " + stringRemoveCommand }; } // Ensure the row index is valid
 
    std::string stringLine = ptable->cell_get_variant_view(iRow, "line").as_string();
-   ptable->erase(ptable->begin(), iRow); // Remove the specified row from the table
+   ptable->erase( iRow ); // Remove the specified row from the table
    
 
    pdocument->MESSAGE_Display("Removed command line: " + stringLine);
 
+   // ## Save table to "saved"
+
+   //result_ = XML_Write_s(FILE_GetHistoryFile_s(argumentsRemove), *ptable, "saved");
+   //if( result_.first == false ) { return result_; }
 
 
    //HistorySave_g(argumentsRemove, pdocument); // Save the updated table back to the history file
@@ -348,10 +357,51 @@ std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argu
    return { true, "" };
 }
 
+
+/// Open xml file with pugixml and remove all entries from node "saved" and then add nodes from table
+std::pair<bool, std::string> XML_Write_s(std::string_view stringHistoryFile, const gd::table::dto::table& tableHistory, std::string_view stringSection)
+{
+   if( stringSection.empty() == true ) { stringSection = "saved"; }
+
+   if( std::filesystem::exists(stringHistoryFile) == true )
+   {
+      pugi::xml_document xmldocument;
+      pugi::xml_parse_result result_ = xmldocument.load_file(stringHistoryFile.data());            if( !result_ ) { return { false, std::format("Failed to load XML file: {}", stringHistoryFile) }; }
+      // ### Get node "saved"
+      pugi::xml_node xmlnodeEntries = xmldocument.child("history").child(stringSection);
+      if( xmlnodeEntries.empty() ) { return { false, std::format("No save node found in XML file: {}", stringHistoryFile) }; }
+      // ### Remove all existing entries
+      xmlnodeEntries.remove_children();
+      // ### Add entries from table
+      for( size_t uRow = 0; uRow < tableHistory.size(); ++uRow )
+      {
+         auto stringName = tableHistory.cell_get_variant_view(uRow, "name").as_string_view();
+         auto stringLine = tableHistory.cell_get_variant_view(uRow, "line").as_string_view();
+         auto stringDate = tableHistory.cell_get_variant_view(uRow, "date").as_string_view();
+         pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");
+         xmlnodeEntry.append_child("name").text().set( stringName.data() );    // save command name
+         xmlnodeEntry.append_child("line").text().set( stringLine.data() );    // save command line
+         xmlnodeEntry.append_child("date").text().set( stringDate.data() );    // save date
+      }
+      // ### Save the XML document back to the file
+      xmldocument.save_file(stringHistoryFile.data(), "  ", pugi::format_default);
+   }
+   else
+   {
+      return { false, "History file does not exist: " + std::string(stringHistoryFile) };
+   }
+   return { true, "" };
+}
+
+
+
+
+/*
 std::pair<bool, std::string> XML_ClearFile_s(const gd::argument::arguments& argumentsClear)
 {
    return { true, "" };
 }
+*/
 
 std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::arguments& argumentsTable)
 {
