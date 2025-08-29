@@ -19,7 +19,7 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 
 
 /*
-@PROJECT [name: history]
+@PROJECT [name: history] [description: History operations]
 
 @TASK [title: add alias to history] [project:history] [assignee: per] [status:open] [created: 250828]
 [summary : Add alias to history]
@@ -29,6 +29,9 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 [summary : Pin a history item]
 [description: "This task involves adding a pin feature to the history, allowing users to pin specific commands for easy access later."]   
 
+@TASK [title: alias] [project:history] [assignee: kevin] [status:open] [created: 250829]
+[summary : move or copy from saved to alias part and set alias name]
+[description: "This task involves adding an alias to the history row, allowing users to specify a shorthand command for accessing their command history."]   
 */
 
 /*
