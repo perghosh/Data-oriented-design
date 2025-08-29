@@ -613,37 +613,9 @@ std::pair<bool, std::string> options::parse(const std::vector<std::string>& vect
 std::string options::to_string() const
 {
    using namespace gd::argument;
-   std::string stringResult;
 
-   // ## convert all options and values to string .............................
-
-   std::vector<std::string> vectorOption;
-   for( auto it = m_argumentsValue.named_begin(), itEnd = m_argumentsValue.named_end(); it != itEnd; it++ )
-   {
-      auto [stringName, argument_] = *it;
-      if( argument_.is_bool() == false )
-      {
-         vectorOption.push_back(std::string("--") + std::string(stringName)); // add option name
-         vectorOption.push_back(argument_.to_string());                      // add option value
-      }
-      else                                                                    // only add boolean options that are true
-      {
-         vectorOption.push_back(std::string("-") + std::string(stringName));  // add flag
-      }
-   }
-
-   // ## get pointers to simulate char* const* argv ...........................
-
-   std::vector<const char*> vectorOptionPointer;
-   for( const auto& it : vectorOption )
-   {
-      vectorOptionPointer.push_back( it.c_str() );
-   }
-
-   stringResult = to_string_s( (unsigned)vectorOptionPointer.size(), vectorOptionPointer.data() );
-   return stringResult;
+   return to_string_s(m_argumentsValue);
 }
-
 
 /// return option value if found as variant
 gd::variant options::get_variant( const std::string_view& stringName ) const 
@@ -1127,6 +1099,45 @@ options options::sub_get( const std::string_view& stringName ) const
 
    return options();
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief convert arguments names and values to string that can be used to start application
+ * @param arguments_ argument object with all options and values
+ * @return std::string with options and values
+ */
+std::string options::to_string_s(const gd::argument::arguments& arguments_)
+{
+   std::string stringResult;
+
+   // ## convert all options and values to string .............................
+
+   std::vector<std::string> vectorOption;
+   for( auto it = arguments_.named_begin(), itEnd = arguments_.named_end(); it != itEnd; it++ )
+   {
+      auto [stringName, argument_] = *it;
+      if( argument_.is_bool() == false )
+      {
+         vectorOption.push_back(std::string("--") + std::string(stringName)); // add option name
+         vectorOption.push_back(argument_.to_string());                      // add option value
+      }
+      else                                                                    // only add boolean options that are true
+      {
+         vectorOption.push_back(std::string("-") + std::string(stringName));  // add flag
+      }
+   }
+
+   // ## get pointers to simulate char* const* argv ...........................
+
+   std::vector<const char*> vectorOptionPointer;
+   for( const auto& it : vectorOption )
+   {
+      vectorOptionPointer.push_back( it.c_str() );
+   }
+
+   stringResult = to_string_s( (unsigned)vectorOptionPointer.size(), vectorOptionPointer.data() );
+   return stringResult;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief convert argument values to string, reconstruct command-line arguments into a string 

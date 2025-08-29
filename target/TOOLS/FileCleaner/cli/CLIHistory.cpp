@@ -211,10 +211,13 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
  */
 std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::cli::options* poptionsHistory, std::string_view stringSection )
 {                                                                                                  assert( std::filesystem::exists(stringFile) == true );
-   gd::cli::options* poptionsActive = poptionsHistory->find_active();
+   return HistoryAppend_g(stringFile, poptionsHistory->name(),  & poptionsHistory->get_arguments(), stringSection);
+}
 
-   poptionsActive->remove("history");                                         // remove history option if it exists, we do not want to save this in history
-   auto stringCommand = poptionsActive->to_string(); // get the full command line for the active command
+std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, std::string_view stringName, gd::argument::arguments* parguments, std::string_view stringSection )
+{                                                                                                  assert( std::filesystem::exists(stringFile) == true );
+   parguments->remove("history");                                             // remove history option if it exists, we do not want to save this in history
+   auto stringCommand = gd::cli::options::to_string_s(*parguments);           // get the full command line for the active command
    
    std::string stringDateTime = DATE_CurrentTime_s(); // Generate date string
 
@@ -228,14 +231,16 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::c
       // ### Append node to "save"
       pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("saved");
       if( xmlnodeEntries.empty() ) { return { false, std::format("No save node found in XML file: {}", stringFile) }; }
-      pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");                          assert( poptionsActive->name().empty() == false );
+      pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");
 
       // ### Check if command already exists
       if( XML_EntryExists_s(&xmlnodeEntries, stringCommand) == true ) { return { false, "Command already exists in history, command: " + stringCommand }; }
 
-      xmlnodeEntry.append_child("name").text().set( poptionsActive->name() ); // save command name
-      xmlnodeEntry.append_child("line").text().set(stringCommand.c_str()); // save command line
+      xmlnodeEntry.append_child("name").text().set( stringName );             // save command name
+      xmlnodeEntry.append_child("line").text().set(stringCommand.c_str());    // save command line
       xmlnodeEntry.append_child("date").text().set( stringDateTime );         // save date
+
+      papplication_g->PrintMessage("Appended command to history: " + stringCommand, gd::argument::arguments{});
 
       // ### Save the XML document back to the file
       xmldocument.save_file(stringFile.data(), "  ", pugi::format_default);
