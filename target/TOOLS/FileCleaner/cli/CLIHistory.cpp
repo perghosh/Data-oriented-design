@@ -85,7 +85,11 @@ static std::filesystem::path GetHistoryPath_s();
 static std::filesystem::path CurrentDirectory_s();
 
 std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, gd::cli::options* poptionsApplication, CDocument* pdocument)
-{
+{                                                                                                  assert( poptionsHistory != nullptr );
+#ifndef NDEBUG
+   auto stringOptions_d = gd::argument::debug::print( poptionsHistory->get_arguments() );
+#endif // !NDEBUG
+
    std::pair<bool, std::string> result_;
    const gd::cli::options& options_ = *poptionsHistory;
    //const gd::cli::options& optionsApplication = *poptionsApplication;

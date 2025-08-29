@@ -241,6 +241,7 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
          if( bAllowPositional == true && (size_t)iPositionalArgument < size() )
          {
             const option* poptionPositional = at( iPositionalArgument );
+            if( poptionPositional->is_flag() == true ) { return error_s( { "Positional argument can not be flag type, command: ", pbszArgument } ); }
             add_value( poptionPositional, pbszArgument );
             iPositionalArgument++;
          }
