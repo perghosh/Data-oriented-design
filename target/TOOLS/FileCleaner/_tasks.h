@@ -21,6 +21,11 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 /*
 @PROJECT [name: history] [description: History operations]
 
+CApplication::FolderGetHome_s
+
+@TASK [title: home directory] [project:history] [assignee: kevin] [status:open] [created: 250830]
+[summary : Use CApplication::FolderGetHome_s to get home directory]
+
 @TASK [title: add alias to history] [project:history] [assignee: per] [status:open] [created: 250828]
 [summary : Add alias to history]
 [description: "This task involves adding an alias to the history feature, allowing users to specify a shorthand command for accessing their command history."]
@@ -37,38 +42,29 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 /*
 @PROJECT [name: print]
 
-@TASK [title: wrap the brief part] [project:print] [assignee: per] [status:open] [created: 250828]
-[summary : Wrap brief part]
+@TASK [title: wrap the brief part] [project:print] [assignee: per] [status:closed] [created: 250828]
+[summary: Wrap brief part]
 [description: "If max width is set then wrap the brief part to that width as the body is wrapped"]
 
 @TASK [title: check that csv print works] [project:print] [assignee: per] [status:open] [created: 250828]
-[summary : Check that CSV print works]
+[summary: Check that CSV print works]
 [description: "This task involves verifying that the CSV print functionality is working as intended."]
 
-@TASK [title: frame] [project:print] [assignee: per] [status:open] [created: 250828]
-[summary : argument to set frame for output row]
+@TASK [title: border/frame] [project:print] [assignee: per] [status:open] [created: 250828]
+[summary: argument to set border/frame for output row]
 [description: "Frame is used if configured doing find searches with key value, with -frame or similar a frame should be printed even if no header or footer is set."]
 
+@TASK [title: format template] [project:print] [assignee: per] [status:open] [level:4] [created: 250830]
+[summary: specify how to print takes time, work on template on how to format output]
+[description: "To get better way to format output based on what type of search thats done figure out some sort of template to read information from"]
 
 */
 
 /*
 @PROJECT [name: help]
 
-@TASK [title: format command help] [project:help] [assignee: per] [status:open] [created: 250828]
+@TASK [title: format command help] [project:help] [assignee: per] [status:closed] [created: 250828]
 [summary : printing command help is not wrapped, that should be wraped as full help is wrapped]
 
 */
 
-/*
-@PROJECT [name: kv] [description: Key value operations]
-
-@TASK [title: figure out key value pairs] [project:kv] [assignee: per] [status:open] [created: 250828]
-[summary : , is added even if key value is missing, remove that]
-
-@TASK [title: ] [project:kv] [assignee: per] [status:ongoing] [created: 250828]
-[summary : , is added even if key value is missing, remove that]
-[code: `CLIFind.cpp` ]
-
-
-*/
