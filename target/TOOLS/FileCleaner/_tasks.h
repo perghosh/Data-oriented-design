@@ -24,7 +24,7 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 CApplication::FolderGetHome_s
 
 @TASK [title: home directory] [project:history] [assignee: kevin] [status:open] [created: 250830]
-[summary : Use CApplication::FolderGetHome_s to get home directory]
+[summary : Replace GetHistoryPath_s with CApplication::FolderGetHome_s to get home directory]
 
 @TASK [title: add alias to history] [project:history] [assignee: per] [status:open] [created: 250828]
 [summary : Add alias to history]
