@@ -310,7 +310,9 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          const gd::cli::options* poptionsActive = optionsApplication.find_active();
          if( poptionsActive != nullptr )
          {
-            poptionsActive->print_documentation(stringHelp, gd::cli::options::tag_documentation_dense{});// print help for active command
+            std::string stringDocumentation;
+            HELP_PrintDocumentation( poptionsActive, stringDocumentation );
+            PrintMessage( stringDocumentation, gd::argument::arguments() );
 
             stringError += "\n\n" + stringHelp;
          }
@@ -614,7 +616,9 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    {
       // @TODO #user.per [name: options] [description: improve format for help information, wrap lines, set indentation and site line width] [idea: add callback to format output ] [state: open] 
       std::string stringDocumentation;
-      poptionsActive->print_documentation( stringDocumentation, gd::cli::options::tag_documentation_dense{});
+
+      HELP_PrintDocumentation( poptionsActive, stringDocumentation );
+
       PrintMessage( stringDocumentation, gd::argument::arguments() );
       return { true, "" };
    }
@@ -709,19 +713,6 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       if( bUseThreads == true ) { return execute_(CLI::Count_g, poptionsActive->clone_arguments(), pdocument); } // count lines in file or directory in its own thread
       else                      { return CLI::Count_g(poptionsActive, pdocument); }// count lines in file or directory
    }
-   /*
-   else if( stringCommandName == "db" )
-   {
-      std::string stringDatabaseFile = (*poptionsActive)["file"].as_string();
-      if( stringCommandName.empty() == false )
-      {
-         auto result_ = DATABASE_Open({ {"file", stringDatabaseFile} });       // open or create database (create is default, not creating set "create" to false)
-         if( result_.first == false ) return result_;
-         result_ = DATABASE_Update();                                          // update database to match latest design
-         if( result_.first == false ) return result_;
-      }
-   }
-   */
    else if( stringCommandName == "dir" )
    {
       auto* pdocument = DOCUMENT_Get("dir", true );
@@ -773,8 +764,6 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    {
       using namespace gd::cli; // use namespace for options
       std::string stringDocumentation, stringFlags;
-      //optionsApplication.print_documentation( stringDocumentation, gd::cli::options::tag_documentation_verbose{});
-
 
       stringDocumentation += "\n\n"; 
       stringDocumentation += gd::console::rgb::print(CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
@@ -782,57 +771,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       stringDocumentation += gd::math::string::format_header_line(stringTemp, 80); // format header line for command name
       stringDocumentation += "\n\n"; 
 
-      optionsApplication.print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_) -> void {
-         if( uType == options::eOptionTypeCommand )
-         {
-            if( stringFlags.empty() == false )
-            {
-               stringDocumentation += "\nFlags:\n";
-               stringDocumentation += stringFlags;
-               stringFlags.clear(); // clear flags for next command
-            }
-
-            if( stringName.empty() == true ) { return; } // skip empty command names
-
-            stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "header", "default" }).as_string(), gd::types::tag_color{});
-            stringDocumentation += "\n\n"; // add newline to description
-            stringDocumentation += gd::math::string::format_header_line(stringName, 80); // format header line for command name
-            stringDocumentation += "\n";
-            stringDocumentation += gd::math::string::format_indent(stringDescription, 2, true); // indent description
-            stringDocumentation += "\n\n";
-         }
-         else if( uType == options::eOptionTypeOption )
-         {
-            // pad to 18 characters
-            stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
-            std::string string_ = std::format("- {:.<16}: ", stringName );
-            stringDocumentation += string_;
-            string_ = gd::math::string::format_text_width( stringDescription, 60 );
-            string_ = gd::math::string::format_indent( string_, 20, false );
-            stringDocumentation += string_;
-            stringDocumentation += "\n";
-         }
-         else if( uType == options::eOptionTypeFlag )
-         {
-            // pad to 18 characters
-            stringFlags += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
-            std::string string_ = std::format("- {:.<16}: ", stringName );
-            stringFlags += string_;
-            string_ = gd::math::string::format_text_width( stringDescription, 60 );
-            string_ = gd::math::string::format_indent( string_, 20, false );
-            stringFlags += string_;
-            stringFlags += "\n";
-         }
-      });
-
-      if( stringFlags.empty() == false )
-      {
-         stringDocumentation += "\nFlags:\n";
-         stringDocumentation += stringFlags;
-         stringFlags.clear(); // clear flags for next command
-      }
-
-
+      HELP_PrintDocumentation( &optionsApplication, stringDocumentation );
 
       std::cout << stringDocumentation << "\n";
    }
@@ -850,6 +789,10 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
 /** ---------------------------------------------------------------------------
  * @brief Updates the application state based on information from application data.
+ * 
+ * This function is responsible for updating the internal state of the application
+ * based on the current configuration and options. Application state are information
+ * that are global, it affects everything in the application.
  */ 
 void CApplication::UpdateApplicationState()
 {
@@ -1798,6 +1741,65 @@ bool CApplication::CONFIG_Exists( std::string_view stringGroup, std::string_view
    if( iRow != -1 ) { return true; }
 
    return false;
+}
+
+/** --------------------------------------------------------------------------- @TAG #help.Application
+ * @brief Print documentation for command-line options
+ * 
+ * This function generates documentation for the provided command-line options
+ * and appends it to the given string.
+ *
+ * @param poptions Pointer to the command-line options object
+ * @param stringDocumentation Reference to the string where documentation will be appended
+ * @return std::pair<bool, std::string> True if successful, false and error message if failed
+ */
+void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, std::string& stringDocumentation)
+{                                                                                                  assert( poptions != nullptr );
+   using namespace gd::cli; // use namespace for options
+   std::string stringFlags; // temporary string to hold flags
+
+   poptions->print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_) -> void {
+      if( uType == options::eOptionTypeCommand )
+      {
+         if( stringFlags.empty() == false )
+         {
+            stringDocumentation += "\nFlags:\n";
+            stringDocumentation += stringFlags;
+            stringFlags.clear();                                              // clear flags for next command
+         }
+
+         if( stringName.empty() == true ) { return; }                          // skip empty command names
+
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "header", "default" }).as_string(), gd::types::tag_color{});
+         stringDocumentation += "\n\n"; // add newline to description
+         stringDocumentation += gd::math::string::format_header_line(stringName, 80); // format header line for command name
+         stringDocumentation += "\n";
+         stringDocumentation += gd::math::string::format_indent(stringDescription, 2, true); // indent description
+         stringDocumentation += "\n\n";
+      }
+      else if( uType == options::eOptionTypeOption )
+      {
+         // pad to 18 characters
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
+         std::string string_ = std::format("- {:.<16}: ", stringName );
+         stringDocumentation += string_;
+         string_ = gd::math::string::format_text_width( stringDescription, 60 );
+         string_ = gd::math::string::format_indent( string_, 20, false );
+         stringDocumentation += string_;
+         stringDocumentation += "\n";
+      }
+      else if( uType == options::eOptionTypeFlag )
+      {
+         // pad to 18 characters
+         stringFlags += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
+         std::string string_ = std::format("- {:.<16}: ", stringName );
+         stringFlags += string_;
+         string_ = gd::math::string::format_text_width( stringDescription, 60 );
+         string_ = gd::math::string::format_indent( string_, 20, false );
+         stringFlags += string_;
+         stringFlags += "\n";
+      }
+   });
 }
 
 
