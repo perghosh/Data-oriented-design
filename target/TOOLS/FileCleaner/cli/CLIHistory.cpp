@@ -84,6 +84,8 @@ static std::filesystem::path GetHistoryPath_s();
 
 static std::filesystem::path CurrentDirectory_s();
 
+static std::string FolderGetHome_s();
+
 std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, gd::cli::options* poptionsApplication, CDocument* pdocument)
 {                                                                                                  assert( poptionsHistory != nullptr );
 #ifndef NDEBUG
@@ -164,7 +166,8 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    else
    {
       stringHistoryFileName = "cleaner-history.xml";                          // Default history file name
-      pathDirectory = GetHistoryPath_s();                                     // Get the history path based on the operating system
+      std::string stringPath = FolderGetHome_s();                               // Get the user home folder
+      pathDirectory = std::filesystem::path(stringPath);                                     // Get the history path based on the operating system
    }
                                                                                                    LOG_DEBUG_RAW( "==> History file path: " + (pathDirectory / stringHistoryFileName).string() );
 
@@ -439,7 +442,8 @@ std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
    else
    {
       stringHistoryFileName = "cleaner-history.xml";                          // Default history file name
-      pathDirectory = GetHistoryPath_s();                                     // Get the history path based on the operating system
+      std::string stringPath = FolderGetHome_s();                               // Get the user home folder
+      pathDirectory = std::filesystem::path(stringPath);                                     // Get the history path based on the operating system
    }
                                                                                                    LOG_DEBUG_RAW( "==> History file path: " + (pathDirectory / stringHistoryFileName).string() );
 
@@ -864,6 +868,14 @@ std::filesystem::path CurrentDirectory_s()
    std::filesystem::path pathDirectory = std::filesystem::current_path();
 
    return pathDirectory;
+}
+
+std::string FolderGetHome_s()
+{
+   std::string stringHome;
+   CApplication::FolderGetHome_s(stringHome);
+
+   return stringHome;
 }
 
 NAMESPACE_CLI_END
