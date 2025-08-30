@@ -331,21 +331,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       if( optionsApplication.exists("prompt", gd::types::tag_state_active{}) == true )
       {
-         // If prompt option is active, we can use it
-         auto stringOptions = optionsApplication.get_variant_view("prompt", gd::types::tag_state_active{}).as_string();
-         if( stringOptions.empty() == false )
-         {
-            gd::cli::options* poptionsActive = optionsApplication.find_active();
-            auto vector_ = gd::utf8::split(stringOptions, ';');                // Split prompt values by ; and add them to options
-            for( const auto& argument_ : vector_ )
-            {
-               std::cout << "Set " << argument_ << ": ";
-               std::string stringValue;
-               std::getline(std::cin, stringValue);
-
-               poptionsActive->set_value( argument_, stringValue );
-            }
-         }
+         auto result_ = CliPrompt_s( &optionsApplication );                    // prompt user for options
+         if( result_.first == false ) { return result_; }
       }
 
       // ## Logging ...........................................................
@@ -2473,6 +2460,56 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
    return uPathCount;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Prompts the user for input values for specified command-line options.
+ *
+ * This method checks if the "prompt" option is active in the provided command-line options.
+ * If active, it retrieves the list of options that require user input, prompts the user for each,
+ * and sets the corresponding values in the active options.
+ *
+ * @param poptionsApplication Pointer to the command-line options object.
+ * @return std::pair<bool, std::string> Returns a pair where the first element is true on success and false on failure,
+ *         and the second element contains an error message if applicable.
+ *
+ * Example usage:
+ * @code
+ * gd::cli::options optionsApplication;
+ * // ... (initialize optionsApplication)
+ * auto result = CApplication::CliPrompt_s(&optionsApplication);
+ * if(!result.first) {
+ *     std::cerr << "Error: " << result.second << std::endl;
+ * }
+ * @endcode
+ */
+std::pair<bool, std::string> CApplication::CliPrompt_s(gd::cli::options* poptionsApplication)
+{                                                                                                  assert(poptionsApplication != nullptr);
+   if( poptionsApplication->exists("prompt", gd::types::tag_state_active{}) == true )
+   {
+      // If prompt option is active, we can use it
+      auto stringOptions = poptionsApplication->get_variant_view("prompt", gd::types::tag_state_active{}).as_string();
+      if( stringOptions.empty() == false )
+      {
+         gd::cli::options* poptionsActive = poptionsApplication->find_active();
+         auto vector_ = gd::utf8::split(stringOptions, ';');                  // Split prompt values by ; and add them to options
+
+         // ## prompt for each argument but first print information to user that user input is needed
+         papplication_g->PrintMessage( "Please provide values for the following options (leave empty to skip)" );
+
+         for( const auto& argument_ : vector_ )
+         {
+            std::cout << "Set " << argument_ << ": ";
+            std::string stringValue;
+            std::getline(std::cin, stringValue);                              // Get user input
+
+            if( stringValue.empty() == true ) continue;                       // Skip empty values
+            poptionsActive->set_value(argument_, stringValue);                // Set value to active options 
+         }
+      }
+   }
+
+   return { true, "" };
+}
+
 /** --------------------------------------------------------------------------- @TAG #folder.home
  * @brief Retrieves the home directory path for the application.
  *
@@ -2924,55 +2961,8 @@ std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::str
    return { true, "" };
 }
 
-/** ---------------------------------------------------------------------------
- * @brief Print command history
- *
- * @return std::pair<bool, std::string> True if successful, false and error message if failed
- */
-std::pair<bool, std::string> CApplication::HistoryPrint_s()
-{
-#ifdef WIN32
 
-   // Create file
-   wchar_t puProgramDataPath[MAX_PATH];
-
-   if( !GetEnvironmentVariableW(L"ProgramData", puProgramDataPath, MAX_PATH) )
-   {
-      return { false, "" };
-   }
-
-   std::wstring stringDirectory = std::wstring(puProgramDataPath) + L"\\tools\\cleaner";
-
-   std::wstring stringFilePath = stringDirectory + L"\\history.xml";
-
-   pugi::xml_document xmldocument;
-
-   pugi::xml_parse_result _result = xmldocument.load_file(stringFilePath.c_str());
-   if( !_result )
-   {
-      return { false, "" };
-   }
-
-   auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "command"} }, gd::table::tag_prepare{}));
-   pugi::xml_node commands_node = xmldocument.child("commands");
-
-   for( auto command : commands_node.children("command") )
-   {
-      std::string stringCommand = command.child_value();
-      ptable->row_add();
-      ptable->cell_set(ptable->get_row_count() - 1, "command", stringCommand);
-   }
-
-   auto stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
-
-   std::cout << "\n" << stringTable << "\n";
-
-#else
-#endif
-
-   return { true, "" };
-}
-
+/*
 std::pair<bool, std::string> CApplication::HistoryLocation_s(std::filesystem::path& pathLocation)
 {
 
@@ -2995,6 +2985,7 @@ std::pair<bool, std::string> CApplication::HistoryLocation_s(std::filesystem::pa
 
    return { true, "" };
 }
+*/
 
 /** ---------------------------------------------------------------------------
  * @brief Finds the configuration file in the current directory or its parent directories.
@@ -3101,19 +3092,31 @@ std::pair<bool, std::string> CApplication::HistorySave_s(const std::string_view&
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Finds the active history file, either local or in the home directory.
+ *
+ * This static method first attempts to find a local history file named ".cleaner-history.xml"
+ * in the current directory and its parent directories. If not found, it then looks for a
+ * history file named "cleaner-history.xml" in the user's home directory.
+ *
+ * @param pathLocation A reference to a filesystem::path where the found history file's path will be stored.
+ * @return std::pair<bool, std::string> Returns a pair where the first element is true if a history file was found,
+ *         false if not found, and the second element contains an error message if applicable.
+ */
 std::pair<bool, std::string> CApplication::HistoryFindActive_s(std::filesystem::path& pathLocation)
 {
-   /*
-      - Check if local history file is in range
-      - If not found, check in user home directory
-      - If no file is found, return false+
-   */
-   
-   HistoryFindFile_s(pathLocation); // Check in current directory and parent directories
+   auto result_ = HistoryFindFile_s(pathLocation);                            // Try to find local history file
 
-   if( pathLocation.empty() == true ) { HistoryLocation_s(pathLocation); } // Check in user home directory
+   // ## Find home history file if no local history file found
 
-   if( pathLocation.empty() == true ) { return { false, "No history file found" }; }
+   if( result_.first == false )
+   {
+      std::string stringHomePath;
+      result_ = FolderGetHome_s( stringHomePath );
+      if( result_.first == false ) { return result_; }
+      pathLocation = std::filesystem::path(stringHomePath) / "cleaner-history.xml"; // Default history location in user home directory
+      if( std::filesystem::exists(pathLocation) == false ) { return { false, "No history file found" }; }
+   }
 
    return { true, "" };
 }
