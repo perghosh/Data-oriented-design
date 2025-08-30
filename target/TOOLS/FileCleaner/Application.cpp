@@ -1733,12 +1733,14 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
    poptions->print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_) -> void {
       if( uType == options::eOptionTypeCommand )
       {
+         /*
          if( stringFlags.empty() == false )
          {
             stringDocumentation += "\nFlags:\n";
             stringDocumentation += stringFlags;
             stringFlags.clear();                                              // clear flags for next command
          }
+         */
 
          if( stringName.empty() == true ) { return; }                          // skip empty command names
 
@@ -1772,6 +1774,14 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
          stringFlags += "\n";
       }
    });
+
+   // ## Print flags if any
+
+   if( stringFlags.empty() == false )
+   {
+      stringDocumentation += "\nFlags\n";
+      stringDocumentation += stringFlags; 
+   }
 }
 
 
@@ -2023,14 +2033,15 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    // ## 'history' handle history
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "Handle command history" );
+      optionsCommand.add({ "run", "Run history entry, this will run the command from history" });
+      optionsCommand.add({ "alias", "Set alias for history entry" });
+      optionsCommand.add({ "list", "Lists all history entries" });
+      optionsCommand.add({ "remove", "Remove history entries" });
       optionsCommand.add_flag( {"create", "Initialize history logic, creates folders and files needed to manage history, this also enables configuration settings"} );
       optionsCommand.add_flag({ "delete", "Delete history, this will delete all history files and folders" });
       optionsCommand.add_flag({ "print", "Print history, this will print all of the history entries" });
       optionsCommand.add_flag({ "edit", "Edit history file if it exists" });
       optionsCommand.add_flag({ "local", "Create history file in current directory" });
-      optionsCommand.add({ "list", "Lists all history entries"});
-      optionsCommand.add({ "remove", "Remove history entries" });
-      optionsCommand.add({ "run", "Run history entry, this will run the command from history" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add(std::move(optionsCommand));
       //optionsCommand.add({});

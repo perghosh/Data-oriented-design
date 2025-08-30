@@ -35,14 +35,8 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 /*
 @PROJECT [name: history] [description: History operations]
 
-CApplication::FolderGetHome_s
-
-@TASK [title: home directory] [project:history] [assignee: kevin] [status:open] [created: 250830]
+@TASK [title: home directory] [project:history] [assignee: kevin] [status:closed] [created: 250830]
 [summary : Replace GetHistoryPath_s with CApplication::FolderGetHome_s to get home directory]
-
-@TASK [title: add alias to history] [project:history] [assignee: per] [status:open] [created: 250828]
-[summary : Add alias to history]
-[description: "This task involves adding an alias to the history feature, allowing users to specify a shorthand command for accessing their command history."]
 
 @TASK [title: pin history item] [project:history] [assignee: per] [status:open] [created: 250828]
 [summary : Pin a history item]
@@ -51,6 +45,7 @@ CApplication::FolderGetHome_s
 @TASK [title: alias] [project:history] [assignee: kevin] [status:open] [created: 250829]
 [summary : move or copy from saved to alias part and set alias name]
 [description: "This task involves adding an alias to the history row, allowing users to specify a shorthand command for accessing their command history."]   
+[sample: """cleaner history --   """
 */
 
 // ----------------------------------------------------------------------------
