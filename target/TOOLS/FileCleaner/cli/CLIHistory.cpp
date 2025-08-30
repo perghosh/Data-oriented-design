@@ -131,7 +131,8 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    }
    else if( options_.exists("run") == true )
    {
-      gd::argument::arguments argumentsRun({ "run", options_["run"].as_string() });
+      gd::argument::arguments argumentsRun;
+      argumentsRun.append( options_.get_arguments(), { "run", "local"} );
       result_ = HistoryRun_g(argumentsRun, poptionsApplication, pdocument);
    }
 
@@ -512,10 +513,10 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
    if( result_.first == false ) { return result_; }                           
 
    std::string stringCommand;
-   std::string stringRun = argumentsRun["run"].as_string();
+   std::string stringRun = argumentsRun["run"].as_string();                                        LOG_DEBUG_RAW( "==> Index/name to run: " + stringRun );
    int64_t iRow = std::stoi(stringRun) - 1;
 
-   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, "Invalid row index: " + stringRun }; } // Ensure the row index is valid
+   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format( "Invalid row index: {} max is: {}", stringRun, ptable->size() ) }; } // Ensure the row index is valid, note that is 1-based index
 
    // ## Get the command from the specified row and execute it
 
