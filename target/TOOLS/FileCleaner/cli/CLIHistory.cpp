@@ -106,7 +106,8 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    }
    else if( options_.exists("print") == true )
    {
-      gd::argument::arguments argumentsPrint({ "print", options_["print"].as_string() });
+      gd::argument::arguments argumentsPrint;
+      argumentsPrint.append( options_.get_arguments(), { "print", "local"} );
       result_ = HistoryPrint_g(argumentsPrint, pdocument);
    }
    else if( options_.exists("remove") == true )
@@ -368,6 +369,7 @@ std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::argumen
  */
 std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
 {
+   std::string stringHistoryFile;
    std::string_view stringHistoryFileName;
    std::filesystem::path pathDirectory;
    bool bCurrentDirectory = arguments_.exists("local"); // If true, use current directory for history file, otherwise user local app data folder
@@ -377,18 +379,17 @@ std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
 
    if( bCurrentDirectory == true )
    {
-      stringHistoryFileName = ".cleaner-history.xml";                         // Local history file name, note that it is hidden file on Unix systems
-      pathDirectory = CurrentDirectory_s();                                   // Get the local history path based on the current directory
+      auto result_ = CApplication::HistoryFindLocal_s(pathDirectory);         // Find the local history folder based on the current directory
+      if( result_.first == false ) { return ""; }                             // Failed to find the local history folder
+      stringHistoryFile = pathDirectory.string();
    }
    else
    {
       stringHistoryFileName = "cleaner-history.xml";                          // Default history file name
       pathDirectory = GetHistoryPath_s();                                     // Get the history path based on the operating system
+      stringHistoryFile = ( pathDirectory / stringHistoryFileName ).string(); // Full path to the history file
    }
-                                                                                                   LOG_DEBUG_RAW( "==> History file path: " + (pathDirectory / stringHistoryFileName).string() );
-
-   std::string stringHistoryFile = ( pathDirectory / stringHistoryFileName ).string(); // Full path to the history file
-
+                                                                                                   LOG_DEBUG_RAW( "==> History file path: " + stringHistoryFile );
    if( std::filesystem::exists(stringHistoryFile) == false )
    {
       return "";
@@ -409,7 +410,10 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
 
-   XML_ReadFile_s(*ptable, argumentsPrint); // Create the table from the XML file
+   // ## Create the table from the XML file
+   XML_ReadFile_s(*ptable, argumentsPrint, [pdocument](std::string_view message_) {
+      if( pdocument ) { pdocument->MESSAGE_Display(message_); }
+   });   
 
    // ## Move to table that is used for printing ..............................
 
@@ -571,6 +575,7 @@ std::pair<bool, std::string> PrepareEmptyXml_s( std::string_view stringHistoryFi
 
    pugi::xml_node xmlnodeRoot = xmldocument.append_child("history");           // "history" = root
 
+   xmlnodeRoot.append_child("named");                                          // "named" = child and used to name important entries
    xmlnodeRoot.append_child("pinned");                                         // "pinned" = child and used to pin important entries
    xmlnodeRoot.append_child("saved");                                          // "saved" = child and used to save important entries
    xmlnodeRoot.append_child("recent");                                         // "recent" = child and used for recent entries
