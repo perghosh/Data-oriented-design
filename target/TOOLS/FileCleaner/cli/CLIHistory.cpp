@@ -47,8 +47,7 @@
 
 #include "CLIHistory.h"
 
-
-
+// @TASK [project: history] 
 
 NAMESPACE_CLI_BEGIN
 
@@ -109,7 +108,8 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    }
    else if( options_.exists("print") == true )
    {
-      gd::argument::arguments argumentsPrint({ "print", options_["print"].as_string() });
+      gd::argument::arguments argumentsPrint;
+      argumentsPrint.append( options_.get_arguments(), { "print", "local"} );
       result_ = HistoryPrint_g(argumentsPrint, pdocument);
    }
    else if( options_.exists("remove") == true )
@@ -133,15 +133,13 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    }
    else if( options_.exists("run") == true )
    {
-      gd::argument::arguments argumentsRun({ "run", options_["run"].as_string() });
+      gd::argument::arguments argumentsRun;
+      argumentsRun.append( options_.get_arguments(), { "run", "local"} );
       result_ = HistoryRun_g(argumentsRun, poptionsApplication, pdocument);
    }
 
    return result_;
 }
-
-
-
 
 /** ---------------------------------------------------------------------------
  * @brief Creates a history file in either the current directory or the user's local application data folder, preparing the necessary folder and initializing the file with empty XML if needed.
@@ -276,86 +274,34 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Removes a specified row from the history table in the document cache, displaying a message upon successful removal.
+ * @param argumentsRemove The arguments containing the row index to remove, accessed via the 'remove' key.
+ * @param argumentsRemove.remove is expected to be a string representing a 1-based index of the row to remove.
+ * @param pdocument Pointer to the document object containing the history table and message display functionality.
+ * @return A pair where the first element is a boolean indicating success (true if the row was removed, false otherwise), and the second element is a string containing an error message if the operation failed, or an empty string on success.
+ */
 std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argumentsRemove, CDocument* pdocument)
 {
    std::string stringRemoveCommand = argumentsRemove["remove"].as_string();
    int64_t iRow = std::stoi(stringRemoveCommand) - 1;
 
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+
+   // ## Read the history file into the table
+
    auto result_ = XML_ReadFile_s(*ptable, argumentsRemove, [pdocument](std::string_view message_) {
       if( pdocument ) { pdocument->MESSAGE_Display(message_); }
-   }); // Read the history file into the table
+   }); 
 
    if( result_.first == false ) { return result_; }
 
    if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, "Invalid row index: " + stringRemoveCommand }; } // Ensure the row index is valid
 
    std::string stringLine = ptable->cell_get_variant_view(iRow, "line").as_string();
-   ptable->erase( iRow ); // Remove the specified row from the table
+   ptable->erase( iRow );                                                     // Remove the specified row from the table
    
-
    pdocument->MESSAGE_Display("Removed command line: " + stringLine);
-
-   // ## Save table to "saved"
-
-   //result_ = XML_Write_s(FILE_GetHistoryFile_s(argumentsRemove), *ptable, "saved");
-   //if( result_.first == false ) { return result_; }
-
-
-   //HistorySave_g(argumentsRemove, pdocument); // Save the updated table back to the history file
-
-   /*std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
-
-   if( std::filesystem::exists(pathCurrentDirectory) == true )
-   {
-      //std::filesystem::remove_all(pathCurrentDirectory); // remove the history folder
-   }*/
-
-   /*std::string stringFileName = FilePath();
-                                                                               assert(!stringFileName.empty());
-
-   pugi::xml_document xmldocument;
-   pugi::xml_parse_result result_ = xmldocument.load_file(stringFileName.c_str());
-   if( !result_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
-
-   // Check if entries exist
-   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("entries");
-   if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
-
-   int iRowCount = 0;
-
-   // Iterate through each entry  
-   for( auto entry : xmlnodeEntries.children("entry") )
-   {
-      std::ostringstream oss;
-      entry.print(oss, "  ", pugi::format_default);
-      std::string entryXml = oss.str();
-      std::cout << entryXml << "\n";
-      if( iRowCount == iIndex )
-      {
-         xmlnodeEntries.remove_child(entry);
-         break;
-      }
-      ++iRowCount;
-   }
-
-   /*for( auto it = xmlnodeEntries.begin(); it != xmlnodeEntries.end(); ++it )
-   {
-      if( std::string(it->name()) == "entry" )
-      {
-         if(iRowCount == iIndex)
-         {
-            xmlnodeEntries.remove_child(*it); // Remove the entry with the specified index
-            break;
-         }
-         ++iRowCount;
-      }
-   }
-
-   xmldocument.save_file(stringFileName.c_str(), "  ", pugi::format_default );
-   */
-
-   //std::cout << stringRemoveCommand << "\n";
 
    return { true, "" };
 }
@@ -427,6 +373,7 @@ std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::argumen
  */
 std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
 {
+   std::string stringHistoryFile;
    std::string_view stringHistoryFileName;
    std::filesystem::path pathDirectory;
    bool bCurrentDirectory = arguments_.exists("local"); // If true, use current directory for history file, otherwise user local app data folder
@@ -436,19 +383,17 @@ std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
 
    if( bCurrentDirectory == true )
    {
-      stringHistoryFileName = ".cleaner-history.xml";                         // Local history file name, note that it is hidden file on Unix systems
-      pathDirectory = CurrentDirectory_s();                                   // Get the local history path based on the current directory
+      auto result_ = CApplication::HistoryFindLocal_s(pathDirectory);         // Find the local history folder based on the current directory
+      if( result_.first == false ) { return ""; }                             // Failed to find the local history folder
+      stringHistoryFile = pathDirectory.string();
    }
    else
    {
       stringHistoryFileName = "cleaner-history.xml";                          // Default history file name
-      std::string stringPath = FolderGetHome_s();                               // Get the user home folder
-      pathDirectory = std::filesystem::path(stringPath);                                     // Get the history path based on the operating system
+      pathDirectory = GetHistoryPath_s();                                     // Get the history path based on the operating system
+      stringHistoryFile = ( pathDirectory / stringHistoryFileName ).string(); // Full path to the history file
    }
-                                                                                                   LOG_DEBUG_RAW( "==> History file path: " + (pathDirectory / stringHistoryFileName).string() );
-
-   std::string stringHistoryFile = ( pathDirectory / stringHistoryFileName ).string(); // Full path to the history file
-
+                                                                                                   LOG_DEBUG_RAW( "==> History file path: " + stringHistoryFile );
    if( std::filesystem::exists(stringHistoryFile) == false )
    {
       return "";
@@ -466,10 +411,15 @@ std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
 std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint, CDocument* pdocument)
 {
    constexpr size_t uMaxLineLength = 70; // Maximum length of a line before it is cut
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
+
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
 
-   XML_ReadFile_s(*ptable, argumentsPrint); // Create the table from the XML file
+   // ## Create the table from the XML file
+   XML_ReadFile_s(*ptable, argumentsPrint, [pdocument](std::string_view message_) {
+      if( pdocument ) { pdocument->MESSAGE_Display(message_); }
+   });   
 
    // ## Move to table that is used for printing ..............................
 
@@ -491,7 +441,7 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
 
    //std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
    std::string stringTable = gd::table::to_string(tablePrint, {{"divide", true}}, gd::table::tag_io_cli{}, gd::table::tag_text{});
-   std::cout << "\n" << stringTable << "\n";
+   pdocument->MESSAGE_Display(stringTable, { array_, {{"color", "default"}}, gd::types::tag_view{} });
 
    return { true, "" };
 }
@@ -556,19 +506,20 @@ std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argume
  */
 std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument)
 {
-   //std::string stringFileName = argumentsRun["file"].as_string();
+   // ## Read the history file into the table
+
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
    auto result_ = XML_ReadFile_s(*ptable, argumentsRun, [pdocument](std::string_view message) {
       if( pdocument ) { pdocument->MESSAGE_Display(message); }
-   }); // Read the history file into the table
+   }); 
 
    if( result_.first == false ) { return result_; }                           
 
    std::string stringCommand;
-   std::string stringRun = argumentsRun["run"].as_string();
+   std::string stringRun = argumentsRun["run"].as_string();                                        LOG_DEBUG_RAW( "==> Index/name to run: " + stringRun );
    int64_t iRow = std::stoi(stringRun) - 1;
 
-   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, "Invalid row index: " + stringRun }; } // Ensure the row index is valid
+   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format( "Invalid row index: {} max is: {} (did you forget -local)", stringRun, ptable->size() ) }; } // Ensure the row index is valid, note that is 1-based index
 
    // ## Get the command from the specified row and execute it
 
@@ -583,6 +534,9 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
       poptionsApplication->set_first(0);
 
       result_ = poptionsApplication->parse_terminal(stringCommand);           // Parse the command line from the history entry
+      if( result_.first == false ) { return result_; }
+
+      auto result_ = CApplication::CliPrompt_s(poptionsApplication);          // If prompt values exist, ask the user for values
       if( result_.first == false ) { return result_; }
 
       result_ = papplication_g->Initialize(*poptionsApplication);             // Initialize the application with parsed options
@@ -627,6 +581,7 @@ std::pair<bool, std::string> PrepareEmptyXml_s( std::string_view stringHistoryFi
 
    pugi::xml_node xmlnodeRoot = xmldocument.append_child("history");           // "history" = root
 
+   xmlnodeRoot.append_child("named");                                          // "named" = child and used to name important entries
    xmlnodeRoot.append_child("pinned");                                         // "pinned" = child and used to pin important entries
    xmlnodeRoot.append_child("saved");                                          // "saved" = child and used to save important entries
    xmlnodeRoot.append_child("recent");                                         // "recent" = child and used for recent entries
@@ -749,25 +704,7 @@ bool XML_EntryExists_s( const pugi::xml_node* pxmlnodeEntries, std::string_view 
  */
 std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable, std::function<void(std::string_view)> callback_)
 {
-   std::filesystem::path pathLocal;
-   std::filesystem::path pathHome;
-
-   std::string stringFileName; // The history file to read
-
-   auto result_ = CApplication::HistoryFindFile_s(pathLocal);          // Get the local history location
-   if( result_.first == false )
-   {
-      result_ = CApplication::HistoryLocation_s(pathHome);
-   }
-
-   if( std::filesystem::exists(pathLocal) == true )
-   {
-      stringFileName = pathLocal.string(); // Use the current directory history file if it exists
-   }
-   else if( std::filesystem::exists(pathHome) == true )
-   {
-      stringFileName = pathHome.string(); // Use the home directory history file if it exists
-   }
+   std::string stringFileName = FILE_GetHistoryFile_s(argumentsTable);
 
    if( stringFileName.empty() == true ) { return { false, "No history file found." }; } // No history file found
 

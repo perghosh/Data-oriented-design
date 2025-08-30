@@ -245,6 +245,7 @@ public:
    std::pair<bool, std::string> CreateDirectory();
    /// Print message to user
    std::pair<bool, std::string> PrintMessage(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat);
+   std::pair<bool, std::string> PrintMessage(const std::string_view& stringMessage);
    /// Print progress message to user
    std::pair<bool, std::string> PrintProgress(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat);
    /// Print error message to user
@@ -398,38 +399,27 @@ public:
    static unsigned PreparePath_s( std::string& stringPath );
    static unsigned PreparePath_s( std::string& stringPath, char iSplitCharacter );
 
+   // ## CLI oprations (CLI = command line interface)
+
+   /// Prompt user for input, adds values to arguments from the prompt
+   static std::pair<bool, std::string>  CliPrompt_s(gd::cli::options* poptionsApplication);
+
    // ## Folder operations
+
    static std::pair<bool, std::string> FolderGetHome_s(std::string& stringHomePath);
-
-   // ## Configuration read functions
-
-   /// Read folders to ignore from ignore file if found, otherwise return empty vector
-   static std::pair<bool, std::string> ReadIgnoreFile_s( const std::string_view& stringForderOrFile, std::vector<ignore>& vectorIgnorePattern );
-
-   static std::pair<bool, std::string> SettingsRead_s(const std::string_view stringFile, gd::types::tag_xml );
-
-   // ## Read data from database
-
-   //static void Read_s(const gd::database::record* precord, gd::table::table_column_buffer* ptablecolumnbuffer );
-   //static void Read_s( gd::database::cursor_i* pcursorSelect, gd::table::table_column_buffer* ptablecolumnbuffer );
-
-   // ## Utility functions
 
    // ## Configuration functions
 
+   /// Read folders to ignore from ignore file if found, otherwise return empty vector
+   static std::pair<bool, std::string> ReadIgnoreFile_s( const std::string_view& stringForderOrFile, std::vector<ignore>& vectorIgnorePattern );
+   static std::pair<bool, std::string> SettingsRead_s(const std::string_view stringFile, gd::types::tag_xml );
    /// Get configuration location
    static std::pair<bool, std::string> ConfigurationFindFile_s(std::filesystem::path& pathLocation, uint32_t uDirectoryLevels );
 
    // ## History functions
 
-   /// Save last command to history
-   static std::pair<bool, std::string> HistorySaveArguments_s(const std::string_view& stringArguments);
-   /// Print history to console
-   static std::pair<bool, std::string> HistoryPrint_s();
-   /// Get history location
-   static std::pair<bool, std::string> HistoryLocation_s(std::filesystem::path& pathLocation);
    /// Get local history location
-   static std::pair<bool, std::string> HistoryFindFile_s(std::filesystem::path& pathLocation );
+   static std::pair<bool, std::string> HistoryFindLocal_s(std::filesystem::path& pathLocation );
    /// Save history table to file
    static std::pair<bool, std::string> HistorySave_s(const std::string_view& stringFileName, const gd::table::dto::table* ptable);
    /// Get active history file
@@ -459,6 +449,11 @@ public:
 
 
 };
+
+inline std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& stringMessage) {
+   gd::argument::arguments argumentsFormat;
+   return PrintMessage(stringMessage, argumentsFormat);
+}
 
 /// return iterator to the beginning of the document list
 inline std::vector<std::unique_ptr<CDocument>>::iterator CApplication::DOCUMENT_Begin() {
