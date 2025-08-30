@@ -3030,7 +3030,7 @@ std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesyst
  * @return std::pair<bool, std::string> Returns a pair where the first element is true if the file was found,
  *         false if not found, and the second element contains an error message if applicable.
  */
-std::pair<bool, std::string> CApplication::HistoryFindFile_s(std::filesystem::path& pathLocation )
+std::pair<bool, std::string> CApplication::HistoryFindLocal_s(std::filesystem::path& pathLocation )
 {
    uint64_t uHistoryLevels = papplication_g->PROPERTY_Get("history-levels");
 
@@ -3105,7 +3105,7 @@ std::pair<bool, std::string> CApplication::HistorySave_s(const std::string_view&
  */
 std::pair<bool, std::string> CApplication::HistoryFindActive_s(std::filesystem::path& pathLocation)
 {
-   auto result_ = HistoryFindFile_s(pathLocation);                            // Try to find local history file
+   auto result_ = HistoryFindLocal_s(pathLocation);                            // Try to find local history file
 
    // ## Find home history file if no local history file found
 
