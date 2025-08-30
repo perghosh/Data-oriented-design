@@ -2882,110 +2882,6 @@ void CApplication::Read_s( gd::database::cursor_i* pcursorSelect, gd::table::tab
 }
 #endif // 0
 
-/** ---------------------------------------------------------------------------
- * @brief Save command line arguments to history file
- *
- * @param stringArguments The command line arguments to save.
- * @return std::pair<bool, std::string> True if successful, false and error message if failed
- */
-std::pair<bool, std::string> CApplication::HistorySaveArguments_s(const std::string_view& stringArguments)
-{
-   return { true, "" };
-#ifdef WIN32
-
-   // Create file
-   wchar_t puProgramDataPath[MAX_PATH];
-
-   if( !GetEnvironmentVariableW(L"ProgramData", puProgramDataPath, MAX_PATH) ) { return { false, "" }; }
-   std::wstring stringDirectory = std::wstring(puProgramDataPath) + L"\\tools";
-   if( !std::filesystem::exists(stringDirectory) )
-   {
-      if( std::filesystem::create_directory(stringDirectory) == false ) { return { false, "" }; }
-   }
-
-   stringDirectory += L"\\cleaner";
-   if( !std::filesystem::exists(stringDirectory) )
-   {
-      if( std::filesystem::create_directory(stringDirectory) == false ) { return { false, "" }; }
-   }
-
-   std::wstring stringFilePath = stringDirectory + L"\\history.xml";
-
-   pugi::xml_document xmldocument;
-
-   pugi::xml_parse_result _result = xmldocument.load_file(stringFilePath.c_str());
-   if( !_result )
-   {
-      return { false, "" };
-   }
-
-   //pugi::xml_node commands_nodeAppend = xmldocument.append_child("commands");
-
-   if( !xmldocument.save_file(stringFilePath.c_str()) )    // clears all here
-   {
-      return { false, "" };
-   }
-
-   // Append command
-   pugi::xml_node commands_nodeChild = xmldocument.child("commands");
-   if( !commands_nodeChild )
-   {
-      commands_nodeChild = xmldocument.append_child("commands");
-   }
-
-   int iCount = 1;
-   // Check if command already exists
-   for( auto command : commands_nodeChild.children("command") )
-   {
-      if( command.child_value() == stringArguments )
-      {
-         commands_nodeChild.remove_child(command); // remove command if it exists
-         pugi::xml_node count_node = command.child("count");
-
-         if( count_node )
-         {
-            iCount = std::stoi(count_node.child_value()) + 1;
-         }
-      }
-   }
-
-   //commands_nodeChild.append_child("command").append_child(pugi::node_pcdata).set_value(stringArguments);
-   pugi::xml_node command_node = commands_nodeChild.append_child("command");
-   command_node.append_child(pugi::node_pcdata).set_value(stringArguments);
-   command_node.append_child("count").append_child(pugi::node_pcdata).set_value(std::to_string(iCount).c_str());
-
-   xmldocument.save_file(stringFilePath.c_str());
-#else
-#endif
-
-   return { true, "" };
-}
-
-
-/*
-std::pair<bool, std::string> CApplication::HistoryLocation_s(std::filesystem::path& pathLocation)
-{
-
-   std::string stringPath;
-
-   FolderGetHome_s(stringPath);
-
-   // check if Local/cleaner/history.xml exists
-   std::filesystem::path pathDirectory = std::filesystem::path(stringPath) / "cleaner-history.xml";
-
-
-
-
-   if( std::filesystem::exists(pathDirectory) == false )
-   {
-      return { false, "History file does not exist: " + pathDirectory.string() };
-   }
-
-   pathLocation = pathDirectory; // Set the location to the history file path
-
-   return { true, "" };
-}
-*/
 
 /** ---------------------------------------------------------------------------
  * @brief Finds the configuration file in the current directory or its parent directories.
@@ -3052,7 +2948,6 @@ std::pair<bool, std::string> CApplication::HistoryFindLocal_s(std::filesystem::p
          return { false, "" };
       }
       pathHistoryCurrent = pathHistoryCurrent.parent_path();                  // Go one directory up and check again
-
    }
 
    return { false, "" };

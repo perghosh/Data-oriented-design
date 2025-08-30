@@ -407,6 +407,8 @@ std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
 std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint, CDocument* pdocument)
 {
    constexpr size_t uMaxLineLength = 70; // Maximum length of a line before it is cut
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
+
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
 
@@ -435,7 +437,7 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
 
    //std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
    std::string stringTable = gd::table::to_string(tablePrint, {{"divide", true}}, gd::table::tag_io_cli{}, gd::table::tag_text{});
-   std::cout << "\n" << stringTable << "\n";
+   pdocument->MESSAGE_Display(stringTable, { array_, {{"color", "default"}}, gd::types::tag_view{} });
 
    return { true, "" };
 }
