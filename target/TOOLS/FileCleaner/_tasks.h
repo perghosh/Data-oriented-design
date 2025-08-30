@@ -5,6 +5,19 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 */
 
 /*
+@PROJECT [name: hot] [description: Hot operations, collec what to do here]
+
+@TASK [title: prompt] [project:hot] [assignee: per] [status:open] [level: 2] [created: 250830]
+[summary: running prompt values from history do not ask for value because it is done later compared to original]
+[description: "Move logick for prompt to enable set prompt value from history"]
+
+@TASK [title: prompt] [project:hot] [assignee: per] [status:open] [level: 1] [created: 250830]
+[summary: better description for prompt values]
+[description: "Add better description for prompt values, what it does and how to use it"]
+*/
+
+
+/*
 @PROJECT [name: prompt]
 
 @TASK [title: add prompt option to options class] [project:prompt] [assignee: per] [status:open] [created: 250828]
@@ -17,6 +30,7 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 
 */
 
+// ----------------------------------------------------------------------------
 
 /*
 @PROJECT [name: history] [description: History operations]
@@ -39,6 +53,8 @@ CApplication::FolderGetHome_s
 [description: "This task involves adding an alias to the history row, allowing users to specify a shorthand command for accessing their command history."]   
 */
 
+// ----------------------------------------------------------------------------
+
 /*
 @PROJECT [name: print]
 
@@ -59,6 +75,8 @@ CApplication::FolderGetHome_s
 [description: "To get better way to format output based on what type of search thats done figure out some sort of template to read information from"]
 
 */
+
+// ----------------------------------------------------------------------------
 
 /*
 @PROJECT [name: help]
