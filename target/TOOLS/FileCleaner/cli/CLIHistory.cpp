@@ -516,7 +516,7 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
    std::string stringRun = argumentsRun["run"].as_string();                                        LOG_DEBUG_RAW( "==> Index/name to run: " + stringRun );
    int64_t iRow = std::stoi(stringRun) - 1;
 
-   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format( "Invalid row index: {} max is: {}", stringRun, ptable->size() ) }; } // Ensure the row index is valid, note that is 1-based index
+   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format( "Invalid row index: {} max is: {} (did you forget -local)", stringRun, ptable->size() ) }; } // Ensure the row index is valid, note that is 1-based index
 
    // ## Get the command from the specified row and execute it
 
