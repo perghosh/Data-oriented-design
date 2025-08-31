@@ -625,7 +625,7 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
                stringContext[uIndex] = '>';                                   // mark the leading row with a '>' character
             }
 
-            // @TASK #ui.cli #user.per [name: list] [brief: set color to marked row to highlight] [status: open]
+            // @TASK #ui.cli #user.per [name: list] [summary: set color to marked row to highlight] [status: open]
 
             pdocument->MESSAGE_Display(stringContext, { array_, {{"color", "body"}}, gd::types::tag_view{} });
          }

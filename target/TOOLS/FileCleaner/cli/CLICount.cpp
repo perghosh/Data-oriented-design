@@ -120,7 +120,7 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
       auto vectorPattern = CApplication::Split_s(stringPattern);
       result_ = pdocument->FILE_UpdatePatternCounters(argumentsPattern, vectorPattern);            if( !result_.first ) { return result_; }
    }
-   // @TASK #user.per [name: count (add rpattern)] [brief: count regex patterns in files][state: open][date: 2025-08-12]
+   // @TASK #user.per [name: count (add rpattern)] [summary: count regex patterns in files][state: open][date: 2025-08-12]
    else if( options_["rpattern"].is_true() )
    {
       iReportType = patterncount_report_;                                     // set report type to pattern report

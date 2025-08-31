@@ -434,7 +434,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       std::tie(bOk, stringError) = Initialize(optionsApplication);
       if( bOk == false ) { return { false, stringError }; }
 
-      // @TASK #user.kevin [name: options history][brief: if history option is set then save last command line to history][user: kevin][created: 2025-08-11]
+      // @TASK #user.kevin [name: options history][summary: if history option is set then save last command line to history][user: kevin][created: 2025-08-11]
       if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true )
       {
          std::string stringHistory;
@@ -3130,7 +3130,7 @@ std::vector<std::string> CApplication::SplitNumber_s(const std::string& stringTe
 }
 
 
-// @TASK #user.per [name: keyvalue][brief: ParseKeyValueRule_s is no longer used, remove it?][state: open][date: 2025-08-12]
+// @TASK #user.per [name: keyvalue][summary: ParseKeyValueRule_s is no longer used, remove it?][state: open][date: 2025-08-12]
 
 /** --------------------------------------------------------------------------- @TAG #hack.keyvalue [description: Parse keys and format if specified, this is added to simplify adding key-value pairs to be read]
  * @brief Parses a key-value rule from a string and populates the provided arguments object.
