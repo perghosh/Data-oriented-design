@@ -201,6 +201,8 @@ Handles command history functionality.
 - `--list <criteria>`: Lists all history entries.
 - `--remove <entries>`: Remove specific history entries.
 - `--run <entry>`: Run history entry, this will run the command from history.
+- `--index <number>`: Specify a history entry by its index number when using `--run`, `--set-alias` or `--remove`.
+- `--set-alias <alias>`: Set a custom alias for a specific history entry for easier recall.
 
 ---
 
