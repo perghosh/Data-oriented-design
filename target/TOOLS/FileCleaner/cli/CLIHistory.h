@@ -62,6 +62,9 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
 /// \brief Edit history file
 std::pair<bool, std::string> HistoryEdit_g( const gd::argument::arguments& argumentsSave );
 
+/// \brief Index history entries from table
+std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argumentsIndex, CDocument* pdocument);
+
 NAMESPACE_CLI_END
 
 /*

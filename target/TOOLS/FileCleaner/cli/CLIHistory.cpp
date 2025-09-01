@@ -162,6 +162,12 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
       argumentsRun.append( options_.get_arguments(), { "run", "local"} );
       result_ = HistoryRun_g(argumentsRun, poptionsApplication, pdocument);
    }
+   else if( options_.exists("index") == true )
+   {
+      gd::argument::arguments argumentsIndex;
+      argumentsIndex.append(options_.get_arguments(), { "index", "set-alias" ,"local"});
+      result_ = HistoryIndex_g(argumentsIndex, pdocument);
+   }
 
    return result_;
 }
@@ -610,6 +616,27 @@ std::pair<bool, std::string> HistoryEdit_g( const gd::argument::arguments& argum
    if( stringHistoryFile.empty() == true ) return { false, "Failed to get history file path." };   
 
    return SHARED_OpenFile_g(stringHistoryFile);
+}
+
+std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argumentsIndex, CDocument* pdocument)
+{
+
+   // ## Read the history file into the table
+
+   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+   auto result_ = XML_ReadFile_s(*ptable, argumentsIndex, [pdocument](std::string_view message) {
+      if( pdocument ) { pdocument->MESSAGE_Display(message); }
+      });
+
+   if( result_.first == false ) { return result_; }
+
+   std::string stringIndex = argumentsIndex["index"].as_string();                                        LOG_DEBUG_RAW("==> Index/name to run: " + stringRun);
+   int64_t iRow = std::stoi(stringIndex) - 1;
+
+   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format("Invalid row index: {} max is: {} (did you forget -local)", stringIndex, ptable->size()) }; } // Ensure the row index is valid, note that is 1-based index
+
+
+   return { true, "" };
 }
 
 /** ---------------------------------------------------------------------------
