@@ -61,9 +61,14 @@ static std::pair<bool, std::string> PrepareEmptyXml_s(std::string_view stringHis
 
 static std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumentsXml);
 
-// ## XML* methods work on XML nodes and XML documents
+// ## TABLE History methods work on history table in document cache ...........
 
-static std::pair<bool, std::string> XML_AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument);
+/// Append an entry to the history table in the document cache
+static std::pair<bool, std::string> TABLE_AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument);
+/// Set attributes, like alias for an entry in the history table in the document cache
+
+// ## XML* methods work on XML nodes and XML documents ........................
+
 bool XML_EntryExists_s( const pugi::xml_node* pxmlnodeEntries, std::string_view stringCommand );
 
 static std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable, std::function<void(std::string_view)> callback_);
@@ -101,18 +106,39 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
 
       result_ = HistoryCreate_g(argumentsCreate, pdocument);
    }
+   else if( options_.exists("set-alias") == true )
+   {
+      // ## Get row index from alias
+      if( options_.exists("index") == false ) { return { false, "Missing required option: --index" }; }
+      uint64_t uIndex = options_["index"].as_uint64();
+      if( uIndex == 0 ) { return { false, "Invalid index value, must be greater than zero" }; }
+      uIndex--;                                                                // Convert to zero-based index
+      
+      gd::argument::arguments argumentsSet( {"alias", options_["set-alias"].as_string()} );
+      argumentsSet.append( options_.get_arguments(), { "pinned", "alias", "local"} );
+      result_ = HistorySetAttributes_g(uIndex, argumentsSet, pdocument);
+      if( result_.first == true ) 
+      {
+         auto stringHistoryFile = FILE_GetHistoryFile_s( argumentsSet );
+         if( std::filesystem::exists(stringHistoryFile) == true )
+         {
+            const auto* ptable_ = pdocument->CACHE_Get("history", false );                         assert( ptable_ != nullptr );
+            result_ = XML_Write_s(stringHistoryFile, *ptable_, "");               // Write an empty history table to the file
+         }
+      }
+   }
    else if( options_.exists("delete") == true )
    {
       gd::argument::arguments argumentsDelete( {"delete", options_["delete"].as_string()} );
       result_ = HistoryDelete_g(argumentsDelete);
    }
-   else if( options_.exists("print") == true )
+   else if( options_.exists("print") == true )                                 // Print history entries from history file
    {
       gd::argument::arguments argumentsPrint;
       argumentsPrint.append( options_.get_arguments(), { "print", "local"} );
       result_ = HistoryPrint_g(argumentsPrint, pdocument);
    }
-   else if( options_.exists("remove") == true )
+   else if( options_.exists("remove") == true )                                // Remove history entries from history file and clear the history table in cache
    {
       gd::argument::arguments argumentsRemove;
       argumentsRemove.append( options_.get_arguments(), { "remove", "local"} );
@@ -122,10 +148,9 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
       {
          const auto* ptable_ = pdocument->CACHE_Get("history", false );                             assert( ptable_ != nullptr );
          result_ = XML_Write_s(stringHistoryFile, *ptable_, "");               // Write an empty history table to the file
-         if( result_.first == false ) { return result_; }
       }
    }
-   else if( options_.exists("edit") == true )
+   else if( options_.exists("edit") == true )                                  // Edit history file in text editor (tries to open associated application)
    {
       gd::argument::arguments argumentsEdit;
       argumentsEdit.append( options_.get_arguments(), { "edit", "local"} );
@@ -262,6 +287,35 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, std::
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Sets attributes for a specific row in the history table stored in the document cache.
+ * @param uRow The index of the row to update in the history table.
+ * @param argumentsSet The arguments containing the attributes to set, which can include 'alias', 'name', 'line', and 'date'.
+ * @param pdocument Pointer to the document object containing the history table and message display functionality.
+ * @return A pair where the first element is a boolean indicating success (true if the attributes were set, false otherwise), and the second element is a string containing an error message if the operation failed, or an empty string on success.
+ */ 
+std::pair<bool, std::string> HistorySetAttributes_g(uint64_t uRow, const gd::argument::arguments& argumentsSet, CDocument* pdocument)
+{
+   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+
+   auto result_ = XML_ReadFile_s(*ptable, argumentsSet, [pdocument](std::string_view message_) {
+      if( pdocument ) { pdocument->MESSAGE_Display(message_); }
+      }); 
+   if( result_.first == false ) { return result_; }
+
+   if( uRow >= ptable->size() ) { return { false, "Invalid row index: " + std::to_string(uRow) }; } // Ensure the row index is valid
+
+   if( argumentsSet.exists("alias") == true ) { ptable->cell_set(uRow, "alias", argumentsSet["alias"].as_string()); }
+   if( argumentsSet.exists("name") == true ) { ptable->cell_set(uRow, "name", argumentsSet["name"].as_string()); }
+   if( argumentsSet.exists("line") == true ) { ptable->cell_set(uRow, "line", argumentsSet["line"].as_string()); }
+   if( argumentsSet.exists("date") == true ) { ptable->cell_set(uRow, "date", argumentsSet["date"].as_string()); }
+
+   // ## Write the updated table back to the history file
+   //auto stringHistoryFile = FILE_GetHistoryFile_s(argumentsSet);
+
+   return { true, "" };
+}
+
 std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argumentsDelete)
 {
    std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
@@ -293,7 +347,6 @@ std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argu
    auto result_ = XML_ReadFile_s(*ptable, argumentsRemove, [pdocument](std::string_view message_) {
       if( pdocument ) { pdocument->MESSAGE_Display(message_); }
    }); 
-
    if( result_.first == false ) { return result_; }
 
    if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, "Invalid row index: " + stringRemoveCommand }; } // Ensure the row index is valid
@@ -327,10 +380,12 @@ std::pair<bool, std::string> XML_Write_s(std::string_view stringHistoryFile, con
          auto stringName = tableHistory.cell_get_variant_view(uRow, "name").as_string_view();
          auto stringLine = tableHistory.cell_get_variant_view(uRow, "line").as_string_view();
          auto stringDate = tableHistory.cell_get_variant_view(uRow, "date").as_string_view();
+         auto stringAlias = tableHistory.cell_get_variant_view(uRow, "alias").as_string_view();
          pugi::xml_node xmlnodeEntry = xmlnodeEntries.append_child("entry");
          xmlnodeEntry.append_child("name").text().set( stringName.data() );    // save command name
          xmlnodeEntry.append_child("line").text().set( stringLine.data() );    // save command line
          xmlnodeEntry.append_child("date").text().set( stringDate.data() );    // save date
+         if( stringAlias.empty() == false ) { xmlnodeEntry.append_child("alias").text().set( stringAlias.data() );  }  // save alias
       }
       // ### Save the XML document back to the file
       xmldocument.save_file(stringHistoryFile.data(), "  ", pugi::format_default);
@@ -645,7 +700,7 @@ std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumen
    return { true, "" };
 }
 
-std::pair<bool, std::string> XML_AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument)
+std::pair<bool, std::string> TABLE_AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument)
 {
    std::string stringFileName = argumentsEntry["file"].as_string();
                                                                                assert(!stringFileName.empty());
@@ -727,6 +782,7 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
       std::string stringDate = entry.child("date").text().get();
       std::string stringName = entry.child("name").text().get();
       std::string stringLine = entry.child("line").text().get();
+      std::string stringAlias = entry.child("alias").text().get();
       // Add the entry to the table  
       auto uRow = tableHistory.row_add_one();
 
@@ -740,6 +796,7 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
       tableHistory.cell_set(uRow, "date", stringDate);
       tableHistory.cell_set(uRow, "name", stringName);
       tableHistory.cell_set(uRow, "line", stringLine);
+      if( stringAlias.empty() == false ) { tableHistory.cell_set(uRow, "alias", stringAlias); }
    }
    return { true, "" };
 }

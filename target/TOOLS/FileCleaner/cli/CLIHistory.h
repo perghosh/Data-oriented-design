@@ -39,6 +39,9 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::c
 std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, std::string_view stringName, gd::argument::arguments* parguments, std::string_view stringSection );
 inline std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::cli::options* poptionsHistory) { return HistoryAppend_g(stringFile, poptionsHistory, ""); }
 
+/// \brief Set attributes for history entry (sets any value)
+std::pair<bool, std::string> HistorySetAttributes_g(uint64_t uRow, const gd::argument::arguments& argumentsSet, CDocument* pdocument); 
+
 /// \brief Delete history file or folder
 std::pair<bool, std::string> HistoryDelete_g( const gd::argument::arguments& argumentsDelete);
 
