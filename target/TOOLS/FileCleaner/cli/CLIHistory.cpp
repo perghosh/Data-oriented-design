@@ -24,6 +24,7 @@
 #include <functional>
 
 #include "gd/gd_file.h"
+#include "gd/math/gd_math_type.h"
 #include "gd/math/gd_math_string.h"
 
 #ifdef _WIN32
@@ -156,7 +157,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
       argumentsEdit.append( options_.get_arguments(), { "edit", "local"} );
       result_ = HistoryEdit_g( argumentsEdit );
    }
-   else if( options_.exists("run") == true )
+   else if( options_.exists("run") == true )                                   // Run a command from the history file
    {
       gd::argument::arguments argumentsRun;
       argumentsRun.append( options_.get_arguments(), { "run", "local"} );
@@ -486,21 +487,25 @@ std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argum
 
    gd::table::dto::table tablePrint(0u, { {"int32", 0, "index"}, {"rstring", 0, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{});
 
-   for( size_t i = 0; i < ptable->size(); ++i )
+   for( size_t u = 0; u < ptable->size(); ++u )
    {
-      auto variantName = ptable->cell_get_variant_view(i, "name");
-      auto variantLine = ptable->cell_get_variant_view(i, "line");
+      auto variantName = ptable->cell_get_variant_view(u, "name" );            // sub command name for cleaner
+      auto variantLine = ptable->cell_get_variant_view(u, "line" );            // command line arguments   
+      auto variantAlias = ptable->cell_get_variant_view(u, "alias" );          // alias if it exists 
 
-      std::string stringLine = variantLine.as_string();
+      std::string stringName = variantName.as_string();
+      if( variantAlias.is_true() == true )                                     // use alias if it exists
+      { 
+         stringName += '\n';
+         stringName += variantAlias.as_string_view(); 
+      } 
 
+      std::string stringLine = variantLine.as_string();                        // command line arguments
       stringLine = gd::math::string::format_text_width(stringLine, uMaxLineLength);// cut long lines
 
-      tablePrint.row_add({ (int32_t)( i + 1 ), variantName, stringLine });
+      tablePrint.row_add({ (int32_t)( u + 1 ), stringName, stringLine });
    }
 
-
-
-   //std::string stringTable = gd::table::to_string(*ptable, gd::table::tag_io_cli{});
    std::string stringTable = gd::table::to_string(tablePrint, {{"divide", true}}, gd::table::tag_io_cli{}, gd::table::tag_text{});
    pdocument->MESSAGE_Display(stringTable, { array_, {{"color", "default"}}, gd::types::tag_view{} });
 
@@ -578,7 +583,13 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
 
    std::string stringCommand;
    std::string stringRun = argumentsRun["run"].as_string();                                        LOG_DEBUG_RAW( "==> Index/name to run: " + stringRun );
-   int64_t iRow = std::stoi(stringRun) - 1;
+
+   int64_t iRow = -1;
+   if( gd::math::type::is_unsigned(stringRun) ) { iRow = std::stoi(stringRun) - 1; }
+   else
+   {
+      iRow = ptable->find( "alias", stringRun );
+   }
 
    if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format( "Invalid row index: {} max is: {} (did you forget -local)", stringRun, ptable->size() ) }; } // Ensure the row index is valid, note that is 1-based index
 
@@ -630,7 +641,7 @@ std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argum
 
    if( result_.first == false ) { return result_; }
 
-   std::string stringIndex = argumentsIndex["index"].as_string();                                        LOG_DEBUG_RAW("==> Index/name to run: " + stringRun);
+   std::string stringIndex = argumentsIndex["index"].as_string();                                  LOG_DEBUG_RAW("==> Index/name to run: " + stringIndex);
    int64_t iRow = std::stoi(stringIndex) - 1;
 
    if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format("Invalid row index: {} max is: {} (did you forget -local)", stringIndex, ptable->size()) }; } // Ensure the row index is valid, note that is 1-based index
