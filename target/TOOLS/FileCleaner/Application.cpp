@@ -2034,7 +2034,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    {
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "history", "Handle command history" );
       optionsCommand.add({ "run", "Run history entry, this will run the command from history" });
-      optionsCommand.add({ "index", "Get history entry by index" });
+      optionsCommand.add({ "index", "Specify history entry by index" });
       optionsCommand.add({ "set-alias", "Set alias for history entry" });
       optionsCommand.add({ "list", "Lists all history entries" });
       optionsCommand.add({ "remove", "Remove history entries" });
