@@ -146,6 +146,28 @@ class table_column_buffer
 public:
    /** 
     * \brief constant numbers used in table or items used in table
+    * 
+    * ## Column states
+    * - eColumnStateLength: column value begins with length
+    * - eColumnStateReference: column value is stored in reference object
+    * - eColumnStateKey: column acts as key column
+    * 
+    * ## Row states
+    * - eRowStateUse: row flag marking that row is in use
+    * - eRowStateDeleted: row flag marking that row is deleted
+    *
+    * ## Table flags
+    * - eTableFlagNull32: reserve 32 bit for each row to mark null for column if no value (max 32 columns)
+    * - eTableFlagNull64: reserve 64 bit for each row to mark null for column if no value (max 64 columns)
+    * - eTableFlagRowStatus: enable row status (if row is valid, modified, deleted)
+    * - eTableFlagDuplicateStrings: enable duplicate strings, strings are not checked for duplicates
+    *
+    * ## Size information
+    * - eSpaceNull32Columns: space marking null columns
+    * - eSpaceNull64Columns: space marking null columns
+    * - eSpaceRowState: space where row state data is placed
+    * - eSpaceRowGrowBy: default number of rows to grow by
+    * - eSpaceFirstAllocate: number of rows to allocate before any values is added
     */
    enum 
    { 
@@ -159,12 +181,10 @@ public:
       eRowStateDeleted        = 0x02,                                          ///< row flag marking that row is deleted
 
       // ## table flags marking table states, how table behaves
-      eTableStateNull32       = 0x0001,                                        ///< reserve 32 bit for each row to mark null for column if no value
       eTableFlagNull32        = 0x0001,                                        ///< reserve 32 bit for each row to mark null for column if no value
-      eTableStateNull64       = 0x0002,                                        ///< reserve 64 bit for each row to mark null for column if no value
       eTableFlagNull64        = 0x0002,                                        ///< reserve 64 bit for each row to mark null for column if no value
-      eTableStateRowStatus    = 0x0004,                                        ///< enable row status (if row is valid, modified, deleted)
       eTableFlagRowStatus     = 0x0004,                                        ///< enable row status (if row is valid, modified, deleted)
+      eTableFlagDuplicateStrings = 0x0008,                                     ///< enable duplicate strings, reference string are not checked for duplicates
       eTableStateMAX          = 0x0010,                                        ///< max state value
 
       // ## size information used to calculate space needed by table
@@ -173,7 +193,6 @@ public:
       eSpaceRowState          = sizeof( uint32_t ),                            ///< space where row state data is placed
       eSpaceRowGrowBy         = 10,                                            ///< default number of rows to grow by
       eSpaceFirstAllocate     = 10,                                            ///< number of rows to allocate before any values is added
-
    };
 
 
@@ -455,6 +474,7 @@ public:
    bool is_null32() const { return m_uFlags & eTableFlagNull32; }
    bool is_null64() const { return m_uFlags & eTableFlagNull64; }
    bool is_rowstatus() const { return m_uFlags & eTableFlagRowStatus; }
+   bool is_duplicated_strings() const { return m_uFlags & eTableFlagDuplicateStrings; }
    bool is_rowmeta() const { return m_puMetaData != nullptr; }
 
    unsigned size_row() const noexcept { return m_uRowSize; }
@@ -1009,8 +1029,8 @@ public:
    void split( uint64_t uRowCount, std::vector<table>& vectorSplit );
 
 /** \name ERASE
-* Erase parts in table
-*///@{
+ * Erase parts in table
+ *///@{
    /// Erase from row index and number of rows from that row
    void erase( uint64_t uFrom, uint64_t uCount );
    /// Erase selected row
@@ -1024,6 +1044,20 @@ public:
    /// Erase selected rows, rows should be sorted in descending order
    void erase(const std::vector<uint64_t>& vectorRowIndex, tag_raw) { erase(vectorRowIndex.data(), (uint64_t)vectorRowIndex.size(), tag_raw{}); }
 //@}
+
+/** \name STORAGE
+ * Logic to calculate storage requirements for table
+ *///@{
+   uint64_t storage_size( tag_columns ) const;
+
+   uint64_t storage_read_size(const std::byte* pBuffer) const;
+   uint64_t storage_read_size(std::byte*& pBuffer) const;
+
+   uint64_t storage_read( const std::byte* pBuffer, tag_columns );
+
+   void storage_write( std::byte* pBuffer, tag_columns ) const;
+ //@}
+
 
 protected:
 /** \name INTERNAL
@@ -1043,7 +1077,7 @@ public:
 public:
    uint8_t* m_puData = nullptr;        ///< data to hold values in table
    uint8_t* m_puMetaData = nullptr;    ///< data block with row meta information
-   unsigned m_uFlags;                  ///< state information for table
+   unsigned m_uFlags;                  ///< state information for table (eTableFlagNull32, eTableFlagNull64, eTableFlagRowStatus, eTableFlagUniqueStrings )
    unsigned m_uRowSize;                ///< row size in bytes
    unsigned m_uRowMetaSize;            ///< meta data size in bytes for each row
    unsigned m_uRowGrowBy = eSpaceRowGrowBy;///< if table needs more space, this holds number of rows to grow by

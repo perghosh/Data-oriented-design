@@ -16,6 +16,52 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE("[table] multiple strings", "[table]") {
+   using namespace gd::table::dto;
+
+   const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+   constexpr unsigned uTableDuplicate = (table::eTableFlagNull32|table::eTableFlagRowStatus|table::eTableFlagDuplicateStrings);
+   gd::table::dto::table tableTest01( uTableDuplicate, { { "int64", "KeyK"}, { "rstring", "name"}, { "rstring", "text"} }, gd::table::tag_prepare{} );
+
+   std::mt19937 mt19937;
+
+   // Generate 100 random strings using stl
+   std::vector<std::string> vectorRandomStrings;
+   for(int i = 0; i < 100; ++i) 
+   {
+       std::string string_;
+       for(int j = 0; j < 10; ++j) 
+       {
+          string_ += stringCharset[mt19937() % stringCharset.size()];
+       }
+       vectorRandomStrings.push_back(string_);
+   }
+
+   for( const auto& string_ : vectorRandomStrings ) 
+   {
+      auto uRow = tableTest01.row_add_one();
+      tableTest01.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} } );
+   }
+
+   // read all names and texts
+   for( uint64_t uRow = 0; uRow < tableTest01.size(); ++uRow ) 
+   {
+      auto stringName = tableTest01.cell_get_variant_view(uRow, "name").as_string_view();
+      auto stringText = tableTest01.cell_get_variant_view(uRow, "text").as_string_view();
+   }
+
+   uint64_t uTableSize = tableTest01.storage_size( gd::table::tag_columns{} );
+
+   std::vector<uint8_t> vectorBuffer;
+   vectorBuffer.resize(uTableSize);
+
+   tableTest01.storage_write(reinterpret_cast<std::byte*>(vectorBuffer.data()), gd::table::tag_columns{});
+
+   std::byte* pBuffer = reinterpret_cast<std::byte*>( vectorBuffer.data() );
+   uint64_t uSize = tableTest01.storage_read_size(pBuffer);
+   //gd::table::dto::table tableTest02(pBuffer, uTableSize, gd::table::tag_columns{});
+}
+
 TEST_CASE("[table] custom columns", "[table]") 
 {
 #ifdef _MSC_VER
