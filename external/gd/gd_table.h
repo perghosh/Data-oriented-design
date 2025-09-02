@@ -135,10 +135,16 @@ struct tag_column {};
 struct tag_parse {};
 
 
+/// tag dispatcher used for cell operations
 struct tag_cell {};
+/// tag dispatcher used for column operations
 struct tag_columns {};
+/// tag dispatcher used for row operations
 struct tag_rows {};
+/// tag dispatcher used for table operations
 struct tag_body {};
+/// tag dispatcher used for reference operations
+struct tag_reference {};
 
 
 /**

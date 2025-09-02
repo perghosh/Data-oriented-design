@@ -1518,13 +1518,24 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
    return *this;
 }
 
-/** ---------------------------------------------------------------------------
- * @brief Set value at position in internal buffer for arguments
- * @param pPosition 
- * @param uType 
- * @param pBuffer 
- * @param uLength 
- * @return 
+/* ---------------------------------------------------------------------------
+ * @brief Sets or updates a value at a specific position in the arguments buffer.
+ * 
+ * This method updates the value at the specified position in the arguments buffer. 
+ * If the existing value's type and size match the new value, it updates the value in place. 
+ * Otherwise, it replaces the existing value, resizing the buffer if necessary.
+ * 
+ * @param pPosition Pointer to the position in the arguments buffer where the value should be set.
+ * @param uType Type of the value to set.
+ * @param pBuffer Pointer to the data buffer containing the new value.
+ * @param uLength Length of the new value in bytes.
+ * @param ppPosition Optional pointer to receive the new position of the value after setting it.
+ * @return arguments& Reference to the current arguments object for chaining.
+ * 
+ * @note If the value type is fixed-size and matches the existing type, the value is updated in place.
+ *       Otherwise, the buffer is resized to accommodate the new value.
+ * 
+ * @warning Ensure that `pPosition` points to a valid location within the arguments buffer.
  */
 arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition )
 {                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition < buffer_data_end() );

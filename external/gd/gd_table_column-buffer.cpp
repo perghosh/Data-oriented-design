@@ -2184,11 +2184,21 @@ void table_column_buffer::cell_set( uint64_t uRow, unsigned uColumn, const gd::v
          }
          else if( columnSet.is_reference() == true )
          {
-            // ## try to find value and store index for found value if it exists, if not add and store new index
-            int64_t iIndex = m_references.find( variantviewValue );
-            if( iIndex == -1 )
+            // ## reference type            
+            int64_t iIndex;
+
+            if( is_duplicated_strings() == false )
             {
-               iIndex = (int64_t )m_references.add( variantviewValue );
+               // ### try to find value and store index for found value if it exists, if not add and store new index
+               int64_t iIndex = m_references.find( variantviewValue );
+               if( iIndex == -1 )
+               {
+                  iIndex = (int64_t )m_references.add( variantviewValue );
+               }
+            }
+            else
+            {
+               iIndex = (int64_t)m_references.add(variantviewValue);           // skip to find existing value, just add new value
             }
 
             memcpy( puRowValue, &iIndex, sizeof( intptr_t ) );                 // copy index value into cell
@@ -4151,6 +4161,96 @@ void table_column_buffer::erase(const uint64_t* puRowIndex, uint64_t uCount, tag
    {
       erase(puRowIndex[u], 1);
    }
+}
+
+uint64_t table_column_buffer::storage_size(tag_columns) const
+{
+
+   // ## calculate size of columns structs
+   uint64_t uColumnCount = get_column_count();
+   uint64_t uSize = sizeof(detail::columns) * uColumnCount;                   // size of columns struct
+   
+   uSize += m_namesColumn.size();                                             // size of column names
+
+   // ## calculate size of data needed to identify count
+   uSize += sizeof(m_uFlags);                                                  // size table flags
+   uSize += sizeof(m_uRowGrowBy);                                              // size of row growth
+
+   uSize += sizeof(uint64_t);                                                  // size of column count
+   uSize += sizeof(uint64_t);                                                  // size of names buffer size
+
+   return uSize;
+}
+
+uint64_t table_column_buffer::storage_read_size(const std::byte* pBuffer) const
+{                                                                                                  assert(pBuffer != nullptr);
+    // Use memcpy to safely read uint64_t from a const std::byte* buffer
+    uint64_t uSize;
+    std::memcpy(&uSize, pBuffer, sizeof(uint64_t));
+    return uSize;
+}
+
+
+uint64_t table_column_buffer::storage_read_size(std::byte*& pBuffer) const
+{                                                                                                  assert(pBuffer != nullptr);
+   uint64_t uSize;
+   std::memcpy(&uSize, pBuffer, sizeof(uSize));
+   pBuffer += sizeof(uSize);
+   return uSize;
+}
+
+uint64_t table_column_buffer::storage_read(const std::byte* pBuffer, tag_columns) 
+{                                                                                                  assert(pBuffer != nullptr);
+   const std::byte* pStartBuffer = pBuffer;
+
+   uint64_t uSize;
+   std::memcpy(&uSize, pBuffer, sizeof(uSize));
+   pBuffer += sizeof(uSize);
+
+   // ## Reserve space for columns and copy memory
+
+   m_vectorColumn.reserve(sizeof(detail::columns) * uSize);
+   std::memcpy(m_vectorColumn.data(), pBuffer, m_vectorColumn.size());
+   pBuffer += m_vectorColumn.size();
+
+   // ## Read column names
+   uint64_t uNamesSize;
+   std::memcpy(&uNamesSize, pBuffer, sizeof(uNamesSize));
+   pBuffer += sizeof(uNamesSize);
+   m_namesColumn.reserve((unsigned)uNamesSize);
+   std::memcpy(m_namesColumn.data(), pBuffer, m_namesColumn.size());
+   pBuffer += m_namesColumn.size();
+
+   return (uint64_t)( pBuffer - pStartBuffer );
+}
+
+static std::byte* write_s(std::byte* pBuffer, const void* pSource, std::size_t uSize)
+{
+   std::memcpy(pBuffer, pSource, uSize);
+   pBuffer += uSize;
+   return pBuffer;
+}
+
+void table_column_buffer::storage_write( std::byte* pBuffer, tag_columns ) const
+{                                                                                                  assert(pBuffer != nullptr);
+
+   // ## Write column metadata
+
+   uint64_t uColumnCount = get_column_count();
+   pBuffer = write_s( pBuffer, &uColumnCount, sizeof(uColumnCount) );
+
+   pBuffer = write_s( pBuffer, m_vectorColumn.data(), m_vectorColumn.size() );
+
+
+   // ## Write column names
+
+   uint64_t uNamesSize = m_namesColumn.size();
+   pBuffer = write_s( pBuffer, &uNamesSize, sizeof(uNamesSize) );
+
+   pBuffer = write_s( pBuffer, m_namesColumn.data(), m_namesColumn.size() );
+
+
+   // ## Save primitive members
 }
 
 

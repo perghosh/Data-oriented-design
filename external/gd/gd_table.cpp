@@ -101,6 +101,11 @@ references& references::operator=( const references& o )
    return *this;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Adds a new reference to the internal collection using the provided variant view and returns its index.
+ * @param v_ A constant reference to a gd::variant_view object containing the value to be referenced.
+ * @return The index of the newly added reference in the internal vector, as a uint64_t.
+ */
 uint64_t references::add( const gd::variant_view& v_ )
 {
    unsigned uSize = gd::types::value_size_g( v_.type(), v_.length()  );        // Get needed size to store value in bytes
