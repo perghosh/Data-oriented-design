@@ -58,7 +58,11 @@ TEST_CASE("[table] multiple strings", "[table]") {
    tableTest01.storage_write(reinterpret_cast<std::byte*>(vectorBuffer.data()), gd::table::tag_columns{});
 
    std::byte* pBuffer = reinterpret_cast<std::byte*>( vectorBuffer.data() );
-   uint64_t uSize = tableTest01.storage_read_size(pBuffer);
+
+   gd::table::dto::table tableTestRead;
+   uint64_t uSize = tableTestRead.storage_read_size(pBuffer);
+   tableTestRead.storage_read( (const std::byte*)vectorBuffer.data(), gd::table::tag_columns{});
+
    //gd::table::dto::table tableTest02(pBuffer, uTableSize, gd::table::tag_columns{});
 }
 
