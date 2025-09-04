@@ -322,7 +322,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          return { false, stringError }; 
       }
 
-      if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true )
+      if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true || optionsApplication.exists("add-to-history", gd::types::tag_state_active{}) == true )
       {
          // If command should be saved to history, we copy the arguments that is saved to history when application is done
          // This is done to make sure that any changes to arguments during application run is not saved to history
@@ -435,14 +435,15 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       if( bOk == false ) { return { false, stringError }; }
 
       // @TASK #user.kevin [name: options history][summary: if history option is set then save last command line to history][user: kevin][created: 2025-08-11]
-      if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true )
+      if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true || optionsApplication.exists("add-to-history", gd::types::tag_state_active{}) == true )
       {
          std::string stringHistory;
          std::filesystem::path pathHistory;
-         auto result_ = HistoryFindActive_s(pathHistory);                       // Get the local history location
+         auto result_ = HistoryFindActive_s(pathHistory);                       // Try to find history file, finds local or home history file but will first try local history file
          if( result_.first == true ) { stringHistory = pathHistory.string(); }
 
          gd::cli::options* poptionsActive = optionsApplication.find_active();
+         if( poptionsActive->exists("add-to-history") == true ) { argumentsHistory.append("alias", (*poptionsActive)["add-to-history"].as_string_view()); }
          result_ = CLI::HistoryAppend_g(stringHistory, poptionsActive->name(), &argumentsHistory, "");  // Append the command to history
          if( result_.first == false ) { return result_; }
       }
@@ -1906,22 +1907,21 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
  */
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
-   optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
-   optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
-   optionsApplication.add_flag({ "print", "Reults from command should be printed" });
    optionsApplication.add_flag( {"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
+   optionsApplication.add_flag( {"logging", "Turn on logging"} );
+   optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
    optionsApplication.add_flag({ "help", "Prints help information about command" });
+   optionsApplication.add_flag({ "history", "Add active command to history" });
+   optionsApplication.add_flag({ "print", "Reults from command should be printed" });
    optionsApplication.add_flag({ "verbose", "Write information about operations that might be useful for user" });
    optionsApplication.add({ "config", "specify configuration file to use configuring cleaner" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
-   optionsApplication.add({ "history", "File to store command history, if not set then history is not stored" });
+   optionsApplication.add({ "add-to-history", "Add to history with alias name" });
    optionsApplication.add({ "logging-severity", "Set the logging severity level. Available levels: `verbose`, `debug`, `info`, `warning`, `error`, `fatal`."});
    optionsApplication.add({ "mode", "Specifies the operational mode of the tool, adapting its behavior for different code analysis purposes. Available modes: `review`, `stats`, `search`, `changes`, `audit`, `document`" });
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
    optionsApplication.add({ "prompt", "Prompts for values that is typed before execute expression, these values will be asked for"});
-   //optionsApplication.add({ "database", "Set folder where logger places log files"});
-   //optionsApplication.add({ "statements", "file containing sql statements"});
 
    {  // ## `count` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count lines in file" );
@@ -3011,6 +3011,8 @@ std::pair<bool, std::string> CApplication::HistorySave_s(const std::string_view&
  */
 std::pair<bool, std::string> CApplication::HistoryFindActive_s(std::filesystem::path& pathLocation)
 {
+   // ## Find local history file first
+
    auto result_ = HistoryFindLocal_s(pathLocation);                            // Try to find local history file
 
    // ## Find home history file if no local history file found
