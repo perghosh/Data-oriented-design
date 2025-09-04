@@ -280,6 +280,11 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, std::
       xmlnodeEntry.append_child("name").text().set( stringName );             // save command name
       xmlnodeEntry.append_child("line").text().set(stringCommand.c_str());    // save command line
       xmlnodeEntry.append_child("date").text().set( stringDateTime );         // save date
+      if( parguments->exists("alias") == true )                               // save alias if it exists
+      { 
+         auto stringAlias = parguments->get_argument("alias").as_string_view();
+         xmlnodeEntry.append_child("alias").text().set( stringAlias ); 
+      } 
 
       papplication_g->PrintMessage("Appended command to history: " + stringCommand, gd::argument::arguments{});
 
