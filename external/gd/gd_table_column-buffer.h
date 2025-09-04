@@ -1048,6 +1048,8 @@ public:
 /** \name STORAGE
  * Logic to calculate storage requirements for table
  *///@{
+   // table_column_buffer& serialize(bool bWrite, std::byte*& pBuffer, uint64_t& uBufferSize, tag_columns);
+
    uint64_t storage_size( tag_columns ) const;
 
    uint64_t storage_read_size(const std::byte* pBuffer) const;
