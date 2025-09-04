@@ -4233,6 +4233,11 @@ static std::byte* write_s(std::byte* pBuffer, const void* pSource, std::size_t u
 
 void table_column_buffer::storage_write( std::byte* pBuffer, tag_columns ) const
 {                                                                                                  assert(pBuffer != nullptr);
+   // ## First value in buffer is size of data block for columns in uint64_t format
+   pBuffer += sizeof(uint64_t); // reserve space for size of data block
+
+
+
 
    // ## Write column metadata
 
