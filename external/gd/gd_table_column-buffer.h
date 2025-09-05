@@ -1050,14 +1050,16 @@ public:
  *///@{
    // table_column_buffer& serialize(bool bWrite, std::byte*& pBuffer, uint64_t& uBufferSize, tag_columns);
 
-   uint64_t storage_size( tag_columns ) const;
+   void serialize( std::byte* pBuffer, bool bSave, tag_columns );
+   void serialize( std::byte* pBuffer, bool bSave, tag_body );
+
+   uint64_t serialize_size( tag_columns ) const;
+   uint64_t serialize_size( tag_body ) const;
 
    uint64_t storage_read_size(const std::byte* pBuffer) const;
    uint64_t storage_read_size(std::byte*& pBuffer) const;
 
    uint64_t storage_read( const std::byte* pBuffer, tag_columns );
-
-   void storage_write( std::byte* pBuffer, tag_columns ) const;
  //@}
 
 

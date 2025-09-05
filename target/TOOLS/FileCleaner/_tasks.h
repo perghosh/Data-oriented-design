@@ -81,3 +81,10 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 
 */
 
+// ----------------------------------------------------------------------------
+
+/*
+@PROJECT [name: serialize-table] [summary: Serialize and deserialize table data]
+
+*/
+

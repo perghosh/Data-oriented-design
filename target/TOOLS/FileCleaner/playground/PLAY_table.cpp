@@ -16,6 +16,33 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+/*
+@TASK [project: serialize-table][status: open][created: 250905]
+[title: select method names for read and write] [description: names needed to read and write data in table class]
+[sample: "suggestions
+- serialize( void* pBuffer, bool bSave, tag_columns )
+- write( void* pBuffer, tag_columns ); read( void* pBuffer, tag_columns );
+- write( void* pBuffer, tag_full ); read( void* pBuffer, tag_full );
+"]
+
+@TASK [project: serialize-table][status: open][created: 250905]
+[title: size methods] [description: methods needed to calculate needed memory size for parts in table]
+[sample: "suggestions
+- serialize_size( tag_columns ); serialize_size( tag_full ); serialize_size( tag_body );
+- write_size( void* pBuffer, tag_columns ); read_size( void* pBuffer, tag_columns );
+"]
+
+@TASK [project: serialize-table][status: open][created: 250905]
+[title: method to calculate needed size for columns]
+[sample: "suggestions
+- serialize_size( tag_columns ); serialize_size( tag_full ); serialize_size( tag_body );
+- write_size( void* pBuffer, tag_columns ); read_size( void* pBuffer, tag_columns );
+"]
+
+
+
+*/
+
 TEST_CASE("[table] multiple strings", "[table]") {
    using namespace gd::table::dto;
 
@@ -50,18 +77,25 @@ TEST_CASE("[table] multiple strings", "[table]") {
       auto stringText = tableTest01.cell_get_variant_view(uRow, "text").as_string_view();
    }
 
-   uint64_t uTableSize = tableTest01.storage_size( gd::table::tag_columns{} );
+   uint64_t uTableSize = tableTest01.serialize_size( gd::table::tag_columns{} );
 
    std::vector<uint8_t> vectorBuffer;
    vectorBuffer.resize(uTableSize);
 
-   tableTest01.storage_write(reinterpret_cast<std::byte*>(vectorBuffer.data()), gd::table::tag_columns{});
+   tableTest01.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), true, gd::table::tag_columns{});
 
+   gd::table::dto::table tableTest02;
+   tableTest02.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), false, gd::table::tag_columns{});
+
+   bool bSame = tableTest02.m_uRowGrowBy == tableTest01.m_uRowGrowBy;          
+
+   /*
    std::byte* pBuffer = reinterpret_cast<std::byte*>( vectorBuffer.data() );
 
    gd::table::dto::table tableTestRead;
    uint64_t uSize = tableTestRead.storage_read_size(pBuffer);
    tableTestRead.storage_read( (const std::byte*)vectorBuffer.data(), gd::table::tag_columns{});
+   */
 
    //gd::table::dto::table tableTest02(pBuffer, uTableSize, gd::table::tag_columns{});
 }
