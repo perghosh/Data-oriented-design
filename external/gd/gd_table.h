@@ -612,6 +612,8 @@ struct names
    bool empty() const noexcept { return m_pbBufferNames == nullptr; }
    /// Reserve memory to store names 
    void reserve( unsigned uSize );
+   /// Resize internal buffer, existing names are kept
+   void resize(unsigned uSize) {  if( uSize > m_uMaxSize ) { reserve( uSize ); }  m_uSize = uSize; }
    /// Free allocated memory and reset members
    void clear() {
       delete [] m_pbBufferNames; 

@@ -4163,21 +4163,159 @@ void table_column_buffer::erase(const uint64_t* puRowIndex, uint64_t uCount, tag
    }
 }
 
-uint64_t table_column_buffer::storage_size(tag_columns) const
-{
+static const std::byte* read_s( const std::byte* pFrom, void* pTo, std::size_t uSize);
+static std::byte* write_s( const void* pSource, std::byte* pBuffer, std::size_t uSize);
 
+/** ---------------------------------------------------------------------------
+ * @brief Serialize or deserialize columns data to/from buffer
+ * 
+ * - `sizeof(uint64_t)` total size of column data block
+ * - `sizeof(uint64_t)` column count
+ * - `sizeof(detail::columns) * count` buffer size for columns 
+ * - `sizeof(uint64_t)` name buffer size
+ * - `name buffer` name data size
+ * - `sizeof(uint64_t) * 2` column related member size in table
+ * 
+ * @param pBuffer pointer to buffer to read from or write to
+ * @param bSave true if data is saved to buffer, false if data is read from buffer
+ * @param tag_columns tag to identify that columns is serialized
+ */
+void table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_columns)
+{
+   if( bSave == false )
+   {
+      uint64_t uRead;
+      const std::byte* pPosition = pBuffer;
+      pPosition = read_s( pPosition, &uRead, sizeof(uRead) );                                      assert( pPosition == pBuffer + sizeof(uRead) );
+      pPosition = read_s( pPosition, &uRead, sizeof(uRead) );
+      m_vectorColumn.reserve(sizeof(detail::columns) * uRead);
+      pPosition = read_s( pPosition, m_vectorColumn.data(), sizeof(detail::columns) * uRead);
+      m_vectorColumn.resize(uRead);
+
+      pPosition = read_s( pPosition, &uRead, sizeof(uRead) );
+      m_namesColumn.reserve((unsigned)uRead);
+      pPosition = read_s( pPosition, m_namesColumn.data(), uRead );
+      m_namesColumn.resize((unsigned)uRead);
+
+      pPosition = read_s(pPosition, &m_uFlags, sizeof(m_uFlags));
+      pPosition = read_s(pPosition, &m_uRowGrowBy, sizeof(m_uRowGrowBy));                          
+#ifndef NDEBUG
+      intptr_t iDifference = pPosition - pBuffer;
+      assert(iDifference == serialize_size(tag_columns{}));
+#endif
+   }
+   else                                                                                            
+   {                                                                                               assert( empty() == false );
+      uint64_t uSave;
+      std::byte* pPosition = pBuffer;
+      uSave = serialize_size(tag_columns{});
+      pPosition = write_s( &uSave, pPosition, sizeof(uSave) );                                     assert( pPosition == pBuffer + sizeof(uSave) );
+
+      uSave = get_column_count();                                              // number of columns
+      pPosition = write_s(&uSave, pPosition, sizeof(uSave));                                       assert(pPosition == ( pBuffer + sizeof(uSave) + sizeof(uSave) ));
+      pPosition = write_s(m_vectorColumn.data(), pPosition, sizeof(detail::columns) * m_vectorColumn.size()); assert(pPosition == ( pBuffer + sizeof(uSave) + sizeof(uSave) + (sizeof(column) *  m_vectorColumn.size()) ));
+
+      uSave = m_namesColumn.size();                                           // size of names buffer
+      pPosition = write_s( &uSave, pPosition, sizeof(uSave) );
+      pPosition = write_s( m_namesColumn.data(), pPosition, m_namesColumn.size() );// names buffer
+
+      pPosition = write_s(&m_uFlags, pPosition, sizeof(m_uFlags));               // table flags
+      pPosition = write_s(&m_uRowGrowBy, pPosition, sizeof(m_uRowGrowBy));       // row growth
+#ifndef NDEBUG
+      intptr_t iDifference = pPosition - pBuffer;
+      assert(iDifference == serialize_size(tag_columns{}));
+#endif
+   }
+}
+
+void table_column_buffer::serialize( std::byte* pBuffer, bool bSave, tag_body )
+{
+   if( bSave == false )
+   {
+      row_clear();
+
+
+      uint64_t uRead;
+      const std::byte* pPosition = pBuffer;
+      pPosition = read_s( pPosition, &uRead, sizeof(uRead) );                  // read row count
+      m_uRowCount = uRead;
+
+      pPosition = read_s( pPosition, &uRead, sizeof(uRead) );                  // read size of data block
+      if( m_puData == nullptr ) prepare();
+      row_reserve_add( m_uRowCount );
+      pPosition = read_s(pPosition, m_puData, uRead);                          // read data block
+   }
+   else                                                                                            
+   {                                                                                               assert( empty() == false );
+      uint64_t uSave;
+      std::byte* pPosition = pBuffer;
+
+      uSave = m_uRowCount;                                                     // row count
+      pPosition = write_s( &uSave, pPosition, sizeof(uSave) );
+
+      uSave += (m_uRowSize * m_uRowCount);                                     // size of data block
+      if( is_rowmeta() == true ) uSave += (size_row_meta() * m_uRowCount);     // size of meta data block
+
+      pPosition = write_s( &uSave, pPosition, sizeof(uSave) );
+      pPosition = write_s( m_puData, pPosition, uSave );
+#ifndef NDEBUG
+      intptr_t iDifference = pPosition - pBuffer;
+      assert(iDifference == serialize_size(tag_body{}));
+#endif
+   }
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Calculate needed size of buffer needed to serialize columns
+ * 
+ * - `sizeof(uint64_t)` total size of column data block
+ * - `sizeof(uint64_t)` column count
+ * - `sizeof(detail::columns) * count` buffer size for columns 
+ * - `sizeof(uint64_t)` name buffer size
+ * - `name buffer` name data size
+ * - `sizeof(uint64_t) * 2` column related member size in table
+ * 
+ * @param tag_columns tag to identify that columns is serialized
+ * @return uint64_t size of buffer needed to serialize columns
+*/
+uint64_t table_column_buffer::serialize_size(tag_columns) const
+{
    // ## calculate size of columns structs
+
+   uint64_t uSize = sizeof(uint64_t) * 2;                                     // total size + column count memory size
+
    uint64_t uColumnCount = get_column_count();
-   uint64_t uSize = sizeof(detail::columns) * uColumnCount;                   // size of columns struct
+   uSize += sizeof(detail::columns) * uColumnCount;                           // size of columns struct
    
+   uSize += sizeof(uint64_t);                                                 // size of names buffer size
    uSize += m_namesColumn.size();                                             // size of column names
 
    // ## calculate size of data needed to identify count
    uSize += sizeof(m_uFlags);                                                  // size table flags
    uSize += sizeof(m_uRowGrowBy);                                              // size of row growth
 
-   uSize += sizeof(uint64_t);                                                  // size of column count
-   uSize += sizeof(uint64_t);                                                  // size of names buffer size
+   return uSize;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Calculate needed size of buffer needed to serialize table
+ * 
+ * - `sizeof(uint64_t)` size of data block
+ * - `sizeof(m_uRowCount)` row count
+ * - `data block` data block size
+ * - `meta block` meta data block size
+ * 
+ * @param tag_body tag to identify that body is serialized
+ * @return uint64_t size of buffer needed to serialize table
+ */
+uint64_t table_column_buffer::serialize_size( tag_body ) const
+{
+   uint64_t uSize = sizeof(uint64_t);                                         // size for block size
+   uSize += sizeof(m_uRowCount);                                              // size for row count
+   uSize += (m_uRowSize * m_uRowCount);                                       // size of data block
+   if( is_rowmeta() == true ) uSize += (size_row_meta() * m_uRowCount);       // size of meta data block
 
    return uSize;
 }
@@ -4224,41 +4362,20 @@ uint64_t table_column_buffer::storage_read(const std::byte* pBuffer, tag_columns
    return (uint64_t)( pBuffer - pStartBuffer );
 }
 
-static std::byte* write_s(std::byte* pBuffer, const void* pSource, std::size_t uSize)
+static const std::byte* read_s( const std::byte* pFrom, void* pTo, std::size_t uSize)
 {
-   std::memcpy(pBuffer, pSource, uSize);
-   pBuffer += uSize;
-   return pBuffer;
-}
-
-void table_column_buffer::storage_write( std::byte* pBuffer, tag_columns ) const
-{                                                                                                  assert(pBuffer != nullptr);
-   // ## First value in buffer is size of data block for columns in uint64_t format
-   pBuffer += sizeof(uint64_t); // reserve space for size of data block
-
-
-
-
-   // ## Write column metadata
-
-   uint64_t uColumnCount = get_column_count();
-   pBuffer = write_s( pBuffer, &uColumnCount, sizeof(uColumnCount) );
-
-   pBuffer = write_s( pBuffer, m_vectorColumn.data(), m_vectorColumn.size() );
-
-
-   // ## Write column names
-
-   uint64_t uNamesSize = m_namesColumn.size();
-   pBuffer = write_s( pBuffer, &uNamesSize, sizeof(uNamesSize) );
-
-   pBuffer = write_s( pBuffer, m_namesColumn.data(), m_namesColumn.size() );
-
-
-   // ## Save primitive members
+   std::memcpy(pTo, pFrom, uSize);
+   pFrom += uSize;
+   return pFrom;
 }
 
 
+static std::byte* write_s( const void* pSource, std::byte* pTarget, std::size_t uSize)
+{
+   std::memcpy(pTarget, pSource, uSize);
+   pTarget += uSize;
+   return pTarget;
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Convert names to column indexes in table
