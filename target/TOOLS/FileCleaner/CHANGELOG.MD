@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.6
+### New Features
+- Speed improvements for huge count results, it uses a bit more momory though.
+- `--add-to-history` options adds command line with name to history file. This allows you to save commands you use often and easily repeat them later.
+
+
 ## v1.0.5
 ### New Features
 - Added support for multi-threaded operations to improve performance and responsiveness.

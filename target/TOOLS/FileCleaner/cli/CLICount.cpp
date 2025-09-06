@@ -1,7 +1,9 @@
 /**
  * @file CLIHistory.cpp
  * @brief Implements the 'count' command used for pattern matching in lines.
-
+ * 
+ * `Count_g` is the main entry point for the 'count' command.
+ * 
  */
 
  // @TAG #cli #count
