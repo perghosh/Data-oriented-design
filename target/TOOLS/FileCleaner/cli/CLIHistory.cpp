@@ -258,6 +258,16 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::c
 std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, std::string_view stringName, gd::argument::arguments* parguments, std::string_view stringSection )
 {                                                                                                  assert( std::filesystem::exists(stringFile) == true );
    parguments->remove("history");                                             // remove history option if it exists, we do not want to save this in history
+   parguments->remove("add-to-history");                                      // remove add-to-history option if it exists, we do not want to save this in history
+
+   std::string stringAlias;
+
+   if( parguments->exists("alias") == true )
+   {
+      stringAlias = parguments->get_argument("alias").as_string_view();
+      parguments->remove("alias");
+   }
+
    auto stringCommand = gd::cli::options::to_string_s(*parguments);           // get the full command line for the active command
    
    std::string stringDateTime = DATE_CurrentTime_s(); // Generate date string
@@ -280,9 +290,8 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, std::
       xmlnodeEntry.append_child("name").text().set( stringName );             // save command name
       xmlnodeEntry.append_child("line").text().set(stringCommand.c_str());    // save command line
       xmlnodeEntry.append_child("date").text().set( stringDateTime );         // save date
-      if( parguments->exists("alias") == true )                               // save alias if it exists
+      if( stringAlias.empty() == false )                                      // save alias if it exists
       { 
-         auto stringAlias = parguments->get_argument("alias").as_string_view();
          xmlnodeEntry.append_child("alias").text().set( stringAlias ); 
       } 
 
