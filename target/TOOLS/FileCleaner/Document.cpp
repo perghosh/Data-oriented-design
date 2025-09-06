@@ -2035,7 +2035,7 @@ gd::table::dto::table CDocument::RESULT_RowCount()
 {
    using namespace gd::table::dto;
    // Define the result table structure
-   constexpr unsigned uTableStyle = (table::eTableFlagNull32 | table::eTableFlagRowStatus);
+   constexpr unsigned uTableStyle = (table::eTableFlagNull32 | table::eTableFlagRowStatus | table::eTableFlagDuplicateStrings );
 
    std::vector< std::tuple< std::string_view, unsigned, std::string_view > > 
       vectorColumn( {{"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"}} );
