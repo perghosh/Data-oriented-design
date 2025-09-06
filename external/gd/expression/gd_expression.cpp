@@ -5,6 +5,8 @@
  * 
  */
 
+#include <cstring> 
+
 #include "gd_expression.h"
 
 _GD_EXPRESSION_BEGIN
