@@ -136,13 +136,13 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    else if( options_.exists("print") == true )                                 // Print history entries from history file
    {
       gd::argument::arguments argumentsPrint;
-      argumentsPrint.append( options_.get_arguments(), { "print", "local"} );
+      argumentsPrint.append( options_.get_arguments(), { "print", "local", "home" } );
       result_ = HistoryPrint_g(argumentsPrint, pdocument);
    }
    else if( options_.exists("remove") == true )                                // Remove history entries from history file and clear the history table in cache
    {
       gd::argument::arguments argumentsRemove;
-      argumentsRemove.append( options_.get_arguments(), { "remove", "local"} );
+      argumentsRemove.append( options_.get_arguments(), { "remove", "local", "home" } );
       result_ = HistoryRemove_g(argumentsRemove, pdocument);
       auto stringHistoryFile = FILE_GetHistoryFile_s( argumentsRemove );
       if( result_.first == true && std::filesystem::exists(stringHistoryFile) == true )
@@ -154,19 +154,19 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    else if( options_.exists("edit") == true )                                  // Edit history file in text editor (tries to open associated application)
    {
       gd::argument::arguments argumentsEdit;
-      argumentsEdit.append( options_.get_arguments(), { "edit", "local"} );
+      argumentsEdit.append( options_.get_arguments(), { "edit", "local", "home" } );
       result_ = HistoryEdit_g( argumentsEdit );
    }
    else if( options_.exists("run") == true )                                   // Run a command from the history file
    {
       gd::argument::arguments argumentsRun;
-      argumentsRun.append( options_.get_arguments(), { "run", "local"} );
+      argumentsRun.append( options_.get_arguments(), { "run", "local", "home" } );
       result_ = HistoryRun_g(argumentsRun, poptionsApplication, pdocument);
    }
    else if( options_.exists("index") == true )
    {
       gd::argument::arguments argumentsIndex;
-      argumentsIndex.append(options_.get_arguments(), { "index", "set-alias" ,"local"});
+      argumentsIndex.append(options_.get_arguments(), { "index", "set-alias" ,"local", "home" });
       result_ = HistoryIndex_g(argumentsIndex, pdocument);
    }
 
@@ -262,10 +262,12 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, std::
 
    std::string stringAlias;
 
+   // ## Check for alias .....................................................
+
    if( parguments->exists("alias") == true )
    {
       stringAlias = parguments->get_argument("alias").as_string_view();
-      parguments->remove("alias");
+      parguments->remove("alias");                                            // remove alias from command line, it is saved as separate node
    }
 
    auto stringCommand = gd::cli::options::to_string_s(*parguments);           // get the full command line for the active command
@@ -449,21 +451,25 @@ std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::argumen
  */
 std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
 {
+   enum { unknown, current, home };                                            // Location options for history file, unknown means try current first, then home
    std::string stringHistoryFile;
    std::string_view stringHistoryFileName;
    std::filesystem::path pathDirectory;
-   bool bCurrentDirectory = arguments_.exists("local"); // If true, use current directory for history file, otherwise user local app data folder
+   int iLocation = unknown;
 
+   if( arguments_.exists("local") == true ) iLocation = current;
+   else if( arguments_.exists("home") == true ) iLocation = home;
 
    // ## Prepare folder for history file ......................................
 
-   if( bCurrentDirectory == true )
+   if( iLocation == unknown || iLocation == current )
    {
       auto result_ = CApplication::HistoryFindLocal_s(pathDirectory);         // Find the local history folder based on the current directory
       if( result_.first == false ) { return ""; }                             // Failed to find the local history folder
       stringHistoryFile = pathDirectory.string();
    }
-   else
+
+   if( iLocation == home || (iLocation == unknown && stringHistoryFile.empty() == true)  )
    {
       stringHistoryFileName = "cleaner-history.xml";                          // Default history file name
       pathDirectory = GetHistoryPath_s();                                     // Get the history path based on the operating system
@@ -616,16 +622,18 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
 
    if( stringCommand.empty() == false )
    {                                                                                               LOG_DEBUG_RAW( "==> Running history command: " + stringCommand );
-      poptionsApplication->clear();
-      poptionsApplication->set_first(0);
 
-      result_ = poptionsApplication->parse_terminal(stringCommand);           // Parse the command line from the history entry
+      gd::cli::options optionsRun;
+      CApplication::Prepare_s(optionsRun);                                    // prepare command-line options
+      optionsRun.set_first(0);
+
+      result_ = optionsRun.parse_terminal(stringCommand);                     // Parse the command line from the history entry
       if( result_.first == false ) { return result_; }
 
-      auto result_ = CApplication::CliPrompt_s(poptionsApplication);          // If prompt values exist, ask the user for values
+      auto result_ = CApplication::CliPrompt_s(&optionsRun);                  // If prompt values exist, ask the user for values
       if( result_.first == false ) { return result_; }
 
-      result_ = papplication_g->Initialize(*poptionsApplication);             // Initialize the application with parsed options
+      result_ = papplication_g->Initialize(optionsRun);                      // Initialize the application with parsed options
       if( result_.first == false ) { return result_; }
    }
 
