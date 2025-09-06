@@ -17,7 +17,7 @@
 #include "catch2/catch_amalgamated.hpp"
 
 /*
-@TASK [project: serialize-table][status: open][created: 250905]
+@TASK [project: serialize-table][status: open][created: 250905] [assigned: per]
 [title: select method names for read and write] [description: names needed to read and write data in table class]
 [sample: "suggestions
 - serialize( void* pBuffer, bool bSave, tag_columns )
@@ -25,19 +25,28 @@
 - write( void* pBuffer, tag_full ); read( void* pBuffer, tag_full );
 "]
 
-@TASK [project: serialize-table][status: open][created: 250905]
+@TASK [project: serialize-table][status: ongoing][created: 250905] [assigned: per]
 [title: size methods] [description: methods needed to calculate needed memory size for parts in table]
 [sample: "suggestions
 - serialize_size( tag_columns ); serialize_size( tag_full ); serialize_size( tag_body );
 - write_size( void* pBuffer, tag_columns ); read_size( void* pBuffer, tag_columns );
 "]
 
-@TASK [project: serialize-table][status: open][created: 250905]
+@TASK [project: serialize-table][status: ongoing][created: 250905] [assigned: per]
 [title: method to calculate needed size for columns]
 [sample: "suggestions
 - serialize_size( tag_columns ); serialize_size( tag_full ); serialize_size( tag_body );
 - write_size( void* pBuffer, tag_columns ); read_size( void* pBuffer, tag_columns );
 "]
+
+@TASK [project: serialize-table][status: ongoing][created: 250905] [assigned: per]
+[title: method to calculate needed size for body]
+[sample: "suggestions
+- serialize_size( tag_body ); 
+"]
+
+@TASK [project: serialize-table][status: ongoing][created: 250905] [assigned: per]
+[title: read and write table body data]
 
 
 
@@ -48,7 +57,7 @@ TEST_CASE("[table] multiple strings", "[table]") {
 
    const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
    constexpr unsigned uTableDuplicate = (table::eTableFlagNull32|table::eTableFlagRowStatus|table::eTableFlagDuplicateStrings);
-   gd::table::dto::table tableTest01( uTableDuplicate, { { "int64", "KeyK"}, { "rstring", "name"}, { "rstring", "text"} }, gd::table::tag_prepare{} );
+   gd::table::dto::table tableTest01( uTableDuplicate, { { "int64", 0, "KeyK"}, { "string", 100, "name"}, { "string", 100, "text"} }, gd::table::tag_prepare{} );
 
    std::mt19937 mt19937;
 
@@ -57,7 +66,9 @@ TEST_CASE("[table] multiple strings", "[table]") {
    for(int i = 0; i < 100; ++i) 
    {
        std::string string_;
-       for(int j = 0; j < 10; ++j) 
+       // Generate random number for length of string
+       int iLength = mt19937() % 100 + 1; // Random length between 1 and 100
+       for(int j = 0; j < iLength; ++j) 
        {
           string_ += stringCharset[mt19937() % stringCharset.size()];
        }
@@ -70,6 +81,8 @@ TEST_CASE("[table] multiple strings", "[table]") {
       tableTest01.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} } );
    }
 
+   std::string stringTable_ = gd::table::to_string(tableTest01, gd::table::tag_io_cli{});
+
    // read all names and texts
    for( uint64_t uRow = 0; uRow < tableTest01.size(); ++uRow ) 
    {
@@ -78,16 +91,26 @@ TEST_CASE("[table] multiple strings", "[table]") {
    }
 
    uint64_t uTableSize = tableTest01.serialize_size( gd::table::tag_columns{} );
+   uTableSize += tableTest01.serialize_size( gd::table::tag_body{} );
 
    std::vector<uint8_t> vectorBuffer;
    vectorBuffer.resize(uTableSize);
 
-   tableTest01.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), true, gd::table::tag_columns{});
+   auto pPosition = tableTest01.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), true, gd::table::tag_columns{});
+   tableTest01.serialize(pPosition, true, gd::table::tag_body{});
 
    gd::table::dto::table tableTest02;
-   tableTest02.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), false, gd::table::tag_columns{});
+   pPosition = tableTest02.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), false, gd::table::tag_columns{});
+   pPosition = tableTest02.serialize(pPosition, false, gd::table::tag_body{});
 
-   bool bSame = tableTest02.m_uRowGrowBy == tableTest01.m_uRowGrowBy;          
+   bool bSame = tableTest02.m_uRowGrowBy == tableTest01.m_uRowGrowBy;
+   bSame = tableTest02.m_uRowCount == tableTest01.m_uRowCount;
+
+   std::string stringTable = gd::table::to_string(tableTest02, gd::table::tag_io_cli{});
+   std::cout << stringTable << std::endl;
+   stringTable = gd::table::to_string(tableTest01, gd::table::tag_io_cli{});
+   std::cout << stringTable << std::endl;
+
 
    /*
    std::byte* pBuffer = reinterpret_cast<std::byte*>( vectorBuffer.data() );

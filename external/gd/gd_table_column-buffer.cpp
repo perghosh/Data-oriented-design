@@ -4180,34 +4180,38 @@ static std::byte* write_s( const void* pSource, std::byte* pBuffer, std::size_t 
  * @param bSave true if data is saved to buffer, false if data is read from buffer
  * @param tag_columns tag to identify that columns is serialized
  */
-void table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_columns)
+std::byte* table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_columns)
 {
+   std::byte* pPosition = pBuffer;
+
    if( bSave == false )
    {
       uint64_t uRead;
-      const std::byte* pPosition = pBuffer;
-      pPosition = read_s( pPosition, &uRead, sizeof(uRead) );                                      assert( pPosition == pBuffer + sizeof(uRead) );
-      pPosition = read_s( pPosition, &uRead, sizeof(uRead) );
-      m_vectorColumn.reserve(sizeof(detail::columns) * uRead);
-      pPosition = read_s( pPosition, m_vectorColumn.data(), sizeof(detail::columns) * uRead);
-      m_vectorColumn.resize(uRead);
+      const std::byte* p_ = pPosition;
+      p_ = read_s( p_, &uRead, sizeof(uRead) );                                                    assert( p_ == pBuffer + sizeof(uRead) );
+      p_ = read_s( p_, &uRead, sizeof(uRead) );
+      m_vectorColumn.reserve(uRead);
+      m_vectorColumn.resize( uRead );
+      p_ = read_s( p_, m_vectorColumn.data(), sizeof(detail::columns) * uRead);
+      
 
-      pPosition = read_s( pPosition, &uRead, sizeof(uRead) );
+      p_ = read_s( p_, &uRead, sizeof(uRead) );                                // size of m_namesColumn buffer
       m_namesColumn.reserve((unsigned)uRead);
-      pPosition = read_s( pPosition, m_namesColumn.data(), uRead );
+      p_ = read_s( p_, m_namesColumn.data(), uRead );                          // read data to m_namesColumn
       m_namesColumn.resize((unsigned)uRead);
 
-      pPosition = read_s(pPosition, &m_uFlags, sizeof(m_uFlags));
-      pPosition = read_s(pPosition, &m_uRowGrowBy, sizeof(m_uRowGrowBy));                          
+      p_ = read_s(p_, &m_uFlags, sizeof(m_uFlags));
+      p_ = read_s(p_, &m_uRowGrowBy, sizeof(m_uRowGrowBy));
+      pPosition += ( p_ - pPosition );
 #ifndef NDEBUG
       intptr_t iDifference = pPosition - pBuffer;
+      iDifference += ( ( 4 - ( iDifference % 4 ) ) % 4 );                      // align to 4 byte boundary
       assert(iDifference == serialize_size(tag_columns{}));
 #endif
    }
    else                                                                                            
    {                                                                                               assert( empty() == false );
       uint64_t uSave;
-      std::byte* pPosition = pBuffer;
       uSave = serialize_size(tag_columns{});
       pPosition = write_s( &uSave, pPosition, sizeof(uSave) );                                     assert( pPosition == pBuffer + sizeof(uSave) );
 
@@ -4219,50 +4223,61 @@ void table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_columns)
       pPosition = write_s( &uSave, pPosition, sizeof(uSave) );
       pPosition = write_s( m_namesColumn.data(), pPosition, m_namesColumn.size() );// names buffer
 
-      pPosition = write_s(&m_uFlags, pPosition, sizeof(m_uFlags));               // table flags
-      pPosition = write_s(&m_uRowGrowBy, pPosition, sizeof(m_uRowGrowBy));       // row growth
+      pPosition = write_s(&m_uFlags, pPosition, sizeof(m_uFlags));             // table flags
+      pPosition = write_s(&m_uRowGrowBy, pPosition, sizeof(m_uRowGrowBy));     // row growth
 #ifndef NDEBUG
       intptr_t iDifference = pPosition - pBuffer;
+      iDifference += ( ( 4 - ( iDifference % 4 ) ) % 4 );                      // align to 4 byte boundary
       assert(iDifference == serialize_size(tag_columns{}));
 #endif
    }
+
+   // Align pPosition 4 bytes boundary
+   while( ( reinterpret_cast<uintptr_t>( pPosition ) % 4 ) != 0 ) pPosition++;
+
+   return pPosition;
 }
 
-void table_column_buffer::serialize( std::byte* pBuffer, bool bSave, tag_body )
-{
+std::byte* table_column_buffer::serialize( std::byte* pBuffer, bool bSave, tag_body )
+{                                                                                                  assert(pBuffer != nullptr); assert( reinterpret_cast<uintptr_t>( pBuffer ) % 4 == 0 );
+   std::byte* pPosition = pBuffer;
+
    if( bSave == false )
    {
       row_clear();
-
-
+      const std::byte* p_ = pPosition;
       uint64_t uRead;
-      const std::byte* pPosition = pBuffer;
-      pPosition = read_s( pPosition, &uRead, sizeof(uRead) );                  // read row count
+      p_ = read_s( p_, &uRead, sizeof(uRead) );                               // read row count
       m_uRowCount = uRead;
 
-      pPosition = read_s( pPosition, &uRead, sizeof(uRead) );                  // read size of data block
+      p_ = read_s( p_, &uRead, sizeof(uRead) );                               // read size of data block
       if( m_puData == nullptr ) prepare();
       row_reserve_add( m_uRowCount );
-      pPosition = read_s(pPosition, m_puData, uRead);                          // read data block
+      p_ = read_s( p_, m_puData, uRead );                                     // read data block
+      pPosition += ( p_ - pPosition );
    }
    else                                                                                            
    {                                                                                               assert( empty() == false );
       uint64_t uSave;
-      std::byte* pPosition = pBuffer;
 
       uSave = m_uRowCount;                                                     // row count
       pPosition = write_s( &uSave, pPosition, sizeof(uSave) );
 
-      uSave += (m_uRowSize * m_uRowCount);                                     // size of data block
+      uSave = (m_uRowSize * m_uRowCount);                                      // size of data block
       if( is_rowmeta() == true ) uSave += (size_row_meta() * m_uRowCount);     // size of meta data block
 
-      pPosition = write_s( &uSave, pPosition, sizeof(uSave) );
-      pPosition = write_s( m_puData, pPosition, uSave );
+      pPosition = write_s(&uSave, pPosition, sizeof(uSave));                   // write size of data block
+      pPosition = write_s(m_puData, pPosition, uSave);                        // write data block
 #ifndef NDEBUG
       intptr_t iDifference = pPosition - pBuffer;
+      iDifference += ( ( 4 - ( iDifference % 4 ) ) % 4 );                      // align to 4 byte boundary
       assert(iDifference == serialize_size(tag_body{}));
 #endif
    }
+
+   // Align pPosition 4 bytes boundary
+   while( ( reinterpret_cast<uintptr_t>( pPosition ) % 4 ) != 0 ) pPosition++;
+   return pPosition;
 }
 
 
@@ -4295,6 +4310,8 @@ uint64_t table_column_buffer::serialize_size(tag_columns) const
    uSize += sizeof(m_uFlags);                                                  // size table flags
    uSize += sizeof(m_uRowGrowBy);                                              // size of row growth
 
+   while( ( uSize % 4 ) != 0 ) uSize++;                                        // align to 4 byte boundary
+
    return uSize;
 }
 
@@ -4316,6 +4333,8 @@ uint64_t table_column_buffer::serialize_size( tag_body ) const
    uSize += sizeof(m_uRowCount);                                              // size for row count
    uSize += (m_uRowSize * m_uRowCount);                                       // size of data block
    if( is_rowmeta() == true ) uSize += (size_row_meta() * m_uRowCount);       // size of meta data block
+
+   while( ( uSize % 4 ) != 0 ) uSize++;                                       // align to 4 byte boundary
 
    return uSize;
 }

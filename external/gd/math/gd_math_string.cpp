@@ -137,7 +137,192 @@ size_t count_character(const std::string_view& stringText, char iCharacter ) noe
    return uCharCount;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Compares two strings ignoring case differences.
+ *
+ * This function performs a case-insensitive comparison of two strings by converting
+ * characters to lowercase before comparison. It processes characters individually
+ * without using built-in case conversion functions. The comparison follows lexicographic
+ * ordering and returns values similar to strcmp.
+ *
+ * @param stringText1 The first string to compare.
+ * @param stringText2 The second string to compare.
+ * @return int Returns 0 if strings are equal (ignoring case), 
+ *             negative value if stringText1 < stringText2,
+ *             positive value if stringText1 > stringText2.
+ */
+int compare_ignore_case(const std::string_view& stringText1, const std::string_view& stringText2) noexcept
+{
+   const size_t uLength1 = stringText1.length(); // Length of the first string
+   const size_t uLength2 = stringText2.length(); // Length of the second string
+   const size_t uMinLength = ( uLength1 < uLength2 ) ? uLength1 : uLength2;// Minimum length to compare
+   
+   const char* piText1 = stringText1.data(); // Pointer to the first string data
+   const char* piText2 = stringText2.data(); // Pointer to the second string data
+   
+   // ## Compare characters up to the shorter string length
+   for(size_t uIndex = 0; uIndex < uMinLength; ++uIndex)
+   {
+      char iChar1 = piText1[uIndex];
+      char iChar2 = piText2[uIndex];
 
+      // ### Convert uppercase to lowercase manually
+      if(iChar1 >= 'A' && iChar1 <= 'Z') { iChar1 = iChar1 + ('a' - 'A'); }
+      if(iChar2 >= 'A' && iChar2 <= 'Z') { iChar2 = iChar2 + ('a' - 'A'); }
+      
+      if(iChar1 < iChar2) { return -1; }
+      if(iChar1 > iChar2) { return 1; }
+   }
+   
+   // ## If all compared characters are equal, compare lengths
+   if(uLength1 < uLength2) { return -1; }
+   if(uLength1 > uLength2) { return 1; }
+   
+   return 0; // Strings are equal
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Checks if two strings are equal ignoring case differences.
+ *
+ * This function performs a case-insensitive equality check of two strings.
+ * It's optimized for the common case where you only need to know if strings
+ * are equal, not their ordering relationship. Returns early on length mismatch
+ * for better performance.
+ *
+ * @param stringText1 The first string to compare.
+ * @param stringText2 The second string to compare.
+ * @return bool Returns true if strings are equal (ignoring case), false otherwise.
+ */
+bool compare_equals_ignore_case(const std::string_view& stringText1, const std::string_view& stringText2) noexcept
+{
+   const size_t uLength1 = stringText1.length();
+   const size_t uLength2 = stringText2.length();
+   
+   // ## Early return if lengths differ
+   if(uLength1 != uLength2) { return false; }
+   
+   const char* piText1 = stringText1.data();
+   const char* piText2 = stringText2.data();
+   
+   // ## Compare each character after case conversion
+   for(size_t uIndex = 0; uIndex < uLength1; ++uIndex)
+   {
+      char iChar1 = piText1[uIndex];
+      char iChar2 = piText2[uIndex];
+
+      // Convert uppercase to lowercase manually
+      if(iChar1 >= 'A' && iChar1 <= 'Z') { iChar1 = iChar1 + ('a' - 'A'); }
+      if(iChar2 >= 'A' && iChar2 <= 'Z') { iChar2 = iChar2 + ('a' - 'A'); }
+      
+      if(iChar1 != iChar2) { return false; }
+   }
+   
+   return true;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Finds the first occurrence of a whole word within a string.
+ *
+ * This function searches for the specified word as a complete word, not as a substring.
+ * It uses word boundaries (similar to regex \b) to ensure the match is a whole word.
+ * The search is case-sensitive. Returns the position of the first character of the
+ * found word, or std::string_view::npos if not found.
+ *
+ * @param stringText The source string to search within.
+ * @param stringWord The word to search for.
+ * @param uOffset The starting position for the search (0-based index).
+ * @return size_t The position of the first occurrence, or std::string_view::npos if not found.
+ * 
+ * @code
+ * std::string text = "The cat in the hat";
+ * size_t pos = find_whole_word(text, "cat"); // Returns 4
+ * size_t pos2 = find_whole_word(text, "at"); // Returns npos (not a whole word)
+ * @endcode
+ */
+size_t find_whole_word(const std::string_view& stringText, const std::string_view& stringWord, size_t uOffset) noexcept
+{
+   if(stringText.empty() == true || stringWord.empty() == true) { return std::string_view::npos; }
+
+   const size_t uTextLength = stringText.length();
+   const size_t uWordLength = stringWord.length();
+   
+   if(uWordLength > uTextLength) { return std::string_view::npos; }
+
+   size_t uSearchStart = uOffset;
+
+   // ## Search for all occurrences of the substring
+   while(uSearchStart <= uTextLength - uWordLength)
+   {
+      size_t uFound = stringText.find(stringWord, uSearchStart);
+      if(uFound == std::string_view::npos) { return std::string_view::npos; }
+      
+      // ## Check if this occurrence is a whole word
+      bool bStartBoundary = is_word_boundary(stringText, uFound);
+      bool bEndBoundary = is_word_boundary(stringText, uFound + uWordLength);
+      
+      if(bStartBoundary && bEndBoundary) { return uFound; }
+      
+      uSearchStart = uFound + 1;
+   }
+   
+   return std::string_view::npos;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Finds the first occurrence of a whole word within a string, ignoring case, starting from offset.
+ *
+ * This function performs the same word boundary search as find_whole_word but
+ * ignores case differences and begins searching at the specified offset position.
+ * It manually converts characters to lowercase for comparison without using built-in 
+ * case conversion functions.
+ *
+ * @param stringText The source string to search within.
+ * @param stringWord The word to search for (case will be ignored).
+ * @param uOffset The starting position for the search (0-based index).
+ * @return size_t The position of the first occurrence, or std::string_view::npos if not found.
+ */
+size_t find_whole_word_ignore_case(const std::string_view& stringText, const std::string_view& stringWord, size_t uOffset) noexcept
+{
+   if(stringText.empty() || stringWord.empty()) { return std::string_view::npos; }
+   
+   const size_t uTextLength = stringText.length();
+   const size_t uWordLength = stringWord.length();
+   
+   // ## Validate offset and length constraints
+   if(uOffset >= uTextLength || uWordLength > (uTextLength - uOffset)) { return std::string_view::npos; }
+   
+   const char* piText = stringText.data();
+   const char* piWord = stringWord.data();
+   
+   // ## Search through the text character by character starting from offset
+   for(size_t uStart = uOffset; uStart <= uTextLength - uWordLength; ++uStart)
+   {
+      // Check if word matches at this position (case-insensitive)
+      bool bMatches = true;
+      for(size_t uIndex = 0; uIndex < uWordLength; ++uIndex)
+      {
+         char iTextChar = piText[uStart + uIndex];
+         char iWordChar = piWord[uIndex];
+         
+         // Convert to lowercase manually
+         if(iTextChar >= 'A' && iTextChar <= 'Z') { iTextChar = iTextChar + ('a' - 'A'); }
+         if(iWordChar >= 'A' && iWordChar <= 'Z') { iWordChar = iWordChar + ('a' - 'A'); }
+
+         if( iTextChar != iWordChar ) { bMatches = false; break; }            // Mismatch found
+      }
+      
+      if(bMatches == true)
+      {
+         // ## Check word boundaries
+         bool bStartBoundary = is_word_boundary(stringText, uStart);
+         bool bEndBoundary = is_word_boundary(stringText, uStart + uWordLength);
+         
+         if(bStartBoundary && bEndBoundary) { return uStart; }
+      }
+   }
+   
+   return std::string_view::npos;
+}
 /** ---------------------------------------------------------------------------
  * @brief Extracts a substring from stringText starting from the first occurrence of `stringFrom`.
  *
@@ -1223,6 +1408,32 @@ std::string merge_delimited(const std::vector<std::string_view> vectorString, ch
    }
    
    return stringResult;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Checks if the position represents a word boundary in the text.
+ *
+ * A word boundary exists when there's a transition between word and non-word characters,
+ * or at the beginning/end of the string. This function checks both the character at the
+ * given position and the previous character to determine if a boundary exists.
+ *
+ * @param stringText The string to check within.
+ * @param uPosition The position to check for word boundary.
+ * @return bool Returns true if there's a word boundary at the position, false otherwise.
+ */
+bool is_word_boundary(const std::string_view& stringText, size_t uPosition) noexcept
+{
+   const size_t uLength = stringText.length();
+   
+   // ## Handle boundaries at start and end of string
+   if(uPosition == 0) { return (uLength > 0) && is_word_character(stringText[0]); }
+   if(uPosition >= uLength) { return (uLength > 0) && is_word_character(stringText[uLength - 1]); }
+
+   // ## Check for transition between word and non-word characters
+   bool bPreviousIsWord = is_word_character(stringText[uPosition - 1]);
+   bool bCurrentIsWord = is_word_character(stringText[uPosition]);
+
+   return bPreviousIsWord != bCurrentIsWord;
 }
 
 
