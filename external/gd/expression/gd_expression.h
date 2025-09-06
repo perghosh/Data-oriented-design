@@ -50,8 +50,10 @@ _GD_EXPRESSION_BEGIN
 #endif
 
 /// get the precedence of the operator
+int to_precedence_g(const char* piOperator);
 int to_precedence_g(const char iOperator);
 /// get the precedence of the operator
+int to_precedence_g(const char* piOperator, tag_optimize );
 int to_precedence_g(char iOperator, tag_optimize );
 /// check if the character is a code
 int is_code_g( char iCharacter );

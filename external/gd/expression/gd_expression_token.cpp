@@ -420,7 +420,7 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
                char iOperator = stringOperator[0];
                if( stringOperator == "(" ) { break; }
 
-               int iTokenPrecedence = to_precedence_g(stringToken[0], tag_optimize{});
+               int iTokenPrecedence = to_precedence_g(stringToken.data(), tag_optimize{});
                int iPrecedence = to_precedence_g(iOperator, tag_optimize{} );
                if( iTokenPrecedence > iPrecedence ) { break; }
 
