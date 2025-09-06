@@ -4251,7 +4251,11 @@ std::byte* table_column_buffer::serialize( std::byte* pBuffer, bool bSave, tag_b
       m_uRowCount = uRead;
 
       p_ = read_s( p_, &uRead, sizeof(uRead) );                               // read size of data block
-      if( m_puData == nullptr ) prepare();
+      if( m_puData == nullptr )
+      {
+         set_reserved_row_count(m_uRowCount);
+         prepare();
+      }
       row_reserve_add( m_uRowCount );
       p_ = read_s( p_, m_puData, uRead );                                     // read data block
       pPosition += ( p_ - pPosition );
