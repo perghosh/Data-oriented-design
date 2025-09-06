@@ -1050,8 +1050,8 @@ public:
  *///@{
    // table_column_buffer& serialize(bool bWrite, std::byte*& pBuffer, uint64_t& uBufferSize, tag_columns);
 
-   void serialize( std::byte* pBuffer, bool bSave, tag_columns );
-   void serialize( std::byte* pBuffer, bool bSave, tag_body );
+   std::byte* serialize( std::byte* pBuffer, bool bSave, tag_columns );
+   std::byte* serialize( std::byte* pBuffer, bool bSave, tag_body );
 
    uint64_t serialize_size( tag_columns ) const;
    uint64_t serialize_size( tag_body ) const;
