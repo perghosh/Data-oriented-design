@@ -2190,7 +2190,7 @@ void table_column_buffer::cell_set( uint64_t uRow, unsigned uColumn, const gd::v
             if( is_duplicated_strings() == false )
             {
                // ### try to find value and store index for found value if it exists, if not add and store new index
-               int64_t iIndex = m_references.find( variantviewValue );
+               iIndex = m_references.find( variantviewValue );
                if( iIndex == -1 )
                {
                   iIndex = (int64_t )m_references.add( variantviewValue );
