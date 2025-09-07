@@ -416,13 +416,18 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
             while( stackOperator.empty() == false )
             {
                auto stringToken = token_.get_name();
-               auto stringOperator = stackOperator.top().get_name();
-               char iOperator = stringOperator[0];
-               if( stringOperator == "(" ) { break; }
+               auto stringStackOperator = stackOperator.top().get_name();
+               if( stringStackOperator == "(" ) { break; }
 
-               int iTokenPrecedence = to_precedence_g(stringToken.data(), tag_optimize{});
-               int iPrecedence = to_precedence_g(iOperator, tag_optimize{} );
-               if( iTokenPrecedence > iPrecedence ) { break; }
+               int iTokenPrecedence;
+               if( stringToken.length() == 1 ) { iTokenPrecedence = to_precedence_g(stringToken[0], tag_optimize{}); }
+               else { iTokenPrecedence = to_precedence_g(stringToken.data(), tag_optimize{}); }
+
+               int iStackPrecedence;
+               if( stringStackOperator.length() == 1 ) { iStackPrecedence = to_precedence_g(stringStackOperator[0], tag_optimize{}); }
+               else { iStackPrecedence = to_precedence_g(stringStackOperator.data(), tag_optimize{}); }
+
+               if( iTokenPrecedence > iStackPrecedence ) { break; }
 
                vectorOut.push_back(stackOperator.top());
                stackOperator.pop();

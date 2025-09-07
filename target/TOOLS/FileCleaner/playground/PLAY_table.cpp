@@ -8,6 +8,12 @@
 #include "gd/gd_table_io.h"
 #include "gd/gd_sql_value.h"
 
+#include "gd/expression/gd_expression_value.h"
+#include "gd/expression/gd_expression_token.h"
+#include "gd/expression/gd_expression_method_01.h"
+#include "gd/expression/gd_expression_runtime.h"
+
+
 #include "../Application.h"
 
 #include "main.h"
@@ -51,6 +57,20 @@
 
 
 */
+
+TEST_CASE("[table] expression", "[table]") {
+   using namespace gd::expression;
+
+   { auto value_ = token::calculate_s("1 + 1 * 2"); std::cout << value_.as_string() << std::endl; }
+   { auto value_ = token::calculate_s("1 + 1 == 2 + 2"); std::cout << value_.as_string() << std::endl; }
+   { auto value_ = token::calculate_s("2 * 3 + 3 * 2 - 4 * 2 + 20"); std::cout << value_.as_string() << std::endl; }
+   { auto value_ = token::calculate_s("2 == 1 || 3 == 2"); std::cout << value_.as_string() << std::endl; }
+
+   // [1, 1, +, 2, 2, +, ==]
+
+
+   //auto b = value1.as_bool();
+}
 
 TEST_CASE("[table] multiple strings", "[table]") {
    using namespace gd::table::dto;
