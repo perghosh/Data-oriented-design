@@ -352,9 +352,12 @@ public:
    std::vector<gd::variant> get_variant_all( const std::string_view& stringName ) const;
    std::vector<gd::variant_view> get_variant_view_all( const std::string_view& stringName ) const;
 
+   // ## if/then for option value, call callback if option exists
 
    bool iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > callback_ ) const;
    void iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > true_, std::function< void( const gd::variant_view& ) > false_ ) const;
+
+   // ## print documentation
 
    /// print all options and their values to get information about options
    void print_documentation( std::string& stringDocumentation, tag_documentation_table ) const;
