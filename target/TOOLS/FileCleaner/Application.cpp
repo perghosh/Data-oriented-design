@@ -3076,7 +3076,7 @@ std::vector<std::string> CApplication::Split_s(const std::string& stringText, ch
    {
       // ## Determine the effective delimiter
 
-      auto uSemicolon = stringText.find(":");
+      auto uSemicolon = stringText.find(";");
       auto uComma = stringText.find(",");
 
       if( uSemicolon != std::string::npos && uComma != std::string::npos )
