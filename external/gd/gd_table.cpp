@@ -112,9 +112,19 @@ uint64_t references::add( const gd::variant_view& v_ )
    reference reference_( v_.type(), v_.length(), uSize );                                          assert( v_.length() <= uSize );
 
    reference* preference = allocate( reference_ );
+#if DEBUG_RELEASE > 0
    copy_data_s( preference, v_.get_value_buffer(), uSize );                                        DEBUG_RELEASE_EXECUTE( preference->assert_valid_d() );
-
+#endif
    return m_vectorReference.size() - 1;
+}
+
+std::byte* references::add( uint64_t uSize, tag_buffer )
+{                                                                                                  assert( uSize > sizeof(reference) );
+   auto uValueSize = uSize - sizeof(reference);                                // total size needed (add reference object size) 
+   reference reference_(gd::variant_type::eTypeUnknown, (unsigned)uValueSize, (unsigned)uValueSize);  assert(uSize <= 0x0fffffff); // realistic
+   reference* preference = allocate( reference_ );
+
+   return (std::byte*)preference->data();
 }
 
 
@@ -199,7 +209,9 @@ void references::copy_data_s( reference* preference, const uint8_t* puData, unsi
    }
 
    memcpy( preference->data(), puData, uSize );
+#if DEBUG_RELEASE > 0
                                                                                                    DEBUG_RELEASE_EXECUTE( preference->clone_d() ); DEBUG_RELEASE_EXECUTE( preference->assert_valid_d() );
+#endif // DEBUG_RELEASE
 }
 
 #if DEBUG_RELEASE > 0

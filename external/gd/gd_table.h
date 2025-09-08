@@ -14,7 +14,7 @@
 
 // ## Default for DEBUG_RELEASE in debug mode is 1 and DEBUG_RELEASE_EXECUTE to execute operations
 #if !defined(NODEBUG) && !defined(DEBUG_RELEASE)
-#  define DEBUG_RELEASE 1
+#  define DEBUG_RELEASE 0
 #  define DEBUG_RELEASE_EXECUTE( expression ) expression
 #else
 #  ifndef DEBUG_RELEASE_EXECUTE
@@ -113,6 +113,8 @@ struct tag_variant_view {};
 /// tag dispatcher used for methods working with arguments object
 struct tag_arguments {};
 
+/// tag dispatcher used for buffer operations
+using tag_buffer = gd::types::tag_buffer;
 /// tag dispatcher direct access to memory data
 using tag_raw = gd::types::tag_raw;
 /// tag dispatcher do modify methods to use pointers
@@ -669,8 +671,10 @@ struct reference
    void release() { m_iReferenceCount--; }
 
    uint8_t* data() const { return (uint8_t*)this + sizeof(reference); }
+   uint8_t* data_this() const { return (uint8_t*)this; }
    uint8_t* data_end() const { return (uint8_t*)this + sizeof(reference) + length(); }
    uint8_t* data_end( unsigned uOffset ) const { return (uint8_t*)this + sizeof(reference) + length() + uOffset; }
+   unsigned data_size() const { return sizeof(reference) + size(); }
 
    void set_size( unsigned uSize ) { assert( uSize <= m_uCapacity ); m_uSize = uSize; }
 
@@ -753,6 +757,90 @@ tableTest.cell_set( 1, 2, "789" );
  */
 struct references
 {
+   // ## iterator support ---------------------------------------------------------
+
+   /// iterator class for references container
+   struct iterator
+   {
+      // ## iterator traits
+
+      using iterator_category = std::random_access_iterator_tag;
+      using value_type = reference*;
+      using difference_type = std::ptrdiff_t;
+      using pointer = reference**;
+      using reference_type = reference*&;
+
+      iterator() : m_pCurrent(nullptr) {}
+      explicit iterator(std::unique_ptr<uint8_t[]>* pCurrent) : m_pCurrent(pCurrent) {}
+
+      reference* operator*() const { return (reference*)m_pCurrent->get(); }
+      reference* operator->() const { return (reference*)m_pCurrent->get(); }
+
+      iterator& operator++() { ++m_pCurrent; return *this; }
+      iterator operator++(int) { iterator tmp = *this; ++m_pCurrent; return tmp; }
+      iterator& operator--() { --m_pCurrent; return *this; }
+      iterator operator--(int) { iterator tmp = *this; --m_pCurrent; return tmp; }
+
+      iterator& operator+=(difference_type n) { m_pCurrent += n; return *this; }
+      iterator& operator-=(difference_type n) { m_pCurrent -= n; return *this; }
+      iterator operator+(difference_type n) const { return iterator(m_pCurrent + n); }
+      iterator operator-(difference_type n) const { return iterator(m_pCurrent - n); }
+      difference_type operator-(const iterator& o) const { return m_pCurrent - o.m_pCurrent; }
+
+      reference* operator[](difference_type n) const { return (reference*)(m_pCurrent[n].get()); }
+
+      bool operator==(const iterator& o) const { return m_pCurrent == o.m_pCurrent; }
+      bool operator!=(const iterator& o) const { return m_pCurrent != o.m_pCurrent; }
+      bool operator<(const iterator& o) const { return m_pCurrent < o.m_pCurrent; }
+      bool operator<=(const iterator& o) const { return m_pCurrent <= o.m_pCurrent; }                 
+      bool operator>(const iterator& o) const { return m_pCurrent > o.m_pCurrent; }
+      bool operator>=(const iterator& o) const { return m_pCurrent >= o.m_pCurrent; }
+
+      std::unique_ptr<uint8_t[]>* m_pCurrent;
+   };
+
+   /// const iterator class for references container
+   struct const_iterator
+   {
+      using iterator_category = std::random_access_iterator_tag;
+      using value_type = const reference*;
+      using difference_type = std::ptrdiff_t;
+      using pointer = const reference**;
+      using reference_type = const reference*&;
+
+      const_iterator() : m_pCurrent(nullptr) {}
+      explicit const_iterator(const std::unique_ptr<uint8_t[]>* pCurrent) : m_pCurrent(pCurrent) {}
+      const_iterator(const iterator& it) : m_pCurrent(&(*it.m_pCurrent)) {}
+
+      const reference* operator*() const { return (const reference*)m_pCurrent->get(); }
+      const reference* operator->() const { return (const reference*)m_pCurrent->get(); }
+
+      const_iterator& operator++() { ++m_pCurrent; return *this; }
+      const_iterator operator++(int) { const_iterator tmp = *this; ++m_pCurrent; return tmp; }
+      const_iterator& operator--() { --m_pCurrent; return *this; }
+      const_iterator operator--(int) { const_iterator tmp = *this; --m_pCurrent; return tmp; }
+
+      const_iterator& operator+=(difference_type n) { m_pCurrent += n; return *this; }
+      const_iterator& operator-=(difference_type n) { m_pCurrent -= n; return *this; }
+      const_iterator operator+(difference_type n) const { return const_iterator(m_pCurrent + n); }
+      const_iterator operator-(difference_type n) const { return const_iterator(m_pCurrent - n); }
+      difference_type operator-(const const_iterator& o) const { return m_pCurrent - o.m_pCurrent; }
+
+      const reference* operator[](difference_type n) const { return (const reference*)(m_pCurrent[n].get()); }
+
+      bool operator==(const const_iterator& o) const { return m_pCurrent == o.m_pCurrent; }
+      bool operator!=(const const_iterator& o) const { return m_pCurrent != o.m_pCurrent; }
+      bool operator<(const const_iterator& o) const { return m_pCurrent < o.m_pCurrent; }
+      bool operator<=(const const_iterator& o) const { return m_pCurrent <= o.m_pCurrent; }
+      bool operator>(const const_iterator& o) const { return m_pCurrent > o.m_pCurrent; }
+      bool operator>=(const const_iterator& o) const { return m_pCurrent >= o.m_pCurrent; }
+
+      const std::unique_ptr<uint8_t[]>* m_pCurrent;
+   };
+
+   using reverse_iterator = std::reverse_iterator<iterator>;
+   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
    // ## construction -------------------------------------------------------------
 
    references() {}
@@ -773,6 +861,7 @@ struct references
 
    /// adds value to references internal list of values
    uint64_t add( const gd::variant_view& v_ );
+   std::byte* add( uint64_t uSize, tag_buffer );
    /// set blob value to value with specified index
    void set( uint64_t uIndex, const uint8_t* puData, unsigned uSize );
 
@@ -791,6 +880,23 @@ struct references
    reference* allocate( const reference& r_ );
    reference* allocate( const uint8_t* puData ) { return allocate( *(reference*)puData ); }
 
+   /// Clear all references and free memory
+   void clear() noexcept { m_vectorReference.clear(); }
+
+   // ## iterator methods ---------------------------------------------------------
+
+   iterator begin() noexcept { return iterator(m_vectorReference.data()); }
+   const_iterator begin() const noexcept { return const_iterator(m_vectorReference.data()); }
+   const_iterator cbegin() const noexcept { return const_iterator(m_vectorReference.data()); }
+   iterator end() noexcept { return iterator(m_vectorReference.data() + m_vectorReference.size()); }
+   const_iterator end() const noexcept { return const_iterator(m_vectorReference.data() + m_vectorReference.size()); }
+   const_iterator cend() const noexcept { return const_iterator(m_vectorReference.data() + m_vectorReference.size()); }
+   reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+   const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+   const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(cend()); }
+   reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+   const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
+   const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
 
    // ## attributes
    std::vector< std::unique_ptr<uint8_t[]> > m_vectorReference;
