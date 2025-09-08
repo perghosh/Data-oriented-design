@@ -78,6 +78,7 @@ TEST_CASE("[table] multiple strings", "[table]") {
    const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
    constexpr unsigned uTableDuplicate = (table::eTableFlagNull32|table::eTableFlagRowStatus|table::eTableFlagDuplicateStrings);
    gd::table::dto::table tableTest01( uTableDuplicate, { { "int64", 0, "KeyK"}, { "string", 100, "name"}, { "string", 100, "text"} }, gd::table::tag_prepare{} );
+   gd::table::dto::table tableTestR01( uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{} );
 
    std::mt19937 mt19937;
 
@@ -87,7 +88,7 @@ TEST_CASE("[table] multiple strings", "[table]") {
    {
        std::string string_;
        // Generate random number for length of string
-       int iLength = mt19937() % 100 + 1; // Random length between 1 and 100
+       int iLength = mt19937() % 30 + 1; // Random length between 1 and 30
        for(int j = 0; j < iLength; ++j) 
        {
           string_ += stringCharset[mt19937() % stringCharset.size()];
@@ -95,11 +96,34 @@ TEST_CASE("[table] multiple strings", "[table]") {
        vectorRandomStrings.push_back(string_);
    }
 
+   unsigned uCount = 1;
    for( const auto& string_ : vectorRandomStrings ) 
    {
       auto uRow = tableTest01.row_add_one();
       tableTest01.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} } );
+      if( uCount > 0 )
+      {
+         uCount--;
+         tableTestR01.row_add_one();
+         tableTestR01.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} } );
+      }
    }
+
+   {  // --- test serialize references
+      auto uReferencesSize = tableTestR01.serialize_size(gd::table::tag_reference{});
+
+      std::vector<uint8_t> vectorBuffer;
+      vectorBuffer.resize(uReferencesSize);
+      auto pPosition = tableTestR01.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), true, gd::table::tag_reference{});
+
+      // read back
+      pPosition = tableTestR01.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), false, gd::table::tag_reference{});
+
+      std::string s_ = gd::table::to_string(tableTestR01, gd::table::tag_io_cli{});
+      std::cout << s_ << std::endl;
+
+   }
+
 
    std::string stringTable_ = gd::table::to_string(tableTest01, gd::table::tag_io_cli{});
 
@@ -130,6 +154,8 @@ TEST_CASE("[table] multiple strings", "[table]") {
    std::cout << stringTable << std::endl;
    stringTable = gd::table::to_string(tableTest01, gd::table::tag_io_cli{});
    std::cout << stringTable << std::endl;
+
+
 
 
    /*

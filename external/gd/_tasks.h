@@ -16,4 +16,6 @@ faster to use offset position to string"]
 @TASK [title: save offset to data] [project:serialize] [assignee : per] [status:open] [created: 250827]
 [summary : Save offset data for table to get direct access]
 [description: When saving table data we need to save offset to data for each row, this makes it possible to read cell values directly from the disk]
+
+
 */

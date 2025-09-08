@@ -147,6 +147,7 @@ struct tag_temporary {};      ///< temporary is used in some form, like a tempor
 struct tag_main_type {};      /// main type if there are secondary types
 struct tag_secondary_type {}; /// secondary type if there are main types
 
+struct tag_buffer {};         ///< buffer is used in some form, like a memory buffer
 struct tag_callback {};       ///< callback is used in some form, like a function pointer
 struct tag_constant {};       ///< constant is used in some form, like a fixed value
 struct tag_method {};         ///< method is used in some form

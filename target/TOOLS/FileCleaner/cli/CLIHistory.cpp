@@ -484,6 +484,12 @@ std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
    return stringHistoryFile;
 }
 
+/*
+@TASK [title: print used keys at the end] [project:history] [assignee : per] [status:open] [created: 250908]
+[summary : Print all used keys at the end when extracting key value information]
+[description: to simplify adding conditions for key value extraction we need to remind user about what keys that are used in search result]
+*/
+
 /** ---------------------------------------------------------------------------
  * @brief Prints the history table from a cached XML file associated with the given document and arguments.
  * @param argumentsPrint The arguments used for printing the history table.

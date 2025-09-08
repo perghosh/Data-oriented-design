@@ -4284,6 +4284,55 @@ std::byte* table_column_buffer::serialize( std::byte* pBuffer, bool bSave, tag_b
    return pPosition;
 }
 
+std::byte* table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_reference)
+{
+   std::byte* pPosition = pBuffer;
+   if(bSave == false)
+   {
+      m_references.clear();                                                    // clean up references
+
+      uint64_t uRead; // dummy read variable
+      const std::byte* p_ = pPosition;
+      p_ = read_s(p_, &uRead, sizeof(uRead));                                  //
+      p_ = read_s(p_, &uRead, sizeof(uRead));                                  // read number of references
+      auto uReadReferenceCount = uRead;
+      for( uint64_t u = 0; u < uReadReferenceCount; u++ )
+      {
+         uint64_t uDataSize;
+         p_ = read_s(p_, &uDataSize, sizeof(uDataSize));                       // read
+         auto* pBuffer = m_references.add(uDataSize, tag_buffer{});            // add new reference
+         p_ = read_s(p_, pBuffer, uDataSize);
+      }
+      
+      pPosition += (p_ - pPosition);
+   }
+   else                                                                                            
+   {                                                                                               assert(empty() == false);
+      auto* pTotalSizePosition = pPosition;                                   // remember position to write total size, this is needed if only read references values
+      pPosition += sizeof(uint64_t);                                          // skip size for now
+
+      uint64_t uSave;
+      uSave = m_references.size();                                             // number of references
+      pPosition = write_s(&uSave, pPosition, sizeof(uSave));
+      for( const auto& it : m_references )
+      {
+         uSave = it->data_size();                                              // size of reference value
+         pPosition = write_s(&uSave, pPosition, sizeof(uSave));
+         pPosition = write_s(it->data_this(), pPosition, it->data_size());          // write reference value
+      }
+
+      // Now write total size of reference block at the start
+      auto* pCurrentPosition = pPosition;
+      uint64_t uTotalSize = (uint64_t)( pPosition - pTotalSizePosition );
+      *(uint64_t*)pTotalSizePosition = uTotalSize;
+   }
+
+   // Align pPosition 4 bytes boundary
+   while( ( reinterpret_cast<uintptr_t>( pPosition ) % 4 ) != 0 ) pPosition++;
+   return pPosition;
+
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Calculate needed size of buffer needed to serialize columns
@@ -4339,6 +4388,22 @@ uint64_t table_column_buffer::serialize_size( tag_body ) const
    if( is_rowmeta() == true ) uSize += (size_row_meta() * m_uRowCount);       // size of meta data block
 
    while( ( uSize % 4 ) != 0 ) uSize++;                                       // align to 4 byte boundary
+
+   return uSize;
+}
+
+uint64_t table_column_buffer::serialize_size( tag_reference ) const
+{
+   uint64_t uSize = sizeof(uint64_t);                                         // size for block size needed to store all references
+   uSize += sizeof(uint64_t);                                                 // total number of references are stored first in uint64_t
+   
+   // ## calculate each reference size with additional size for value
+
+   for( const auto& it : m_references )
+   {
+      uSize += sizeof(uint64_t);                                              // add reference value size
+      uSize += it->data_size();                                               // add size of reference value
+   }
 
    return uSize;
 }
