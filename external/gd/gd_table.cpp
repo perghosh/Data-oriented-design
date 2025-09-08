@@ -124,7 +124,7 @@ std::byte* references::add( uint64_t uSize, tag_buffer )
    reference reference_(gd::variant_type::eTypeUnknown, (unsigned)uValueSize, (unsigned)uValueSize);  assert(uSize <= 0x0fffffff); // realistic
    reference* preference = allocate( reference_ );
 
-   return (std::byte*)preference->data();
+   return (std::byte*)preference;
 }
 
 

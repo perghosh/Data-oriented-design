@@ -678,6 +678,28 @@ struct reference
 
    void set_size( unsigned uSize ) { assert( uSize <= m_uCapacity ); m_uSize = uSize; }
 
+   std::byte* read( const std::byte* pBuffer ) {                                                   assert( pBuffer != nullptr );
+      const std::byte* p_ = pBuffer;
+      m_iReferenceCount = *(decltype( m_iReferenceCount )*)p_; p_ += sizeof(m_iReferenceCount);
+      m_uType = *(decltype( m_uType )*)p_;      p_ += sizeof(m_uType);
+      m_uLength = *(decltype( m_uLength )*)p_;  p_ += sizeof(m_uLength);
+      m_uSize = *(decltype( m_uSize )*)p_;      p_ += sizeof(m_uSize);
+      m_uCapacity = *(decltype( m_uCapacity )*)p_; p_ += sizeof(m_uCapacity);
+      memcpy(data(), p_, size());               p_ += size();
+      return (std::byte*)p_;
+   }
+
+   std::byte* write( std::byte* pBuffer ) const {                                                  assert( pBuffer != nullptr );
+      std::byte* p_ = pBuffer;
+      *(decltype( m_iReferenceCount )*)p_ = m_iReferenceCount; p_ += sizeof(m_iReferenceCount);
+      *(decltype( m_uType )*)p_ = m_uType;      p_ += sizeof(m_uType);
+      *(decltype( m_uLength )*)p_ = m_uLength;  p_ += sizeof(m_uLength);
+      *(decltype( m_uSize )*)p_ = m_uSize;      p_ += sizeof(m_uSize);
+      *(decltype( m_uCapacity )*)p_ = m_uCapacity; p_ += sizeof(m_uCapacity);
+      memcpy(p_, data(), size());               p_ += size();
+      return p_;
+   }  
+
 
    // ## attributes
    int m_iReferenceCount;  ///< reference counter
