@@ -698,7 +698,20 @@ struct reference
       *(decltype( m_uCapacity )*)p_ = m_uCapacity; p_ += sizeof(m_uCapacity);
       memcpy(p_, data(), size());               p_ += size();
       return p_;
-   }  
+   }
+
+   std::byte* serialize( std::byte* pBuffer, bool bSave ) {                                        assert( pBuffer != nullptr );
+      if( bSave ) {
+         return write( pBuffer );
+      }
+      else {
+         return read( pBuffer );
+      }
+   }
+
+   uint64_t serialize_size() const {
+      return sizeof(m_iReferenceCount) + sizeof(m_uType) + sizeof(m_uLength) + sizeof(m_uSize) + sizeof(m_uCapacity) + size();
+   }
 
 
    // ## attributes
