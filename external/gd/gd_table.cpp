@@ -112,8 +112,10 @@ uint64_t references::add( const gd::variant_view& v_ )
    reference reference_( v_.type(), v_.length(), uSize );                                          assert( v_.length() <= uSize );
 
    reference* preference = allocate( reference_ );
+   copy_data_s( preference, v_.get_value_buffer(), uSize );
 #if DEBUG_RELEASE > 0
-   copy_data_s( preference, v_.get_value_buffer(), uSize );                                        DEBUG_RELEASE_EXECUTE( preference->assert_valid_d() );
+   //copy_data_s( preference, v_.get_value_buffer(), uSize );                                        
+                                                                                                   DEBUG_RELEASE_EXECUTE( preference->assert_valid_d() );
 #endif
    return m_vectorReference.size() - 1;
 }

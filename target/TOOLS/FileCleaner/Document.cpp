@@ -122,6 +122,12 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    auto result_ = FILE_Harvest(argumentsPath);
    if( result_.first == false ) return result_;
 
+   {
+      auto* ptable1_ = CACHE_Get("file", false);                                                    
+      if( ptable1_->size() == 0 ) { return { false, "No files found." }; }
+      std::string stringTable = gd::table::to_string(*ptable1_, gd::table::tag_io_cli{});
+   }
+
    if( stringFilter.empty() == false )
    {
       auto result_ = FILE_Filter(stringFilter);
@@ -132,6 +138,10 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
       auto result_ = FILE_FilterBinaries();
       if( result_.first == false ) return result_;
    }
+
+   // ## Check if files are found
+   auto* ptable_ = CACHE_Get("file", false);                                                       assert(ptable_ != nullptr);
+   if( ptable_->size() == 0 ) { return { false, "No files found." }; }
    
    return { true, "" };
 }
@@ -1115,7 +1125,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
 
    std::string stringFileBuffer;
    stringFileBuffer.reserve( 64 * 64 );
-
+                                                                                                   LOG_DEBUG_RAW("== Number of files: " & uFileCount);
    // ## Prepare key value if used
    std::vector<gd::argument::arguments> vectorKeyValue;
    if( pargumentsFind->exists("keys") == true || pargumentsFind->exists("kv") == true )                                  // Check if key-value pairs are provided 

@@ -420,7 +420,10 @@ public:
 
    ~table_column_buffer() 
    { 
-      delete[] m_puData;
+      if( m_puData != nullptr )
+      {
+         delete[] m_puData;
+      }
    }
    ///@}
 

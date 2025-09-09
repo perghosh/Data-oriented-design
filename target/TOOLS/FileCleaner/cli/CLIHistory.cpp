@@ -91,6 +91,40 @@ static std::filesystem::path CurrentDirectory_s();
 
 static std::string FolderGetHome_s();
 
+
+/** --------------------------------------------------------------------------- @TAG #cli #history [summary: main dispatcher for history commands]
+ * @brief Handles history-related CLI commands by dispatching to the appropriate handler based on options.
+ *
+ * Step-by-step logic for each if/else branch:
+ * 1. If "create" option exists:
+ *    - Prepare arguments for creation (append "create" and "local" if present).
+ *    - Call HistoryCreate_g to create a new history file.
+ * 2. Else if "set-alias" option exists:
+ *    - Check for required "index" option; return error if missing or invalid.
+ *    - Prepare arguments for setting alias (append "alias", "pinned", "local").
+ *    - Call HistorySetAttributes_g to set alias for the specified row.
+ *    - If successful, get the history file path and write the updated table to XML.
+ * 3. Else if "delete" option exists:
+ *    - Prepare arguments for deletion.
+ *    - Call HistoryDelete_g to delete the history folder.
+ * 4. Else if "print" option exists:
+ *    - Prepare arguments for printing (append "print", "local", "home").
+ *    - Call HistoryPrint_g to print the history table.
+ * 5. Else if "remove" option exists:
+ *    - Prepare arguments for removal (append "remove", "local", "home").
+ *    - Call HistoryRemove_g to remove a row from the history table.
+ *    - If successful, write the updated table to the XML file.
+ * 6. Else if "edit" option exists:
+ *    - Prepare arguments for editing (append "edit", "local", "home").
+ *    - Call HistoryEdit_g to open the history file in a text editor.
+ * 7. Else if "run" option exists:
+ *    - Prepare arguments for running (append "run", "local", "home").
+ *    - Call HistoryRun_g to execute a command from the history.
+ * 8. Else if "index" option exists:
+ *    - Prepare arguments for index (append "index", "set-alias", "local", "home").
+ *    - Call HistoryIndex_g to handle index-related actions.
+ * 9. Return the result of the selected operation.
+ */
 std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, gd::cli::options* poptionsApplication, CDocument* pdocument)
 {                                                                                                  assert( poptionsHistory != nullptr );
 #ifndef NDEBUG
