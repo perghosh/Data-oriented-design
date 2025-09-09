@@ -854,6 +854,7 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    std::vector<std::string> vectorHeader;
    std::vector<std::string> vectorBrief;
    std::vector<std::string> vectorFooter;
+   std::vector<std::string> vectorAll;
 
    char iSeparator = ';'; // separator used to split the keys
    {
@@ -865,6 +866,8 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    if( pargumentsPrint->exists("header") == true ) { vectorHeader = gd::utf8::split( pargumentsPrint->get_argument("header").as_string(), iSeparator, gd::types::tag_string{}); }
    if( pargumentsPrint->exists("brief") == true ) { vectorBrief = gd::utf8::split( pargumentsPrint->get_argument("brief").as_string(), iSeparator, gd::types::tag_string{}); }
    if( pargumentsPrint->exists("footer") == true ) { vectorFooter = gd::utf8::split( pargumentsPrint->get_argument("footer").as_string(), iSeparator, gd::types::tag_string{}); }
+
+   vectorAll = vectorBody;
 
    // ### Remove keys from vectorBody found in other vectors
    if( vectorHeader.empty() == false )
@@ -1006,7 +1009,26 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       pdocument->MESSAGE_Display("");                                         // add a newline after each row to separate the key-value pairs
    }// for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow ) {
 
-   // ## print summary of key-value pairs
+   // ## Final summary ........................................................
+
+   // ### print keys used in the output to remind the user what keys are available when querying key-value pairs
+   
+
+
+   {
+      bool bFirst = true;
+      std::string stringKeys( "Keys used: " );
+      for( auto it = std::begin( vectorAll ); it != std::end( vectorAll ); it++ )
+      {
+         if( bFirst == false ) stringKeys += ", "; 
+         bFirst = false;
+         stringKeys += *it;
+      }
+
+      pdocument->MESSAGE_Display(stringKeys, { array_, {{"color", "default"}}, gd::types::tag_view{} });
+   }
+
+   // ### print summary of key-value pairs
    std::string stringSummary = std::format("Found {} sections with key-value pairs", ptableKeyValue->get_row_count());
    stringSummary = gd::math::string::format_header_line(stringSummary, uWidth, '#', '=', '#');
    pdocument->MESSAGE_Display(stringSummary, { array_, {{"color", "default"}}, gd::types::tag_view{} });
