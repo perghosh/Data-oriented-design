@@ -68,19 +68,23 @@ std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argum
 NAMESPACE_CLI_END
 
 /*
-@TASK [name: history] [task: delete row] [priority: high] [state: open] [assigned_to: kevin] [description: Delete history row, with row index]
+@TASK [project: history] [task: delete row] [priority: high] [state: open] [owner: kevin] [description: Delete history row, with row index]
 [sample: 'cleaner history --delete 5 ']
+[summary: 1 23 4 5 6 7 8 9 10 -> cleaner history --delete 5 -> 1 2 3 4 6 7 8 9 10 1 23 4 5 6 7 8 9 10 -> cleaner history --delete 5 -> 1 2 3 4 6 7 8 9 10 ]
 */
 
 /*
-@TASK [name: history] [task: prune] [priority: high] [state: open] [assigned_to: kevin] [description: Shrink number of history items in save, add option "prune"]
+@TASK [project: history] [task: prune] [priority: high] [state: open] [owner: kevin] [description: Shrink number of history items in save, add option "prune"]
 [sample: 'cleaner history --prune "50%" ']
 */
 
 /*
-@TASK [name: history] [task: pin] [priority: high] [state: open] [assigned_to: kevin] [description: Pin history command, copy command from save to pinned]
+@TASK [project: history] [task: pin] [priority: high] [state: open] [owner: kevin] [description: Pin history command, copy command from save to pinned]
 [sample: "cleaner history --pin 23" - Pin history command with number 23 in save]
 */
 
-
+/*
+@TASK [project: history] [title: history printing width] [priority: high] [state: open] [owner: per] [description: Pin history command, copy command from save to pinned]
+[sample: "cleaner history --pin 23" - Pin history command with number 23 in save]
+*/
 

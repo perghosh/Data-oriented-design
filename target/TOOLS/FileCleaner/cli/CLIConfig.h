@@ -46,7 +46,7 @@ NAMESPACE_CLI_END
 
 /*
 @TASK #configuration.create #user.per
-[name: config] [priority: high] [state: ongoing] [assigned_to: per] [todo: "test in linux"]
+[name: config] [priority: high] [state: ongoing] [owner: per] [todo: "test in linux"]
 [description: "## create configuration file if it doesn't exist.
 For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json`.
 For linux this file should be placed in `~/.local/share/cleaner/cleaner-   configuration.json`.

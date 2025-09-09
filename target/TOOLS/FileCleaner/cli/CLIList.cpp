@@ -60,7 +60,7 @@ std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocum
 
 /*
 @TASK #list.pattern #user.per
-[name: list] [priority: high] [state: open] [assigned_to: per]
+[name: list] [priority: high] [state: open] [owner: per]
 [description: "## Apply same special to pattern as in find to make it easer to type, setting segment and and operator" ]
 
 [sample: '

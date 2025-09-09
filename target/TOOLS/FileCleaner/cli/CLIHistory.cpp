@@ -170,13 +170,13 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    else if( options_.exists("print") == true )                                 // Print history entries from history file
    {
       gd::argument::arguments argumentsPrint;
-      argumentsPrint.append( options_.get_arguments(), { "print", "local", "home" } );
+      argumentsPrint.append( options_.get_arguments(), { "print", "local", "home", "width" } );
       result_ = HistoryPrint_g(argumentsPrint, pdocument);
    }
    else if( options_.exists("remove") == true )                                // Remove history entries from history file and clear the history table in cache
    {
       gd::argument::arguments argumentsRemove;
-      argumentsRemove.append( options_.get_arguments(), { "remove", "local", "home" } );
+      argumentsRemove.append( options_.get_arguments(), { "remove", "local", "home" });
       result_ = HistoryRemove_g(argumentsRemove, pdocument);
       auto stringHistoryFile = FILE_GetHistoryFile_s( argumentsRemove );
       if( result_.first == true && std::filesystem::exists(stringHistoryFile) == true )
@@ -532,8 +532,15 @@ std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
  */
 std::pair<bool, std::string> HistoryPrint_g(const gd::argument::arguments& argumentsPrint, CDocument* pdocument)
 {
-   constexpr size_t uMaxLineLength = 70; // Maximum length of a line before it is cut
+   size_t uMaxLineLength = 70; // Maximum length of a line before it is cut
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
+
+   if( argumentsPrint.exists("width") == true )
+   {
+      uint64_t uWidth = argumentsPrint["width"].as_uint64();
+      if( uWidth < 30 ) { uWidth = 30; }
+      uMaxLineLength = (size_t)uWidth;
+   }
 
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
 

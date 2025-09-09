@@ -24,7 +24,7 @@ and a configurable line width for better readability in terminals.
  - Add a callback mechanism for custom formatting of output blocks.
  - Allow configuration via a `cli_options.json` file.
   """ ]
-[priority: high] [state: open] [assigned_to: per]
+[priority: high] [state: open] [owner: per]
 */
 
 

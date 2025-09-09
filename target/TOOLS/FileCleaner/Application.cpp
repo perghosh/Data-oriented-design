@@ -1593,7 +1593,7 @@ void CApplication::DATABASE_CloseActive()
 @TASK #configuration.load #user.per [name: config]
 --
 [description: "## Load application configuration file into table used to store configuration in application table used for this." ]
-[priority: high] [state: open] [assigned_to: per]
+[priority: high] [state: open] [owner: per]
 [idea: "Method for loading configuration is called `CONFIG_Load'."]
 */
 
@@ -2038,6 +2038,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "set-alias", "Set alias for history entry" });
       optionsCommand.add({ "list", "Lists all history entries" });
       optionsCommand.add({ "remove", "Remove history entries" });
+      optionsCommand.add({ "width", "Width for output" });
       optionsCommand.add_flag( {"create", "Initialize history logic, creates folders and files needed to manage history, this also enables configuration settings"} );
       optionsCommand.add_flag({ "delete", "Delete history, this will delete all history files and folders" });
       optionsCommand.add_flag({ "print", "Print history, this will print all of the history entries" });

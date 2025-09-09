@@ -150,7 +150,7 @@ std::pair<bool, std::string> RunExpression_g(const std::string_view& stringExpre
  * 
  * @code
  * // Example usage: Filtering a table based on a "where" expression
-   std::string stringExpression("(str::toupper( source::get_argument(args,'assigned_to') ) == 'PER') || (source::get_argument(args,'assigned_to') == 'kevin')");
+   std::string stringExpression("(str::toupper( source::get_argument(args,'owner') ) == 'PER') || (source::get_argument(args,'owner') == 'kevin')");
    auto result_ = RunExpression_Where_g(stringExpression, &tableKeyValue);
    @endcode
  */

@@ -157,12 +157,12 @@ std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFil
  * 
  * @example
  * // Simple equality
- * Input:  "assigned_to = 'per'"
- * Output: "(source::get_argument(args,'assigned_to') == 'per')"
+ * Input:  "owner = 'per'"
+ * Output: "(source::get_argument(args,'owner') == 'per')"
  * 
  * @example  
  * // Complex expression with logical operators
- * Input:  "(assigned_to = 'per' OR assigned_to = 'kevin') AND status = 'open'"
+ * Input:  "(owner = 'per' OR owner = 'kevin') AND status = 'open'"
  * Output: "((source::get_argument(args,'assigned_to') == 'per') || (source::get_argument(args,'assigned_to') == 'kevin')) && (source::get_argument(args,'status') == 'open')"
  * 
  * @example
@@ -182,8 +182,8 @@ std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFil
  * 
  * @example
  * // Multiple conditions with mixed case operators
- * Input:  "priority = high AND status <> closed OR assigned_to = admin"
- * Output: "(source::get_argument(args,'priority') == 'high') && (source::get_argument(args,'status') != 'closed') || (source::get_argument(args,'assigned_to') == 'admin')"
+ * Input:  "priority = high AND status <> closed OR owner = admin"
+ * Output: "(source::get_argument(args,'priority') == 'high') && (source::get_argument(args,'status') != 'closed') || (source::get_argument(args,'owner') == 'admin')"
  */
 std::pair<bool, std::string> SHARED_SqlToExpression_g(std::string_view stringSql, std::string& stringExpression)
 {
@@ -191,10 +191,10 @@ std::pair<bool, std::string> SHARED_SqlToExpression_g(std::string_view stringSql
    if( stringSql.find("source::") != std::string_view::npos ) { stringExpression = stringSql; return { true, "" };  } // if source:: is found, then it is already in internal format
 
      // ## Convert SQL-like syntax to internal expression format
-     // sample 1 "assigned_to = 'per'" -> "(source::get_argument(args,'assigned_to') == 'per')"
-     // sample 2 "(assigned_to = 'per' OR assigned_to = 'kevin') AND status = 'open'" -> "((source::get_argument(args,'assigned_to') == 'per') || (source::get_argument(args,'assigned_to') == 'kevin')) && (source::get_argument(args,'status') == 'open')"
-     // sample 3 "status <> 'open' and assigned_to = 'per'" -> "(source::get_argument(args,'status') != 'open') && (source::get_argument(args,'assigned_to') == 'per')"
-     // sample 4 "assigned_to = per" -> "(source::get_argument(args,'assigned_to') == 'per')" (auto-quote unquoted values)
+     // sample 1 "owner = 'per'" -> "(source::get_argument(args,'owner') == 'per')"
+     // sample 2 "(owner = 'per' OR owner = 'kevin') AND status = 'open'" -> "((source::get_argument(args,'owner') == 'per') || (source::get_argument(args,'owner') == 'kevin')) && (source::get_argument(args,'status') == 'open')"
+     // sample 3 "status <> 'open' and owner = 'per'" -> "(source::get_argument(args,'status') != 'open') && (source::get_argument(args,'owner') == 'per')"
+     // sample 4 "owner = per" -> "(source::get_argument(args,'owner') == 'per')" (auto-quote unquoted values)
 
    std::string stringResult;
    // Convert SQL-like syntax to internal expression format
