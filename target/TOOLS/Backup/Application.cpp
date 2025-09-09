@@ -2,8 +2,74 @@
 
 #include "Application.h"
 
+#include <vector>
+#include <fstream>
+#include <iostream>
 
 
+std::pair<bool, std::string> ReadFile(std::string_view stringLocation, std::vector<std::string> vectorContent)
+{
+
+   std::ifstream ifstreamFile(stringLocation.data());
+
+   if( ifstreamFile.is_open() == false )
+   {
+      return { false, "Failed to open file: " + std::string(stringLocation) };
+   }
+
+   std::string stringLine;
+   while( std::getline(ifstreamFile, stringLine) )
+   {
+      vectorContent.push_back(stringLine);
+   }
+
+   ifstreamFile.close();
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> ReadFile(std::string_view stringLocation, std::vector<char>& cBuffer)
+{
+   std::ifstream ifstreamFile(stringLocation.data(), std::ios::binary | std::ios::ate);
+
+   if( ifstreamFile.is_open() == false )
+   {
+      return { false, "Failed to open file: " + std::string(stringLocation) };
+   }
+
+   std::streamsize streamsizeSize = ifstreamFile.tellg();   // Get the size of the file
+   ifstreamFile.seekg(0, std::ios::beg);                    // Move to the beginning of the file
+
+   cBuffer.resize(streamsizeSize);                       // Resize the buffer to fit the file content
+
+   if( !ifstreamFile.read(cBuffer.data(), streamsizeSize) )
+   {
+      return { false, "Failed to read file: " + std::string(stringLocation) };
+   }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> PrintContent(const std::vector<std::string>& vectorContent)
+{
+   unsigned int uSize = vectorContent.size();
+
+   for( unsigned int u = 0; u < uSize; u++ )
+   {
+      std::string stringLine = vectorContent[u];
+      std::cout << stringLine << std::endl;
+   }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> PrintContent(const std::vector<char>& cBuffer)
+{
+   std::cout.write(cBuffer.data(), cBuffer.size());
+
+
+   return { true, "" };
+}
 
 
 /** ---------------------------------------------------------------------------
@@ -34,7 +100,7 @@ void CApplication::common_construct(CApplication&& o) noexcept
 
 std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszArgument[], std::function<bool(const std::string_view&, const gd::variant_view&)> process_)
 {
-   if( iArgumentCount > 1 )
+   /*if( iArgumentCount > 1 )
    {
       gd::cli::options optionsApplication;
       CApplication::Prepare_s(optionsApplication);
@@ -56,8 +122,18 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          CDocument document_(std::move(commands_));
          DOCUMENT_Add(document_);
       }
-   }
+   } */
 
+
+   if( iArgumentCount > 1 )
+   {
+      std::cout << ppbszArgument[0] << std::endl;
+      std::cout << ppbszArgument[1] << std::endl;
+
+      std::vector<char> cBuffer;
+      ReadFile(ppbszArgument[1], cBuffer);
+      PrintContent(cBuffer);
+   }
 
    // Process the command-line arguments
    return { true, "" };
