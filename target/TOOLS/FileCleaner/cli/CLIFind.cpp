@@ -938,7 +938,18 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
          for( const auto& key_ : vectorBrief ) 
          { 
             if( stringPrint.empty() == false ) stringPrint += "\n";           // add a separator if the stringPrint is not empty
-            stringPrint += pargumentsRow->get_argument( key_ ).as_string_view(); 
+
+            std::string stringBrief = pargumentsRow->get_argument( key_ ).as_string(); 
+            if( uTextWidth > 0 )
+            {
+               // format the value to fit in the width, with a margin for the key and separator
+               auto uWidth = uTextWidth - 2 - stringBriefFormat.length();
+               if( uWidth < 40 ) uWidth = 40;                                  // ensure the width is at least 40 characters, this is to avoid too narrow output
+               stringBrief = gd::math::string::format_text_width(stringBrief, uWidth);
+               stringBrief = gd::math::string::format_indent(stringBrief, stringBriefFormat.length(), false); // indent the value with the key margin width + 2 spaces because adds for separator and space after that
+            }
+
+            stringPrint += stringBrief;
          }
 
          if( stringPrint.empty() == false )
@@ -1025,7 +1036,7 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
          stringKeys += *it;
       }
 
-      pdocument->MESSAGE_Display(stringKeys, { array_, {{"color", "default"}}, gd::types::tag_view{} });
+      pdocument->MESSAGE_Display(stringKeys + "\n", {array_, {{"color", "default"}}, gd::types::tag_view{}});
    }
 
    // ### print summary of key-value pairs

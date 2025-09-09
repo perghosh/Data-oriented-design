@@ -8,12 +8,12 @@
 ### key value search
 
 - `cleaner find * --pattern "&c-@TASK" --kv "name;description@[]:" -vs` - *search for `@TASK` in comments*
-- `cleaner find * --pattern "&c-@TASK;" --kv "name;description;sample;idea;state;assigned_to@[]:" -vs`
+- `cleaner find * --pattern "&c-@TASK;" --kv "name;description;sample;idea;state;owner@[]:" -vs`
 
 ### key value search for per
 
 - `cleaner find * --pattern "&c-@TASK;#user.per" --kv "name;description@[]:" -vs` - *search for `@TASK` in comments*
-- `cleaner find * --pattern "&c-@TASK;#user.per" --kv "name;description;sample;idea;state;assigned_to@[]:" -vs`
+- `cleaner find * --pattern "&c-@TASK;#user.per" --kv "name;description;sample;idea;state;owner@[]:" -vs`
 
 ### Code sample search
 
@@ -30,7 +30,7 @@
 --
 [description: "## <description text>" ]
 
-[priority: low|medium|high] [state: open|ongoing|closed|resolved] [assigned_to: <user>]
+[priority: low|medium|high] [state: open|ongoing|closed|resolved] [owner: <user>]
 [idea: "<idea>"]
 [sample: "<sample>"]
 

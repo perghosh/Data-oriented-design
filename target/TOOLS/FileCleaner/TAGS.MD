@@ -61,7 +61,7 @@
 | created_by | User who created the task |
 | created_at | Timestamp when the task was created |
 | updated_by | User who last updated the task |
-| assigned_to | User to whom the task is assigned |
+| owner | User to whom the task is assigned |
 | link | External link to a related issue, documentation, or design document (e.g., Jira ticket, Confluence page). |
 | context | A brief description of the code area or component this task relates to, as well as why it is important. |
 | time-spent | Time spent on the task (e.g., in hours). |
@@ -82,7 +82,7 @@
   - Add a callback mechanism for custom formatting of output blocks.
   - Allow configuration via a `cli_options.json` file.
   """ ]
-[priority: high] [status: open] [assigned_to: per]
+[priority: high] [status: open] [owner: per]
 */
 ```
 
