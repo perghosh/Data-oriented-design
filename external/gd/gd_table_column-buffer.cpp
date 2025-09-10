@@ -4286,6 +4286,9 @@ std::byte* table_column_buffer::serialize( std::byte* pBuffer, bool bSave, tag_b
 
 std::byte* table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_reference)
 {
+#ifndef NDEBUG
+   uint64_t uSize_d = 0;
+#endif
    std::byte* pPosition = pBuffer;
    if(bSave == false)
    {
@@ -4293,7 +4296,10 @@ std::byte* table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_re
 
       uint64_t uRead; // dummy read variable
       const std::byte* p_ = pPosition;
-      p_ = read_s(p_, &uRead, sizeof(uRead));                                  //
+      p_ = read_s(p_, &uRead, sizeof(uRead));                                  // read total size of reference block
+#ifndef NDEBUG
+      uSize_d = uRead;
+#endif
       p_ = read_s(p_, &uRead, sizeof(uRead));                                  // read number of references
       auto uReadReferenceCount = uRead;
       for( uint64_t u = 0; u < uReadReferenceCount; u++ )
@@ -4303,11 +4309,17 @@ std::byte* table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_re
          auto* pBuffer = m_references.add(uDataSize, tag_buffer{});            // add new reference
          p_ = read_s(p_, pBuffer, uDataSize);
       }
-      
+#ifndef NDEBUG
+      intptr_t iDifference = p_ - pBuffer;
+      assert(iDifference == uSize_d);
+#endif
+
       pPosition += (p_ - pPosition);
    }
    else                                                                                            
    {                                                                                               assert(empty() == false);
+      // Note! We write total size of reference block at the start of the block, but we do not know the size until all references are written
+
       auto* pTotalSizePosition = pPosition;                                   // remember position to write total size, this is needed if only read references values
       pPosition += sizeof(uint64_t);                                          // skip size for now
 
