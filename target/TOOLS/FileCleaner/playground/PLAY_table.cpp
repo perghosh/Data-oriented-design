@@ -96,7 +96,7 @@ TEST_CASE("[table] multiple strings", "[table]") {
        vectorRandomStrings.push_back(string_);
    }
 
-   unsigned uCount = 1;
+   unsigned uCount = 10;
    for( const auto& string_ : vectorRandomStrings ) 
    {
       auto uRow = tableTest01.row_add_one();
@@ -114,14 +114,13 @@ TEST_CASE("[table] multiple strings", "[table]") {
 
       std::vector<uint8_t> vectorBuffer;
       vectorBuffer.resize(uReferencesSize);
-      auto pPosition = tableTestR01.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), true, gd::table::tag_reference{});
+      auto pPosition = tableTestR01.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), true, gd::table::tag_reference{}); // write
 
       // read back
-      pPosition = tableTestR01.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), false, gd::table::tag_reference{});
+      pPosition = tableTestR01.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), false, gd::table::tag_reference{}); // read
 
       std::string s_ = gd::table::to_string(tableTestR01, gd::table::tag_io_cli{});
       std::cout << s_ << std::endl;
-
    }
 
 
