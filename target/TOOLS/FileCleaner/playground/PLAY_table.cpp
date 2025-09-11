@@ -1,4 +1,15 @@
+#include <iostream>
+#include <fstream>
 #include <filesystem>
+#include <cstdio>
+
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 
 #include "gd/gd_file.h"
 #include "gd/gd_utf8.h"
@@ -21,6 +32,8 @@
 #include "../Command.h"
 
 #include "catch2/catch_amalgamated.hpp"
+
+static std::string CreateTemporaryFile_s();
 
 /*
 @TASK [project: serialize-table][status: open][created: 250905] [assigned: per]
@@ -72,40 +85,40 @@ TEST_CASE("[table] expression", "[table]") {
    //auto b = value1.as_bool();
 }
 
-TEST_CASE("[table] multiple strings", "[table]") {
+TEST_CASE("[table] tests to serialize parts of table", "[table]") {
    using namespace gd::table::dto;
 
    const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-   constexpr unsigned uTableDuplicate = (table::eTableFlagNull32|table::eTableFlagRowStatus|table::eTableFlagDuplicateStrings);
-   gd::table::dto::table tableTest01( uTableDuplicate, { { "int64", 0, "KeyK"}, { "string", 100, "name"}, { "string", 100, "text"} }, gd::table::tag_prepare{} );
-   gd::table::dto::table tableTestR01( uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{} );
+   constexpr unsigned uTableDuplicate = ( table::eTableFlagNull32 | table::eTableFlagRowStatus | table::eTableFlagDuplicateStrings );
+   gd::table::dto::table tableTest01(uTableDuplicate, { { "int64", 0, "KeyK"}, { "string", 100, "name"}, { "string", 100, "text"} }, gd::table::tag_prepare{});
+   gd::table::dto::table tableTestR01(uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{});
 
    std::mt19937 mt19937;
 
    // Generate 100 random strings using stl
    std::vector<std::string> vectorRandomStrings;
-   for(int i = 0; i < 100; ++i) 
+   for( int i = 0; i < 100; ++i )
    {
-       std::string string_;
-       // Generate random number for length of string
-       int iLength = mt19937() % 30 + 1; // Random length between 1 and 30
-       for(int j = 0; j < iLength; ++j) 
-       {
-          string_ += stringCharset[mt19937() % stringCharset.size()];
-       }
-       vectorRandomStrings.push_back(string_);
+      std::string string_;
+      // Generate random number for length of string
+      int iLength = mt19937() % 30 + 1; // Random length between 1 and 30
+      for( int j = 0; j < iLength; ++j )
+      {
+         string_ += stringCharset[mt19937() % stringCharset.size()];
+      }
+      vectorRandomStrings.push_back(string_);
    }
 
    unsigned uCount = 10;
-   for( const auto& string_ : vectorRandomStrings ) 
+   for( const auto& string_ : vectorRandomStrings )
    {
       auto uRow = tableTest01.row_add_one();
-      tableTest01.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} } );
+      tableTest01.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} });
       if( uCount > 0 )
       {
          uCount--;
          tableTestR01.row_add_one();
-         tableTestR01.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} } );
+         tableTestR01.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} });
       }
    }
 
@@ -120,30 +133,30 @@ TEST_CASE("[table] multiple strings", "[table]") {
       pPosition = tableTestR01.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), false, gd::table::tag_reference{}); // read
 
       std::string s_ = gd::table::to_string(tableTestR01, gd::table::tag_io_cli{});
-      std::cout << s_ << std::endl;
+      //std::cout << s_ << std::endl;
    }
 
 
    std::string stringTable_ = gd::table::to_string(tableTest01, gd::table::tag_io_cli{});
 
    // read all names and texts
-   for( uint64_t uRow = 0; uRow < tableTest01.size(); ++uRow ) 
+   for( uint64_t uRow = 0; uRow < tableTest01.size(); ++uRow )
    {
       auto stringName = tableTest01.cell_get_variant_view(uRow, "name").as_string_view();
       auto stringText = tableTest01.cell_get_variant_view(uRow, "text").as_string_view();
    }
 
-   uint64_t uTableSize = tableTest01.serialize_size( gd::table::tag_columns{} );
-   uTableSize += tableTest01.serialize_size( gd::table::tag_body{} );
+   uint64_t uTableSize = tableTest01.serialize_size(gd::table::tag_columns{});
+   uTableSize += tableTest01.serialize_size(gd::table::tag_body{});
 
    std::vector<uint8_t> vectorBuffer;
    vectorBuffer.resize(uTableSize);
 
-   auto pPosition = tableTest01.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), true, gd::table::tag_columns{});
+   auto pPosition = tableTest01.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), true, gd::table::tag_columns{});
    tableTest01.serialize(pPosition, true, gd::table::tag_body{});
 
    gd::table::dto::table tableTest02;
-   pPosition = tableTest02.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), false, gd::table::tag_columns{});
+   pPosition = tableTest02.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), false, gd::table::tag_columns{});
    pPosition = tableTest02.serialize(pPosition, false, gd::table::tag_body{});
 
    bool bSame = tableTest02.m_uRowGrowBy == tableTest01.m_uRowGrowBy;
@@ -152,21 +165,69 @@ TEST_CASE("[table] multiple strings", "[table]") {
    std::string stringTable = gd::table::to_string(tableTest02, gd::table::tag_io_cli{});
    std::cout << stringTable << std::endl;
    stringTable = gd::table::to_string(tableTest01, gd::table::tag_io_cli{});
-   std::cout << stringTable << std::endl;
+   //std::cout << stringTable << std::endl;
+}
 
+TEST_CASE("[table] save table to disk", "[table]") {
+   using namespace gd::table::dto;
+   const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+   constexpr unsigned uTableDuplicate = (table::eTableFlagNull32|table::eTableFlagRowStatus|table::eTableFlagDuplicateStrings);
 
+   gd::table::dto::table tableSerialize( uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{} );
+
+   std::mt19937 mt19937;
+
+   // Generate 100 random strings using stl
+   std::vector<std::string> vectorRandomStrings;
+   for( int i = 0; i < 100; ++i )
+   {
+      std::string string_;
+      // Generate random number for length of string
+      int iLength = mt19937() % 30 + 1; // Random length between 1 and 30
+      for( int j = 0; j < iLength; ++j )
+      {
+         string_ += stringCharset[mt19937() % stringCharset.size()];
+      }
+      vectorRandomStrings.push_back(string_);
+   }
+   
+   for( const auto& string_ : vectorRandomStrings )
+   {
+      auto uRow = tableSerialize.row_add_one();
+      tableSerialize.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} });
+   }
+
+   std::string stringTemporaryFile = CreateTemporaryFile_s();
+
+   // delete temporary file if exists
+   if( std::filesystem::exists( stringTemporaryFile ) == true )
+   {
+      std::filesystem::remove( stringTemporaryFile );
+   }
+
+   uint64_t uTableSize = tableSerialize.serialize_size(gd::table::tag_columns{});
 
 
    /*
-   std::byte* pBuffer = reinterpret_cast<std::byte*>( vectorBuffer.data() );
+   // ## Serialize to disk
+   {
+      // Generate
 
-   gd::table::dto::table tableTestRead;
-   uint64_t uSize = tableTestRead.storage_read_size(pBuffer);
-   tableTestRead.storage_read( (const std::byte*)vectorBuffer.data(), gd::table::tag_columns{});
+      std::string stringFile = Application::get_temp_path() + "table_test.gdt";
+      gd::file::file file( stringFile, gd::file::eOpenWriteCreate );
+      if( file.is_open() == true )
+      {
+         auto uSize = tableSerialize.serialize_size( gd::table::tag_full{} );
+         std::vector<uint8_t> vectorBuffer;
+         vectorBuffer.resize( uSize );
+         tableSerialize.serialize( reinterpret_cast<std::byte*>( vectorBuffer.data() ), true, gd::table::tag_full{} );
+         file.write( vectorBuffer.data(), (unsigned)vectorBuffer.size() );
+         file.close();
+      }
+   }
    */
-
-   //gd::table::dto::table tableTest02(pBuffer, uTableSize, gd::table::tag_columns{});
 }
+
 
 TEST_CASE("[table] custom columns", "[table]") 
 {
@@ -241,3 +302,54 @@ TEST_CASE("[table] custom columns 1", "[table]")
    }
 }
 
+
+
+
+
+
+namespace fs = std::filesystem;
+
+std::string CreateTemporaryFile_s() 
+{
+   const std::string& stringPrefix = "temp";
+   const std::string& stringSuffix = ".tmp";
+
+   try 
+   {
+      // Get temp directory
+      std::filesystem::path pathTemporaryDirectory = std::filesystem::temp_directory_path();
+
+      // Create unique filename
+      std::filesystem::path pathTemporary = pathTemporaryDirectory / (stringPrefix + "XXXXXX" + stringSuffix);
+
+      // Generate unique path
+      std::string stringTemplate = pathTemporary.string();
+
+      // For platforms that support mkstemp/mktemp
+#ifndef _WIN32
+      char* piResult = mkstemps(const_cast<char*>(stringTemplate.c_str()), stringSuffix.length());
+      if(piResult == nullptr) { throw std::runtime_error("Failed to create temporary file"); }
+      return stringTemplate;
+#else
+      // Windows fallback - create unique name manually
+      char piUniqueName[MAX_PATH];
+      if( ::GetTempFileNameA(pathTemporaryDirectory.string().c_str(), stringPrefix.c_str(), 0, piUniqueName) == 0) { throw std::runtime_error("Failed to create temporary file on Windows"); }
+
+      // Rename to include suffix if needed
+      if(!stringSuffix.empty() && stringSuffix != ".tmp") 
+      {
+         std::filesystem::path original(piUniqueName);
+         std::filesystem::path new_path = original.parent_path() / (original.stem().string() + stringSuffix);
+         std::filesystem::rename(original, new_path);
+         return new_path.string();
+      }
+
+      return piUniqueName;
+#endif
+   }
+   catch (const std::exception& e) 
+   {
+      std::cerr << "Error creating temp file: " << e.what() << std::endl;
+      return "";
+   }
+}
