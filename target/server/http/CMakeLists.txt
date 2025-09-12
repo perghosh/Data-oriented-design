@@ -37,7 +37,7 @@ endfunction()
 
 set( USE_TARGET_ ON ) # ========================================================= ${http}
 if( USE_TARGET_ )
-   # file(GLOB HTTP_FILES_ http/*.cpp http/*.h )                                 # all cpp files in http file directory
+   file(GLOB HTTP_FILES_ *.cpp )                                               # all cpp files in root directory
    set(TARGET_NAME_ "http")
 
    add_executable(${TARGET_NAME_}
@@ -46,7 +46,7 @@ if( USE_TARGET_ )
       ${GD_SOURCES_ALL}
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
 
-     # ${HTTP_FILES_}                                                         # current directory files
+     ${HTTP_FILES_}                                                           # current directory files
       
       "main.cpp"                                                              # main file where method main is located
    )
