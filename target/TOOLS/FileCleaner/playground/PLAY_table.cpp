@@ -201,27 +201,6 @@ TEST_CASE("[table] save table to disk", "[table]") {
       std::string stringTable1 = gd::table::to_string(tableSerialize1, gd::table::tag_io_cli{});
       std::cout << stringTable1 << std::endl;
    }
-
-
-
-   /*
-   // ## Serialize to disk
-   {
-      // Generate
-
-      std::string stringFile = Application::get_temp_path() + "table_test.gdt";
-      gd::file::file file( stringFile, gd::file::eOpenWriteCreate );
-      if( file.is_open() == true )
-      {
-         auto uSize = tableSerialize.serialize_size( gd::table::tag_full{} );
-         std::vector<uint8_t> vectorBuffer;
-         vectorBuffer.resize( uSize );
-         tableSerialize.serialize( reinterpret_cast<std::byte*>( vectorBuffer.data() ), true, gd::table::tag_full{} );
-         file.write( vectorBuffer.data(), (unsigned)vectorBuffer.size() );
-         file.close();
-      }
-   }
-   */
 }
 
 
