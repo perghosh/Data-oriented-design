@@ -28,7 +28,7 @@ std::pair<bool, std::string> ReadFile(std::string_view stringLocation, std::vect
    return { true, "" };
 }
 
-std::pair<bool, std::string> ReadFile(std::string_view stringLocation, std::vector<char>& cBuffer)
+std::pair<bool, std::string> ReadFile(std::string_view stringLocation, std::vector<char>& vectorBuffer)
 {
    std::ifstream ifstreamFile(stringLocation.data(), std::ios::binary | std::ios::ate);
 
@@ -40,9 +40,9 @@ std::pair<bool, std::string> ReadFile(std::string_view stringLocation, std::vect
    std::streamsize streamsizeSize = ifstreamFile.tellg();   // Get the size of the file
    ifstreamFile.seekg(0, std::ios::beg);                    // Move to the beginning of the file
 
-   cBuffer.resize(streamsizeSize);                       // Resize the buffer to fit the file content
+   vectorBuffer.resize(streamsizeSize);                       // Resize the buffer to fit the file content
 
-   if( !ifstreamFile.read(cBuffer.data(), streamsizeSize) )
+   if( !ifstreamFile.read(vectorBuffer.data(), streamsizeSize) )
    {
       return { false, "Failed to read file: " + std::string(stringLocation) };
    }
@@ -53,6 +53,7 @@ std::pair<bool, std::string> ReadFile(std::string_view stringLocation, std::vect
 std::pair<bool, std::string> PrintContent(const std::vector<std::string>& vectorContent)
 {
    unsigned int uSize = vectorContent.size();
+   //std::vector<char> vectorCharacters;
 
    for( unsigned int u = 0; u < uSize; u++ )
    {
@@ -60,12 +61,47 @@ std::pair<bool, std::string> PrintContent(const std::vector<std::string>& vector
       std::cout << stringLine << std::endl;
    }
 
+
+
    return { true, "" };
 }
 
-std::pair<bool, std::string> PrintContent(const std::vector<char>& cBuffer)
+std::pair<bool, std::string> PrintContent(const std::vector<char>& vectorBuffer)
 {
-   std::cout.write(cBuffer.data(), cBuffer.size());
+   unsigned int uSize = vectorBuffer.size();
+   //unsigned int uCount = 0;
+   std::vector<char> vectorCharacters;
+
+   vectorCharacters.resize(uSize);
+
+   std::cout.write(vectorBuffer.data(), vectorBuffer.size());
+   std::cout << std::endl;
+
+   for( char cTemp : vectorBuffer )
+   {
+      if( std::find(vectorCharacters.begin(), vectorCharacters.end(), cTemp) == vectorCharacters.end() )
+      {
+         vectorCharacters.push_back(cTemp);
+      }
+   }
+
+   /*for( unsigned int u = 0; u < uSize; u++ )
+   {
+      char cTemp = vectorBuffer[u];
+
+      for( unsigned int u2 = 0; u2 < uSize; u2++ )
+      {
+         if( cTemp == vectorBuffer[u2] && cTemp != vectorCharacters[u2] )
+         {
+            vectorCharacters[uCount] = cTemp;
+            uCount++;
+         }
+      }
+   }*/
+
+
+
+   std::cout.write(vectorCharacters.data(), vectorCharacters.size());
 
 
    return { true, "" };
@@ -130,9 +166,9 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       std::cout << ppbszArgument[0] << std::endl;
       std::cout << ppbszArgument[1] << std::endl;
 
-      std::vector<char> cBuffer;
-      ReadFile(ppbszArgument[1], cBuffer);
-      PrintContent(cBuffer);
+      std::vector<char> vectorBuffer;
+      ReadFile(ppbszArgument[1], vectorBuffer);
+      PrintContent(vectorBuffer);
    }
 
    // Process the command-line arguments
