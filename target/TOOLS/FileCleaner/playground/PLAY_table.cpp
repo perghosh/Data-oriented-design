@@ -1,3 +1,7 @@
+/** @test [name: PLAY_table.cpp] [category: table] [description: tests for table serialization and expression evaluation]
+ * @file PLAY_table.cpp 
+ */
+
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -70,6 +74,156 @@ static std::string CreateTemporaryFile_s();
 
 
 */
+
+TEST_CASE("[table] save table to disk", "[table]") {
+   using namespace gd::table::dto;
+   const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+   constexpr unsigned uTableDuplicate = (table::eTableFlagNull32|table::eTableFlagRowStatus|table::eTableFlagDuplicateStrings);
+
+   gd::table::dto::table tableSerialize( uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{} );
+   gd::table::dto::table tableSerialize1(uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{});
+
+   std::mt19937 mt19937;
+
+   // Generate 100 random strings using stl
+   std::vector<std::string> vectorRandomStrings;
+   for( int i = 0; i < 10; ++i )
+   {
+      std::string string_;
+      // Generate random number for length of string
+      int iLength = mt19937() % 30 + 1; // Random length between 1 and 30
+      for( int j = 0; j < iLength; ++j )
+      {
+         string_ += stringCharset[mt19937() % stringCharset.size()];
+      }
+      vectorRandomStrings.push_back(string_);
+   }
+   
+   for( const auto& string_ : vectorRandomStrings )
+   {
+      auto uRow = tableSerialize.row_add_one();
+      tableSerialize.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} });
+   }
+
+   std::string stringTemporaryFile = CreateTemporaryFile_s();
+
+	// ## Serialize only columns to disk and read back .........................
+
+   uint64_t uTableSize = tableSerialize.serialize_size(gd::table::tag_columns{});
+
+   // create vector to hold serialized data
+   std::vector<uint8_t> vectorBuffer;
+   vectorBuffer.resize(uTableSize);
+   auto pPosition = tableSerialize.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), true, gd::table::tag_columns{}); // write
+   // write to disk using std::ofstream
+   {
+      std::ofstream file_( stringTemporaryFile, std::ios::binary );
+      if( file_.is_open() == true )
+      {
+         file_.write( reinterpret_cast<const char*>( vectorBuffer.data() ), (std::streamsize)vectorBuffer.size() );
+         file_.close();
+      }
+   }
+
+   // read back using std::ifstream
+   {
+      std::ifstream file_( stringTemporaryFile, std::ios::binary );
+      if( file_.is_open() == true )
+      {
+         file_.read( reinterpret_cast<char*>( vectorBuffer.data() ), (std::streamsize)vectorBuffer.size() );
+         file_.close();
+      }
+   }
+
+   pPosition = tableSerialize.serialize(reinterpret_cast<std::byte*>( vectorBuffer.data() ), false, gd::table::tag_columns{}); // read
+	tableSerialize1.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), false, gd::table::tag_columns{}); // read into second table to see if both are equal
+
+   // delete temporary file if exists
+   if( std::filesystem::exists( stringTemporaryFile ) == true )
+   {
+      std::filesystem::remove( stringTemporaryFile );
+   }
+
+   // ## print table tableSerialize to cli
+   {
+      std::string stringTable = gd::table::to_string(tableSerialize, gd::table::tag_io_cli{});
+      std::cout << stringTable << std::endl;
+	}
+
+   stringTemporaryFile = CreateTemporaryFile_s();
+
+
+	// ## Serialize only body to disk and read back .........................
+	uTableSize = tableSerialize.serialize_size(gd::table::tag_body{});
+	vectorBuffer.resize(uTableSize);
+	pPosition = tableSerialize.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), true, gd::table::tag_body{}); // write
+	// write to disk using std::ofstream
+	{
+		std::ofstream file_(stringTemporaryFile, std::ios::binary);
+		if(file_.is_open() == true)
+		{
+			file_.write(reinterpret_cast<const char*>(vectorBuffer.data()), (std::streamsize)vectorBuffer.size());
+			file_.close();
+		}
+	}
+	// read back using std::ifstream
+	{
+		std::ifstream file_(stringTemporaryFile, std::ios::binary);
+		if(file_.is_open() == true)
+		{
+			file_.read(reinterpret_cast<char*>(vectorBuffer.data()), (std::streamsize)vectorBuffer.size());
+			file_.close();
+		}
+	}
+
+	tableSerialize.row_clear();                                                                     // clear all rows to see if read back works
+
+	pPosition = tableSerialize.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), false, gd::table::tag_body{}); // read
+   tableSerialize1.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), false, gd::table::tag_body{}); // read
+
+   uTableSize = tableSerialize.serialize_size(gd::table::tag_reference{});
+   vectorBuffer.resize(uTableSize);
+   pPosition = tableSerialize.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), true, gd::table::tag_reference{}); // write
+   tableSerialize1.serialize(reinterpret_cast<std::byte*>(vectorBuffer.data()), false, gd::table::tag_reference{}); // read
+	// delete temporary file if exists
+	if(std::filesystem::exists(stringTemporaryFile) == true)
+	{
+		std::filesystem::remove(stringTemporaryFile);
+	}
+
+   tableSerialize.cell_set(0, "name", "new name");
+   tableSerialize.cell_set(1, "text", "new text"); // set new values to see if table still works
+
+   // ## print table tableSerialize to cli
+   {
+      std::string stringTable = gd::table::to_string(tableSerialize, gd::table::tag_io_cli{});
+      std::cout << stringTable << std::endl;
+      std::string stringTable1 = gd::table::to_string(tableSerialize1, gd::table::tag_io_cli{});
+      std::cout << stringTable1 << std::endl;
+   }
+
+
+
+   /*
+   // ## Serialize to disk
+   {
+      // Generate
+
+      std::string stringFile = Application::get_temp_path() + "table_test.gdt";
+      gd::file::file file( stringFile, gd::file::eOpenWriteCreate );
+      if( file.is_open() == true )
+      {
+         auto uSize = tableSerialize.serialize_size( gd::table::tag_full{} );
+         std::vector<uint8_t> vectorBuffer;
+         vectorBuffer.resize( uSize );
+         tableSerialize.serialize( reinterpret_cast<std::byte*>( vectorBuffer.data() ), true, gd::table::tag_full{} );
+         file.write( vectorBuffer.data(), (unsigned)vectorBuffer.size() );
+         file.close();
+      }
+   }
+   */
+}
+
 
 TEST_CASE("[table] expression", "[table]") {
    using namespace gd::expression;
@@ -168,65 +322,6 @@ TEST_CASE("[table] tests to serialize parts of table", "[table]") {
    //std::cout << stringTable << std::endl;
 }
 
-TEST_CASE("[table] save table to disk", "[table]") {
-   using namespace gd::table::dto;
-   const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-   constexpr unsigned uTableDuplicate = (table::eTableFlagNull32|table::eTableFlagRowStatus|table::eTableFlagDuplicateStrings);
-
-   gd::table::dto::table tableSerialize( uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{} );
-
-   std::mt19937 mt19937;
-
-   // Generate 100 random strings using stl
-   std::vector<std::string> vectorRandomStrings;
-   for( int i = 0; i < 100; ++i )
-   {
-      std::string string_;
-      // Generate random number for length of string
-      int iLength = mt19937() % 30 + 1; // Random length between 1 and 30
-      for( int j = 0; j < iLength; ++j )
-      {
-         string_ += stringCharset[mt19937() % stringCharset.size()];
-      }
-      vectorRandomStrings.push_back(string_);
-   }
-   
-   for( const auto& string_ : vectorRandomStrings )
-   {
-      auto uRow = tableSerialize.row_add_one();
-      tableSerialize.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} });
-   }
-
-   std::string stringTemporaryFile = CreateTemporaryFile_s();
-
-   // delete temporary file if exists
-   if( std::filesystem::exists( stringTemporaryFile ) == true )
-   {
-      std::filesystem::remove( stringTemporaryFile );
-   }
-
-   uint64_t uTableSize = tableSerialize.serialize_size(gd::table::tag_columns{});
-
-
-   /*
-   // ## Serialize to disk
-   {
-      // Generate
-
-      std::string stringFile = Application::get_temp_path() + "table_test.gdt";
-      gd::file::file file( stringFile, gd::file::eOpenWriteCreate );
-      if( file.is_open() == true )
-      {
-         auto uSize = tableSerialize.serialize_size( gd::table::tag_full{} );
-         std::vector<uint8_t> vectorBuffer;
-         vectorBuffer.resize( uSize );
-         tableSerialize.serialize( reinterpret_cast<std::byte*>( vectorBuffer.data() ), true, gd::table::tag_full{} );
-         file.write( vectorBuffer.data(), (unsigned)vectorBuffer.size() );
-         file.close();
-      }
-   }
-   */
-}
 
 
 TEST_CASE("[table] custom columns", "[table]") 
