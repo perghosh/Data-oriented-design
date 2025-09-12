@@ -30,9 +30,10 @@ set(CMAKE_CXX_STANDARD 20)
 add_compile_definitions(NOMINMAX)
 
 # TODO: Add tests and install targets if needed.
-add_subdirectory( "target/DOD" )
-add_subdirectory( "target/server/socket" )
-add_subdirectory( "target/GD-samples" )
+# add_subdirectory( "target/DOD" )
+#add_subdirectory( "target/server/socket" )
+# add_subdirectory( "target/GD-samples" )
+add_subdirectory( "target/server/http" )
 add_subdirectory( "misc/howto" )
 add_subdirectory( "test" )
 add_subdirectory( "target/TOOLS/FileCleaner" )
