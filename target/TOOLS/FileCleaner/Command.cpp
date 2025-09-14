@@ -1789,7 +1789,7 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
-std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode, const std::vector<std::string>& vectorPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_)
+std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode, const std::vector<std::string>& vectorPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::table* ptable_)
 {
    uint64_t uFileKey = argumentsFind["file-key"]; // key to file for main table holding activ files
    std::string stringFile = argumentsFind["source"].as_string();                                   assert(stringFile.empty() == false);
