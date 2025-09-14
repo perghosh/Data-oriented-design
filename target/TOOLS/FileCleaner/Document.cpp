@@ -433,8 +433,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
    for(int i = 0; i < iThreadCount; ++i) { vectorCountThread.emplace_back(process_, i); }
 
    // Wait for all threads to complete
-   for(auto& threadWorker : vectorCountThread) { threadWorker.join(); }
-   
+   for(auto& threadWorker : vectorCountThread) { threadWorker.join(); }       // Wait for all threads to complete
+
    MESSAGE_Progress("", {{"clear", true}});                                   // Clear progress message
 
    // ### Handle any collected errors
@@ -1471,11 +1471,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
       vectorPatternThread.emplace_back(process_, i); 
    }
 
-   // Wait for all threads to complete
-   for(auto& threadWorker : vectorPatternThread) 
-   { 
-      threadWorker.join(); 
-   }
+   
+   for(auto& threadWorker : vectorPatternThread) { threadWorker.join(); }     // Wait for all threads to complete
 
    MESSAGE_Progress("", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true}});
 
