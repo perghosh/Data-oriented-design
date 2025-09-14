@@ -99,7 +99,8 @@ public:
    std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& argumentsList, int iThreadCount = 0 );
    std::pair<bool, std::string> FILE_UpdatePatternList( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsList, int iThreadCount = 0 );
 
-   std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::string >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind );
+   std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::string >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind, int iThreadCount = 0 );
+   std::pair<bool, std::string> FILE_UpdatePatternFind_old( const std::vector< std::string >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind );
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsList );
 
    std::pair<bool, std::string> BUFFER_UpdateKeyValue( const gd::argument::shared::arguments& argumentsFile, std::string_view stringFileBuffer, gd::table::dto::table& tableRow, const std::vector<gd::argument::arguments>& vectorRule);

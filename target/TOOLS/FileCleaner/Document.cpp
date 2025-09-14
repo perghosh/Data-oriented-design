@@ -828,7 +828,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
 
    // ## Prepare columns for line list table 
-   detail::columns* pcolumnsThread = new detail::columns{};
+   detail::columns* pcolumnsThread = new detail::columns{};                   // Columns for thread-local tables, columns are reference counted and deleted automatically when no longer used, ref count reach 0
    ptableLineList->to_columns( *pcolumnsThread );
 
    // ## Worker function to process files in parallel .........................
@@ -1113,8 +1113,10 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
  *   that match the patterns and updates the "file-linelist" table with the results.
  * - If an error occurs during the process, it is added to the internal error list.
  */
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::string >& vectorPattern, const gd::argument::shared::arguments* pargumentsFind )
-{                                                                                                  assert( pargumentsFind != nullptr );
+
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind_old( const std::vector< std::string >& vectorPattern, const gd::argument::shared::arguments* pargumentsFind )
+{                                                                                                  assert( pargumentsFind != nullptr && "Invalid arguments" );
+   using namespace gd::table;
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
 
@@ -1160,6 +1162,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
       }
    }
 
+   // ## Prepare columns for line list table 
+   detail::columns* pcolumnsThread = new detail::columns{};                   // Columns for thread-local tables, columns are reference counted and deleted automatically when no longer used, ref count reach 0
+   ptableLineList->to_columns( *pcolumnsThread );
 
    // ## Prepare the patterns for finding and searching in files
 
@@ -1202,7 +1207,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
       // ## Find patterns in the stringFileBuffer
 
       uint64_t uRowOffset = ptableLineList->size();                           // Get the current row count in the "file-linelist" table
-      result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorPattern, arguments_, ptableLineList ); // Find lines with patterns in the file blob
+      //result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorPattern, arguments_, ptableLineList ); // Find lines with patterns in the file blob
       if( result_.first == false )
       {
          ERROR_Add(result_.second); // Add error to the internal error list
@@ -1239,8 +1244,255 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
    MESSAGE_Progress( "", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true} });
 
    return { true, "" };
-
 }
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Updates the pattern find results for files in the cache using multithreading.
+ *
+ * This method processes a list of patterns and applies them to the files stored in the cache.
+ * It generates a list of lines in each file where the patterns are found and stores the results
+ * in the "file-linelist" cache table. The method uses multithreading to process files in parallel.
+ * 
+ * If key-value pairs are specified in the arguments, it extracts them from the found lines and
+ * results are stored in the "file-linelist" table.
+ *
+ * @param vectorPattern A vector of strings representing the patterns to search for.
+ *                      The vector must not be empty and can contain a maximum of 64 patterns.
+ * @param pargumentsFind The arguments containing additional parameters such as segment and max hits.
+ * @param iThreadCount Number of threads to use (0 = auto-detect)
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ *
+ * @pre The `vectorPattern` must not be empty and must contain fewer than 64 patterns.
+ * @post The "file-linelist" cache table is updated with the lines where the patterns are found.
+ *
+ * @details
+ * - The method ensures that the "file-linelist" cache table is prepared and available.
+ * - Uses multithreading to process files in parallel for better performance.
+ * - Each thread processes files independently and merges results thread-safely.
+ * - Supports key-value pair extraction if specified in arguments.
+ */
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments* pargumentsFind, int iThreadCount)
+{                                                                                                  assert(pargumentsFind != nullptr && "Invalid arguments");
+                                                                                                   assert(vectorPattern.empty() == false); // Ensure the pattern list is not empty
+                                                                                                   assert(vectorPattern.size() < 64);      // Ensure the pattern list contains fewer than 64 patterns
+   using namespace gd::table;
+   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
+   auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
+
+   auto uFileCount = ptableFile->get_row_count();                             // Total number of files to process
+   uint64_t uMax = 500u;                                                      // Default maximum number of hits
+   if(pargumentsFind != nullptr) uMax = pargumentsFind->get_argument<uint64_t>("max", 500u);
+
+                                                                                                   LOG_DEBUG_RAW("== Number of files: " & uFileCount);
+
+   // ## Prepare key value logic if used
+
+   std::vector<gd::argument::arguments> vectorKeyValue;
+   bool bUseKeyValue = false; // Flag to indicate if key-value processing is needed
+   std::string stringKVFormat; // key-value format, if key-value pairs are scoped like {key=value}, [key:value] etc. "{}=" or "[]:" are used to read sample scope
+
+   if(pargumentsFind->exists("keys") == true || pargumentsFind->exists("kv") == true)
+   {
+      bUseKeyValue = true;
+      
+      if(pargumentsFind->exists("kv-format") == true)
+      {
+         stringKVFormat = (*pargumentsFind)["kv-format"].as_string();
+      }
+
+      if(pargumentsFind->exists("keys") == true)
+      {
+         auto vector_ = pargumentsFind->get_all<std::string>("keys");
+         
+         if(vector_.size() == 1) 
+         { 
+            char iSplit = ';';                                                // default separator for keys
+            std::string& stringKeys = vector_[0];
+            auto uPosition = stringKeys.find_first_of(",");   
+            if(uPosition != std::string::npos) { iSplit = ','; }             // use the first separator found
+            vector_ = CApplication::Split_s(vector_[0], iSplit);             // split it by iSplit character to get multiple keys
+            // remove all empty keys
+            vector_.erase(std::remove_if(vector_.begin(), vector_.end(), [](const std::string& key) { return key.empty(); }), vector_.end());
+         } 
+
+         for(const auto& key_ : vector_)
+         {
+            gd::argument::arguments argumentsRule({{"key", key_}});
+            if(stringKVFormat.empty() == false) { argumentsRule.append("scope", stringKVFormat); }
+            vectorKeyValue.push_back(argumentsRule);
+         }
+      }
+   }
+
+   // ## Thread synchronization variables
+   std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
+   std::atomic<uint64_t> uAtomicProcessedCount(0);                            // Count of processed files
+   std::atomic<uint64_t> uAtomicTotalLines(0);                                // Total lines found across all threads
+   std::mutex mutexLineList;                                                  // Mutex to protect ptableLineList access
+   std::mutex mutexKeyValue;                                                  // Mutex to protect key-value processing
+   std::vector<std::string> vectorError;                                      // Collect errors from all threads
+   std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
+
+   // ## Prepare columns for line list table 
+   detail::columns* pcolumnsThread = new detail::columns{};                   // Columns for thread-local tables
+   ptableLineList->to_columns(*pcolumnsThread);
+
+   // ## Worker function to process files in parallel .........................
+   auto process_ = [&](int iThreadId) -> void
+   {
+      // Create thread-local table for collecting results
+      std::unique_ptr<table> ptableLineListLocal = std::make_unique<table>(pcolumnsThread, 10, ptableLineList->get_flags(), 10);
+      
+      // Thread-local file buffer
+      std::string stringFileBuffer;
+      stringFileBuffer.reserve(64 * 64);
+      
+      while(true)
+      {
+         // Get next file index to process
+         uint64_t uRowIndex = uAtomicFileIndex.fetch_add(1);
+         if(uRowIndex >= uFileCount) { break; }
+         
+         try
+         {
+            // Update progress (thread-safe)
+            uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
+            if(uProcessed % 10 == 0)                                          // Show progress every 10 files
+            {
+               uint64_t uPercent = (uProcessed * 100) / uFileCount;
+               MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true}});
+            }
+
+            // STEP 1: Get file info (ptableFile is read-only so no mutex needed)
+            auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
+            auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
+            auto uKey = ptableFile->cell_get_variant_view(uRowIndex, "key").as_uint64();
+
+            // STEP 2: Build full file path
+            gd::file::path pathFile(stringFolder);
+            pathFile += stringFilename;
+            std::string stringFile = pathFile.string();
+
+            // STEP 3: Prepare arguments for pattern finding
+            gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+            if(pargumentsFind->exists("segment") == true) 
+            {
+               arguments_.append("segment", (*pargumentsFind)["segment"].as_string());
+            }
+
+            stringFileBuffer.clear();                                         // Clear buffer for reuse
+
+            // STEP 4: Load file into memory
+            auto result_ = CLEAN_File_g(stringFile, arguments_, stringFileBuffer);
+            if(result_.first == false)
+            {
+               std::lock_guard<std::mutex> lockErrors(mutexErrors);
+               vectorError.push_back("File load error: " + stringFile + " - " + result_.second);
+               continue;
+            }
+
+            if(stringFileBuffer.empty() == true) continue;                    // Skip empty files
+
+            // STEP 5: Find patterns in the file buffer
+            uint64_t uRowOffset = ptableLineListLocal->size();                // Get current local table size
+            result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorPattern, arguments_, ptableLineListLocal.get());
+            if(result_.first == false)
+            {
+               std::lock_guard<std::mutex> lockErrors(mutexErrors);
+               vectorError.push_back("Pattern find error: " + stringFile + " - " + result_.second);
+               continue;
+            }
+
+            if(uRowOffset == ptableLineListLocal->size()) continue;           // Skip if no patterns were found
+
+            // STEP 6: Update key-value pairs if provided
+            if(bUseKeyValue == true)
+            {
+               // Extract rows where to look for key-value pairs
+               std::vector<uint64_t> vectorRow;
+               gd::table::dto::table tableRow(0u, {{"uint64", 0, "row"}, {"uint64", 0, "linelist-key"}}, gd::table::tag_prepare{});
+
+               for(auto itRow = uRowOffset; itRow < ptableLineListLocal->size(); itRow++)
+               {
+                  uint64_t uRow = ptableLineListLocal->cell_get_variant_view(itRow, "row");
+                  uint64_t uKeyLocal = ptableLineListLocal->cell_get_variant_view(itRow, "key");
+                  vectorRow.push_back(uRow);
+
+                  auto r_ = tableRow.row_add_one();
+                  tableRow.cell_set(r_, "row", uRow);
+                  tableRow.cell_set(r_, "linelist-key", uKeyLocal);
+               }
+
+               {                                                               // Thread-safe call to BUFFER_UpdateKeyValue 
+                  std::lock_guard<std::mutex> lockKeyValue(mutexKeyValue);
+                  BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);
+               }
+
+               //BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);
+            }
+
+            // STEP 7: Append results to main table (thread-safe)
+            {
+               std::lock_guard<std::mutex> lockLineList(mutexLineList);
+               ptableLineList->append(ptableLineListLocal.get());             // Append local results to main table
+
+               // Update total line count and check maximum
+               uint64_t uCurrentLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count()) + ptableLineListLocal->get_row_count();
+               if(uCurrentLines > uMax) 
+               {
+                  uAtomicFileIndex.store(uFileCount);                         // Signal other threads to stop
+               }
+            }
+            
+            ptableLineListLocal->row_clear();                                 // Clear local table for next iteration
+         }
+         catch(const std::exception& exception_)
+         {
+            std::lock_guard<std::mutex> lockErrors(mutexErrors);
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+         }
+      }
+   };
+
+   // ## Prepare and run threads ..............................................
+
+   if(iThreadCount <= 0) { iThreadCount = std::thread::hardware_concurrency(); } // Auto-detect thread count
+   if(iThreadCount <= 0) { iThreadCount = 1; }                               // Fallback to single thread
+   if(iThreadCount > 8) { iThreadCount = 8; }                                // Limit to 8 threads
+   if(ptableFile->size() < iThreadCount) { iThreadCount = (int)ptableFile->size(); } // Limit threads to number of files
+
+   // Create and launch worker threads
+   std::vector<std::thread> vectorPatternThread;
+   vectorPatternThread.reserve(iThreadCount);
+
+   for(int i = 0; i < iThreadCount; ++i) 
+   { 
+      vectorPatternThread.emplace_back(process_, i); 
+   }
+
+   // Wait for all threads to complete
+   for(auto& threadWorker : vectorPatternThread) 
+   { 
+      threadWorker.join(); 
+   }
+
+   MESSAGE_Progress("", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true}});
+
+   // ### Handle any collected errors
+   if(!vectorError.empty())
+   {
+      for(const auto& stringError : vectorError) 
+      { 
+         ERROR_Add(stringError); 
+      }
+   }
+
+   return {true, ""};
+}
+
 
 std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind )
 {
