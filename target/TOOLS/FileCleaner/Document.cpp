@@ -1371,12 +1371,12 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
             auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
             auto uKey = ptableFile->cell_get_variant_view(uRowIndex, "key").as_uint64();
 
-            // STEP 2: Build full file path
+            // STEP 2: Build full file path ...................................
             gd::file::path pathFile(stringFolder);
             pathFile += stringFilename;
             std::string stringFile = pathFile.string();
 
-            // STEP 3: Prepare arguments for pattern finding
+            // STEP 3: Prepare arguments for pattern finding ..................
             gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
             if(pargumentsFind->exists("segment") == true) 
             {
@@ -1385,7 +1385,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
 
             stringFileBuffer.clear();                                         // Clear buffer for reuse
 
-            // STEP 4: Load file into memory
+            // STEP 4: Load file into memory ..................................
             auto result_ = CLEAN_File_g(stringFile, arguments_, stringFileBuffer);
             if(result_.first == false)
             {
@@ -1396,7 +1396,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
 
             if(stringFileBuffer.empty() == true) continue;                    // Skip empty files
 
-            // STEP 5: Find patterns in the file buffer
+            // STEP 5: Find patterns in the file buffer .......................
             uint64_t uRowOffset = ptableLineListLocal->size();                // Get current local table size
             result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorPattern, arguments_, ptableLineListLocal.get());
             if(result_.first == false)
@@ -1408,10 +1408,10 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
 
             if(uRowOffset == ptableLineListLocal->size()) continue;           // Skip if no patterns were found
 
-            // STEP 6: Update key-value pairs if provided
+            // STEP 6: Update key-value pairs if provided .....................
             if(bUseKeyValue == true)
             {
-               // Extract rows where to look for key-value pairs
+               // Extract rows where to look for key-value pairs and this is used because there could be a lot of matched find pattern where key-value pairs are not found
                std::vector<uint64_t> vectorRow;
                gd::table::dto::table tableRow(0u, {{"uint64", 0, "row"}, {"uint64", 0, "linelist-key"}}, gd::table::tag_prepare{});
 
@@ -1430,11 +1430,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                   std::lock_guard<std::mutex> lockKeyValue(mutexKeyValue);
                   BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);
                }
-
-               //BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);
             }
 
-            // STEP 7: Append results to main table (thread-safe)
+            // STEP 7: Append results to main table (thread-safe) .............
             {
                std::lock_guard<std::mutex> lockLineList(mutexLineList);
                ptableLineList->append(ptableLineListLocal.get());             // Append local results to main table
