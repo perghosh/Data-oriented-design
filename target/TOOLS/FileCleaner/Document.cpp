@@ -1426,9 +1426,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                   tableRow.cell_set(r_, "linelist-key", uKeyLocal);
                }
 
-               {                                                               // Thread-safe call to BUFFER_UpdateKeyValue 
-                  std::lock_guard<std::mutex> lockKeyValue(mutexKeyValue);
-                  BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);
+               {                                                               
+                  std::lock_guard<std::mutex> lockKeyValue(mutexKeyValue);    // Thread-safe call to BUFFER_UpdateKeyValue 
+                  BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);// Update table called "keyvalue", it's a table with arguments
                }
             }
 
