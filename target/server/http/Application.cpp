@@ -89,13 +89,13 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
    papplication_g->PROPERTY_Add("folder-application", stringApplicationFolder);
 
-   gd::cli::options optionsConfiguration;
-   Prepare_s(optionsConfiguration);
+   gd::cli::options optionsApplication;
+   Prepare_s(optionsApplication);
 
    // ## Parse arguments if sent
-   if( iArgumentCount > 1 )																	 // do we have arguments ? (first is application)
+   if( iArgumentCount > 1 )											           // do we have arguments ? (first is application)
    {
-      auto [bOk, stringError] = optionsConfiguration.parse( iArgumentCount, ppbszArgument );
+	   auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument); // @BOOKMARK [title: options] [description: parse command line arguments] 
       if( bOk == false ) { return { bOk, stringError }; }
    }
 
@@ -103,8 +103,14 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
    int iResult = Main_s( iArgumentCount, ppbszArgument );
 
+   // ## Process the command-line arguments
+   auto [bOk, stringError] = Initialize(optionsApplication);
+   if (bOk == false) { return { false, stringError }; }
+
+
    return application::basic::CApplication::Main( iArgumentCount, ppbszArgument, nullptr );
 }
+
 
 std::pair<bool, std::string> CApplication::Initialize()
 {
@@ -318,6 +324,23 @@ int CApplication::Main_s(int iArgumentCount, char* ppbszArgument[])
    return 0;
 }
 
+std::pair<bool, std::string> CApplication::Initialize(gd::cli::options& optionsApplication)
+{
+    // ## Read port number if found
+	if(optionsApplication["port"].is_true() == true)
+	{
+		int iPort = optionsApplication["port"].as_int();
+		if (iPort < 1 || iPort > 65535) { return { false, "Port number must be between 1-65535" }; }
+		PROPERTY_Add("port", iPort);                                                               LOG_INFORMATION_RAW("== Port number: " & iPort);
+	}
+
+    return { true, std::string() };
+}
+
+
+/** --------------------------------------------------------------------------- @BOOKMARK [title: options] [description: Prepare application specific arguments]
+ * @brief Prepare application specific arguments
+ */
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
    // ## Log settings
@@ -327,6 +350,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({"logging-severity", "Set specific severity for logger, severity acts as a filter"});
    optionsApplication.add({"logging-tags", "set active log-tags to filter log messages"});
    optionsApplication.add({"logging-show", "Default is to log messages (non tagged), with this you can turn them on or off. If setting tag/tags then this turns off if not set to be on, value 0|1"});
+
+   optionsApplication.add({ "port", "Set port number" });
 
    // ## Folder settings
    optionsApplication.add({"path", "Global path variable used to find files in any of the folders if not found in selected folder, folders are separated by semicolon"});

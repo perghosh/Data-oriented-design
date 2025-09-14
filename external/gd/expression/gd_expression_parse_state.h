@@ -116,18 +116,25 @@ public:
     */
    enum enumStateNumber
    {
-      eStateNumberNone = 0,		///< no state
-      eStateNumberLineComment,	///< comment state
-      eStateNumberWhitespace,	   ///< whitespace state
-      eStateNumberString,		   ///< string state
-      eStateNumberNumber,		   ///< number state
-      eStateNumberIdentifier,	   ///< identifier state
-      eStateNumberOperator,	   ///< operator state
-      eStateNumberEnd,			   ///< end of expression
+      eStateNumberNone = 0,         ///< no state
+      eStateNumberLineComment,      ///< comment state
+      eStateNumberWhitespace,       ///< whitespace state
+      eStateNumberString,           ///< string state
+      eStateNumberNumber,           ///< number state
+      eStateNumberIdentifier,       ///< identifier state
+      eStateNumberOperator,         ///< operator state
+      eStateNumberEnd,              ///< end of expression
       // multiline states        
-      eStateNumberBlockComment,  ///< block comment state
-      eStateNumberRawString,	   ///< raw string state
-      eStateNumberScriptCode     ///< script that differs from the rest
+      eStateNumberBlockComment,     ///< block comment state
+      eStateNumberRawString,        ///< raw string state
+      eStateNumberScriptCode,       ///< script that differs from the rest
+
+      // States for plain text parsing can be added here
+      eStateNumberText,             ///< plain text state
+      eStateNumberHeading,          ///< heading state 
+      eStateNumberTable,            ///< table state
+      eStateNumberSummary,          ///< summary state
+      eStateNumberConfiguration,    ///< configuration state
    };
 
 
@@ -161,6 +168,13 @@ public:
       eStateBlockComment  = eStateNumberBlockComment  | eGroupComment,    ///< block comment state
       eStateRawString     = eStateNumberRawString     | eGroupString,     ///< raw string state
       eStateScriptCode    = eStateNumberScriptCode    | eGroupOutside,    ///< script that differs from the rest
+
+	  // States for plain text parsing can be added here
+      eStateText          = eStateNumberText          | eGroupOutside,    ///< plain text state
+      eStateHeading       = eStateNumberHeading       | eGroupOutside,    ///< heading state 
+      eStateTable         = eStateNumberTable         | eGroupOutside,    ///< table state
+      eStateSummary       = eStateNumberSummary       | eGroupOutside,    ///< summary state
+	  eStateConfiguration = eStateNumberConfiguration | eGroupOutside,    ///< configuration state
    };
 
 
