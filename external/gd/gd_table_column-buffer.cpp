@@ -7,6 +7,7 @@
  * 
  */
 
+#include <variant>
 
 #include "gd_utf8.h"
 #include "gd_utf8_2.h"
@@ -2808,7 +2809,6 @@ int64_t table_column_buffer::row_get_absolute(uint64_t uRelativeRow, unsigned uS
 int64_t table_column_buffer::find( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept
 {                                                                                                  assert( m_puData );
    auto& columnSet = m_vectorColumn[uColumn];                                                      assert( variantviewFind.type_number() == columnSet.ctype_number() );
-   //const uint8_t* puFindValue = variantviewFind.data();
 
    if( variantviewFind.is_primitive() )
    {
@@ -2842,6 +2842,120 @@ int64_t table_column_buffer::find( unsigned uColumn, uint64_t uStartRow, uint64_
    return -1;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief find value in table
+ * @param uStartRow row to start search
+ * @param uCount number of rows trying to find value in
+ * @param listFind list of column names and values to find
+ * @return index to row if value was found, -1 if not found
+ */
+int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant) const noexcept
+{                                                                                                  assert( m_puData && "Table data is not prepared" );
+   uint64_t uEndRow = uStartRow + uCount;                                                          assert( uEndRow <= get_row_count() );
+   std::vector< std::pair<unsigned, gd::variant_view> > vectorFind; // hold column names and values to find
+
+#ifndef NDEBUG
+   for( auto it : listFind )                                                   // check that all columns exists
+   { 
+      if( std::holds_alternative<std::string_view>(it.first) == true ) { assert( column_exists( std::get<std::string_view>(it.first) ) == true && "Invalid column name"); }
+      else { assert(std::get<unsigned>(it.first) < get_column_count() && "Column index too large" ); }
+   } 
+#endif 
+
+   // ## Convert list to vector with column index and value to find
+   for( auto it : listFind )
+   {
+      if( std::holds_alternative<std::string_view>(it.first) == true )
+      {
+         auto uColumnIndex = column_get_index(std::get<std::string_view>(it.first));
+         assert(uColumnIndex != (unsigned)-1);
+         vectorFind.push_back({ uColumnIndex, it.second });
+      }
+      else
+      {
+         vectorFind.push_back({ std::get<unsigned>(it.first), it.second });
+      }
+   }
+
+   return find( uStartRow, uCount, vectorFind );
+}
+
+/*
+std::vector<uint64_t> table_column_buffer::find_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind) const noexcept
+{
+   std::vector<uint64_t> vectorRow;
+   for( uint64_t uRow = uStartRow; uRow < uStartRow + uCount; ++uRow)
+   {
+      if (cell_get_variant_view(uRow, uColumn) == variantviewFind)
+      {
+         vectorRow.push_back(uRow);
+      }
+   }
+
+   return vectorRow;
+}
+*/
+
+std::vector<uint64_t> table_column_buffer::find_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind) const noexcept
+{                                                                                                  assert(m_puData && "Table data is not prepared");
+   std::vector<uint64_t> vectorRow;
+   auto& columnSet = m_vectorColumn[uColumn];
+   assert(variantviewFind.type_number() == columnSet.ctype_number());
+   
+   if(variantviewFind.is_primitive())
+   {
+      uint64_t uEndRow = uStartRow + uCount;
+      assert(uEndRow <= get_row_count());
+      
+      // ## optimization to find all values, direct access to table data with method `cell_get`
+      if(variantviewFind.is_64() == true)  // is value a 64 bit value
+      {
+         uint64_t uFind = *(uint64_t*)variantviewFind.data();
+         for(auto uRow = uStartRow; uRow < uEndRow; uRow++)
+         {
+            auto uValue = *(const uint64_t*)cell_get(uRow, uColumn);
+            if (uValue == uFind)
+            {
+               vectorRow.push_back(uRow);
+            }
+         }
+      }
+      else
+      {  // 32 bit value (remember that each value is at least 32 bit in table)
+         uint32_t uFind = variantviewFind.as_uint();
+         for(auto uRow = uStartRow; uRow < uEndRow; uRow++)
+         {
+            auto uValue = *(const uint32_t*)cell_get(uRow, uColumn);
+            if (uValue == uFind)
+            {
+               vectorRow.push_back(uRow);
+            }
+         }
+      }
+   }
+   else
+   {
+      return find_all_variant_view( uColumn, uStartRow, uCount, variantviewFind );
+   }
+   
+   return vectorRow;
+}
+
+std::vector<uint64_t> table_column_buffer::find_all_variant_view( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept
+{                                                                                                  assert( m_puData && "Table data is not prepared" );
+   std::vector<uint64_t> vectorRow;
+   auto& columnSet = m_vectorColumn[uColumn];                                                      assert( variantviewFind.type_number() == columnSet.ctype_number() );
+   uint64_t uEndRow = uStartRow + uCount;                                                          assert( uEndRow <= get_row_count() );
+   for( auto uRow = uStartRow; uRow < uEndRow; uRow++ )
+   {
+      auto variantviewValue = cell_get_variant_view( uRow, uColumn );
+      if( variantviewFind == variantviewValue )
+      {
+         vectorRow.push_back(uRow);
+      }
+   }
+   return vectorRow;
+}
 
 
 /** ---------------------------------------------------------------------------

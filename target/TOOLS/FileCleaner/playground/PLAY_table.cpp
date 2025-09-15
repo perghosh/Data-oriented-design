@@ -218,6 +218,45 @@ TEST_CASE("[table] expression", "[table]") {
    //auto b = value1.as_bool();
 }
 
+TEST_CASE("[table] find rows in table", "[table]") {
+   using namespace gd::table::dto;
+   constexpr unsigned uTableDuplicate = ( table::eTableFlagNull32 | table::eTableFlagRowStatus | table::eTableFlagDuplicateStrings );
+   gd::table::dto::table tableTest01(uTableDuplicate, { { "int64", 0, "KeyK"}, { "int64", 0, "n1"}, { "string", 100, "name"}, { "string", 100, "text"} }, gd::table::tag_prepare{});
+   for( uint64_t i = 0; i < 100; ++i )
+   {
+      auto uRow = tableTest01.row_add_one();
+      tableTest01.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"n1", (int64_t)uRow + 100}, {"name", "name" + std::to_string(uRow)}, {"text", "text" + std::to_string(uRow)} });
+   }
+
+   auto iRow = tableTest01.find("KeyK", (int64_t)50 );                                             assert( iRow != -1 && "No row found" );
+
+   iRow = tableTest01.find( { { "KeyK", (int64_t)50 }, { "n1", (int64_t)150 } }, gd::table::tag_column_variant{});assert(iRow != -1 && "No row found");
+
+
+   /*
+   // find row with KeyK == 50
+   auto vectorRows = tableTest01.row_find( { {"KeyK", (int64_t)50} } );
+   if( vectorRows.size() == 1 )
+   {
+      auto uRow = vectorRows[0];
+      auto stringName = tableTest01.cell_get_variant_view(uRow, "name").as_string_view();
+      auto stringText = tableTest01.cell_get_variant_view(uRow, "text").as_string_view();
+      bool bSame = ( stringName == "name50" );
+      bSame = ( stringText == "text50" );
+   }
+   // find row with name == name20
+   vectorRows = tableTest01.row_find( { {"name", "name20"} } );
+   if( vectorRows.size() == 1 )
+   {
+      auto uRow = vectorRows[0];
+      auto stringName = tableTest01.cell_get_variant_view(uRow, "name").as_string_view();
+      auto stringText = tableTest01.cell_get_variant_view(uRow, "text").as_string_view();
+      bool bSame = ( stringName == "name20" );
+      bSame = ( stringText == "text20" );
+   }
+   */
+}
+
 TEST_CASE("[table] tests to serialize parts of table", "[table]") {
    using namespace gd::table::dto;
 

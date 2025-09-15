@@ -885,6 +885,16 @@ public:
    int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind ) const;
    int64_t find( const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind ) const { return find( 0, get_row_count(), vectorFind ); }
 
+   int64_t find(const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant ) const noexcept { return find(0, get_row_count(), listFind, tag_column_variant{}); }
+   int64_t find( uint64_t uStartRow, uint64_t uCount, const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant ) const noexcept;
+
+   
+   std::vector<uint64_t> find_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind) const noexcept;
+   std::vector<uint64_t> find_all(unsigned uColumn, const gd::variant_view& variantviewFind) const noexcept { return find_all(uColumn, 0, get_row_count(), variantviewFind); }
+
+   std::vector<uint64_t> find_all_variant_view( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;
+
+
    /// Find first row marked as free (flag `eRowStateUse` is not used)
    int64_t find_first_free_row( uint64_t uStartRow ) const;
    int64_t find_first_free_row() const { return find_first_free_row( 0 ); }

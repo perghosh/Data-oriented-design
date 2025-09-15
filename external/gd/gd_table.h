@@ -112,6 +112,8 @@ struct tag_variant {};
 struct tag_variant_view {};
 /// tag dispatcher used for methods working with arguments object
 struct tag_arguments {};
+/// tag dispatcher used for methods working with column object 
+struct tag_column_variant {};
 
 /// tag dispatcher used for buffer operations
 using tag_buffer = gd::types::tag_buffer;
