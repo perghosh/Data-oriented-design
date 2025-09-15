@@ -2880,22 +2880,14 @@ int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std
    return find( uStartRow, uCount, vectorFind );
 }
 
-/*
-std::vector<uint64_t> table_column_buffer::find_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind) const noexcept
-{
-   std::vector<uint64_t> vectorRow;
-   for( uint64_t uRow = uStartRow; uRow < uStartRow + uCount; ++uRow)
-   {
-      if (cell_get_variant_view(uRow, uColumn) == variantviewFind)
-      {
-         vectorRow.push_back(uRow);
-      }
-   }
-
-   return vectorRow;
-}
-*/
-
+/** ---------------------------------------------------------------------------
+ * @brief find all values in table
+ * @param uColumn index for column where to find value
+ * @param uStartRow row to start search
+ * @param uCount number of rows trying to find value in
+ * @param variantviewFind value to find
+ * @return vector with row indexes where value was found
+ */
 std::vector<uint64_t> table_column_buffer::find_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind) const noexcept
 {                                                                                                  assert(m_puData && "Table data is not prepared");
    std::vector<uint64_t> vectorRow;
@@ -2941,6 +2933,14 @@ std::vector<uint64_t> table_column_buffer::find_all(unsigned uColumn, uint64_t u
    return vectorRow;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief find all values in table
+ * @param uColumn index for column where to find value
+ * @param uStartRow row to start search
+ * @param uCount number of rows trying to find value in
+ * @param variantviewFind value to find
+ * @return vector with row indexes where value was found
+ */
 std::vector<uint64_t> table_column_buffer::find_all_variant_view( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept
 {                                                                                                  assert( m_puData && "Table data is not prepared" );
    std::vector<uint64_t> vectorRow;
