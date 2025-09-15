@@ -2935,6 +2935,73 @@ std::vector<uint64_t> table_column_buffer::find_all(unsigned uColumn, uint64_t u
 
 /** ---------------------------------------------------------------------------
  * @brief find all values in table
+ * @param uStartRow row to start search
+ * @param uCount number of rows trying to find value in
+ * @param vectorFind vector with column indexes and values to find
+ * @return vector with row indexes where value was found
+ */
+std::vector<uint64_t> table_column_buffer::find_all( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair< unsigned, gd::variant_view > >& vectorFind ) const noexcept
+{                                                                                                  assert( m_puData && "Table data is not prepared" );
+   std::vector<uint64_t> vectorRow;
+   uint64_t uEndRow = uStartRow + uCount;                                                          assert( uEndRow <= get_row_count() );
+
+   auto itFindBegin = std::begin( vectorFind );
+   auto itFindEnd = std::end( vectorFind );
+
+   for( uint64_t uRow = uStartRow, uEnd = uStartRow + uCount; uRow < uEnd; uRow++ )
+   {
+      bool bFound = true;
+      for( auto it = itFindBegin; it != itFindEnd; it++ )
+      {
+         auto variantviewValue = cell_get_variant_view( uRow, it->first );
+         if( it->second != variantviewValue ) { bFound = false; break; }
+      }
+
+      if( bFound == true ) vectorRow.push_back(uRow);
+   }
+
+   return vectorRow;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief find all values in table
+ * @param uStartRow row to start search
+ * @param uCount number of rows trying to find value in
+ * @param listFind list of column names and values to find
+ * @return vector with row indexes where value was found
+ */
+std::vector<uint64_t> table_column_buffer::find_all(uint64_t uStartRow, uint64_t uCount, const std::initializer_list<std::pair<std::variant<unsigned, std::string_view>, gd::variant_view>>& listFind, tag_column_variant) const noexcept
+{                                                                                                  assert( m_puData && "Table data is not prepared" );
+#ifndef NDEBUG
+   for( auto it : listFind )                                                   // check that all columns exists
+   { 
+      if( std::holds_alternative<std::string_view>(it.first) == true ) { assert( column_exists( std::get<std::string_view>(it.first) ) == true && "Invalid column name"); }
+      else { assert(std::get<unsigned>(it.first) < get_column_count() && "Column index too large" ); }
+   } 
+#endif 
+
+   std::vector< std::pair<unsigned, gd::variant_view> > vectorFind; // hold column names and values to find
+
+   // ## Convert list to vector with column index and value to find
+   for( auto it : listFind )
+   {
+      if( std::holds_alternative<std::string_view>(it.first) == true )
+      {
+         auto uColumnIndex = column_get_index(std::get<std::string_view>(it.first));
+         assert(uColumnIndex != (unsigned)-1);
+         vectorFind.push_back({ uColumnIndex, it.second });
+      }
+      else
+      {
+         vectorFind.push_back({ std::get<unsigned>(it.first), it.second });
+      }
+   }
+
+   return find_all( uStartRow, uCount, vectorFind );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief find all values in table
  * @param uColumn index for column where to find value
  * @param uStartRow row to start search
  * @param uCount number of rows trying to find value in

@@ -885,14 +885,29 @@ public:
    int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind ) const;
    int64_t find( const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorFind ) const { return find( 0, get_row_count(), vectorFind ); }
 
+   // ## find row based on multiple column values
+
    int64_t find(const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant ) const noexcept { return find(0, get_row_count(), listFind, tag_column_variant{}); }
    int64_t find( uint64_t uStartRow, uint64_t uCount, const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant ) const noexcept;
 
+   // ## find all matching rows
    
    std::vector<uint64_t> find_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind) const noexcept;
    std::vector<uint64_t> find_all(unsigned uColumn, const gd::variant_view& variantviewFind) const noexcept { return find_all(uColumn, 0, get_row_count(), variantviewFind); }
 
+   std::vector<uint64_t> find_all( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair< unsigned, gd::variant_view > >& vectorFind ) const noexcept;
+   std::vector<uint64_t> find_all(const std::vector< std::pair< unsigned, gd::variant_view > >& vectorFind) const noexcept { return find_all(0, get_row_count(), vectorFind); }
+   std::vector<uint64_t> find_all( uint64_t uStartRow, uint64_t uCount, const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant ) const noexcept;
+   std::vector<uint64_t> find_all(const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant) const noexcept { return find_all(0, get_row_count(), listFind, tag_column_variant{}); }
+
+   // ### optimized find all for sorted columns
+
+   // std::vector<uint64_t> find_all( uint64_t uStartRow, uint64_t uCount, const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant, tag_first_sorted ) const noexcept;
+
+   // ## # find all matching rows with more flexibility but a bit slower compared to `find_all` methods
+
    std::vector<uint64_t> find_all_variant_view( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;
+   std::vector<uint64_t> find_all_variant_view(unsigned uColumn, const gd::variant_view& variantviewFind) const noexcept { return find_all_variant_view(uColumn, 0, get_row_count(), variantviewFind); }
 
 
    /// Find first row marked as free (flag `eRowStateUse` is not used)
