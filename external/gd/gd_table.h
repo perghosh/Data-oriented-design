@@ -114,6 +114,8 @@ struct tag_variant_view {};
 struct tag_arguments {};
 /// tag dispatcher used for methods working with column object 
 struct tag_column_variant {};
+/// tag dispatcher used for methods working with something where the first is sorted
+struct tag_first_sorted {};
 
 /// tag dispatcher used for buffer operations
 using tag_buffer = gd::types::tag_buffer;
