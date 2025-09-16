@@ -122,10 +122,13 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    auto result_ = FILE_Harvest(argumentsPath);
    if( result_.first == false ) return result_;
 
+   gd::table::dto::table* ptableFile = nullptr;
+
    {
       auto* ptable1_ = CACHE_Get("file", false);                                                    
       if( ptable1_->size() == 0 ) { return { false, "No files found." }; }
-      std::string stringTable = gd::table::to_string(*ptable1_, gd::table::tag_io_cli{});
+      //std::string stringTable = gd::table::to_string(*ptable1_, gd::table::tag_io_cli{});
+      ptableFile = ptable1_;
    }
 
    if( stringFilter.empty() == false )
@@ -134,9 +137,10 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
       if( result_.first == false ) return result_;
    }
    else
-   {
-      auto result_ = FILE_FilterBinaries();
+   {                                                                                               LOG_DEBUG_RAW( "== filter binary files, before is count: " & ptableFile->size() );
+      auto result_ = FILE_FilterBinaries();                                                        
       if( result_.first == false ) return result_;
+                                                                                                   LOG_DEBUG_RAW("== filter binary files, after is count: " & ptableFile->size());
    }
 
    // ## Check if files are found
@@ -1500,10 +1504,11 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                ptableLineList->append(ptableLineListLocal.get());             // Append local results to main table
 
                // Update total line count and check maximum
-               uint64_t uCurrentLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count()) + ptableLineListLocal->get_row_count();
+               uint64_t uPreviousLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count());
+               uint64_t uCurrentLines = uPreviousLines + ptableLineListLocal->get_row_count();
                if(uCurrentLines > uMax) 
                {
-                  uAtomicFileIndex.store(uFileCount);                         // Signal other threads to stop
+                  uAtomicFileIndex.store(uFileCount);
                }
             }
             
@@ -1811,10 +1816,11 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                ptableLineList->append(ptableLineListLocal.get());             // Append local results to main table
 
                // Update total line count and check maximum
-               uint64_t uCurrentLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count()) + ptableLineListLocal->get_row_count();
+               uint64_t uPreviousLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count());
+               uint64_t uCurrentLines = uPreviousLines + ptableLineListLocal->get_row_count();
                if(uCurrentLines > uMax) 
                {
-                  uAtomicFileIndex.store(uFileCount);                         // Signal other threads to stop
+                  uAtomicFileIndex.store(uFileCount);
                }
             }
             
