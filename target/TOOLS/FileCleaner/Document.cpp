@@ -1477,6 +1477,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
             // STEP 6: Update key-value pairs if provided .....................
             if(bUseKeyValue == true)
             {
+               std::lock_guard<std::mutex> lockKeyValue(mutexKeyValue);       // Thread-safe call to BUFFER_UpdateKeyValue 
+
                // Extract rows where to look for key-value pairs and this is used because there could be a lot of matched find pattern where key-value pairs are not found
                std::vector<uint64_t> vectorRow;
                gd::table::dto::table tableRow(0u, {{"uint64", 0, "row"}, {"uint64", 0, "linelist-key"}}, gd::table::tag_prepare{});
@@ -1492,10 +1494,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                   tableRow.cell_set(r_, "linelist-key", uKeyLocal);
                }
 
-               {                                                               
-                  std::lock_guard<std::mutex> lockKeyValue(mutexKeyValue);    // Thread-safe call to BUFFER_UpdateKeyValue 
-                  BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);// Update table called "keyvalue", it's a table with arguments
-               }
+               BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);// Update table called "keyvalue", it's a table with arguments
             }
 
             // STEP 7: Append results to main table (thread-safe) .............
@@ -1789,6 +1788,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
             // STEP 6: Update key-value pairs if provided .....................
             if(bUseKeyValue == true)
             {
+               std::lock_guard<std::mutex> lockKeyValue(mutexKeyValue);       // Thread-safe call to BUFFER_UpdateKeyValue 
+
                // Extract rows where to look for key-value pairs and this is used because there could be a lot of matched find pattern where key-value pairs are not found
                std::vector<uint64_t> vectorRow;
                gd::table::dto::table tableRow(0u, {{"uint64", 0, "row"}, {"uint64", 0, "linelist-key"}}, gd::table::tag_prepare{});
@@ -1804,10 +1805,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                   tableRow.cell_set(r_, "linelist-key", uKeyLocal);
                }
 
-               {                                                               
-                  std::lock_guard<std::mutex> lockKeyValue(mutexKeyValue);    // Thread-safe call to BUFFER_UpdateKeyValue 
-                  BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);// Update table called "keyvalue", it's a table with arguments
-               }
+               BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);// Update table called "keyvalue", it's a table with arguments
             }
 
             // STEP 7: Append results to main table (thread-safe) .............
