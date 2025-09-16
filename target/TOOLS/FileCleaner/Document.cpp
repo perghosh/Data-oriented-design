@@ -1442,10 +1442,11 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                ptableLineList->append(ptableLineListLocal.get());             // Append local results to main table
 
                // Update total line count and check maximum
-               uint64_t uCurrentLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count()) + ptableLineListLocal->get_row_count();
+               uint64_t uPreviousLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count());
+               uint64_t uCurrentLines = uPreviousLines + ptableLineListLocal->get_row_count();
                if(uCurrentLines > uMax) 
                {
-                  uAtomicFileIndex.store(uFileCount);                         // Signal other threads to stop
+                  uAtomicFileIndex.store(uFileCount);
                }
             }
             
@@ -1753,10 +1754,11 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                ptableLineList->append(ptableLineListLocal.get());             // Append local results to main table
 
                // Update total line count and check maximum
-               uint64_t uCurrentLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count()) + ptableLineListLocal->get_row_count();
+               uint64_t uPreviousLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count());
+               uint64_t uCurrentLines = uPreviousLines + ptableLineListLocal->get_row_count();
                if(uCurrentLines > uMax) 
                {
-                  uAtomicFileIndex.store(uFileCount);                         // Signal other threads to stop
+                  uAtomicFileIndex.store(uFileCount);
                }
             }
             
