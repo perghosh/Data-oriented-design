@@ -289,6 +289,8 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       if (result_.first == false) return result_;
    }
 
+   auto* ptableFile = pdocument->CACHE_Get("file");                                                assert(ptableFile != nullptr); LOG_DEBUG_RAW("== number of files: " & ptableFile->size());
+
    if( options_.exists("pattern") == true )
    {                                                                                               LOG_INFORMATION_RAW( "== search pattern: " & options_["pattern"].as_string() );
       auto vector_ = options_.get_argument_all("pattern", gd::types::tag_view{}); // get all patterns
