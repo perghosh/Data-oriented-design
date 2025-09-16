@@ -1113,10 +1113,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
  *   that match the patterns and updates the "file-linelist" table with the results.
  * - If an error occurs during the process, it is added to the internal error list.
  */
-
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind_old( const std::vector< std::string >& vectorPattern, const gd::argument::shared::arguments* pargumentsFind )
-{                                                                                                  assert( pargumentsFind != nullptr && "Invalid arguments" );
-   using namespace gd::table;
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::string >& vectorPattern, const gd::argument::shared::arguments* pargumentsFind )
+{                                                                                                  assert( pargumentsFind != nullptr );
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
    auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
 
@@ -1127,7 +1125,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind_old( const std::v
 
    std::string stringFileBuffer;
    stringFileBuffer.reserve( 64 * 64 );
-                                                                                                   LOG_DEBUG_RAW("== Number of files: " & uFileCount);
+
    // ## Prepare key value if used
    std::vector<gd::argument::arguments> vectorKeyValue;
    if( pargumentsFind->exists("keys") == true || pargumentsFind->exists("kv") == true )                                  // Check if key-value pairs are provided 
@@ -1162,9 +1160,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind_old( const std::v
       }
    }
 
-   // ## Prepare columns for line list table 
-   detail::columns* pcolumnsThread = new detail::columns{};                   // Columns for thread-local tables, columns are reference counted and deleted automatically when no longer used, ref count reach 0
-   ptableLineList->to_columns( *pcolumnsThread );
 
    // ## Prepare the patterns for finding and searching in files
 
@@ -1207,7 +1202,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind_old( const std::v
       // ## Find patterns in the stringFileBuffer
 
       uint64_t uRowOffset = ptableLineList->size();                           // Get the current row count in the "file-linelist" table
-      //result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorPattern, arguments_, ptableLineList ); // Find lines with patterns in the file blob
+      result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorPattern, arguments_, ptableLineList ); // Find lines with patterns in the file blob
       if( result_.first == false )
       {
          ERROR_Add(result_.second); // Add error to the internal error list
@@ -1245,6 +1240,73 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind_old( const std::v
 
    return { true, "" };
 }
+
+std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind )
+{
+   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
+   auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
+
+   auto default_ = gd::argument::shared::arguments();
+   gd::argument::shared::arguments& options_ = default_;
+   if( pargumentsFind != nullptr ) options_ = *pargumentsFind ;
+
+   uint64_t uFileIndex = 0; // index for file table
+   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
+   uint64_t uMax = options_.get_argument<uint64_t>("max", 500u );             // @@TODO: Change solution to take default value for number of hits from applicaton property
+
+   std::string stringFileBuffer; // Buffer to store the file content
+   stringFileBuffer.reserve( 64 * 64 );
+
+
+   for(const auto& itRowFile : *ptableFile)
+   {
+      // ## calculate percentage for progress message
+
+      uFileIndex++;                                                            // increment file index for each file, used for progress message
+      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
+      {
+         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
+         MESSAGE_Progress( "", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true} });
+      }
+
+      // ## Generate the full file path (folder + filename)
+      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
+      gd::file::path pathFile(string_);
+      string_ = itRowFile.cell_get_variant_view("filename").as_string();
+      pathFile += string_;
+      std::string stringFile = pathFile.string();
+
+      auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
+
+      // Find lines with patterns and update the "file-linelist" table
+      gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+      if( pargumentsFind->exists("segment") == true ) arguments_.append("segment", (*pargumentsFind)["segment"].as_string() ); // Add segment if it exists in the arguments
+      stringFileBuffer.clear();                                               // Clear the blob vector to reuse it for the next file
+      auto result_ = CLEAN_File_g(stringFile, arguments_, stringFileBuffer);  // Load file into memory as a blob
+      if( result_.first == false)
+      {
+         ERROR_Add(result_.second);                                           // Add error to the internal error list
+         continue;                                                            // Skip to the next file if there was an error
+      }
+
+      if( stringFileBuffer.empty() == true ) continue;                        // Skip empty files
+
+      // ## Find patterns in the file blob
+      result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorRegexPatterns, arguments_, ptableLineList ); // Find lines with patterns in the file blob
+      if( result_.first == false )
+      {
+         ERROR_Add(result_.second); // Add error to the internal error list
+         continue; // Skip to the next file if there was an error
+      }
+
+      if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
+   }
+
+   MESSAGE_Progress( "", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true} });
+
+   return { true, "" };
+}
+
 
 
 /** ---------------------------------------------------------------------------

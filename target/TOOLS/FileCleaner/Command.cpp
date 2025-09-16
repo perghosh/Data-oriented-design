@@ -1789,6 +1789,197 @@ std::pair<bool, std::string> COMMAND_ListLinesWithPattern(const gd::argument::sh
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
  */
+std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode, const std::vector<std::string>& vectorPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_)
+{
+   uint64_t uFileKey = argumentsFind["file-key"]; // key to file for main table holding activ files
+   std::string stringFile = argumentsFind["source"].as_string();                                   assert(stringFile.empty() == false);
+   std::vector<std::pair<uint64_t, std::string>> vectorRow; // vector to hold matched rows and the pattern that matched
+
+   try 
+   {
+      // ## Function to add line to table
+      auto add_line_to_table_ = [uFileKey,ptable_,&stringFile]( uint64_t uLineRow, const std::string_view& stringPattern ) 
+         {  
+            // ## adds line with information about found pattern to table holding matches
+            auto uRow = ptable_->row_add_one();
+            ptable_->cell_set(uRow, "key", uRow + 1);
+            ptable_->cell_set(uRow, "file-key", uFileKey);
+            ptable_->cell_set(uRow, "filename", stringFile);
+            ptable_->cell_set(uRow, "row", uLineRow);
+            ptable_->cell_set(uRow, "pattern", stringPattern, gd::types::tag_adjust{});
+         };
+
+      // ## Function to count newlines from start to get row number
+      auto count_newline_ = [&stringCode](size_t pos) -> uint64_t 
+      {
+         return static_cast<uint64_t>(std::count(stringCode.begin(), stringCode.begin() + pos, '\n'));
+      };
+
+      // ## Search for each regex pattern in the entire buffer
+      for(const auto& stringPattern : vectorPatterns) 
+      {
+         // ## Search for the string pattern in `stringCode` and count all matches
+         size_t uPosition = 0;
+         while((uPosition = stringCode.find(stringPattern, uPosition)) != std::string::npos) 
+         {
+            uint64_t uRow = count_newline_(uPosition); // Determine which row this match starts in
+            vectorRow.emplace_back(uRow, stringPattern); // Store the match with its row number and pattern identifier
+            uPosition += stringPattern.length(); // Move past the current match
+         }
+      }
+
+      // Sort results by row number for easier processing
+      std::sort(vectorRow.begin(), vectorRow.end(), 
+         [](const std::pair<uint64_t, std::string>& a, const std::pair<uint64_t, std::string>& b) { return a.first < b.first; });
+
+      // ## Store results in the table for each match found
+      if( vectorRow.empty() == false && ptable_ != nullptr )                  // found matches and table is provided ? 
+      {
+         std::string stringFile = argumentsFind["source"].as_string(); // Get the source file name
+
+         // Open the file to read full lines later
+         std::ifstream file_(stringFile, std::ios::binary);
+         if( file_.is_open() == false ) { return {false, "Failed to open file: " + stringFile}; }
+
+         for( const auto& it : vectorRow ) 
+         {
+            uint64_t uRow = it.first; // Get the row number
+            add_line_to_table_(uRow, it.second); // Add the row to the table
+         }
+
+
+         file_.clear(); // clear EOF and fail bits
+         file_.seekg(0, std::ios::beg); // move to the beginning of the file
+         auto result_ = FILES_ReadFullRow_g( &file_, ptable_, ptable_->size() - vectorRow.size() ); // read full line for each row into "line" field as a preview for all rows that were added to the table
+         if( result_.first == false ) { return result_; }                     // If reading full lines failed, return error
+      }
+
+      // Return success with info about matches found
+      uint64_t totalLines = static_cast<uint64_t>(std::count(stringCode.begin(), stringCode.end(), '\n')) + 1;
+      std::string result = "Found " + std::to_string(vectorRow.size()) + " matches across " + std::to_string(totalLines) + " lines";
+      return {true, result};
+   }
+   catch (const std::exception& e) 
+   {
+      return {false, std::string("Error processing patterns: ") + e.what()};
+   }
+
+   return { true, "" };                                                       // Return success if no matches found
+}
+
+
+/** ----------------------------------------------------------------------------
+ * @brief Finds patterns in a string and stores the results in a table.
+ *
+ * This function searches for specified regular expression patterns in the provided string code.
+ * It identifies matches, records their line numbers, and stores the results in a table.
+ *
+ * @param stringCode The source code as a string to search for patterns.
+ * @param vectorRegexPatterns A vector of pairs, each containing a boost::regex and its string representation, to search for in the code.
+ * @param argumentsFind Arguments containing arguments how to find and data to generate result.
+ * @param ptable_ Pointer to the table where matching lines will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode, const std::vector<std::pair<boost::regex, std::string>>& vectorRegexPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::dto::table* ptable_)
+{
+   uint64_t uFileKey = argumentsFind["file-key"]; // key to file for main table holding activ files
+   std::string stringFile = argumentsFind["source"].as_string();                                   assert(stringFile.empty() == false);
+   std::vector<std::pair<uint64_t, std::string>> vectorRow; // vector to hold matched rows and the pattern that matched
+
+   try 
+   {
+      // ## Function to add line to table
+      auto add_line_to_table_ = [uFileKey,ptable_,&stringFile]( uint64_t uLineRow, const std::string_view& stringPattern ) 
+         {  
+            // ## adds line with information about found pattern to table holding matches
+            auto uRow = ptable_->row_add_one();
+            ptable_->cell_set(uRow, "key", uRow + 1);
+            ptable_->cell_set(uRow, "file-key", uFileKey);
+            ptable_->cell_set(uRow, "filename", stringFile);
+            ptable_->cell_set(uRow, "row", uLineRow);
+            ptable_->cell_set(uRow, "pattern", stringPattern, gd::types::tag_adjust{});
+         };
+
+      // ## Function to count newlines from start to get row number
+      auto count_newline_ = [&stringCode](size_t pos) -> uint64_t 
+      {
+         return static_cast<uint64_t>(std::count(stringCode.begin(), stringCode.begin() + pos, '\n'));
+      };
+
+      // ## Search for each regex pattern in the entire buffer
+      for(const auto& pattern : vectorRegexPatterns) 
+      {
+         boost::sregex_iterator itRegex(stringCode.begin(),stringCode.end(), pattern.first);
+         boost::sregex_iterator itEnd;
+
+         // ### Find all matches for this pattern
+         while(itRegex != itEnd) 
+         {
+            const boost::smatch& match_ = *itRegex;
+            size_t uPosition = static_cast<size_t>( match_.position() );       // Get the position of the match in the string
+            uint64_t uRow = count_newline_(uPosition);                         // Determine which row this match starts in
+            vectorRow.emplace_back(uRow, pattern.second);                      // Store the match with its row number and pattern identifier
+            ++itRegex;
+         }
+      }
+
+      // Sort results by row number for easier processing
+      std::sort(vectorRow.begin(), vectorRow.end(), 
+         [](const std::pair<uint64_t, std::string>& a, const std::pair<uint64_t, std::string>& b) { return a.first < b.first; });
+
+      // ## Store results in the table if needed
+      if( vectorRow.empty() == false && ptable_ != nullptr)                   // found matches and table is provided ? 
+      {
+         std::string stringFile = argumentsFind["source"].as_string(); // Get the source file name
+
+         // Open the file to read full lines later
+         std::ifstream file_(stringFile, std::ios::binary);
+         if( file_.is_open() == false ) { return {false, "Failed to open file: " + stringFile}; }
+
+         for( const auto& it : vectorRow ) 
+         {
+            uint64_t uRow = it.first; // Get the row number
+            add_line_to_table_(uRow, it.second); // Add the row to the table
+         }
+
+
+         file_.clear(); // clear EOF and fail bits
+         file_.seekg(0, std::ios::beg); // move to the beginning of the file
+         auto result_ = FILES_ReadFullRow_g( &file_, ptable_, ptable_->size() - vectorRow.size() ); // read full line for each row into "line" field as a preview for all rows that were added to the table
+         if( result_.first == false ) { return result_; }                     // If reading full lines failed, return error
+      }
+
+      // Return success with info about matches found
+      uint64_t totalLines = static_cast<uint64_t>(std::count(stringCode.begin(), stringCode.end(), '\n')) + 1;
+      std::string result = "Found " + std::to_string(vectorRow.size()) + " matches across " + std::to_string(totalLines) + " lines";
+      return {true, result};
+   }
+   catch (const std::exception& e) 
+   {
+      return {false, std::string("Error processing patterns: ") + e.what()};
+   }
+
+   return { true, "" };                                                       // Return success if no matches found
+}
+
+
+/** ----------------------------------------------------------------------------
+ * @brief Finds patterns in a string and stores the results in a table.
+ *
+ * This function searches for specified patterns in the provided string code.
+ * It identifies matches, records their line numbers, and stores the results in a table.
+ * The function supports regular expressions.
+ *
+ * @param stringCode The source code as a string to search for patterns.
+ * @param vectorPatterns A vector of patterns to search for. It holds string that represents the regex pattern and regex object used to search for.
+ * @param argumentsFind Arguments containing arguments how to find and data to generate result.
+ * @param ptable_ Pointer to the table where matching lines will be stored.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
 std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode, const std::vector<std::string>& vectorPatterns, const gd::argument::shared::arguments& argumentsFind, gd::table::table* ptable_)
 {
    uint64_t uFileKey = argumentsFind["file-key"]; // key to file for main table holding activ files
