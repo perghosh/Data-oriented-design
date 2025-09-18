@@ -2047,8 +2047,8 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
 
       // Return success with info about matches found
       uint64_t totalLines = static_cast<uint64_t>(std::count(stringCode.begin(), stringCode.end(), '\n')) + 1;
-      std::string result = "Found " + std::to_string(vectorRow.size()) + " matches across " + std::to_string(totalLines) + " lines";
-      return {true, result};
+      //std::string result = "Found " + std::to_string(vectorRow.size()) + " matches across " + std::to_string(totalLines) + " lines";
+      return { true, "" };
    }
    catch (const std::exception& e) 
    {

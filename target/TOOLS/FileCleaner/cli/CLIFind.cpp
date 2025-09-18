@@ -340,7 +340,14 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
 
       auto result_ = pdocument->FILE_UpdatePatternFind(vectorPatternString, &argumentsFind, 0); // Search for patterns in harvested files and place them into the result table
-      if (result_.first == false) return result_;
+      if (result_.first == false)
+      {
+         if (pdocument->ERROR_Empty() == false)
+         {
+            pdocument->ERROR_Print();                                         // print any errors that occurred during the pattern search)
+         }
+         return result_;                                                      // if error occurred, return the error
+      }
 
       if( options_["match-all"].is_true() == true )
       {
@@ -467,7 +474,7 @@ std::pair<bool, std::string> MatchAllPatterns_g(const std::vector<std::string>& 
  */
 std::pair<bool, std::string> SynchronizeResult_g(CDocument* pdocument)
 {                                                                                                  assert(pdocument != nullptr);
-   auto* ptableLineList = pdocument->CACHE_Get("file-linelist");                                   assert(ptableLineList != nullptr); // ensure the "file-linelist" table is in cache
+   const auto* ptableLineList = pdocument->CACHE_Get("file-linelist");                             assert(ptableLineList != nullptr); // ensure the "file-linelist" table is in cache
    auto* ptableKeyValue = pdocument->CACHE_GetTableArguments("keyvalue"); 
 
    if( ptableKeyValue != nullptr )
