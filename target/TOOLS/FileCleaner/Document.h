@@ -196,7 +196,7 @@ public:
    void ERROR_Add( const std::string_view& stringError );
    bool ERROR_Empty() const { return m_vectorError.empty(); }
    size_t ERROR_Size() const { return m_vectorError.size(); }
-   void ERROR_Print();
+   void ERROR_Print( bool bClear = false );
 
 //@}
 
@@ -222,8 +222,10 @@ public:
    // ## cache information is stored in dto tables (dto = data transfer object)
    std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document
    std::string m_stringCacheConfiguration;      ///< file name for file with cache configuration information 
+
+   /// Mutex lock used when methods within document work on table data
+   std::mutex m_mutexCache;
    /// vector of tables used to cache data
-   //std::vector< std::unique_ptr< gd::table::dto::table > > m_vectorTableCache;
    std::vector< table_t > m_vectorTableCache;
 
    // ## Error information. Document are able to collect error information that may be usefull locating problems

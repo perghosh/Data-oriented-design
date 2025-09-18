@@ -1393,12 +1393,12 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
       }
    }
 
+	std::atomic<bool> bError(false);                                           // Atomic flag to signal threads to stop processing
    // ## Thread synchronization variables
    std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
-   std::atomic<uint64_t> uAtomicProcessedCount(0);                            // Count of processed files
+   //std::atomic<uint64_t> uAtomicProcessedCount(0);                          // Count of processed files
    std::atomic<uint64_t> uAtomicTotalLines(0);                                // Total lines found across all threads
    std::mutex mutexLineList;                                                  // Mutex to protect ptableLineList access
-   std::mutex mutexKeyValue;                                                  // Mutex to protect key-value processing
    std::vector<std::string> vectorError;                                      // Collect errors from all threads
    std::mutex mutexErrors;                                                    // Mutex to protect access to vectorError
 
@@ -1418,19 +1418,20 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
       
       while(true)
       {
-         // Get next file index to process
-         uint64_t uRowIndex = uAtomicFileIndex.fetch_add(1);
+         uint64_t uRowIndex = uAtomicFileIndex.fetch_add(1); // Get next file index to process
          if(uRowIndex >= uFileCount) { break; }
          
          try
          {
             // Update progress (thread-safe)
+            /*
             uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;
             if(uProcessed % 10 == 0)                                          // Show progress every 10 files
             {
                uint64_t uPercent = (uProcessed * 100) / uFileCount;
                MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true}});
             }
+            */
 
             // STEP 1: Get file info (ptableFile is read-only so no mutex needed)
             auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
@@ -1441,6 +1442,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
             gd::file::path pathFile(stringFolder);
             pathFile += stringFilename;
             std::string stringFile = pathFile.string();
+
+
+				//MESSAGE_Display("Thread " + std::to_string(iThreadId) + " processing file: " + stringFile); // Debug message
 
             // STEP 3: Prepare arguments for pattern finding ..................
             gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
@@ -1477,8 +1481,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
             // STEP 6: Update key-value pairs if provided .....................
             if(bUseKeyValue == true)
             {
-               std::lock_guard<std::mutex> lockKeyValue(mutexKeyValue);       // Thread-safe call to BUFFER_UpdateKeyValue 
-
                // Extract rows where to look for key-value pairs and this is used because there could be a lot of matched find pattern where key-value pairs are not found
                std::vector<uint64_t> vectorRow;
                gd::table::dto::table tableRow(0u, {{"uint64", 0, "row"}, {"uint64", 0, "linelist-key"}}, gd::table::tag_prepare{});
@@ -1517,7 +1519,17 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
             vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
+				bError = true;
          }
+         catch(...)
+         {
+            std::lock_guard<std::mutex> lockErrors(mutexErrors);
+            // get index to last file
+				auto uIndex = uAtomicFileIndex.load();
+            vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " unknown error, file index = " + std::to_string(uIndex));
+            bError = true;
+         }
+
       }
    };
 
@@ -1525,7 +1537,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
 
    if(iThreadCount <= 0) { iThreadCount = std::thread::hardware_concurrency(); } // Auto-detect thread count
    if(iThreadCount <= 0) { iThreadCount = 1; }                               // Fallback to single thread
-   if(iThreadCount > 8) { iThreadCount = 8; }                                // Limit to 8 threads
+   if(iThreadCount > 2) { iThreadCount = 2; }                                // Limit to 2 threads
    if(ptableFile->size() < iThreadCount) { iThreadCount = (int)ptableFile->size(); } // Limit threads to number of files
                                                                                                    LOG_DEBUG_RAW("== Using threads: " & iThreadCount);
 
@@ -1533,92 +1545,21 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
    std::vector<std::thread> vectorPatternThread;
    vectorPatternThread.reserve(iThreadCount);
 
-   for(int i = 0; i < iThreadCount; ++i) 
-   { 
-      vectorPatternThread.emplace_back(process_, i); 
-   }
-
+	for (int i = 0; i < iThreadCount; ++i) { vectorPatternThread.emplace_back(process_, i); }// Launch threads
    
    for(auto& threadWorker : vectorPatternThread) { threadWorker.join(); }     // Wait for all threads to complete
 
-   MESSAGE_Progress("", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true}});
+   //MESSAGE_Progress("", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true}});
 
    // ### Handle any collected errors
-   if(!vectorError.empty())
+   if( bError == true )
    {
       for(const auto& stringError : vectorError) { ERROR_Add(stringError); }
+		return { false, "Errors occurred during pattern finding, see error log for details." };
    }
 
    return {true, ""};
 }
-
-/*
-std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsFind )
-{
-   auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
-   auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
-
-   auto default_ = gd::argument::shared::arguments();
-   gd::argument::shared::arguments& options_ = default_;
-   if( pargumentsFind != nullptr ) options_ = *pargumentsFind ;
-
-   uint64_t uFileIndex = 0; // index for file table
-   auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
-   uint64_t uMax = options_.get_argument<uint64_t>("max", 500u );             // @@TODO: Change solution to take default value for number of hits from applicaton property
-
-   std::string stringFileBuffer; // Buffer to store the file content
-   stringFileBuffer.reserve( 64 * 64 );
-
-
-   for(const auto& itRowFile : *ptableFile)
-   {
-      // ## calculate percentage for progress message
-
-      uFileIndex++;                                                            // increment file index for each file, used for progress message
-      if( uFileIndex % 10 == 0 ) // show progress message every 10 files
-      {
-         uint64_t uPercent = (uFileIndex * 100) / uFileCount;                 // calculate percentage of files processed
-         MESSAGE_Progress( "", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true} });
-      }
-
-      // ## Generate the full file path (folder + filename)
-      auto string_ = itRowFile.cell_get_variant_view("folder").as_string();
-      gd::file::path pathFile(string_);
-      string_ = itRowFile.cell_get_variant_view("filename").as_string();
-      pathFile += string_;
-      std::string stringFile = pathFile.string();
-
-      auto uKey = itRowFile.cell_get_variant_view("key").as_uint64();
-
-      // Find lines with patterns and update the "file-linelist" table
-      gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
-      if( pargumentsFind->exists("segment") == true ) arguments_.append("segment", (*pargumentsFind)["segment"].as_string() ); // Add segment if it exists in the arguments
-      stringFileBuffer.clear();                                               // Clear the blob vector to reuse it for the next file
-      auto result_ = CLEAN_File_g(stringFile, arguments_, stringFileBuffer);  // Load file into memory as a blob
-      if( result_.first == false)
-      {
-         ERROR_Add(result_.second);                                           // Add error to the internal error list
-         continue;                                                            // Skip to the next file if there was an error
-      }
-
-      if( stringFileBuffer.empty() == true ) continue;                        // Skip empty files
-
-      // ## Find patterns in the file blob
-      result_ = COMMAND_FindPattern_g(stringFileBuffer, vectorRegexPatterns, arguments_, ptableLineList ); // Find lines with patterns in the file blob
-      if( result_.first == false )
-      {
-         ERROR_Add(result_.second); // Add error to the internal error list
-         continue; // Skip to the next file if there was an error
-      }
-
-      if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
-   }
-
-   MESSAGE_Progress( "", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true} });
-
-   return { true, "" };
-}
-*/
 
 
 /** ---------------------------------------------------------------------------
@@ -1881,6 +1822,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
  */
 std::pair<bool, std::string> CDocument::BUFFER_UpdateKeyValue(const gd::argument::shared::arguments& argumentsFile, std::string_view stringFileBuffer, gd::table::dto::table& tableRow, const std::vector<gd::argument::arguments>& vectorRule)
 {
+   std::lock_guard<std::mutex> lockCache( m_mutexCache ); // lock method and check that `keyvalue` is not used by other operations
+
    uint64_t uFileKey = argumentsFile["file-key"].as_uint64();                                      assert( uFileKey > 0 );
    std::string_view stringFile = argumentsFile["source"].as_string_view();                         assert( stringFile.empty() == false );
    auto ptableKeyValue = CACHE_GetTableArguments("keyvalue", true); // Ensure the "keyvalue" table is in cache
@@ -2893,7 +2836,7 @@ void CDocument::ERROR_Add( const std::string_view& stringError )
    m_vectorError.push_back( std::move(argumentsError) );
 }
 
-void CDocument::ERROR_Print() 
+void CDocument::ERROR_Print( bool bClear ) 
 {
    std::shared_lock<std::shared_mutex> lock_( m_sharedmutexError );            // locks `m_vectorError`
    if( m_vectorError.empty() == true ) return;                                 // no errors, exit
@@ -2903,6 +2846,8 @@ void CDocument::ERROR_Print()
       std::string stringError = itError["text"].as_string();
       if( stringError.empty() == false ) { m_papplication->PrintError(stringError, gd::argument::arguments() ); } // print error message
    }
+
+	if (bClear == true) m_vectorError.clear();                                  // clear error list
 
 }
 

@@ -98,6 +98,7 @@ if( USE_TARGET_ )
 
    if(MSVC)
       # Windows/MSVC specific settings with SIMD optimizations
+
       if(CMAKE_BUILD_TYPE STREQUAL "Debug")
          # Debug build - minimal optimization but enable debugging
          target_compile_options(${TARGET_NAME_} PRIVATE
@@ -107,8 +108,26 @@ if( USE_TARGET_ )
             /RTC1                  # Runtime error checks
             /MDd                   # Debug runtime library (or /MTd for static)
          )
+      elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+         # Release with Debug Info - optimized but with asserts and debug info
+         target_compile_options(${TARGET_NAME_} PRIVATE
+            /O2                    # Optimize for speed
+            /Zi                    # Generate debug information
+            /Oi                    # Enable intrinsic functions
+            /Ot                    # Favor fast code
+            /Gy                    # Function-level linking
+            /arch:AVX2             # Enable AVX2 SIMD instructions
+            /favor:INTEL64         # Optimize for Intel 64-bit
+            /fp:fast               # Fast floating-point model
+            # Note: NO /DNDEBUG here - this keeps asserts enabled
+         )
+         # Less aggressive linking for RelWithDebInfo to preserve debugging capability
+         target_link_options(${TARGET_NAME_} PRIVATE
+            /OPT:REF               # Remove unreferenced functions/data
+            /INCREMENTAL:NO        # Disable incremental linking
+         )
       else()
-         # Release build - full optimization with SIMD
+         # Full Release build - maximum optimization, no asserts
          target_compile_options(${TARGET_NAME_} PRIVATE
             /O2                    # Optimize for speed
             /Oi                    # Enable intrinsic functions
@@ -122,7 +141,7 @@ if( USE_TARGET_ )
             /Gy                    # Function-level linking
             /DNDEBUG               # Define NDEBUG for release builds
          )
-         
+      
          # Release linking with optimization
          target_link_options(${TARGET_NAME_} PRIVATE
             /LTCG                  # Link-time code generation
@@ -131,7 +150,6 @@ if( USE_TARGET_ )
             /INCREMENTAL:NO        # Disable incremental linking
          )
       endif()
-      
    elseif(APPLE)
       # macOS specific settings - keep it simple
       if(CMAKE_BUILD_TYPE STREQUAL "Debug")
