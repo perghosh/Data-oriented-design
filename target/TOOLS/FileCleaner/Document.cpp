@@ -1527,6 +1527,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
    if(iThreadCount <= 0) { iThreadCount = 1; }                               // Fallback to single thread
    if(iThreadCount > 8) { iThreadCount = 8; }                                // Limit to 8 threads
    if(ptableFile->size() < iThreadCount) { iThreadCount = (int)ptableFile->size(); } // Limit threads to number of files
+                                                                                                   LOG_DEBUG_RAW("== Using threads: " & iThreadCount);
 
    // Create and launch worker threads
    std::vector<std::thread> vectorPatternThread;
@@ -1838,6 +1839,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
    if(iThreadCount <= 0) { iThreadCount = 1; }                               // Fallback to single thread
    if(iThreadCount > 8) { iThreadCount = 8; }                                // Limit to 8 threads
    if(ptableFile->size() < iThreadCount) { iThreadCount = (int)ptableFile->size(); } // Limit threads to number of files
+                                                                                                   LOG_DEBUG_RAW("== Using threads: " & iThreadCount);
 
    // Create and launch worker threads
    std::vector<std::thread> vectorPatternThread;

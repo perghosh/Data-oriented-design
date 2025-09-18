@@ -98,6 +98,8 @@ std::string format_text_width(std::string_view stringText, size_t uWidth, char i
 
 /// Trims text by removing duplicate characters.
 std::string trim_repeated_chars(const std::string_view& stringText, size_t uMaxRepeated = 2);
+/// Trims text by removing character if string begins or ends with slected character
+std::string trim_first_and_last(const std::string_view& stringText, char iCharacter);
 
 // ## Conversion methods ......................................................
 

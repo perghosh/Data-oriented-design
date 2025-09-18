@@ -52,7 +52,7 @@ std::pair<bool, std::string> ReadFile(std::string_view stringLocation, std::vect
 
 std::pair<bool, std::string> PrintContent(const std::vector<std::string>& vectorContent)
 {
-   unsigned int uSize = vectorContent.size();
+   auto uSize = vectorContent.size();
    //std::vector<char> vectorCharacters;
 
    for( unsigned int u = 0; u < uSize; u++ )
@@ -68,7 +68,7 @@ std::pair<bool, std::string> PrintContent(const std::vector<std::string>& vector
 
 std::pair<bool, std::string> PrintContent(const std::vector<char>& vectorBuffer)
 {
-   unsigned int uSize = vectorBuffer.size();
+   auto uSize = vectorBuffer.size();
    //unsigned int uCount = 0;
    std::vector<char> vectorCharacters;
 
