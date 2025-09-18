@@ -81,6 +81,7 @@ Counts lines in files or folders, or counts pattern occurrences.
 - `--ignore <match;match;match>`: Ignore files or folders matching the specified patterns. Multiple patterns are separated by `;`.
 - `--recursive <depth>`: Perform the operation recursively up to the specified depth.
 - `--rpattern <regex>`: Use a regular expression pattern to search for more complex text matches within file content.
+- `--ignore <match>`: Ignore files or folders matching patterns (multiple separated by `;`)
 - `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
 - `--output <file>`: Save the output to a file.
 - `--page <index>`: Print the output to the console from slected page, default page size is 10 lines.
@@ -228,6 +229,8 @@ Displays the version of the application.
 ## Global options
 These options can be used with any command to modify its behavior globally. Behaviour might be different depending on the command used.
 
+- `--add-to-history <alias>`: Add to history with alias name
+- `--explain`: Print additional context or descriptions about items
 - `--logging`: Turn on logging functionality.
 - `--logging-csv`: Add csv logger, prints log information using the csv format.
 - `--logging-severity <severity>`: Specify severity level for logging. Valid values are: `verbose`, `debug`, `info`, `warning`, `error`, `fatal`.
