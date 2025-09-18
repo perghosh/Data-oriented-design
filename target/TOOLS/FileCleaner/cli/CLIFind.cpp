@@ -339,7 +339,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
       uPatternCount = vectorPatternString.size();                             // count the number of patterns to search for
       if( uPatternCount == 0 ) return { false, "No patterns provided." };     // if no patterns are provided, return an error
 
-      auto result_ = pdocument->FILE_UpdatePatternFind(vectorPatternString, &argumentsFind); // Search for patterns in harvested files and place them into the result table
+      auto result_ = pdocument->FILE_UpdatePatternFind(vectorPatternString, &argumentsFind, 0); // Search for patterns in harvested files and place them into the result table
       if (result_.first == false) return result_;
 
       if( options_["match-all"].is_true() == true )
@@ -942,7 +942,7 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
             if( stringPrint.empty() == false ) stringPrint += "\n";           // add a separator if the stringPrint is not empty
 
             std::string stringBrief = pargumentsRow->get_argument( key_ ).as_string(); 
-            if( uTextWidth > 0 )
+            if( uTextWidth > 0 && stringBrief.empty() == false)
             {
                // format the value to fit in the width, with a margin for the key and separator
                auto uWidth = uTextWidth - 2 - stringBriefFormat.length();

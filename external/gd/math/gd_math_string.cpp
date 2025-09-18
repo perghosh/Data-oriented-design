@@ -1159,7 +1159,7 @@ std::string format_header_line(const std::string_view& stringHeaderName, enumAli
  */
 std::string format_text_width(std::string_view stringText, size_t uWidth, char iFillChar)
 {
-   assert(stringText.empty() == false); assert(uWidth > 0);
+   assert(stringText.empty() == false);                                                             assert(uWidth > 0);
 
    std::string stringResult;
    stringResult.reserve(stringText.size() * 2); // More reasonable reserve size
@@ -1279,6 +1279,48 @@ std::string trim_repeated_chars(const std::string_view& stringText, size_t uMaxR
    return stringResult;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Removes specified character from the beginning and end of a string.
+ *
+ * This function removes the specified character from the first and/or last
+ * position of the input string. If the character appears at the beginning,
+ * it will be removed. If it appears at the end, it will be removed. If the
+ * same character appears at both positions, both occurrences will be removed.
+ * Only the outermost matching characters are removed - the function does not
+ * remove multiple consecutive characters from either end.
+ *
+ * @param stringText The source string to process.
+ * @param iCharacter The character to remove from first and last positions.
+ * @return std::string A new string with the specified character removed from ends.
+ * 
+ * @code
+std::string text = "\"Hello World\"";
+std::string result = trim_first_and_last(text, '"');
+// result contains "Hello World"
+ * @endcode
+ */
+std::string trim_first_and_last(const std::string_view& stringText, char iCharacter)
+{
+   if(stringText.empty()) { return std::string{}; }                           // Return empty string if input is empty
+   
+   size_t uStartPosition = 0;                                                 // Starting position for substring
+   size_t uLength = stringText.length();                                      // Length of substring to extract
+   
+   // ## Check if first character matches and should be removed
+   if(stringText.front() == iCharacter) 
+   {
+      uStartPosition = 1;
+      uLength--;
+   }
+   
+   // ## Check if last character matches and should be removed
+   if(uLength > 0 && stringText.back() == iCharacter) { uLength--; }
+   
+   // ### Return substring with trimmed characters
+   return std::string(stringText.substr(uStartPosition, uLength));
+}
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief Converts a hexadecimal string to its ASCII representation.
@@ -1373,6 +1415,7 @@ std::string merge_delimited(const std::string_view& stringFirst, const std::stri
 
    for( const auto& stringValue : vectorSecond )
    {
+	  if (stringValue.empty() == true) { continue; }                          // Remove empty strings from second input
       if( std::find(vectorUnique.begin(), vectorUnique.end(), stringValue) == vectorUnique.end() )
       {
          vectorUnique.push_back(stringValue);

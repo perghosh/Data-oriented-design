@@ -2683,25 +2683,35 @@ namespace gd {
        * @param stringText text to split into multiple parts (remember to not destroy string as long as work with string_view items are used)
        * @param chSplitWith character used to mark where to split text
        * @param vectorPart vector where strings are stored
+
+       TEST CASES TO VERIFY BEHAVIOR:
+       "a,b,c"     -> ["a", "b", "c"]       (normal case)
+       "a,b,c,"    -> ["a", "b", "c", ""]   (trailing separator creates empty part)
+       ",a,b,c"    -> ["", "a", "b", "c"]   (leading separator creates empty part)
+       "a,,b"      -> ["a", "", "b"]        (consecutive separators create empty part)
+       ""          -> []                    (empty string creates no parts)
+       "abc"       -> ["abc"]               (no separator, whole string)
+       ","         -> ["", ""]              (only separator creates two empty parts)
        */
       void split( const std::string_view& stringText, char chSplitWith, std::vector<std::string_view>& vectorPart )
       {
+
+         if (stringText.empty()) { return; }                                       // Handle empty string case
+
          const char* pbszStart = stringText.data();
-         for( const char* pbszPosition = stringText.data(), *pbszEnd = stringText.data() + stringText.length(); pbszPosition != pbszEnd; pbszPosition++ )
+         const char* pbszEnd = stringText.data() + stringText.length();
+
+         for (const char* pbszPosition = stringText.data(); pbszPosition != pbszEnd; pbszPosition++)
          {
-            if( *pbszPosition == chSplitWith )
+            if (*pbszPosition == chSplitWith)
             {
-               vectorPart.emplace_back( std::string_view( pbszStart, pbszPosition - pbszStart ) );
+               vectorPart.emplace_back(std::string_view(pbszStart, pbszPosition - pbszStart));
                pbszStart = pbszPosition + 1;
             }
          }
 
-         // if part contains text or last position in string is same as split character, then add one more to vector
-         if( pbszStart <= &stringText.back() || stringText.back() == chSplitWith )
-         {
-            unsigned uSplitWith = stringText.back() == chSplitWith ? 1 : 0;    // if last character is split character then decrease length by one
-            vectorPart.emplace_back( std::string_view( pbszStart, (stringText.data() + (stringText.length() - uSplitWith)) - pbszStart));
-         }
+         // ## Always add the final part (even if empty when string ends with split character)
+         vectorPart.emplace_back(std::string_view(pbszStart, pbszEnd - pbszStart));
       }
 
       /** -------------------------------------------------------------------
