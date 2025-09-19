@@ -240,7 +240,7 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
 
                // Skip if source file is newer than target (we want older files in this mode)
                // But also skip if source is too old (beyond the time limit)
-               if(source_time_ > target_time_ || source_time_ < timeThreshold)
+               if(source_time_ > target_time_)
                {
                   uFilesSkippedDueToAge++;
                   continue;
