@@ -1974,6 +1974,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the listing. Multiple folder names can be separated with semicolons (`;`). This helps exclude irrelevant directories." });
       optionsCommand.add({ "backup", "If destination file exits then make a backup"});
       optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
+      optionsCommand.add_flag({ "overwrite", 'o', "Overwrite files existing files"});
+      optionsCommand.add_flag({ "newer", "Only copy files that are newer if target file is found" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );

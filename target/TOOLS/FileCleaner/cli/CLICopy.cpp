@@ -2,6 +2,7 @@
  * @file CLICopy.cpp
  */
 
+#include <chrono>
 #include <format>
 
 #include "gd/gd_uuid.h"
@@ -57,7 +58,9 @@ std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocum
    */
    if (options_.exists("target") == true)
    {
-      gd::argument::shared::arguments arguments_({ { "depth", uRecursive }, { "filter", stringFilter }, { "pattern", options_["pattern"].as_string() }, { "segment", options_["segment"].as_string() } });
+      gd::argument::shared::arguments arguments_;
+      arguments_.append(options_.get_arguments(), { "depth", "overwrite", "pattern", "rpattern", "segment", "newer"});
+
       auto result_ = CopyFiles_g(stringSource, options_["target"].as_string(), arguments_, pdocument);
    }
 
@@ -81,35 +84,45 @@ std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocum
  * @return std::pair<bool, std::string> Pair indicating success/failure and an error message if any.
  */
 std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const std::string& stringTargetFolder, const gd::argument::shared::arguments& arguments_, CDocument* pdocument)
-{                                                                                                  assert( stringSource != "" );
+{                                                                                               assert( stringSource != "" ); assert( stringTargetFolder != "" ); assert( pdocument != nullptr );
    auto ptableDir = pdocument->CACHE_Get( "file-dir", true );
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
    auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptableDir, uDepth, true);        if( result_.first == false ) return result_;
+
+	// ## determine the source folder to remove from path when copying ...........
    
-   std::string stringSourceFolder;
+	std::string stringSourceFolder; // the source folder to remove from path when copying
    if(std::filesystem::is_directory(stringSource) == true) { stringSourceFolder = stringSource; }
    else
    {
-      stringSourceFolder = std::filesystem::path(stringSource).parent_path().string();          // get parent directory if source is a file
+      stringSourceFolder = std::filesystem::path(stringSource).parent_path().string();// get parent directory if source is a file
    }
    
-   // ## validate stringSource and stringTarget
+	// ## validate stringSource and stringTarget .................................
+
+   if( std::filesystem::exists( stringSourceFolder) == false ) { return { false, "Source folder does not exist: " + stringSourceFolder }; }
+
+   
+	if(std::filesystem::exists(stringTargetFolder) == false)                    // Check target folder and if not found then create it
+	{
+		pdocument->MESSAGE_Display("Target folder does not exist, creating: " + stringTargetFolder);
+		std::error_code errorcode;
+		std::filesystem::create_directories(stringTargetFolder, errorcode);
+		if(errorcode) return { false, "Failed to create target directory: " + errorcode.message() };
+	}
+
+	// ## Prepare paths .......................................................
+
    std::filesystem::path pathSource = std::filesystem::canonical(stringSourceFolder);
    std::filesystem::path pathTarget = std::filesystem::canonical(stringTargetFolder);
    if( pathSource == pathTarget )                                              // Check if source and target are the same folder
    {
       return { false, "Source and target folders cannot be the same" };
-   }
+   }	                                                                                              LOG_DEBUG_RAW("Source folder: " & pathSource.string().c_str()); LOG_DEBUG_RAW("Target folder: " & pathTarget.string().c_str());
    
-   if( std::filesystem::exists(stringTargetFolder) == false )                 // ensure target folder exists
-   {
-      std::error_code errorcode;
-      std::filesystem::create_directories(stringTargetFolder, errorcode);
-      if(errorcode) return { false, "Failed to create target directory: " + errorcode.message() };
-   }
-   
-   // ## Generate list of files to copy to target folder
+	// ## Generate list of files to copy to target folder ......................
+
    std::vector<std::string> vectorSourceFile;
    gd::table::dto::table* ptableFile = ptableDir;                             // get the table pointer
    for(const auto& itRowFile : *ptableFile)
@@ -118,43 +131,156 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
       
       if( std::filesystem::exists(stringFile) == false )                      // check if file exists
       {
-         pdocument->ERROR_Add("File does not exist: " + stringFile); continue;
+         pdocument->ERROR_Add("Missing file: " + stringFile); continue;
       }
       
       vectorSourceFile.push_back(stringFile);                                 // add file to vector
    }
    
    if( vectorSourceFile.empty() == true ) { return { false, "No files found to copy" }; } // no files to copy
-   
+                                                                                                    LOG_DEBUG_RAW("Files to copy: " & vectorSourceFile.size());
+
+   // ## Prepare settings for copy operation .................................
+
+	bool bOverwrite = arguments_["overwrite"].as_bool();                       // get overwrite option
+	std::string stringNewer = arguments_["newer"].as_string();                 // get newer option, format is hh:mm:ss and with priority for hours, then minutes and last seconds if something is missing
+
+   // Parse and calculate the time threshold for "newer" comparison
+   std::chrono::system_clock::time_point timeThreshold;
+   int iNewerFilter = 0;  // 0 = no filter, positive = newer than, negative = older than
+
+   if (stringNewer.empty() == false)                                         // if newer is set then parse it
+   {
+      std::string stringTimeOnly = stringNewer;
+
+      // Check for negative prefix and set filter direction
+      if (stringTimeOnly[0] == '-')
+      {
+         iNewerFilter = -1;                                                    // negative = older files filter
+         stringTimeOnly = stringTimeOnly.substr(1);                           // remove the negative sign for parsing
+      }
+      else
+      {
+         iNewerFilter = 1;                                                     // positive = newer files filter
+      }
+
+      auto vectorTime = CApplication::Split_s(stringTimeOnly, ':');
+      if (vectorTime.size() > 3) return { false, "Invalid format for newer option, use [-]hh:mm:ss" };
+
+      unsigned uHours = 0;
+      unsigned uMinutes = 0;
+      unsigned uSeconds = 0;
+
+      try
+      {
+         if (vectorTime.size() >= 1) uHours = std::stoi(vectorTime[0]);
+         if (vectorTime.size() >= 2) uMinutes = std::stoi(vectorTime[1]);
+         if (vectorTime.size() == 3) uSeconds = std::stoi(vectorTime[2]);
+      }
+      catch (const std::exception& e) { return { false, "Invalid time values in newer option: " + std::string(e.what()) }; }
+
+      if (uHours > 0x10000 || uMinutes > 59 || uSeconds > 59) return { false, "Invalid time value for newer option, use [-]hh:mm:ss" };
+
+      unsigned uTotalSeconds = uHours * 3600 + uMinutes * 60 + uSeconds;      // Calculate total seconds for the time difference   
+
+      auto now = std::chrono::system_clock::now();
+      if (iNewerFilter < 0)
+      {
+         // For negative values, we set threshold to current time + duration (files can be older but within limit)
+         timeThreshold = now + std::chrono::seconds(uTotalSeconds);
+         pdocument->MESSAGE_Display(std::format( "Using older filter: files can be older but not more than {}:{}:{} old", uHours, uMinutes, uSeconds ) );
+      }
+      else
+      {
+         // For positive values, we set threshold to current time - duration (files must be newer than X time ago)
+         timeThreshold = now - std::chrono::seconds(uTotalSeconds);
+         pdocument->MESSAGE_Display( std::format( "Using newer filter: files must be newer than {}:{}:{} ago", uHours, uMinutes, uSeconds ) );
+      }
+
+      bOverwrite = true;                                                      // if newer is set then we must overwrite
+   }
+
    // ## copy files to target folder, if sub directories then create same file structure in target but remove the source folder
+
+   unsigned uFilesCopied = 0;
+   unsigned uFilesSkippedDueToAge = 0;
+   unsigned uFilesSkippedDueToOverwrite = 0;
+
    for( const auto& stringSourceFile : vectorSourceFile )
    {
-      std::filesystem::path pathSourceFile(stringSourceFile);
-      std::filesystem::path pathRelative = std::filesystem::relative(pathSourceFile, stringSourceFolder);
-      std::filesystem::path pathTargetFile = std::filesystem::path(stringTargetFolder) / pathRelative;
+		std::filesystem::path pathSourceFile(stringSourceFile); // get the source file path
+		std::filesystem::path pathRelative = std::filesystem::relative(pathSourceFile, stringSourceFolder); // get the relative path to source folder
+		std::filesystem::path pathTargetFile = std::filesystem::path(stringTargetFolder) / pathRelative; // create the target file path
       
       // create target directory if it doesn't exist
       std::filesystem::path pathTargetDir = pathTargetFile.parent_path();
       if( std::filesystem::exists(pathTargetDir) == false )
       {
-         std::error_code ec;
-         std::filesystem::create_directories(pathTargetDir, ec);
-         if( ec ) 
-         {
-            pdocument->ERROR_Add("Failed to create directory: " + pathTargetDir.string() + " - " + ec.message());
-            continue;
-         }
+         std::error_code errorcode;
+         std::filesystem::create_directories(pathTargetDir, errorcode);
+         if( errorcode ) { pdocument->ERROR_Add("Failed to create directory: " + pathTargetDir.string() + " - " + errorcode.message()); continue; }
       }
-      
-      // copy the file
-      std::error_code ec;
-      std::filesystem::copy_file(pathSourceFile, pathTargetFile, std::filesystem::copy_options::overwrite_existing, ec);
-      if( ec )
+
+		bool bTargetExists = std::filesystem::exists(pathTargetFile); // check if target file exists
+      if(bOverwrite == false && bTargetExists == true) { uFilesSkippedDueToOverwrite++; continue; } // if not overwrite and file exists then skip
+
+      if(iNewerFilter != 0)
       {
-         pdocument->ERROR_Add("Failed to copy file: " + stringSourceFile + " to " + pathTargetFile.string() + " - " + ec.message());
+         // ### Apply "newer" or "older" filter logic .......................
+         try
+         {
+				auto source_last_write_ = std::filesystem::last_write_time(pathSourceFile); // get last write time of source file
+				auto source_time_ = std::chrono::system_clock::time_point(source_last_write_.time_since_epoch()); // convert to system clock time point
+
+				if(iNewerFilter < 0)                                              // negative = older files filter
+            {
+               // For negative newer values: allow files that are older but not too old
+               if(bTargetExists == true)
+               {
+						auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile); // get last write time of target file
+						auto target_time_ = std::chrono::system_clock::time_point(target_last_write_.time_since_epoch()); // convert to system clock time point  
+
+                  // Skip if source file is newer than target (we want older files in this mode)
+                  // But also skip if source is too old (beyond the time limit)
+                  if(source_time_ > target_time_ || source_time_ < timeThreshold)
+                  {
+                     uFilesSkippedDueToAge++;
+                     continue;
+                  }
+               }
+            }
+            else
+            {
+               // For positive newer values: standard newer logic
+               if(bTargetExists == true)
+               {
+						auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile); // get last write time of target file
+						auto target_time_ = std::chrono::system_clock::time_point(target_last_write_.time_since_epoch()); // convert to system clock time point
+
+                  // Skip if source file is not newer than target file
+                  if (source_time_ <= target_time_) { uFilesSkippedDueToAge++; continue; }
+               }
+				} // if(iNewerFilter < 0) ... else ... 
+			} // try
+         catch (const std::exception& e) { pdocument->ERROR_Add( std::format( "Failed to check file times for: {} - {}", stringSourceFile, e.what() ));  continue; }
       }
+
+      // copy the file
+      std::error_code errorcode;
+      std::filesystem::copy_file(pathSourceFile, pathTargetFile, std::filesystem::copy_options::overwrite_existing, errorcode);
+      if(errorcode)
+      {
+         pdocument->ERROR_Add("Failed to copy file: " + stringSourceFile + " to " + pathTargetFile.string() + " - " + errorcode.message());
+      }
+      else { uFilesCopied++; }
    }
-   
+
+   // Display summary
+   pdocument->MESSAGE_Display("Copy operation completed");
+   pdocument->MESSAGE_Display( std::format( "Files copied: {}", uFilesCopied ) );
+   if(uFilesSkippedDueToOverwrite > 0) pdocument->MESSAGE_Display( std::format( "  Files skipped (overwrite disabled): {}", uFilesSkippedDueToOverwrite ) );
+   if(uFilesSkippedDueToAge > 0)  pdocument->MESSAGE_Display( std::format( "  Files skipped (not newer): {}", uFilesSkippedDueToAge ) );
+
    return { true, "" };
 }
 

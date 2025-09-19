@@ -31,6 +31,7 @@ NAMESPACE_CLI_BEGIN
 
 std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocument* pdocument);
 
+/// @brief Copies files from source to target folder while preserving directory structure.
 std::pair<bool, std::string> CopyFiles_g( const std::string& stringSource, const std::string& stringTarget, const gd::argument::shared::arguments& arguments_, CDocument* pdocument);
 
 
