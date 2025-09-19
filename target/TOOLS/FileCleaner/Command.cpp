@@ -31,6 +31,32 @@
 
 namespace detail {
 
+	/// check if file is accessible
+   bool is_accessible(const std::filesystem::path& path_) 
+   {
+      try 
+      {
+         std::ifstream file(path_, std::ios::binary);                         // Try to open the file for reading to check accessibility
+         if( file.is_open() == false ) { return false; }
+         file.close();
+         return true;
+      }
+      catch (const std::exception&) { return false; }
+   }
+
+	/// check if file is in use (locked)
+   bool in_use(const std::filesystem::path& path_) 
+   {
+      try 
+      {
+         std::ifstream file(path_, std::ios::binary);
+         if(file.is_open() == false) { return true; }
+         file.close();
+         return false;
+      }
+      catch (const std::exception&) { return true; }
+   }
+
    /// add file to table
    void add_file_to_table(const gd::file::path& pathFile, gd::table::dto::table* ptable_, bool bSize = false)
    {

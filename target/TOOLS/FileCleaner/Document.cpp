@@ -78,28 +78,6 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
    auto result_ = FILES_Harvest_g(argumentsPath, ptable_);
    if( result_.first == false ) return result_;
 
-   //auto ptableCount =  std::make_unique<gd::table::dto::table>( gd::table::dto::table( 0u, { {"rstring", 0, "path"}, {"uint64", 0, "count"}, {"uint64", 0, "comment"}, {"uint64", 0, "space"} }, gd::table::tag_prepare{} ) );
-
-
-   /*
-   for( const auto& itRow : *ptable_ )
-   {
-      auto value_ = itRow.cell_get_variant_view( "path" );
-      std::string stringFile = value_.as_string();
-      
-      auto uRow = ptableCount->get_row_count();
-      ptableCount->row_add();
-
-      uint64_t uCount = RowCount(stringFile);
-
-      ptableCount->cell_set(uRow, "path", stringFile);
-      ptableCount->cell_set(uRow, "count", uCount);
-   }
-   //auto stringTable = gd::table::to_string( *ptableCount, gd::table::tag_io_cli{});
-   //std::cout << "\n" << stringTable << "\n";
-
-   //CountRowsInFile(*ptable_); // TODO: remove this line, it is only for debug
-   */
    return result_;
 }
 
@@ -218,10 +196,24 @@ std::pair<bool, std::string> CDocument::FILE_Filter(const std::string_view& stri
  */
 std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
 {
+   /*
+   auto is_accessible_ = [](const std::filesystem::path& path_) -> bool
+      {
+         try
+         {
+            std::ifstream file(path_, std::ios::binary);                         // Try to open the file for reading to check accessibility
+            if (file.is_open() == false) { return false; }
+            file.close();
+            return true;
+         }
+         catch (const std::exception&) { return false; }
+      };
+      */
+
    char piBuffer[1024]; // buffer used to check if file is binary or not
    std::vector<uint64_t> vectorRemoveRow;
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);
-
+                                                                                                   LOG_DEBUG_RAW("== Total files to check for binary: " & ptableFile->size());
    uint64_t uFileIndex = 0; // index for file table
    auto uFileCount = ptableFile->get_row_count(); // get current row count in file-count table
 
@@ -245,7 +237,6 @@ std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
       gd::file::path pathFile(stringFolder);
       pathFile += stringFilename;
 
-      
       std::string stringExtension = pathFile.extension().string();
 
       bool bIsText = CApplication::IsTextFile_s(stringExtension); // Check if file is text or binary based on extension
@@ -253,21 +244,32 @@ std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
       if( bIsText == false )
       {
          std::string stringFile = pathFile.string();
-         if( std::filesystem::is_regular_file(stringFile) == false ) { vectorRemoveRow.push_back(uRow); }
+         if( std::filesystem::is_regular_file(stringFile) == false )
+         { 
+            vectorRemoveRow.push_back(uRow); 
+         }
          else
          {
             // ## open file and check if it is a text file
 
             // Open filenn and read 1024 bytes into buffer
-            std::ifstream file_(stringFile, std::ios::binary);
-            if( file_.is_open() == false ) { vectorRemoveRow.push_back(uRow); continue; }
-            file_.read(piBuffer, sizeof(piBuffer));
-            auto uSize = file_.gcount();
-            file_.close();
-            if( uSize == 0 ) { vectorRemoveRow.push_back(uRow); continue; }
-            // Check if file is binary
-            bIsText = gd::utf8::is_text( piBuffer, uSize );
-            if( bIsText == false ) { vectorRemoveRow.push_back(uRow); continue; }
+            try
+            {
+               std::ifstream file_(stringFile, std::ios::binary);
+               if( file_.is_open() == false ) { vectorRemoveRow.push_back(uRow); continue; }
+               file_.read(piBuffer, sizeof(piBuffer));
+               auto uSize = file_.gcount();
+               file_.close();
+               if( uSize == 0 ) { vectorRemoveRow.push_back(uRow); continue; }
+               // Check if file is binary
+               bIsText = gd::utf8::is_text( piBuffer, uSize );
+               if( bIsText == false ) { vectorRemoveRow.push_back(uRow); continue; }
+            }
+            catch (const std::exception&)
+            {
+               vectorRemoveRow.push_back(uRow);
+               continue;
+            }
          }
       }
    }
@@ -277,7 +279,7 @@ std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
       ptableFile->erase(vectorRemoveRow);
    }
 
-   MESSAGE_Progress("", {{"clear", true}});
+	MESSAGE_Progress("", { {"clear", true} });                                                        LOG_DEBUG_RAW("== After filter binary files, count is: " & ptableFile->size());
 
    return { true, "" };
 }

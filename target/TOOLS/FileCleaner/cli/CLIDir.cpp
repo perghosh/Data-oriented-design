@@ -104,7 +104,6 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
  */
 std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, const gd::argument::shared::arguments& arguments_, CDocument* pdocument )
 {                                                                                                  assert( stringSource != "" );
-   //std::unique_ptr<gd::table::dto::table> ptable;
    auto ptable = pdocument->CACHE_Get( "file-dir", true );
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
