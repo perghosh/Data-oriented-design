@@ -6,6 +6,9 @@
 - `--add-to-history` options adds command line with name to history file. This allows you to save commands you use often and easily repeat them later.
 - `-home` option added to where to open history or config file, home specifies user home directory.
 - `--run` in history command tries to find history in current directory first, if not found it looks in user home directory. This makes it easier to use history files for different projects.
+- command `copy` added to copy files
+- For `copy` the options `--source`, `--target`, `--ignore`, `--filter` and `--newer` was added
+- `copy` will generate the same folder structure in target as in source if needed
 
 
 ## v1.0.5
