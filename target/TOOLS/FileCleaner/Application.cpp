@@ -62,6 +62,7 @@ bool os_fnmatch(const char* piPattern, const char* piPath) {
 
 #include "cli/CLIConfig.h"
 #include "cli/CLICount.h"
+#include "cli/CLICopy.h"
 #include "cli/CLIDir.h"
 #include "cli/CLIFind.h"
 #include "cli/CLIHistory.h"
@@ -678,6 +679,12 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    if( stringCommandName == "config" )                                         // command = "config"
    {
       return CLI::Configuration_g(poptionsActive);                             // manage configuration
+   }
+   else if (stringCommandName == "copy")                                       // copy
+   {
+      auto* pdocument = DOCUMENT_Get("copy", true);
+      auto result_ = CLI::Copy_g(poptionsActive, pdocument);
+      if (result_.first == false) return result_;
    }
    else if( stringCommandName == "count" )                                     // command = "count"
    {
@@ -1960,9 +1967,13 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    {  // ## `copy` command, count number of lines in file 
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file from source to target" );
-      optionsCommand.add({"source", 's', "File to copy"});
-      optionsCommand.add({"destination", 'd', "Destination, where file is copied to"});
-      optionsCommand.add({"backup", 'b', "If destination file exits then make a backup"});
+      optionsCommand.add({ "source", 's', "File to copy"});
+      optionsCommand.add({ "target", 't', "Destination, where file is copied to"});
+      optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
+      optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)." });
+      optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the listing. Multiple folder names can be separated with semicolons (`;`). This helps exclude irrelevant directories." });
+      optionsCommand.add({ "backup", "If destination file exits then make a backup"});
+      optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
