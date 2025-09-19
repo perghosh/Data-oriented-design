@@ -59,7 +59,7 @@ std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocum
    if (options_.exists("target") == true)
    {
       gd::argument::shared::arguments arguments_;
-      arguments_.append(options_.get_arguments(), { "depth", "overwrite", "pattern", "rpattern", "segment", "newer"});
+      arguments_.append(options_.get_arguments(), { "filter", "depth", "overwrite", "pattern", "rpattern", "segment", "newer"});
 
       auto result_ = CopyFiles_g(stringSource, options_["target"].as_string(), arguments_, pdocument);
    }
@@ -188,13 +188,13 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
       {
          // For negative values, we set threshold to current time + duration (files can be older but within limit)
          timeThreshold = now + std::chrono::seconds(uTotalSeconds);
-         pdocument->MESSAGE_Display(std::format( "Using older filter: files can be older but not more than {}:{}:{} old", uHours, uMinutes, uSeconds ) );
+         pdocument->MESSAGE_Display(std::format( "Using older filter: files can be older but not more than {:02}:{:02}:{:02} old", uHours, uMinutes, uSeconds ) );
       }
       else
       {
          // For positive values, we set threshold to current time - duration (files must be newer than X time ago)
          timeThreshold = now - std::chrono::seconds(uTotalSeconds);
-         pdocument->MESSAGE_Display( std::format( "Using newer filter: files must be newer than {}:{}:{} ago", uHours, uMinutes, uSeconds ) );
+         pdocument->MESSAGE_Display( std::format( "Using newer filter: files must be newer than {:02}:{:02}:{:02} ago", uHours, uMinutes, uSeconds ) );
       }
 
       bOverwrite = true;                                                      // if newer is set then we must overwrite
@@ -224,7 +224,7 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
 		bool bTargetExists = std::filesystem::exists(pathTargetFile); // check if target file exists
       if(bOverwrite == false && bTargetExists == true) { uFilesSkippedDueToOverwrite++; continue; } // if not overwrite and file exists then skip
 
-      if(iNewerFilter != 0)
+      if(iNewerFilter != 0 && bTargetExists)
       {
          // ### Apply "newer" or "older" filter logic .......................
          try
@@ -235,31 +235,25 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
 				if(iNewerFilter < 0)                                              // negative = older files filter
             {
                // For negative newer values: allow files that are older but not too old
-               if(bTargetExists == true)
-               {
-						auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile); // get last write time of target file
-						auto target_time_ = std::chrono::system_clock::time_point(target_last_write_.time_since_epoch()); // convert to system clock time point  
+					auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile); // get last write time of target file
+					auto target_time_ = std::chrono::system_clock::time_point(target_last_write_.time_since_epoch()); // convert to system clock time point  
 
-                  // Skip if source file is newer than target (we want older files in this mode)
-                  // But also skip if source is too old (beyond the time limit)
-                  if(source_time_ > target_time_ || source_time_ < timeThreshold)
-                  {
-                     uFilesSkippedDueToAge++;
-                     continue;
-                  }
+               // Skip if source file is newer than target (we want older files in this mode)
+               // But also skip if source is too old (beyond the time limit)
+               if(source_time_ > target_time_ || source_time_ < timeThreshold)
+               {
+                  uFilesSkippedDueToAge++;
+                  continue;
                }
             }
             else
             {
                // For positive newer values: standard newer logic
-               if(bTargetExists == true)
-               {
-						auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile); // get last write time of target file
-						auto target_time_ = std::chrono::system_clock::time_point(target_last_write_.time_since_epoch()); // convert to system clock time point
+					auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile); // get last write time of target file
+					auto target_time_ = std::chrono::system_clock::time_point(target_last_write_.time_since_epoch()); // convert to system clock time point
 
-                  // Skip if source file is not newer than target file
-                  if (source_time_ <= target_time_) { uFilesSkippedDueToAge++; continue; }
-               }
+               // Skip if source file is not newer than target file
+               if (source_time_ <= target_time_) { uFilesSkippedDueToAge++; continue; }
 				} // if(iNewerFilter < 0) ... else ... 
 			} // try
          catch (const std::exception& e) { pdocument->ERROR_Add( std::format( "Failed to check file times for: {} - {}", stringSourceFile, e.what() ));  continue; }
