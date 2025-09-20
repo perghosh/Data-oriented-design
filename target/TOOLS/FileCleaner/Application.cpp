@@ -774,8 +774,6 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
  * verbose output, or external setup tasks.
  *
  * ### Features:
- * - Synchronous execution (no threading)
- * - Minimal setup and configuration
  * - Excludes history command to prevent recursion
  * - Direct command execution without UI elements
  *
