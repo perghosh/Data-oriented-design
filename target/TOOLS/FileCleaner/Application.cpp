@@ -764,13 +764,13 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
    gd::cli::options* poptionsActive = optionsApplication.find_active();
    if( poptionsActive == nullptr ) { return { false, "No active options found" }; }
 
+   bool bSetLogging = CliLogging_s(&optionsApplication);
+
    // Get command name
-   std::string stringCommandName = poptionsActive->name();
+	std::string stringCommandName = poptionsActive->name();                                         LOG_DEBUG_RAW("== Internal command: " & stringCommandName);
    
    // Set basic properties without verbose logging
    PROPERTY_Set("command", stringCommandName);
-
-   bool bSetLogging = CliLogging_s( &optionsApplication );
 
    if( optionsApplication.exists("prompt", gd::types::tag_state_active{}) == true )
    {
@@ -1864,6 +1864,7 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
    {
       stringDocumentation += "\nFlags\n";
       stringDocumentation += stringFlags; 
+		stringFlags.clear();                                                    // clear flags for next command
    }
 }
 

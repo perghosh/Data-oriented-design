@@ -1398,7 +1398,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
 	std::atomic<bool> bError(false);                                           // Atomic flag to signal threads to stop processing
    // ## Thread synchronization variables
    std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
-   //std::atomic<uint64_t> uAtomicProcessedCount(0);                          // Count of processed files
+   std::atomic<uint64_t> uAtomicProcessedCount(0);                            // Count of processed files
    std::atomic<uint64_t> uAtomicTotalLines(0);                                // Total lines found across all threads
    std::mutex mutexLineList;                                                  // Mutex to protect ptableLineList access
    std::vector<std::string> vectorError;                                      // Collect errors from all threads
@@ -1444,9 +1444,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
             gd::file::path pathFile(stringFolder);
             pathFile += stringFilename;
             std::string stringFile = pathFile.string();
-
-
-				//MESSAGE_Display("Thread " + std::to_string(iThreadId) + " processing file: " + stringFile); // Debug message
 
             // STEP 3: Prepare arguments for pattern finding ..................
             gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
@@ -1539,7 +1536,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
 
    if(iThreadCount <= 0) { iThreadCount = std::thread::hardware_concurrency(); } // Auto-detect thread count
    if(iThreadCount <= 0) { iThreadCount = 1; }                               // Fallback to single thread
-   if(iThreadCount > 2) { iThreadCount = 2; }                                // Limit to 2 threads
+   if(iThreadCount > 4) { iThreadCount = 4; }                                // Limit to 6 threads
    if(ptableFile->size() < iThreadCount) { iThreadCount = (int)ptableFile->size(); } // Limit threads to number of files
                                                                                                    LOG_DEBUG_RAW("== Using threads: " & iThreadCount);
 
@@ -1788,13 +1785,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
    std::vector<std::thread> vectorPatternThread;
    vectorPatternThread.reserve(iThreadCount);
 
-   for(int i = 0; i < iThreadCount; ++i) 
-   { 
-      vectorPatternThread.emplace_back(process_, i); 
-   }
+   for (int i = 0; i < iThreadCount; ++i) { vectorPatternThread.emplace_back(process_, i); }// Launch threads
 
-   
-   for(auto& threadWorker : vectorPatternThread) { threadWorker.join(); }     // Wait for all threads to complete
+   for (auto& threadWorker : vectorPatternThread) { threadWorker.join(); }     // Wait for all threads to complete
 
    MESSAGE_Progress("", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true}});
 
