@@ -92,27 +92,34 @@ All table data is stored in one single memory block, this is done to speed up ac
 Information about each column is stored in `gd::table::dto::table::column` structure.
 
 *Sample data layout*
-
+@verbatim
     ╔═══════╦════════════╦═════════════════════════╦════╗
     ║ int32 ║   int64    ║         string          ║int8║
-    ║       ║            ║                         ║    ║
-    ║       ║            ║                         ║    ║
-    ║       ║            ║                         ║    ║
-    ║       ║            ║                         ║    ║
-    ║       ║            ║                         ║    ║
-    ║       ║            ║                         ║    ║
     ║       ║            ║                         ║    ║
     ║       ║            ║                         ║    ║
     ╠═══════╩════════════╬═════════════════════════╩════╝
     ║ meta data for each ║
     ║ row                ║
     ║                    ║
-    ║                    ║
-    ║                    ║
-    ║                    ║
-    ║                    ║
     ╚════════════════════╝
+@endverbatim
 
+*simd layout*
+@verbatim
+╔════════╦════════╦════════╦════════╗
+║ double ║ int64  ║ double ║ int64  ║
+║        ║        ║        ║        ║
+║        ║        ║        ║        ║
+╚════════╩════════╩════════╩════════╝
+@endverbatim
+
+@verbatim
+╔════════╦════════╦════════╦════════╦════════╦════════╦════════╦════════╗
+║ double ║ int64  ║ double ║ int64  ║ double ║ int64  ║ double ║ padding║
+║        ║        ║        ║        ║        ║        ║        ║ 64 bit ║
+║        ║        ║        ║        ║        ║        ║        ║        ║
+╚════════╩════════╩════════╩════════╩════════╩════════╩════════╩════════╝
+@endverbatim
 
  *
  *
@@ -127,18 +134,68 @@ for( auto it = std::begin( tableTable ); it != std::end( tableTable ); it++ )
    auto vectorValue = it.get_variant_view( vectorTableColumn );
    std::cout << gd::debug::print( vectorValue ) << "\n";
 }
-
  \endcode
 
  *Sample on how to create tables*
- \code
+ @code
  using namespace gd::table::dto;
  // create table that are able to stor null values and holds rowstatus, table still needs columns and after that you need to prepare it
  gd::table::dto::table tableCodeGroup( 10, (table::eTableFlagNull32|table::eTableFlagRowStatus) );
 
  // creates table ready to be used, this generates three columns
  gd::table::dto::table tableCodeGroup( (table::eTableFlagNull32|table::eTableFlagRowStatus), { { "int64", "GroupK"}, { "rstring", "FName"}, { "rstring", "FDescription"} }, gd::table::tag_prepare{} );
- \endcode
+ @endcode
+
+ *Sample to create avx512 table*
+ @code 
+   using namespace gd::table::dto;
+   // create table that are able to stor null values and holds rowstatus, table still needs columns and after that you need to prepare it
+   table tableAvx512( 10, 0, 
+ @endcode
+
+ *Sample using table to simplify for compiler to generate simd code*
+ @code 
+using namespace gd::table::dto;
+constexpr unsigned uRowCount = 10;
+
+// create table with 10 double columns, 8 value columns and two sum columns
+table tableSimd( uRowCount, 0, 0, gd::types::type_g( "double" ), 10, gd::table::tag_prepare{} );
+for( int i = 0; i < uRowCount; ++i )
+{
+   // add numbers to each column
+   auto uRow = tableSimd.row_add_one();
+   for( int j = 0; j < 8; ++j ) { tableSimd.cell_set( uRow, j, (double)(i * 10 + j) );  }
+}
+
+for( int i = 0; i < uRowCount; ++i ) // calculate sum of each row
+{
+   double dSum = 0.0;
+   for( int j = 0; j < 8; ++j ) { dSum += tableSimd.cell_get_variant_view(i, j).as_double(); }
+   tableSimd.cell_set( i, 8, dSum );
+}
+
+for( int i = 0; i < uRowCount; ++i ) // calculate using simd friendly code
+{
+   double dSum = 0.0;
+   uint8_t* puRow = tableSimd.row_get( i ); // get pointer to 8 doubles
+   bool b8ByteAligned = (reinterpret_cast<uintptr_t>(puRow) % 8) == 0; assert( b8ByteAligned == true );
+   
+   for( int j = 0; j < 8; ++j ) { dSum += reinterpret_cast<double*>(puRow)[j]; } // sum using simd friendly code
+
+   double dSum2 = 0.0;
+   double* __restrict pdCells8 = reinterpret_cast<double*>(puRow);
+   for( int j = 0; j < 8; ++j ) { dSum2 += pdCells8[j]; } assert(dSum == dSum2);
+
+   tableSimd.cell_set( i, 9, dSum );
+}
+
+{  // print table to cli
+   std::string stringTable = gd::table::to_string(tableSimd, gd::table::tag_io_cli{});
+   std::cout << stringTable << std::endl;
+}
+@endcode
+
+
 
  */
 class table_column_buffer
@@ -405,6 +462,9 @@ public:
 
    table_column_buffer( const std::string_view& stringColumns, tag_parse, tag_prepare );
    table_column_buffer( unsigned uFlags, const std::string_view& stringColumns, tag_parse, tag_prepare );
+
+   // simd constructors
+   table_column_buffer(unsigned uRowCount, unsigned uFlags, unsigned uGrowBy, unsigned uType, unsigned uColumnCount, tag_prepare );
    
 // copy
    table_column_buffer( const table_column_buffer& o ): m_puData(nullptr) { common_construct( o ); }
@@ -833,7 +893,6 @@ public:
    gd::variant_view cell_get_variant_view( uint64_t uRow, unsigned uColumn, tag_raw ) const noexcept;
    /// get cell value using name or column index, if name then column gets index to speed up the process next time value is returned
    gd::variant_view cell_get_variant_view( uint64_t uRow, std::variant< unsigned, std::string_view >* pvariantColumn ) const noexcept;
-
 
 
    unsigned cell_get_length( uint64_t uRow, unsigned uColumn ) const noexcept;

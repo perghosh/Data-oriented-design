@@ -206,6 +206,23 @@ table_column_buffer::table_column_buffer( const std::vector<std::tuple<std::stri
    }
 }
 
+table_column_buffer::table_column_buffer(unsigned uRowCountAllocate, unsigned uFlags, unsigned uGrowBy, unsigned uType, unsigned uColumnCount, tag_prepare)
+{
+   m_uFlags = uFlags;
+   m_uRowSize = 0;
+   m_uRowGrowBy = uGrowBy;
+   m_uRowCount = 0;
+   m_uReservedRowCount = uRowCountAllocate > 0 ? uRowCountAllocate : eSpaceFirstAllocate; // if 0 then allocate default space
+   for( unsigned u = 0; u < uColumnCount; u++ )
+   {
+      column_add( uType, 0 );
+   }
+   prepare();
+   if( uRowCountAllocate > 0 ) { row_reserve_add( uRowCountAllocate ); }
+}
+
+
+
 table_column_buffer::table_column_buffer( const table_column_buffer& o, uint64_t uFrom, uint64_t uCount )
    : m_puData{}
 {

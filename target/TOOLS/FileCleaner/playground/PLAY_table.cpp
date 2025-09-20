@@ -6,6 +6,7 @@
 #include <fstream>
 #include <filesystem>
 #include <cstdio>
+#include <immintrin.h>
 
 
 #ifdef _WIN32
@@ -71,9 +72,57 @@ static std::string CreateTemporaryFile_s();
 @TASK [project: serialize-table][status: ongoing][created: 250905] [assigned: per]
 [title: read and write table body data]
 
-
-
 */
+
+TEST_CASE("[table] simd table 01", "[table]") {
+   using namespace gd::table::dto;
+
+   constexpr unsigned uRowCount = 10;
+
+   // create table with 10 double columns, 8 value columns and two sum columns
+   table tableSimd( uRowCount, 0, 0, gd::types::type_g( "double" ), 10, gd::table::tag_prepare{} );
+   for( int i = 0; i < uRowCount; ++i )
+   {
+      // add numbers to each column
+      auto uRow = tableSimd.row_add_one();
+      for( int j = 0; j < 8; ++j ) { tableSimd.cell_set( uRow, j, (double)(i * 10 + j) );  }
+   }
+
+   // calculate sum of each row
+   for( int i = 0; i < uRowCount; ++i )
+   {
+      double dSum = 0.0;
+      for( int j = 0; j < 8; ++j ) { dSum += tableSimd.cell_get_variant_view(i, j).as_double(); }
+      tableSimd.cell_set( i, 8, dSum );
+   }
+
+   // calculate using simd friendly code
+   for( int i = 0; i < uRowCount; ++i )
+   {
+      double dSum = 0.0;
+      // get pointer to 8 doubles
+      uint8_t* puRow = tableSimd.row_get( i );
+
+      bool b8ByteAligned = (reinterpret_cast<uintptr_t>(puRow) % 8) == 0; assert( b8ByteAligned == true );
+
+      // sum using simd friendly code
+      for( int j = 0; j < 8; ++j ) { dSum += reinterpret_cast<double*>(puRow)[j]; }
+
+      double dSum2 = 0.0;
+      double* __restrict pdCells8 = reinterpret_cast<double*>(puRow);
+      for( int j = 0; j < 8; ++j ) { dSum2 += pdCells8[j]; }
+
+      assert(dSum == dSum2);
+
+      tableSimd.cell_set( i, 9, dSum );
+   }
+
+   // print table to cli
+   {
+      std::string stringTable = gd::table::to_string(tableSimd, gd::table::tag_io_cli{});
+      std::cout << stringTable << std::endl;
+   }
+}
 
 TEST_CASE("[table] save table to disk", "[table]") {
    using namespace gd::table::dto;

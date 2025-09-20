@@ -4,7 +4,6 @@
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0Initialize.Application` - Initialize the application from command line 
  * - `0TAG0RUN.Application` - run commands, there are a number of commands that can be run
- * - `0TAG0Database.Application` - database operations
  * - `0TAG0Options.Application` - prepare command line options
  * - `0TAG0Settings.Application` - settings operations
  * 
