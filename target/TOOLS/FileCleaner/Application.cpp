@@ -766,6 +766,102 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    return { true, "" };
 }
 
+/** --------------------------------------------------------------------------- @TAG #option #internal #application
+ * @brief Internal initialization method for executing commands programmatically.
+ *
+ * This method is designed for internal use, particularly by the history command
+ * to execute other commands. It processes command-line options without threading,
+ * verbose output, or external setup tasks.
+ *
+ * ### Features:
+ * - Synchronous execution (no threading)
+ * - Minimal setup and configuration
+ * - Excludes history command to prevent recursion
+ * - Direct command execution without UI elements
+ *
+ * @param optionsApplication The parsed command-line options.
+ * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
+ */
+std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options& optionsApplication )
+{
+   gd::cli::options* poptionsActive = optionsApplication.find_active();
+   if( poptionsActive == nullptr ) { return { false, "No active options found" }; }
+
+   // Get command name
+   std::string stringCommandName = poptionsActive->name();
+   
+   // Set basic properties without verbose logging
+   PROPERTY_Set("command", stringCommandName);
+
+   // Execute commands (excluding history to prevent recursion)
+   if( stringCommandName == "config" )
+   {
+      return CLI::Configuration_g(poptionsActive);
+   }
+   else if (stringCommandName == "copy")
+   {
+      auto* pdocument = DOCUMENT_Get("copy", true);
+      return CLI::Copy_g(poptionsActive, pdocument);
+   }
+   else if( stringCommandName == "count" )
+   {
+      auto* pdocument = DOCUMENT_Get("count", true);
+      return CLI::Count_g(poptionsActive, pdocument);
+   }
+   else if( stringCommandName == "dir" )
+   {
+      auto* pdocument = DOCUMENT_Get("dir", true);
+      return CLI::Dir_g(poptionsActive, pdocument);
+   }
+   else if( stringCommandName == "find" )
+   {
+      auto* pdocument = DOCUMENT_Get("find", true);
+      return CLI::Find_g(poptionsActive, pdocument);
+   }
+   else if( stringCommandName == "kv" )
+   {
+      auto* pdocument = DOCUMENT_Get("keyvalue", true);
+      return CLI::KeyValue_g(poptionsActive, pdocument);
+   }
+   else if( stringCommandName == "list" )
+   {
+      auto* pdocument = DOCUMENT_Get("list", true);
+      auto result_ = CLI::List_g(poptionsActive, pdocument);
+      if( pdocument->ERROR_Empty() == false ) { pdocument->ERROR_Print(); }
+      return result_;
+   }
+   else if( stringCommandName == "paste" )
+   {
+      return CLI::Paste_g(poptionsActive, &optionsApplication);
+   }
+   else if( stringCommandName == "run" )
+   { 
+      std::string stringCommand = ( *poptionsActive )["command"].as_string();
+      return CLI::Run_g(stringCommand, this);
+   }
+   else if( stringCommandName == "help" )
+   {
+      // For internal use, return simple help without console output
+      return { true, "Help command executed internally" };
+   }
+   else if( stringCommandName == "version" )
+   {
+      // For internal use, return version info without console output
+      return { true, "version 1.0.6" };
+   }
+   else if( stringCommandName == "history" )
+   {
+      // Prevent recursion - history command should not call itself internally
+      return { false, "History command cannot be executed internally to prevent recursion" };
+   }
+   else
+   {
+      return { false, "Unknown command: " + stringCommandName };
+   }
+
+   return { true, "" };
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Updates the application state based on information from application data.
  * 
