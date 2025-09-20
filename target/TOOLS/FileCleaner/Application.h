@@ -239,6 +239,9 @@ public:
 /** \name OPERATION
 *///@{
    std::pair<bool, std::string> Initialize( gd::cli::options& optionsApplication );
+
+   std::pair<bool, std::string> InitializeInternal( gd::cli::options& optionsApplication );
+
    /// Update application state
    void UpdateApplicationState();
    /// Create application specific directory if it does not exist
