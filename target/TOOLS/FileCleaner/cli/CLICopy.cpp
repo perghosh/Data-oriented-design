@@ -58,8 +58,8 @@ std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocum
    */
    if (options_.exists("target") == true)
    {
-      gd::argument::shared::arguments arguments_;
-      arguments_.append(options_.get_arguments(), { "filter", "depth", "overwrite", "pattern", "rpattern", "segment", "newer"});
+      gd::argument::shared::arguments arguments_({ { "depth", uRecursive } } );
+      arguments_.append(options_.get_arguments(), { "filter", "overwrite", "pattern", "rpattern", "segment", "newer"});
 
       auto result_ = CopyFiles_g(stringSource, options_["target"].as_string(), arguments_, pdocument);
    }
@@ -89,6 +89,8 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
    auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptableDir, uDepth, true);        if( result_.first == false ) return result_;
+
+	pdocument->MESSAGE_Display(std::format("Files found from source/sources '{}'", stringSource));
 
 	// ## determine the source folder to remove from path when copying ...........
    
@@ -224,7 +226,7 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
 		bool bTargetExists = std::filesystem::exists(pathTargetFile); // check if target file exists
       if(bOverwrite == false && bTargetExists == true) { uFilesSkippedDueToOverwrite++; continue; } // if not overwrite and file exists then skip
 
-      if(iNewerFilter != 0 && bTargetExists)
+      if(iNewerFilter != 0 && bTargetExists == true)
       {
          // ### Apply "newer" or "older" filter logic .......................
          try
@@ -240,11 +242,7 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
 
                // Skip if source file is newer than target (we want older files in this mode)
                // But also skip if source is too old (beyond the time limit)
-               if(source_time_ > target_time_)
-               {
-                  uFilesSkippedDueToAge++;
-                  continue;
-               }
+               if(source_time_ > target_time_ || source_time_ < timeThreshold) { uFilesSkippedDueToAge++; continue; }
             }
             else
             {
