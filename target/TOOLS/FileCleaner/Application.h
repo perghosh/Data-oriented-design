@@ -406,6 +406,8 @@ public:
 
    /// Prompt user for input, adds values to arguments from the prompt
    static std::pair<bool, std::string>  CliPrompt_s(gd::cli::options* poptionsApplication);
+   /// Setup logging based on command line arguments
+   static bool CliLogging_s(gd::cli::options* poptionsApplication);
 
    // ## Folder operations
 

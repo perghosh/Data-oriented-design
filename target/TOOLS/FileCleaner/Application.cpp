@@ -337,28 +337,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       // ## Logging ...........................................................
 #ifdef GD_LOG_SIMPLE
-      bool bSetLogging = false;
-      if( optionsApplication.exists("logging-severity", gd::types::tag_state_active{}) == true ) // if logging severity is set
-      {
-         std::string stringSeverity = optionsApplication.get_variant_view("logging-severity", gd::types::tag_state_active{}).as_string();
-         if( stringSeverity.empty() == false )
-         {
-            auto eSeverityNumber = gd::log::severity_get_type_number_g(stringSeverity);
-            if( eSeverityNumber != gd::log::enumSeverityNumber::eSeverityNumberNone )
-            {                                                                                      
-               gd::log::logger<0>* plogger = gd::log::get_s();
-               plogger->set_severity( eSeverityNumber );                                           LOG_INFORMATION_RAW("== Set logging severity to: " & stringSeverity);
-               bSetLogging = true;                                                                 // set logging is set
-            }
-         }
-
-         gd::log::logger<0>* plogger = gd::log::get_s();
-         if( plogger->is_severity_debug() == true )
-         {
-            std::string stringArguments = PROPERTY_Get("arguments").as_string();
-            LOG_DEBUG_RAW("== Arguments: " & stringArguments);
-         }
-      }
+      bool bSetLogging = CliLogging_s( &optionsApplication );
 #endif // GD_LOG_SIMPLE
 
       // ## Load configuration ................................................
@@ -791,6 +770,14 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
    // Set basic properties without verbose logging
    PROPERTY_Set("command", stringCommandName);
 
+   bool bSetLogging = CliLogging_s( &optionsApplication );
+
+   if( optionsApplication.exists("prompt", gd::types::tag_state_active{}) == true )
+   {
+      auto result_ = CliPrompt_s( &optionsApplication );                      // prompt user for options
+      if( result_.first == false ) { return result_; }
+   }
+
    // Execute commands (excluding history to prevent recursion)
    if( stringCommandName == "config" )
    {
@@ -836,11 +823,6 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
    { 
       std::string stringCommand = ( *poptionsActive )["command"].as_string();
       return CLI::Run_g(stringCommand, this);
-   }
-   else if( stringCommandName == "help" )
-   {
-      // For internal use, return simple help without console output
-      return { true, "Help command executed internally" };
    }
    else if( stringCommandName == "version" )
    {
@@ -2627,6 +2609,28 @@ std::pair<bool, std::string> CApplication::CliPrompt_s(gd::cli::options* poption
    }
 
    return { true, "" };
+}
+
+bool CApplication::CliLogging_s(gd::cli::options* poptionsApplication)
+{
+   bool bSetLogging = false;
+#ifdef GD_LOG_SIMPLE
+   if( poptionsApplication->exists("logging-severity", gd::types::tag_state_active{}) == true ) // if logging severity is set
+   {
+      std::string stringSeverity = poptionsApplication->get_variant_view("logging-severity", gd::types::tag_state_active{}).as_string();
+      if( stringSeverity.empty() == false )
+      {
+         auto eSeverityNumber = gd::log::severity_get_type_number_g(stringSeverity);
+         if( eSeverityNumber != gd::log::enumSeverityNumber::eSeverityNumberNone )
+         {                                                                                      
+            gd::log::logger<0>* plogger = gd::log::get_s();
+            plogger->set_severity( eSeverityNumber );                                              LOG_INFORMATION_RAW("== Set logging severity to: " & stringSeverity);
+            bSetLogging = true;                                                // set logging is set
+         }
+      }
+   }
+#endif 
+   return bSetLogging;
 }
 
 /** --------------------------------------------------------------------------- @TAG #folder.home

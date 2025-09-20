@@ -677,10 +677,7 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
       result_ = optionsRun.parse_terminal(stringCommand);                     // Parse the command line from the history entry
       if( result_.first == false ) { return result_; }
 
-      auto result_ = CApplication::CliPrompt_s(&optionsRun);                  // If prompt values exist, ask the user for values
-      if( result_.first == false ) { return result_; }
-
-      result_ = papplication_g->Initialize(optionsRun);                      // Initialize the application with parsed options
+      result_ = papplication_g->InitializeInternal(optionsRun);                      // Initialize the application with parsed options
       if( result_.first == false ) { return result_; }
    }
 
