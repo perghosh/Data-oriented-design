@@ -49,6 +49,9 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
 /// @brief Harvests files from the specified path and populates a table with their details.
 std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_ );
 
+/// @brief Harvests files matching a wildcard pattern from the specified path and populates a table with their details.
+std::pair<bool, std::string> FILES_Harvest_WithWildcard_g(const std::string& stringPath, const std::string& stringWildcard, gd::table::dto::table* ptable_, unsigned uDepth, bool bSize);
+
 /// @brief Read lines from a file, starting at the specified row and offset, and returning the specified number of lines.
 std::pair<bool, std::string> FILES_ReadLines_g( const std::string& stringPath, uint64_t uRow, int64_t iOffset, uint64_t uCount, std::string& stringLines, int64_t* piLeadingLineCount = nullptr );
 /// Read the full line from source file into line column to get the full preview so user recognize the code

@@ -297,7 +297,9 @@ public:
    
    /// parse single string, splits string into parts and parse as normal
    std::pair<bool, std::string> parse( const std::string_view& stringArgument );
+   /// parse vector of strings as normal
    std::pair<bool, std::string> parse( const std::vector<std::string>& vectorArgument );
+   /// parse single terminal line, splits string into parts and parse as normal, this is the exakt format as you type in terminal
    std::pair<bool, std::string> parse_terminal( const std::string_view& stringArgument );
 
    std::string to_string() const;

@@ -272,6 +272,76 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Harvests files from a specified path, automatically extracting wildcards from the path.
+ *
+ * This is a convenience wrapper around FILES_Harvest_g that automatically detects wildcard 
+ * characters in the path and moves them to the wildcard filter parameter. This allows users 
+ * to specify paths like "C:\folder\*.txt" instead of having to separate the directory and 
+ * wildcard components manually.
+ *
+ * @param stringPath The directory path or path with wildcards to start harvesting files from.
+ *                   Examples: "C:\folder", "C:\folder\*.txt", "/home/user/docs/*.pdf"
+ * @param stringWildcard A wildcard pattern to filter files. This will be combined with any
+ *                       wildcards extracted from the path using semicolon separator.
+ * @param ptable_ A pointer to the table where the harvested file details will be stored.
+ * @param uDepth The maximum depth for recursive traversal. A value of 0 means no recursion.
+ * @param bSize Whether to collect file size and date information.
+ * @return A pair containing success status and error message (if any).
+ *
+ * @note If both the path contains wildcards AND stringWildcard is provided, they are combined
+ *       with a semicolon separator. Example: path "*.txt" + filter "*.doc" = "*.txt;*.doc"
+ *
+ * @example
+ * @code
+ * gd::table::dto::table table;
+ * // These calls demonstrate wildcard combination:
+ * FILES_Harvest_WithWildcard_g("C:\\docs\\*.txt", "*.doc", &table, 2, true);
+ * // Results in filter: "*.txt;*.doc"
+ * 
+ * FILES_Harvest_WithWildcard_g("C:\\docs\\*.txt", "", &table, 2, true);
+ * // Results in filter: "*.txt"
+ * @endcode
+ */
+std::pair<bool, std::string> FILES_Harvest_WithWildcard_g(const std::string& stringPath, const std::string& stringWildcard, gd::table::dto::table* ptable_, unsigned uDepth, bool bSize)
+{
+   assert(ptable_ != nullptr);
+   std::string stringProcessedPath = stringPath; // Default to the original path
+   std::string stringEffectiveWildcard = stringWildcard;
+   size_t uWildcard = stringPath.find_first_of("*?"); // Check if the path contains wildcard characters (* or ?)
+   
+   if( uWildcard != std::string::npos )
+   {
+      size_t uLastSeparator = stringPath.find_last_of("\\/", uWildcard); // Find the last directory separator before the wildcard
+      if( uLastSeparator != std::string::npos )
+      {
+         stringProcessedPath = stringPath.substr(0, uLastSeparator);          // Split the path: directory part and wildcard part
+         std::string stringExtractedWildcard = stringPath.substr(uLastSeparator + 1);
+         
+         if( stringWildcard.empty() == false )                                // If a wildcard was already provided, combine them
+         {
+            // Combine both wildcards with semicolon separator
+            stringEffectiveWildcard = stringExtractedWildcard + ";" + stringWildcard;
+         }
+         else { stringEffectiveWildcard = stringExtractedWildcard; }
+      }
+      else
+      {
+         // Wildcard is at the beginning of the path (unusual case)
+         // This would be like "*.txt" as the entire path
+         stringProcessedPath = ".";                                           // Use current directory
+         
+         if( stringWildcard.empty() == false )                                // Combine with existing wildcard if present
+         {
+            stringEffectiveWildcard = stringPath + ";" + stringWildcard;
+         }
+         else { stringEffectiveWildcard = stringPath; }
+      }
+   }
+   // Call the main harvesting function with processed parameters
+   return FILES_Harvest_g(stringProcessedPath, stringEffectiveWildcard, ptable_, uDepth, bSize);
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Harvests files from the specified path and populates a table with their details.
  * @param argumentsPath The arguments containing the source path for harvesting files.
  * @param ptable_ A pointer to the table where the harvested file details will be stored.
