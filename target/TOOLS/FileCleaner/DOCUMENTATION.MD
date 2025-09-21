@@ -158,7 +158,9 @@ Copies files from source to destination.
 
 **Options:**
 - `--source <path>`: File to copy.
-- `--destination <path>`: Destination where file is copied to.
+- `--target <path>`: Destination where file is copied to.
+- `--newer <timestamp>`: Only copy files where the difference are newer/older than found file. Usefull if moving files between computers/cloud and dates are not in sync.
+- `--filter <pattern>`: Filter files using wildcard patterns, multiple patterns are separated by `;`.
 - `--backup`: If destination file exists, make a backup before copying.
 
 ---

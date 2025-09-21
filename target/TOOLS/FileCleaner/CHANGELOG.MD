@@ -9,6 +9,13 @@
 - command `copy` added to copy files
 - For `copy` the options `--source`, `--target`, `--ignore`, `--filter` and `--newer` was added
 - `copy` will generate the same folder structure in target as in source if needed
+- `prompt` and `logging-severity` works for saved command where history can execute them
+- `alias` added to history items to simplify running them
+- `find` is now threaded to improve performance
+- `help` formatting improved
+
+bug fixes
+- Fixed a bug when help duplicated flags documentation
 
 
 ## v1.0.5
