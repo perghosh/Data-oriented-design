@@ -88,7 +88,7 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    auto ptableDir = pdocument->CACHE_Get( "file-dir", true );
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
-   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptableDir, uDepth, true);        if( result_.first == false ) return result_;
+   auto result_ = FILES_Harvest_WithWildcard_g( stringSource, stringFilter, ptableDir, uDepth, true); if( result_.first == false ) return result_;
 
    std::string stringTargetFolder_ = stringTargetFolder;
 

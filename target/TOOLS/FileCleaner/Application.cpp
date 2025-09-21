@@ -2043,8 +2043,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    {  // ## `copy` command, count number of lines in file 
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file from source to target" );
-      optionsCommand.add({ "source", 's', "File to copy"});
-      optionsCommand.add({ "target", 't', "Destination, where file is copied to"});
+      optionsCommand.add({ "source", 's', "File or files to copy, if many files then a tip is to set filter with --filter and folders in source" });
+      optionsCommand.add({ "target", 't', "Destination, where file is copied to" });
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)." });
       optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the listing. Multiple folder names can be separated with semicolons (`;`). This helps exclude irrelevant directories." });
