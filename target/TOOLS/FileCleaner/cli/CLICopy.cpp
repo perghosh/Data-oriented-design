@@ -146,8 +146,6 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
       }
 
       std::error_code errorcode;
-      std::filesystem::create_directories(pathTargetFile.parent_path(), errorcode); // create target directory if it doesn't exist
-      if(errorcode) { return { false, "Failed to create directory: " + pathTargetFile.parent_path().string() + " Error: " + errorcode.message() }; }
       std::filesystem::copy_file(pathSourceFile, pathTargetFile, std::filesystem::copy_options::overwrite_existing, errorcode); // copy the file
       if(errorcode) { return { false, "Failed to copy file: " + pathSourceFile.string() + " to " + pathTargetFile.string() + " Error: " + errorcode.message() }; }
       pdocument->MESSAGE_Display("Copied file: " + pathSourceFile.string() + " to " + pathTargetFile.string());
