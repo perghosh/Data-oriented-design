@@ -90,6 +90,8 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    unsigned uDepth = arguments_["depth"].as_uint();
    auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptableDir, uDepth, true);        if( result_.first == false ) return result_;
 
+   std::string stringTargetFolder_ = stringTargetFolder;
+
 	pdocument->MESSAGE_Display(std::format("Files found from source/sources '{}'", stringSource));
 
 	// ## determine the source folder to remove from path when copying ...........
@@ -105,25 +107,52 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
 
    if( std::filesystem::exists( stringSourceFolder) == false ) { return { false, "Source folder does not exist: " + stringSourceFolder }; }
 
-   
-	if(std::filesystem::exists(stringTargetFolder) == false)                    // Check target folder and if not found then create it
+
+	if( std::filesystem::is_directory(stringTargetFolder) == false && std::filesystem::exists(stringTargetFolder) == false) // Check target folder and if not found then create it
 	{
 		pdocument->MESSAGE_Display("Target folder does not exist, creating: " + stringTargetFolder);
 		std::error_code errorcode;
 		std::filesystem::create_directories(stringTargetFolder, errorcode);
 		if(errorcode) return { false, "Failed to create target directory: " + errorcode.message() };
 	}
+   else if( std::filesystem::is_regular_file(stringTargetFolder) == true )
+   {
+      stringTargetFolder_ = std::filesystem::path(stringTargetFolder).parent_path().string(); // if target is a file then get the parent directory
+   }
 
 	// ## Prepare paths .......................................................
 
    std::filesystem::path pathSource = std::filesystem::canonical(stringSourceFolder);
-   std::filesystem::path pathTarget = std::filesystem::canonical(stringTargetFolder);
+   std::filesystem::path pathTarget = std::filesystem::canonical(stringTargetFolder_);
    if( pathSource == pathTarget )                                              // Check if source and target are the same folder
    {
       return { false, "Source and target folders cannot be the same" };
    }	                                                                                              LOG_DEBUG_RAW("Source folder: " & pathSource.string().c_str()); LOG_DEBUG_RAW("Target folder: " & pathTarget.string().c_str());
    
 	// ## Generate list of files to copy to target folder ......................
+
+   // ### Special case, if source is a file then just copy that file
+   if( std::filesystem::is_regular_file(stringSource) == true )                // if source is a file then just copy that file
+   {
+      std::filesystem::path pathSourceFile(stringSource);                      // get the source file path
+
+      // check if target is complete file path or just a folder
+      std::filesystem::path pathTargetFile( stringTargetFolder_ );
+
+      // Check if target holds a file name or just a folder
+      if( pathTargetFile.has_extension() == false )                           // if target has no extension then it is a folder
+      {
+         pathTargetFile = pathTargetFile / pathSourceFile.filename();          // add the source file name to the target folder
+      }
+
+      std::error_code errorcode;
+      std::filesystem::create_directories(pathTargetFile.parent_path(), errorcode); // create target directory if it doesn't exist
+      if(errorcode) { return { false, "Failed to create directory: " + pathTargetFile.parent_path().string() + " Error: " + errorcode.message() }; }
+      std::filesystem::copy_file(pathSourceFile, pathTargetFile, std::filesystem::copy_options::overwrite_existing, errorcode); // copy the file
+      if(errorcode) { return { false, "Failed to copy file: " + pathSourceFile.string() + " to " + pathTargetFile.string() + " Error: " + errorcode.message() }; }
+      pdocument->MESSAGE_Display("Copied file: " + pathSourceFile.string() + " to " + pathTargetFile.string());
+      return { true, "" };
+   }
 
    std::vector<std::string> vectorSourceFile;
    gd::table::dto::table* ptableFile = ptableDir;                             // get the table pointer
