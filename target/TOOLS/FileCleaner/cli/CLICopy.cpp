@@ -95,26 +95,48 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
 	pdocument->MESSAGE_Display(std::format("Files found from source/sources '{}'", stringSource));
 
    // ### Special case, if source is a file then just copy that file
-   if( std::filesystem::is_regular_file(stringSource) == true )                // if source is a file then just copy that file
+   // Special case: if source is a file, copy that single file
+   if( std::filesystem::is_regular_file(stringSource) == true )
    {
-      std::filesystem::path pathSourceFile(stringSource);                      // get the source file path
+      std::filesystem::path pathSourceFile(stringSource);
+      std::filesystem::path pathTargetFile(stringTargetFolder_);
 
-      // check if target is complete file path or just a folder
-      std::filesystem::path pathTargetFile( stringTargetFolder_ );
-
-      // Check if target holds a file name or just a folder
-      if( pathTargetFile.has_extension() == false )                           // if target has no extension then it is a folder
+      // Normalize target path based on special cases
+      if( stringTargetFolder_ == "." || stringTargetFolder_ == "./" || stringTargetFolder_ == "" )
       {
-         pathTargetFile = pathTargetFile / pathSourceFile.filename();          // add the source file name to the target folder
+         pathTargetFile = std::filesystem::current_path() / pathSourceFile.filename();
       }
+      else if( stringTargetFolder_ == ".." )
+      {
+         pathTargetFile = std::filesystem::current_path().parent_path() / pathSourceFile.filename();
+      }
+      else if( stringTargetFolder_ == "../" )
+      {
+         pathTargetFile = std::filesystem::current_path().parent_path() / pathSourceFile.filename();
+      }
+      else if( std::filesystem::is_directory(pathTargetFile) == true )
+      {
+         pathTargetFile = pathTargetFile / pathSourceFile.filename();
+      }
+      else if( pathTargetFile.has_extension() == false )
+      {
+         // Assume it's a directory path and append filename
+         pathTargetFile = pathTargetFile / pathSourceFile.filename();
+      }
+      // If pathTargetFile has extension, treat it as complete file path
 
+      // Ensure target directory exists
       std::error_code errorcode;
-      std::filesystem::copy_file(pathSourceFile, pathTargetFile, std::filesystem::copy_options::overwrite_existing, errorcode); // copy the file
+      std::filesystem::create_directories(pathTargetFile.parent_path(), errorcode);
+      if(errorcode) { return { false, "Failed to create target directory: " + pathTargetFile.parent_path().string() + " Error: " + errorcode.message() }; }
+
+      // Copy the file
+      std::filesystem::copy_file(pathSourceFile, pathTargetFile, std::filesystem::copy_options::overwrite_existing, errorcode);
       if(errorcode) { return { false, "Failed to copy file: " + pathSourceFile.string() + " to " + pathTargetFile.string() + " Error: " + errorcode.message() }; }
+
       pdocument->MESSAGE_Display("Copied file: " + pathSourceFile.string() + " to " + pathTargetFile.string());
       return { true, "" };
    }
-
 
 	// ## determine the source folder to remove from path when copying ...........
    
