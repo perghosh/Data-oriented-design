@@ -94,6 +94,28 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
 
 	pdocument->MESSAGE_Display(std::format("Files found from source/sources '{}'", stringSource));
 
+   // ### Special case, if source is a file then just copy that file
+   if( std::filesystem::is_regular_file(stringSource) == true )                // if source is a file then just copy that file
+   {
+      std::filesystem::path pathSourceFile(stringSource);                      // get the source file path
+
+      // check if target is complete file path or just a folder
+      std::filesystem::path pathTargetFile( stringTargetFolder_ );
+
+      // Check if target holds a file name or just a folder
+      if( pathTargetFile.has_extension() == false )                           // if target has no extension then it is a folder
+      {
+         pathTargetFile = pathTargetFile / pathSourceFile.filename();          // add the source file name to the target folder
+      }
+
+      std::error_code errorcode;
+      std::filesystem::copy_file(pathSourceFile, pathTargetFile, std::filesystem::copy_options::overwrite_existing, errorcode); // copy the file
+      if(errorcode) { return { false, "Failed to copy file: " + pathSourceFile.string() + " to " + pathTargetFile.string() + " Error: " + errorcode.message() }; }
+      pdocument->MESSAGE_Display("Copied file: " + pathSourceFile.string() + " to " + pathTargetFile.string());
+      return { true, "" };
+   }
+
+
 	// ## determine the source folder to remove from path when copying ...........
    
 	std::string stringSourceFolder; // the source folder to remove from path when copying
@@ -130,27 +152,6 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    }	                                                                                              LOG_DEBUG_RAW("Source folder: " & pathSource.string().c_str()); LOG_DEBUG_RAW("Target folder: " & pathTarget.string().c_str());
    
 	// ## Generate list of files to copy to target folder ......................
-
-   // ### Special case, if source is a file then just copy that file
-   if( std::filesystem::is_regular_file(stringSource) == true )                // if source is a file then just copy that file
-   {
-      std::filesystem::path pathSourceFile(stringSource);                      // get the source file path
-
-      // check if target is complete file path or just a folder
-      std::filesystem::path pathTargetFile( stringTargetFolder_ );
-
-      // Check if target holds a file name or just a folder
-      if( pathTargetFile.has_extension() == false )                           // if target has no extension then it is a folder
-      {
-         pathTargetFile = pathTargetFile / pathSourceFile.filename();          // add the source file name to the target folder
-      }
-
-      std::error_code errorcode;
-      std::filesystem::copy_file(pathSourceFile, pathTargetFile, std::filesystem::copy_options::overwrite_existing, errorcode); // copy the file
-      if(errorcode) { return { false, "Failed to copy file: " + pathSourceFile.string() + " to " + pathTargetFile.string() + " Error: " + errorcode.message() }; }
-      pdocument->MESSAGE_Display("Copied file: " + pathSourceFile.string() + " to " + pathTargetFile.string());
-      return { true, "" };
-   }
 
    std::vector<std::string> vectorSourceFile;
    gd::table::dto::table* ptableFile = ptableDir;                             // get the table pointer
