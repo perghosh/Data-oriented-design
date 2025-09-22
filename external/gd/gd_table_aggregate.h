@@ -702,8 +702,8 @@ TYPE aggregate<TABLE>::percentile( unsigned uColumn, double dPercentile, uint64_
       for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) 
       {
          if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue;
-         TYPE value = (TYPE)m_ptable->cell_get_variant_view( uRow, uColumn );
-         values.push_back( value );
+         TYPE value_ = (TYPE)m_ptable->cell_get_variant_view( uRow, uColumn );
+         vectorValue.push_back( value_ );
       }
    }
    else {
@@ -713,8 +713,8 @@ TYPE aggregate<TABLE>::percentile( unsigned uColumn, double dPercentile, uint64_
          auto variantviewValue = m_ptable->cell_get_variant_view( uRow, uColumn );
          bool bOk = variantviewValue.convert_to( eType, variantConvertTo );
          if( bOk == true ) {
-            TYPE value = (TYPE)variantConvertTo;
-            vectorValue.push_back( value );
+            TYPE value_ = (TYPE)variantConvertTo;
+            vectorValue.push_back( value_ );
          }
       }
    }
@@ -744,6 +744,37 @@ TYPE aggregate<TABLE>::percentile( unsigned uColumn, double dPercentile, uint64_
    {
       return vectorValue[uLowerIndex] + static_cast<TYPE>( dFraction ) * (vectorValue[uUpperIndex] - vectorValue[uLowerIndex]);
    }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Count values in column that contain the specified pattern
+ * @param uColumn index to column to search in
+ * @param stringPattern pattern to search for within cell values
+ * @param uBeginRow start row to search from
+ * @param uCount number of rows from start row
+ * @return number of values in column that contain the pattern within specified range
+ */
+template <typename TABLE>
+unsigned aggregate<TABLE>::count_contains( unsigned uColumn, const std::string_view& stringPattern, uint64_t uBeginRow, uint64_t uCount ) const { assert( m_ptable != nullptr );
+   assert( uColumn < m_ptable->get_column_count() );
+   
+   uint64_t uEndRow = uBeginRow + uCount;
+   if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
+
+   unsigned uMatchCount = 0;
+   bool bHasNull = m_ptable->is_null();
+
+   for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
+      if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue; // skip null values
+
+      gd::variant_view value_ = m_ptable->cell_get_variant_view(uRow, uColumn);
+      std::string stringValue = value_.as_string();
+      
+      // Check if the pattern is found in the string value
+      if( stringValue.find( stringPattern ) != std::string::npos ) { uMatchCount++; }
+   }
+
+   return uMatchCount;
 }
 
 /**
