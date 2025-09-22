@@ -35,6 +35,7 @@ inline constexpr uint8_t uTailetextMarker_d = 0x01;
 #include <memory>
 
 #include "gd_types.h"
+#include "gd_variant_view.h"
 
 #if defined( __clang__ )
    #pragma GCC diagnostic push

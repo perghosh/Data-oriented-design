@@ -79,6 +79,18 @@ public:
    /** \name OPERATION
    *///@{
 
+   // ## min operation - find minimum values
+
+   template<typename TYPE>
+   TYPE min( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+   template<typename TYPE>
+   TYPE min( unsigned uColumn ) const { return min<TYPE>( uColumn, 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   TYPE min( const std::string_view& stringName ) const { return min<TYPE>( m_ptable->column_get_index( stringName ), 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   TYPE min( const std::string_view& stringName, uint64_t uBeginRow, uint64_t uCount ) const { return min<TYPE>( m_ptable->column_get_index( stringName ), uBeginRow, uCount ); }
+
+
    // ## max operation calculating size in bytes each value needs related to read it as text
 
    unsigned max( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount, tag_length ) const;
@@ -98,8 +110,87 @@ public:
    template<typename TYPE>
    TYPE sum( unsigned uColumn ) const { return sum<TYPE>( uColumn, 0, m_ptable->get_row_count() ); }
 
+   // ## average operation
+   template<typename TYPE>
+   double average( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+   template<typename TYPE>
+   double average( unsigned uColumn ) const { return average<TYPE>( uColumn, 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   double average( const std::string_view& stringName ) const { return average<TYPE>( m_ptable->column_get_index( stringName ), 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   double average( const std::string_view& stringName, uint64_t uBeginRow, uint64_t uCount ) const { return average<TYPE>( m_ptable->column_get_index( stringName ), uBeginRow, uCount ); }
+
+   // ## count operations
+   uint64_t count( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+   uint64_t count( unsigned uColumn ) const { return count( uColumn, 0, m_ptable->get_row_count() ); }
+   uint64_t count( const std::string_view& stringName ) const { return count( m_ptable->column_get_index( stringName ), 0, m_ptable->get_row_count() ); }
+   uint64_t count( const std::string_view& stringName, uint64_t uBeginRow, uint64_t uCount ) const { return count( m_ptable->column_get_index( stringName ), uBeginRow, uCount ); }
+
+   uint64_t count_not_null( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+   uint64_t count_not_null( unsigned uColumn ) const { return count_not_null( uColumn, 0, m_ptable->get_row_count() ); }
+   uint64_t count_not_null( const std::string_view& stringName ) const { return count_not_null( m_ptable->column_get_index( stringName ), 0, m_ptable->get_row_count() ); }
+   uint64_t count_not_null( const std::string_view& stringName, uint64_t uBeginRow, uint64_t uCount ) const { return count_not_null( m_ptable->column_get_index( stringName ), uBeginRow, uCount ); }
+
+   uint64_t count_null( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+   uint64_t count_null( unsigned uColumn ) const { return count_null( uColumn, 0, m_ptable->get_row_count() ); }
+   uint64_t count_null( const std::string_view& stringName ) const { return count_null( m_ptable->column_get_index( stringName ), 0, m_ptable->get_row_count() ); }
+   uint64_t count_null( const std::string_view& stringName, uint64_t uBeginRow, uint64_t uCount ) const { return count_null( m_ptable->column_get_index( stringName ), uBeginRow, uCount ); }
+
+   // ## unique count operation
+   uint64_t count_unique( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+   uint64_t count_unique( unsigned uColumn ) const { return count_unique( uColumn, 0, m_ptable->get_row_count() ); }
+   uint64_t count_unique( const std::string_view& stringName ) const { return count_unique( m_ptable->column_get_index( stringName ), 0, m_ptable->get_row_count() ); }
+   uint64_t count_unique( const std::string_view& stringName, uint64_t uBeginRow, uint64_t uCount ) const { return count_unique( m_ptable->column_get_index( stringName ), uBeginRow, uCount ); }
+
+   // ## variance and standard deviation operations
+   template<typename TYPE>
+   double variance( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+   template<typename TYPE>
+   double variance( unsigned uColumn ) const { return variance<TYPE>( uColumn, 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   double variance( const std::string_view& stringName ) const { return variance<TYPE>( m_ptable->column_get_index( stringName ), 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   double variance( const std::string_view& stringName, uint64_t uBeginRow, uint64_t uCount ) const { return variance<TYPE>( m_ptable->column_get_index( stringName ), uBeginRow, uCount ); }
+
+   template<typename TYPE>
+   double std_deviation( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+   template<typename TYPE>
+   double std_deviation( unsigned uColumn ) const { return std_deviation<TYPE>( uColumn, 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   double std_deviation( const std::string_view& stringName ) const { return std_deviation<TYPE>( m_ptable->column_get_index( stringName ), 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   double std_deviation( const std::string_view& stringName, uint64_t uBeginRow, uint64_t uCount ) const { return std_deviation<TYPE>( m_ptable->column_get_index( stringName ), uBeginRow, uCount ); }
+
+   // ## median and percentile operations
+   template<typename TYPE>
+   TYPE median( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+   template<typename TYPE>
+   TYPE median( unsigned uColumn ) const { return median<TYPE>( uColumn, 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   TYPE median( const std::string_view& stringName ) const { return median<TYPE>( m_ptable->column_get_index( stringName ), 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   TYPE median( const std::string_view& stringName, uint64_t uBeginRow, uint64_t uCount ) const { return median<TYPE>( m_ptable->column_get_index( stringName ), uBeginRow, uCount ); }
+
+   template<typename TYPE>
+   TYPE percentile( unsigned uColumn, double dPercentile, uint64_t uBeginRow, uint64_t uCount ) const;
+   template<typename TYPE>
+   TYPE percentile( unsigned uColumn, double dPercentile ) const { return percentile<TYPE>( uColumn, dPercentile, 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   TYPE percentile( const std::string_view& stringName, double dPercentile ) const { return percentile<TYPE>( m_ptable->column_get_index( stringName ), dPercentile, 0, m_ptable->get_row_count() ); }
+   template<typename TYPE>
+   TYPE percentile( const std::string_view& stringName, double dPercentile, uint64_t uBeginRow, uint64_t uCount ) const { return percentile<TYPE>( m_ptable->column_get_index( stringName ), dPercentile, uBeginRow, uCount ); }
+
+   // ## string-specific operations
+   unsigned count_contains( unsigned uColumn, const std::string_view& stringPattern, uint64_t uBeginRow, uint64_t uCount ) const;
+   unsigned count_contains( unsigned uColumn, const std::string_view& stringPattern ) const { return count_contains( uColumn, stringPattern, 0, m_ptable->get_row_count() ); }
+   unsigned count_contains( const std::string_view& stringName, const std::string_view& stringPattern ) const { return count_contains( m_ptable->column_get_index( stringName ), stringPattern, 0, m_ptable->get_row_count() ); }
+   unsigned count_contains( const std::string_view& stringName, const std::string_view& stringPattern, uint64_t uBeginRow, uint64_t uCount ) const { return count_contains( m_ptable->column_get_index( stringName ), stringPattern, uBeginRow, uCount ); }
+
    
    std::vector<gd::variant_view> unique( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const;
+   std::vector<gd::variant_view> unique( unsigned uColumn ) const { return unique(uColumn, 0, m_ptable->get_row_count()); }
+   std::vector<gd::variant_view> unique( const std::string_view& stringName, uint64_t uBeginRow, uint64_t uCount ) const { return unique(m_ptable->column_get_index(stringName), uBeginRow, uCount); }
+   std::vector<gd::variant_view> unique( const std::string_view& stringName ) const { return unique(m_ptable->column_get_index(stringName), 0, m_ptable->get_row_count()); }
 
 
    // ## fix operations performs specific task to handle edge cases
@@ -148,7 +239,52 @@ template<typename TYPE, typename TABLE>
 TYPE sum( const TABLE& t_, unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) { return aggregate( &t_ ).template sum<TYPE>( uColumn, uBeginRow, uCount ); }
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Find minimum value in specified column range
+ * @param uColumn index to column to find minimum value in
+ * @param uBeginRow start row to check values from
+ * @param uCount number of rows from start row
+ * @return minimum value found in column within specified range
+ */
+template<typename TABLE>
+template<typename TYPE>
+TYPE aggregate<TABLE>::min( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const {        assert( m_ptable != nullptr );
+   uint64_t uEndRow = uBeginRow + uCount;
+   if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
 
+   auto eType = gd::types::type_g<TYPE>( gd::types::tag_ask_compiler{});
+   auto uColumnType = m_ptable->column_get_ctype( uColumn );
+   bool bHasNull = m_ptable->is_null();
+   bool bInitialized = false;
+   TYPE min_{};
+
+   if( (( unsigned )eType & 0xff) == (uColumnType & 0xff) ) {
+      for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue;
+         TYPE value = (TYPE)m_ptable->cell_get_variant_view( uRow, uColumn );
+         if( bInitialized == false || value < min_ ) {
+            min_ = value;
+            bInitialized = true;
+         }
+      }
+   }
+   else {
+      for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue;
+         gd::variant variantConvertTo;
+         auto variantviewValue = m_ptable->cell_get_variant_view( uRow, uColumn );
+         bool bOk = variantviewValue.convert_to( eType, variantConvertTo );
+         if( bOk == true ) {
+            TYPE value = (TYPE)variantConvertTo;
+            if( bInitialized == false || value < min_ ) {
+               min_ = value;
+               bInitialized = true;
+            }
+         }
+      }
+   }
+   return min_;
+}
 
 /** ---------------------------------------------------------------------------
  * @brief count max number of ascii characters needed for column
@@ -337,7 +473,278 @@ TYPE aggregate<TABLE>::sum( unsigned uColumn, uint64_t uBeginRow, uint64_t uCoun
    return sum_;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Count total number of values (including nulls) in specified column range
+ * @param uColumn index to column to count values in
+ * @param uBeginRow start row to count from
+ * @param uCount number of rows from start row
+ * @return total number of values in column within specified range
+*/
+template <typename TABLE>
+uint64_t aggregate<TABLE>::count( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const { assert( m_ptable != nullptr );
+   uint64_t uEndRow = uBeginRow + uCount;
+   if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
 
+   return uEndRow - uBeginRow;
+}
+
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Count non-null values in specified column range
+ * @param uColumn index to column to count values in
+ * @param uBeginRow start row to count from
+ * @param uCount number of rows from start row
+ * @return number of non-null values found in column within specified range
+ */
+template <typename TABLE>
+uint64_t aggregate<TABLE>::count_not_null( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const { assert( m_ptable != nullptr );
+   uint64_t uEndRow = uBeginRow + uCount;
+   if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
+
+   uint64_t uCount_ = 0;
+   bool bHasNull = m_ptable->is_null();
+
+   for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
+      if( bHasNull == false || m_ptable->cell_is_null(uRow, uColumn) == false ) {
+         uCount_++;
+      }
+   }
+   return uCount_;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Count null values in specified column range
+ * @param uColumn index to column to count null values in
+ * @param uBeginRow start row to count from
+ * @param uCount number of rows from start row
+ * @return number of null values found in column within specified range
+*/
+template <typename TABLE>
+uint64_t aggregate<TABLE>::count_null( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const { assert( m_ptable != nullptr );
+   uint64_t uEndRow = uBeginRow + uCount;
+   if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
+
+   uint64_t uNullCount = 0;
+   bool bHasNull = m_ptable->is_null();
+
+   if( bHasNull == true ) {
+      for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
+         if( m_ptable->cell_is_null(uRow, uColumn) == true ) {
+            uNullCount++;
+         }
+      }
+   }
+   return uNullCount;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Count unique values in specified column range
+ * @param uColumn index to column to count unique values in
+ * @param uBeginRow start row to count from
+ * @param uCount number of rows from start row
+ * @return number of unique values found in column within specified range
+ */
+template <typename TABLE>
+uint64_t aggregate<TABLE>::count_unique( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const { assert( m_ptable != nullptr ); assert( uColumn < m_ptable->get_column_count() );
+   std::unordered_set<std::string> unorderedset_;
+   uint64_t uEndRow = uBeginRow + uCount;
+   if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
+
+   bool bHasNull = m_ptable->is_null();
+
+   for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) 
+   {
+      if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue;
+
+      gd::variant_view value_ = m_ptable->cell_get_variant_view(uRow, uColumn);
+      std::string stringValue = value_.as_string();
+      unorderedset_.insert(stringValue);
+   }
+
+   return unorderedset_.size();
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Calculate variance of values in specified column range (non-template version)
+ * @param uColumn index to column to calculate variance for
+ * @param uBeginRow start row to calculate from
+ * @param uCount number of rows from start row
+ * @return variance of values found in column within specified range
+ */
+template<typename TABLE>
+template<typename TYPE>
+double aggregate<TABLE>::variance( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const { assert( m_ptable != nullptr );
+   // Use double as default type for variance calculation
+   auto eType = m_ptable->column_get_ctype( uColumn );
+   
+   // ## Dispatch to appropriate type based on column type
+
+   if( gd::types::detail::is_integer( eType ) ) 
+   {
+      return variance<int64_t>( uColumn, uBeginRow, uCount );
+   }
+   else if( gd::types::detail::is_decimal( eType ) ) 
+   {
+      return variance<double>( uColumn, uBeginRow, uCount );
+   }
+   else 
+   {
+      return variance<double>( uColumn, uBeginRow, uCount );                  // For other types, try to convert to double
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Calculate standard deviation of values in specified column range
+ * @param uColumn index to column to calculate standard deviation for
+ * @param uBeginRow start row to calculate from
+ * @param uCount number of rows from start row
+ * @return standard deviation of values found in column within specified range
+*/
+template<typename TABLE>
+template<typename TYPE>
+double aggregate<TABLE>::std_deviation( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const {
+   assert( m_ptable != nullptr );
+   return std::sqrt( variance( uColumn, uBeginRow, uCount ) );
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Find median value in specified column range
+ * @param uColumn index to column to find median value in
+ * @param uBeginRow start row to check values from
+ * @param uCount number of rows from start row
+ * @return median value found in column within specified range
+*/
+template<typename TABLE>
+template<typename TYPE>
+TYPE aggregate<TABLE>::median( unsigned uColumn, uint64_t uBeginRow, uint64_t uCount ) const { assert( m_ptable != nullptr );
+   uint64_t uEndRow = uBeginRow + uCount;
+   if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
+
+   auto eType = gd::types::type_g<TYPE>( gd::types::tag_ask_compiler{});
+   auto uColumnType = m_ptable->column_get_ctype( uColumn );
+   bool bHasNull = m_ptable->is_null();
+   std::vector<TYPE> vectorValue;
+
+   if( (( unsigned )eType & 0xff) == (uColumnType & 0xff) ) 
+   {
+      for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) 
+      {
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue;
+         TYPE value = (TYPE)m_ptable->cell_get_variant_view( uRow, uColumn );
+         vectorValue.push_back( value );
+      }
+   }
+   else 
+   {
+      for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) 
+      {
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue;
+         gd::variant variantConvertTo;
+         auto variantviewValue = m_ptable->cell_get_variant_view( uRow, uColumn );
+         bool bOk = variantviewValue.convert_to( eType, variantConvertTo );
+         if( bOk == true ) 
+         {
+            TYPE value = (TYPE)variantConvertTo;
+            vectorValue.push_back( value );
+         }
+      }
+   }
+
+   if( vectorValue.empty() ) return TYPE{};
+
+   std::sort( vectorValue.begin(), vectorValue.end() );
+   size_t size = vectorValue.size();
+
+   if( size % 2 == 0 ) {
+      // Even number of elements - return average of middle two
+      if constexpr( std::is_integral_v<TYPE> ) 
+      {
+         return (vectorValue[size/2 - 1] + vectorValue[size/2]) / 2;
+      } 
+      else 
+      {
+         return (vectorValue[size/2 - 1] + vectorValue[size/2]) / static_cast<TYPE>(2.0);
+      }
+   } 
+   else 
+   {
+      // Odd number of elements - return middle element
+      return vectorValue[size/2];
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Find percentile value in specified column range
+ * @param uColumn index to column to find percentile value in
+ * @param dPercentile percentile to find (0.0 to 100.0)
+ * @param uBeginRow start row to check values from
+ * @param uCount number of rows from start row
+ * @return percentile value found in column within specified range
+*/
+template<typename TABLE>
+template<typename TYPE>
+TYPE aggregate<TABLE>::percentile( unsigned uColumn, double dPercentile, uint64_t uBeginRow, uint64_t uCount ) const { assert( m_ptable != nullptr ); assert( dPercentile >= 0.0 && dPercentile <= 100.0 );
+   
+   uint64_t uEndRow = uBeginRow + uCount;
+   if( uEndRow > m_ptable->get_row_count() ) { uEndRow = m_ptable->get_row_count(); }
+
+   auto eType = gd::types::type_g<TYPE>( gd::types::tag_ask_compiler{});
+   auto uColumnType = m_ptable->column_get_ctype( uColumn );
+   bool bHasNull = m_ptable->is_null();
+   std::vector<TYPE> vectorValue;
+
+   if( type_number_g( eType ) == type_number_g( uColumnType ) ) 
+   {
+      for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) 
+      {
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue;
+         TYPE value = (TYPE)m_ptable->cell_get_variant_view( uRow, uColumn );
+         values.push_back( value );
+      }
+   }
+   else {
+      for( uint64_t uRow = uBeginRow; uRow < uEndRow; uRow++ ) {
+         if( bHasNull == true && m_ptable->cell_is_null(uRow, uColumn) == true ) continue;
+         gd::variant variantConvertTo;
+         auto variantviewValue = m_ptable->cell_get_variant_view( uRow, uColumn );
+         bool bOk = variantviewValue.convert_to( eType, variantConvertTo );
+         if( bOk == true ) {
+            TYPE value = (TYPE)variantConvertTo;
+            vectorValue.push_back( value );
+         }
+      }
+   }
+
+   if( vectorValue.empty() ) return TYPE{};
+
+   std::sort( vectorValue.begin(), vectorValue.end() );
+
+   if( dPercentile == 0.0 ) return vectorValue.front();
+   if( dPercentile == 100.0 ) return vectorValue.back();
+
+   double dIndex = (dPercentile / 100.0) * (vectorValue.size() - 1);
+   size_t uLowerIndex = static_cast<size_t>( std::floor( dIndex ) );
+   size_t uUpperIndex = static_cast<size_t>( std::ceil( dIndex ) );
+
+   if( uLowerIndex == uUpperIndex ) {
+      return vectorValue[uLowerIndex];
+   }
+
+   // Linear interpolation between the two values
+   double dFraction = dIndex - std::floor( dIndex );
+   if constexpr( std::is_integral_v<TYPE> ) 
+   {
+      return static_cast<TYPE>( vectorValue[uLowerIndex] + dFraction * (vectorValue[uUpperIndex] - vectorValue[uLowerIndex]) );
+   } 
+   else 
+   {
+      return vectorValue[uLowerIndex] + static_cast<TYPE>( dFraction ) * (vectorValue[uUpperIndex] - vectorValue[uLowerIndex]);
+   }
+}
 
 /**
  * @brief Retrieves unique values from a specified column within a range of rows.

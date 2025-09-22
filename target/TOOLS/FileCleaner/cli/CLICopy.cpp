@@ -6,6 +6,7 @@
 #include <format>
 
 #include "gd/gd_uuid.h"
+#include "gd/gd_table_aggregate.h"
 
 #include "../Command.h"
 #include "../Application.h"
@@ -17,6 +18,9 @@
 
 
 NAMESPACE_CLI_BEGIN
+
+static std::pair<bool, std::string> FILE_PatternFilter_s( const gd::argument::shared::arguments& arguments_, CDocument* pdocument );
+
 
 // ## Copy operations
 
@@ -172,7 +176,14 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    {
       return { false, "Source and target folders cannot be the same" };
    }	                                                                                              LOG_DEBUG_RAW("Source folder: " & pathSource.string().c_str()); LOG_DEBUG_RAW("Target folder: " & pathTarget.string().c_str());
-   
+
+   // ## Apply pattern filter if set ..........................................
+
+   if( arguments_.exists("pattern") == true )
+   {
+      auto result_ = FILE_PatternFilter_s(arguments_, pdocument); if( result_.first == false ) return result_;
+   }
+
 	// ## Generate list of files to copy to target folder ......................
 
    std::vector<std::string> vectorSourceFile;
@@ -322,6 +333,24 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    pdocument->MESSAGE_Display( std::format( "Files copied: {}", uFilesCopied ) );
    if(uFilesSkippedDueToOverwrite > 0) pdocument->MESSAGE_Display( std::format( "  Files skipped (overwrite disabled): {}", uFilesSkippedDueToOverwrite ) );
    if(uFilesSkippedDueToAge > 0)  pdocument->MESSAGE_Display( std::format( "  Files skipped (not newer): {}", uFilesSkippedDueToAge ) );
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> FILE_PatternFilter_s(const gd::argument::shared::arguments& arguments_, CDocument* pdocument)
+{
+   auto vectorPattern = arguments_.get_all<std::string>("pattern"); // get all patterns from options and put them into vectorPattern
+
+   // remove empty patterns
+   vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
+   if( vectorPattern.size() == 0 ) return {false, "No patterns provided."}; // if no patterns are provided, return an error
+
+   auto result_ = pdocument->FILE_UpdatePatternList(vectorPattern, arguments_); // Search for patterns in harvested files and place them into the result table
+   if( result_.first == false ) return result_;
+
+   const auto ptable_ = pdocument->CACHE_Get("file-dir", false); 
+   gd::table::aggregate aggregate_(ptable_);
+   auto vectorFileKey = aggregate_.unique("file-key"); // get unique keys from the file-dir table
 
    return { true, "" };
 }
