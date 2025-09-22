@@ -1126,7 +1126,7 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
                stringHeader += '\n';
                for( auto itWidth = std::begin(vectorWidth); itWidth != (it + 1); itWidth++ )
                {
-                  unsigned uOffset = ( *itWidth + 3 );                                // add width of the column separator
+                  unsigned uOffset = ( *itWidth + 3 );                         // add width of the column separator, width = space, separator, space
                   stringHeader.insert(stringHeader.end(), uOffset, ' ');
                   uOffset += 2;
                }
