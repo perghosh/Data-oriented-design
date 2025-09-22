@@ -656,24 +656,26 @@ TYPE aggregate<TABLE>::median( unsigned uColumn, uint64_t uBeginRow, uint64_t uC
 
    if( vectorValue.empty() ) return TYPE{};
 
-   std::sort( vectorValue.begin(), vectorValue.end() );
-   size_t size = vectorValue.size();
+   std::sort(vectorValue.begin(), vectorValue.end());                         // Sort values to find median
+   size_t uSize = vectorValue.size();
 
-   if( size % 2 == 0 ) {
-      // Even number of elements - return average of middle two
+   // ## Calculate median value
+
+   if( uSize % 2 == 0 ) 
+   {
+      
       if constexpr( std::is_integral_v<TYPE> ) 
       {
-         return (vectorValue[size/2 - 1] + vectorValue[size/2]) / 2;
+         return (vectorValue[uSize/2 - 1] + vectorValue[uSize/2]) / 2;        // Even number of elements - return average of middle two (no single value in the middle)
       } 
       else 
       {
-         return (vectorValue[size/2 - 1] + vectorValue[size/2]) / static_cast<TYPE>(2.0);
+         return (vectorValue[uSize/2 - 1] + vectorValue[uSize/2]) / static_cast<TYPE>(2.0); // Floating point - return precise average
       }
    } 
    else 
    {
-      // Odd number of elements - return middle element
-      return vectorValue[size/2];
+      return vectorValue[uSize / 2];                                          // Odd number of elements - return middle element
    }
 }
 
