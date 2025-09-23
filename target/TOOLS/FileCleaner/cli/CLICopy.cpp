@@ -106,15 +106,11 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
       std::filesystem::path pathTargetFile(stringTargetFolder_);
 
       // Normalize target path based on special cases
-      if( stringTargetFolder_ == "." || stringTargetFolder_ == "./" || stringTargetFolder_ == "" )
+      if( stringTargetFolder_ == "." || stringTargetFolder_ == "./" || stringTargetFolder_ == "" ) // current folder
       {
          pathTargetFile = std::filesystem::current_path() / pathSourceFile.filename();
       }
-      else if( stringTargetFolder_ == ".." )
-      {
-         pathTargetFile = std::filesystem::current_path().parent_path() / pathSourceFile.filename();
-      }
-      else if( stringTargetFolder_ == "../" )
+      else if( stringTargetFolder_ == ".." || stringTargetFolder_ == "../" )  // parent folder
       {
          pathTargetFile = std::filesystem::current_path().parent_path() / pathSourceFile.filename();
       }
@@ -127,7 +123,6 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
          // Assume it's a directory path and append filename
          pathTargetFile = pathTargetFile / pathSourceFile.filename();
       }
-      // If pathTargetFile has extension, treat it as complete file path
 
       // Ensure target directory exists
       std::error_code errorcode;
@@ -181,7 +176,9 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
 
    if( arguments_.exists("pattern") == true )
    {
-      auto result_ = FILE_PatternFilter_s(arguments_, pdocument); if( result_.first == false ) return result_;
+      gd::argument::shared::arguments argumentsFilter( arguments_ );
+      argumentsFilter += { { "files", "file-dir" } };
+      auto result_ = FILE_PatternFilter_s(argumentsFilter, pdocument); if( result_.first == false ) return result_;
    }
 
 	// ## Generate list of files to copy to target folder ......................
@@ -348,11 +345,13 @@ std::pair<bool, std::string> FILE_PatternFilter_s(const gd::argument::shared::ar
    auto result_ = pdocument->FILE_UpdatePatternList(vectorPattern, arguments_); // Search for patterns in harvested files and place them into the result table
    if( result_.first == false ) return result_;
 
-   auto ptable_ = pdocument->CACHE_Get("file-linelist", false); 
-   gd::table::aggregate aggregate_(ptable_);
+   auto ptableLineList = pdocument->CACHE_Get("file-linelist", false);
+   gd::table::aggregate aggregate_(ptableLineList);
    auto vectorFileKey = aggregate_.unique("file-key");                        // get all unique file keys from the harvested files table
 
-   auto vectorRow = ptable_->find_all("key", vectorFileKey);                  // mark all rows as in use that are in the pattern result table
+   auto ptableDir = pdocument->CACHE_Get("file-dir", false);                                       assert(ptableDir != nullptr);
+
+   auto vectorRow = ptableDir->find_all("key", vectorFileKey);                // mark all rows as in use that are in the pattern result table
    std::sort(vectorRow.begin(), vectorRow.end());                             // sort the found rows
 
    // create vector with rows inverted from found rows placed into vectorRow
@@ -368,12 +367,12 @@ std::pair<bool, std::string> FILE_PatternFilter_s(const gd::argument::shared::ar
       uRowPosition = itRow + 1;
    }
 
-   if( uRowPosition < ptable_->size() ) 
+   if( uRowPosition < ptableDir->size() ) 
    {
-      for( auto u = uRowPosition; u < ptable_->size(); u++ ) { vectorRowInverted.push_back(u); } // add to inverted set
+      for( auto u = uRowPosition; u < ptableDir->size(); u++ ) { vectorRowInverted.push_back(u); } // add to inverted set
    }
 
-   ptable_->erase(vectorRowInverted);                                         // erase all rows that are not in the pattern result table
+   ptableDir->erase(vectorRowInverted);                                         // erase all rows that are not in the pattern result table
 
    return { true, "" };
 }

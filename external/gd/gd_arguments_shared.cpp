@@ -1251,6 +1251,8 @@ arguments::pointer arguments::insert(pointer pPosition, argument_type uType, con
  */
 arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsigned int uLength)
 { 
+   unique();                                                                   // make sure we have our own copy of data
+
    uint64_t uReserveLength = buffer_size();                                    // current buffer size
    uReserveLength += uLength + sizeof(uint32_t) * 2;                           // value length (and prefix value length for strings)
    uReserveLength += sizeof( uint16_t ) + sizeof(uint32_t);                    // value type and value length if needed
@@ -1298,7 +1300,8 @@ arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsign
  * \return arguments& argument object for nested calls
  */
 arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argument_type uType, const_pointer pBuffer, unsigned int uLength)
-{                                                                                                  assert(m_pbuffer->get_reference_count() <= 1); assert( uNameLength < 0x1000 ); // no change if two or more holds value and realistic name lenghts
+{                                                                                                  assert( uNameLength < 0x1000 ); // no change if two or more holds value and realistic name lenghts
+   unique();                                                                   // make sure we have our own copy of data
 #ifndef NDEBUG
    enumCType eType_d = (enumCType)(uType & ~eTypeNumber_MASK);                 // get absolute variable type
    auto typename_d = gd::types::type_name_g( eType_d );                        // readable name for type
@@ -1513,6 +1516,8 @@ arguments& arguments::append_argument( const std::vector< std::pair<std::string_
  */
 arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength)
 {
+   unique();                                                                   // make sure we have our own copy of data
+
    pointer pPosition = find(std::string_view(pbszName, uNameLength));
    if( pPosition == nullptr )
    {  // value was not found, just add it
@@ -1616,6 +1621,8 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
  */
 arguments& arguments::set( pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition )
 {
+   unique();                                                                   // make sure we have our own copy of data
+
    // get current argument
    argument argumentOld = arguments::get_argument_s(pPosition);
 
@@ -1799,6 +1806,7 @@ arguments::pointer arguments::insert(size_t uIndex, const std::string_view& stri
  */
 arguments::pointer arguments::insert(pointer pPosition, const gd::variant_view& variantviewValue, tag_view)
 {                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition <= buffer_data_end() );
+   unique();                                                                   // make sure we have our own copy of data
 #ifndef NDEBUG
    // auto string_d = debug::print( *this );
 #endif // !NDEBUG
@@ -1845,6 +1853,7 @@ arguments::pointer arguments::insert(pointer pPosition, const gd::variant_view& 
  */
 arguments::pointer arguments::insert(pointer pPosition, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view)
 {                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition <= buffer_data_end() );
+   unique();                                                                   // make sure we have our own copy of data
 #ifndef NDEBUG
    auto string_d = debug::print( *this );
 #endif // !NDEBUG
@@ -2489,6 +2498,66 @@ bool arguments::reserve(uint64_t uCount)
    }
 
    return false;
+}
+
+/** --------------------------------------------------------------------------- clone */ /**
+ * \brief Forces creation of a new buffer copy
+ *
+ * \param uMinSize Minimum size for the new buffer
+ * \return true if successful
+ */
+bool arguments::clone( uint64_t uMinSize )
+{
+   uint64_t uCurrentSize = m_pbuffer->size();
+   uint64_t uNeededBufferSize = std::max(uMinSize, uCurrentSize);
+
+   // Calculate new buffer size with growth factor
+   if( uNeededBufferSize < uCurrentSize * 3 / 2 ) 
+   {
+      uNeededBufferSize = uCurrentSize * 3 / 2;
+   }
+
+   // Align to 64 bytes
+   uint64_t uTotalSize = ( sizeof(buffer) + uNeededBufferSize + 63 ) & ~63;
+   uint8_t* pNewData = new uint8_t[uTotalSize];
+
+   buffer* pNewBuffer = (buffer*)pNewData;
+
+   // Initialize new buffer
+   uint64_t uActualBufferSize = uTotalSize - sizeof(buffer);
+   *pNewBuffer = buffer(uCurrentSize, uActualBufferSize);
+
+   // Copy existing data
+   if( uCurrentSize > 0 ) 
+   {
+      memcpy(pNewBuffer->data(), m_pbuffer->data(), uCurrentSize);
+   }
+
+   // Release old buffer and switch to new one
+   buffer_release();
+   m_pbuffer = pNewBuffer;
+
+   return true;
+}
+
+/** -------------------------------------------------------------------------- unique */ /**
+ * \brief Ensures this arguments instance has exclusive access to its buffer
+ *
+ * If the buffer is shared (reference count > 1), creates a private copy.
+ * This should be called before any mutating operations.
+ *
+ * \param uMinSize Minimum size needed for the operation (optional)
+ * \return true if a new buffer was allocated, false if existing buffer was kept
+ */
+bool arguments::unique(uint64_t uMinSize)
+{
+   // If we're the only owner and have enough space, nothing to do
+   if( m_pbuffer->is_shared() == false && m_pbuffer->buffer_size() >= uMinSize ) 
+   {
+      return false;
+   }
+
+   return clone(uMinSize);
 }
 
 void arguments::remove(const std::string_view& stringName)

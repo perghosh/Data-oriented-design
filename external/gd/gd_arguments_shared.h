@@ -316,7 +316,8 @@ public:
    /**
     * \brief store data for arguments, all data is stored in one single block of memory
     *
-    *
+    * This structure is allocated with extra memory to hold the actual data. 
+    * Data is stored right after this structure in memory.
     */
    struct buffer
    {
@@ -345,6 +346,9 @@ public:
             delete [] (uint8_t*)this;
          }
       }
+
+      bool is_shared() const { assert( m_iReferenceCount > 0 && "Something is very wrong, should not be 0 or negative"); return m_iReferenceCount > 1; }
+      bool is_static_buffer() const { return this == &arguments::m_buffer_s; }
 
    // ## attributes
       uint64_t m_uSize;             ///< used size in buffer
@@ -807,6 +811,7 @@ public: //0TAG0operator.arguments
    arguments& operator+=( const std::string& v_ ) { append( v_ ); return *this; }
    arguments& operator+=( const char* v_ ) { append( v_ ); return *this; }
    arguments& operator+=( const std::vector<std::pair<std::string_view, gd::variant_view>>& vector_ ) { append( vector_ ); return *this; }
+   arguments& operator+=( std::initializer_list<std::pair<std::string_view, gd::variant_view>> list_ );
 
 
    /*
@@ -1237,6 +1242,9 @@ public:
    const_iterator erase(const_iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < cend() ? itPosition : cend(); }
    /// make sure internal buffer can hold specified number of bytes, buffer data is copied if increased
    bool reserve(uint64_t uCount);
+   bool clone(uint64_t uMinSize = 0);
+   bool unique(uint64_t uMinSize = 0);
+
    /// Remove param starting at position, remember that if you are string positions in buffer they are invalidated with this method
    void remove( const std::string_view& stringName );
    void remove(const_pointer pPosition);
@@ -1458,6 +1466,15 @@ public:
    static size_type npos;
 
 };
+
+// ## operators ---------------------------------------------------------------
+
+/// += operator to append values from initializer list
+inline arguments& arguments::operator+=( std::initializer_list<std::pair<std::string_view, gd::variant_view>> list_ ) { 
+   append( list_ ); 
+   return *this; 
+}
+
 
 /// Return value as specified template type
 template<typename TYPE> 
