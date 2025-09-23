@@ -814,7 +814,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    gd::parse::patterns patternsFind(vectorPattern);
    patternsFind.sort();                                                       // Sort patterns by length, longest first (important for pattern matching)
 
-   auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
+   std::string_view stringFiles = "files";
+   if( argumentsList.exists("files") == true ) { stringFiles = argumentsList["files"].as_string_view(); } // Get the file list to process, default is "files"
+   auto* ptableFile = CACHE_Get( stringFiles );                               // Retrieve the "file" cache table
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
                                                                                                    assert(ptableFile != nullptr); assert(ptableLineList != nullptr);
 
@@ -851,19 +853,28 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
          
          try
          {
-            // STEP 1: Get file info (ptableFile is read-only so no mutex needed)
-            auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
-            auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
+            gd::file::path pathFile;
+            std::string stringFile;
 
-            // STEP 2: Build full file path
-            gd::file::path pathFile(stringFolder);
-            pathFile += stringFilename;
-            std::string stringFile = pathFile.string();
+            // STEP 1: 
+            if( ptableFile->column_exists("path") == true )
+            {
+               stringFile = ptableFile->cell_get_variant_view(uRowIndex, "path").as_string();
+            }
+            else
+            {
+               auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
+               auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
+
+               // STEP 2: Build full file path
+               pathFile = gd::file::path(stringFolder) / stringFilename;
+               stringFile = pathFile.string();
+            }
 
             auto uKey = ptableFile->cell_get_variant_view(uRowIndex, "key").as_uint64();
 
             // STEP 3: Find lines with patterns 
-            gd::argument::shared::arguments arguments_({{"source", stringFile}, {"file-key", uKey}});
+            gd::argument::shared::arguments arguments_({ {"source", stringFile}, {"file-key", uKey} }); assert(stringFile.empty() == false && "need to full path to file");
             if( stringSegment.empty() == false ) arguments_.set("segment", stringSegment.data()); // Set the segment (code, comment, string) to search in
             
             auto result_ = COMMAND_ListLinesWithPattern(arguments_, patternsFind, ptableLineListLocal.get()); // Find lines with patterns and update the local table, ptableLineListLocal is thread-local
@@ -1994,7 +2005,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       if( p_ == nullptr )
       {
          // file table: key | path | size | date | extension  
-         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 20, "extension"} }, gd::table::tag_prepare{}));
+         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 20, "extension"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"} }, gd::table::tag_prepare{}));
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }
