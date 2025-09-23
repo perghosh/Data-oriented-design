@@ -953,6 +953,11 @@ public:
    
    std::vector<uint64_t> find_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind) const noexcept;
    std::vector<uint64_t> find_all(unsigned uColumn, const gd::variant_view& variantviewFind) const noexcept { return find_all(uColumn, 0, get_row_count(), variantviewFind); }
+   std::vector<uint64_t> find_all(std::string_view stringName, const gd::variant_view& variantviewFind) const noexcept { return find_all( column_get_index( stringName ), 0, get_row_count(), variantviewFind); }
+
+   std::vector<uint64_t> find_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const std::vector<gd::variant_view>& vectorFind) const noexcept;
+   std::vector<uint64_t> find_all(unsigned uColumn, const std::vector<gd::variant_view>& vectorFind) const noexcept { return find_all(uColumn, 0, get_row_count(), vectorFind); }
+   std::vector<uint64_t> find_all(std::string_view stringName, const std::vector<gd::variant_view>& vectorFind) const noexcept { return find_all(column_get_index(stringName), 0, get_row_count(), vectorFind); }
 
    std::vector<uint64_t> find_all( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair< unsigned, gd::variant_view > >& vectorFind ) const noexcept;
    std::vector<uint64_t> find_all(const std::vector< std::pair< unsigned, gd::variant_view > >& vectorFind) const noexcept { return find_all(0, get_row_count(), vectorFind); }

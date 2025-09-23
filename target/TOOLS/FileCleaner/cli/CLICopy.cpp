@@ -348,9 +348,32 @@ std::pair<bool, std::string> FILE_PatternFilter_s(const gd::argument::shared::ar
    auto result_ = pdocument->FILE_UpdatePatternList(vectorPattern, arguments_); // Search for patterns in harvested files and place them into the result table
    if( result_.first == false ) return result_;
 
-   const auto ptable_ = pdocument->CACHE_Get("file-dir", false); 
+   auto ptable_ = pdocument->CACHE_Get("file-linelist", false); 
    gd::table::aggregate aggregate_(ptable_);
-   auto vectorFileKey = aggregate_.unique("file-key"); // get unique keys from the file-dir table
+   auto vectorFileKey = aggregate_.unique("file-key");                        // get all unique file keys from the harvested files table
+
+   auto vectorRow = ptable_->find_all("key", vectorFileKey);                  // mark all rows as in use that are in the pattern result table
+   std::sort(vectorRow.begin(), vectorRow.end());                             // sort the found rows
+
+   // create vector with rows inverted from found rows placed into vectorRow
+   std::vector<uint64_t> vectorRowInverted;
+   size_t uRowPosition = 0;
+
+   for( auto itRow : vectorRow ) 
+   { 
+      for( auto u = uRowPosition; u < itRow; u++ ) 
+      { 
+         vectorRowInverted.push_back(u);  // add to inverted set
+      }
+      uRowPosition = itRow + 1;
+   }
+
+   if( uRowPosition < ptable_->size() ) 
+   {
+      for( auto u = uRowPosition; u < ptable_->size(); u++ ) { vectorRowInverted.push_back(u); } // add to inverted set
+   }
+
+   ptable_->erase(vectorRowInverted);                                         // erase all rows that are not in the pattern result table
 
    return { true, "" };
 }
