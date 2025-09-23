@@ -2950,6 +2950,20 @@ std::vector<uint64_t> table_column_buffer::find_all(unsigned uColumn, uint64_t u
    return vectorRow;
 }
 
+std::vector<uint64_t> table_column_buffer::find_all(unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const std::vector<gd::variant_view>& vectorFind) const noexcept
+{                                                                                                  assert(m_puData && "Table data is not prepared");
+   std::vector<uint64_t> vectorRow;
+   uint64_t uEndRow = uStartRow + uCount;                                                          assert(uEndRow <= get_row_count());
+
+   for( size_t u = 0; u < vectorFind.size(); u++)
+   {
+      auto iRow = find_variant_view(uColumn, uStartRow, uCount, vectorFind[u]);
+      if( iRow >= 0 ) vectorRow.push_back((uint64_t)iRow);
+   }
+
+   return vectorRow;
+}
+
 /** ---------------------------------------------------------------------------
  * @brief find all values in table
  * @param uStartRow row to start search

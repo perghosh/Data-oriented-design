@@ -303,8 +303,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
  * @endcode
  */
 std::pair<bool, std::string> FILES_Harvest_WithWildcard_g(const std::string& stringPath, const std::string& stringWildcard, gd::table::dto::table* ptable_, unsigned uDepth, bool bSize)
-{
-   assert(ptable_ != nullptr);
+{                                                                                                  assert(ptable_ != nullptr);
    std::string stringProcessedPath = stringPath; // Default to the original path
    std::string stringEffectiveWildcard = stringWildcard;
    size_t uWildcard = stringPath.find_first_of("*?"); // Check if the path contains wildcard characters (* or ?)
