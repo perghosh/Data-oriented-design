@@ -270,11 +270,11 @@ public:
     */
    struct column
    {
-      column() { memset( this, 0, sizeof(column) ); }
-      column( unsigned uCType ) { memset( this, 0, sizeof(column) ); m_uCType = uCType; }
+      column() { memset(static_cast<void*>(this), 0, sizeof(column) ); }
+      column( unsigned uCType ) { memset(static_cast<void*>(this), 0, sizeof(column) ); m_uCType = uCType; }
       column( unsigned uCType, unsigned uSize ): m_uCType(uCType), m_uType(uCType), m_uState(0), m_uPosition(0), m_uSize(uSize), m_uPrimitiveSize( gd::types::value_size_g(uCType) ), m_uNameOffset(0), m_uAliasOffset(0) {}
       column( unsigned uCType, unsigned uType, unsigned uSize ): m_uCType(uCType), m_uType(uType), m_uState(0), m_uPosition(0), m_uSize(uSize), m_uPrimitiveSize( gd::types::value_size_g(uCType) ), m_uNameOffset(0), m_uAliasOffset(0) {}
-      column( const column* pcolumn ) { memcpy( this, pcolumn, sizeof(column) ); }
+      column( const column* pcolumn ) { memcpy(static_cast<void*>(this), pcolumn, sizeof(column) ); }
 
       void state( unsigned uState ) { m_uState = uState; }                     ///< Set column state flags
       [[nodiscard]] unsigned state() const noexcept { return m_uState; }       ///< Get column state

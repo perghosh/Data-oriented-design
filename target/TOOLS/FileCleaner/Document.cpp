@@ -814,7 +814,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    gd::parse::patterns patternsFind(vectorPattern);
    patternsFind.sort();                                                       // Sort patterns by length, longest first (important for pattern matching)
 
-   std::string_view stringFiles = "files";
+   std::string_view stringFiles = "file";
    if( argumentsList.exists("files") == true ) { stringFiles = argumentsList["files"].as_string_view(); } // Get the file list to process, default is "files"
    auto* ptableFile = CACHE_Get( stringFiles );                               // Retrieve the "file" cache table
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
@@ -929,7 +929,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 
    if( iThreadCount <= 0 ) { iThreadCount = std::thread::hardware_concurrency(); } // Use hardware concurrency if no thread count is specified
    if(iThreadCount <= 0) { iThreadCount = 1; }                                 // Fallback to single thread if hardware_concurrency returns 0
-   if( iThreadCount > 8 ) { iThreadCount = 8; }                                // Limit to 8 threads for performance and resource management
+   if( iThreadCount > 6 ) { iThreadCount = 6; }                                // Limit to 6 threads for performance and resource management
    if( ptableFile->size() < iThreadCount ) { iThreadCount = (int)ptableFile->size(); } // Limit threads to number of files
 
    // Create and launch worker threads
@@ -1082,7 +1082,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 
    if( iThreadCount <= 0 ) { iThreadCount = std::thread::hardware_concurrency(); } // Use hardware concurrency if no thread count is specified
    if(iThreadCount <= 0) { iThreadCount = 1; }                                 // Fallback to single thread if hardware_concurrency returns 0
-   if( iThreadCount > 8 ) { iThreadCount = 8; }                                // Limit to 8 threads for performance and resource management
+   if( iThreadCount > 6 ) { iThreadCount = 6; }                                // Limit to 6 threads for performance and resource management
    if( ptableFile->size() < iThreadCount ) { iThreadCount = (int)ptableFile->size(); } // Limit threads to number of files
 
    // Create and launch worker threads
