@@ -99,8 +99,8 @@ public:
 
    /// copies variant data into variant_view, this is possible because they are binary compatible, just that variant view do not own the data:
    /// \note flag marking that data is allocated in variant is cleared
-   explicit variant_view( const gd::variant& v ) { memcpy( this, &v, sizeof(variant_view) ); m_uType &= ~variant_type::eFlagAllocate; }
-   explicit variant_view( const gd::variant* pv ) { memcpy( this, pv, sizeof(variant_view) ); m_uType &= ~variant_type::eFlagAllocate; }
+   explicit variant_view( const gd::variant& v ) { memcpy(static_cast<void*>(this), &v, sizeof(variant_view) ); m_uType &= ~variant_type::eFlagAllocate; }
+   explicit variant_view( const gd::variant* pv ) { memcpy(static_cast<void*>(this), pv, sizeof(variant_view) ); m_uType &= ~variant_type::eFlagAllocate; }
 
    variant_view( const variant_view& o ) { common_construct( o ); }            // copy
    variant_view( variant_view&& o ) noexcept { common_construct( std::move( o ) ); }// move

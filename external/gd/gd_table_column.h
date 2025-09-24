@@ -95,8 +95,8 @@ public:
    ~column() {}
 private:
    // common copy
-   void common_construct( const column& o ) { memcpy( this, &o, offsetof( column, m_stringName ) ); m_stringName = o.m_stringName; m_stringAlias = o.m_stringAlias; m_arguments = o.m_arguments; }
-   void common_construct( column&& o ) noexcept { memcpy( this, &o, offsetof( column, m_stringName ) ); m_stringName = std::move( o.m_stringName ); m_stringAlias = std::move( o.m_stringAlias ); m_arguments = std::move( o.m_arguments ); }
+   void common_construct( const column& o ) { memcpy(static_cast<void*>(this), &o, offsetof( column, m_stringName ) ); m_stringName = o.m_stringName; m_stringAlias = o.m_stringAlias; m_arguments = o.m_arguments; }
+   void common_construct( column&& o ) noexcept { memcpy(static_cast<void*>(this), &o, offsetof( column, m_stringName ) ); m_stringName = std::move( o.m_stringName ); m_stringAlias = std::move( o.m_stringAlias ); m_arguments = std::move( o.m_arguments ); }
 
 // ## operator -----------------------------------------------------------------
 public:

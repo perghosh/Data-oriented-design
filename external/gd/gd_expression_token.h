@@ -77,7 +77,7 @@ struct token
 
    ~token() {}
    // common copy
-   void common_construct(const token& o) { memcpy( this, &o, sizeof(token) ); }
+   void common_construct(const token& o) { memcpy( static_cast<void*>(this), &o, sizeof(token) ); }
 
    unsigned type() const { return m_uType; }
    unsigned length() const { return m_uLength; }
