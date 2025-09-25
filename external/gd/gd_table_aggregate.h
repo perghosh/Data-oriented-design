@@ -26,6 +26,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_set>
+#include <algorithm>
 
 #include "gd/gd_table.h"
 
