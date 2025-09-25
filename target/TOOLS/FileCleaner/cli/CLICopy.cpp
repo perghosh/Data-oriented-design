@@ -93,6 +93,7 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
    auto result_ = FILES_Harvest_WithWildcard_g( stringSource, stringFilter, ptableDir, uDepth, true); if( result_.first == false ) return result_;
+	pdocument->MESSAGE_Display( ptableDir, CDocument::tag_state{});
 
    std::string stringTargetFolder_ = stringTargetFolder;
 
@@ -334,6 +335,12 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Filters files in a document based on provided patterns, updating internal tables and returning the operation status.
+ * @param arguments_ A collection of arguments containing pattern options and other parameters.
+ * @param pdocument Pointer to the document object to be filtered and updated.
+ * @return A pair where the first element is a boolean indicating success or failure, and the second element is a string containing an error message or an empty string if successful.
+ */
 std::pair<bool, std::string> FILE_PatternFilter_s(const gd::argument::shared::arguments& arguments_, CDocument* pdocument)
 {
    auto vectorPattern = arguments_.get_all<std::string>("pattern"); // get all patterns from options and put them into vectorPattern
@@ -346,6 +353,7 @@ std::pair<bool, std::string> FILE_PatternFilter_s(const gd::argument::shared::ar
    if( result_.first == false ) return result_;
 
    auto ptableLineList = pdocument->CACHE_Get("file-linelist", false);
+	pdocument->MESSAGE_Display(ptableLineList, CDocument::tag_state{}); // display the pattern result table
    gd::table::aggregate aggregate_(ptableLineList);
    auto vectorFileKey = aggregate_.unique("file-key");                        // get all unique file keys from the harvested files table
 
@@ -373,6 +381,8 @@ std::pair<bool, std::string> FILE_PatternFilter_s(const gd::argument::shared::ar
    }
 
    ptableDir->erase(vectorRowInverted);                                         // erase all rows that are not in the pattern result table
+
+   pdocument->MESSAGE_Display(ptableDir, CDocument::tag_state{}); // display the pattern result table
 
    return { true, "" };
 }

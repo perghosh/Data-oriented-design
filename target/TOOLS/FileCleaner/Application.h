@@ -140,6 +140,8 @@ public:
 
       eApplicationStateCheckIgnoreFolder = 0x10, ///< Application is checking ignore patterns for folders, used to avoid processing folders that are ignored
       eApplicationStateCheckIgnoreFile   = 0x20, ///< Application is checking ignore patterns for files, used to avoid processing files that are ignored
+
+		eApplicationStatePrint             = 0x40, ///< Application is printing output, when set a lot more is printed
    };
 
 
@@ -219,9 +221,10 @@ public:
    // ## application state checks
    
    bool IsInitialized() const { return ( m_uApplicationState & eApplicationStateInitialized ) != 0; }
-   bool IsWork() const { return ( m_uApplicationState & eApplicationStateWork ) != 0; }
-   bool IsIdle() const { return ( m_uApplicationState & eApplicationStateIdle ) != 0; }
-   bool IsExit() const { return ( m_uApplicationState & eApplicationStateExit ) != 0; }
+   bool IsWork() const { return ( m_uApplicationState & eApplicationStateWork  ) != 0; }
+   bool IsIdle() const { return ( m_uApplicationState & eApplicationStateIdle  ) != 0; }
+   bool IsExit() const { return ( m_uApplicationState & eApplicationStateExit  ) != 0; }
+   bool IsPrint() const { return (m_uApplicationState & eApplicationStatePrint ) != 0; }
 
    bool IsState(unsigned uState) const { return ( m_uApplicationState & uState ) != 0; }
 

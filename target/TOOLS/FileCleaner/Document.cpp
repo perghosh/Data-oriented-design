@@ -849,7 +849,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
       {
          // Get next file index to process
          uint64_t uRowIndex = uAtomicFileIndex.fetch_add(1);                  // get thread safe current index and increment it
-         if(uRowIndex >= uFileCount) { break; }
+         if(uRowIndex >= uFileCount) {  break; }
          
          try
          {
@@ -901,7 +901,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 
                // Update total line count and check if we've exceeded the maximum
                uint64_t uCurrentLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count()) + ptableLineListLocal->get_row_count();
-               if( uCurrentLines > uMax ) 
+               if(uMax > 0 && uCurrentLines > uMax )                           // if max amount of hits is reached, signal other threads to stop processing
                {
                   uAtomicFileIndex.store(uFileCount);                          // Signal other threads to stop by setting file index to max
                }
@@ -1054,7 +1054,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 
                // Update total line count and check if we've exceeded the maximum
                uint64_t uCurrentLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count()) + ptableLineListLocal->get_row_count();
-               if( uCurrentLines > uMax ) 
+               if (uMax > 0 && uCurrentLines > uMax)                           // if max amount of hits is reached, signal other threads to stop processing
                {
                   uAtomicFileIndex.store(uFileCount);                          // Signal other threads to stop by setting file index to max
                }
@@ -2801,12 +2801,19 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
 
 void CDocument::MESSAGE_Display(const std::string_view& stringMessage)
 {
-   m_papplication->PrintMessage(stringMessage, gd::argument::arguments() );    // display message in application window
+   m_papplication->PrintMessage(stringMessage, gd::argument::arguments() );   // display message in application window
 }
 
 void CDocument::MESSAGE_Display(const std::string_view& stringMessage, const gd::argument::arguments& argumentsMessage )
 {
-   m_papplication->PrintMessage(stringMessage, argumentsMessage );             // display message in application window
+   m_papplication->PrintMessage(stringMessage, argumentsMessage );            // display message in application window
+}
+
+void CDocument::MESSAGE_Display(const gd::table::dto::table* ptable_, tag_state)
+{
+   if( ptable_ == nullptr || m_papplication->IsPrint() == false ) return;
+   std::string stringTable = gd::table::to_string(*ptable_, gd::table::tag_io_cli{});
+   m_papplication->PrintMessage(stringTable, gd::argument::arguments() );     // display message in application window
 }
 
 /// Restore the message display to original state

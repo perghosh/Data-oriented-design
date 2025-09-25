@@ -43,6 +43,10 @@ class CApplication;
 class CDocument
 {
 public:
+   /// tag dispatcher used to state dependet operations
+   struct tag_state {};
+
+public:
    /// @brief Type alias for table, which can be either a `gd::table::dto::table` or a `gd::table::arguments::table`.
    using table_t = std::variant< std::unique_ptr< gd::table::dto::table >, std::unique_ptr< gd::table::arguments::table > >;
 
@@ -178,6 +182,7 @@ public:
    /// Display message to user
    void MESSAGE_Display( const std::string_view& stringMessage );
    void MESSAGE_Display( const std::string_view& stringMessage, const gd::argument::arguments& arguments_ );
+   void MESSAGE_Display( const gd::table::dto::table* ptable_, tag_state);
    /// Reset message display, i.e. colors are restored to default
    void MESSAGE_Display();
    void MESSAGE_Background();
