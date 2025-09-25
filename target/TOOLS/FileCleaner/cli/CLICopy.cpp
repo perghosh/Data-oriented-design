@@ -6,7 +6,6 @@
 #include <format>
 
 #include "gd/gd_uuid.h"
-#include "gd/gd_table_aggregate.h"
 
 #include "../Command.h"
 #include "../Application.h"
@@ -18,9 +17,6 @@
 
 
 NAMESPACE_CLI_BEGIN
-
-static std::pair<bool, std::string> FILE_PatternFilter_s( const gd::argument::shared::arguments& arguments_, CDocument* pdocument );
-
 
 // ## Copy operations
 
@@ -93,7 +89,6 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
    auto result_ = FILES_Harvest_WithWildcard_g( stringSource, stringFilter, ptableDir, uDepth, true); if( result_.first == false ) return result_;
-	pdocument->MESSAGE_Display( ptableDir, CDocument::tag_state{});
 
    std::string stringTargetFolder_ = stringTargetFolder;
 
@@ -107,11 +102,15 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
       std::filesystem::path pathTargetFile(stringTargetFolder_);
 
       // Normalize target path based on special cases
-      if( stringTargetFolder_ == "." || stringTargetFolder_ == "./" || stringTargetFolder_ == "" ) // current folder
+      if( stringTargetFolder_ == "." || stringTargetFolder_ == "./" || stringTargetFolder_ == "" )
       {
          pathTargetFile = std::filesystem::current_path() / pathSourceFile.filename();
       }
-      else if( stringTargetFolder_ == ".." || stringTargetFolder_ == "../" )  // parent folder
+      else if( stringTargetFolder_ == ".." )
+      {
+         pathTargetFile = std::filesystem::current_path().parent_path() / pathSourceFile.filename();
+      }
+      else if( stringTargetFolder_ == "../" )
       {
          pathTargetFile = std::filesystem::current_path().parent_path() / pathSourceFile.filename();
       }
@@ -124,6 +123,7 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
          // Assume it's a directory path and append filename
          pathTargetFile = pathTargetFile / pathSourceFile.filename();
       }
+      // If pathTargetFile has extension, treat it as complete file path
 
       // Ensure target directory exists
       std::error_code errorcode;
@@ -172,16 +172,7 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    {
       return { false, "Source and target folders cannot be the same" };
    }	                                                                                              LOG_DEBUG_RAW("Source folder: " & pathSource.string().c_str()); LOG_DEBUG_RAW("Target folder: " & pathTarget.string().c_str());
-
-   // ## Apply pattern filter if set ..........................................
-
-   if( arguments_.exists("pattern") == true )
-   {
-      gd::argument::shared::arguments argumentsFilter( arguments_ );
-      argumentsFilter += { { "files", "file-dir" } };
-      auto result_ = FILE_PatternFilter_s(argumentsFilter, pdocument); if( result_.first == false ) return result_;
-   }
-
+   
 	// ## Generate list of files to copy to target folder ......................
 
    std::vector<std::string> vectorSourceFile;
@@ -290,15 +281,22 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
          // ### Apply "newer" or "older" filter logic .......................
          try
          {
-				auto source_last_write_ = std::filesystem::last_write_time(pathSourceFile); // get last write time of source file
-				auto source_time_ = std::chrono::system_clock::time_point(source_last_write_.time_since_epoch()); // convert to system clock time point
+            auto source_last_write_ = std::filesystem::last_write_time(pathSourceFile);
+            auto source_time_ = std::chrono::system_clock::time_point(
+               std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                  source_last_write_.time_since_epoch()
+               )
+            );            
 
 				if(iNewerFilter < 0)                                              // negative = older files filter
             {
                // For negative newer values: allow files that are older but not too old
-					auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile); // get last write time of target file
-					auto target_time_ = std::chrono::system_clock::time_point(target_last_write_.time_since_epoch()); // convert to system clock time point  
-
+               auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile);
+               auto target_time_ = std::chrono::system_clock::time_point(
+                  std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                     target_last_write_.time_since_epoch()
+                  )
+               );
                // Skip if source file is newer than target (we want older files in this mode)
                // But also skip if source is too old (beyond the time limit)
                if(source_time_ > target_time_ || source_time_ < timeThreshold) { uFilesSkippedDueToAge++; continue; }
@@ -306,8 +304,12 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
             else
             {
                // For positive newer values: standard newer logic
-					auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile); // get last write time of target file
-					auto target_time_ = std::chrono::system_clock::time_point(target_last_write_.time_since_epoch()); // convert to system clock time point
+               auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile);
+               auto target_time_ = std::chrono::system_clock::time_point(
+                  std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                     target_last_write_.time_since_epoch()
+                  )
+               );
 
                // Skip if source file is not newer than target file
                if (source_time_ <= target_time_) { uFilesSkippedDueToAge++; continue; }
@@ -331,58 +333,6 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    pdocument->MESSAGE_Display( std::format( "Files copied: {}", uFilesCopied ) );
    if(uFilesSkippedDueToOverwrite > 0) pdocument->MESSAGE_Display( std::format( "  Files skipped (overwrite disabled): {}", uFilesSkippedDueToOverwrite ) );
    if(uFilesSkippedDueToAge > 0)  pdocument->MESSAGE_Display( std::format( "  Files skipped (not newer): {}", uFilesSkippedDueToAge ) );
-
-   return { true, "" };
-}
-
-/** ---------------------------------------------------------------------------
- * @brief Filters files in a document based on provided patterns, updating internal tables and returning the operation status.
- * @param arguments_ A collection of arguments containing pattern options and other parameters.
- * @param pdocument Pointer to the document object to be filtered and updated.
- * @return A pair where the first element is a boolean indicating success or failure, and the second element is a string containing an error message or an empty string if successful.
- */
-std::pair<bool, std::string> FILE_PatternFilter_s(const gd::argument::shared::arguments& arguments_, CDocument* pdocument)
-{
-   auto vectorPattern = arguments_.get_all<std::string>("pattern"); // get all patterns from options and put them into vectorPattern
-
-   // remove empty patterns
-   vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
-   if( vectorPattern.size() == 0 ) return {false, "No patterns provided."}; // if no patterns are provided, return an error
-
-   auto result_ = pdocument->FILE_UpdatePatternList(vectorPattern, arguments_); // Search for patterns in harvested files and place them into the result table
-   if( result_.first == false ) return result_;
-
-   auto ptableLineList = pdocument->CACHE_Get("file-linelist", false);
-	pdocument->MESSAGE_Display(ptableLineList, CDocument::tag_state{}); // display the pattern result table
-   gd::table::aggregate aggregate_(ptableLineList);
-   auto vectorFileKey = aggregate_.unique("file-key");                        // get all unique file keys from the harvested files table
-
-   auto ptableDir = pdocument->CACHE_Get("file-dir", false);                                       assert(ptableDir != nullptr);
-
-   auto vectorRow = ptableDir->find_all("key", vectorFileKey);                // mark all rows as in use that are in the pattern result table
-   std::sort(vectorRow.begin(), vectorRow.end());                             // sort the found rows
-
-   // create vector with rows inverted from found rows placed into vectorRow
-   std::vector<uint64_t> vectorRowInverted;
-   size_t uRowPosition = 0;
-
-   for( auto itRow : vectorRow ) 
-   { 
-      for( auto u = uRowPosition; u < itRow; u++ ) 
-      { 
-         vectorRowInverted.push_back(u);  // add to inverted set
-      }
-      uRowPosition = itRow + 1;
-   }
-
-   if( uRowPosition < ptableDir->size() ) 
-   {
-      for( auto u = uRowPosition; u < ptableDir->size(); u++ ) { vectorRowInverted.push_back(u); } // add to inverted set
-   }
-
-   ptableDir->erase(vectorRowInverted);                                         // erase all rows that are not in the pattern result table
-
-   pdocument->MESSAGE_Display(ptableDir, CDocument::tag_state{}); // display the pattern result table
 
    return { true, "" };
 }
