@@ -8,7 +8,6 @@
 #include <boost/regex.hpp>
 
 #include "gd/gd_uuid.h"
-#include "gd/gd_table_aggregate.h"
 
 #include "../Command.h"
 #include "../Application.h"
@@ -20,9 +19,6 @@
 
 
 NAMESPACE_CLI_BEGIN
-
-static std::pair<bool, std::string> FILE_PatternFilter_s( const gd::argument::shared::arguments& arguments_, CDocument* pdocument );
-
 
 // ## Copy operations
 
@@ -95,7 +91,6 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
    auto result_ = FILES_Harvest_WithWildcard_g( stringSource, stringFilter, ptableDir, uDepth, true); if( result_.first == false ) return result_;
-	pdocument->MESSAGE_Display( ptableDir, CDocument::tag_state{});
 
    std::string stringTargetFolder_ = stringTargetFolder;
 
@@ -109,11 +104,15 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
       std::filesystem::path pathTargetFile(stringTargetFolder_);
 
       // Normalize target path based on special cases
-      if( stringTargetFolder_ == "." || stringTargetFolder_ == "./" || stringTargetFolder_ == "" ) // current folder
+      if( stringTargetFolder_ == "." || stringTargetFolder_ == "./" || stringTargetFolder_ == "" )
       {
          pathTargetFile = std::filesystem::current_path() / pathSourceFile.filename();
       }
-      else if( stringTargetFolder_ == ".." || stringTargetFolder_ == "../" )  // parent folder
+      else if( stringTargetFolder_ == ".." )
+      {
+         pathTargetFile = std::filesystem::current_path().parent_path() / pathSourceFile.filename();
+      }
+      else if( stringTargetFolder_ == "../" )
       {
          pathTargetFile = std::filesystem::current_path().parent_path() / pathSourceFile.filename();
       }
@@ -126,6 +125,7 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
          // Assume it's a directory path and append filename
          pathTargetFile = pathTargetFile / pathSourceFile.filename();
       }
+      // If pathTargetFile has extension, treat it as complete file path
 
       // Ensure target directory exists
       std::error_code errorcode;
@@ -174,16 +174,7 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    {
       return { false, "Source and target folders cannot be the same" };
    }	                                                                                              LOG_DEBUG_RAW("Source folder: " & pathSource.string().c_str()); LOG_DEBUG_RAW("Target folder: " & pathTarget.string().c_str());
-
-   // ## Apply pattern filter if set ..........................................
-
-   if( arguments_.exists("pattern") == true )
-   {
-      gd::argument::shared::arguments argumentsFilter( arguments_ );
-      argumentsFilter += { { "files", "file-dir" } };
-      auto result_ = FILE_PatternFilter_s(argumentsFilter, pdocument); if( result_.first == false ) return result_;
-   }
-
+   
 	// ## Generate list of files to copy to target folder ......................
 
    std::vector<std::string> vectorSourceFile;
@@ -292,15 +283,22 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
          // ### Apply "newer" or "older" filter logic .......................
          try
          {
-				auto source_last_write_ = std::filesystem::last_write_time(pathSourceFile); // get last write time of source file
-				auto source_time_ = std::chrono::system_clock::time_point(source_last_write_.time_since_epoch()); // convert to system clock time point
+            auto source_last_write_ = std::filesystem::last_write_time(pathSourceFile);
+            auto source_time_ = std::chrono::system_clock::time_point(
+               std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                  source_last_write_.time_since_epoch()
+               )
+            );            
 
 				if(iNewerFilter < 0)                                              // negative = older files filter
             {
                // For negative newer values: allow files that are older but not too old
-					auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile); // get last write time of target file
-					auto target_time_ = std::chrono::system_clock::time_point(target_last_write_.time_since_epoch()); // convert to system clock time point  
-
+               auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile);
+               auto target_time_ = std::chrono::system_clock::time_point(
+                  std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                     target_last_write_.time_since_epoch()
+                  )
+               );
                // Skip if source file is newer than target (we want older files in this mode)
                // But also skip if source is too old (beyond the time limit)
                if(source_time_ > target_time_ || source_time_ < timeThreshold) { uFilesSkippedDueToAge++; continue; }
@@ -308,8 +306,12 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
             else
             {
                // For positive newer values: standard newer logic
-					auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile); // get last write time of target file
-					auto target_time_ = std::chrono::system_clock::time_point(target_last_write_.time_since_epoch()); // convert to system clock time point
+               auto target_last_write_ = std::filesystem::last_write_time(pathTargetFile);
+               auto target_time_ = std::chrono::system_clock::time_point(
+                  std::chrono::duration_cast<std::chrono::system_clock::duration>(
+                     target_last_write_.time_since_epoch()
+                  )
+               );
 
                // Skip if source file is not newer than target file
                if (source_time_ <= target_time_) { uFilesSkippedDueToAge++; continue; }
