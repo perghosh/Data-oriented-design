@@ -322,12 +322,20 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          return { false, stringError }; 
       }
 
+		// ### Set print state if print flag is found ..........................
+
+      if(optionsApplication.exists("print", gd::types::tag_state_active{}) == true) papplication_g->SetState(eApplicationStatePrint, 0);
+
+		// ### Check if saving to history ......................................
+
       if( optionsApplication.exists("history", gd::types::tag_state_active{}) == true || optionsApplication.exists("add-to-history", gd::types::tag_state_active{}) == true )
       {
          // If command should be saved to history, we copy the arguments that is saved to history when application is done
          // This is done to make sure that any changes to arguments during application run is not saved to history
          argumentsHistory = optionsApplication.find_active()->get_arguments(); // get the arguments from the active options
       }
+
+		// ### Prompt user for options .........................................
 
       if( optionsApplication.exists("prompt", gd::types::tag_state_active{}) == true )
       {
