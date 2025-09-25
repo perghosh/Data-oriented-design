@@ -5,6 +5,8 @@
 #include <chrono>
 #include <format>
 
+#include <boost/regex.hpp>
+
 #include "gd/gd_uuid.h"
 #include "gd/gd_table_aggregate.h"
 
@@ -343,14 +345,46 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
  */
 std::pair<bool, std::string> FILE_PatternFilter_s(const gd::argument::shared::arguments& arguments_, CDocument* pdocument)
 {
-   auto vectorPattern = arguments_.get_all<std::string>("pattern"); // get all patterns from options and put them into vectorPattern
+	if(arguments_.exists("pattern") == true) 
+   { 
+      auto vectorPattern = arguments_.get_all<std::string>("pattern"); // get all patterns from options and put them into vectorPattern
 
-   // remove empty patterns
-   vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
-   if( vectorPattern.size() == 0 ) return {false, "No patterns provided."}; // if no patterns are provided, return an error
+      // remove empty patterns
+      vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
+      if( vectorPattern.size() == 0 ) return {false, "No patterns provided."}; // if no patterns are provided, return an error
 
-   auto result_ = pdocument->FILE_UpdatePatternList(vectorPattern, arguments_); // Search for patterns in harvested files and place them into the result table
-   if( result_.first == false ) return result_;
+      auto result_ = pdocument->FILE_UpdatePatternList(vectorPattern, arguments_); // Search for patterns in harvested files and place them into the result table
+      if( result_.first == false ) return result_;
+	}
+   else if (arguments_.exists("rpattern") == true)
+   {
+      auto vectorPattern = arguments_.get_all<std::string>("rpattern"); // get all patterns from options and put them into vectorPattern
+      // remove empty patterns
+      vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
+      if (vectorPattern.size() == 0) return { false, "No patterns provided." }; // if no patterns are provided, return an error
+
+      std::vector<std::pair<boost::regex, std::string>> vectorRegexPattern;
+
+      // ## convert string to regex and put it into vectorRegexPatterns
+
+      for (auto& stringPattern : vectorPattern)
+      {
+         try
+         {
+            boost::regex regexPattern(stringPattern);
+            vectorRegexPattern.push_back({ regexPattern, stringPattern });
+         }
+         catch (const boost::regex_error& e)
+         {
+            std::string stringError = "Invalid regex pattern: '" + stringPattern + "'. Error: " + e.what();
+            return { false, stringError };
+         }
+      }
+
+      auto result_ = pdocument->FILE_UpdatePatternList(vectorRegexPattern, arguments_); // Search for patterns in harvested files and place them into the result table
+      if (result_.first == false) return result_;
+   }
+   else { return { false, "No pattern or rpattern option provided." }; }
 
    auto ptableLineList = pdocument->CACHE_Get("file-linelist", false);
 	pdocument->MESSAGE_Display(ptableLineList, CDocument::tag_state{}); // display the pattern result table

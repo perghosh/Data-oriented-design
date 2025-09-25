@@ -977,7 +977,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 {                                                                                                  assert(vectorRegexPatterns.empty() == false); // Ensure the regex pattern list is not empty
    using namespace gd::table;
    
-   auto* ptableFile = CACHE_Get("file");                                      // Retrieve the "file" cache table
+   std::string_view stringFiles = "file";
+   if(argumentsList.exists("files") == true) { stringFiles = argumentsList["files"].as_string_view(); } // Get the file list to process, default is "files"
+   auto* ptableFile = CACHE_Get(stringFiles);                                 // Retrieve the "file" cache table
    auto* ptableLineList = CACHE_Get("file-linelist", true);                   // Ensure the "file-linelist" table is in cache
                                                                                                    assert(ptableFile != nullptr); assert(ptableLineList != nullptr);
 
@@ -1015,14 +1017,23 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
          
          try
          {
-            // STEP 1: Get file info (ptableFile is read-only so no mutex needed)
-            auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
-            auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
+            gd::file::path pathFile;
+            std::string stringFile;
 
-            // STEP 2: Build full file path
-            gd::file::path pathFile(stringFolder);
-            pathFile += stringFilename;
-            std::string stringFile = pathFile.string();
+            // STEP 1: 
+            if(ptableFile->column_exists("path") == true)
+            {
+               stringFile = ptableFile->cell_get_variant_view(uRowIndex, "path").as_string();
+            }
+            else
+            {
+               auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
+               auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
+
+               // STEP 2: Build full file path
+               pathFile = gd::file::path(stringFolder) / stringFilename;
+               stringFile = pathFile.string();
+            }
 
             auto uKey = ptableFile->cell_get_variant_view(uRowIndex, "key").as_uint64();
 
@@ -1040,7 +1051,6 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
                uint64_t uProcessed = uAtomicProcessedCount.fetch_add(1) + 1;   // Update progress even on failure
                if(uProcessed % 10 == 0)
                {
-                  //std::lock_guard<std::mutex> lockProgress(mutexProgress);
                   uint64_t uPercent = (uProcessed * 100) / uFileCount;
                   MESSAGE_Progress("", {{"percent", uPercent}, {"label", "Find in files"}, {"sticky", true}});
                }
@@ -1250,7 +1260,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
          BUFFER_UpdateKeyValue(arguments_, stringFileBuffer, tableRow, vectorKeyValue);   // Update table from key-value pairs @TAG #kv
       }
 
-      if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
+      if( uMax > 0 && ptableLineList->size() > uMax ) { break; }       // Stop if the maximum number of lines is reached
    }
 
    MESSAGE_Progress( "", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true} });
@@ -1316,7 +1326,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind( const std::vecto
          continue; // Skip to the next file if there was an error
       }
 
-      if( ptableLineList->size() > uMax ) { break; }                          // Stop if the maximum number of lines is reached
+      if( uMax > 0 && ptableLineList->size() > uMax ) { break; }              // Stop if the maximum number of lines is reached
    }
 
    MESSAGE_Progress( "", {{"percent", 100}, {"label", "Find in files"}, {"sticky", true} });
@@ -1517,10 +1527,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                // Update total line count and check maximum
                uint64_t uPreviousLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count());
                uint64_t uCurrentLines = uPreviousLines + ptableLineListLocal->get_row_count();
-               if(uCurrentLines > uMax) 
-               {
-                  uAtomicFileIndex.store(uFileCount);
-               }
+
+					if(uMax > 0 && uCurrentLines > uMax) { uAtomicFileIndex.store(uFileCount); } // Signal other threads to stop if max hits reached
             }
             
             ptableLineListLocal->row_clear();                                 // Clear local table for next iteration
@@ -1768,10 +1776,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                // Update total line count and check maximum
                uint64_t uPreviousLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count());
                uint64_t uCurrentLines = uPreviousLines + ptableLineListLocal->get_row_count();
-               if(uCurrentLines > uMax) 
-               {
-                  uAtomicFileIndex.store(uFileCount);
-               }
+
+               if(uMax > 0 && uCurrentLines > uMax) { uAtomicFileIndex.store(uFileCount); } // Signal other threads to stop if max hits reached
             }
             
             ptableLineListLocal->row_clear();                                 // Clear local table for next iteration
