@@ -26,6 +26,8 @@
    #pragma warning( disable : 4996  )
 #endif
 
+#if GD_COMPILER_HAS_CPP20_SUPPORT
+
 _GD_LOG_LOGGER_BEGIN
 
 
@@ -422,3 +424,5 @@ void printer_csvfile::file_close_s(int iFileHandle)
 }
 
 _GD_LOG_LOGGER_END
+
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT

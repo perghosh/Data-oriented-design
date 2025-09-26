@@ -34,6 +34,7 @@ inline constexpr uint8_t uTailetextMarker_d = 0x01;
 #include <vector>
 #include <memory>
 
+#include "gd_compiler.h"
 #include "gd_types.h"
 #include "gd_variant_view.h"
 
