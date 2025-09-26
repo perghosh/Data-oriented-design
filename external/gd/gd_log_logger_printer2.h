@@ -14,6 +14,7 @@
 #include "windows.h"
 #endif
 
+#include "gd_compiler.h"
 #include "gd_log_logger.h"
 #include "gd_table_table.h"
 
@@ -25,7 +26,10 @@
 #endif
 
 
+#if GD_COMPILER_HAS_CPP20_SUPPORT
+
 _GD_LOG_LOGGER_BEGIN
+
 
 // ================================================================================================
 // ================================================================================ printer_csvfile
@@ -176,3 +180,5 @@ constexpr std::pair<unsigned,unsigned> printer_csvfile::flags_s( std::string_vie
 
 
 _GD_LOG_LOGGER_END
+
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT
