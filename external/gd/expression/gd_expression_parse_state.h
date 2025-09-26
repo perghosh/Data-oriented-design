@@ -451,6 +451,7 @@ public:
        return eStateNone; // Default case for invalid input
    }
 
+#if GD_COMPILER_HAS_CPP20_SUPPORT
    /// convert state to string, this will convert the enumState value to a string
    static consteval std::string_view to_string_s(enumState eState)
    {
@@ -470,6 +471,7 @@ public:
       }
       return "NONE"; // Default case for invalid input
    }
+#endif /// GD_COMPILER_HAS_CPP20_SUPPORT
 
    /// convert string to group, this will convert the string to the enumGroup value
    static constexpr enumGroup to_group_s(const std::string_view stringName)
