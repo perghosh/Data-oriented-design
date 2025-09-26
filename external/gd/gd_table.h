@@ -932,12 +932,14 @@ struct references
    iterator end() noexcept { return iterator(m_vectorReference.data() + m_vectorReference.size()); }
    const_iterator end() const noexcept { return const_iterator(m_vectorReference.data() + m_vectorReference.size()); }
    const_iterator cend() const noexcept { return const_iterator(m_vectorReference.data() + m_vectorReference.size()); }
+#if GD_COMPILER_HAS_CPP20_SUPPORT
    reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
    const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
    const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(cend()); }
    reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
    const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
    const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT
 
    // ## attributes
    std::vector< std::unique_ptr<uint8_t[]> > m_vectorReference;
