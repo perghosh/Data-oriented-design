@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <fstream>
 #include <filesystem>
+#include <algorithm>
 
 
 #include "gd_utf8.h"
