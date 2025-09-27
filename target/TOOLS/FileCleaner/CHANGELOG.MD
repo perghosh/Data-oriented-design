@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.7
+### New Features
+- Added support for case-insensitive and whole-word matching in the find command.
+- Improved performance of pattern matching by using threads for `find` command.
+- Enhanced logging capabilities for better debugging and analysis.
+- `copy` command works similar to cp command in linux, but with options to filter files, folders and content.
+- `copy` command between two folders that recurses into subfolders generating the same folder structure in target as in source.
+
 ## v1.0.6
 ### New Features
 - Speed improvements for huge count results, it uses a bit more momory though.
