@@ -104,7 +104,11 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
 
    {
       auto* ptable1_ = CACHE_Get("file", false);                                                    
-      if( ptable1_->size() == 0 ) { return { false, "No files found." }; }
+      if( ptable1_->size() == 0 ) 
+      { 
+         MESSAGE_Display("No files found.");
+         return { true, "" }; 
+      }
       //std::string stringTable = gd::table::to_string(*ptable1_, gd::table::tag_io_cli{});
       ptableFile = ptable1_;
    }
@@ -797,6 +801,11 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
  * @param vectorPattern A vector of strings representing the patterns to search for.
  *                      The vector must not be empty and can contain a maximum of 64 patterns.
  * @param argumentsList Arguments for pattern processing (e.g., segment specification, max lines)
+ * @param argumentsList.icase If present, the pattern matching will ignore case.
+ * @param argumentsList.word If present, the pattern matching will only match whole words.
+ * @param argumentsList.files If present, the pattern matching will only process files from the specified cache table (default is "file").
+ * @param argumentsList.segment If present, the pattern matching will search within the specified segment.
+ * @param argumentsList.max If present, the pattern matching will limit the number of matches to the specified maximum.
  * @param iThreadCount Number of threads to use (0 = auto-detect)
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
@@ -811,8 +820,16 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
 {                                                                                                  assert(vectorPattern.empty() == false); // Ensure the pattern list is not empty
                                                                                                    assert(vectorPattern.size() < 64);      // Ensure the pattern list contains fewer than 64 patterns
    using namespace gd::table;
+   
+   // ## Prepare pattern list for searching ...................................
+
    gd::parse::patterns patternsFind(vectorPattern);
+
+   if( argumentsList.exists("icase") == true ) { patternsFind.set_ignore_case(true); } // Set to ignore case if specified
+   if( argumentsList.exists("word") == true ) { patternsFind.set_word(true); } // Set to match whole words only if specified
+
    patternsFind.sort();                                                       // Sort patterns by length, longest first (important for pattern matching)
+   patternsFind.prepare();                                                    // Prepare patterns for searching (compile for flags)
 
    std::string_view stringFiles = "file";
    if( argumentsList.exists("files") == true ) { stringFiles = argumentsList["files"].as_string_view(); } // Get the file list to process, default is "files"
@@ -1472,6 +1489,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
             {
                arguments_.append("segment", (*pargumentsFind)["segment"].as_string());
             }
+            arguments_.append( *pargumentsFind, {"icase", "word"});
 
             stringFileBuffer.clear();                                         // Clear buffer for reuse
 

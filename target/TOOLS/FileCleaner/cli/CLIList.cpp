@@ -125,7 +125,7 @@ std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList,
    }
 
    gd::argument::shared::arguments argumentsList;
-   argumentsList.append( options_.get_arguments(), { "max", "segment", "match-all" });
+   argumentsList.append( options_.get_arguments(), { "max", "segment", "match-all", "icase", "word"});
    if( argumentsList.exists("max") == false ) { argumentsList.set("max", 512); } // default to 512 lines
 
    // ## check for pattern that 

@@ -109,7 +109,13 @@ public:
 
 		bool is_ignore_case() const { return (m_uFlags & eMatchIgnoreCase) != 0; } ///< check if ignore case flag is set
 		bool is_word() const { return (m_uFlags & eMatchWord) != 0; } ///< check if word flag is set
-      
+
+      void set_ignore_case(bool b_ = true) { if( b_ ) m_uFlags |= eMatchIgnoreCase; else m_uFlags &= ~eMatchIgnoreCase; } ///< set ignore case flag
+      void set_word(bool b_ = true) { if( b_ ) m_uFlags |= eMatchWord; else m_uFlags &= ~eMatchWord; } ///< set word flag
+
+      void set_flags(uint64_t uFlags) { m_uFlags = uFlags; } ///< set flags
+      void set_flags(uint64_t uSet, uint64_t uClear) { m_uFlags |= uSet; m_uFlags &= ~uClear; }
+
       /// convert to uint8_t, this will return the first character in the pattern string and is used to identify markers
       operator uint8_t() const { return static_cast<uint8_t>(m_stringPattern[0]); } 
       operator std::string_view() const { return m_stringPattern; } ///< convert to string_view
@@ -180,6 +186,9 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   void set_ignore_case(bool b_ = true);
+   void set_word(bool b_ = true);
+
    const std::vector<pattern>& get_patterns() const { return m_vectorPattern; } ///< get vector of patterns
    const std::array<uint8_t, 256>& get_marker_hint() const { return m_arrayMarkerHint; } ///< get marker hint
    const pattern& get_pattern(size_t uIndex) const { assert(uIndex < m_vectorPattern.size()); return m_vectorPattern[uIndex]; } ///< get pattern at index
@@ -200,7 +209,12 @@ public:
       add_marker_hint(stringPattern[0]);
    }
 
+   /// Return pattern string at index
+   std::string get_pattern_text(std::size_t uIndex) { assert(uIndex < m_vectorPattern.size()); return m_vectorPattern[uIndex].get_pattern(); } ///< get pattern string at index
+
    void sort(); ///< sort vector of patterns based on length
+
+   void prepare(); ///< prepare marker hint array based on patterns in vector
 
    void clear() { m_vectorPattern.clear(); m_arrayMarkerHint = { 0 }; } ///< clear vector of patterns
    bool empty() const { return m_vectorPattern.empty(); } ///< check if vector of patterns is empty
@@ -212,10 +226,14 @@ public:
 
    /// Try to find the pattern in the text
    int find_pattern(const char* piText, size_t uLength, uint64_t* puOffset = nullptr ) const;
+   /// Try to find the pattern in the text with offset
+   int find_pattern(const char* piText, size_t uLength, uint64_t uOffset, uint64_t* puFindOffset ) const;
    /// Overloaded function to find pattern
    int find_pattern(const char* piBegin, const char* piEnd, uint64_t* puOffset = nullptr) const { return find_pattern(piBegin, size_t(piEnd - piBegin), puOffset); } ///< find pattern in text
    /// Overloaded function to find pattern in std::string_view
    int find_pattern(const std::string_view& stringText, uint64_t* puOffset = nullptr) const { return find_pattern(stringText.data(), stringText.length(), puOffset); } ///< find pattern in text
+   /// Overloaded function to find pattern in std::string_view with offset
+   int find_pattern(std::string_view stringText, uint64_t uOffset, uint64_t* puFindOffset = nullptr) const { return find_pattern(stringText.data(), stringText.length(), uOffset, puFindOffset); } ///< find pattern in text
 
    /**
     * @brief Check if text is escaped
@@ -240,6 +258,7 @@ private:
    void add_marker_hint(char iCharacter) { add_marker_hint(uint8_t(iCharacter)); }
    int find_(const uint8_t* puBegin, const uint8_t* puEnd ) const;            ///< find pattern in text, not optimized
    int find_(const char* piBegin, const char* piEnd) const { return find_(reinterpret_cast<const uint8_t*>( piBegin ), reinterpret_cast<const uint8_t*>( piEnd ) ); } ///< find pattern in text, not optimized  
+   int find_(const uint8_t* puPosition, const uint8_t* puBegin, const uint8_t* puEnd ) const; ///< find pattern in text
 
 // ## attributes ----------------------------------------------------------------
 public:
@@ -247,6 +266,16 @@ public:
    std::array<uint8_t, 256> m_arrayMarkerHint;
    std::vector<pattern> m_vectorPattern; ///< vector of patterns to use when matching strings
 };
+
+/// set to ignore case for all patterns
+inline void patterns::set_ignore_case(bool b_) {
+   for(auto& it : m_vectorPattern) { it.set_ignore_case(b_); }
+}
+
+/// set to match whole words for all patterns
+inline void patterns::set_word(bool b_) {
+   for(auto& it : m_vectorPattern) { it.set_word(b_); }
+}
 
 /**
  * @brief Check if text matches any pattern in the vector

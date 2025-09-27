@@ -281,7 +281,8 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
    }
 
 
-   // ## Harvest files from the source paths
+   // ## Harvest files from the source paths ..................................
+
    for( const auto& stringSource : vectorSource )
    {
       gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
@@ -291,8 +292,11 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
    auto* ptableFile = pdocument->CACHE_Get("file");                                                assert(ptableFile != nullptr); LOG_DEBUG_RAW("== number of files: " & ptableFile->size());
 
+   // ## Search for patterns in the harvested files ...........................
+
    if( options_.exists("pattern") == true )
    {                                                                                               LOG_INFORMATION_RAW( "== search pattern: " & options_["pattern"].as_string() );
+      argumentsFind.append( options_, {"icase", "word"});
       auto vector_ = options_.get_argument_all("pattern", gd::types::tag_view{}); // get all patterns
       std::vector<std::string> vectorPattern; // store patterns as views
       std::vector<std::string> vectorPatternString;                           // store patterns as strings
