@@ -2081,6 +2081,13 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
    std::string stringFile = argumentsFind["source"].as_string();                                   assert(stringFile.empty() == false);
    std::vector<std::pair<uint64_t, std::string>> vectorRow; // vector to hold matched rows and the pattern that matched
 
+   gd::parse::patterns patternsFind( vectorPatterns ); // holds patterns to find
+   if( argumentsFind.exists("icase") == true ) { patternsFind.set_ignore_case(true); } // Set to ignore case if specified
+   if( argumentsFind.exists("word") == true ) { patternsFind.set_word(true); } // Set to match whole words only if specified
+
+   patternsFind.sort();                                                       // Sort patterns by length, longest first (important for pattern matching)
+   patternsFind.prepare();                                                    // Prepare patterns for searching (compile for flags)
+
    try 
    {
       // ## Function to add line to table
@@ -2101,17 +2108,17 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
          return static_cast<uint64_t>(std::count(stringCode.begin(), stringCode.begin() + pos, '\n'));
       };
 
-      // ## Search for each regex pattern in the entire buffer
-      for(const auto& stringPattern : vectorPatterns) 
+      // ## Search for each pattern in the entire buffer
+
+      int iPattern = -1;
+      uint64_t uPosition = 0;
+      uint64_t uFindPosition = 0;
+      while( (iPattern = patternsFind.find_pattern(stringCode, uPosition, &uFindPosition)) != -1 )
       {
-         // ## Search for the string pattern in `stringCode` and count all matches
-         size_t uPosition = 0;
-         while((uPosition = stringCode.find(stringPattern, uPosition)) != std::string::npos) 
-         {
-            uint64_t uRow = count_newline_(uPosition); // Determine which row this match starts in
-            vectorRow.emplace_back(uRow, stringPattern); // Store the match with its row number and pattern identifier
-            uPosition += stringPattern.length(); // Move past the current match
-         }
+         uint64_t uRow = count_newline_(uFindPosition); // Determine which row this match starts in
+         const std::string& stringPattern = patternsFind.get_pattern_text(iPattern);
+         vectorRow.emplace_back(uRow, stringPattern); // Store the match with its row number and pattern identifier
+         uPosition = uFindPosition + stringPattern.length(); // Move past the current match
       }
 
       // Sort results by row number for easier processing

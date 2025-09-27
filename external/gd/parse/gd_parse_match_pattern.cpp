@@ -23,6 +23,35 @@ void patterns::sort()
    });
 }
 
+/// prepare marker hint array based on patterns in vector
+void patterns::prepare()
+{
+   m_arrayMarkerHint = { 0 };
+   for( const auto& it : m_vectorPattern )
+   {
+      if( it.is_ignore_case() == true )
+      {
+         // add both upper and lower case characters to marker hint
+         char iChar = it.get_pattern()[0];
+         auto bIsAlpha = std::isalpha(static_cast<unsigned char>( iChar )) != 0;
+         if( bIsAlpha == false ) 
+         {
+            add_marker_hint(it.get_pattern()[0]);
+            continue; // not an alpha character, just add it once
+         }
+
+         auto iMarker = static_cast<char>( std::tolower(iChar) );
+         add_marker_hint( iMarker );
+         iMarker = static_cast<char>( std::toupper(iChar) );
+         add_marker_hint( iMarker );
+      }
+      else
+      {
+         add_marker_hint(it.get_pattern()[0]);
+      }
+   }
+}
+
 /// Finds first pattern in list of internal patterns and if any is found return index to that pattern
 int patterns::find_pattern(const char* piText, size_t uLength, uint64_t* puOffset ) const
 {
@@ -31,12 +60,35 @@ int patterns::find_pattern(const char* piText, size_t uLength, uint64_t* puOffse
    {
       if( m_arrayMarkerHint[static_cast<uint8_t>( *p_ )] == 0 ) continue;     // no match found
       int iIndex = find_( p_, piTextEnd );
-      if( puOffset != nullptr ) *puOffset = p_ - piText;                      // set offset to start of pattern
-      if( iIndex != -1 ) return iIndex;                                       // pattern found
+      if( iIndex != -1 )                                                      // pattern found
+      {
+         if( puOffset != nullptr ) *puOffset = p_ - piText;                   // set offset to start of pattern
+         return iIndex;                                       
+      }
    }
 
    return -1;
 }
+
+/// Finds first pattern in list of internal patterns and if any is found return index to that pattern
+int patterns::find_pattern(const char* piText, size_t uLength, uint64_t uOffset, uint64_t* puOffset ) const
+{                                                                                                  assert(uLength >= uOffset);
+   const char* piPosition = piText + uOffset;
+   decltype( piPosition ) piTextEnd = piText + uLength;
+   for( const auto* p_ = piPosition; p_ != piTextEnd; p_++ )
+   {
+      if( m_arrayMarkerHint[static_cast<uint8_t>( *p_ )] == 0 ) continue;     // no match found
+      int iIndex = find_( (const uint8_t*)p_, (const uint8_t*)piText, (const uint8_t*)piTextEnd );
+      if( iIndex != -1 )                                                      // pattern found
+      {
+         if( puOffset != nullptr ) *puOffset = p_ - piText;                   // set offset to start of pattern
+         return iIndex;                                       
+      }
+   }
+
+   return -1;
+}
+
 
 /// Finds first pattern in list of internal patterns and if any is found return index to that pattern
 int patterns::find_(const uint8_t* puBegin, const uint8_t* puEnd ) const
@@ -56,6 +108,25 @@ int patterns::find_(const uint8_t* puBegin, const uint8_t* puEnd ) const
 
    }
 
+   return -1;
+}
+
+/// Finds first pattern in list of internal patterns and if any is found return index to that pattern
+/// This function is optimized to use the pattern's compare method for matching, which considers case sensitivity and word boundaries.
+int patterns::find_(const uint8_t* puPosition, const uint8_t* puBegin, const uint8_t* puEnd ) const
+{
+   int iIndex = -1;
+   size_t uLength = puEnd - puPosition;
+   for( const auto& it : m_vectorPattern )
+   {
+      iIndex++;
+      const auto& stringPattern = it.get_pattern();
+      if( stringPattern.length() > uLength ) continue;                         // pattern is longer than text
+      if( it.compare( (const char*)puPosition, (const char*)puBegin ) == true )
+      {
+         return iIndex;                                                        // pattern found
+      }
+   }
    return -1;
 }
 

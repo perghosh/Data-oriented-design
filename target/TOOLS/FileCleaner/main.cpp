@@ -58,7 +58,7 @@ int main(int iArgumentCount, char** ppbszArgument)                             /
             // Optionally, sleep to avoid busy-waiting, this will lower the cpu work
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
          }
-			                                                                                                LOG_DEBUG_RAW("\nApplication exit wait loop\n");
+			                                                                                                LOG_DEBUG_RAW("Application exit wait loop");
       }
 
       papplication_->Exit();
