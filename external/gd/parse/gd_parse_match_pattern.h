@@ -51,6 +51,13 @@ _GD_PARSE_BEGIN
 class patterns
 {
 public:
+   enum enumMatch
+   {
+      eMatchNone = 0,    ///< no match
+      eMatchIgnoreCase = 0x01, ///< matched a pattern
+		eMatchWord = 0x02 ///< matched a whole word
+	};
+public:
    /**
     * @struct pattern
     * @brief Represents a string pattern with optional escape sequence.
@@ -81,16 +88,17 @@ public:
       pattern() {}
       pattern(const std::string_view& stringPattern) : m_stringPattern(stringPattern) {}
       pattern(const std::string& stringPattern) : m_stringPattern(stringPattern) {}
-      pattern(const std::string_view& stringPattern, const std::string_view& stringEscape)
-         : m_stringPattern(stringPattern), m_stringEscape(stringEscape) {}
-      pattern(const pattern& o): m_stringPattern(o.m_stringPattern), m_stringEscape(o.m_stringEscape) {}
-      pattern(pattern&& o) noexcept : m_stringPattern(std::move(o.m_stringPattern)), m_stringEscape(std::move(o.m_stringEscape)) {}
+      pattern(const std::string_view& stringPattern, const std::string_view& stringEscape) : m_stringPattern(stringPattern), m_stringEscape(stringEscape) {}
+		pattern(const std::string& stringPattern, const std::string& stringEscape) : m_stringPattern(stringPattern), m_stringEscape(stringEscape) {}
+		pattern(uint64_t uFlags, const std::string_view& stringPattern, const std::string_view& stringEscape = "") : m_uFlags(uFlags), m_stringPattern(stringPattern), m_stringEscape(stringEscape) {}
+      pattern(const pattern& o): m_uFlags(o.m_uFlags), m_stringPattern(o.m_stringPattern), m_stringEscape(o.m_stringEscape) {}
+      pattern(pattern&& o) noexcept : m_uFlags(o.m_uFlags), m_stringPattern(std::move(o.m_stringPattern)), m_stringEscape(std::move(o.m_stringEscape)) {}
       pattern& operator=(const pattern& o) {
-         assert(this != &o); m_stringPattern = o.m_stringPattern; m_stringEscape = o.m_stringEscape;
+         assert(this != &o); m_uFlags = o.m_uFlags; m_stringPattern = o.m_stringPattern; m_stringEscape = o.m_stringEscape;
          return *this;
       }
       pattern& operator=(pattern&& o) noexcept {
-         assert(this != &o); m_stringPattern = std::move(o.m_stringPattern); m_stringEscape = std::move(o.m_stringEscape);
+         assert(this != &o); m_uFlags = o.m_uFlags; m_stringPattern = std::move(o.m_stringPattern); m_stringEscape = std::move(o.m_stringEscape);
          return *this;
       }
       ~pattern() {}
@@ -98,6 +106,9 @@ public:
    // ## operator -----------------------------------------------------------------
       bool operator==(const pattern& o) const { return m_stringPattern == o.m_stringPattern; }
       bool operator==(const std::string_view& stringPattern) const { return m_stringPattern == stringPattern; }
+
+		bool is_ignore_case() const { return (m_uFlags & eMatchIgnoreCase) != 0; } ///< check if ignore case flag is set
+		bool is_word() const { return (m_uFlags & eMatchWord) != 0; } ///< check if word flag is set
       
       /// convert to uint8_t, this will return the first character in the pattern string and is used to identify markers
       operator uint8_t() const { return static_cast<uint8_t>(m_stringPattern[0]); } 
@@ -109,12 +120,8 @@ public:
       size_t length() const { return m_stringPattern.length(); } ///< get length of pattern string
 
       /// compares if equal to pattern string and only the sequence of characters in the pattern string
-      bool compare(const char* piText) const {
-         if(std::strncmp(piText, m_stringPattern.c_str(), m_stringPattern.length()) == 0) {
-            return true;
-         }
-         return false;
-      }
+      bool compare(const char* piText, const char* piTextStart) const;
+      bool compare(const char* piText) const { return compare(piText, nullptr); }
 
       /// check if text is escaped, this will check if the text is escaped with the escape character
       bool is_escaped(const char* piText) const {
@@ -126,6 +133,7 @@ public:
       }
 
       // ## attributes
+		uint64_t m_uFlags = 0; ///< flags for pattern behavior, see enumMatch
       std::string m_stringPattern; ///< pattern string to match
       std::string m_stringEscape; ///< escape character sequence
    };

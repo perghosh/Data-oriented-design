@@ -59,5 +59,57 @@ int patterns::find_(const uint8_t* puBegin, const uint8_t* puEnd ) const
    return -1;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Compares a substring of text to the stored pattern, considering case sensitivity and word boundaries as specified by the pattern's flags.
+ * @param piText Pointer to the start of the substring in the text to compare against the pattern.
+ * @param piTextStart Pointer to the start of the full text buffer, used for word boundary checks. Can be nullptr if not needed.
+ * @return Returns true if the substring matches the pattern according to the current flags and word boundary requirements; otherwise, returns false.
+ */
+bool patterns::pattern::compare(const char* piText, const char* piTextStart) const 
+{	                                                                                                assert(m_stringPattern.empty() == false && "pattern string is empty");
+   const size_t uPatternLength = m_stringPattern.length();
+
+   // ## Fast path: exact case-sensitive comparison when no flags are set ....
+   if(m_uFlags == 0) { return std::strncmp(piText, m_stringPattern.c_str(), uPatternLength) == 0; }
+
+   // ## Check basic string match (case-sensitive or case-insensitive) .......
+   bool bMatches;
+   if(is_ignore_case() == true) 
+   {
+      // Case-insensitive comparison - use platform-specific function
+#ifdef _WIN32
+      bMatches = _strnicmp(piText, m_stringPattern.c_str(), uPatternLength) == 0;
+#else
+      bMatches = strncasecmp(piText, m_stringPattern.c_str(), uPatternLength) == 0;
+#endif
+   }
+   else 
+   {
+      // Case-sensitive comparison
+      bMatches = std::strncmp(piText, m_stringPattern.c_str(), uPatternLength) == 0;
+   }
+
+   if(bMatches == false) return false;
+
+
+	// ## Check word boundaries if required ...................................
+   if(is_word() == true)                                                      // If word matching is required, check word boundaries 
+   {
+      if(piTextStart != nullptr && piText > piTextStart)                      // Check character before the match (should be non-alphanumeric or start of string)
+      {
+         if(std::isalnum(static_cast<unsigned char>(*(piText - 1))) || *(piText - 1) == '_') 
+         {
+            return false;
+         }
+      }
+
+      // Check character after the match (should be non-alphanumeric or end of string)
+      char iCharAfter = piText[uPatternLength];
+      if(iCharAfter != '\0' && (std::isalnum(static_cast<unsigned char>(iCharAfter)) || iCharAfter == '_'))  { return false; }
+   }
+
+   return true;
+}
+
 
 _GD_PARSE_END

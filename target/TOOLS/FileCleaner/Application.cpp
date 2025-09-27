@@ -1998,13 +1998,15 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
  */
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
-   optionsApplication.add_flag( {"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"} );
-   optionsApplication.add_flag( {"logging", "Turn on logging"} );
-   optionsApplication.add_flag( {"logging-csv", "Add csv logger, prints log information using the csv format"} );
+   optionsApplication.add_flag({"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"});
+   optionsApplication.add_flag({"logging", "Turn on logging"});
+   optionsApplication.add_flag({"logging-csv", "Add csv logger, prints log information using the csv format"});
    optionsApplication.add_flag({ "help", "Prints help information about command" });
    optionsApplication.add_flag({ "history", "Add active command to history" });
-   optionsApplication.add_flag({ "print", "Reults from command should be printed" });
+   optionsApplication.add_flag({ "print", "Results from command should be printed" });
    optionsApplication.add_flag({ "verbose", "Write information about operations that might be useful for user" });
+   optionsApplication.add_flag({ "icase", "Ignore case when matching patterns" });
+   optionsApplication.add_flag({ "word", "Match whole words only when patterns are used" });
    optionsApplication.add({ "config", "specify configuration file to use configuring cleaner" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "add-to-history", "Add to history with alias name" });
@@ -2055,6 +2057,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "target", 't', "Destination, where file is copied to" });
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)." });
+      optionsCommand.add({ "rpattern", "Use a **regular expression pattern** to search for more complex text matches within file content." });
       optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the listing. Multiple folder names can be separated with semicolons (`;`). This helps exclude irrelevant directories." });
       optionsCommand.add({ "backup", "If destination file exits then make a backup"});
       optionsCommand.add({ "newer", "Only copy files that are newer if target file is found" });
