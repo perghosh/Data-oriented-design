@@ -1026,9 +1026,13 @@ std::pair<bool, std::string> COMMAND_CollectPatternStatistics(const gd::argument
       else if( stringSegment == "all" ) uFindInState = ( eStateComment | eStateString | eStateCode );
    }
 
-
    gd::parse::patterns patternsFind(vectorPattern); // patterns to find in source code
+
+   if( argumentsPath.exists("icase") == true ) { patternsFind.set_ignore_case(true); } // Set to ignore case if specified
+   if( argumentsPath.exists("word") == true ) { patternsFind.set_word(true); } // Set to match whole words only if specified
+
    patternsFind.sort();                                                       // Sort patterns by length, longest first
+   patternsFind.prepare();
 
    // ## Prepare source file
    std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
