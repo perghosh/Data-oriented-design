@@ -117,6 +117,7 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
 
    if( options_["pattern"].is_true() )                                        // Handle pattern matching if specified
    {
+      argumentsPattern.append( options_.get_arguments(), { "icase", "word" });
       iReportType = patterncount_report_;                                     // set report type to pattern report
       std::string stringPattern = options_["pattern"].as_string();
       auto vectorPattern = CApplication::Split_s(stringPattern);

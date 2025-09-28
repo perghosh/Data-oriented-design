@@ -59,7 +59,8 @@ int patterns::find_pattern(const char* piText, size_t uLength, uint64_t* puOffse
    for( const auto* p_ = piText; p_ != piTextEnd; p_++ )
    {
       if( m_arrayMarkerHint[static_cast<uint8_t>( *p_ )] == 0 ) continue;     // no match found
-      int iIndex = find_( p_, piTextEnd );
+      int iIndex;
+      iIndex = find_( p_, piText, piTextEnd );
       if( iIndex != -1 )                                                      // pattern found
       {
          if( puOffset != nullptr ) *puOffset = p_ - piText;                   // set offset to start of pattern

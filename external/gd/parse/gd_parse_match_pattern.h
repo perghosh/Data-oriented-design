@@ -259,6 +259,7 @@ private:
    int find_(const uint8_t* puBegin, const uint8_t* puEnd ) const;            ///< find pattern in text, not optimized
    int find_(const char* piBegin, const char* piEnd) const { return find_(reinterpret_cast<const uint8_t*>( piBegin ), reinterpret_cast<const uint8_t*>( piEnd ) ); } ///< find pattern in text, not optimized  
    int find_(const uint8_t* puPosition, const uint8_t* puBegin, const uint8_t* puEnd ) const; ///< find pattern in text
+   int find_(const char* piPosition, const char* piBegin, const char* piEnd) const { return find_(reinterpret_cast<const uint8_t*>( piPosition ), reinterpret_cast<const uint8_t*>( piBegin ), reinterpret_cast<const uint8_t*>( piEnd )); } ///< find pattern in text
 
 // ## attributes ----------------------------------------------------------------
 public:

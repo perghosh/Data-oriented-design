@@ -548,7 +548,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
             // STEP 3: Process pattern statistics (SLOW operation - no mutex needed, thread-safe)
             gd::argument::shared::arguments argumentsPattern_({ {"source", stringFile} });
             if( argumentsPattern.exists("segment") == true ) { argumentsPattern_.set("segment", argumentsPattern["segment"].as_string_view()); } // set the segment (code, comment, string) to search in
-            
+            argumentsPattern_.append(argumentsPattern,{ "icase", "word" }); // set the patterns to search for
+
             auto result_ = COMMAND_CollectPatternStatistics( argumentsPattern_, vectorPattern, vectorCount );
 
             if(result_.first == false)
