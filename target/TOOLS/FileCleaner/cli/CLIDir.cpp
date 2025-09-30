@@ -5,6 +5,7 @@
 #include <format>
 
 #include "gd/gd_uuid.h"
+#include "gd/math/gd_math_string.h"
 
 #include "../Command.h"
 #include "../Application.h"
@@ -21,6 +22,8 @@
 
 
 NAMESPACE_CLI_BEGIN
+
+void CountLevel_s(gd::table::dto::table* ptable_);
 
 // ## Dir operations
 
@@ -109,6 +112,8 @@ std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, cons
    unsigned uDepth = arguments_["depth"].as_uint();
    auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable, uDepth, true);        if( result_.first == false ) return result_;
 
+   CountLevel_s(ptable);
+
    std::string stringSegment = arguments_["segment"].as_string();
 
    gd::table::dto::table* ptableFile = ptable;                                // get the table pointer
@@ -169,6 +174,8 @@ std::pair<bool, std::string> DirFilter_g( const std::string& stringSource, const
    auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable, uDepth, true);
    if( result_.first == false ) return result_;
 
+	CountLevel_s(ptable);
+
 #ifdef _WIN32
    if( arguments_.exists("script") == true )
    {
@@ -204,6 +211,8 @@ std::pair<bool, std::string> DirFilter_g(const std::string& stringSource, const 
    auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth, true );
    if( result_.first == false ) return result_;
 
+   CountLevel_s(ptable.get());
+
    pdocument->CACHE_Add( std::move( ptable ) );
    
    return { true, "" };
@@ -224,6 +233,23 @@ std::pair<bool, std::string> DirPrint_g(CDocument* pdocument)
    return { true, "" };
 }
 
+void CountLevel_s(gd::table::dto::table* ptable_)
+{
+   if( ptable_ == nullptr ) return;
+   char iCharacter = 0;
+   for(auto it : *ptable_)
+   {
+      std::string_view stringPath = it.cell_get_variant_view("path").as_string_view();
+      if(iCharacter == 0)
+      {
+         // try to find out character used for path separator
+         if (gd::math::string::count_character(stringPath, '\\') > 0) iCharacter = '\\';
+         else if (gd::math::string::count_character(stringPath, '/') > 0) iCharacter = '/';
+      }
+      auto uCount = gd::math::string::count_character(stringPath, iCharacter);
+      it.cell_set("level", (int32_t)uCount );                                    // set the level of the file in the directory structure
+   }
+}
 
 
 
