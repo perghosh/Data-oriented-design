@@ -2247,7 +2247,7 @@ void CApplication::PrepareLogging_s()
 
 
 
-/** --------------------------------------------------------------------------- @TAG #data.extension [description: Information about source code extensions, source code format]
+/** --------------------------------------------------------------------------- @TAG #data.extension [description: Information about source code extensions, source code format] [tags: config ]
  * @brief Prepares the state for parsing based on the file extension.
  * @param argumentsPath The arguments containing the source path for harvesting files.
  * @param state_ The state object to be prepared.
@@ -2332,6 +2332,7 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
    {
       state_.add(std::string_view("LINECOMMENT"), "#", "\n");
       state_.add(std::string_view("BLOCKCOMMENT"), "\"\"\"", "\"\"\"");
+      state_.add(std::string_view("BLOCKCOMMENT"), "\'\'\'", "\'\'\'");
       state_.add(std::string_view("STRING"), "\"", "\"");
       state_.add(std::string_view("STRING"), "'", "'");
    }
