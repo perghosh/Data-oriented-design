@@ -733,7 +733,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
       stringDocumentation += "\n\n"; 
       stringDocumentation += gd::console::rgb::print(CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
-      std::string stringTemp =  "Global options and flags, works for all commands";
+      std::string stringTemp =  "Requested help for commands";
       stringDocumentation += gd::math::string::format_header_line(stringTemp, 80); // format header line for command name
       stringDocumentation += "\n\n"; 
 
@@ -1821,18 +1821,27 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
    using namespace gd::cli; // use namespace for options
    std::string stringFlags; // temporary string to hold flags
 
+   if( poptions->exists( "commands", gd::types::tag_state_active{}) == true)
+   {
+      stringDocumentation += std::format("{:<12} {}\n", "COMMAND", "DESCRIPTION");
+      stringDocumentation += std::format("{:<12} {}\n", "-------", "-----------");
+      poptions->print_documentation([this, &stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_) -> void {
+         if (uType == options::eOptionTypeCommand)
+         {
+            if (stringName.empty() == true) { return; }                          // skip empty command names
+
+            stringDocumentation += gd::console::rgb::print(CONFIG_Get("color", { "header", "default" }).as_string(), gd::types::tag_color{});
+				stringDocumentation += std::format("{:<12} {}", stringName, stringDescription);
+            stringDocumentation += "\n";
+         }
+      });
+
+		return;                                                                     // if we have commands then we do not print options and flags
+   }
+
    poptions->print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_) -> void {
       if( uType == options::eOptionTypeCommand )
       {
-         /*
-         if( stringFlags.empty() == false )
-         {
-            stringDocumentation += "\nFlags:\n";
-            stringDocumentation += stringFlags;
-            stringFlags.clear();                                              // clear flags for next command
-         }
-         */
-
          if( stringName.empty() == true ) { return; }                          // skip empty command names
 
          stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "header", "default" }).as_string(), gd::types::tag_color{});
@@ -2189,10 +2198,10 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
-
-
    {  // ## `help` print help about @TAG #options.help
       gd::cli::options optionsCommand( "help", "Print command line help" );
+      optionsCommand.add_flag({ "commands", "List all available commands without detailed descriptions" });
+      optionsCommand.set_flag((gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
