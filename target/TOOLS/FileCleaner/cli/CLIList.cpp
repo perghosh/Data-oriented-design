@@ -38,6 +38,7 @@ std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocum
 {
    const gd::cli::options& options_ = *poptionsList;
 
+
    std::string stringCommandName = options_.name();
    if( stringCommandName == "list" )
    {
