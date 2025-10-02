@@ -228,6 +228,7 @@ private:
    void common_construct( const options& o ) {
       m_uFirstToken = o.m_uFirstToken;
       m_uFlags = o.m_uFlags;
+      m_iArgumentCount = o.m_iArgumentCount;
       m_stringName = o.m_stringName;
       m_stringDescription = o.m_stringDescription;
       m_vectorOption = o.m_vectorOption;
@@ -238,6 +239,7 @@ private:
    void common_construct( options&& o ) noexcept {
       m_uFirstToken = o.m_uFirstToken;
       m_uFlags = o.m_uFlags;
+		m_iArgumentCount = o.m_iArgumentCount;
       m_stringName = std::move( o.m_stringName );
       m_stringDescription = std::move( o.m_stringDescription );
       m_vectorOption = std::move( o.m_vectorOption );
@@ -256,10 +258,8 @@ public:
 public:
 /** \name GET/SET
 *///@{
-   const gd::argument::arguments& get_arguments() const { return m_argumentsValue; }
-   gd::argument::arguments& get_arguments() { return m_argumentsValue; }
-   const std::string& name() const { return m_stringName; }
-   const std::string& description() const { return m_stringDescription; }
+// ## flags and settings
+
    void set_first( unsigned uFirst ) { m_uFirstToken = uFirst; }
    void set_flag( unsigned uSet, unsigned uClear ) noexcept { m_uFlags |= uSet; m_uFlags &= ~uClear;  }
    bool is_flag( enumFlag eFlag ) const noexcept { return (m_uFlags & (unsigned)eFlag) == eFlag; }                                                                                            
@@ -271,6 +271,20 @@ public:
    bool is_sub() const;
    /// Check if single dash options is allowed
    bool is_single_dash() const { return is_flag( eFlagSingleDash ); }
+
+	// ## argument values
+
+	/// number of arguments passed to parse function (if set)
+	int get_argument_count() const { return m_iArgumentCount; }
+   void set_argument_count(int iCount) { m_iArgumentCount = iCount; }
+
+   const gd::argument::arguments& get_arguments() const { return m_argumentsValue; }
+   gd::argument::arguments& get_arguments() { return m_argumentsValue; }
+
+	// ## meta data about active sub command
+
+   const std::string& name() const { return m_stringName; }
+   const std::string& description() const { return m_stringDescription; }
 
    void parent(const options* poptionsParent) { m_poptionsParent = poptionsParent; }
    void set_parent(const options* poptionsParent) { m_poptionsParent = poptionsParent; }
@@ -440,6 +454,7 @@ public:
 public:
    unsigned m_uFirstToken = 1;         ///< Where to start parsing values, when arguments are passed to application then first argument is normally the file name for executable
    unsigned m_uFlags = 0;              ///< How `options` should work internally
+	int      m_iArgumentCount = -1;     ///< Number of arguments passed to application
    std::string m_stringName;           ///< If named child command or for other type of identification
    std::string m_stringDescription;    ///< Describe (sub) command
    std::vector<option> m_vectorOption; ///< Valid option values

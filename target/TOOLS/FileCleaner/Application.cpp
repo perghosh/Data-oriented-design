@@ -322,6 +322,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          return { false, stringError }; 
       }
 
+      optionsApplication.set_argument_count( iArgumentCount );
+
 		// ### Set print state if print flag is found ..........................
 
       if(optionsApplication.exists("print", gd::types::tag_state_active{}) == true) papplication_g->SetState(eApplicationStatePrint, 0);
@@ -572,6 +574,9 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    gd::cli::options* poptionsActive = optionsApplication.find_active();
    if( poptionsActive == nullptr ) { return { false, "No active options found" }; }
 
+   // Set argument count to found active options command if set to main options object, that might affect behaviour based on implementation
+   if(optionsApplication.get_argument_count() != -1) { poptionsActive->set_argument_count(optionsApplication.get_argument_count()); }
+
    if( poptionsActive->exists("help") == true ) 
    {
       // @TODO #user.per [name: options] [description: improve format for help information, wrap lines, set indentation and site line width] [idea: add callback to format output ] [state: open] 
@@ -659,9 +664,6 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       if( result_.first == false ) return result_;
    }
 
-   //auto* pdocument = DOCUMENT_Add(stringCommandName);
-   //if( pdocument == nullptr ) { return { false, "Failed to add document" }; }
-
    if( stringCommandName == "config" )                                         // command = "config"
    {
       return CLI::Configuration_g(poptionsActive);                             // manage configuration
@@ -687,6 +689,16 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "find" )
    {
+      // prepare options for list command, this is for usability so that user can use list command without specifying file or pattern
+      // Check for only one argument, then this should search for that element
+      if(poptionsActive->get_argument_count() == 3)                           // 3 is 3 subtracting program name and command name
+      {                                                                                            assert(poptionsActive->exists("R") == false); 
+         // move from filter to pattern
+		   auto stringPattern = (*poptionsActive)["filter"].as_string_view();
+         poptionsActive->add_value("pattern", stringPattern);
+         poptionsActive->set_value("filter", "**");
+      }
+
       auto* pdocument = DOCUMENT_Get("find", true );
       auto result_ = CLI::Find_g( poptionsActive, pdocument );
       if( result_.first == false ) return result_;
@@ -705,6 +717,16 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "list" )
    {
+		// prepare options for list command, this is for usability so that user can use list command without specifying file or pattern
+      // Check for only one argument, then this should search for that element
+		if(poptionsActive->get_argument_count() == 3)                           // 3 is 3 subtracting program name and command name
+      {                                                                                            assert(poptionsActive->exists("R") == false); 
+         // move from filter to pattern
+		   auto stringPattern = (*poptionsActive)["filter"].as_string_view();
+         poptionsActive->add_value("pattern", stringPattern);
+         poptionsActive->set_value("filter", "**");
+      }
+
       // Add a document for the "count" command
       auto* pdocument = DOCUMENT_Get("list", true);
       if( bUseThreads == true ) { return execute_(CLI::List_g, poptionsActive->clone_arguments(), pdocument); } // list lines in file or directory with the matched pattern in its own thread
@@ -761,8 +783,21 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
  * verbose output, or external setup tasks.
  *
  * ### Features:
- * - Excludes history command to prevent recursion
- * - Direct command execution without UI elements
+ * - Excludes history command to prevent recursion.
+ * - Direct command execution without UI elements.
+ * - Supports the following subcommands:
+ *   - **config**: Manages configuration files, including creation, editing, and backup.
+ *   - **copy**: Copies files from source to target, with support for filters, patterns, and backup options.
+ *   - **count**: Counts lines or patterns in files or directories, supports recursive and filtered operations.
+ *   - **dir**: Lists files in directories, with filtering, pattern matching, and sorting capabilities.
+ *   - **find**: Searches for patterns in files, supports multiline and key-value extraction.
+ *   - **kv**: Extracts key-value pairs from files based on specified rules and formats.
+ *   - **list**: Lists lines in files matching specified patterns, supports context and scripting.
+ *   - **paste**: Reads text from clipboard or input files for further processing.
+ *   - **run**: Executes commands from loaded templates or history.
+ *   - **version**: Returns the current application version.
+ *   - **help**: Displays help information for commands and options.
+ * - Each subcommand is executed without threading, verbose output, or external setup, ensuring fast and direct execution.
  *
  * @param optionsApplication The parsed command-line options.
  * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
@@ -1790,7 +1825,7 @@ gd::variant_view CApplication::CONFIG_Get(std::string_view stringGroup, std::str
 }
 
 /** ---------------------------------------------------------------------------
- * @brief Check if a configuration exists in the config table
+ * @brief Check if configuration exists in the config table
  * 
  * @param stringGroup The group name of the configuration
  * @param stringName The name of the configuration
@@ -1994,16 +2029,6 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
  * - `output`        : Saves output to a specified file.
  * - `database`      : Sets the folder for log files.
  * - `statements`    : Specifies a file containing SQL statements.
- *
- * ### Subcommands
- * - `count`    : Counts lines in files or directories.
- * - `copy`     : Copies files from source to destination.
- * - `db`       : Configures database settings.
- * - `history`  : Handles command history.
- * - `list`     : Lists rows matching specified patterns.
- * - `join`     : Joins two or more files.
- * - `help`     : Displays help information.
- * - `version`  : Displays the application version.
  */
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
@@ -2026,7 +2051,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({ "prompt", "Prompts for values that is typed before execute expression, these values will be asked for"});
 
    {  // ## `count` command, copies file from source to target
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count lines in file" );
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count patterns or lines and segments in selected files" );
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "source", 's', "File(s) or folder(s) to count lines in"});
@@ -2061,7 +2086,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
 
    {  // ## `copy` command, count number of lines in file 
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file from source to target" );
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file or selected files from source to target" );
       optionsCommand.add({ "source", 's', "File or files to copy, if many files then a tip is to set filter with --filter and folders in source" });
       optionsCommand.add({ "target", 't', "Destination, where file is copied to" });
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
@@ -2089,7 +2114,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
 
    { // ## 'dir' command, list files
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List files in a specified directory." );
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List selected files, lots of filtering options to select what to list." );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
       optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations. Multiple directories are separated with semicolons (`;`)" });
@@ -2109,7 +2134,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
    { // ## 'find' command, list files
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "find", "Search for file content within directories." );
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "find", "Search patterns in files and all filecontent is searched in, this enables multiline patterns" );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `*.cpp`) to apply when searching for files. Multiple filters are separated with ;. If no filter is provided, all found text files will be searched for patterns." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
       optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations. Multiple directories are separated with semicolons (`;`)" });
@@ -2160,16 +2185,16 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
    { // ## 'list' command, list rows with specified patterns @TAG #options.list
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "Search and list rows in files that match specified patterns." );
-      optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `app*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all found files are processed." });
-      optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with commas (`,`) or semicolons (`;`). Matches are reported per row." });
-      optionsCommand.add({ "source", 's', "Specify the **file(s) or folder(s)** to search for matching rows. This is the starting point for the search operation." });
+      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "Search files and list lines matching specified patterns. Searches are performed line-by-line within files." );
+      optionsCommand.add({ "filter", "Filter files by name using **wildcard patterns** (e.g., `*.cpp`, `test*`). Multiple patterns can be separated by semicolons (`;`). If omitted, all files are processed." });
+      optionsCommand.add({ "pattern", 'p', "**Search patterns** to find in file content. Multiple patterns can be separated by commas (`,`) or semicolons (`;`). Each line is checked for matches." });
+      optionsCommand.add({ "source", 's', "Specify the **file(s) or folder(s)** to search for matching rows. This is the starting point for the search operation. Multiple sources are split with (`;`)." });
       optionsCommand.add({ "ignore", "Provide one or more **folder names to exclude** from the search. Multiple folder names can be separated with semicolons (`;`). This helps narrow down the search scope." });
-      optionsCommand.add({ "rpattern", "Use a **regular expression pattern** to search for complex text matches within file content. Ideal for advanced pattern matching." });
-      optionsCommand.add({ "context", "Display **surrounding code or text** to provide context for each matched row. This helps understand where the match occurred in the file." });
+      optionsCommand.add({ "rpattern", "**Regular expression pattern** for advanced text matching. Supports complex pattern matching using regex syntax." });
+      optionsCommand.add({ "context", "Show **context lines** around matches. Displays surrounding code/text to help understand the match location within the file. One or two integer numbers." });
       optionsCommand.add({ "expression", 'e', "Provide an **inline script expression** for advanced customization of search results. This enables non-standard functionality and complex processing." });
       optionsCommand.add({ "script", "Execute an **external script file** for advanced and custom processing of matched rows. Ideal for complex automation tasks." });
-      optionsCommand.add({ "max", "Set the **maximum number of matching rows** to return. Use this to limit output and improve performance for large searches." });
+      optionsCommand.add({ "max", "**Maximum results** to return. Limits the number of matching lines output to improve performance in large searches." });
       optionsCommand.add({ "segment", "Limit the search to specific **types of code segments**, such as `code`, `comment`, `string`, or `all`. This refines the search to relevant parts of the file." });
       optionsCommand.add_flag( {"R", "Enable **recursive scanning** of all subfolders. Sets the recursion depth to 16, ensuring a thorough search of subdirectories."} );
       optionsCommand.add_flag( {"match-all", "Require **all specified patterns** to match within the same row for it to be included in the results."} );
