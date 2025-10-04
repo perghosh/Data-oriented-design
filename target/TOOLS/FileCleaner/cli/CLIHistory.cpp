@@ -167,6 +167,18 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
       gd::argument::arguments argumentsDelete( {"delete", options_["delete"].as_string()} );
       result_ = HistoryDelete_g(argumentsDelete);
    }
+   else if(options_.exists("edit") == true)                                   // Edit history file in text editor (tries to open associated application)
+   {
+      gd::argument::arguments argumentsEdit;
+      argumentsEdit.append(options_.get_arguments(), { "edit", "local", "home" });
+      result_ = HistoryEdit_g(argumentsEdit);
+   }
+	else if(options_.exists("list") == true)                                   // list history entries from history file
+   {
+      gd::argument::arguments argumentsList;
+      argumentsList.append(options_.get_arguments(), { "edit", "local", "home" });
+      result_ = HistoryList_g(argumentsList);
+   }
    else if( options_.exists("print") == true )                                 // Print history entries from history file
    {
       gd::argument::arguments argumentsPrint;
@@ -184,12 +196,6 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
          const auto* ptable_ = pdocument->CACHE_Get("history", false );                             assert( ptable_ != nullptr );
          result_ = XML_Write_s(stringHistoryFile, *ptable_, "");               // Write an empty history table to the file
       }
-   }
-   else if( options_.exists("edit") == true )                                  // Edit history file in text editor (tries to open associated application)
-   {
-      gd::argument::arguments argumentsEdit;
-      argumentsEdit.append( options_.get_arguments(), { "edit", "local", "home" } );
-      result_ = HistoryEdit_g( argumentsEdit );
    }
    else if( options_.exists("run") == true )                                   // Run a command from the history file
    {
@@ -373,17 +379,75 @@ std::pair<bool, std::string> HistorySetAttributes_g(uint64_t uRow, const gd::arg
    return { true, "" };
 }
 
-std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argumentsDelete)
+/** ---------------------------------------------------------------------------
+ * @brief Deletes the history folder and its contents, either from the current directory or the user's home directory based on the provided arguments.
+ * @param argumentsDelete The arguments used to determine the location of the history folder (checks for the 'home' key).
+ * @param pdocument Pointer to a CDocument object used for displaying messages to the user.
+ * @return A pair where the first element is true if the history folder was successfully deleted or did not exist, and false otherwise; the second element is an error message if deletion failed, or an empty string on success.
+ */
+std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argumentsDelete, CDocument* pdocument)
 {
-   std::filesystem::path pathCurrentDirectory = std::filesystem::current_path() / ".cleaner";
+   std::filesystem::path pathHistory; // path to history
 
-   if( std::filesystem::exists(pathCurrentDirectory) == true  )
+	// ## Find history file ...................................................
+
+   if( argumentsDelete.exists("home") == true )
    {
-      std::filesystem::remove_all(pathCurrentDirectory); // remove the history folder
+      // Get history file from home directory
+		std::string stringPath = FolderGetHome_s();                             // Get the user home folder
+      pathHistory = std::filesystem::path(stringPath);                        // Get the history path based on the operating system
+      pathHistory = pathHistory / "cleaner-history.xml";
+	}
+   else
+   {
+      pathHistory = std::filesystem::current_path() / ".cleaner-history.xml"; // Get history file from current directory
+	}
+
+   if( std::filesystem::exists(pathHistory) == true  )
+   {
+      std::error_code errorcode;
+      std::filesystem::remove_all(pathHistory, errorcode); // remove the history folder
+      if( (bool)errorcode == true )
+      {
+         return { false, "Failed to remove history folder: " + errorcode.message() };
+      }
+      else if( std::filesystem::exists(pathHistory) == true )
+      {
+         return { false, std::format( "Failed to remove history folder, file {} exists", pathHistory ) };
+      }
+
+		pdocument->MESSAGE_Display("Removed history file: " + pathHistory.string());
    }
 
    return { true, "" };
 }
+
+/* ---------------------------------------------------------------------------
+ * @brief Edit a command in the history
+ */
+std::pair<bool, std::string> HistoryEdit_g( const gd::argument::arguments& argumentsEdit )
+{
+   std::string stringHistoryFile = FILE_GetHistoryFile_s( argumentsEdit );
+   if( stringHistoryFile.empty() == true ) return { false, "Failed to get history file path." };   
+
+   return SHARED_OpenFile_g(stringHistoryFile);
+}
+
+
+
+std::pair<bool, std::string> HistoryList_g(const gd::argument::arguments& argumentsList, CDocument* pdocument)
+{
+   std::string stringHistoryFile = FILE_GetHistoryFile_s( argumentsList );
+   if( stringHistoryFile.empty() == true ) return { false, "Failed to get history file path." };   
+   if( std::filesystem::exists(stringHistoryFile) == false ) { return { false, "History file does not exist: " + stringHistoryFile }; }
+
+   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+
+
+}
+
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief Removes a specified row from the history table in the document cache, displaying a message upon successful removal.
@@ -682,17 +746,6 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
    }
 
    return { true, "" };
-}
-
-/* ---------------------------------------------------------------------------
- * @brief Edit a command in the history
- */
-std::pair<bool, std::string> HistoryEdit_g( const gd::argument::arguments& argumentsEdit )
-{
-   std::string stringHistoryFile = FILE_GetHistoryFile_s( argumentsEdit );
-   if( stringHistoryFile.empty() == true ) return { false, "Failed to get history file path." };   
-
-   return SHARED_OpenFile_g(stringHistoryFile);
 }
 
 std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argumentsIndex, CDocument* pdocument)

@@ -80,10 +80,16 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
       if( result_.first == false ) return result_;
    }
 
+   if(options_.exists("where") == true)
+   {
+      pdocument->CACHE_Where("file-dir", options_["where"]);                  // filter table based on where condition
+   }
+
    if( options_.exists("sort") == true )
    {
       pdocument->CACHE_Sort("file-dir", options_["sort"]);                    // sort the table by the given sort value
    }
+
 
    DirPrint_g(pdocument);                                                     // print the table to the console
 
@@ -233,6 +239,10 @@ std::pair<bool, std::string> DirPrint_g(CDocument* pdocument)
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Counts the level (number of parent folders) of each file in the directory structure.
+ * @param ptable_ pointer to the table object containing file information
+ */
 void CountLevel_s(gd::table::dto::table* ptable_)
 {
    if( ptable_ == nullptr ) return;

@@ -43,7 +43,13 @@ inline std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile
 std::pair<bool, std::string> HistorySetAttributes_g(uint64_t uRow, const gd::argument::arguments& argumentsSet, CDocument* pdocument); 
 
 /// \brief Delete history file or folder
-std::pair<bool, std::string> HistoryDelete_g( const gd::argument::arguments& argumentsDelete);
+std::pair<bool, std::string> HistoryDelete_g( const gd::argument::arguments& argumentsDelete, CDocument* pdocument);
+
+/// \brief Edit history file
+std::pair<bool, std::string> HistoryEdit_g(const gd::argument::arguments& argumentsEdit);
+
+/// \brief Edit history file
+std::pair<bool, std::string> HistoryList_g(const gd::argument::arguments& argumentsList, CDocument* pdocument);
 
 /// \brief Remove entry or entries in history file
 std::pair<bool, std::string> HistoryRemove_g(const gd::argument::arguments& argumentsRemove, CDocument* pdocument);
@@ -58,9 +64,6 @@ std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& arg
 std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argumentsSave, CDocument* pdocument);
 
 std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument);
-
-/// \brief Edit history file
-std::pair<bool, std::string> HistoryEdit_g( const gd::argument::arguments& argumentsSave );
 
 /// \brief Index history entries from table
 std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argumentsIndex, CDocument* pdocument);
