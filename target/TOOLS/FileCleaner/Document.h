@@ -147,6 +147,8 @@ public:
 
    /// Sort cached table for specified column
    std::pair<bool, std::string> CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_, gd::table::dto::table* ptable_ = nullptr );
+   /// Filter cached table based on where expression
+   std::pair<bool, std::string> CACHE_Where(std::string_view stringId, std::string_view stringWhere, gd::table::dto::table* ptable_ = nullptr);
 
    /// Return information to generate cache data
    std::pair<bool, std::string> CACHE_GetInformation( const std::string_view& stringId, gd::argument::arguments& argumentsCache );
@@ -241,6 +243,10 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
+
+	/// Prepare expression to be used performing where operations on table
+	static std::pair<bool, std::string> EXPRESSION_PrepareForTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression);
+
    /// Generate result from table where rows in table just are listed top to bottom
    static std::string RESULT_VisualStudio_s( gd::table::dto::table& table_ );
    static void RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult );

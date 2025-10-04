@@ -22,6 +22,8 @@
 #include "gd/math/gd_math_string.h"
 #include "gd/parse/gd_parse_formats.h"
 
+#include "automation/code-analysis/Run.h"
+
 #include "Command.h"
 #include "Application.h"
 
@@ -2380,6 +2382,65 @@ std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& strin
    return { true, "" };
 }
 
+// @TODO [name: where] [brief: Filter rows in table based on expression] [state: open] [date: 2025-10-03] [user: per]
+
+std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, std::string_view stringWhere, gd::table::dto::table* ptable_ )
+{
+   if(ptable_ == nullptr) { ptable_ = CACHE_Get(stringId, false); }                                assert(ptable_ != nullptr);
+
+   // ## Read all column names from table
+	std::vector<std::string_view> vectorName = ptable_->column_get_name();
+
+	std::array<uint8_t, 256> arrayQuote{}; // array to store character types for each ASCII character
+	arrayQuote['\''] = 1; // quote
+   arrayQuote['\"'] = 1; // double quote
+   auto vectorFound = gd::math::string::find_all_word(stringWhere, vectorName, arrayQuote);
+
+   std::string stringExpression;
+	auto result_ = EXPRESSION_PrepareForTable_s(stringWhere, vectorFound, stringExpression);
+	if(result_.first == false) return result_;
+
+   RunExpression_Where_g(stringExpression, ptable_);
+
+   // ## prepare formula
+
+	// replace found column names with formula used to extract value from row in table
+
+   /*
+   // Lock cache for thread safety
+   std::unique_lock lock(m_sharedmutexTableCache);
+
+   // Get the table from cache (prepare if needed)
+   gd::table::dto::table* ptable = ptable_ ? ptable_ : CACHE_Get(stringId, true);
+   if(!ptable) {
+      return { false, "CACHE_Where: Table not found for id: " + std::string(stringId) };
+   }
+
+   // Prepare result table
+   auto resultTable = std::make_unique<gd::table::dto::table>(*ptable);
+
+   // Filter rows based on 'stringWhere' expression
+   // This assumes 'stringWhere' is a filter expression that can be parsed/applied.
+   // You may need to adapt this logic to your actual filter implementation.
+   size_t filteredCount = 0;
+   for(const auto& row : ptable->rows()) {
+      // Example: Assume row has a method 'matches_where' that takes a variant_view
+      if(row.matches_where(stringWhere)) {
+         resultTable->add_row(row);
+         ++filteredCount;
+      }
+   }
+
+   // Optionally, update the cache with the filtered table
+   // CACHE_Add(std::move(*resultTable), stringId);
+
+   // Return result
+   std::string message = "CACHE_Where: Filtered " + std::to_string(filteredCount) + " rows for id: " + std::string(stringId);
+
+   */
+   return { true, "" };
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Get information about cache to be able to generate data for it
  * 
@@ -2887,6 +2948,27 @@ void CDocument::ERROR_Print( bool bClear )
 
 	if (bClear == true) m_vectorError.clear();                                  // clear error list
 
+}
+
+std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression)
+{
+   stringPreparedExpression.clear();
+   if( stringExpression.empty() == true ) return { false, "No expression provided" };
+   size_t uLastPos = 0;
+   for( const auto& [uStart, uLength] : vectorPosition )
+   {
+      if( uStart > uLastPos ) stringPreparedExpression += stringExpression.substr(uLastPos, uStart - uLastPos); // add text before position
+
+		// Extract column name from expression
+		auto stringColumn = stringExpression.substr(uStart, uLength);
+
+      stringPreparedExpression += std::format("source::get_cell_value( table, row, '{}' )", stringColumn); // add code to get column value from row
+      uLastPos = uStart + uLength;
+   }
+   
+   if( uLastPos < stringExpression.length() ) stringPreparedExpression += stringExpression.substr(uLastPos); // add text after last position
+
+   return { true, "" };
 }
 
 void CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult )

@@ -118,8 +118,8 @@ std::pair<bool, std::string> RunExpression_g(const std::string_view& stringExpre
 
       for( const auto& value_ : vectorReturn )
       {
-         auto uAddSnippetRow = ptableSnippet->row_add_one();
-         ptableSnippet->cell_set(uAddSnippetRow, "key", uAddSnippetRow + 1 );
+         auto uAddSnippetRow = ptableSnippet->row_add_one();                  // add row
+			ptableSnippet->cell_set(uAddSnippetRow, "key", uAddSnippetRow + 1);  // set key to row + 1
          uint64_t uFileKey = ptableLineList->cell_get_variant_view(uRow, "key");
          ptableSnippet->cell_set(uAddSnippetRow, "file-key", uFileKey );
          ptableSnippet->cell_set(uAddSnippetRow, "filename", stringFileName);
@@ -207,3 +207,78 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
 
    return { true, "" };
 }
+
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Executes a "where" expression on a table, filtering rows based on the expression.
+ * 
+ * - configure runtime with methods for default operations
+ * - iterate through the table lines to process the expression
+ * 
+ * This function parses the expression string into tokens, compiles them into postfix notation,
+ * and then evaluates the expression for each row in the provided table. Rows that do not satisfy
+ * the expression are marked for deletion and removed from the table.
+ * 
+ * @param stringExpression The "where" expression to be evaluated.
+ * @param ptable_ Pointer to a table containing data to be filtered.
+ * 
+ * @return A pair containing a boolean indicating success or failure, and a string with the result or error message.
+ * 
+ * @code
+ * // Example usage: Filtering a table based on a "where" expression
+   @endcode
+ */
+std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& stringExpression, gd::table::dto::table* ptable_)
+{
+   // ## convert string to tokens
+
+   std::vector<gd::expression::token> vectorToken;
+   std::pair<bool, std::string> result_ = gd::expression::token::parse_s(stringExpression, vectorToken, gd::expression::tag_formula{});
+   if( result_.first == false ) { return result_; }
+
+   // ## compile tokens and that means to convert tokens to postfix, place them in correct order to be processed
+
+   std::vector<gd::expression::token> vectorPostfix;
+   result_ = gd::expression::token::compile_s(vectorToken, vectorPostfix, gd::expression::tag_postfix{});
+   if( result_.first == false ) { return result_; }
+
+   // ## create runtime and add methods for operations
+
+   gd::expression::runtime runtime_;
+   runtime_.add( { (unsigned)uMethodDefaultSize_g, gd::expression::pmethodDefault_g, ""});
+   runtime_.add( { (unsigned)uMethodStringSize_g, gd::expression::pmethodString_g, std::string("str")});
+   runtime_.add( { (unsigned)uMethodSelectSize_g, pmethodSelect_g, std::string("source")});
+
+   std::vector<uint64_t> vectorDeleteRow; // rows to delete
+
+   runtime_.set_variable("table", std::pair<const char*, void*>("table", ptable_)); // set table used to calculate on
+
+   for( uint64_t uRow = 0; uRow < ptable_->size(); uRow++ )
+   {
+      runtime_.set_variable("row", (int64_t)uRow);                            // set line variable to the current line
+
+      gd::expression::value valueResult;
+      std::vector<gd::expression::value> vectorReturn;
+      result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_); // calculate the expression
+
+      bool bWhere = false;
+      for( const auto& value_ : vectorReturn )
+      {
+         if( value_.is_bool() == true )
+         {
+            bool bResult = value_.get_bool();
+            if( bResult == true ) { bWhere = true; break; }
+         }
+      }
+
+      if( bWhere == false ) { vectorDeleteRow.push_back(uRow); } // mark row for deletion
+
+      if( result_.first == false ) { return result_; }
+   }
+                                                                                                   LOG_VERBOSE_RAW("== Keep Rows: " & (ptable_->size() - vectorDeleteRow.size()));
+   if( vectorDeleteRow.empty() == false ) { ptable_->erase(vectorDeleteRow); }  // erase rows that did not match the where condition
+
+   return { true, "" };
+}
+

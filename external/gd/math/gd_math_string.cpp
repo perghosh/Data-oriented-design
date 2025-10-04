@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <sstream>
 
 #include "gd/gd_compiler.h"
@@ -235,11 +236,11 @@ bool compare_equals_ignore_case(const std::string_view& stringText1, const std::
  * 
  * @code
  * std::string text = "The cat in the hat";
- * size_t pos = find_whole_word(text, "cat"); // Returns 4
- * size_t pos2 = find_whole_word(text, "at"); // Returns npos (not a whole word)
+ * size_t pos = find_word(text, "cat"); // Returns 4
+ * size_t pos2 = find_word(text, "at"); // Returns npos (not a whole word)
  * @endcode
  */
-size_t find_whole_word(const std::string_view& stringText, const std::string_view& stringWord, size_t uOffset) noexcept
+size_t find_word(const std::string_view& stringText, const std::string_view& stringWord, size_t uOffset) noexcept
 {
    if(stringText.empty() == true || stringWord.empty() == true) { return std::string_view::npos; }
 
@@ -281,7 +282,7 @@ size_t find_whole_word(const std::string_view& stringText, const std::string_vie
  * @param uOffset The starting position for the search (0-based index).
  * @return size_t The position of the first occurrence, or std::string_view::npos if not found.
  */
-size_t find_whole_word_ignore_case(const std::string_view& stringText, const std::string_view& stringWord, size_t uOffset) noexcept
+size_t find_word_ignore_case(const std::string_view& stringText, const std::string_view& stringWord, size_t uOffset) noexcept
 {
    if(stringText.empty() || stringWord.empty()) { return std::string_view::npos; }
    
@@ -323,6 +324,332 @@ size_t find_whole_word_ignore_case(const std::string_view& stringText, const std
    
    return std::string_view::npos;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Finds all occurrences of a whole word within a string.
+ *
+ * This function searches for all occurrences of the specified word as complete words,
+ * not as substrings. It uses word boundaries to ensure matches are whole words.
+ * The search is case-sensitive.
+ *
+ * @param stringText The source string to search within.
+ * @param stringWord The word to search for.
+ * @param uOffset The starting position for the search (0-based index).
+ * @return std::vector<std::pair<size_t, size_t>> Vector of pairs containing 
+ *         (position, length) for each found word occurrence.
+ * 
+ * @code
+ * std::string text = "The cat sat on the mat";
+ * auto results = find_all_word(text, "at"); // Returns empty (not whole words)
+ * auto results2 = find_all_word(text, "the"); // Returns [(0,3), (15,3)]
+ * @endcode
+ */
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, std::string_view stringWord, size_t uOffset) noexcept
+{
+   std::vector< std::pair<size_t, size_t> > vectorResults;
+   
+   if(stringText.empty() == true || stringWord.empty() == true) { return vectorResults; }
+
+   const size_t uTextLength = stringText.length();
+   const size_t uWordLength = stringWord.length();
+   
+   if(uWordLength > uTextLength) { return vectorResults; }
+
+   size_t uSearchStart = uOffset;
+
+   // ## Search for all occurrences of the substring
+   while(uSearchStart <= uTextLength - uWordLength)
+   {
+      size_t uFound = stringText.find(stringWord, uSearchStart);
+      if(uFound == std::string_view::npos) { break; }
+      
+      // ## Check if this occurrence is a whole word
+      bool bStartBoundary = is_word_boundary(stringText, uFound);
+      bool bEndBoundary = is_word_boundary(stringText, uFound + uWordLength);
+      
+      if(bStartBoundary && bEndBoundary)
+      {
+         vectorResults.push_back(std::make_pair(uFound, uWordLength));
+      }
+      
+      uSearchStart = uFound + 1;
+   }
+   
+   return vectorResults;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Finds all occurrences of multiple whole words within a string.
+ *
+ * This function searches for all occurrences of any word from the provided vector
+ * as complete words. Each match includes the position and length of the found word.
+ * The search is case-sensitive.
+ *
+ * @param stringText The source string to search within.
+ * @param vectorWord Vector of words to search for.
+ * @param uOffset The starting position for the search (0-based index).
+ * @return std::vector<std::pair<size_t, size_t>> Vector of pairs containing 
+ *         (position, length) for each found word occurrence, sorted by position.
+ */
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string_view>& vectorWord, size_t uOffset) noexcept
+{
+   std::vector< std::pair<size_t, size_t> > vectorResults;
+   
+   if(stringText.empty() == true || vectorWord.empty() == true) { return vectorResults; }
+
+   // ## Search for each word in the vector
+   for(const auto& stringWord : vectorWord)
+   {
+      if(stringWord.empty() == true) { continue; }
+      
+      const size_t uTextLength = stringText.length();
+      const size_t uWordLength = stringWord.length();
+      
+      if(uWordLength > uTextLength) { continue; }
+
+      size_t uSearchStart = uOffset;
+
+      while(uSearchStart <= uTextLength - uWordLength)
+      {
+         size_t uFound = stringText.find(stringWord, uSearchStart);
+         if(uFound == std::string_view::npos) { break; }
+         
+         // ## Check if this occurrence is a whole word
+         bool bStartBoundary = is_word_boundary(stringText, uFound);
+         bool bEndBoundary = is_word_boundary(stringText, uFound + uWordLength);
+         
+         if(bStartBoundary && bEndBoundary)
+         {
+            vectorResults.push_back(std::make_pair(uFound, uWordLength));
+         }
+         
+         uSearchStart = uFound + 1;
+      }
+   }
+   
+   // ## Sort results by position
+   std::sort(vectorResults.begin(), vectorResults.end());
+   
+   return vectorResults;
+}
+
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Finds all occurrences of a whole word within a string, skipping marked regions.
+ *
+ * This function searches for the specified word while skipping regions marked in the
+ * arraySkip buffer. A region is skipped if:
+ * - It is between two ASCII codes marked as 1 in arraySkip
+ * - Three consecutive identical characters marked as 1 are found
+ * The search is case-sensitive.
+ *
+ * @param stringText The source string to search within.
+ * @param stringWord The word to search for.
+ * @param arraySkip Array where values set to 1 mark ASCII codes that define skip regions.
+ * @param uOffset The starting position for the search (0-based index).
+ * @return std::vector<std::pair<size_t, size_t>> Vector of pairs containing 
+ *         (position, length) for each found word occurrence outside skip regions.
+ */
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, std::string_view stringWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset) noexcept
+{
+   std::vector< std::pair<size_t, size_t> > vectorResults;
+   
+   if(stringText.empty() == true || stringWord.empty() == true) { return vectorResults; }
+
+   const size_t uTextLength = stringText.length();
+   const size_t uWordLength = stringWord.length();
+   
+   if(uWordLength > uTextLength) { return vectorResults; }
+
+   size_t uSearchStart = uOffset;
+
+   // ## Search for all occurrences of the substring
+   while(uSearchStart <= uTextLength - uWordLength)
+   {
+      size_t uFound = stringText.find(stringWord, uSearchStart);
+      if(uFound == std::string_view::npos) { break; }
+      
+      // ## Check if this position is within a skip region
+      bool bInSkipRegion = false;
+      
+      // Check if found position is between two marked characters
+      for(size_t uPos = 0; uPos < uFound && uPos < uTextLength; ++uPos)
+      {
+         uint8_t uChar = static_cast<uint8_t>(stringText[uPos]);
+         if(arraySkip[uChar] == 1)
+         {
+            // Find the closing marked character
+            for(size_t uEnd = uPos + 1; uEnd < uTextLength; ++uEnd)
+            {
+               uint8_t uEndChar = static_cast<uint8_t>(stringText[uEnd]);
+               if(arraySkip[uEndChar] == 1)
+               {
+                  if(uFound >= uPos && uFound < uEnd)
+                  {
+                     bInSkipRegion = true;
+                     break;
+                  }
+                  break;
+               }
+            }
+            if(bInSkipRegion == true) { break; }
+         }
+      }
+      
+      // Check for three consecutive identical marked characters
+      if(bInSkipRegion == false && uFound >= 2)
+      {
+         for(size_t uPos = 0; uPos <= uFound - 2 && uPos + 2 < uTextLength; ++uPos)
+         {
+            uint8_t uChar1 = stringText[uPos];
+            uint8_t uChar2 = stringText[uPos + 1];
+            uint8_t uChar3 = stringText[uPos + 2];
+
+            uint8_t uCharCode = static_cast<uint8_t>(uChar1);
+
+            if(arraySkip[uCharCode] == 1 && uChar1 == uChar2 && uChar2 == uChar3)
+            {
+               // Find where this skip region ends (after the three characters)
+               size_t uSkipEnd = uPos + 3;
+               if(uFound >= uPos && uFound < uSkipEnd)
+               {
+                  bInSkipRegion = true;
+                  break;
+               }
+            }
+         }
+      }
+      
+      if(bInSkipRegion == false)
+      {
+         // ## Check if this occurrence is a whole word
+         bool bStartBoundary = is_word_boundary(stringText, uFound);
+         bool bEndBoundary = is_word_boundary(stringText, uFound + uWordLength);
+         
+         if(bStartBoundary && bEndBoundary)
+         {
+            vectorResults.push_back(std::make_pair(uFound, uWordLength));
+         }
+      }
+      
+      uSearchStart = uFound + 1;
+   }
+   
+   return vectorResults;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Finds all occurrences of multiple whole words within a string, skipping marked regions.
+ *
+ * This function searches for all words from the vector while skipping regions marked
+ * in the arraySkip buffer. A region is skipped if:
+ * - It is between two ASCII codes marked as 1 in arraySkip
+ * - Three consecutive identical characters marked as 1 are found
+ * The search is case-sensitive.
+ *
+ * @param stringText The source string to search within.
+ * @param vectorWord Vector of words to search for.
+ * @param arraySkip Array where values set to 1 mark ASCII codes that define skip regions.
+ * @param uOffset The starting position for the search (0-based index).
+ * @return std::vector<std::pair<size_t, size_t>> Vector of pairs containing 
+ *         (position, length) for each found word occurrence outside skip regions, sorted by position.
+ */
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string_view>& vectorWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset) noexcept
+{
+   std::vector< std::pair<size_t, size_t> > vectorResults;
+   
+   if(stringText.empty() == true || vectorWord.empty() == true) { return vectorResults; }
+
+   // ## Search for each word in the vector
+   for(const auto& stringWord : vectorWord)
+   {
+      if(stringWord.empty() == true) { continue; }
+      
+      const size_t uTextLength = stringText.length();
+      const size_t uWordLength = stringWord.length();
+      
+      if(uWordLength > uTextLength) { continue; }
+
+      size_t uSearchStart = uOffset;
+
+      while(uSearchStart <= uTextLength - uWordLength)
+      {
+         size_t uFound = stringText.find(stringWord, uSearchStart);
+         if(uFound == std::string_view::npos) { break; }
+         
+         // ## Check if this position is within a skip region
+         bool bInSkipRegion = false;
+         
+         // Check if found position is between two marked characters
+         for(size_t uPos = 0; uPos < uFound && uPos < uTextLength; ++uPos)
+         {
+            uint8_t uChar = static_cast<uint8_t>(stringText[uPos]);
+            if(arraySkip[uChar] == 1)
+            {
+               // Find the closing marked character
+               for(size_t uEnd = uPos + 1; uEnd < uTextLength; ++uEnd)
+               {
+                  uint8_t uEndChar = static_cast<uint8_t>(stringText[uEnd]);
+                  if(arraySkip[uEndChar] == 1)
+                  {
+                     if(uFound >= uPos && uFound < uEnd)
+                     {
+                        bInSkipRegion = true;
+                        break;
+                     }
+                     break;
+                  }
+               }
+               if(bInSkipRegion == true) { break; }
+            }
+         }
+         
+         // Check for three consecutive identical marked characters
+         if(bInSkipRegion == false && uFound >= 2)
+         {
+            for(size_t uPos = 0; uPos <= uFound - 2 && uPos + 2 < uTextLength; ++uPos)
+            {
+               uint8_t uChar1 = stringText[uPos];
+               uint8_t uChar2 = stringText[uPos + 1];
+               uint8_t uChar3 = stringText[uPos + 2];
+
+               if(arraySkip[uChar1] == 1 && uChar1 == uChar2 && uChar2 == uChar3)
+               {
+                  // Find where this skip region ends (after the three characters)
+                  size_t uSkipEnd = uPos + 3;
+                  if(uFound >= uPos && uFound < uSkipEnd)
+                  {
+                     bInSkipRegion = true;
+                     break;
+                  }
+               }
+            }
+         }
+         
+         if(bInSkipRegion == false)
+         {
+            // ## Check if this occurrence is a whole word
+            bool bStartBoundary = is_word_boundary(stringText, uFound);
+            bool bEndBoundary = is_word_boundary(stringText, uFound + uWordLength);
+            
+            if(bStartBoundary && bEndBoundary)
+            {
+               vectorResults.push_back(std::make_pair(uFound, uWordLength));
+            }
+         }
+         
+         uSearchStart = uFound + 1;
+      }
+   }
+   
+   // ## Sort results by position
+   std::sort(vectorResults.begin(), vectorResults.end());
+   
+   return vectorResults;
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Extracts a substring from stringText starting from the first occurrence of `stringFrom`.
  *

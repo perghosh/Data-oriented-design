@@ -45,9 +45,17 @@ bool compare_equals_ignore_case(const std::string_view& stringText1, const std::
 // ## Search methods ..........................................................
 
 /// Finds the first occurrence of stringWord as a whole word in stringText.
-size_t find_whole_word(const std::string_view& stringText, const std::string_view& stringWord, size_t uOffset = 0) noexcept;
+size_t find_word(const std::string_view& stringText, const std::string_view& stringWord, size_t uOffset = 0) noexcept;
 /// Finds the first occurrence of stringWord as a whole word in stringText, ignoring case.
-size_t find_whole_word_ignore_case(const std::string_view& stringText, const std::string_view& stringWord, size_t uOffset = 0) noexcept;
+size_t find_word_ignore_case(const std::string_view& stringText, const std::string_view& stringWord, size_t uOffset = 0) noexcept;
+
+// ## Find all methods .........................................................
+
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, std::string_view stringWord, size_t uOffset = 0) noexcept;
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string_view>& vectorWord, size_t uOffset = 0) noexcept;
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, std::string_view stringWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset = 0) noexcept;
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string_view>& vectorWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset = 0) noexcept;
+
 
 // ## Selection methods .......................................................
 

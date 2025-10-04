@@ -49,6 +49,30 @@ static std::pair<bool, std::string> GetArgument_s( const std::vector<value>& vec
    return { false, "Invalid argument name type, expected string." };
 }
 
+
+/// sample: `get_cell_value(table, row, column)`
+std::pair<bool, std::string> GetCellValue_s( const std::vector<value>& vectorArgument, value* pvalueReturn )
+{                                                                                                  assert(vectorArgument.size() > 2);
+   auto object_ = vectorArgument[2];                                                               assert(object_.is_pointer() == true);
+   gd::table::dto::table* ptable_ = (gd::table::dto::table*)object_.get_pointer();
+
+   auto& row_ = vectorArgument[1];
+   int64_t iRow = row_.as_integer();
+	if(iRow < 0 || (uint64_t)iRow >= ptable_->size()) { return { false, "Row index out of range." }; }
+
+   auto& column_ = vectorArgument[0];
+   if(column_.is_string() == true )
+   {
+		auto variantview_ = ptable_->cell_get_variant_view((uint64_t)iRow, column_.as_string());
+      *pvalueReturn = to_value_g( variantview_ );
+
+      return { true, "" };
+   }
+
+   return { false, "Invalid argument name type, expected string." };
+}
+
+
 static std::pair<bool, std::string> SelectAll_s( const std::vector<value>& vectorArgument, value* pvalueReturn )
 {                                                                                                  assert(vectorArgument.size() > 0);
    auto source_ = vectorArgument[0];                                                               assert(source_.is_pointer() == true);
@@ -146,6 +170,7 @@ static std::pair<bool, std::string> SelectBetween_s( const std::vector<value>& v
 const method pmethodSelect_g[] = {
    { (void*)&CountLines_s, "count_lines", 1, 0 },
    { (void*)&GetArgument_s, "get_argument", 2, 1 },
+   { (void*)&GetCellValue_s, "get_cell_value", 3, 1 },
    { (void*)&SelectAll_s, "select_all", 1, 1 },
    { (void*)&SelectBetween_s, "select_between", 3, 2 },
    { (void*)&SelectLine_s, "select_line", 2, 1 },
