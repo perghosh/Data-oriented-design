@@ -165,7 +165,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    else if( options_.exists("delete") == true )
    {
       gd::argument::arguments argumentsDelete( {"delete", options_["delete"].as_string()} );
-      result_ = HistoryDelete_g(argumentsDelete);
+      result_ = HistoryDelete_g(argumentsDelete, pdocument);
    }
    else if(options_.exists("edit") == true)                                   // Edit history file in text editor (tries to open associated application)
    {
@@ -177,7 +177,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    {
       gd::argument::arguments argumentsList;
       argumentsList.append(options_.get_arguments(), { "edit", "local", "home" });
-      result_ = HistoryList_g(argumentsList);
+      result_ = HistoryList_g(argumentsList, pdocument);
    }
    else if( options_.exists("print") == true )                                 // Print history entries from history file
    {
@@ -235,7 +235,7 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
    }
    else
    {
-      stringHistoryFileName = "cleaner-history.xml";                          // Default history file name
+      stringHistoryFileName = ".cleaner-history.xml";                          // Default history file name
       std::string stringPath = FolderGetHome_s();                               // Get the user home folder
       pathDirectory = std::filesystem::path(stringPath);                                     // Get the history path based on the operating system
    }
@@ -396,7 +396,7 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
       // Get history file from home directory
 		std::string stringPath = FolderGetHome_s();                             // Get the user home folder
       pathHistory = std::filesystem::path(stringPath);                        // Get the history path based on the operating system
-      pathHistory = pathHistory / "cleaner-history.xml";
+      pathHistory = pathHistory / ".cleaner-history.xml";
 	}
    else
    {
@@ -413,7 +413,7 @@ std::pair<bool, std::string> HistoryDelete_g(const gd::argument::arguments& argu
       }
       else if( std::filesystem::exists(pathHistory) == true )
       {
-         return { false, std::format( "Failed to remove history folder, file {} exists", pathHistory ) };
+         return { false, std::format( "Failed to remove history, file {} exists", pathHistory.string() ) };
       }
 
 		pdocument->MESSAGE_Display("Removed history file: " + pathHistory.string());
@@ -441,7 +441,9 @@ std::pair<bool, std::string> HistoryList_g(const gd::argument::arguments& argume
    if( stringHistoryFile.empty() == true ) return { false, "Failed to get history file path." };   
    if( std::filesystem::exists(stringHistoryFile) == false ) { return { false, "History file does not exist: " + stringHistoryFile }; }
 
-   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+
+   std::unique_ptr<gd::table::dto::table> ptableHistory;
+   pdocument->CACHE_Prepare("history", ptableHistory); // Get the history table from the cache
 
 
 }
@@ -569,7 +571,7 @@ std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ )
 
    if( iLocation == home || (iLocation == unknown && stringHistoryFile.empty() == true)  )
    {
-      stringHistoryFileName = "cleaner-history.xml";                          // Default history file name
+      stringHistoryFileName = ".cleaner-history.xml";                          // Default history file name
       pathDirectory = GetHistoryPath_s();                                     // Get the history path based on the operating system
       stringHistoryFile = ( pathDirectory / stringHistoryFileName ).string(); // Full path to the history file
    }
@@ -780,7 +782,7 @@ std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argum
  * 
  * @code
  * // Example usage: PrepareEmptyXml_s
- * auto [bOk, stringError] = PrepareEmptyXml_s("cleaner-history.xml");
+ * auto [bOk, stringError] = PrepareEmptyXml_s(".cleaner-history.xml");
  * if (!bOk) { std::cerr << "Error: " << stringError << std::endl; } 
  * else { std::cout << "Empty history XML prepared successfully." << std::endl; }
  * @endcode
@@ -940,6 +942,7 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
       std::string stringName = entry.child("name").text().get();
       std::string stringLine = entry.child("line").text().get();
       std::string stringAlias = entry.child("alias").text().get();
+      std::string stringDescription = entry.child("description").text().get();
       // Add the entry to the table  
       auto uRow = tableHistory.row_add_one();
 
@@ -954,6 +957,7 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
       tableHistory.cell_set(uRow, "name", stringName);
       tableHistory.cell_set(uRow, "line", stringLine);
       if( stringAlias.empty() == false ) { tableHistory.cell_set(uRow, "alias", stringAlias); }
+      if( stringDescription.empty() == false ) { tableHistory.cell_set(uRow, "description", stringDescription); }
    }
    return { true, "" };
 }
