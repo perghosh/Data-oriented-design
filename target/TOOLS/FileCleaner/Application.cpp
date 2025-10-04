@@ -3164,7 +3164,7 @@ std::pair<bool, std::string> CApplication::HistorySave_s(const std::string_view&
  *
  * This static method first attempts to find a local history file named ".cleaner-history.xml"
  * in the current directory and its parent directories. If not found, it then looks for a
- * history file named "cleaner-history.xml" in the user's home directory.
+ * history file named ".cleaner-history.xml" in the user's home directory.
  *
  * @param pathLocation A reference to a filesystem::path where the found history file's path will be stored.
  * @return std::pair<bool, std::string> Returns a pair where the first element is true if a history file was found,
@@ -3183,7 +3183,7 @@ std::pair<bool, std::string> CApplication::HistoryFindActive_s(std::filesystem::
       std::string stringHomePath;
       result_ = FolderGetHome_s( stringHomePath );
       if( result_.first == false ) { return result_; }
-      pathLocation = std::filesystem::path(stringHomePath) / "cleaner-history.xml"; // Default history location in user home directory
+      pathLocation = std::filesystem::path(stringHomePath) / ".cleaner-history.xml"; // Default history location in user home directory
       if( std::filesystem::exists(pathLocation) == false ) { return { false, "No history file found" }; }
    }
 
