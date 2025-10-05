@@ -158,6 +158,7 @@ public:
    void CACHE_Erase( gd::types::tag_temporary );
    /// Dump cache data to string
    std::string CACHE_Dump(const std::string_view& stringId);
+	/// Check if cache with specified id exists
    bool CACHE_Exists(const std::string_view& stringId) const;
 #ifndef NDEBUG
    bool CACHE_Exists_d( const std::string_view& stringId );

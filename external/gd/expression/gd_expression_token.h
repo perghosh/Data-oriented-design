@@ -36,6 +36,7 @@
 _GD_EXPRESSION_BEGIN 
 
 struct tag_formula {}; ///< tag for formula
+struct tag_formula_keyword {}; ///< tag for formula with keywords
 struct tag_expression {}; ///< tag for expression
 struct tag_postfix {}; ///< tag for postfix
 
@@ -162,6 +163,7 @@ struct token
    static const char* skip_whitespace_s(const char* piszBegin, const char* piszEnd);
    static std::pair<bool, std::string> parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_formula);
    static std::pair<bool, std::string> parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula);
+   static std::pair<bool, std::string> parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_formula_keyword);
    static std::pair<bool, std::string> compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix);
    static std::pair<bool, std::string> calculate_s( const std::vector<token>& vectorToken, value* pvalueResult );
    static std::pair<bool, std::string> calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_);
@@ -182,6 +184,9 @@ struct token
    static uint32_t to_type_s( uint32_t uType, enumTokenPart eTokenPart );
 
    static constexpr uint32_t token_type_s(const std::string_view& s_);
+
+	/// @brief read keyword operator from string, returns true if a keyword was found
+   static bool operator_read_keyword_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char** ppiszReadTo);
 };
 
 /// @brief parse expression string to tokens

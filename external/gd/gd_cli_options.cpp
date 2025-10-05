@@ -85,6 +85,22 @@ void options::add_global( const options& options_ )
    }
 }
 
+/// Add option that can be flag or option with value
+void options::add_flag_or_option(const option& option_)
+{
+   option optionAdd(option_);
+   optionAdd.set_flags((eOptionFlagFlag| eOptionFlagOption), 0);
+
+   // ## if option name is only one character and letter is not set then set letter to first character
+
+   if(optionAdd.name().length() == 1 && optionAdd.letter() == '\0' )
+   {
+      optionAdd.set_letter(optionAdd.name()[0]);                              // set letter to first character
+   }
+   
+   m_vectorOption.push_back( std::move(optionAdd) );
+}
+
 /// Get all values for name as variant_view's in list
 std::vector<gd::variant_view> options::get_all(const std::string_view& stringName) const
 {
@@ -120,18 +136,18 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
    // ## Loop arguments sent to application (starts at 1, first is the application name)
    for( int iPosition = m_uFirstToken; iPosition != iArgumentCount; iPosition++ )
    {                                                                                               assert( iPosition < iArgumentCount ); // iPosition cant pass iArgumentCount
-      const char* pbszArgument = ppbszArgumentValue[iPosition];                // current argument
+      const char* pbszArgument = ppbszArgumentValue[iPosition];               // current argument
 
       bool bOption = false;      // test if option
       bool bMayBeFlag = false;   // if no option then test for flag or abreviated option
       if( pbszArgument[0] == '-' && pbszArgument[1] == '-' ) bOption = true;
       else if( is_single_dash() == true && pbszArgument[0] == '-' ) { bOption = true; bMayBeFlag = true; }
 
-      if( bOption == true )                                                    // found option
+      if( bOption == true )                                                   // found option
       {
-         bAllowPositional = false;                                             // no more positional arguments are allowed
-         const char* pbszFindArgument = pbszArgument + 1;                      // move past first dash
-         if( *pbszFindArgument == '-' ) pbszFindArgument++;                    // move to argument name
+         bAllowPositional = false;                                            // no more positional arguments are allowed
+         const char* pbszFindArgument = pbszArgument + 1;                     // move past first dash
+         if( *pbszFindArgument == '-' ) pbszFindArgument++;                   // move to argument name
          poptionActive = find( pbszFindArgument );                             
 
          if(poptionActive == nullptr && bMayBeFlag == false )
@@ -139,15 +155,15 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
             /// Checks if parent options state is enabled and if parent option, then try to find value in parent
             if( is_parent() == true && poptionsRoot != nullptr ) poptionActive = poptionsRoot->find( pbszFindArgument );
          }
+
+         if(poptionActive == nullptr && is_flag(eFlagUnchecked) == false)     // unknown argument and we do not allow unknown arguments?
+         {
+            return error_s({ "Unknown option : ", pbszArgument });
+         }
          
          // ## if no option found and single dash options is not allowed 
          if( poptionActive != nullptr )
          {
-            if( poptionActive == nullptr && is_flag( eFlagUnchecked ) == false )// unknown argument and we do not allow unknown arguments?
-            {
-               return error_s( { "Unknown option : ", pbszArgument } );
-            }
-
             // ## check for flag if single dash is allowed
             if( bMayBeFlag == true && poptionActive->is_flag() == true )
             {

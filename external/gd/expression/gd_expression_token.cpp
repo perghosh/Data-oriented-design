@@ -20,8 +20,10 @@ constexpr uint8_t SEPARATOR_BIT = 0x10;             ///  , ;, :, ., ?, !, @
 constexpr uint8_t STRING_DELIMITER_BIT = 0x20;      ///< ", ', `
 constexpr uint8_t SPECIAL_CHAR_BIT = 0x40;
 constexpr uint8_t DEFAULT_BIT = 0x00;
+constexpr uint8_t KEYWORD_OPERATOR_START_BIT = 0x80;
 
-constexpr uint8_t puCharacterGroup_g[0x100] =
+/// Lookup table for character classification based om symbolic operators
+constexpr uint8_t puCharacterSymbolicGroup_g[0x100] =
 {
    //         0,   1,   2,   3,    4,   5,   6,   7,    8,   9,   A,   B,    C,   D,   E,   F
    /* 0 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x01,0x01,0x01,0x01, 0x01,0x01,0x00,0x00,  /* 0   - 15  */
@@ -33,6 +35,31 @@ constexpr uint8_t puCharacterGroup_g[0x100] =
    /* 5 */ 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x40, 0x40,0x40,0x48,0x04,  /* 80  - 95  P,Q,R,S,T,U,V,W,X,Y,Z,[,\,],^,_ */
    /* 6 */ 0x40,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04,  /* 96  - 111 `,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o */
    /* 7 */ 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x40, 0x48,0x40,0x40,0x00,  /* 112 - 127 p,q,r,s,t,u,v,w,x,y,z,{,|,},~,DEL */
+
+   /* 8 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 128 - 143 */
+   /* 9 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 144 - 159 */
+   /* A */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 160 - 175 */
+   /* B */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 176 - 191 */
+
+   /* C */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 192 - 207 */
+   /* D */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 208 - 223 */
+   /* E */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 224 - 239 */
+   /* F */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00   /* 240 - 255 */
+};
+
+/// Lookup table for character classification based om keyword operators
+constexpr uint8_t puCharacterKeywordGroup_g[0x100] =
+{
+   //         0,   1,   2,   3,    4,   5,   6,   7,    8,   9,   A,   B,    C,   D,   E,   F
+   /* 0 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x01,0x01,0x01,0x01, 0x01,0x01,0x00,0x00,  /* 0   - 15  */
+   /* 1 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 16  - 31  */
+   /* 2 */ 0x01,0x48,0x20,0x40, 0x40,0x48,0x48,0x20, 0x40,0x40,0x48,0x48, 0x10,0x48,0x12,0x48,  /* 32  - 47   ' ',!,",#,$,%,&,',(,),*,+,,,-,.,/ */
+   /* 3 */ 0x02,0x02,0x02,0x02, 0x02,0x02,0x02,0x02, 0x02,0x02,0x44,0x10, 0x48,0x48,0x48,0x40,  /* 48  - 63  0,1,2,3,4,5,6,7,8,9,:,;,<,=,>,? */
+
+   /* 4 */ 0x40,0x84,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x84,0x04,0x04, 0x04,0x84,0x84,0x84,  /* 64  - 79  @,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O */
+   /* 5 */ 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x84,0x04,0x04,0x40, 0x40,0x40,0x48,0x04,  /* 80  - 95  P,Q,R,S,T,U,V,W,X,Y,Z,[,\,],^,_ */
+   /* 6 */ 0x40,0x84,0x04,0x04, 0x04,0x04,0x04,0x04, 0x04,0x84,0x04,0x04, 0x04,0x84,0x84,0x84,  /* 96  - 111 `,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o */
+   /* 7 */ 0x04,0x04,0x04,0x04, 0x04,0x04,0x04,0x04, 0x84,0x04,0x04,0x40, 0x48,0x40,0x40,0x00,  /* 112 - 127 p,q,r,s,t,u,v,w,x,y,z,{,|,},~,DEL */
 
    /* 8 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 128 - 143 */
    /* 9 */ 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,  /* 144 - 159 */
@@ -96,7 +123,7 @@ value token::as_value() const
 inline const char* token::skip_whitespace_s(const char* piszBegin, const char* piszEnd)
 {
    const char* pisz_ = piszBegin;
-   while(pisz_ < piszEnd && (puCharacterGroup_g[static_cast<uint8_t>(*pisz_)] & WHITESPACE_BIT))
+   while(pisz_ < piszEnd && (puCharacterSymbolicGroup_g[static_cast<uint8_t>(*pisz_)] & WHITESPACE_BIT))
    {
       ++pisz_;
    }
@@ -131,9 +158,9 @@ uint32_t token::read_number_s(const char* piszBegin, const char* piszEnd, std::s
    const char* pisz_ = piszBegin;
    if( pisz_ < piszEnd && (*pisz_ == '-' || *pisz_ == '+') ) { ++pisz_; }      // Skip the sign
 
-   while( pisz_ < piszEnd && (puCharacterGroup_g[static_cast<uint8_t>(*pisz_)] & DIGIT_BIT) ) 
+   while( pisz_ < piszEnd && (puCharacterSymbolicGroup_g[static_cast<uint8_t>(*pisz_)] & DIGIT_BIT) ) 
    { 
-      uType |= puCharacterGroup_g[static_cast<uint8_t>(*pisz_)];               // Set the type
+      uType |= puCharacterSymbolicGroup_g[static_cast<uint8_t>(*pisz_)];               // Set the type
       ++pisz_; 
    }
 
@@ -223,9 +250,9 @@ std::pair<uint32_t, uint32_t> token::read_variable_and_s(const char* piszBegin, 
    const char* pisz_ = piszBegin;
 
    // ## read all characters, characters can be a-z, A-Z, 0-9, _, @, :
-   while( pisz_ < piszEnd && ( puCharacterGroup_g[static_cast<uint8_t>(*pisz_)] & ALPHABETIC_BIT ) )
+   while( pisz_ < piszEnd && ( puCharacterSymbolicGroup_g[static_cast<uint8_t>(*pisz_)] & ALPHABETIC_BIT ) )
    {
-      uType |= puCharacterGroup_g[static_cast<uint8_t>(*pisz_)] & (ALPHABETIC_BIT|SPECIAL_CHAR_BIT);               // Set the type
+      uType |= puCharacterSymbolicGroup_g[static_cast<uint8_t>(*pisz_)] & (ALPHABETIC_BIT|SPECIAL_CHAR_BIT);               // Set the type
       ++pisz_;
    }
 
@@ -265,7 +292,7 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
       piszPosition = skip_whitespace_s(piszPosition, piszEnd);                 // Skip whitespace
       if( piszPosition >= piszEnd ) { break; }  
 
-      uint8_t uCharacterType = puCharacterGroup_g[static_cast<uint8_t>(*piszPosition)];  // Get the type of the character
+      uint8_t uCharacterType = puCharacterSymbolicGroup_g[static_cast<uint8_t>(*piszPosition)];  // Get the type of the character
 
       if( uCharacterType & DIGIT_BIT )                                         // Number
       {
@@ -325,7 +352,7 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
                piszPosition += 2;
                continue;
             }
-            else if( piszPosition[0] == '-' )
+            else if( piszPosition[0] == '-' )                                  // special case to handle negate
             {
                auto type_ = vectorToken.empty() == false ? vectorToken.back().get_token_type() : token::token_type_s("OPERATOR");
                if( type_ == token::token_type_s("OPERATOR") )                  // Was previous token an operator
@@ -373,6 +400,161 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
 
 
       if( uCharacterType & SEPARATOR_BIT )                                           // Special character
+      {
+         uint32_t uTokenType = token::token_type_s( "SEPARATOR" );
+         vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
+         piszPosition++;
+         continue;
+      }
+
+      piszPosition++;
+   }
+
+   return { true, "" };
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Parses a string into tokens with keyword operator support.
+ *
+ * This function processes the input string and generates a vector of tokens.
+ * It handles keyword operators (and, or, not, in, is, xor, mod) in addition
+ * to all standard token types.
+ *
+ * @param piszBegin Pointer to the beginning of the input string.
+ * @param piszEnd Pointer to the end of the input string.
+ * @param vectorToken Vector to store the generated tokens.
+ * @param tag_formula_keyword Tag to indicate keyword operator parsing mode.
+ * @return A pair containing a boolean indicating success and a string with an error message if any.
+ */
+std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_formula_keyword )
+{
+   const char* piszPosition = piszBegin;                                       // Current position
+
+   /// ## Loop through the string and parse the tokens
+   while( piszPosition < piszEnd )
+   {
+      piszPosition = skip_whitespace_s(piszPosition, piszEnd);                 // Skip whitespace
+      if( piszPosition >= piszEnd ) { break; }  
+
+      uint8_t uCharacterType = puCharacterKeywordGroup_g[static_cast<uint8_t>(*piszPosition)];  // Get the type of the character
+
+      if( uCharacterType & DIGIT_BIT )                                         // Number
+      {
+         uint32_t uTokenType = token::token_type_s( "VALUE" );
+         std::string_view string_;
+         uint32_t uType = read_number_s(piszPosition, piszEnd, string_);
+         if( uType & SEPARATOR_BIT ) { uTokenType += to_type_s( eValueTypeDecimal, eTokenPartType ); }
+         else { uTokenType += to_type_s(eValueTypeInteger, eTokenPartType); }
+
+         vectorToken.emplace_back( token( uTokenType, string_ ) );
+         piszPosition += string_.length();
+         continue;
+      }
+
+      // ### Check for keyword operator, variable, method or reserved keyword
+      if( uCharacterType & ALPHABETIC_BIT )                                    // Identifier
+      {
+         // ### Try keyword operator first if character can start one
+         if( uCharacterType & KEYWORD_OPERATOR_START_BIT )
+         {
+            std::string_view stringKeyword_;
+            const char* piszEnd_ = nullptr;
+            if( operator_read_keyword_s(piszPosition, piszEnd, stringKeyword_, &piszEnd_) == true )
+            {
+               uint32_t uTokenType = token::token_type_s("OPERATOR");
+               vectorToken.emplace_back(token(uTokenType, stringKeyword_));
+               piszPosition = piszEnd_;
+               continue;
+            }
+         }
+
+         // ### Process as variable/function/label
+         std::string_view string_;
+         const char* piszEnd_ = nullptr;
+         auto [uType, uTokenType] = read_variable_and_s(piszPosition, piszEnd, string_, &piszEnd_);
+         if( uType != 0 )
+         {
+            if( uTokenType == token::token_type_s("VARIABLE") )
+            {
+               vectorToken.emplace_back(token(uTokenType, string_));
+            }
+            else if( uTokenType == token::token_type_s("FUNCTION") )
+            {
+               if( uType & SPECIAL_CHAR_BIT )                                  // If special char this has to have a ':' character
+               {
+                  uTokenType |= uint32_t(eFunctionNamespace);                  // add namespace flag to find method among namespaced methods
+                  vectorToken.emplace_back(token(uTokenType, string_));
+               }
+               else
+               {
+                  vectorToken.emplace_back(token(uTokenType, string_));
+               }
+            }
+            
+            piszPosition = piszEnd_;
+         }
+         continue;
+      }
+
+      if( uCharacterType & OPERATOR_BIT )                                      // Operator
+      {
+         uint32_t uTokenType = token::token_type_s( "OPERATOR" );
+         if( uCharacterType & SPECIAL_CHAR_BIT )
+         {
+            if( piszPosition[1] == '=' || piszPosition[1] == '&' || piszPosition[1] == '|' )       // Handle special operators that have two characters like >=, <=, == etc
+            {
+               vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 2)));
+               piszPosition += 2;
+               continue;
+            }
+            else if( piszPosition[0] == '-' )                                  // special case to handle negate
+            {
+               auto type_ = vectorToken.empty() == false ? vectorToken.back().get_token_type() : token::token_type_s("OPERATOR");
+               if( type_ == token::token_type_s("OPERATOR") )                  // Was previous token an operator
+               {
+                  // ## this has to be a unary operator for negative number try to read number
+                  uTokenType = token::token_type_s( "VALUE" );                 // value token
+                  std::string_view string_; // string that gets value
+                  uint32_t uType = read_number_s(piszPosition, piszEnd, string_);// read number
+                  if( uType & SEPARATOR_BIT ) { uTokenType += to_type_s( eValueTypeDecimal, eTokenPartType ); } // is it decimal?
+                  else { uTokenType += to_type_s(eValueTypeInteger, eTokenPartType); } // integer
+
+                  vectorToken.emplace_back( token( uTokenType, string_ ) );
+                  piszPosition += string_.length();
+                  continue;
+               }
+            }
+         }
+
+         vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 1)));
+         piszPosition++;
+         continue;
+      }
+
+      if( uCharacterType & STRING_DELIMITER_BIT )                              // String delimiter
+      {
+         std::string_view string_;
+         const char* piszEnd_ = nullptr;
+         uint32_t uType = read_string_s(piszPosition, piszEnd, string_, &piszEnd_);
+         if( uType != 0 )
+         {
+            uint32_t uTokenType = token::token_type_s("VALUE") + to_type_s(eValueTypeString, eTokenPartType);
+            vectorToken.emplace_back( token( uTokenType, string_ ) );
+            piszPosition = piszEnd_;
+         }
+         continue;
+      }
+
+      if( uCharacterType & SPECIAL_CHAR_BIT )                                  // Special character
+      {
+         uint32_t uTokenType = token::token_type_s( "SPECIAL_CHAR" );
+         vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
+         piszPosition++;
+         continue;
+      }
+
+      if( uCharacterType & SEPARATOR_BIT )                                     // Separator
       {
          uint32_t uTokenType = token::token_type_s( "SEPARATOR" );
          vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
@@ -931,6 +1113,87 @@ value token::calculate_s(const std::string_view& stringExpression, std::unique_p
    }
 
    return calculate_s(stringExpression, *pruntime.get() );
+}
+
+/** --------------------------------------------------------------------------
+ * @brief Reads a keyword operator from the input string.
+ *
+ * This function checks if the current position contains a keyword operator
+ * (like 'and', 'or', 'not', 'in', etc.) and returns it if found.
+ *
+ * @code
+ * // sample usage
+ * const char* input = "x and y";
+ * const char* end = input + strlen(input);
+ * std::string_view result;
+ * const char* readTo;
+ * bool found = token::operator_read_keyword_s(input + 2, end, result, &readTo);
+ * if(found) {
+ *    std::cout << "Found operator: " << result << std::endl;
+ * }
+ * @endcode
+ *
+ * @param piszBegin Pointer to the beginning of the input string.
+ * @param piszEnd Pointer to the end of the input string.
+ * @param string_ Reference to a string_view to store the found operator.
+ * @param ppiszReadTo Pointer to a pointer to store the position after the operator.
+ * @return true if a keyword operator was found, false otherwise.
+ */
+bool token::operator_read_keyword_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char** ppiszReadTo)
+{
+   // Define keyword operators - ordered by length (longest first) to match greedily
+   static const std::pair<const char*, size_t> ppairKeywordOperators[] = {
+      {"not", 3},
+      {"and", 3},
+      {"or", 2},
+      {"in", 2},
+      {"is", 2},
+      {"xor", 3},
+      {"mod", 3}
+   };
+
+   const char* piPosition = piszBegin;
+
+	if(piszEnd - piPosition < 3) { return false; }                             // Minimum length for keyword operators is 2 characters
+   
+   // ## Try to match each keyword operator ..................................
+
+   for(const auto& [piKeyword, uLength] : ppairKeywordOperators)
+   {
+      bool bMatch = true; // do we have a match
+      for(size_t u = 0; u < uLength; ++u)
+      {
+         char iChar = piPosition[u];
+         char iCharKeyword = piKeyword[u];
+         // Simple case-insensitive comparison (ASCII only)
+         if(iChar >= 'A' && iChar <= 'Z') { iChar = iChar - 'A' + 'a'; }
+         if(iChar != iCharKeyword) { bMatch = false; break; }
+      }
+      
+      if(bMatch == true)
+      {
+         // Verify that the keyword is not part of a larger identifier
+         // Check character before (if not at start)
+         if(piPosition > piszBegin)
+         {
+            uint8_t uPrevType = puCharacterSymbolicGroup_g[static_cast<uint8_t>(piPosition[-1])];
+            if(uPrevType & (ALPHABETIC_BIT | DIGIT_BIT)) { continue; }
+         }
+         
+         if(piPosition + uLength < piszEnd)                                   // Check character after
+         {
+            uint8_t uNextType = puCharacterSymbolicGroup_g[static_cast<uint8_t>(piPosition[uLength])];
+            if(uNextType & (ALPHABETIC_BIT | DIGIT_BIT)) { continue; }
+         }
+         
+         // Found a valid keyword operator
+         string_ = std::string_view(piPosition, uLength);
+         if(ppiszReadTo != nullptr) { *ppiszReadTo = piPosition + uLength; }
+         return true;
+      }
+   }
+   
+   return false;
 }
 
 

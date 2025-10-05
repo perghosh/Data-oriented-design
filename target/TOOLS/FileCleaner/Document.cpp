@@ -2402,42 +2402,6 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
 
    RunExpression_Where_g(stringExpression, ptable_);
 
-   // ## prepare formula
-
-	// replace found column names with formula used to extract value from row in table
-
-   /*
-   // Lock cache for thread safety
-   std::unique_lock lock(m_sharedmutexTableCache);
-
-   // Get the table from cache (prepare if needed)
-   gd::table::dto::table* ptable = ptable_ ? ptable_ : CACHE_Get(stringId, true);
-   if(!ptable) {
-      return { false, "CACHE_Where: Table not found for id: " + std::string(stringId) };
-   }
-
-   // Prepare result table
-   auto resultTable = std::make_unique<gd::table::dto::table>(*ptable);
-
-   // Filter rows based on 'stringWhere' expression
-   // This assumes 'stringWhere' is a filter expression that can be parsed/applied.
-   // You may need to adapt this logic to your actual filter implementation.
-   size_t filteredCount = 0;
-   for(const auto& row : ptable->rows()) {
-      // Example: Assume row has a method 'matches_where' that takes a variant_view
-      if(row.matches_where(stringWhere)) {
-         resultTable->add_row(row);
-         ++filteredCount;
-      }
-   }
-
-   // Optionally, update the cache with the filtered table
-   // CACHE_Add(std::move(*resultTable), stringId);
-
-   // Return result
-   std::string message = "CACHE_Where: Filtered " + std::to_string(filteredCount) + " rows for id: " + std::string(stringId);
-
-   */
    return { true, "" };
 }
 
@@ -2601,6 +2565,11 @@ std::string CDocument::CACHE_Dump(const std::string_view& stringId)
    return stringCliTable;
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Check if cache with specified id exists
+ * @param stringId id to check
+ * @return true if cache exists, false otherwise
+ */
 bool CDocument::CACHE_Exists(const std::string_view& stringId) const
 {
    for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
