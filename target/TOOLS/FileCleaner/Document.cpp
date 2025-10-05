@@ -2032,7 +2032,17 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       if( p_ == nullptr )
       {
          // file table: key | path | size | date | extension  
-         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 20, "extension"}, {"int32", 0, "level"} }, gd::table::tag_prepare{}));
+         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "days"}, {"string", 20, "extension"}, {"int32", 0, "level"} }, gd::table::tag_prepare{}));
+         ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
+      }
+   }
+   else if(stringId == "file-dir-all")                                         // file cache, used to store file information  
+   {
+      auto p_ = CACHE_Get(stringId, false);
+      if(p_ == nullptr)
+      {
+         // file table: key | path | size | date | extension  
+         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "days"}, {"string", 20, "extension"}, {"int32", 0, "level"}, {"int32", 0, "year"}, {"int32", 0, "month"}, {"int32", 0, "day"} }, gd::table::tag_prepare{}));
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }
@@ -2340,6 +2350,8 @@ std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& strin
    int iColumn = -1;
    if( ptable_ == nullptr ) { ptable_ = CACHE_Get(stringId, false); }
                                                                                                    assert(ptable_ != nullptr);
+   if(ptable_->size() == 0) { return { true, "" }; } // empty table, nothing to sort
+
    if( column_.is_string() )
    {
       std::string stringColumn = column_.as_string();

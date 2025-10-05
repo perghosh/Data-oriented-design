@@ -108,12 +108,55 @@ enum enumTokenPart
 };
 
 /**
- * \brief
+ * @brief Represents a token in an expression.
  *
- *
+ * A token is a fundamental unit of an expression, such as an operator, operand, or identifier.
+ * Each token has a type and a name, which help in parsing and evaluating expressions.
+ * 
+ * The name in this token is a string view that references the original expression string, avoiding unnecessary copies
+ * or using the list of operators that exists as from the static member method called operator_s
  */
 struct token 
 {
+   /// @brief constant values for operator types
+   enum enumOperator
+   {
+      eOperatorNone              = 0,   //  0: no operator
+      eOperatorAdd               = 1,   //  1: +
+      eOperatorSubtract          = 2,   //  2: -
+      eOperatorAddAssign         = 3,   //  3: +=
+      eOperatorAssign            = 4,   //  4: =
+      eOperatorBitwiseAnd        = 5,   //  5: &
+      eOperatorBitwiseAndAssign  = 6,   //  6: &=
+      eOperatorBitwiseNot        = 7,   //  7: ~
+      eOperatorBitwiseOr         = 8,   //  8: |
+      eOperatorBitwiseOrAssign   = 9,   //  9: |=
+      eOperatorBitwiseXor        = 10,  // 10: ^
+      eOperatorBitwiseXorAssign  = 11,  // 11: ^=
+      eOperatorComma             = 12,  // 12: ,
+      eOperatorDecrement         = 13,  // 13: --
+      eOperatorDivide            = 14,  // 14: /
+      eOperatorDivideAssign      = 15,  // 15: /=
+      eOperatorEqual             = 16,  // 16: ==
+      eOperatorGreaterThan       = 17,  // 17: >
+      eOperatorGreaterThanEqual  = 18,  // 18: >=
+      eOperatorIncrement         = 19,  // 19: ++
+      eOperatorLeftShift         = 20,  // 20: <<
+      eOperatorLeftShiftAssign   = 21,  // 21: <<=
+      eOperatorLessThan          = 22,  // 22: <
+      eOperatorLessThanEqual     = 23,  // 23: <=
+      eOperatorLogicalAnd        = 24,  // 24: &&
+      eOperatorLogicalNot        = 25,  // 25: !
+      eOperatorLogicalOr         = 26,  // 26: ||
+      eOperatorModulus           = 27,  // 27: %
+      eOperatorModulusAssign     = 28,  // 28: %=
+      eOperatorMultiply          = 29,  // 29: *
+      eOperatorMultiplyAssign    = 30,  // 30: *=
+      eOperatorNotEqual          = 31,  // 31: !=
+      eOperatorRightShift        = 32,  // 32: >>
+      eOperatorRightShiftAssign  = 33   // 33: >>=
+   };
+
 // ## construction ------------------------------------------------------------
    token() : m_uType(0), m_stringName("") {}
    token(uint32_t uType, const std::string_view& string_) : m_uType(uType), m_stringName(string_) {}
@@ -160,10 +203,20 @@ struct token
    std::string_view m_stringName;
 
 // ## free functions ----------------------------------------------------------
+
+   // ## move methods
+
    static const char* skip_whitespace_s(const char* piszBegin, const char* piszEnd);
+
+   // ## parse methods
+
    static std::pair<bool, std::string> parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_formula);
    static std::pair<bool, std::string> parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula);
    static std::pair<bool, std::string> parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_formula_keyword);
+   static std::pair<bool, std::string> parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula_keyword);
+
+	// ## compile and calculate methods
+
    static std::pair<bool, std::string> compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix);
    static std::pair<bool, std::string> calculate_s( const std::vector<token>& vectorToken, value* pvalueResult );
    static std::pair<bool, std::string> calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_);
@@ -176,6 +229,8 @@ struct token
    static value calculate_s( const std::string_view& stringExpression, std::unique_ptr<runtime>& pruntime );
    static value calculate_s( const std::string_view& stringExpression );
 
+	// ## read methods
+
    static uint32_t read_number_s(const char* piszBegin, const char* piszEnd, std::string_view& string_); 
    static uint32_t read_string_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo );
    static std::pair<uint32_t, uint32_t> read_variable_and_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo); 
@@ -185,14 +240,25 @@ struct token
 
    static constexpr uint32_t token_type_s(const std::string_view& s_);
 
-	/// @brief read keyword operator from string, returns true if a keyword was found
+   /// @brief read keyword operator from string, returns true if a keyword was found
    static bool operator_read_keyword_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char** ppiszReadTo);
+
+   // ## operator methods
+
+   static std::string_view operator_s(uint32_t uOperator);
+   static uint32_t operator_s(std::string_view stringOperator);
 };
 
 /// @brief parse expression string to tokens
 inline std::pair<bool, std::string> token::parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula) {
    return parse_s(stringExpression.data(), stringExpression.data() + stringExpression.length(), vectorToken, tag_formula());
 }
+
+/// @brief parse expression string to tokens
+inline std::pair<bool, std::string> token::parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula_keyword) {
+   return parse_s(stringExpression.data(), stringExpression.data() + stringExpression.length(), vectorToken, tag_formula_keyword());
+}
+
 
 /// @brief calculate_s that is simplified  where this version removes then need for runtime
 inline std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vectorToken, value* pvalueResult) {

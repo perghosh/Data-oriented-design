@@ -1,4 +1,4 @@
-/**
+/**                                                                            @CODE [tag: expression, where] [description: run expressions in file cleaner]
  * \file Run.cpp
  * \brief Contains the implementation of expression methods used for cleaner
  * 
@@ -234,13 +234,13 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
    // ## convert string to tokens
 
    std::vector<gd::expression::token> vectorToken;
-   std::pair<bool, std::string> result_ = gd::expression::token::parse_s(stringExpression, vectorToken, gd::expression::tag_formula{});
+   std::pair<bool, std::string> result_ = gd::expression::token::parse_s(stringExpression, vectorToken, gd::expression::tag_formula_keyword{});
    if( result_.first == false ) { return result_; }
 
    // ## compile tokens and that means to convert tokens to postfix, place them in correct order to be processed
 
    std::vector<gd::expression::token> vectorPostfix;
-   result_ = gd::expression::token::compile_s(vectorToken, vectorPostfix, gd::expression::tag_postfix{});
+	result_ = gd::expression::token::compile_s(vectorToken, vectorPostfix, gd::expression::tag_postfix{});// convert to postfix notation
    if( result_.first == false ) { return result_; }
 
    // ## create runtime and add methods for operations

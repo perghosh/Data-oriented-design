@@ -80,7 +80,7 @@ namespace detail {
             auto now_ = std::chrono::system_clock::now();
             auto diff_ = now_ - sctp_;
             auto days_ = std::chrono::duration_cast<std::chrono::days>(diff_).count();
-            ptable_->cell_set(uRow, "date", static_cast<double>(days_), gd::types::tag_convert{});
+            ptable_->cell_set(uRow, "days", static_cast<double>(days_), gd::types::tag_convert{});
          }
 
          std::string stringFilePath = pathFile.string();
@@ -143,7 +143,7 @@ namespace detail {
             auto now_ = std::chrono::system_clock::now();
             auto diff_ = now_ - sctp_;
             auto days_ = std::chrono::duration_cast<std::chrono::days>(diff_).count();
-            ptable_->cell_set(uRow, "date", static_cast<double>(days_), gd::types::tag_convert{});
+            ptable_->cell_set(uRow, "days", static_cast<double>(days_), gd::types::tag_convert{});
          }
 
          std::string stringFilePath = pathFile.string();

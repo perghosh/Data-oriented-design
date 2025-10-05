@@ -1,4 +1,4 @@
-/**                                                                            @TAG #ui.cli #command.dir [description: declaration for dir methods]
+/**                                                                            @CODE [tag: cli, command] [description: declaration for dir methods]
 * @file CLIDir.h
 *  
 */
