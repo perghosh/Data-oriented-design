@@ -40,13 +40,18 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
       pdocument->GetApplication()->IGNORE_Add(vectorIgnore);                  // add ignore patterns to the application
    }
 
-
-   // std::string stringTableResultId = gd::uuid(gd::uuid::tag_random{}).to_string(); // create a random id for the table result
+	// ## get recursive value .................................................
 
    unsigned uRecursive = options_["recursive"].as_uint();
-   if(uRecursive == 0 && options_.exists("R") == true) uRecursive = 16;        // set to 16 if R is set, find all files
+   if(uRecursive == 0 && options_.exists("R") == true)
+   {
+      if(options_["R"].is_bool() == true) uRecursive = 16;                    // set to 16 if R is set, find all files
+      else { uRecursive = options_["R"].as_uint(); }
+   }
 
    pdocument->GetApplication()->UpdateApplicationState();
+
+	// ## get filter value ....................................................
 
    std::string stringFilter = options_["filter"].as_string();
    if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" ) 
@@ -54,6 +59,8 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
       stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
       if( uRecursive == 0 ) uRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
    }
+
+	// ## perform the pattern operation if found ..............................
 
    if( options_.exists("pattern") == true )                                    // 
    {
@@ -80,9 +87,11 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
       if( result_.first == false ) return result_;
    }
 
+	// ## if where and sort then filter and sort result .......................
+
    if(options_.exists("where") == true)
    {
-      pdocument->CACHE_Where("file-dir", options_["where"]);                  // filter table based on where condition
+      auto result_ = pdocument->CACHE_Where("file-dir", options_["where"]);   // filter table based on where condition
    }
 
    if( options_.exists("sort") == true )
@@ -92,7 +101,6 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 
 
    DirPrint_g(pdocument);                                                     // print the table to the console
-
 
    return { true, "" };
 }

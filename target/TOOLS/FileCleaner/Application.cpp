@@ -294,7 +294,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       std::string stringArgument = gd::cli::options::to_string_s(iArgumentCount, ppbszArgument, 1);
 #ifndef NDEBUG
       // Debug: parse the arguments into a vector of strings to check if parsing works correctly
-      auto vectorArgument_d = gd::cli::options::parse_s(stringArgument);                           assert( vectorArgument_d.size() == (iArgumentCount - 1) );
+      auto vectorArgument_d = gd::cli::options::parse_s(stringArgument);                           assert( vectorArgument_d.size() == (iArgumentCount - 1) ); 
 #endif
 
 
@@ -305,7 +305,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       // ## Parse the command-line arguments
 
-      auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);
+      auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);// @CODE [tag: parse]
       if( bOk == false ) 
       { 
          std::string stringHelp;
@@ -2124,7 +2124,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "script", "Execute an **external script file** for advanced processing of the listed files. Useful for custom formatting or filtering." });
       optionsCommand.add({ "sort", "Sort the listed files based on a **specified column name** (e.g., name, size, date). This organizes the output for easier analysis." });
       optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
-      optionsCommand.add_flag( {"R", "Enable **recursive listing** of files in subfolders. Sets the recursion depth to 16, ensuring all subdirectories are scanned."} );
+      optionsCommand.add_flag_or_option( {"R", "Enable **recursive listing** of files in subfolders. Sets the recursion depth to 16, ensuring all subdirectories are scanned."} );
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, enabling seamless integration with the IDE."} );
       optionsCommand.add_flag( {"win", "Enable **Windows-specific functionality**, adapting the listing behavior to leverage Windows operating system features."} );
@@ -2172,7 +2172,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "run", "Run history entry, this will run the command from history" });
       optionsCommand.add({ "index", "Specify history entry by index" });
       optionsCommand.add({ "set-alias", "Set alias for history entry" });
-      optionsCommand.add({ "list", "Lists all history entries" });
+      optionsCommand.add_flag_or_option({ "list", "Lists all history entries" });
       optionsCommand.add({ "remove", "Remove history entries" });
       optionsCommand.add({ "width", "Width for output" });
       optionsCommand.add_flag( {"create", "Initialize history logic, creates folders and files needed to manage history, this also enables configuration settings"} );

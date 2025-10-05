@@ -50,7 +50,15 @@ static std::pair<bool, std::string> GetArgument_s( const std::vector<value>& vec
 }
 
 
-/// sample: `get_cell_value(table, row, column)`
+/** --------------------------------------------------------------------------
+ * @brief Retrieves the value of a cell from a table object, given row and column indices or names.
+ * 
+ * Table used is a gd::table::dto::table object. And table need to be inserted into the expression engine as a pointer.
+ * 
+ * @param vectorArgument A vector containing the column identifier (string or integer), row index (integer), and a pointer to the table object.
+ * @param pvalueReturn Pointer to a value object where the retrieved cell value will be stored.
+ * @return A pair consisting of a boolean indicating success or failure, and a string containing an error message if applicable.
+ */
 std::pair<bool, std::string> GetCellValue_s( const std::vector<value>& vectorArgument, value* pvalueReturn )
 {                                                                                                  assert(vectorArgument.size() > 2);
    auto object_ = vectorArgument[2];                                                               assert(object_.is_pointer() == true);
@@ -64,6 +72,15 @@ std::pair<bool, std::string> GetCellValue_s( const std::vector<value>& vectorArg
    if(column_.is_string() == true )
    {
 		auto variantview_ = ptable_->cell_get_variant_view((uint64_t)iRow, column_.as_string());
+      *pvalueReturn = to_value_g( variantview_ );
+
+      return { true, "" };
+   }
+   else if(column_.is_integer() == true)
+   {
+      unsigned uColumn = (unsigned)column_.as_integer();
+		if(uColumn >= ptable_->get_column_count()) { return { false, "Column index out of range." }; }
+      auto variantview_ = ptable_->cell_get_variant_view((uint64_t)iRow, uColumn);
       *pvalueReturn = to_value_g( variantview_ );
 
       return { true, "" };

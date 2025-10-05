@@ -126,13 +126,15 @@ public:
    {
       eOptionFlagGlobal    = 0b0000'0000'0000'0001,   ///< option is global, valid for all commands 
       eOptionFlagSingle    = 0b0000'0000'0000'0010,   ///< option is only allowed if alone
+      eOptionFlagFlag      = 0b0000'0000'0000'0100,   ///< option can be used as flag
+		eOptionFlagOption    = 0b0000'0000'0000'1000,   ///< option is used with value
    };
 
    enum enumOptionType
    {
       eOptionTypeCommand   = 1, ///< command type
       eOptionTypeOption    = 2, ///< option type
-      eOptionTypeFlag      = 3, ///< flag type
+      eOptionTypeFlag      = 4, ///< flag type
    };
 
    // 0TAG0option.options
@@ -176,7 +178,7 @@ public:
 
       ~option() {}
 
-      bool is_flag() const noexcept { return m_uType & gd::types::eTypeNumberBool; }
+      bool is_flag() const noexcept { return m_uType & gd::types::eTypeNumberBool || (m_uFlags & eOptionFlagFlag) == eOptionFlagFlag; }
       bool is_global() const noexcept { return (m_uFlags & eOptionFlagGlobal) == eOptionFlagGlobal; }
 
       std::string_view name() const { return m_stringName; }
@@ -186,7 +188,8 @@ public:
       void set_type( unsigned uType ) { m_uType = uType; }
       option& type( unsigned uType ) { m_uType = uType; return *this; }
       option& type( const std::string_view& stringType ) { m_uType = gd::types::type_g( stringType ); return *this; }
-      void set_flags( unsigned uFlags ) { m_uType = uFlags; }
+      void set_flags( unsigned uFlags ) { m_uFlags = uFlags; }
+		void set_flags(unsigned uSet, unsigned uClear) { m_uFlags |= uSet; m_uFlags &= ~uClear; }
       option& flags( unsigned uFlags ) { m_uFlags = uFlags; return *this; }
       std::string_view description() const { return m_stringDescription; }
 
@@ -303,6 +306,8 @@ public:
    void add_flag( const option& optionSource );
    /// Add globals option rules from passed options (checks all global option in options )
    void add_global( const options& options_ );
+	/// Add option that can be flag or option with value
+   void add_flag_or_option(const option& option_);
 
 
    /// Parse application arguments (like they are sent to `main`)

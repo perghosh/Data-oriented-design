@@ -79,8 +79,6 @@ inline std::pair<bool, std::string>  XML_ReadFile_s(gd::table::dto::table& table
 
 static std::pair<bool, std::string> XML_Write_s(std::string_view stringHistoryFile, const gd::table::dto::table& tableHistory, std::string_view stringSection);
 
-static std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::arguments& argumentsTable);
-
 static std::string FILE_GetHistoryFile_s( const gd::argument::arguments& arguments_ );
 
 static std::string DATE_CurrentTime_s();
@@ -443,9 +441,16 @@ std::pair<bool, std::string> HistoryList_g(const gd::argument::arguments& argume
 
 
    std::unique_ptr<gd::table::dto::table> ptableHistory;
-   pdocument->CACHE_Prepare("history", ptableHistory); // Get the history table from the cache
+   pdocument->CACHE_Prepare("history", &ptableHistory); // Get the history table from the cache
+
+   auto result_ = XML_ReadFile_s(*ptableHistory, argumentsList, [pdocument](std::string_view message_) {
+      if( pdocument ) { pdocument->MESSAGE_Display(message_); }
+	});
+
+   if(result_.first == false) { return { false, "Failed to read history file: " + stringHistoryFile }; }
 
 
+	return { true, "" };
 }
 
 
@@ -520,29 +525,6 @@ std::pair<bool, std::string> XML_Write_s(std::string_view stringHistoryFile, con
    return { true, "" };
 }
 
-
-
-
-/*
-std::pair<bool, std::string> XML_ClearFile_s(const gd::argument::arguments& argumentsClear)
-{
-   return { true, "" };
-}
-*/
-
-std::unique_ptr<gd::table::dto::table> CreateTable_s(const gd::argument::arguments& argumentsTable)
-{
-   if( argumentsTable.exists("print") == true && argumentsTable["print"].as_bool() == true )
-   {
-      auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
-      return std::move(ptable);
-   }
-   else
-   {
-      auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"int32", 0, "index"}, {"rstring", 0, "date"}, {"rstring", 0, "name"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
-      return std::move(ptable);
-   }
-}
 
 /** ---------------------------------------------------------------------------
  * @brief Retrieves the full path to the history file based on the provided arguments, checking for its existence.
@@ -650,8 +632,6 @@ std::pair<bool, std::string> HistoryGetRow_g(const gd::argument::arguments& argu
    std::string stringFileName = argumentsRow["file"].as_string();
                                                                                assert(!stringFileName.empty());
 
-   //auto ptable = CreateTable_s(argumentsRow);
-   //CDocument document;
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
    XML_ReadFile_s(*ptable, argumentsRow); // Read the history file into the table
 
@@ -923,7 +903,6 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
    if( stringFileName.empty() == true ) { return { false, "No history file found." }; } // No history file found
 
    if( callback_ ) { callback_("Reading history file: " + stringFileName); }
-   //auto ptable = std::make_unique<gd::table::dto::table>(gd::table::dto::table(0u, { {"rstring", 0, "date"}, {"rstring", 0, "command"}, {"rstring", 0, "line"} }, gd::table::tag_prepare{}));
 
    pugi::xml_document xmldocument;
    pugi::xml_parse_result xmlparseresult_ = xmldocument.load_file(stringFileName.c_str());
