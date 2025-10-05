@@ -502,13 +502,7 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
          uint32_t uTokenType = token::token_type_s( "OPERATOR" );
          if( uCharacterType & SPECIAL_CHAR_BIT )
          {
-            if( piszPosition[1] == '=' || piszPosition[1] == '&' || piszPosition[1] == '|' )       // Handle special operators that have two characters like >=, <=, == etc
-            {
-               vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 2)));
-               piszPosition += 2;
-               continue;
-            }
-            else if( piszPosition[0] == '-' )                                  // special case to handle negate
+            if( piszPosition[0] == '-' )                                  // special case to handle negate
             {
                auto type_ = vectorToken.empty() == false ? vectorToken.back().get_token_type() : token::token_type_s("OPERATOR");
                if( type_ == token::token_type_s("OPERATOR") )                  // Was previous token an operator
