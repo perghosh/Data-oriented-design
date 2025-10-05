@@ -699,6 +699,359 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
    return { true, "" };
 }
 
+
+/** --------------------------------------------------------------------------
+ * @brief Compiles the input tokens preserving their order (no precedence handling).
+ *
+ * This function takes a vector of tokens and outputs them in order, only handling
+ * parentheses and function calls. Operators are output immediately without
+ * precedence-based reordering. Use this when tokens are already in correct order.
+ *
+ * @param vectorIn Input vector of tokens to be compiled.
+ * @param vectorOut Output vector to store the compiled tokens.
+ * @param tag_postfix_no_precedence Tag to indicate order-preserving compilation.
+ * @return A pair containing a boolean indicating success and a string with an error message if any.
+ */
+/** --------------------------------------------------------------------------
+ * @brief Compiles the input tokens preserving their order (no precedence handling).
+ *
+ * This function takes a vector of tokens and outputs them in order, only handling
+ * parentheses and function calls. Operators are output immediately without
+ * precedence-based reordering. Use this when tokens are already in correct order.
+ *
+ * @param vectorIn Input vector of tokens to be compiled.
+ * @param vectorOut Output vector to store the compiled tokens.
+ * @param tag_postfix_no_precedence Tag to indicate order-preserving compilation.
+ * @return A pair containing a boolean indicating success and a string with an error message if any.
+ */
+std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix_no_precedence)
+{
+   std::stack<token> stackOperator;
+
+   for( const auto& token_ : vectorIn )
+   {
+#ifndef NDEBUG
+      auto stringToken_d = token_.get_name();
+#endif
+
+      uint32_t uTokenType = token_.get_token_type();
+      switch( uTokenType )
+      {
+      case token_type_s("OPERATOR"):
+         {
+            // No precedence checking - just output operator immediately
+            vectorOut.push_back(token_);
+         }
+      break;
+      case token_type_s("VALUE"):
+         vectorOut.push_back(token_);
+      break;
+      case token_type_s("VARIABLE"):
+         vectorOut.push_back(token_);
+      break;
+      case token_type_s("FUNCTION"):
+         stackOperator.push(token_);
+      break;
+      case token::token_type_s("SEPARATOR"):
+         {
+            auto stringToken = token_.get_name();
+            char iCharacter = stringToken[0];
+            if( iCharacter == ',' )
+            {
+               if( stackOperator.empty() == false )
+               {
+                  auto& tokenTop = stackOperator.top();
+                  if( tokenTop.get_token_type() == token_type_s("VALUE") || tokenTop.get_token_type() == token_type_s("VARIABLE") ) 
+                  { 
+                     vectorOut.push_back(std::move(tokenTop));
+                     stackOperator.pop();
+                  }
+               }
+            }
+            else if( iCharacter == ';' )
+            {
+               while( stackOperator.empty() == false )
+               {
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+               vectorOut.push_back(std::move(token_));
+            }
+            else { return { false, "[compile_s] - Unsupported separator: " + std::string(stringToken) }; }
+         }
+      break;
+
+      case token_type_s("SPECIAL_CHAR"):
+         {
+            auto stringToken = token_.get_name();
+            char iCharacter = stringToken[0];
+            if( iCharacter == '(' )
+            {
+               stackOperator.push(token_);
+            }
+            else if( iCharacter == ')' )
+            {
+               while( stackOperator.empty() == false )
+               {
+                  auto stringOperator = stackOperator.top().get_name();
+                  if( stringOperator == "(" ) { break; }
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+               if( stackOperator.empty() == false ) { stackOperator.pop(); }
+            }
+            else
+            {
+               vectorOut.push_back(token_);
+            }
+         }
+      break;
+
+      default:
+         assert( false );
+         break;
+      }
+   }
+
+   while( stackOperator.empty() == false )
+   {
+      vectorOut.push_back( stackOperator.top() );
+      stackOperator.pop();
+   }
+
+   return { true, "" };
+}
+
+/*
+std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix_no_precedence)
+{
+   std::stack<token> stackOperator;
+
+   for( const auto& token_ : vectorIn )
+   {
+#ifndef NDEBUG
+      auto stringToken_d = token_.get_name();
+#endif
+
+      uint32_t uTokenType = token_.get_token_type();
+      switch( uTokenType )
+      {
+      case token_type_s("OPERATOR"):
+         {
+            // No precedence checking - just output operator immediately
+            vectorOut.push_back(token_);
+         }
+      break;
+      case token_type_s("VALUE"):
+         vectorOut.push_back(token_);
+      break;
+      case token_type_s("VARIABLE"):
+         vectorOut.push_back(token_);
+      break;
+      case token_type_s("FUNCTION"):
+         stackOperator.push(token_);
+      break;
+      case token::token_type_s("SEPARATOR"):
+         {
+            auto stringToken = token_.get_name();
+            char iCharacter = stringToken[0];
+            if( iCharacter == ',' )
+            {
+               if( stackOperator.empty() == false )
+               {
+                  auto& tokenTop = stackOperator.top();
+                  if( tokenTop.get_token_type() == token_type_s("VALUE") || tokenTop.get_token_type() == token_type_s("VARIABLE") ) 
+                  { 
+                     vectorOut.push_back(std::move(tokenTop));
+                     stackOperator.pop();
+                  }
+               }
+            }
+            else if( iCharacter == ';' )
+            {
+               while( stackOperator.empty() == false )
+               {
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+               vectorOut.push_back(std::move(token_));
+            }
+            else { return { false, "[compile_s] - Unsupported separator: " + std::string(stringToken) }; }
+         }
+      break;
+
+      case token_type_s("SPECIAL_CHAR"):
+         {
+            auto stringToken = token_.get_name();
+            char iCharacter = stringToken[0];
+            if( iCharacter == '(' )
+            {
+               stackOperator.push(token_);
+            }
+            else if( iCharacter == ')' )
+            {
+               while( stackOperator.empty() == false )
+               {
+                  auto stringOperator = stackOperator.top().get_name();
+                  if( stringOperator == "(" ) { break; }
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+               if( stackOperator.empty() == false ) { stackOperator.pop(); }
+            }
+            else { vectorOut.push_back(token_); }
+         }
+      break;
+
+      default:
+         assert( false );
+         break;
+      }
+   }
+
+   while( stackOperator.empty() == false )
+   {
+      vectorOut.push_back( stackOperator.top() );
+      stackOperator.pop();
+   }
+
+   return { true, "" };
+}
+*/
+
+
+/** --------------------------------------------------------------------------
+ * @brief Compiles tokens to postfix using custom operator precedence.
+ *
+ * Internal helper that performs Shunting Yard algorithm with custom precedence.
+ *
+ * @param vectorIn Input vector of tokens.
+ * @param vectorOut Output vector for postfix tokens.
+ * @param mapPrecedence Custom precedence map.
+ * @return Pair of success flag and error message.
+ */
+std::pair<bool, std::string> token::compile_with_precedence_s( const std::vector<token>& vectorIn, std::vector<token>& vectorOut, const std::map<std::string, int>& mapPrecedence)
+{
+   std::stack<token> stackOperator;
+
+   for( const auto& token_ : vectorIn )
+   {
+      uint32_t uTokenType = token_.get_token_type();
+      
+      switch( uTokenType )
+      {
+      case token_type_s("OPERATOR"):
+         {
+            auto stringToken = token_.get_name();
+            
+            while( stackOperator.empty() == false )
+            {
+               auto stringStackOperator = stackOperator.top().get_name();
+               if( stringStackOperator == "(" ) { break; }
+
+               int iTokenPrecedence = 0;
+               int iStackPrecedence = 0;
+
+               auto itToken = mapPrecedence.find(std::string(stringToken));
+               if( itToken != mapPrecedence.end() ) { iTokenPrecedence = itToken->second; }
+               else
+               {
+                  if( stringToken.length() == 1 ) { iTokenPrecedence = to_precedence_g(stringToken[0], tag_optimize{}); }
+                  else { iTokenPrecedence = to_precedence_g(stringToken.data(), tag_optimize{}); }
+               }
+
+               auto itStack = mapPrecedence.find(std::string(stringStackOperator));
+               if( itStack != mapPrecedence.end() ) { iStackPrecedence = itStack->second; }
+               else
+               {
+                  if( stringStackOperator.length() == 1 ) { iStackPrecedence = to_precedence_g(stringStackOperator[0], tag_optimize{}); }
+                  else { iStackPrecedence = to_precedence_g(stringStackOperator.data(), tag_optimize{}); }
+               }
+
+               if( iTokenPrecedence > iStackPrecedence ) { break; }
+
+               vectorOut.push_back(stackOperator.top());
+               stackOperator.pop();
+            }
+
+            stackOperator.push(token_);
+         }
+         break;
+         
+      case token_type_s("VALUE"):
+      case token_type_s("VARIABLE"):
+         vectorOut.push_back(token_);
+         break;
+         
+      case token_type_s("FUNCTION"):
+         stackOperator.push(token_);
+         break;
+         
+      case token_type_s("SEPARATOR"):
+         {
+            auto stringToken = token_.get_name();
+            char iCharacter = stringToken[0];
+            if( iCharacter == ',' )
+            {
+               while( stackOperator.empty() == false && stackOperator.top().get_name() != "(" )
+               {
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+            }
+            else if( iCharacter == ';' )
+            {
+               while( stackOperator.empty() == false )
+               {
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+               vectorOut.push_back(token_);
+            }
+         }
+         break;
+         
+      case token_type_s("SPECIAL_CHAR"):
+         {
+            auto stringToken = token_.get_name();
+            char iCharacter = stringToken[0];
+            if( iCharacter == '(' )
+            {
+               stackOperator.push(token_);
+            }
+            else if( iCharacter == ')' )
+            {
+               while( stackOperator.empty() == false )
+               {
+                  auto stringOperator = stackOperator.top().get_name();
+                  if( stringOperator == "(" ) { break; }
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+               if( stackOperator.empty() == false ) { stackOperator.pop(); }
+               
+               if( stackOperator.empty() == false && 
+                   stackOperator.top().get_token_type() == token_type_s("FUNCTION") )
+               {
+                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop();
+               }
+            }
+         }
+         break;
+      }
+   }
+
+   while( stackOperator.empty() == false )
+   {
+      vectorOut.push_back(stackOperator.top());
+      stackOperator.pop();
+   }
+
+   return { true, "" };
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Evaluates binary operations based on the operator string
  *
@@ -1115,6 +1468,154 @@ value token::calculate_s(const std::string_view& stringExpression, std::unique_p
 
    return calculate_s(stringExpression, *pruntime.get() );
 }
+
+
+/** --------------------------------------------------------------------------
+ * @brief Converts an infix expression string directly to postfix notation string.
+ *
+ * This function takes an infix expression and converts it to postfix (RPN) 
+ * notation as a string. Useful for generating SQL WHERE clauses or other
+ * contexts where postfix string representation is needed.
+ *
+ * @code
+ * // sample usage
+ * std::string infix = "a + b * c";
+ * std::string postfix = token::infix_to_postfix_s(infix);
+ * // Result: "a b c * +"
+ * 
+ * std::string sqlWhere = "age > 18 and status = 'active'";
+ * std::string postfixWhere = token::infix_to_postfix_s(sqlWhere, tag_formula_keyword{});
+ * // Result: "age 18 > status 'active' = and"
+ * @endcode
+ *
+ * @param stringExpression The infix expression to convert.
+ * @param tag Optional tag to specify parsing mode (tag_formula or tag_formula_keyword).
+ * @return String containing the postfix notation, tokens separated by spaces.
+ */
+std::string token::infix_to_postfix_s(const std::string_view& stringExpression, tag_formula)
+{
+   std::vector<token> vectorToken;
+   auto result = parse_s(stringExpression, vectorToken, tag_formula{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   std::vector<token> vectorPostfix;
+   result = compile_s(vectorToken, vectorPostfix, tag_postfix{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   return tokens_to_string_s(vectorPostfix);
+}
+
+std::string token::infix_to_postfix_s(const std::string_view& stringExpression, tag_formula_keyword)
+{
+   std::vector<token> vectorToken;
+   auto result = parse_s(stringExpression, vectorToken, tag_formula_keyword{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   std::vector<token> vectorPostfix;
+   result = compile_s(vectorToken, vectorPostfix, tag_postfix{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   return tokens_to_string_s(vectorPostfix);
+}
+
+
+/** --------------------------------------------------------------------------
+ * @brief Converts a vector of tokens to a space-separated string.
+ *
+ * Helper function that converts tokens back to their string representation,
+ * separated by spaces. Handles proper formatting for different token types.
+ *
+ * @param vectorToken Vector of tokens to convert.
+ * @return String representation of tokens separated by spaces.
+ */
+std::string token::tokens_to_string_s(const std::vector<token>& vectorToken)
+{
+   std::string stringResult;
+   stringResult.reserve(vectorToken.size() * 4);                               // estimate space needed
+
+   for( size_t u = 0; u < vectorToken.size(); ++u )
+   {
+      const auto& token_ = vectorToken[u];
+      auto stringName = token_.get_name();
+
+      switch( token_.get_token_type() )
+      {
+      case token_type_s("VALUE"):
+         {
+            if( token_.get_value_type() == eValueTypeString )
+            {
+               stringResult += "'";
+               stringResult += stringName;
+               stringResult += "'";
+            }
+            else
+            {
+               stringResult += stringName;
+            }
+         }
+         break;
+
+      case token_type_s("VARIABLE"):
+      case token_type_s("OPERATOR"):
+         stringResult += stringName;
+         break;
+
+      case token_type_s("FUNCTION"):
+         {
+            stringResult += stringName;
+            stringResult += "(";
+         }
+         break;
+
+      case token_type_s("SEPARATOR"):
+         {
+            char iChar = stringName[0];
+            if( iChar == ',' ) { stringResult += ","; }
+            else if( iChar == ';' ) { stringResult += ";"; }
+         }
+         break;
+
+      case token_type_s("SPECIAL_CHAR"):
+         {
+            char iChar = stringName[0];
+            if( iChar == '(' || iChar == ')' ) { stringResult += iChar; }
+         }
+         break;
+
+      default:
+         break;
+      }
+
+      if( u < vectorToken.size() - 1 ) { stringResult += " "; }               // add space between tokens
+   }
+
+   return stringResult;
+}
+
+/** --------------------------------------------------------------------------
+ * @brief Converts infix to postfix with custom operator precedence.
+ *
+ * Extended version that allows specifying custom operator precedence rules.
+ * Useful when target system has different precedence than standard C++.
+ *
+ * @param stringExpression The infix expression to convert.
+ * @param mapPrecedence Map of operator strings to precedence values (higher = stronger binding).
+ * @param tag Optional tag to specify parsing mode.
+ * @return String containing the postfix notation.
+ */
+std::string token::infix_to_postfix_s( const std::string_view& stringExpression, const std::map<std::string, int>& mapPrecedence, tag_formula)
+{
+   std::vector<token> vectorToken;
+   auto result = parse_s(stringExpression, vectorToken, tag_formula{});
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   std::vector<token> vectorPostfix;
+   result = compile_with_precedence_s(vectorToken, vectorPostfix, mapPrecedence);
+   if( result.first == false ) { throw std::invalid_argument(result.second); }
+
+   return tokens_to_string_s(vectorPostfix);
+}
+
 
 /** --------------------------------------------------------------------------
  * @brief Reads a keyword operator from the input string.
