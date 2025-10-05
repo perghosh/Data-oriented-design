@@ -706,18 +706,12 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
  * This function takes a vector of tokens and outputs them in order, only handling
  * parentheses and function calls. Operators are output immediately without
  * precedence-based reordering. Use this when tokens are already in correct order.
- *
- * @param vectorIn Input vector of tokens to be compiled.
- * @param vectorOut Output vector to store the compiled tokens.
- * @param tag_postfix_no_precedence Tag to indicate order-preserving compilation.
- * @return A pair containing a boolean indicating success and a string with an error message if any.
- */
-/** --------------------------------------------------------------------------
- * @brief Compiles the input tokens preserving their order (no precedence handling).
- *
- * This function takes a vector of tokens and outputs them in order, only handling
- * parentheses and function calls. Operators are output immediately without
- * precedence-based reordering. Use this when tokens are already in correct order.
+ * 
+ * Why use this?
+ * If you want to write expression in different formats that are simpler for user to write in.
+ * There you often need to modify to make it work with the default format used by the engine.
+ * This might be helpfull in that type of situation because you will need more flexibility in
+ * converting the expression to the default format.
  *
  * @param vectorIn Input vector of tokens to be compiled.
  * @param vectorOut Output vector to store the compiled tokens.
