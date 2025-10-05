@@ -19,6 +19,7 @@
 #include <fstream>
 #include <functional>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -39,6 +40,7 @@ struct tag_formula {}; ///< tag for formula
 struct tag_formula_keyword {}; ///< tag for formula with keywords
 struct tag_expression {}; ///< tag for expression
 struct tag_postfix {}; ///< tag for postfix
+struct tag_postfix_no_precedence {};
 
 enum enumTokenType
 {
@@ -218,6 +220,8 @@ struct token
 	// ## compile and calculate methods
 
    static std::pair<bool, std::string> compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix);
+   static std::pair<bool, std::string> compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix_no_precedence);
+   static std::pair<bool, std::string> compile_with_precedence_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, const std::map<std::string, int>& mapPrecedence);
    static std::pair<bool, std::string> calculate_s( const std::vector<token>& vectorToken, value* pvalueResult );
    static std::pair<bool, std::string> calculate_s(const std::vector<token>& vectorToken, value* pvalueResult, runtime& runtime_);
    static std::pair<bool, std::string> calculate_s(const std::vector<token>& vectorToken, std::vector<value>* pvectorReturn, runtime& runtime_);
@@ -228,6 +232,13 @@ struct token
    static value calculate_s( const std::string_view& stringExpression, runtime& runtime_ );
    static value calculate_s( const std::string_view& stringExpression, std::unique_ptr<runtime>& pruntime );
    static value calculate_s( const std::string_view& stringExpression );
+
+   // ## token methods
+
+   static std::string infix_to_postfix_s(const std::string_view& stringExpression, tag_formula);
+   static std::string infix_to_postfix_s(const std::string_view& stringExpression, tag_formula_keyword);
+   static std::string tokens_to_string_s(const std::vector<token>& vectorToken);
+   static std::string infix_to_postfix_s(const std::string_view& stringExpression, const std::map<std::string, int>& mapPrecedence, tag_formula);
 
 	// ## read methods
 

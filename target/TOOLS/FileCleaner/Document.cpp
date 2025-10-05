@@ -6,6 +6,7 @@
 
 */
 
+#include <algorithm>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -21,6 +22,8 @@
 #include "gd/gd_utf8.h"
 #include "gd/math/gd_math_string.h"
 #include "gd/parse/gd_parse_formats.h"
+
+#include "gd/expression/gd_expression_token.h"
 
 #include "automation/code-analysis/Run.h"
 
@@ -2402,11 +2405,49 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
 
    // ## Read all column names from table
 	std::vector<std::string_view> vectorName = ptable_->column_get_name();
+   // sort vector with names so that the largest name in character length is first
+   std::sort(vectorName.begin(), vectorName.end(), [](const std::string_view& a, const std::string_view& b) { return a.size() > b.size(); });
+
 
 	std::array<uint8_t, 256> arrayQuote{}; // array to store character types for each ASCII character
 	arrayQuote['\''] = 1; // quote
    arrayQuote['\"'] = 1; // double quote
+
+   std::string stringPostfix;
+   stringPostfix = gd::expression::token::infix_to_postfix_s(stringWhere, gd::expression::tag_formula_keyword{});
+   auto vectorFound = gd::math::string::find_all_word(stringPostfix, vectorName, arrayQuote);
+
+   std::string stringExpression;
+   auto result_ = EXPRESSION_PrepareForTable_s(stringPostfix, vectorFound, stringExpression);
+
+   if(result_.first == false) return result_;
+
+   RunExpression_Where_g(stringExpression, ptable_);
+
+   return { true, "" };
+/*
+
    auto vectorFound = gd::math::string::find_all_word(stringWhere, vectorName, arrayQuote);
+
+   {
+      // test
+      {
+         std::string s1 = "level level level level  level  level;";
+         std::string string1_;
+         auto vectorFound1 = gd::math::string::find_all_word(s1, vectorName, arrayQuote);
+         auto result1_ = EXPRESSION_PrepareForTable_s(s1, vectorFound1, string1_);
+      }
+      
+
+      std::string stringExpression;
+      stringExpression = gd::expression::token::infix_to_postfix_s(stringWhere, gd::expression::tag_formula_keyword{});
+      auto vectorFound = gd::math::string::find_all_word(stringExpression, vectorName, arrayQuote);
+      std::string string_;
+      auto result_ = EXPRESSION_PrepareForTable_s(stringExpression, vectorFound, string_);
+      if(result_.first == false) return result_;
+
+      RunExpression_Where_g(string_, ptable_);
+   }
 
    std::string stringExpression;
 	auto result_ = EXPRESSION_PrepareForTable_s(stringWhere, vectorFound, stringExpression);
@@ -2415,6 +2456,7 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
    RunExpression_Where_g(stringExpression, ptable_);
 
    return { true, "" };
+   */
 }
 
 /** ---------------------------------------------------------------------------
@@ -2935,19 +2977,23 @@ std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForTable_s(const std::
 {
    stringPreparedExpression.clear();
    if( stringExpression.empty() == true ) return { false, "No expression provided" };
-   size_t uLastPos = 0;
+   size_t uLastPosition = 0;
    for( const auto& [uStart, uLength] : vectorPosition )
    {
-      if( uStart > uLastPos ) stringPreparedExpression += stringExpression.substr(uLastPos, uStart - uLastPos); // add text before position
+      if(uStart > uLastPosition)
+      {
+			auto uLength = uStart - uLastPosition;
+         stringPreparedExpression += stringExpression.substr(uLastPosition, uLength); // add text before position
+      }
+      uLastPosition = uStart + uLength;
 
 		// Extract column name from expression
 		auto stringColumn = stringExpression.substr(uStart, uLength);
 
       stringPreparedExpression += std::format("source::get_cell_value( table, row, '{}' )", stringColumn); // add code to get column value from row
-      uLastPos = uStart + uLength;
    }
-   
-   if( uLastPos < stringExpression.length() ) stringPreparedExpression += stringExpression.substr(uLastPos); // add text after last position
+
+   if( uLastPosition < stringExpression.length() ) stringPreparedExpression += stringExpression.substr(uLastPosition); // add text after last position
 
    return { true, "" };
 }
