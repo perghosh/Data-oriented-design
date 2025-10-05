@@ -2,7 +2,7 @@
 ._*
 .DS_Store
 --*
-ignore-
+ignore-*
 out/
 build/
 temp__*
