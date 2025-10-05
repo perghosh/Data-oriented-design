@@ -431,7 +431,8 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
 {
    const char* piszPosition = piszBegin;                                       // Current position
 
-   /// ## Loop through the string and parse the tokens
+   /// ## Loop through the string and parse the tokens .......................
+
    while( piszPosition < piszEnd )
    {
       piszPosition = skip_whitespace_s(piszPosition, piszEnd);                 // Skip whitespace
@@ -458,12 +459,12 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
          // ### Try keyword operator first if character can start one
          if( uCharacterType & KEYWORD_OPERATOR_START_BIT )
          {
-            std::string_view stringKeyword_;
+            std::string_view stringOperator;
             const char* piszEnd_ = nullptr;
-            if( operator_read_keyword_s(piszPosition, piszEnd, stringKeyword_, &piszEnd_) == true )
+            if( operator_read_keyword_s(piszPosition, piszEnd, stringOperator, &piszEnd_) == true )
             {
                uint32_t uTokenType = token::token_type_s("OPERATOR");
-               vectorToken.emplace_back(token(uTokenType, stringKeyword_));
+               vectorToken.emplace_back(token(uTokenType, stringOperator));
                piszPosition = piszEnd_;
                continue;
             }
@@ -481,9 +482,9 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
             }
             else if( uTokenType == token::token_type_s("FUNCTION") )
             {
-               if( uType & SPECIAL_CHAR_BIT )                                  // If special char this has to have a ':' character
+               if( uType & SPECIAL_CHAR_BIT )                                 // If special char this has to have a ':' character
                {
-                  uTokenType |= uint32_t(eFunctionNamespace);                  // add namespace flag to find method among namespaced methods
+                  uTokenType |= uint32_t(eFunctionNamespace);                 // add namespace flag to find method among namespaced methods
                   vectorToken.emplace_back(token(uTokenType, string_));
                }
                else
@@ -497,18 +498,24 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
          continue;
       }
 
-      if( uCharacterType & OPERATOR_BIT )                                      // Operator
+      if( uCharacterType & OPERATOR_BIT )                                     // Operator
       {
          uint32_t uTokenType = token::token_type_s( "OPERATOR" );
          if( uCharacterType & SPECIAL_CHAR_BIT )
          {
-            if( piszPosition[0] == '-' )                                  // special case to handle negate
+            if(piszPosition[0] == '=' )                                       // Handle = when parsing keyword and add it as ==
+            {
+               vectorToken.emplace_back(token(uTokenType, token::operator_s(eOperatorEqual)));
+               piszPosition++;
+               continue;
+				}
+            else if( piszPosition[0] == '-' )                                 // special case to handle negate
             {
                auto type_ = vectorToken.empty() == false ? vectorToken.back().get_token_type() : token::token_type_s("OPERATOR");
-               if( type_ == token::token_type_s("OPERATOR") )                  // Was previous token an operator
+               if( type_ == token::token_type_s("OPERATOR") )                 // Was previous token an operator
                {
                   // ## this has to be a unary operator for negative number try to read number
-                  uTokenType = token::token_type_s( "VALUE" );                 // value token
+                  uTokenType = token::token_type_s( "VALUE" );                // value token
                   std::string_view string_; // string that gets value
                   uint32_t uType = read_number_s(piszPosition, piszEnd, string_);// read number
                   if( uType & SEPARATOR_BIT ) { uTokenType += to_type_s( eValueTypeDecimal, eTokenPartType ); } // is it decimal?
@@ -1129,21 +1136,21 @@ value token::calculate_s(const std::string_view& stringExpression, std::unique_p
  *
  * @param piszBegin Pointer to the beginning of the input string.
  * @param piszEnd Pointer to the end of the input string.
- * @param string_ Reference to a string_view to store the found operator.
+ * @param stringOperator Reference to a string_view to store the found operator.
  * @param ppiszReadTo Pointer to a pointer to store the position after the operator.
  * @return true if a keyword operator was found, false otherwise.
  */
-bool token::operator_read_keyword_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char** ppiszReadTo)
+bool token::operator_read_keyword_s(const char* piszBegin, const char* piszEnd, std::string_view& stringOperator, const char** ppiszReadTo)
 {
    // Define keyword operators - ordered by length (longest first) to match greedily
-   static const std::pair<const char*, size_t> ppairKeywordOperators[] = {
-      {"not", 3},
-      {"and", 3},
-      {"or", 2},
-      {"in", 2},
-      {"is", 2},
-      {"xor", 3},
-      {"mod", 3}
+   static const std::tuple<const char*, size_t, const char*> ppairKeywordOperators[] = {
+      {"not", 3, "!="},
+      {"and", 3, "&&"},
+      {"or", 2, "||"},
+      {"in", 2, "in"},
+      {"is", 2, "is"},
+      {"xor", 3, "^"},
+      {"mod", 3, "%"}
    };
 
    const char* piPosition = piszBegin;
@@ -1152,7 +1159,7 @@ bool token::operator_read_keyword_s(const char* piszBegin, const char* piszEnd, 
    
    // ## Try to match each keyword operator ..................................
 
-   for(const auto& [piKeyword, uLength] : ppairKeywordOperators)
+   for(const auto& [piKeyword, uLength, piSymbol] : ppairKeywordOperators)
    {
       bool bMatch = true; // do we have a match
       for(size_t u = 0; u < uLength; ++u)
@@ -1180,8 +1187,8 @@ bool token::operator_read_keyword_s(const char* piszBegin, const char* piszEnd, 
             if(uNextType & (ALPHABETIC_BIT | DIGIT_BIT)) { continue; }
          }
          
-         // Found a valid keyword operator
-         string_ = std::string_view(piPosition, uLength);
+			// ## Found a valid keyword operator ................................
+         stringOperator = std::string_view(piSymbol);
          if(ppiszReadTo != nullptr) { *ppiszReadTo = piPosition + uLength; }
          return true;
       }
@@ -1190,5 +1197,89 @@ bool token::operator_read_keyword_s(const char* piszBegin, const char* piszEnd, 
    return false;
 }
 
+
+// Maps operator enum to string representation
+std::string_view token::operator_s(uint32_t uOperator) {
+   using enumOperator = token::enumOperator;
+   switch(uOperator) 
+   {
+      case enumOperator::eOperatorAdd:               return "+";
+      case enumOperator::eOperatorSubtract:          return "-";
+      case enumOperator::eOperatorAddAssign:         return "+=";
+      case enumOperator::eOperatorAssign:            return "=";
+      case enumOperator::eOperatorBitwiseAnd:        return "&";
+      case enumOperator::eOperatorBitwiseAndAssign:  return "&=";
+      case enumOperator::eOperatorBitwiseNot:        return "~";
+      case enumOperator::eOperatorBitwiseOr:         return "|";
+      case enumOperator::eOperatorBitwiseOrAssign:   return "|=";
+      case enumOperator::eOperatorBitwiseXor:        return "^";
+      case enumOperator::eOperatorBitwiseXorAssign:  return "^=";
+      case enumOperator::eOperatorComma:             return ",";
+      case enumOperator::eOperatorDecrement:         return "--";
+      case enumOperator::eOperatorDivide:            return "/";
+      case enumOperator::eOperatorDivideAssign:      return "/=";
+      case enumOperator::eOperatorEqual:             return "==";
+      case enumOperator::eOperatorGreaterThan:       return ">";
+      case enumOperator::eOperatorGreaterThanEqual:  return ">=";
+      case enumOperator::eOperatorIncrement:         return "++";
+      case enumOperator::eOperatorLeftShift:         return "<<";
+      case enumOperator::eOperatorLeftShiftAssign:   return "<<=";
+      case enumOperator::eOperatorLessThan:          return "<";
+      case enumOperator::eOperatorLessThanEqual:     return "<=";
+      case enumOperator::eOperatorLogicalAnd:        return "&&";
+      case enumOperator::eOperatorLogicalNot:        return "!";
+      case enumOperator::eOperatorLogicalOr:         return "||";
+      case enumOperator::eOperatorModulus:           return "%";
+      case enumOperator::eOperatorModulusAssign:     return "%=";
+      case enumOperator::eOperatorMultiply:          return "*";
+      case enumOperator::eOperatorMultiplyAssign:    return "*=";
+      case enumOperator::eOperatorNotEqual:          return "!=";
+      case enumOperator::eOperatorRightShift:        return ">>";
+      case enumOperator::eOperatorRightShiftAssign:  return ">>=";
+      case enumOperator::eOperatorNone:              return "";
+      default:                                       return "";
+   }
+}
+
+// Maps string representation to operator enum
+uint32_t token::operator_s(std::string_view stringOperator) 
+{
+    using enumOperator = token::enumOperator;
+    if(stringOperator == "+")    return enumOperator::eOperatorAdd;
+    if(stringOperator == "-")    return enumOperator::eOperatorSubtract;
+    if(stringOperator == "+=")   return enumOperator::eOperatorAddAssign;
+    if(stringOperator == "=")    return enumOperator::eOperatorAssign;
+    if(stringOperator == "&")    return enumOperator::eOperatorBitwiseAnd;
+    if(stringOperator == "&=")   return enumOperator::eOperatorBitwiseAndAssign;
+    if(stringOperator == "~")    return enumOperator::eOperatorBitwiseNot;
+    if(stringOperator == "|")    return enumOperator::eOperatorBitwiseOr;
+    if(stringOperator == "|=")   return enumOperator::eOperatorBitwiseOrAssign;
+    if(stringOperator == "^")    return enumOperator::eOperatorBitwiseXor;
+    if(stringOperator == "^=")   return enumOperator::eOperatorBitwiseXorAssign;
+    if(stringOperator == ",")    return enumOperator::eOperatorComma;
+    if(stringOperator == "--")   return enumOperator::eOperatorDecrement;
+    if(stringOperator == "/")    return enumOperator::eOperatorDivide;
+    if(stringOperator == "/=")   return enumOperator::eOperatorDivideAssign;
+    if(stringOperator == "==")   return enumOperator::eOperatorEqual;
+    if(stringOperator == ">")    return enumOperator::eOperatorGreaterThan;
+    if(stringOperator == ">=")   return enumOperator::eOperatorGreaterThanEqual;
+    if(stringOperator == "++")   return enumOperator::eOperatorIncrement;
+    if(stringOperator == "<<")   return enumOperator::eOperatorLeftShift;
+    if(stringOperator == "<<=")  return enumOperator::eOperatorLeftShiftAssign;
+    if(stringOperator == "<")    return enumOperator::eOperatorLessThan;
+    if(stringOperator == "<=")   return enumOperator::eOperatorLessThanEqual;
+    if(stringOperator == "&&")   return enumOperator::eOperatorLogicalAnd;
+    if(stringOperator == "!")    return enumOperator::eOperatorLogicalNot;
+    if(stringOperator == "||")   return enumOperator::eOperatorLogicalOr;
+    if(stringOperator == "%")    return enumOperator::eOperatorModulus;
+    if(stringOperator == "%=")   return enumOperator::eOperatorModulusAssign;
+    if(stringOperator == "*")    return enumOperator::eOperatorMultiply;
+    if(stringOperator == "*=")   return enumOperator::eOperatorMultiplyAssign;
+    if(stringOperator == "!=")   return enumOperator::eOperatorNotEqual;
+    if(stringOperator == ">>")   return enumOperator::eOperatorRightShift;
+    if(stringOperator == ">>=")  return enumOperator::eOperatorRightShiftAssign;
+    if(stringOperator == "")     return enumOperator::eOperatorNone;
+    return enumOperator::eOperatorNone;
+}
 
 _GD_EXPRESSION_END
