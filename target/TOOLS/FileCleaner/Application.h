@@ -94,6 +94,25 @@ public:
       eModeDocument     ///< Document mode, used for managing documents
    };
 
+   /**
+    * \enum enumDetail
+    * \brief Represents the level of detail for output or processing.
+    *
+    * - eDetailUnknown:   Unknown or unspecified detail level.
+    * - eDetailBasic:    Basic detail level.
+    * - eDetailStandard: Standard detail level (this is default).
+    * - eDetailExtended: Extended detail level.
+    * - eDetailFull:     Full detail level.
+	 */
+   enum enumDetail
+   {
+		eDetailUnknown = 0,///< Unknown or unspecified detail level
+		eDetailBasic,     ///< Basic detail level
+      eDetailStandard,  ///< Standard detail level (this is default)
+      eDetailExtended,  ///< Extended detail level
+      eDetailFull       ///< Full detail level
+	};
+
 
    /**
     * \enum enumUIType
@@ -213,6 +232,11 @@ public:
    void SetMode(enumMode eMode) { m_eMode = eMode; }
    void SetMode(const std::string_view& stringMode); 
    std::string GetModeAsString() const;
+
+	enumDetail GetDetail() const { return m_eDetail; }
+	void SetDetail(enumDetail eDetail) { m_eDetail = eDetail; }
+	void SetDetail(const std::string_view& stringDetail);
+	std::string GetDetailAsString() const;
 
    enumUIType GetUIType() const { return m_eUIType; }
    void SetUIType(enumUIType eUIType) { m_eUIType = eUIType; }
@@ -360,6 +384,7 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    enumMode m_eMode = eModeUnknown;                ///< Mode of the application, e.g. review, stats, search, changes, audit, document
+	enumDetail m_eDetail = eDetailStandard;         ///< Level of detail for output or processing
    enumUIType m_eUIType = eUITypeUnknown;          ///< Type of user interface
    unsigned m_uApplicationState = eApplicationStateUnknown; ///< State of the application
 
