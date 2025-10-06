@@ -520,7 +520,7 @@ public:
       }
 
       void common_construct(const argument& o) {
-         memcpy(this, &o, sizeof(argument_edit));
+         memcpy(static_cast<void*>(this), &o, sizeof(argument_edit));
       }
 
       argument_edit& operator=(argument argumentSet) { m_pArguments->set(m_pPosition, argumentSet); return *this; }
@@ -711,7 +711,7 @@ protected:
    }
 
    void common_construct(arguments&& o) noexcept {
-      memcpy(this, &o, sizeof(arguments));
+      memcpy(static_cast<void*>(this), &o, sizeof(arguments));
       o.m_pBuffer = nullptr;
       o.m_bOwner = false;
       o.m_uLength = 0;
@@ -1364,7 +1364,7 @@ public:
 public:
    // ## buffer methods, used to access buffer data 0TAG0buffer.arguments
 
-   void buffer_set() { memset( this, 0, sizeof( arguments ) ); }
+   void buffer_set() { memset(static_cast<void*>(this), 0, sizeof( arguments ) ); }
    void buffer_set( pointer p_ ) { m_pBuffer = p_; }
    void buffer_delete() { if( is_owner() ) delete [] m_pBuffer; }
    pointer buffer_data() { return m_pBuffer; }
