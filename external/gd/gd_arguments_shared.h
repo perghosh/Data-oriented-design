@@ -578,7 +578,7 @@ public:
       }
 
       void common_construct(const argument& o) {
-         memcpy(this, &o, sizeof(argument_edit));
+         memcpy(static_cast<void*>(this), &o, sizeof(argument_edit));
       }
 
       argument_edit& operator=(argument argumentSet) { set(argumentSet); return *this; }

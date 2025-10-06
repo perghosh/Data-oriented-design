@@ -182,7 +182,7 @@ reference* references::allocate( const reference& referenceToCopy )
    
    reference* preferenceRaw = (reference*)pReference.get();
    
-   memcpy( preferenceRaw, &referenceToCopy, sizeof(reference) );
+   memcpy(static_cast<void*>(preferenceRaw), &referenceToCopy, sizeof(reference) );
 #if DEBUG_RELEASE > 0
    *preferenceRaw->data_end( 1 ) = uTailetextMarker_d;
    *preferenceRaw->data_end( 2 ) = uTailetextMarker_d;
