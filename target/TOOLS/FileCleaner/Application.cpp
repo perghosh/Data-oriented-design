@@ -183,7 +183,7 @@ std::string CApplication::GetModeAsString() const
 }
 
 
-/** ---------------------------------------------------------------------------  @TAG #type
+/** ---------------------------------------------------------------------------
  * @brief Returns the string representation of the UI type.
  *
  * This method converts the enum value of the UI type to its corresponding string representation.
@@ -223,6 +223,41 @@ void CApplication::SetMode(const std::string_view& stringMode)
    else if(stringMode == "document") m_eMode = eModeDocument;
    else                              m_eMode = eModeUnknown;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Returns the string representation of the current detail level.
+ */
+std::string CApplication::GetDetailAsString() const
+{                                  
+   switch (m_eDetail)
+   {
+   case eDetailUnknown:  return "unknown";
+   case eDetailBasic:    return "basic";
+   case eDetailStandard: return "standard";
+   case eDetailExtended: return "extended";
+   case eDetailFull:     return "full";
+   }
+   return "unknown";
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Sets the detail level of the application based on the provided string.
+ *
+ * This method updates the application's detail level based on the input string. If the string does not match any known detail levels,
+ * it sets the detail level to `eDetailUnknown`.
+ *
+ * @param stringDetail The string representation of the detail level to set.
+ */
+void CApplication::SetDetail(const std::string_view& stringDetail)
+{
+   if     (stringDetail == "basic"   ) m_eDetail = eDetailBasic;
+   else if(stringDetail == "standard") m_eDetail = eDetailStandard;
+   else if(stringDetail == "extended") m_eDetail = eDetailExtended;
+   else if(stringDetail == "full"    ) m_eDetail = eDetailFull;
+   else                                m_eDetail = eDetailUnknown;
+}
+
 
 
 /*
@@ -593,6 +628,13 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       auto stringMode = optionsApplication.get_variant_view("mode", gd::types::tag_state_active{} ).as_string_view();
       SetMode(stringMode);                                                    // set application mode
    }
+
+   if(optionsApplication.exists("detail", gd::types::tag_state_active{}) == true)// if detail the set application detail
+   {
+      auto stringDetail = optionsApplication.get_variant_view("detail", gd::types::tag_state_active{}).as_string_view();
+      SetDetail(stringDetail);                                                    // set application detail
+   }
+
 
    /// ## prepare command
 
@@ -2049,6 +2091,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
    optionsApplication.add({ "prompt", "Prompts for values that is typed before execute expression, these values will be asked for"});
+   optionsApplication.add_flag_or_option({ "detail", "Set detail level on information presented to user. levels are basic, standard, extended, full or 0,1,2,3. If detail set as flag then standard is used." });
 
    {  // ## `count` command, copies file from source to target
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count patterns or lines and segments in selected files" );

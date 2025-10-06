@@ -841,7 +841,7 @@ void variant_view::copy_s( const variant_view& variantviewFrom, variant& variant
    
    if( variantviewFrom.type_number() <= eTypeTipRegister )
    {
-      memcpy( &variantTo, &variantviewFrom, sizeof(variant) );
+      memcpy( static_cast<void*>(&variantTo), &variantviewFrom, sizeof(variant));
    }
    else
    {
@@ -875,7 +875,7 @@ void variant_view::copy_s( const variant_view& variantviewFrom, variant& variant
 */
 void variant_view::copy_s( const variant& variantFrom, variant_view& variantviewTo )
 {
-   memcpy( &variantviewTo, &variantFrom, sizeof(variant) );
+   memcpy(static_cast<void*>(&variantviewTo), &variantFrom, sizeof(variant) );
 }
 
 /// variant values in list are converted to string and concatenated with each other and returned
