@@ -415,6 +415,9 @@ public:
 
    static enumUIType GetUITypeFromString_s(const std::string_view& stringUIType);
 
+	/// Check if detail level matches string
+   static bool IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view& stringDetailLevel);
+
    // ## Prepare Application 
 
    /// Prepare options for application, options are used to parse command-line arguments

@@ -1979,6 +1979,12 @@ std::pair<bool, std::string> CDocument::RESULT_Save(const gd::argument::shared::
    return { true, "" };
 }
 
+void CDocument::PROPERTY_UpdateFromApplication()
+{
+   /// Set detail level if not set
+   if(PROPERTY_Exists( "detail") == false) {PROPERTY_Set("detail", uint32_t( GetApplication()->GetDetail() ) ); }
+}
+
 
 // 0TAG0CACHE.Document 
 
@@ -2009,6 +2015,9 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
    using namespace gd::table::dto;
    constexpr unsigned uTableStyle = ( table::eTableFlagNull32 | table::eTableFlagRowStatus );
 
+	// ## Find out the detail level and that will decide which columns to create
+   uint32_t uDetailLevel = PROPERTY_Get("detail", uint32_t(CApplication::enumDetail::eDetailStandard)).as_uint();
+
    if( ptable == nullptr )
    {
       auto ptableFind = CACHE_Get(stringId, false);
@@ -2034,18 +2043,22 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       auto p_ = CACHE_Get(stringId, false);
       if( p_ == nullptr )
       {
-         // file table: key | path | size | date | extension  
-         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "days"}, {"string", 20, "extension"}, {"int32", 0, "level"} }, gd::table::tag_prepare{}));
-         ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
-      }
-   }
-   else if(stringId == "file-dir-all")                                         // file cache, used to store file information  
-   {
-      auto p_ = CACHE_Get(stringId, false);
-      if(p_ == nullptr)
-      {
-         // file table: key | path | size | date | extension  
-         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "days"}, {"string", 20, "extension"}, {"int32", 0, "level"}, {"int32", 0, "year"}, {"int32", 0, "month"}, {"int32", 0, "day"} }, gd::table::tag_prepare{}));
+         if( CApplication::IsDetailLevel_s( uDetailLevel, "BASIC") == true )
+         {
+            // file table: key | path | size | date | extension
+            ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"string", 20, "extension"} }, gd::table::tag_prepare{}));
+         }
+         else if( CApplication::IsDetailLevel_s( uDetailLevel, "STANDARD") == true )
+         {
+				// file table: key | path | size | date | extension | level
+            ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "days"}, {"string", 20, "extension"}, {"int32", 0, "level"} }, gd::table::tag_prepare{}));
+         }
+         else
+         {
+				// file table: key | path | size | date | extension | level | year | month | day
+            ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "days"}, {"string", 20, "extension"}, {"int32", 0, "level"}, {"int32", 0, "year"}, {"int32", 0, "month"}, {"int32", 0, "day"} }, gd::table::tag_prepare{}));
+			}
+
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }

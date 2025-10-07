@@ -29,6 +29,9 @@ void CountLevel_s(gd::table::dto::table* ptable_);
 
 std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocument* pdocument)
 {                                                                                                  assert( poptionsDir != nullptr );
+
+   if(pdocument->PROPERTY_Exists("detail") == false) { pdocument->PROPERTY_UpdateFromApplication(); }
+
    const gd::cli::options& options_ = *poptionsDir;
    std::string stringSource = (*poptionsDir)["source"].as_string(); 
    CApplication::PreparePath_s(stringSource);                                  // if source is empty then set it to current path, otherwiss prepare it
@@ -91,7 +94,8 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 
    if(options_.exists("where") == true)
    {
-      auto result_ = pdocument->CACHE_Where("file-dir", options_["where"]);   // filter table based on where condition
+      auto result_ = pdocument->CACHE_Where("file-dir", options_["where"].as_string_view());   // filter table based on where condition
+      if(result_.first == false) return result_;
    }
 
    if( options_.exists("sort") == true )
@@ -225,7 +229,8 @@ std::pair<bool, std::string> DirFilter_g(const std::string& stringSource, const 
    auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable.get(), uDepth, true );
    if( result_.first == false ) return result_;
 
-   CountLevel_s(ptable.get());
+	// count level if column exists
+   if(ptable->column_exists("level") == true) { CountLevel_s(ptable.get()); }
 
    pdocument->CACHE_Add( std::move( ptable ) );
    
