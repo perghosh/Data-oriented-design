@@ -61,7 +61,7 @@ std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocum
    if (options_.exists("target") == true)
    {
       gd::argument::shared::arguments arguments_({ { "depth", uRecursive } } );
-      arguments_.append(options_.get_arguments(), { "filter", "overwrite", "pattern", "rpattern", "segment", "newer"});
+      arguments_.append(options_.get_arguments(), { "filter", "overwrite", "pattern", "rpattern", "segment", "newer", "where"});
 
       auto result_ = CopyFiles_g(stringSource, options_["target"].as_string(), arguments_, pdocument);
    }
@@ -87,7 +87,8 @@ std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocum
  */
 std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const std::string& stringTargetFolder, const gd::argument::shared::arguments& arguments_, CDocument* pdocument)
 {                                                                                               assert( stringSource != "" ); assert( stringTargetFolder != "" ); assert( pdocument != nullptr );
-   auto ptableDir = pdocument->CACHE_Get( "file-dir", true );
+constexpr std::string_view stringTableId = "file-dir";
+   auto ptableDir = pdocument->CACHE_Get(stringTableId, true );
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
    auto result_ = FILES_Harvest_WithWildcard_g( stringSource, stringFilter, ptableDir, uDepth, true); if( result_.first == false ) return result_;
@@ -164,6 +165,14 @@ std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const 
    else if( std::filesystem::is_regular_file(stringTargetFolder) == true )
    {
       stringTargetFolder_ = std::filesystem::path(stringTargetFolder).parent_path().string(); // if target is a file then get the parent directory
+   }
+
+   // ## if where and sort then filter and sort result .......................
+
+   if(arguments_.exists("where") == true)
+   {
+      auto result_ = pdocument->CACHE_Where(stringTableId, arguments_["where"].as_string_view());   // filter table based on where condition
+		if(result_.first == false) return result_;
    }
 
 	// ## Prepare paths .......................................................

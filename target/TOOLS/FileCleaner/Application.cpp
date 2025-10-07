@@ -251,11 +251,15 @@ std::string CApplication::GetDetailAsString() const
  */
 void CApplication::SetDetail(const std::string_view& stringDetail)
 {
-   if     (stringDetail == "basic"   ) m_eDetail = eDetailBasic;
-   else if(stringDetail == "standard") m_eDetail = eDetailStandard;
-   else if(stringDetail == "extended") m_eDetail = eDetailExtended;
-   else if(stringDetail == "full"    ) m_eDetail = eDetailFull;
-   else                                m_eDetail = eDetailUnknown;
+   // convert to lowercase
+   std::string stringDetailLower( stringDetail );
+   std::transform(stringDetailLower.begin(), stringDetailLower.end(), stringDetailLower.begin(), ::tolower);
+
+   if     (stringDetailLower == "basic"   ) m_eDetail = eDetailBasic;
+   else if(stringDetailLower == "standard") m_eDetail = eDetailStandard;
+   else if(stringDetailLower == "extended") m_eDetail = eDetailExtended;
+   else if(stringDetailLower == "full"    ) m_eDetail = eDetailFull;
+   else                                     m_eDetail = eDetailUnknown;
 }
 
 
@@ -2049,6 +2053,36 @@ CApplication::enumUIType CApplication::GetUITypeFromString_s(const std::string_v
    return eUITypeUnknown; // Default to none if no match found
 }
 
+bool CApplication::IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view& stringDetailLevel)
+{                                                                                                  assert(stringDetailLevel.empty() == false);
+   if(stringDetailLevel[0] == 'B' || stringDetailLevel == "1") 		         // "BASIC"
+   {
+      if( uDetailLevel <= 1 ) return true;
+   }
+	else if(stringDetailLevel[0] == 'S' || stringDetailLevel == "2") 		      // "STANDARD"
+   {
+      if( uDetailLevel <= 2 ) return true;
+   }
+	else if(stringDetailLevel[0] == 'E' || stringDetailLevel == "3") 		      // "EXTENDED"
+   {
+      if( uDetailLevel <= 3 ) return true;
+   }
+   else if( stringDetailLevel[0] == 'F' || stringDetailLevel == "4")          // "FULL"
+   {
+      if( uDetailLevel <= 4 ) return true;
+   }
+   else
+   {
+      try
+      {
+         auto uValue = std::stoul(stringDetailLevel.data());
+         if( uValue == uDetailLevel ) return true;
+      }
+      catch(...) {}
+   }
+   return false;
+}
+
 // 0TAG0Options.Application
 
 
@@ -2139,6 +2173,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "backup", "If destination file exits then make a backup"});
       optionsCommand.add({ "newer", "Only copy files that are newer if target file is found" });
       optionsCommand.add({ "segment", "type of segment in code to search in"});
+      optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
       optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
       optionsCommand.add_flag({ "overwrite", 'o', "Overwrite files existing files"});
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );

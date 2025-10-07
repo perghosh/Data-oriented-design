@@ -121,6 +121,22 @@ public:
    std::pair<bool, std::string> RESULT_Save(const gd::argument::shared::arguments& argumentsResult, const gd::table::dto::table* ptableResult );
 //@}
 
+/** \name PROPERTY
+* Property accessors for the documents internal state
+* Properties are stored in the `m_arguments` member and it can store any kind of data. Each property is identified by a string name.
+*///@{
+   gd::argument::shared::arguments& PROPERTY_Get() { return m_arguments; }
+   const gd::argument::shared::arguments& PROPERTY_Get() const { return m_arguments; }
+   gd::variant_view PROPERTY_Get(std::string_view stringName) const { return m_arguments[stringName].as_variant_view(); }
+   gd::variant_view PROPERTY_Get(std::string_view stringName, gd::variant_view default_) const { return m_arguments.exists(stringName) ? m_arguments[stringName].as_variant_view() : default_; }
+	void PROPERTY_Set(const std::string_view& stringName, const gd::variant_view& variantValue) { m_arguments.set(stringName, variantValue); }
+	bool PROPERTY_Exists(const std::string_view& stringName) const { return m_arguments.exists(stringName); }
+	/// Updates properties from application properties, e.g. detail level
+   void PROPERTY_UpdateFromApplication();
+//@}
+
+
+
 /** \name CACHE
  * Documents can cache information and support multiple named caches.
  * Each cache is stored in a named table, which is kept in the document's `m_vectorTableCache` member.

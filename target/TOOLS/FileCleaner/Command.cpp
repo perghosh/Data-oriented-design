@@ -112,16 +112,16 @@ namespace detail {
             if( bMatch == true ) { bMatched = true; break; }
          }
 
-         if( bMatched == false ) return false;                                 // no match, return false
+         if( bMatched == false ) return false;                                // no match, return false
       }
 
       auto uRow = ptable_->row_add_one();
       ptable_->cell_set(uRow, "key", uRow + 1);
 
-      unsigned uColumnPath = ptable_->column_find_index("path");               // get column index for path
-      if( uColumnPath != (unsigned)-1 )                                        // found "path" column ?
+      unsigned uColumnPath = ptable_->column_find_index("path");              // get column index for path
+      if( uColumnPath != (unsigned)-1 )                                       // found "path" column ?
       {
-         ptable_->cell_set(uRow, uColumnPath, pathFile.string());              // set path in table
+         ptable_->cell_set(uRow, uColumnPath, pathFile.string());             // set path in table
       }
       else
       {
@@ -132,20 +132,43 @@ namespace detail {
 
       ptable_->cell_set(uRow, "extension", pathFile.extension().string());
 
-      // get file size
-      if( bSize == true )
+		bool bDate = ptable_->column_exists("days"); // check if days column exists
+
+      if(bDate == true)
       {
-         std::error_code errorcode_;                                           // error code for last write time
+         std::error_code errorcode_;                                          // error code for last write time
          auto time_ = std::filesystem::last_write_time(pathFile, errorcode_);
-         if( !errorcode_ )
-         { 
-            auto sctp_ = std::chrono::time_point_cast<std::chrono::system_clock::duration>( time_ - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now() );
+         if(!errorcode_)
+         {
+            auto sctp_ = std::chrono::time_point_cast<std::chrono::system_clock::duration>(time_ - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
             auto now_ = std::chrono::system_clock::now();
             auto diff_ = now_ - sctp_;
             auto days_ = std::chrono::duration_cast<std::chrono::days>(diff_).count();
             ptable_->cell_set(uRow, "days", static_cast<double>(days_), gd::types::tag_convert{});
-         }
 
+            // check for year and if year is found then set value for year, month and day
+            if(ptable_->column_exists("year") == true)
+            {
+               auto time_t_ = std::chrono::system_clock::to_time_t(sctp_);
+               std::tm tm_;
+
+#ifdef _WIN32
+               localtime_s(&tm_, &time_t_);
+#else
+               localtime_r(&time_t_, &tm_);
+#endif
+
+               ptable_->cell_set(uRow, "year", tm_.tm_year + 1900, gd::types::tag_convert{});
+               ptable_->cell_set(uRow, "month", tm_.tm_mon + 1, gd::types::tag_convert{});
+               ptable_->cell_set(uRow, "day", tm_.tm_mday, gd::types::tag_convert{});
+            }
+         }
+      }
+
+
+      // get file size
+      if( bSize == true )
+      {
          std::string stringFilePath = pathFile.string();
          std::ifstream ifstreamFile(stringFilePath.data(), std::ios::binary | std::ios::ate);
          if( ifstreamFile.is_open() == true )
