@@ -177,6 +177,8 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
 
    std::vector<uint64_t> vectorDeleteRow; // rows to delete
 
+   runtime_.set_variable( "argstable", std::pair<const char*, void*>( "argstable", ptableKeyValue ) ); // set table used to calculate on
+
    for( uint64_t uRow = 0; uRow < ptableKeyValue->size(); uRow++ )
    {
       auto* parguments_ = ptableKeyValue->row_get_arguments_pointer(uRow);
@@ -253,7 +255,7 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
 
    std::vector<uint64_t> vectorDeleteRow; // rows to delete
 
-   runtime_.set_variable("table", std::pair<const char*, void*>("table", ptable_)); // set table used to calculate on
+   runtime_.set_variable("dtotable", std::pair<const char*, void*>("dtotable", ptable_)); // set table used to calculate on
 
    for( uint64_t uRow = 0; uRow < ptable_->size(); uRow++ )
    {
