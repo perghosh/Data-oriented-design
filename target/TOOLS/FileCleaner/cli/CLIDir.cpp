@@ -92,6 +92,22 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 
 	// ## if where and sort then filter and sort result .......................
 
+   auto value_ = options_.get_variant_view( "where", gd::cli::options::tag_optional{});
+   if( value_.has_value() == true )
+   {
+      auto result_ = pdocument->CACHE_Where("file-dir", value_.value().as_string_view());// filter table based on where condition
+      if(result_.first == false) return result_;
+   }
+
+   value_ = options_.get_variant_view( "sort", gd::cli::options::tag_optional{});
+   if( value_.has_value() == true )
+   {
+      auto result_ = pdocument->CACHE_Sort("file-dir", value_.value().as_string_view());// sort the table by the given sort value
+      if(result_.first == false) return result_;
+   }
+
+
+   /*
    if(options_.exists("where") == true)
    {
       auto result_ = pdocument->CACHE_Where("file-dir", options_["where"].as_string_view());   // filter table based on where condition
@@ -102,6 +118,7 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    {
       pdocument->CACHE_Sort("file-dir", options_["sort"]);                    // sort the table by the given sort value
    }
+   */
 
 
    DirPrint_g(pdocument);                                                     // print the table to the console

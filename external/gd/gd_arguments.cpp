@@ -2501,6 +2501,50 @@ std::vector<arguments::argument> arguments::get_argument(const std::vector<const
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Get argument for index if found
+ * @param uIndex index for value
+ * @return std::optional<arguments::argument> optional with value if found, otherwise nullopt
+ * 
+ * @code
+   auto value_ = arguments_.get_variant_view( "where", tag_optional{});
+   if( value_.has_value() == true )
+   {
+      auto result_ = do_something("file-dir", value_.value().as_string_view());
+      if(result_.first == false) return result_;
+   }
+ * @endcode
+ */
+std::optional<arguments::argument> arguments::get_argument(size_t uIndex, gd::types::tag_optional) const
+{
+   if( empty() == false )
+   {
+      const_pointer pPosition = buffer_data();
+      unsigned int uCount = 0;
+      while( (pPosition = next(pPosition)) != nullptr )
+      {
+         if( uCount == (unsigned int)uIndex ) return get_argument_s( pPosition );
+         uCount++;
+      }
+   }
+   return std::nullopt;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get argument for name if found
+ * @param stringName name for value
+ * @return std::optional<arguments::argument> optional with value if found, otherwise nullopt
+ */
+std::optional<arguments::argument> arguments::get_argument(const std::string_view& stringName, gd::types::tag_optional) const
+{
+   const auto* pPosition = find(stringName);
+   if( pPosition != nullptr )
+   {
+      return get_argument_s(pPosition);
+   }
+   return std::nullopt;
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Get param at specified position
  * \param uIndex position in buffer where param is found
  * @return std::pair<std::string_view, gd::variant_view> pair value with argument name and argument value as variant_view
@@ -2525,6 +2569,42 @@ std::pair<std::string_view, gd::variant_view> arguments::get_variant_view( unsig
 
    return std::pair<std::string_view, gd::variant_view>();
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Get variant view for index if found
+ * @param uIndex index for value
+ * @return std::optional<gd::variant_view> optional with value if found, otherwise nullopt
+ */
+std::optional<gd::variant_view> arguments::get_variant_view(size_t uIndex, gd::types::tag_optional) const
+{
+   if( empty() == false )
+   {
+      const_pointer pPosition = buffer_data();
+      unsigned int uCount = 0;
+      while( (pPosition = next(pPosition)) != nullptr )
+      {
+         if( uCount == (unsigned int)uIndex ) return get_argument_s( pPosition ).get_variant_view();
+         uCount++;
+      }
+   }
+   return std::nullopt;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get variant view for name if found
+ * @param stringName name for value
+ * @return std::optional<gd::variant_view> optional with value if found, otherwise nullopt
+ */
+std::optional<gd::variant_view> arguments::get_variant_view( const std::string_view& stringName, gd::types::tag_optional ) const
+{
+   const auto* pPosition = find(stringName);
+   if( pPosition != nullptr )
+   {
+      return get_argument_s(pPosition).get_variant_view();
+   }
+   return std::nullopt;
+}
+
 
 // ================================================================================================
 // ================================================================================= FREE FUNCTIONS
