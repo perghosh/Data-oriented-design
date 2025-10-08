@@ -68,8 +68,9 @@ _GD_TYPES_BEGIN
  * tag dispatchers have zero cost and removes the need to create a lot of different names for methods
  */
 
- // ----------------------------------------------------------------------------
- // ## command related tag dispatchers
+
+// ----------------------------------------------------------------------------
+// ## command related tag dispatchers
 struct tag_command_add {};      ///< add command, like add item to list
 struct tag_command_remove {};   ///< remove command, like remove item from list
 struct tag_command_update {};   ///< update command, like update item in list
@@ -157,12 +158,21 @@ struct tag_pointer {};        ///< pointer is used in some form, like a memory a
 struct tag_property {};       ///< property is used in some form
 struct tag_variable {};       ///< variable is used in some form
 
+// ----------------------------------------------------------------------------
+// ## focus on action
+
+struct tag_try {};            ///< try is used in some form, like a try-catch block
+struct tag_force {};          /// force is used in some form, like force a value or state
+struct tag_default {};        ///< default is used in some form, like a default value or state
+struct tag_custom {};         ///< custom is used in some form, like a user-defined value or state
+struct tag_special {};        ///< special is used in some form, like a special value or state
 
 // ----------------------------------------------------------------------------
 // ## stl tag dispatchers, used to glue with stl
 
 struct tag_list {};           ///< stl std::list object is used in some form
 struct tag_map {};            ///< stl std::map object is used in some form
+struct tag_optional {};       ///< stl std::optional object is used in some form
 struct tag_pair {};           ///< stl std::pair object is used in some form
 struct tag_queue {};          ///< stl std::queue object is used in some form
 struct tag_set {};            ///< stl std::set object is used in some form
@@ -217,6 +227,17 @@ struct tag_row_column {};     ///< row-column format, like Excel (rows horizonta
 struct tag_column_row {};     ///< column-row format, transposed Excel-like layout
 struct tag_xy {};             ///< x-y ordering, like Cartesian coordinates (x horizontal, y vertical)
 struct tag_yx {};             ///< y-x ordering, transposed Cartesian coordinates
+
+// ----------------------------------------------------------------------------
+// ## storage related tag dispatchers
+struct tag_storage_memory {};   ///< memory storage, like RAM
+struct tag_storage_disk {};     ///< disk storage, like HDD or SSD
+struct tag_storage_cloud {};    ///< cloud storage, like AWS S3 or Azure Blob
+struct tag_storage_cache {};    ///< cache storage, like in-memory cache or disk cache
+struct tag_storage_temporary {};///< temporary storage, like temp files or in-memory temp data
+struct tag_storage_permanent {};///< permanent storage, like database or long-term files
+struct tag_storage_database {}; ///< database storage, like SQL or NoSQL databases
+
 
 
 
