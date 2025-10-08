@@ -2412,6 +2412,30 @@ std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& strin
 
 // @TODO [name: where] [brief: Filter rows in table based on expression] [state: open] [date: 2025-10-03] [user: per]
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Filters rows in a cache table based on a specified expression.
+ * 
+ * This method evaluates a given expression against the rows of a cache table identified by `stringId`.
+ * Rows that do not satisfy the expression are removed from the table.
+ * 
+ * @param stringId The identifier of the cache table to be filtered.
+ * @param stringWhere The expression used to filter the rows. The expression should be in infix notation.
+ * @param ptable_ A pointer to the cache table. If `nullptr`, the method will attempt to retrieve the table from the cache.
+ * 
+ * @return A pair containing:
+ *         - `bool`: `true` if the filtering was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ * 
+ * @details
+ * - The method first retrieves the column names from the specified table to identify valid identifiers in the expression.
+ * - It then converts the infix expression to postfix notation for easier evaluation.
+ * - The method identifies all column names used in the expression and prepares it for evaluation by replacing column names with their corresponding values.
+ * - Finally, it evaluates the expression for each row in the table and removes rows that do not satisfy the expression.
+ * 
+ * @pre The cache table identified by `stringId` must exist and contain data.
+ * @post The cache table is modified to only include rows that satisfy the filtering expression.
+ */
 std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, std::string_view stringWhere, gd::table::dto::table* ptable_ )
 {
    if(ptable_ == nullptr) { ptable_ = CACHE_Get(stringId, false); }                                assert(ptable_ != nullptr);
@@ -2438,38 +2462,6 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
    RunExpression_Where_g(stringExpression, ptable_);
 
    return { true, "" };
-/*
-
-   auto vectorFound = gd::math::string::find_all_word(stringWhere, vectorName, arrayQuote);
-
-   {
-      // test
-      {
-         std::string s1 = "level level level level  level  level;";
-         std::string string1_;
-         auto vectorFound1 = gd::math::string::find_all_word(s1, vectorName, arrayQuote);
-         auto result1_ = EXPRESSION_PrepareForTable_s(s1, vectorFound1, string1_);
-      }
-      
-
-      std::string stringExpression;
-      stringExpression = gd::expression::token::infix_to_postfix_s(stringWhere, gd::expression::tag_formula_keyword{});
-      auto vectorFound = gd::math::string::find_all_word(stringExpression, vectorName, arrayQuote);
-      std::string string_;
-      auto result_ = EXPRESSION_PrepareForTable_s(stringExpression, vectorFound, string_);
-      if(result_.first == false) return result_;
-
-      RunExpression_Where_g(string_, ptable_);
-   }
-
-   std::string stringExpression;
-	auto result_ = EXPRESSION_PrepareForTable_s(stringWhere, vectorFound, stringExpression);
-	if(result_.first == false) return result_;
-
-   RunExpression_Where_g(stringExpression, ptable_);
-
-   return { true, "" };
-   */
 }
 
 /** ---------------------------------------------------------------------------
@@ -3003,7 +2995,7 @@ std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForTable_s(const std::
 		// Extract column name from expression
 		auto stringColumn = stringExpression.substr(uStart, uLength);
 
-      stringPreparedExpression += std::format("source::get_cell_value( table, row, '{}' )", stringColumn); // add code to get column value from row
+      stringPreparedExpression += std::format("source::get_cell_value( dtotable, row, '{}' )", stringColumn); // add code to get column value from row
    }
 
    if( uLastPosition < stringExpression.length() ) stringPreparedExpression += stringExpression.substr(uLastPosition); // add text after last position
