@@ -105,6 +105,7 @@ _GD_CLI_BEGIN
 class options
 {
 public:
+   using tag_optional = gd::types::tag_optional;               ///< tag dispatcher for optional arguments
    /// Format for printing options in a table format
    struct tag_documentation_table {};
    /// Format for printing options in a dense format
@@ -368,10 +369,12 @@ public:
    gd::variant_view get_variant_view( const std::string_view& stringName, unsigned uindex ) const noexcept;
    gd::variant_view get_variant_view( const std::string_view* pstringName, unsigned uindex ) const noexcept;
    gd::variant_view get_variant_view( const std::initializer_list<std::string_view>& stringName ) const noexcept;
-   // gd::variant_view get_variant_view( const std::initializer_list<std::string_view>& stringName, unsigned uindex ) const noexcept; TODO: impement this i `arguments` object
 
    std::vector<gd::variant> get_variant_all( const std::string_view& stringName ) const;
    std::vector<gd::variant_view> get_variant_view_all( const std::string_view& stringName ) const;
+
+   std::optional<gd::variant_view> get_variant_view( size_t uIndex, tag_optional ) const noexcept { return m_argumentsValue.get_variant_view( uIndex, tag_optional{}); }
+   std::optional<gd::variant_view> get_variant_view( std::string_view stringName, tag_optional ) const noexcept { return m_argumentsValue.get_variant_view( stringName, tag_optional{}); }
 
    // ## if/then for option value, call callback if option exists
 
