@@ -288,7 +288,7 @@ std::pair<bool, std::string> CDocument::FILE_FilterBinaries()
       ptableFile->erase(vectorRemoveRow);
    }
 
-	MESSAGE_Progress("", { {"clear", true} });                                                        LOG_DEBUG_RAW("== After filter binary files, count is: " & ptableFile->size());
+   MESSAGE_Progress("", { {"clear", true} });                                                        LOG_DEBUG_RAW("== After filter binary files, count is: " & ptableFile->size());
 
    return { true, "" };
 }
@@ -1439,7 +1439,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
       }
    }
 
-	std::atomic<bool> bError(false);                                           // Atomic flag to signal threads to stop processing
+   std::atomic<bool> bError(false);                                           // Atomic flag to signal threads to stop processing
    // ## Thread synchronization variables
    std::atomic<uint64_t> uAtomicFileIndex(0);                                 // Current file being processed
    std::atomic<uint64_t> uAtomicProcessedCount(0);                            // Count of processed files
@@ -1552,7 +1552,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
                uint64_t uPreviousLines = uAtomicTotalLines.fetch_add(ptableLineListLocal->get_row_count());
                uint64_t uCurrentLines = uPreviousLines + ptableLineListLocal->get_row_count();
 
-					if(uMax > 0 && uCurrentLines > uMax) { uAtomicFileIndex.store(uFileCount); } // Signal other threads to stop if max hits reached
+               if(uMax > 0 && uCurrentLines > uMax) { uAtomicFileIndex.store(uFileCount); } // Signal other threads to stop if max hits reached
             }
             
             ptableLineListLocal->row_clear();                                 // Clear local table for next iteration
@@ -1561,13 +1561,13 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
             vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " error: " + exception_.what());
-				bError = true;
+            bError = true;
          }
          catch(...)
          {
             std::lock_guard<std::mutex> lockErrors(mutexErrors);
             // get index to last file
-				auto uIndex = uAtomicFileIndex.load();
+            auto uIndex = uAtomicFileIndex.load();
             vectorError.push_back(std::string("Thread ") + std::to_string(iThreadId) + " unknown error, file index = " + std::to_string(uIndex));
             bError = true;
          }
@@ -1587,7 +1587,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
    std::vector<std::thread> vectorPatternThread;
    vectorPatternThread.reserve(iThreadCount);
 
-	for (int i = 0; i < iThreadCount; ++i) { vectorPatternThread.emplace_back(process_, i); }// Launch threads
+   for (int i = 0; i < iThreadCount; ++i) { vectorPatternThread.emplace_back(process_, i); }// Launch threads
    
    for(auto& threadWorker : vectorPatternThread) { threadWorker.join(); }     // Wait for all threads to complete
 
@@ -1597,7 +1597,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternFind(const std::vector
    if( bError == true )
    {
       for(const auto& stringError : vectorError) { ERROR_Add(stringError); }
-		return { false, "Errors occurred during pattern finding, see error log for details." };
+      return { false, "Errors occurred during pattern finding, see error log for details." };
    }
 
    return {true, ""};
@@ -2015,7 +2015,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
    using namespace gd::table::dto;
    constexpr unsigned uTableStyle = ( table::eTableFlagNull32 | table::eTableFlagRowStatus );
 
-	// ## Find out the detail level and that will decide which columns to create
+   // ## Find out the detail level and that will decide which columns to create
    uint32_t uDetailLevel = PROPERTY_Get("detail", uint32_t(CApplication::enumDetail::eDetailStandard)).as_uint();
 
    if( ptable == nullptr )
@@ -2050,14 +2050,14 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
          }
          else if( CApplication::IsDetailLevel_s( uDetailLevel, "STANDARD") == true )
          {
-				// file table: key | path | size | date | extension | level
+            // file table: key | path | size | date | extension | level
             ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "days"}, {"string", 20, "extension"}, {"int32", 0, "level"} }, gd::table::tag_prepare{}));
          }
          else
          {
-				// file table: key | path | size | date | extension | level | year | month | day
+            // file table: key | path | size | date | extension | level | year | month | day
             ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "days"}, {"string", 20, "extension"}, {"int32", 0, "level"}, {"int32", 0, "year"}, {"int32", 0, "month"}, {"int32", 0, "day"} }, gd::table::tag_prepare{}));
-			}
+         }
 
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
@@ -2441,13 +2441,13 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
    if(ptable_ == nullptr) { ptable_ = CACHE_Get(stringId, false); }                                assert(ptable_ != nullptr);
 
    // ## Read all column names from table
-	std::vector<std::string_view> vectorName = ptable_->column_get_name();
+   std::vector<std::string_view> vectorName = ptable_->column_get_name();
    // sort vector with names so that the largest name in character length is first
    std::sort(vectorName.begin(), vectorName.end(), [](const std::string_view& a, const std::string_view& b) { return a.size() > b.size(); });
 
 
-	std::array<uint8_t, 256> arrayQuote{}; // array to store character types for each ASCII character
-	arrayQuote['\''] = 1; // quote
+   std::array<uint8_t, 256> arrayQuote{}; // array to store character types for each ASCII character
+   arrayQuote['\''] = 1; // quote
    arrayQuote['\"'] = 1; // double quote
 
    std::string stringPostfix;
@@ -2464,6 +2464,35 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
    return { true, "" };
 }
 
+std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, std::string_view stringWhere, const std::vector<std::string>& vectorArgument, gd::table::arguments::table* ptable_ )
+{
+   if(ptable_ == nullptr) { ptable_ = CACHE_GetTableArguments(stringId, false); }                  assert(ptable_ != nullptr);
+
+   // ## Read all column names from table
+   std::vector<std::string_view> vectorName = ptable_->column_get_name();
+   // sort vector with names so that the largest name in character length is first
+   std::sort(vectorName.begin(), vectorName.end(), [](const std::string_view& a, const std::string_view& b) { return a.size() > b.size(); });
+
+
+   std::array<uint8_t, 256> arrayQuote{}; // array to store character types for each ASCII character
+   arrayQuote['\''] = 1; // quote
+   arrayQuote['\"'] = 1; // double quote
+
+   std::string stringPostfix;
+   stringPostfix = gd::expression::token::infix_to_postfix_s(stringWhere, gd::expression::tag_formula_keyword{});
+   auto vectorFound = gd::math::string::find_all_word(stringPostfix, vectorArgument, arrayQuote);
+
+   std::string stringExpression;
+   auto result_ = EXPRESSION_PrepareForArgument_s(stringPostfix, vectorFound, stringExpression);
+
+   if(result_.first == false) return result_;
+
+   RunExpression_Where_g(stringExpression, ptable_);
+
+   return { true, "" };
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Get information about cache to be able to generate data for it
  * 
@@ -2471,13 +2500,13 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
 auto ptableAtoms = pdocument->CACHE_Get( "atoms" );
 if( ptableAtoms == nullptr )
 {
-	gd::table::dto::table table;
+   gd::table::dto::table table;
 
    gd::argument::arguments argumentsCache = pdocument->CACHE_GetInformation( "atoms" );
    std::string stringSelect = argumentsCache["value"].as_string();
-	auto [bOk, stringError] = application::database::SQL_SelectToTable_g( &databaseRead, stringSelect, &table );
+   auto [bOk, stringError] = application::database::SQL_SelectToTable_g( &databaseRead, stringSelect, &table );
 
-	pdocument->CACHE_Add( std::move( table ), "atoms" );
+   pdocument->CACHE_Add( std::move( table ), "atoms" );
 }
 
 ptableAtoms = pdocument->CACHE_Get( "atoms" );
@@ -2958,15 +2987,15 @@ void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd
  */
 void CDocument::ERROR_Add( const std::string_view& stringError )
 {
-   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );            // locks `m_vectorError`
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );           // locks `m_vectorError`
    gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
    m_vectorError.push_back( std::move(argumentsError) );
 }
 
 void CDocument::ERROR_Print( bool bClear ) 
 {
-   std::shared_lock<std::shared_mutex> lock_( m_sharedmutexError );            // locks `m_vectorError`
-   if( m_vectorError.empty() == true ) return;                                 // no errors, exit
+   std::shared_lock<std::shared_mutex> lock_( m_sharedmutexError );           // locks `m_vectorError`
+   if( m_vectorError.empty() == true ) return;                                // no errors, exit
 
    for( const auto& itError : m_vectorError )
    {
@@ -2974,37 +3003,70 @@ void CDocument::ERROR_Print( bool bClear )
       if( stringError.empty() == false ) { m_papplication->PrintError(stringError, gd::argument::arguments() ); } // print error message
    }
 
-	if (bClear == true) m_vectorError.clear();                                  // clear error list
+   if (bClear == true) m_vectorError.clear();                                 // clear error list
 
 }
 
-std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression)
+namespace {
+
+/// Generate expression by inserting method to get value from table
+std::string insert_method_(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string_view stringMethod)
 {
-   stringPreparedExpression.clear();
-   if( stringExpression.empty() == true ) return { false, "No expression provided" };
+   std::string stringPreparedExpression; // prepared expression
    size_t uLastPosition = 0;
    for( const auto& [uStart, uLength] : vectorPosition )
    {
-      if(uStart > uLastPosition)
+      if( uStart > uLastPosition )                                            // check if there is text before position to add that before adding method
       {
-			auto uLength = uStart - uLastPosition;
+         auto uLength = uStart - uLastPosition;
          stringPreparedExpression += stringExpression.substr(uLastPosition, uLength); // add text before position
       }
-      uLastPosition = uStart + uLength;
+      uLastPosition = uStart + uLength;                                      // update last position
+      
+      // Extract column name from expression
+      auto stringColumn = stringExpression.substr(uStart, uLength);
 
-		// Extract column name from expression
-		auto stringColumn = stringExpression.substr(uStart, uLength);
-
-      stringPreparedExpression += std::format("source::get_cell_value( dtotable, row, '{}' )", stringColumn); // add code to get column value from row
+      try 
+      {
+         stringPreparedExpression += std::vformat( stringMethod, std::make_format_args(stringColumn) );
+      } 
+      catch (const std::format_error&) { stringPreparedExpression.append(stringColumn); } // Fallback if formatting fails
    }
-
+   
    if( uLastPosition < stringExpression.length() ) stringPreparedExpression += stringExpression.substr(uLastPosition); // add text after last position
+
+   return stringPreparedExpression;
+}
+} // namespace
+
+/// Prepare expression for table
+std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression)
+{                                                                                                  assert( stringExpression.empty() == false );
+   stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "source::get_cell_value( dtotable, row, '{}' )" );
 
    return { true, "" };
 }
 
+/// Prepare expression for arguments table
+std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForArgumentsTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression)
+{                                                                                                  assert( stringExpression.empty() == false );
+   stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "source::get_cell_value( argtable, row, '{}' )" );
+
+   return { true, "" };
+}
+
+
+/// Prepare expression for argument table
+std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForArgument_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression)
+{                                                                                                  assert( stringExpression.empty() == false );
+   stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "source::get_argument( args, '{}' )" );
+
+   return { true, "" };
+}
+
+
 void CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult )
-{
+{  
    unsigned uColumnCount = table_.get_column_count(); // get number of columns
 
    for( const auto& itRow : table_ )

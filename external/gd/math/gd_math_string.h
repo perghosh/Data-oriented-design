@@ -56,6 +56,10 @@ std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& s
 std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, std::string_view stringWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset = 0) noexcept;
 std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string_view>& vectorWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset = 0) noexcept;
 
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string>& vectorWord, size_t uOffset) noexcept;
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string>& vectorWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset = 0) noexcept;
+
+
 
 // ## Selection methods .......................................................
 

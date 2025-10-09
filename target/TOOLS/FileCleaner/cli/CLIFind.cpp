@@ -222,13 +222,13 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
    bool bUseKeyValue = false; // flag to indicate if key-value pairs should be used
 
    if( options_.exists("segment") == true ) { argumentsFind.append("segment", options_["segment"].as_string()); }
-   if( options_.exists_any({ "keys", "brief", "header", "footer"}) == true )
+   if( options_.exists_any( { "keys", "brief", "header", "footer" } ) == true )  // if keys or header or brief or footer is set, we want to use key-value pairs
    {
       bUseKeyValue = true;                                                    // if keys are set, we want to use key-value pairs
       // ## merge header, footer, brief and  keys with key-value pairs
       if( options_.exists_any({ "header", "brief", "footer" }) == true )
       {
-         std::vector<std::string_view> vectorKeys;
+         std::vector<std::string_view> vectorKeys; // vector to store all keys used for key-value pairs
          vectorKeys.push_back(options_["keys"].as_string_view());             // add header to the keys
          vectorKeys.push_back(options_["header"].as_string_view());           // add header to the keys
          vectorKeys.push_back(options_["brief"].as_string_view());            // add brief to the keys
@@ -255,7 +255,7 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
                                                                                                    LOG_DEBUG_RAW( "== keyvalue format: " & argumentsFind["kv-format"].as_string() );
    }
 
-   // ## Check if kv or keys are provided, this is special (hack) for quick editing sending arguments
+   // ## Check if kv or keys are provided in kv argument, this is special (hack) for quick editing sending arguments
    if( options_.exists("kv") == true ) 
    { 
       std::string string_ = options_["kv"].as_string();
@@ -470,6 +470,7 @@ std::pair<bool, std::string> MatchAllPatterns_g(const std::vector<std::string>& 
  *
  * Tables involved in the find operation is in this method checked and synchronized.
  * The file-linelist table is the core and dependent tables are checked against it.
+ * Unconnected rows are removed from the dependent tables. Only connected rows are kept.
  *
  * @param pdocument Pointer to the CDocument instance containing the file line list and key-value table.
  * @return A pair containing:
@@ -484,6 +485,9 @@ std::pair<bool, std::string> SynchronizeResult_g(CDocument* pdocument)
    if( ptableKeyValue != nullptr )
    {
       std::vector<uint64_t> vectorRowDelete; // vector of row numbers to delete
+
+      // ## iterate over all rows in key-value table and check if the file-linelist-key exists in the file line list
+
       for( size_t uRow = 0; uRow < ptableKeyValue->get_row_count(); ++uRow )
       {
          uint64_t uLineListKey = ptableKeyValue->cell_get_variant_view(uRow, "file-linelist-key");
@@ -852,12 +856,19 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    // ## check for where filter in argumentsPrint, if exists then filter the key-value pairs       @TAG #expression.where
    if( pargumentsPrint->exists("where") == true )
    {
+      auto stringKeys = pargumentsPrint->get_argument("keys").as_string();
+      auto vectorColumn = CApplication::Split_s( stringKeys, 0 );
+
       std::string stringWhere = pargumentsPrint->get_argument("where").as_string();   // get the where filter from the arguments
 
-      std::string stringExpression;                                             // string to hold the expression for filtering
-      auto result_ = SHARED_SqlToExpression_g(stringWhere, stringExpression);                      if( result_.first == false ) { return result_; }
 
-      result_ = RunExpression_Where_g( stringExpression, ptableKeyValue );                         if( result_.first == false ) { return result_;  }
+      auto result_ = pdocument->CACHE_Where( "keyvalue", stringWhere, vectorColumn );
+      if( result_.first == false ) { return result_; }                            // if where filter failed, return the error
+
+      //std::string stringExpression;                                             // string to hold the expression for filtering
+      //result_ = SHARED_SqlToExpression_g(stringWhere, stringExpression);                           if( result_.first == false ) { return result_; }
+
+      //result_ = RunExpression_Where_g( stringExpression, ptableKeyValue );                         if( result_.first == false ) { return result_;  }
    }
 
 

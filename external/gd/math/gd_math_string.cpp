@@ -433,7 +433,16 @@ std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& s
    return vectorResults;
 }
 
+/// Overloaded function to accept vector of std::string and convert to string_view
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string>& vectorWord, size_t uOffset) noexcept
+{
+   // convert vector to vector with string views
+   std::vector<std::string_view> vectorWordView;
+   vectorWordView.reserve(vectorWord.size());
+   for( const auto& word : vectorWord ) { vectorWordView.push_back(word); }
 
+   return find_all_word(stringText, vectorWordView, uOffset);
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Finds all occurrences of a whole word within a string, skipping marked regions.
@@ -685,179 +694,15 @@ std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& s
    return vectorResult;
 }
 
-/*
-std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string_view>& vectorWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset) noexcept
+/// Overloaded function to accept vector of std::string and convert to string_view
+std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string>& vectorWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset ) noexcept
 {
-   std::vector< std::pair<size_t, size_t> > vectorResult;
-   if(stringText.empty() == true || vectorWord.empty() == true) { return vectorResult; }
-
-   const auto* piBegin = stringText.data();
-   const uint8_t* puPosition = (const uint8_t*)piBegin;
-   uint64_t uLength = (uint64_t)stringText.length();
-   const auto* piEnd = piBegin + uLength;
-
-   while(puPosition != (const uint8_t*)piEnd)
-   {
-      // ## check for comment
-      if(arraySkip[(uint8_t)*puPosition] == 1)
-      {
-         // check if there are three character that start and ends comment
-			bool bThree = false;
-			uint8_t uChar = (uint8_t)*puPosition;
-         if(puPosition + 2 < piEnd && *puPosition == *(puPosition + 1) && *puPosition == *(puPosition + 2) && arraySkip[uChar] == 1) { bThree = true;	puPosition += 3; } // skip the three characters
-			else { puPosition++; } // skip the single character
-
-         if(bThree == true)
-         {
-            // skip until the next three characters
-            while(puPosition + 2 < piEnd)
-            {
-               if(*puPosition == uChar && *(puPosition + 1) == uChar && *(puPosition + 2) == uChar) { puPosition += 3; break; } // skip the three characters
-               puPosition++;
-            }
-         }
-         else
-         {
-            // skip until the next single character
-            while(puPosition < piEnd)
-            {
-               if(*puPosition == uChar) { puPosition++; break; } // skip the single character
-               puPosition++;
-            }
-			}
-			continue;
-      }
-
-		// ## check for word ...................................................
-      for(const auto& stringWord : vectorWord)
-      {
-         if(stringWord.empty() == true) { continue; }
-         const size_t uWordLength = stringWord.length();
-         if(uWordLength == 0 || (size_t)(piEnd - (const char*)puPosition) < uWordLength) { continue; } // not enough characters left
-       
-         // check if the word matches
-         bool bMatches = true;
-         for(size_t uIndex = 0; uIndex < uWordLength; ++uIndex)
-         {
-            if(*(puPosition + uIndex) != (uint8_t)stringWord[uIndex]) { bMatches = false; break; } // mismatch found
-         }
-         
-         if(bMatches == true)
-         {
-            // ## Check if this occurrence is a whole word
-            size_t uFound = (size_t)(puPosition - (const uint8_t*)piBegin);
-            bool bStartBoundary = is_word_boundary(stringText, uFound);
-            bool bEndBoundary = is_word_boundary(stringText, uFound + uWordLength);
-            if(bStartBoundary && bEndBoundary)
-            {
-               vectorResult.push_back(std::make_pair(uFound, uWordLength));
-               puPosition += uWordLength; // move past the found word
-               break; // move to the next position in the main loop
-            }
-         }
-      }
-		puPosition++;
-   }
-
-	return vectorResult;
+   // convert vector to vector with string views
+   std::vector<std::string_view> vectorWordView;
+   vectorWordView.reserve(vectorWord.size());
+   for( const auto& word_ : vectorWord ) { vectorWordView.push_back(word_); }
+   return find_all_word(stringText, vectorWordView, arraySkip, uOffset);
 }
-*/
-
-/*
-std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string_view>& vectorWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset) noexcept
-{
-   std::vector< std::pair<size_t, size_t> > vectorResults;
-
-   if(stringText.empty() == true || vectorWord.empty() == true) { return vectorResults; }
-
-   // ## Search for each word in the vector
-   for(const auto& stringWord : vectorWord)
-   {
-      if(stringWord.empty() == true) { continue; }
-      
-      const size_t uTextLength = stringText.length();
-      const size_t uWordLength = stringWord.length();
-      
-      if(uWordLength > uTextLength) { continue; }
-
-      size_t uSearchStart = uOffset;
-
-      while(uSearchStart <= uTextLength - uWordLength)
-      {
-         size_t uFound = stringText.find(stringWord, uSearchStart);
-         if(uFound == std::string_view::npos) { break; }
-         
-         // ## Check if this position is within a skip region
-         bool bInSkipRegion = false;
-         
-         // Check if found position is between two marked characters
-         for(size_t uPos = 0; uPos < uFound && uPos < uTextLength; ++uPos)
-         {
-            uint8_t uChar = static_cast<uint8_t>(stringText[uPos]);
-            if(arraySkip[uChar] == 1)
-            {
-               // Find the closing marked character
-               for(size_t uEnd = uPos + 1; uEnd < uTextLength; ++uEnd)
-               {
-                  uint8_t uEndChar = static_cast<uint8_t>(stringText[uEnd]);
-                  if(arraySkip[uEndChar] == 1)
-                  {
-                     if(uFound >= uPos && uFound < uEnd)
-                     {
-                        bInSkipRegion = true;
-                        break;
-                     }
-                     break;
-                  }
-               }
-               if(bInSkipRegion == true) { break; }
-            }
-         }
-         
-         // Check for three consecutive identical marked characters
-         if(bInSkipRegion == false && uFound >= 2)
-         {
-            for(size_t uPos = 0; uPos <= uFound - 2 && uPos + 2 < uTextLength; ++uPos)
-            {
-               uint8_t uChar1 = stringText[uPos];
-               uint8_t uChar2 = stringText[uPos + 1];
-               uint8_t uChar3 = stringText[uPos + 2];
-
-               if(arraySkip[uChar1] == 1 && uChar1 == uChar2 && uChar2 == uChar3)
-               {
-                  // Find where this skip region ends (after the three characters)
-                  size_t uSkipEnd = uPos + 3;
-                  if(uFound >= uPos && uFound < uSkipEnd)
-                  {
-                     bInSkipRegion = true;
-                     break;
-                  }
-               }
-            }
-         }
-         
-         if(bInSkipRegion == false)
-         {
-            // ## Check if this occurrence is a whole word
-            bool bStartBoundary = is_word_boundary(stringText, uFound);
-            bool bEndBoundary = is_word_boundary(stringText, uFound + uWordLength);
-            
-            if(bStartBoundary && bEndBoundary)
-            {
-               vectorResults.push_back(std::make_pair(uFound, uWordLength));
-            }
-         }
-         
-         uSearchStart = uFound + 1;
-      }
-   }
-   
-   // ## Sort results by position
-   std::sort(vectorResults.begin(), vectorResults.end());
-   
-   return vectorResults;
-}
-*/
 
 
 /** ---------------------------------------------------------------------------
