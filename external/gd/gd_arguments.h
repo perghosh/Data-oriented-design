@@ -64,6 +64,7 @@
 #pragma once
 #include <cassert>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -1076,6 +1077,9 @@ public:
    [[nodiscard]] argument get_argument( const std::initializer_list<std::string_view>& listName ) const;
    [[nodiscard]] std::vector<argument> get_argument( const std::vector<const_pointer>& vectorPosition ) const;
 
+   [[nodiscard]] std::optional<argument> get_argument(size_t uIndex, gd::types::tag_optional) const;
+   [[nodiscard]] std::optional<argument> get_argument(const std::string_view& stringName, gd::types::tag_optional) const;
+
 
    /**
     * Try to get value for param name, if not found then insert `vInsert` into params 
@@ -1114,6 +1118,11 @@ public:
    /// return first value for name 
    gd::variant_view get_variant_view( const std::string_view& stringName ) const { return get_argument( stringName ).get_variant_view(); }
    [[nodiscard]] std::pair< std::string_view, gd::variant_view > get_variant_view(unsigned int uIndex, tag_pair ) const;
+
+   /// return first value for index as optional
+   std::optional<gd::variant_view> get_variant_view(size_t uIndex, gd::types::tag_optional) const;
+   /// return first value for name as optional
+   std::optional<gd::variant_view> get_variant_view( const std::string_view& stringName, gd::types::tag_optional ) const;
 //@}
 
    template<typename OBJECT>
