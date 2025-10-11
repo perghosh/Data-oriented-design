@@ -1506,6 +1506,17 @@ bool table::row_set(uint64_t uRow, const unsigned* puColumn, const std::string_v
 }
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Set raw data to row, data must be of correct size
+ * @param uRow row where data is set
+ * @param praw_ pointer to raw data
+ */
+void table::row_set( uint64_t uRow, const void* praw_, tag_raw )
+{                                                                                                  assert( uRow < m_uRowCount ); assert( praw_ != nullptr );
+   uint8_t* puRow = row_get( uRow );
+   memcpy( puRow, praw_, m_uRowSize );
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Set column sequence in row to value

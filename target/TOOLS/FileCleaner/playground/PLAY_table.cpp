@@ -85,7 +85,7 @@ TEST_CASE("[table] simd table 01", "[table]") {
    {
       // add numbers to each column
       auto uRow = tableSimd.row_add_one();
-      for( int j = 0; j < 8; ++j ) { tableSimd.cell_set( uRow, j, (double)(i * 10 + j) );  }
+      for( int j = 0; j < 8; ++j ) { tableSimd.cell_set( uRow, j, (double)( i * 10 + j ) ); }
    }
 
    // calculate sum of each row

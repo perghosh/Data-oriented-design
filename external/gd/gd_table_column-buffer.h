@@ -1,4 +1,4 @@
-﻿/**
+/**
  * \file gd_table_column-buffer.h
  * 
  * @brief Table used to transfer/move data, Use `gd::table::dto::table` class that is optimized for data transfer.
@@ -366,6 +366,8 @@ public:
       auto operator+( std::ptrdiff_t iDistance ) { return iterator_row( (std::ptrdiff_t)m_uRow + iDistance, m_ptablecolumnbuffer ); }
       auto operator-( std::ptrdiff_t iDistance ) { return iterator_row( (std::ptrdiff_t)m_uRow - iDistance, m_ptablecolumnbuffer ); }
 
+      const uint8_t* get( tag_raw ) const { return m_ptablecolumnbuffer->row_get(m_uRow); }
+
       std::vector< gd::variant_view > get_variant_view() const { return m_ptablecolumnbuffer->row_get_variant_view( m_uRow ); }
       std::vector< gd::variant_view > get_variant_view( const std::vector<unsigned>& vectorColumn ) const { return m_ptablecolumnbuffer->row_get_variant_view( m_uRow, vectorColumn ); }
       std::vector< gd::variant_view > get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const { return m_ptablecolumnbuffer->row_get_variant_view( m_uRow, puIndex, uSize ); }
@@ -399,6 +401,15 @@ public:
       operator uint64_t() const  noexcept  { return m_uRow; }
       uint64_t get_row() const noexcept { return m_uRow; }
       int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
+
+      const uint8_t* get( tag_raw ) const { return m_ptablecolumnbuffer->row_get(m_uRow); }
+
+      std::vector< gd::variant_view > get_variant_view() const { return m_ptablecolumnbuffer->row_get_variant_view( m_uRow ); }
+      std::vector< gd::variant_view > get_variant_view( const std::vector<unsigned>& vectorColumn ) const { return m_ptablecolumnbuffer->row_get_variant_view( m_uRow, vectorColumn ); }
+      std::vector< gd::variant_view > get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const { return m_ptablecolumnbuffer->row_get_variant_view( m_uRow, puIndex, uSize ); }
+
+      gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptablecolumnbuffer->cell_get_variant_view( m_uRow, uIndex ); }
+      gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptablecolumnbuffer->cell_get_variant_view( m_uRow, stringName ); }
 
       const_iterator_row& operator++() { m_uRow++; return *this; }
       const_iterator_row operator++(int) { const_iterator_row it_ = *this; ++(*this); return it_; }
@@ -782,6 +793,9 @@ public:
    void row_set_null( uint64_t uFrom, uint64_t uCount );
    void row_set_range( uint64_t uRow, const gd::variant_view variantviewSet, tag_convert ) { row_set_range( uRow, 0, get_column_count(), variantviewSet, tag_convert{}); }
    void row_set_range( uint64_t uRow, unsigned uStartColumn, unsigned uCount, const gd::variant_view variantviewSet, tag_convert );
+
+   /// set raw data in row, use with care because no checks are done
+   void row_set( uint64_t uRow, const void* praw_, tag_raw );
 
    // ### support for external objects
    template< typename OBJECT >
