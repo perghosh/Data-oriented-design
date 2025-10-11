@@ -169,11 +169,14 @@ public:
       iterator_row( uint64_t uRow, table* ptable ): m_uRow(uRow), m_ptable(ptable ) {}
 
       auto operator*() const { return gd::table::row<table>( m_ptable, m_uRow ); }
-      uint64_t get_row() const noexcept { return m_uRow; }
-      int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
 
       bool operator==( const iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow == m_uRow; }
       bool operator!=( const iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow != m_uRow; }
+
+      uint64_t get_row() const noexcept { return m_uRow; }
+      int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
+
+      const uint8_t* get( tag_raw ) const { return m_ptable->row_get(m_uRow); }
 
       iterator_row& operator++() { m_uRow++; return *this; }
       iterator_row operator++(int) { iterator_row it_ = *this; ++(*this); return it_; }
@@ -186,6 +189,7 @@ public:
       gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex ); }
       gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName ); }
       std::vector< gd::variant_view > cell_get_variant_view() const { return m_ptable->cell_get_variant_view( m_uRow ); }
+      std::vector< gd::variant_view > get_variant_view( const std::vector<unsigned>& vectorColumn ) const { return m_ptable->row_get_variant_view( m_uRow, vectorColumn ); }
 
       void cell_set( unsigned uColumn, const gd::variant_view& variantviewValue ) { m_ptable->cell_set( m_uRow, uColumn, variantviewValue ); }
       void cell_set( const std::string_view& stringName, const gd::variant_view& variantviewValue ) { m_ptable->cell_set( m_uRow, stringName, variantviewValue ); }
@@ -202,11 +206,18 @@ public:
       const_iterator_row( uint64_t uRow, const table* ptable ): m_uRow(uRow), m_ptable(ptable) {}
       const_iterator_row( int64_t iRow, table* ptable ): m_uRow((uint64_t)iRow), m_ptable(ptable) {}
 
+      bool operator==( const const_iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow == m_uRow; }
+      bool operator!=( const const_iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow != m_uRow; }
+
       uint64_t get_row() const noexcept { return m_uRow; }
       int64_t get_irow() const noexcept { return (int64_t)m_uRow; }
 
-      bool operator==( const const_iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow == m_uRow; }
-      bool operator!=( const const_iterator_row& o ) const { assert( o.m_ptable == m_ptable ); return o.m_uRow != m_uRow; }
+      const uint8_t* get( tag_raw ) const { return m_ptable->row_get(m_uRow); }
+
+      gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex ); }
+      gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName ); }
+      std::vector< gd::variant_view > cell_get_variant_view() const { return m_ptable->cell_get_variant_view( m_uRow ); }
+      std::vector< gd::variant_view > get_variant_view( const std::vector<unsigned>& vectorColumn ) const { return m_ptable->row_get_variant_view( m_uRow, vectorColumn ); }
 
       const_iterator_row& operator++() { m_uRow++; return *this; }
       const_iterator_row operator++(int) { const_iterator_row it_ = *this; ++(*this); return it_; }
@@ -215,10 +226,6 @@ public:
 
       const_iterator_row operator+( int64_t iDistance ) { return const_iterator_row( m_uRow + iDistance, m_ptable ); }
       const_iterator_row operator-( int64_t iDistance ) { return const_iterator_row( m_uRow - iDistance, m_ptable ); }
-
-      gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptable->cell_get_variant_view( m_uRow, uIndex ); }
-      gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptable->cell_get_variant_view( m_uRow, stringName ); }
-      std::vector< gd::variant_view > cell_get_variant_view() const { return m_ptable->cell_get_variant_view( m_uRow ); }
 
       uint64_t m_uRow;
       const table* m_ptable;
@@ -545,6 +552,9 @@ public:
    void row_set_null( uint64_t uFrom, uint64_t uCount );
    void row_set_range( uint64_t uRow, const gd::variant_view variantviewSet, tag_convert ) { row_set_range( uRow, 0, get_column_count(), variantviewSet, tag_convert{}); }
    void row_set_range( uint64_t uRow, unsigned uStartColumn, unsigned uCount, const gd::variant_view variantviewSet, tag_convert );
+
+   /// set raw data in row, use with care because no checks are done
+   void row_set( uint64_t uRow, const void* praw_, tag_raw );
    ///@}
   
    /// @name row_clear
