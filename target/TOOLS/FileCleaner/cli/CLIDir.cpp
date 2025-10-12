@@ -96,6 +96,7 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    if( value_.has_value() == true )
    {
       auto result_ = pdocument->CACHE_Where("file-dir", value_.value().as_string_view());// filter table based on where condition
+                                                                                                   LOG_ERROR_RAW_IF( result_.first == false, std::format("Error in where: {}, error: {}", value_.value().as_string_view(), result_.second) );
       if(result_.first == false) return result_;
    }
 

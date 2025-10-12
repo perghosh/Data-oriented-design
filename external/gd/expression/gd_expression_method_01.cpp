@@ -32,7 +32,8 @@ std::pair<bool, std::string> average_g(const std::vector<value>& vectorArgument,
 
 std::pair<bool, std::string> length_g( const std::vector< value >& vectorArgument, value* pvalueResult )
 {                                                                                                  assert( vectorArgument.size() > 0 );
-   if( vectorArgument[0].is_string() == false ) { return {false, "length_g - Invalid argument type"}; }
+const auto& v_ = vectorArgument[0];
+   if( v_.is_string() == false ) { return {false, "length_g - Invalid argument type"}; }
 
    auto string_ = vectorArgument[0].as_string_view();
    *pvalueResult = static_cast<int64_t>( string_.length() );

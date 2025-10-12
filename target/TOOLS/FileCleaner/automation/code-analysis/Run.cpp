@@ -264,6 +264,7 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
       gd::expression::value valueResult;
       std::vector<gd::expression::value> vectorReturn;
       result_ = gd::expression::token::calculate_s(vectorPostfix, &vectorReturn, runtime_); // calculate the expression
+      if( result_.first == false ) { return result_; }
 
       bool bWhere = false;
       for( const auto& value_ : vectorReturn )

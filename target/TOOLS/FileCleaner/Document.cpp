@@ -2471,11 +2471,11 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
    auto vectorFound = gd::math::string::find_all_word(stringPostfix, vectorName, arrayQuote);
 
    std::string stringExpression;
-   auto result_ = EXPRESSION_PrepareForTable_s(stringPostfix, vectorFound, stringExpression);
-
+   auto result_ = EXPRESSION_PrepareForTable_s(stringPostfix, vectorFound, stringExpression);// prepare expression by replacing column names with values from table
    if(result_.first == false) return result_;
-
-   RunExpression_Where_g(stringExpression, ptable_);
+                                                                                                   LOG_DEBUG_RAW("== Where formula: " & stringExpression);
+   result_ = RunExpression_Where_g(stringExpression, ptable_);     
+   if( result_.first == false ) return result_;
 
    return { true, "" };
 }
@@ -2500,10 +2500,10 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
 
    std::string stringExpression;
    auto result_ = EXPRESSION_PrepareForArgument_s(stringPostfix, vectorFound, stringExpression);
-
    if(result_.first == false) return result_;
 
-   RunExpression_Where_g(stringExpression, ptable_);
+   result_ = RunExpression_Where_g(stringExpression, ptable_);
+   if( result_.first == false ) return result_;
 
    return { true, "" };
 }
