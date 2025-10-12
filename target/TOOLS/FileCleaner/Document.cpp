@@ -1,4 +1,4 @@
-﻿/**
+/**
 * \file Document.cpp
 * 
 * ### 0TAG0 File navigation, mark and jump to common parts
@@ -327,6 +327,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
 {
    auto* ptableFile = CACHE_Get("file");                                                           assert( ptableFile != nullptr );
    auto* ptableFileCount = CACHE_Get("file-count");                                                assert( ptableFileCount != nullptr );
+   unsigned uDetailLevel = PROPERTY_Get("detail").as_uint();
 
    auto uFileCount = ptableFile->get_row_count();                             // Total number of files to process
 
@@ -409,7 +410,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdateRowCounters( int iThreadCount
                uint64_t uCount = argumentsResult["count"].as_uint64();
                ptableFileCount->cell_set(iRowIndexCount, "count", uCount);
 
-               if(argumentsResult["code"].is_null() == false)                  // Update additional statistics if available
+               // Update additional statistics if available
+               // Detail level check because if set to BASIC then only count is calculated
+               if(argumentsResult["code"].is_null() == false && CApplication::IsDetailLevel_s( uDetailLevel, "BASIC") == false)                  
                {
                   ptableFileCount->cell_set(iRowIndexCount, "code", argumentsResult["code"].as_uint64());
                   ptableFileCount->cell_set(iRowIndexCount, "characters", argumentsResult["characters"].as_uint64());
@@ -2067,12 +2070,25 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       auto p_ = CACHE_Get(stringId, false);
       if( p_ == nullptr )
       {
-         // file-count table: key | file-key | filename  
-         //           count | code | characters | comment | string  
-         ptable_ = std::make_unique<table>(table(uTableStyle,
-            { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
-              {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"} }, gd::table::tag_prepare{})
-         );
+         if( CApplication::IsDetailLevel_s(uDetailLevel, "BASIC") == true )
+         {
+            // file-count table: key | file-key | filename  
+            //           count | code
+            ptable_ = std::make_unique<table>(table(uTableStyle,
+               { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
+                 {"uint64", 0, "count"}, {"uint64", 0, "code"} }, gd::table::tag_prepare{})
+            );
+         }
+         else
+         {
+            // file-count table: key | file-key | filename  
+            //           count | code | characters | comment | string  
+            ptable_ = std::make_unique<table>(table(uTableStyle,
+               { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
+                 {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"} }, gd::table::tag_prepare{})
+            );
+         }
+
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
       }
    }
@@ -2694,9 +2710,16 @@ gd::table::dto::table CDocument::RESULT_RowCount()
    using namespace gd::table::dto;
    // Define the result table structure
    constexpr unsigned uTableStyle = (table::eTableFlagNull32 | table::eTableFlagRowStatus | table::eTableFlagDuplicateStrings );
+   unsigned uDetailLevel = PROPERTY_Get("detail").as_uint();
 
    std::vector< std::tuple< std::string_view, unsigned, std::string_view > > 
       vectorColumn( {{"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "count"}, {"uint64", 0, "code"}, {"uint64", 0, "characters"}, {"uint64", 0, "comment"}, {"uint64", 0, "string"}} );
+
+   if(CApplication::IsDetailLevel_s( uDetailLevel, "BASIC") == true)
+   {
+      // remove code, characters, comment and string columns
+      vectorColumn.erase(vectorColumn.begin() + 3, vectorColumn.end());
+   }
 
    // ## check for modes where user wants to see code
    //    in this case we remove the folder column and only show filename and count to make it compact and easy to open file in editor
