@@ -937,7 +937,11 @@ void options::print_documentation( std::function<void(unsigned uType, std::strin
    for( auto it : m_vectorOption )
    {
       unsigned uType = eOptionTypeOption;
-      if( it.is_flag() == true ) { uType = eOptionTypeFlag; }                 // if flag then set type to flag
+      if( it.is_flag() == true ) 
+      { 
+         if( it.is_option() == true ) uType |= eOptionTypeFlag;               // if option and flag then set type to option flag
+         else uType = eOptionTypeFlag;                                        // if flag then set type to flag
+      }                 
 
       callback_( uType, it.name(), it.description(), &it, this );
    }

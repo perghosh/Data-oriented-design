@@ -179,6 +179,7 @@ public:
 
       ~option() {}
 
+      bool is_option() const noexcept { return ( m_uFlags & eOptionFlagOption ) == eOptionFlagOption; }
       bool is_flag() const noexcept { return m_uType & gd::types::eTypeNumberBool || (m_uFlags & eOptionFlagFlag) == eOptionFlagFlag; }
       bool is_global() const noexcept { return (m_uFlags & eOptionFlagGlobal) == eOptionFlagGlobal; }
 

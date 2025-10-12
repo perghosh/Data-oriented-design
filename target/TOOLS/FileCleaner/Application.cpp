@@ -1934,13 +1934,14 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
          stringDocumentation += gd::math::string::format_indent(stringDescription, 2, true); // indent description
          stringDocumentation += "\n\n";
       }
-      else if( uType == options::eOptionTypeOption )
+      else if( (uType & options::eOptionTypeOption) == options::eOptionTypeOption )
       {
          // pad to 18 characters
          stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
          std::string string_ = std::format("- {:.<16}: ", stringName );
          stringDocumentation += string_;
          string_ = gd::math::string::format_text_width( stringDescription, 60 );
+         if( ( uType & options::eOptionTypeFlag ) == options::eOptionTypeFlag ) { string_ += " (flag)"; } // if flag then add to description
          string_ = gd::math::string::format_indent( string_, 20, false );
          stringDocumentation += string_;
          stringDocumentation += "\n";
@@ -1980,13 +1981,14 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
          stringDocumentation += gd::math::string::format_header_line("GLOBALS", 80, '#', '=', '#'); // format header line
          stringDocumentation += "\n\n";
       }
-      else if( uType == options::eOptionTypeOption )
+      else if( (uType & options::eOptionTypeOption) == options::eOptionTypeOption )
       {
          // pad to 18 characters
          stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
          std::string string_ = std::format("- {:.<16}: ", stringName );
          stringDocumentation += string_;
          string_ = gd::math::string::format_text_width( stringDescription, 60 );
+         if( ( uType & options::eOptionTypeFlag ) == options::eOptionTypeFlag ) { string_ += " (flag)"; } // if flag then add to description
          string_ = gd::math::string::format_indent( string_, 20, false );
          stringDocumentation += string_;
          stringDocumentation += "\n";
