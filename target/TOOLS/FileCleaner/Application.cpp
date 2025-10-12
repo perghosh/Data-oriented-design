@@ -1940,8 +1940,9 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
          stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
          std::string string_ = std::format("- {:.<16}: ", stringName );
          stringDocumentation += string_;
-         string_ = gd::math::string::format_text_width( stringDescription, 60 );
+         string_ = stringDescription;
          if( ( uType & options::eOptionTypeFlag ) == options::eOptionTypeFlag ) { string_ += " (flag)"; } // if flag then add to description
+         string_ = gd::math::string::format_text_width( string_, 60 );
          string_ = gd::math::string::format_indent( string_, 20, false );
          stringDocumentation += string_;
          stringDocumentation += "\n";
@@ -1987,8 +1988,9 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
          stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
          std::string string_ = std::format("- {:.<16}: ", stringName );
          stringDocumentation += string_;
-         string_ = gd::math::string::format_text_width( stringDescription, 60 );
+         string_ = stringDescription;
          if( ( uType & options::eOptionTypeFlag ) == options::eOptionTypeFlag ) { string_ += " (flag)"; } // if flag then add to description
+         string_ = gd::math::string::format_text_width( string_, 60 );
          string_ = gd::math::string::format_indent( string_, 20, false );
          stringDocumentation += string_;
          stringDocumentation += "\n";
