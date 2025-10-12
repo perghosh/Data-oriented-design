@@ -930,17 +930,19 @@ void options::print_documentation( std::string& stringDocumentation, tag_documen
 
 }
 
-void options::print_documentation( std::function<void(unsigned uType, std::string_view, std::string_view, const option*)> callback_ ) const
+void options::print_documentation( std::function<void(unsigned uType, std::string_view, std::string_view, const option*, const options*)> callback_ ) const
 {
-   callback_( eOptionTypeCommand, m_stringName, m_stringDescription, nullptr );
+   callback_( eOptionTypeCommand, m_stringName, m_stringDescription, nullptr, this );
 
    for( auto it : m_vectorOption )
    {
       unsigned uType = eOptionTypeOption;
       if( it.is_flag() == true ) { uType = eOptionTypeFlag; }                 // if flag then set type to flag
 
-      callback_( uType, it.name(), it.description(), &it );
+      callback_( uType, it.name(), it.description(), &it, this );
    }
+
+   callback_( 0, std::string_view(), std::string_view(), nullptr, this );
 
    for(const auto& it : m_vectorSubOption)
    {
@@ -982,7 +984,7 @@ void options::print_documentation(std::string& stringDocumentation, tag_document
    stringDocumentation += "=================================\n";               // footer
 }
 
-// Helper function to print options for a sub-option (e.g., count’s source, pattern)
+// Helper function to print options for a sub-option (e.g., countâ€™s source, pattern)
 void options::print_suboption_options(const options& optionsSub, std::string& stringDocumentation) const
 {
    bool bHasOptions = false;

@@ -1906,7 +1906,7 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
    {
       stringDocumentation += std::format("{:<12} {}\n", "COMMAND", "DESCRIPTION");
       stringDocumentation += std::format("{:<12} {}\n", "-------", "-----------");
-      poptions->print_documentation([this, &stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_) -> void {
+      poptions->print_documentation([this, &stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_, const auto* poptions_) -> void {
          if (uType == options::eOptionTypeCommand)
          {
             if (stringName.empty() == true) { return; }                          // skip empty command names
@@ -1920,7 +1920,9 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
 		return;                                                                     // if we have commands then we do not print options and flags
    }
 
-   poptions->print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_) -> void {
+   poptions->print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_, const auto* poptions_) -> void {
+      if( poptions_->get_parent() == nullptr ) { return; }                      // skip globals
+
       if( uType == options::eOptionTypeCommand )
       {
          if( stringName.empty() == true ) { return; }                          // skip empty command names
@@ -1954,16 +1956,61 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
          stringFlags += string_;
          stringFlags += "\n";
       }
+      else if( uType == 0 )
+      {
+         if( stringFlags.empty() == true ) return; // if no flags then skip
+
+         stringDocumentation += "\nFlags\n";
+         stringDocumentation += stringFlags; 
+         stringFlags.clear();
+      }
    });
 
-   // ## Print flags if any
+   // ## globals
+   poptions->print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_, const auto* poptions_) -> void {
+      if( poptions_->get_parent() != nullptr ) { return; }                      // skip subcommands
+      if( poptions_->name().empty() == false ) { return; }                       // skip if name
 
-   if( stringFlags.empty() == false )
-   {
-      stringDocumentation += "\nFlags\n";
-      stringDocumentation += stringFlags; 
-		stringFlags.clear();                                                    // clear flags for next command
-   }
+      if( uType == options::eOptionTypeCommand )
+      {
+         if( stringName.empty() == false ) { return; }                          // skip command names
+
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "header", "default" }).as_string(), gd::types::tag_color{});
+         stringDocumentation += "\n\n"; // add newline to description
+         stringDocumentation += gd::math::string::format_header_line("GLOBALS", 80, '#', '=', '#'); // format header line
+         stringDocumentation += "\n\n";
+      }
+      else if( uType == options::eOptionTypeOption )
+      {
+         // pad to 18 characters
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
+         std::string string_ = std::format("- {:.<16}: ", stringName );
+         stringDocumentation += string_;
+         string_ = gd::math::string::format_text_width( stringDescription, 60 );
+         string_ = gd::math::string::format_indent( string_, 20, false );
+         stringDocumentation += string_;
+         stringDocumentation += "\n";
+      }
+      else if( uType == options::eOptionTypeFlag )
+      {
+         // pad to 18 characters
+         stringFlags += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
+         std::string string_ = std::format("- {:.<16}: ", stringName );
+         stringFlags += string_;
+         string_ = gd::math::string::format_text_width( stringDescription, 60 );
+         string_ = gd::math::string::format_indent( string_, 20, false );
+         stringFlags += string_;
+         stringFlags += "\n";
+      }
+      else if( uType == 0 )
+      {
+         if( stringFlags.empty() == true ) return; // if no flags then skip
+
+         stringDocumentation += "\nFlags\n";
+         stringDocumentation += stringFlags; 
+         stringFlags.clear();
+      }
+   });
 }
 
 
@@ -2140,6 +2187,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "sort", "Sorts result on selected column name" });
       optionsCommand.add({ "stats", "Add statistics to generated output" });
       optionsCommand.add({ "table", "Table is used based on options set, for example generating sql insert queries will use table name to insort to" });
+      optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
       optionsCommand.add_flag( {"R", "Set recursive to 16, simple to scan all subfolders"} );
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Adapt to visual studio output window format, make files clickable"} );
