@@ -376,6 +376,62 @@ struct rows
  */
 struct range
 {
+   // ## iterators ---------------------------------------------------------------
+
+   // Iterator for rows in the range
+   struct row_iterator
+   {
+      row_iterator( uint64_t uRow, const range* prange ) : m_uRow{uRow}, m_prange{prange} {}
+
+      uint64_t operator*() const { return m_uRow; }
+      row_iterator& operator++() { ++m_uRow; return *this; }
+      bool operator!=( const row_iterator& o ) const { return m_uRow != o.m_uRow; }
+
+      uint64_t m_uRow;
+      const range* m_prange;
+
+   };
+
+   // Range for rows in the range
+   struct row_range
+   {
+      row_range( const range* prange ) : m_prange{prange} {}
+      row_iterator begin() const { return row_iterator( m_prange->m_uRow1, m_prange ); }
+      row_iterator end() const { return row_iterator( m_prange->m_uRow2 + 1, m_prange ); }
+
+      const range* m_prange; ///< pointer to range object
+   };
+
+   // Iterator for all cells in the range
+   struct cell_iterator
+   {
+      cell_iterator( uint64_t uRow, uint32_t uColumn, const range* prange ) : m_uRow{uRow}, m_uColumn{uColumn}, m_prange{prange} {}
+
+      struct cell { uint64_t row; uint32_t column; };
+      cell operator*() const { return {m_uRow, m_uColumn}; }
+
+      cell_iterator& operator++() {
+         ++m_uColumn;
+         if( m_uColumn > m_prange->m_uColumn2 ) { m_uColumn = m_prange->m_uColumn1; ++m_uRow; }
+         return *this;
+      }
+
+      bool operator!=( const cell_iterator& o ) const {  return m_uRow != o.m_uRow || m_uColumn != o.m_uColumn; }
+
+      uint64_t m_uRow;
+      uint32_t m_uColumn;
+      const range* m_prange;
+   };
+
+   // Range for all cells in the range
+   struct cell_range
+   {
+      cell_range( const range* prange ) : m_prange{prange} {}
+      cell_iterator begin() const {return cell_iterator( m_prange->m_uRow1, m_prange->m_uColumn1, m_prange ); }
+      cell_iterator end() const { return cell_iterator( m_prange->m_uRow2 + 1, m_prange->m_uColumn1, m_prange ); }
+      const range* m_prange;
+   };
+
 // ## construction ------------------------------------------------------------
    range() {}
    range( tag_null ) { clear(); }
@@ -383,14 +439,16 @@ struct range
    range( uint64_t uRow, tag_rows ) : m_uRow1{uRow}, m_uRow2{uRow} {}
    range( uint64_t uRow, unsigned uColumn ) : m_uRow1{ uRow }, m_uColumn1{ uColumn }, m_uRow2{ (uint64_t)-1 }, m_uColumn2{ (unsigned)-1 } {}
    range( uint64_t uRow1, unsigned uColumn1, uint64_t uRow2, unsigned uColumn2 ) : m_uRow1{ uRow1 }, m_uColumn1{ uColumn1 }, m_uRow2{ uRow2 }, m_uColumn2{ uColumn2 } {}
-   // copy
-   range( const range& o ) { common_construct( o ); }
-   // assign
-   range& operator=( const range& o ) { common_construct( o ); return *this; }
+
+   range( const range& o ) = default;
+   range& operator=( const range& o ) = default;
 
    ~range() {}
-   // common copy
-   void common_construct( const range& o ) { m_uRow1 = o.m_uRow1; m_uRow2 = o.m_uRow2; m_uColumn1 = o.m_uColumn1; m_uColumn2 = o.m_uColumn2; }
+
+
+// ## operator ----------------------------------------------------------------
+   bool operator==( const range& o ) const noexcept { return m_uRow1 == o.m_uRow1 && m_uRow2 == o.m_uRow2 && m_uColumn1 == o.m_uColumn1 && m_uColumn2 == o.m_uColumn2; }
+   bool operator!=( const range& o ) const noexcept { return !(*this == o); }
 
 // ## methods -----------------------------------------------------------------
    uint64_t r1() const noexcept { return m_uRow1; }
@@ -402,7 +460,7 @@ struct range
    void r1( int64_t iRow ) { m_uRow1 = (uint64_t)iRow; }
    void r2( int64_t iRow ) { m_uRow2 = (uint64_t)iRow; }
    void c1( uint32_t uColumn ) { m_uColumn1 = uColumn; }
-   void c2( uint32_t uColumn ) { m_uColumn1 = uColumn; }
+   void c2( uint32_t uColumn ) { m_uColumn2 = uColumn; }
 
 
    void top( uint64_t uRow ) { m_uRow1 = uRow; }
@@ -419,8 +477,34 @@ struct range
    bool is_r2() const { return m_uRow2 != uint64_t(-1); }
 
    void clear() { m_uRow1 = uint64_t(-1); m_uRow2 = uint64_t(-1); m_uColumn1 = uint32_t(-1); m_uColumn2 = uint32_t(-1); }
+   /// check if range is empty
    bool empty() const noexcept { return m_uRow1 == uint64_t(-1); }
-   uint64_t count() const { return height() * width(); }
+   /// count of cells in range
+   uint64_t count() const { return empty() ? 0 : height() * width(); }
+
+   /// normalize range so that row1 is always <= row2 and column1 is always <= column2
+   void normalize() {
+      if( m_uRow2 < m_uRow1 ) std::swap( m_uRow1, m_uRow2 );
+      if( m_uColumn2 < m_uColumn1 ) std::swap( m_uColumn1, m_uColumn2 );
+   }
+
+   /// check if specified cell is in range
+   /// returns true if cell is in range
+   bool contains( uint64_t uRow, uint32_t uColumn ) const noexcept { return uRow >= m_uRow1 && uRow <= m_uRow2 &&  uColumn >= m_uColumn1 && uColumn <= m_uColumn2; }
+
+   /// check if specified range intersects with this range
+   /// returns true if ranges overlap
+   /// Intersect is defined as having at least one cell in common.
+   bool intersects( const range& o ) const noexcept { return m_uRow1 <= o.m_uRow2 && m_uRow2 >= o.m_uRow1 && m_uColumn1 <= o.m_uColumn2 && m_uColumn2 >= o.m_uColumn1; }
+
+   /// check if range is a single cell
+   bool is_single_cell() const noexcept { return m_uRow1 == m_uRow2 && m_uColumn1 == m_uColumn2; }
+
+   /// get range of rows
+   row_range rows() const { return row_range( this ); }
+   /// get range of cells
+   cell_range cells() const { return cell_range( this ); }
+
 
 /** \name DEBUG
 *///@{
