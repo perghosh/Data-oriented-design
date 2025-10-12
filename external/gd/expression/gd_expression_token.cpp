@@ -438,6 +438,10 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
       piszPosition = skip_whitespace_s(piszPosition, piszEnd);                 // Skip whitespace
       if( piszPosition >= piszEnd ) { break; }  
 
+#ifndef NDEBUG
+      char iCharacter_d = *piszPosition;
+#endif
+
       uint8_t uCharacterType = puCharacterKeywordGroup_g[static_cast<uint8_t>(*piszPosition)];  // Get the type of the character
 
       if( uCharacterType & DIGIT_BIT )                                         // Number
@@ -491,7 +495,10 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
                {
                   vectorToken.emplace_back(token(uTokenType, string_));
                }
+               
+               // vectorToken.emplace_back(token::token_type_s("SPECIAL_CHAR"), "(");// Add parenthesis token if function: not working
             }
+
             
             piszPosition = piszEnd_;
          }
@@ -550,9 +557,28 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
       if( uCharacterType & SPECIAL_CHAR_BIT )                                  // Special character
       {
          uint32_t uTokenType = token::token_type_s( "SPECIAL_CHAR" );
+         char iCharacter = *piszPosition;
          vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
          piszPosition++;
          continue;
+
+/*
+
+         char iCharacter = *piszPosition;
+         if( iCharacter == '(' )
+         {
+            vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
+         }
+         else if( iCharacter == ')' )
+         {
+            vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
+         }
+         else
+         {
+            return { false, "[parse_s] - Unsupported special character: " + std::string(1, iCharacter) };
+         }
+
+*/
       }
 
       if( uCharacterType & SEPARATOR_BIT )                                     // Separator
