@@ -203,9 +203,9 @@ std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, v
    const auto& needle_ = vectorArgument[0];
    if( haystack_.is_string() && needle_.is_string() )
    {
-      auto text_ = haystack_.as_string_view();
-      auto word_ = needle_.as_string_view();
-      *pvalueResult = (text_.find(word_) != std::string_view::npos);
+      auto stringText = haystack_.as_string_view();
+      auto stringWord = needle_.as_string_view();
+      *pvalueResult = (stringText.find(stringWord) != std::string_view::npos);
       return { true, "" };
    }
    return { false, "has_g - Invalid argument type" };
@@ -261,6 +261,129 @@ std::pair<bool, std::string> ends_with_g(const std::vector< value >& vectorArgum
       return { true, "" };
    }
    return { false, "ends_with_g - Invalid argument type" };
+}
+
+// Helper function to extract tags from a string
+// A tag consists of alphanumeric characters, hyphens, and underscores.
+// Returns a vector of strings, where each string is a tag.
+std::vector<std::string> extract_tags(std::string_view text) 
+{
+   std::vector<std::string> vectorTag;
+   std::string stringTag;
+
+   for(char c : text) 
+   {
+      if( std::isalnum(static_cast<unsigned char>(c)) || c == '-' || c == '_' ) { stringTag += c;} 
+      else 
+      {
+         if( stringTag.empty() == false) 
+         {
+            vectorTag.push_back(stringTag);
+            stringTag.clear();
+         }
+      }
+   }
+
+   if(stringTag.empty() == false) { vectorTag.push_back(stringTag); }
+   return vectorTag;
+}
+
+namespace detail
+{
+
+   // Helper function to extract tags from a string_view
+   // A tag consists of alphanumeric characters, hyphens, and underscores.
+   // Returns a vector of string_views, where each string_view refers to a tag
+   // within the original 'text' string_view.
+   //
+   // IMPORTANT: The returned std::vector<std::string_view> is only valid as long
+   // as the original 'text' string_view (and its underlying string data) remains
+   // alive and unchanged.
+   std::vector<std::string_view> read_tags(std::string_view stringText)
+   {
+      std::vector<std::string_view> vectorTagView;
+      size_t uTagStart = std::string_view::npos; // Sentinel value to indicate no tag currently being tracked
+
+      for(size_t u = 0; u < stringText.length(); ++u)
+      {
+         char iCharacter = stringText[u];
+
+         if (std::isalnum(static_cast<unsigned char>(iCharacter)) || iCharacter == '-' || iCharacter == '_')
+         {
+            // If we are not currently tracking a tag, start one
+            if (uTagStart == std::string_view::npos)
+            {
+               uTagStart = u;
+            }
+         }
+         else // Non-tag character (delimiter)
+         {
+            // If a tag was being tracked, add it to the vector
+            if (uTagStart != std::string_view::npos)
+            {
+               vectorTagView.push_back(stringText.substr(uTagStart, u - uTagStart));
+               uTagStart = std::string_view::npos; // Reset tag tracking
+            }
+         }
+      }
+
+      // After the loop, check if there's an unfinished tag at the end of the string
+      if (uTagStart != std::string_view::npos)
+      {
+         vectorTagView.push_back(stringText.substr(uTagStart));
+      }
+
+      return vectorTagView;
+   }
+}
+
+/// Check if tag (needle) is contained in the tags of text (haystack).
+std::pair<bool, std::string> has_tag_g(const std::vector< value >& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 1);
+   const auto& tag_ = vectorArgument[0];
+   const auto& text_ = vectorArgument[1];
+   if( text_.is_string() && tag_.is_string() )
+   {
+      auto stringText = text_.as_string_view();
+      auto stringTag = tag_.as_string_view();
+      auto vectorTags = detail::read_tags(stringText);
+      bool bHas = false;
+      for(const auto& tagView : vectorTags)
+      {
+         if(tagView == stringTag)
+         {
+            bHas = true;
+            break;
+         }
+      }
+      *pvalueResult = bHas;
+      return { true, "" };
+   }
+   return { false, "has_tag_g - Invalid argument type" };
+}
+
+/// Returns a comma-separated list of unique tags from text.
+std::pair<bool, std::string> list_tags_g(const std::vector< value >& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& text_ = vectorArgument[0];
+   if( text_.is_string() )
+   {
+      auto stringText = text_.as_string_view();
+      auto vectorTags = detail::read_tags(stringText);
+      if(vectorTags.empty() == true) { *pvalueResult = std::string(""); return { true, "" }; }
+      std::sort(vectorTags.begin(), vectorTags.end());
+      auto it = std::unique(vectorTags.begin(), vectorTags.end());
+      vectorTags.erase(it, vectorTags.end());
+      std::string stringResult;
+      for(size_t i = 0; i < vectorTags.size(); ++i)
+      {
+         if(i > 0) stringResult += ",";
+         stringResult += std::string(vectorTags[i]);
+      }
+      *pvalueResult = stringResult;
+      return { true, "" };
+   }
+   return { false, "list_tags_g - Invalid argument type" };
 }
 
 
