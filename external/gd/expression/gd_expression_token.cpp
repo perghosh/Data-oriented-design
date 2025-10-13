@@ -755,6 +755,169 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Parses a postfix expression with keyword operator support.
+ *
+ * This function processes a string that is already in postfix notation and 
+ * handles keyword operators (and, or, not, in, is, xor, mod). The expression 
+ * should already be in the correct evaluation order.
+ *
+ * @code
+ * // sample usage
+ * const char* postfix = "age 18 > status 'active' == and";
+ * const char* end = postfix + strlen(postfix);
+ * std::vector<token> vectorToken;
+ * auto result = token::parse_s(postfix, end, vectorToken, tag_postfix_keyword{});
+ * @endcode
+ *
+ * @param piszBegin Pointer to the beginning of the postfix expression string.
+ * @param piszEnd Pointer to the end of the postfix expression string.
+ * @param vectorToken Vector to store the generated tokens.
+ * @param tag_postfix_keyword Tag to indicate postfix with keyword parsing mode.
+ * @return A pair containing a boolean indicating success and a string with an error message if any.
+ */
+std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_postfix_keyword)
+{
+   const char* piszPosition = piszBegin;                                       // Current position
+
+   /// ## Loop through the string and parse the tokens in order ...............
+   while( piszPosition < piszEnd )
+   {
+      piszPosition = skip_whitespace_s(piszPosition, piszEnd);                 // Skip whitespace
+      if( piszPosition >= piszEnd ) { break; }  
+
+      uint8_t uCharacterType = puCharacterKeywordGroup_g[static_cast<uint8_t>(*piszPosition)];  // Get the type of the character
+
+      if( uCharacterType & DIGIT_BIT )                                         // Number
+      {
+         uint32_t uTokenType = token::token_type_s( "VALUE" );
+         std::string_view string_;
+         uint32_t uType = read_number_s(piszPosition, piszEnd, string_);
+         if( uType & SEPARATOR_BIT ) { uTokenType += to_type_s( eValueTypeDecimal, eTokenPartType ); }
+         else { uTokenType += to_type_s(eValueTypeInteger, eTokenPartType); }
+
+         vectorToken.emplace_back( token( uTokenType, string_ ) );
+         piszPosition += string_.length();
+         continue;
+      }
+
+      // ### Check for keyword operator, variable, method or reserved keyword
+      if( uCharacterType & ALPHABETIC_BIT )                                    // Identifier
+      {
+         // ### Try keyword operator first if character can start one
+         if( uCharacterType & KEYWORD_OPERATOR_START_BIT )
+         {
+            std::string_view stringOperator;
+            const char* piszEnd_ = nullptr;
+            if( operator_read_keyword_s(piszPosition, piszEnd, stringOperator, &piszEnd_) == true )
+            {
+               uint32_t uTokenType = token::token_type_s("OPERATOR");
+               vectorToken.emplace_back(token(uTokenType, stringOperator));
+               piszPosition = piszEnd_;
+               continue;
+            }
+         }
+
+         // ### Process as variable/function/label
+         std::string_view string_;
+         const char* piszEnd_ = nullptr;
+         auto [uType, uTokenType] = read_variable_and_s(piszPosition, piszEnd, string_, &piszEnd_);
+         if( uType != 0 )
+         {
+            if( uTokenType == token::token_type_s("VARIABLE") )
+            {
+               vectorToken.emplace_back(token(uTokenType, string_));
+            }
+            else if( uTokenType == token::token_type_s("FUNCTION") )
+            {
+               if( uType & SPECIAL_CHAR_BIT )                                  // If special char this has to have a ':' character
+               {
+                  uTokenType |= uint32_t(eFunctionNamespace);                  // add namespace flag to find method among namespaced methods
+                  //if( string_.back() != '(' ) string_ = std::string_view(string_.data(), string_.length() + 1); // add ( if missing
+                  vectorToken.emplace_back(token(uTokenType, string_));
+               }
+               else
+               {
+                  vectorToken.emplace_back(token(uTokenType, string_));
+               }
+            }
+            
+            piszPosition = piszEnd_;
+         }
+         continue;
+      }
+
+      if( uCharacterType & OPERATOR_BIT )                                      // Operator
+      {
+         uint32_t uTokenType = token::token_type_s( "OPERATOR" );
+         if( uCharacterType & SPECIAL_CHAR_BIT )
+         {
+            if( piszPosition[0] == '=' )                                       // Handle = when parsing keyword and add it as ==
+            {
+               vectorToken.emplace_back(token(uTokenType, token::operator_s(eOperatorEqual)));
+               piszPosition++;
+               continue;
+            }
+            else if( piszPosition[0] == '-' )                                  // special case to handle negate
+            {
+               auto type_ = vectorToken.empty() == false ? vectorToken.back().get_token_type() : token::token_type_s("OPERATOR");
+               if( type_ == token::token_type_s("OPERATOR") )                  // Was previous token an operator
+               {
+                  // ## this has to be a unary operator for negative number try to read number
+                  uTokenType = token::token_type_s( "VALUE" );                 // value token
+                  std::string_view string_; // string that gets value
+                  uint32_t uType = read_number_s(piszPosition, piszEnd, string_);// read number
+                  if( uType & SEPARATOR_BIT ) { uTokenType += to_type_s( eValueTypeDecimal, eTokenPartType ); } // is it decimal?
+                  else { uTokenType += to_type_s(eValueTypeInteger, eTokenPartType); } // integer
+
+                  vectorToken.emplace_back( token( uTokenType, string_ ) );
+                  piszPosition += string_.length();
+                  continue;
+               }
+            }
+         }
+
+         vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 1)));
+         piszPosition++;
+         continue;
+      }
+
+      if( uCharacterType & STRING_DELIMITER_BIT )                              // String delimiter
+      {
+         std::string_view string_;
+         const char* piszEnd_ = nullptr;
+         uint32_t uType = read_string_s(piszPosition, piszEnd, string_, &piszEnd_);
+         if( uType != 0 )
+         {
+            uint32_t uTokenType = token::token_type_s("VALUE") + to_type_s(eValueTypeString, eTokenPartType);
+            vectorToken.emplace_back( token( uTokenType, string_ ) );
+            piszPosition = piszEnd_;
+         }
+         continue;
+      }
+
+      if( uCharacterType & SPECIAL_CHAR_BIT )                                  // Special character
+      {
+         uint32_t uTokenType = token::token_type_s( "SPECIAL_CHAR" );
+         vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
+         piszPosition++;
+         continue;
+      }
+
+      if( uCharacterType & SEPARATOR_BIT )                                     // Separator
+      {
+         uint32_t uTokenType = token::token_type_s( "SEPARATOR" );
+         vectorToken.emplace_back( token( uTokenType, std::string_view( piszPosition, 1 ) ) );
+         piszPosition++;
+         continue;
+      }
+
+      piszPosition++;
+   }
+
+   return { true, "" };
+}
+
 /** --------------------------------------------------------------------------
  * @brief Compiles the input tokens into postfix notation.
  *

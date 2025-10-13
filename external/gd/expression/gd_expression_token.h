@@ -40,6 +40,7 @@ struct tag_formula {}; ///< tag for formula
 struct tag_formula_keyword {}; ///< tag for formula with keywords
 struct tag_expression {}; ///< tag for expression
 struct tag_postfix {}; ///< tag for postfix
+struct tag_postfix_keyword {};
 struct tag_postfix_no_precedence {};
 
 enum enumTokenType
@@ -219,6 +220,8 @@ struct token
 
    static std::pair<bool, std::string> parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_postfix);
    static std::pair<bool, std::string> parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_postfix);
+   static std::pair<bool, std::string> parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_postfix_keyword);
+   static std::pair<bool, std::string> parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_postfix_keyword);
 
 	// ## compile and calculate methods
 
@@ -276,6 +279,10 @@ inline std::pair<bool, std::string> token::parse_s(const std::string_view& strin
 /// @brief parse postfix expression string to tokens, this is used when the expression is already in postfix notation
 inline std::pair<bool, std::string> token::parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_postfix) {
    return parse_s(stringExpression.data(), stringExpression.data() + stringExpression.length(), vectorToken, tag_postfix());
+}
+
+inline std::pair<bool, std::string> token::parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_postfix_keyword) {
+   return parse_s(stringExpression.data(), stringExpression.data() + stringExpression.length(), vectorToken, tag_postfix_keyword());
 }
 
 

@@ -36,6 +36,7 @@ std::pair<bool, std::string> tolower_g(const std::vector< value >& vectorArgumen
 std::pair<bool, std::string> toupper_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 
 std::pair<bool, std::string> count_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> find_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> missing_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> starts_with_g(const std::vector< value >& vectorArgument, value* pvalueResult);
@@ -55,6 +56,7 @@ constexpr size_t uMethodDefaultSize_g = sizeof(pmethodDefault_g) / sizeof(method
 const method pmethodString_g[] = {
    { (void*)&count_g, "count", 2, 1 },
    { (void*)&ends_with_g, "ends_with", 2, 1 },
+   { (void*)&find_g, "find", 3, 1 },
    { (void*)&has_g, "has", 2, 1 },
    { (void*)&length_g, "length", 1, 1 },
    { (void*)&missing_g, "missing", 2, 1 },
