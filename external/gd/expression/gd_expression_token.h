@@ -217,6 +217,9 @@ struct token
    static std::pair<bool, std::string> parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_formula_keyword);
    static std::pair<bool, std::string> parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula_keyword);
 
+   static std::pair<bool, std::string> parse_s(const char* piszBegin, const char* piszEnd, std::vector<token>& vectorToken, tag_postfix);
+   static std::pair<bool, std::string> parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_postfix);
+
 	// ## compile and calculate methods
 
    static std::pair<bool, std::string> compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix);
@@ -268,6 +271,11 @@ inline std::pair<bool, std::string> token::parse_s(const std::string_view& strin
 /// @brief parse expression string to tokens
 inline std::pair<bool, std::string> token::parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_formula_keyword) {
    return parse_s(stringExpression.data(), stringExpression.data() + stringExpression.length(), vectorToken, tag_formula_keyword());
+}
+
+/// @brief parse postfix expression string to tokens, this is used when the expression is already in postfix notation
+inline std::pair<bool, std::string> token::parse_s(const std::string_view& stringExpression, std::vector<token>& vectorToken, tag_postfix) {
+   return parse_s(stringExpression.data(), stringExpression.data() + stringExpression.length(), vectorToken, tag_postfix());
 }
 
 
