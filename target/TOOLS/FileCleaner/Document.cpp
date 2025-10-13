@@ -3065,7 +3065,7 @@ std::string insert_method_(const std::string_view& stringExpression, const std::
 /// Prepare expression for table
 std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression)
 {                                                                                                  assert( stringExpression.empty() == false );
-   stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "source::get_cell_value( dtotable, row, '{}' )" );
+   stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "dtotable row '{}' source::get_cell_value(" );
 
    return { true, "" };
 }
@@ -3073,7 +3073,7 @@ std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForTable_s(const std::
 /// Prepare expression for arguments table
 std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForArgumentsTable_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression)
 {                                                                                                  assert( stringExpression.empty() == false );
-   stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "source::get_cell_value( argtable, row, '{}' )" );
+   stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "argtable row '{}' source::get_cell_value(" );
 
    return { true, "" };
 }
@@ -3082,7 +3082,7 @@ std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForArgumentsTable_s(co
 /// Prepare expression for argument table
 std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForArgument_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression)
 {                                                                                                  assert( stringExpression.empty() == false );
-   stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "source::get_argument( args, '{}' )" );
+   stringPreparedExpression += insert_method_( stringExpression, vectorPosition, "args '{}' source::get_argument(" );
 
    return { true, "" };
 }
