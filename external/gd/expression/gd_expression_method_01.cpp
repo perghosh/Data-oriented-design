@@ -175,6 +175,26 @@ std::pair<bool, std::string> count_g(const std::vector< value >& vectorArgument,
    return { false, "count_g - Invalid argument type" };
 }
 
+/// Find the position of the first occurrence of word (needle) in text (haystack). Returns -1 if not found.
+/// takes three arguments, the third argument is the offset to start searching from (default is 0)
+std::pair<bool, std::string> find_g(const std::vector< value >& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 2);
+   const auto& offset_ = vectorArgument[2];
+   const auto& text_ = vectorArgument[1];
+   const auto& word_ = vectorArgument[0];
+   if( offset_.is_integer() && text_.is_string() && word_.is_string() )
+   {
+      auto uOffset = static_cast<size_t>( std::max(static_cast<int64_t>(offset_.as_integer()), int64_t{0}) );
+      auto stringText = text_.as_string_view();
+      auto stringWord = word_.as_string_view();
+      auto uPosition = stringText.find(stringWord, uOffset);
+      *pvalueResult = (uPosition != std::string_view::npos) ? static_cast<int64_t>(uPosition) : -1;
+      return { true, "" };
+   }
+
+   return { false, "find_g - Invalid argument type" };
+}
+
 /// Check if word (needle) is contained in text (haystack).
 std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
