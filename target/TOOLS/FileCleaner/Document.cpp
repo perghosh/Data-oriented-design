@@ -1991,7 +1991,7 @@ void CDocument::PROPERTY_UpdateFromApplication()
 
 // 0TAG0CACHE.Document 
 
-/** --------------------------------------------------------------------------- @TAG #cache 
+/** --------------------------------------------------------------------------- @CODE [tag: cache] [description: Cache management]
  * @brief Prepares a cache table for the specified identifier.  
  *  
  * This method initializes and prepares a table for caching data associated with the given `stringId`.  
@@ -2013,7 +2013,7 @@ void CDocument::PROPERTY_UpdateFromApplication()
  *  
  * @note This method assumes that the `CACHE_Add` function handles the ownership of the table.  
  */  
-void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<gd::table::dto::table>* ptable) // @TAG #data.cache
+void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<gd::table::dto::table>* ptable)
 {                                                                                                  LOG_VERBOSE_RAW("== Prepare table:" << stringId << "CDocument::CACHE_Prepare");
    using namespace gd::table::dto;
    constexpr unsigned uTableStyle = ( table::eTableFlagNull32 | table::eTableFlagRowStatus );
@@ -2344,7 +2344,7 @@ gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::stri
 
 // @TASK #user.per [name: sort] [brief: Find sort column by first match exact, then check for index and last try to find part of column name] [state: open] [date: 2025-08-13]
 
-/** ---------------------------------------------------------------------------
+/** ---------------------------------------------------------------------------  @CODE [tag: sort] [description: Sorts a cached table by a specified column]
 * @brief Sorts a cached table by a specified column.
 *
 * This method sorts the rows of a cache table identified by `stringId` based on the values
@@ -2376,7 +2376,7 @@ gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::stri
 * @post The rows in the cache table are sorted based on the specified column.
 *
 */
-std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_, gd::table::dto::table* ptable_)  // @TAG #data.cache #command.sort
+std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& stringId, const gd::variant_view& column_, gd::table::dto::table* ptable_)  
 {
    bool bAscending = true;
    int iColumn = -1;
@@ -2429,7 +2429,7 @@ std::pair<bool, std::string> CDocument::CACHE_Sort(const std::string_view& strin
 // @TODO [name: where] [brief: Filter rows in table based on expression] [state: open] [date: 2025-10-03] [user: per]
 
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @CODE [tag: where] [description: Filter rows in table based on expression]
  * @brief Filters rows in a cache table based on a specified expression.
  * 
  * This method evaluates a given expression against the rows of a cache table identified by `stringId`.

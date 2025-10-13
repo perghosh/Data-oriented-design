@@ -38,6 +38,8 @@ std::pair<bool, std::string> toupper_g(const std::vector< value >& vectorArgumen
 std::pair<bool, std::string> count_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> find_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> has_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> has_tag_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> list_tags_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> missing_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> starts_with_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> ends_with_g(const std::vector< value >& vectorArgument, value* pvalueResult);
@@ -58,7 +60,9 @@ const method pmethodString_g[] = {
    { (void*)&ends_with_g, "ends_with", 2, 1 },
    { (void*)&find_g, "find", 3, 1 },
    { (void*)&has_g, "has", 2, 1 },
+   { (void*)&has_tag_g, "has_tag", 2, 1 },
    { (void*)&length_g, "length", 1, 1 },
+   { (void*)&list_tags_g, "list_tags", 1, 1 },
    { (void*)&missing_g, "missing", 2, 1 },
    { (void*)&starts_with_g, "starts_with", 2, 1 },
    { (void*)&tolower_g, "tolower", 1, 1},
