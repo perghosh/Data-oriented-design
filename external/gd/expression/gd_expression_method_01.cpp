@@ -30,6 +30,7 @@ std::pair<bool, std::string> average_g(const std::vector<value>& vectorArgument,
    return { true, "" };
 }
 
+/// Return the length of a string.
 std::pair<bool, std::string> length_g( const std::vector< value >& vectorArgument, value* pvalueResult )
 {                                                                                                  assert( vectorArgument.size() > 0 );
    const auto& v_ = vectorArgument[0];
@@ -41,6 +42,7 @@ std::pair<bool, std::string> length_g( const std::vector< value >& vectorArgumen
    return { true, "" };
 }
 
+/// Return the maximum of two numbers.
 std::pair<bool, std::string> max_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
    const auto& l_ = vectorArgument[0];
@@ -62,6 +64,7 @@ std::pair<bool, std::string> max_g(const std::vector<value>& vectorArgument, val
    return { true, "" };
 }
 
+/// Returns the minimum of two values.
 std::pair<bool, std::string> min_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
    const auto& l_ = vectorArgument[0];
@@ -83,6 +86,7 @@ std::pair<bool, std::string> min_g(const std::vector<value>& vectorArgument, val
    return { true, "" };
 }
 
+/// Sum two numbers and return the result.
 std::pair<bool, std::string> sum_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 1);
    const auto& l_ = vectorArgument[0];
@@ -101,6 +105,121 @@ std::pair<bool, std::string> sum_g(const std::vector<value>& vectorArgument, val
       return { false, "sum_g - Invalid argument type" };
    }
 
+   return { true, "" };
+}
+
+/// Calculate absolute value
+std::pair<bool, std::string> abs_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   
+   if( v_.is_integer() )
+   {
+      int64_t iValue = v_.as_integer();
+      *pvalueResult = (iValue < 0) ? -iValue : iValue;
+   }
+   else if( v_.is_double() )
+   {
+      double dValue = v_.as_double();
+      *pvalueResult = (dValue < 0.0) ? -dValue : dValue;
+   }
+   else
+   {
+      return { false, "abs_g - Invalid argument type" };
+   }
+   
+   return { true, "" };
+}
+
+/// Round number to nearest integer or specified decimal places
+std::pair<bool, std::string> round_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   
+   int64_t iDecimals = 0;
+   if( vectorArgument.size() > 1 && vectorArgument[1].is_integer() )
+   {
+      iDecimals = vectorArgument[1].as_integer();
+   }
+   
+   if( v_.is_integer() )
+   {
+      *pvalueResult = v_.as_integer();
+   }
+   else if( v_.is_double() )
+   {
+      double dValue = v_.as_double();
+      
+      if( iDecimals == 0 )
+      {
+         *pvalueResult = static_cast<int64_t>(std::round(dValue));
+      }
+      else
+      {
+         double dMultiplier = std::pow(10.0, static_cast<double>(iDecimals));
+         *pvalueResult = std::round(dValue * dMultiplier) / dMultiplier;
+      }
+   }
+   else
+   {
+      return { false, "round_g - Invalid argument type" };
+   }
+   
+   return { true, "" };
+}
+
+/// Calculate floor of number
+std::pair<bool, std::string> floor_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+
+   if( v_.is_integer() ) { *pvalueResult = v_.as_integer(); }
+   else if( v_.is_double() ) { *pvalueResult = static_cast<int64_t>(std::floor(v_.as_double())); }
+   else { return { false, "floor_g - Invalid argument type" }; }
+   
+   return { true, "" };
+}
+
+/// Calculate ceiling of number
+std::pair<bool, std::string> ceil_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   
+   if( v_.is_integer() ) { *pvalueResult = v_.as_integer(); }
+   else if( v_.is_double() ) { *pvalueResult = static_cast<int64_t>(std::ceil(v_.as_double())); }
+   else { return { false, "ceil_g - Invalid argument type" }; }
+   
+   return { true, "" };
+}
+
+/// Conditional: returns second argument if first is true, third argument otherwise
+std::pair<bool, std::string> if_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 2);
+   const auto& condition_ = vectorArgument[2];
+   const auto& true_value_ = vectorArgument[1];
+   const auto& false_value_ = vectorArgument[0];
+   
+   if( condition_.is_bool() == false ) { return {false, "if_g - First argument must be boolean"}; }
+   
+   *pvalueResult = condition_.as_bool() ? true_value_ : false_value_;
+   return { true, "" };
+}
+
+/// Check if value is null
+std::pair<bool, std::string> is_null_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   
+   *pvalueResult = v_.is_null();
+   return { true, "" };
+}
+
+/// Check if value is not null
+std::pair<bool, std::string> is_not_null_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   
+   *pvalueResult = (v_.is_null() == false);
    return { true, "" };
 }
 
@@ -286,6 +405,363 @@ std::vector<std::string> extract_tags(std::string_view text)
 
    if(stringTag.empty() == false) { vectorTag.push_back(stringTag); }
    return vectorTag;
+}
+
+/// Trim whitespace from both ends of string
+std::pair<bool, std::string> trim_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   if( v_.is_string() == false ) 
+   { 
+      if( v_.is_null() == true ) 
+      {
+         *pvalueResult = v_;
+         return { true, "" };
+      }
+      return {false, "trim_g - Invalid argument type"}; 
+   }
+
+   auto stringText = v_.as_string_view();
+   size_t uStart = 0;
+   size_t uEnd = stringText.length();
+   
+   while( uStart < uEnd && std::isspace(static_cast<unsigned char>(stringText[uStart])) ) { ++uStart; }
+   while( uEnd > uStart && std::isspace(static_cast<unsigned char>(stringText[uEnd - 1])) ) { --uEnd; }
+   
+   *pvalueResult = std::string(stringText.substr(uStart, uEnd - uStart));
+   return { true, "" };
+}
+
+/// Trim whitespace from left side of string
+std::pair<bool, std::string> ltrim_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   if( v_.is_string() == false ) 
+   { 
+      if( v_.is_null() == true ) 
+      {
+         *pvalueResult = v_;
+         return { true, "" };
+      }
+      return {false, "ltrim_g - Invalid argument type"}; 
+   }
+
+   auto stringText = v_.as_string_view();
+   size_t uStart = 0;
+   
+   while( uStart < stringText.length() && std::isspace(static_cast<unsigned char>(stringText[uStart])) ) { ++uStart; }
+   
+   *pvalueResult = std::string(stringText.substr(uStart));
+   return { true, "" };
+}
+
+/// Trim whitespace from right side of string
+std::pair<bool, std::string> rtrim_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   if( v_.is_string() == false ) 
+   { 
+      if( v_.is_null() == true ) 
+      {
+         *pvalueResult = v_;
+         return { true, "" };
+      }
+      return {false, "rtrim_g - Invalid argument type"}; 
+   }
+
+   auto stringText = v_.as_string_view();
+   size_t uEnd = stringText.length();
+   
+   while( uEnd > 0 && std::isspace(static_cast<unsigned char>(stringText[uEnd - 1])) ) { --uEnd; }
+   
+   *pvalueResult = std::string(stringText.substr(0, uEnd));
+   return { true, "" };
+}
+
+/// Extract substring from text starting at position with given length
+std::pair<bool, std::string> substring_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 2);
+   const auto& text_ = vectorArgument[2];
+   const auto& start_ = vectorArgument[1];
+   const auto& length_ = vectorArgument[0];
+   
+   if( text_.is_string() && start_.is_integer() && length_.is_integer() )
+   {
+      auto stringText = text_.as_string_view();
+      auto uStart = static_cast<size_t>(std::max(static_cast<int64_t>(0), start_.as_integer()));
+      auto uLength = static_cast<size_t>(std::max(static_cast<int64_t>(0), length_.as_integer()));
+      
+      if( uStart >= stringText.length() )
+      {
+         *pvalueResult = std::string("");
+      }
+      else
+      {
+         *pvalueResult = std::string(stringText.substr(uStart, uLength));
+      }
+      return { true, "" };
+   }
+   return { false, "substring_g - Invalid argument type" };
+}
+
+/// Replace all occurrences of search string with replacement string
+std::pair<bool, std::string> replace_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 2);
+   const auto& text_ = vectorArgument[2];
+   const auto& search_ = vectorArgument[1];
+   const auto& replace_ = vectorArgument[0];
+   
+   if( text_.is_string() && search_.is_string() && replace_.is_string() )
+   {
+      std::string stringResult = text_.as_string();
+      auto stringSearch = search_.as_string_view();
+      auto stringReplace = replace_.as_string_view();
+      
+      if( stringSearch.empty() == true )
+      {
+         *pvalueResult = stringResult;
+         return { true, "" };
+      }
+      
+      size_t uPosition = 0;
+      while( (uPosition = stringResult.find(stringSearch, uPosition)) != std::string::npos )
+      {
+         stringResult.replace(uPosition, stringSearch.length(), stringReplace);
+         uPosition += stringReplace.length();
+      }
+      
+      *pvalueResult = stringResult;
+      return { true, "" };
+   }
+   return { false, "replace_g - Invalid argument type" };
+}
+
+/// Reverse the characters in a string
+std::pair<bool, std::string> reverse_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   if( v_.is_string() == false ) 
+   { 
+      if( v_.is_null() == true ) 
+      {
+         *pvalueResult = v_;
+         return { true, "" };
+      }
+      return {false, "reverse_g - Invalid argument type"}; 
+   }
+
+   std::string stringResult = v_.as_string();
+   std::reverse(stringResult.begin(), stringResult.end());
+   
+   *pvalueResult = stringResult;
+   return { true, "" };
+}
+
+/// Repeat string N times
+std::pair<bool, std::string> repeat_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 1);
+   const auto& text_ = vectorArgument[1];
+   const auto& count_ = vectorArgument[0];
+   
+   if( text_.is_string() && count_.is_integer() )
+   {
+      auto stringText = text_.as_string();
+      auto iCount = count_.as_integer();
+      
+      if( iCount < 0 )
+      {
+         return { false, "repeat_g - Count cannot be negative" };
+      }
+      
+      std::string stringResult;
+      stringResult.reserve(stringText.length() * static_cast<size_t>(iCount));
+      
+      for( int64_t i = 0; i < iCount; ++i )
+      {
+         stringResult += stringText;
+      }
+      
+      *pvalueResult = stringResult;
+      return { true, "" };
+   }
+   return { false, "repeat_g - Invalid argument type" };
+}
+
+/// Check if string represents a numeric value
+std::pair<bool, std::string> is_numeric_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   
+   if( v_.is_string() == false ) { *pvalueResult = false; return { true, "" }; }
+
+   auto stringText = v_.as_string_view();
+   if( stringText.empty() == true ) { *pvalueResult = false; return { true, "" }; }
+   
+   size_t uPos = 0;
+   if( stringText[0] == '-' || stringText[0] == '+' ) { ++uPos; }
+   
+   bool bHasDigit = false;
+   bool bHasDot = false;
+   
+   for( ; uPos < stringText.length(); ++uPos )
+   {
+      if( std::isdigit(static_cast<unsigned char>(stringText[uPos])) )
+      {
+         bHasDigit = true;
+      }
+      else if( stringText[uPos] == '.' && bHasDot == false )
+      {
+         bHasDot = true;
+      }
+      else
+      {
+         *pvalueResult = false;
+         return { true, "" };
+      }
+   }
+   
+   *pvalueResult = bHasDigit;
+   return { true, "" };
+}
+
+/// Check if string contains only alphabetic characters
+std::pair<bool, std::string> is_alpha_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   
+   if( v_.is_string() == false ) { *pvalueResult = false; return { true, "" }; }
+
+   auto stringText = v_.as_string_view();
+   if( stringText.empty() == true ) { *pvalueResult = false; return { true, "" }; }
+   
+   for( char i : stringText )
+   {
+      if( std::isalpha(static_cast<unsigned char>(i)) == false )
+      {
+         *pvalueResult = false;
+         return { true, "" };
+      }
+   }
+   
+   *pvalueResult = true;
+   return { true, "" };
+}
+
+/// Check if string is empty or contains only whitespace
+std::pair<bool, std::string> is_empty_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 0);
+   const auto& v_ = vectorArgument[0];
+   
+   if( v_.is_null() == true ) { *pvalueResult = true; return { true, "" }; }
+   
+   if( v_.is_string() == false ) { *pvalueResult = false; return { true, "" }; }
+
+   auto stringText = v_.as_string_view();
+   if( stringText.empty() == true ) { *pvalueResult = true; return { true, "" }; }
+   
+   for( char c : stringText )
+   {
+      if( std::isspace(static_cast<unsigned char>(c)) == false )
+      {
+         *pvalueResult = false;
+         return { true, "" };
+      }
+   }
+   
+   *pvalueResult = true;
+   return { true, "" };
+}
+
+/// Get character at specific position in string
+std::pair<bool, std::string> char_at_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 1);
+   const auto& text_ = vectorArgument[1];
+   const auto& position_ = vectorArgument[0];
+   
+   if( text_.is_string() && position_.is_integer() )
+   {
+      auto stringText = text_.as_string_view();
+      auto iPosition = position_.as_integer();
+      
+      if( iPosition < 0 || static_cast<size_t>(iPosition) >= stringText.length() )
+      {
+         *pvalueResult = std::string("");
+      }
+      else
+      {
+         *pvalueResult = std::string(1, stringText[static_cast<size_t>(iPosition)]);
+      }
+      return { true, "" };
+   }
+   return { false, "char_at_g - Invalid argument type" };
+}
+
+/// Get N characters from left side of string
+std::pair<bool, std::string> left_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 1);
+   const auto& text_ = vectorArgument[1];
+   const auto& count_ = vectorArgument[0];
+   
+   if( text_.is_string() && count_.is_integer() )
+   {
+      auto stringText = text_.as_string_view();
+      auto iCount = static_cast<size_t>(std::max(static_cast<int64_t>(0), count_.as_integer()));
+      
+      *pvalueResult = std::string(stringText.substr(0, std::min(iCount, stringText.length())));
+      return { true, "" };
+   }
+   return { false, "left_g - Invalid argument type" };
+}
+
+/// Get N characters from right side of string
+std::pair<bool, std::string> right_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 1);
+   const auto& text_ = vectorArgument[1];
+   const auto& count_ = vectorArgument[0];
+   
+   if( text_.is_string() && count_.is_integer() )
+   {
+      auto stringText = text_.as_string_view();
+      auto iCount = static_cast<size_t>(std::max(static_cast<int64_t>(0), count_.as_integer()));
+      
+      if( iCount >= stringText.length() )
+      {
+         *pvalueResult = std::string(stringText);
+      }
+      else
+      {
+         *pvalueResult = std::string(stringText.substr(stringText.length() - iCount, iCount));
+      }
+      return { true, "" };
+   }
+   return { false, "right_g - Invalid argument type" };
+}
+
+/// Extract substring (Excel-style: start position is 1-based)
+std::pair<bool, std::string> mid_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{                                                                                                  assert(vectorArgument.size() > 2);
+   const auto& text_ = vectorArgument[2];
+   const auto& start_ = vectorArgument[1];
+   const auto& length_ = vectorArgument[0];
+   
+   if( text_.is_string() && start_.is_integer() && length_.is_integer() )
+   {
+      auto stringText = text_.as_string_view();
+      auto iStart = start_.as_integer() - 1; // Convert to 0-based
+      auto iLength = length_.as_integer();
+      
+      if( iStart < 0 || iLength < 0 ) { *pvalueResult = std::string(""); }
+      else
+      {
+         auto uStart = static_cast<size_t>(iStart);
+         auto uLength = static_cast<size_t>(iLength);
+         
+         if( uStart >= stringText.length() ) { *pvalueResult = std::string(""); }
+         else { *pvalueResult = std::string(stringText.substr(uStart, uLength)); }
+      }
+      return { true, "" };
+   }
+   return { false, "mid_g - Invalid argument type" };
 }
 
 namespace detail

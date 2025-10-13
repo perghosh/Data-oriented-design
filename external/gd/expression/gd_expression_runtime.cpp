@@ -59,8 +59,9 @@ const method* runtime::find_method(const std::string_view& stringName, tag_names
       const method* pmethodEnd = pmethodBegin + std::get<0>(*it);
       const method* pmethodFind = std::lower_bound(pmethodBegin, pmethodEnd, stringMethod );
       if( pmethodFind != pmethodEnd )
-      {                                                                                            assert( stringName.find( pmethodFind->name() ) != std::string::npos );
-         return pmethodFind;
+      {                                                                                            //assert( stringName.find( pmethodFind->name() ) != std::string::npos );
+         if( stringMethod == pmethodFind->name() ) return pmethodFind;
+         return nullptr;
       }
    }
 
