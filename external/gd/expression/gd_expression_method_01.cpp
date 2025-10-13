@@ -179,9 +179,10 @@ std::pair<bool, std::string> count_g(const std::vector< value >& vectorArgument,
 /// takes three arguments, the third argument is the offset to start searching from (default is 0)
 std::pair<bool, std::string> find_g(const std::vector< value >& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 2);
-   const auto& offset_ = vectorArgument[2];
-   const auto& text_ = vectorArgument[1];
-   const auto& word_ = vectorArgument[0];
+   const auto& text_ = vectorArgument[2];
+   const auto& word_ = vectorArgument[1];
+   const auto& offset_ = vectorArgument[0];
+
    if( offset_.is_integer() && text_.is_string() && word_.is_string() )
    {
       auto uOffset = static_cast<size_t>( std::max(static_cast<int64_t>(offset_.as_integer()), int64_t{0}) );

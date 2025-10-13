@@ -698,7 +698,7 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
             if( piszPosition[0] == '-' )
             {
                auto type_ = vectorToken.empty() == false ? vectorToken.back().get_token_type() : token::token_type_s("OPERATOR");
-               if( type_ == token::token_type_s("OPERATOR") )                  // Was previous token an operator
+               if( type_ == token::token_type_s("OPERATOR") || type_ == token::token_type_s("FUNCTION") ) // Was previous token an operator or function
                {
                   // ## this has to be a unary operator for negative number try to read number
                   uTokenType = token::token_type_s( "VALUE" );                 // value token
@@ -861,7 +861,7 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
             else if( piszPosition[0] == '-' )                                  // special case to handle negate
             {
                auto type_ = vectorToken.empty() == false ? vectorToken.back().get_token_type() : token::token_type_s("OPERATOR");
-               if( type_ == token::token_type_s("OPERATOR") )                  // Was previous token an operator
+               if( type_ == token::token_type_s("OPERATOR") || type_ == token::token_type_s("FUNCTION") ) // Was previous token an operator or function
                {
                   // ## this has to be a unary operator for negative number try to read number
                   uTokenType = token::token_type_s( "VALUE" );                 // value token
@@ -919,17 +919,24 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
 }
 
 /** --------------------------------------------------------------------------
- * @brief Compiles the input tokens into postfix notation.
- *
- * This function takes a vector of tokens and converts them into postfix
- * notation using the Shunting Yard algorithm. It handles operators, values,
- * variables, and special characters.
- *
- * @param vectorIn Input vector of tokens to be compiled.
- * @param vectorOut Output vector to store the compiled tokens in postfix notation.
- * @param tag_postfix Tag to indicate the compilation mode (postfix in this case).
- * @return A pair containing a boolean indicating success and a string with an error message if any.
- */
+* @brief Compiles the input tokens into postfix notation.
+*
+* This function takes a vector of tokens and converts them into postfix
+* notation using the Shunting Yard algorithm. It handles operators, values,
+* variables, functions, and special characters.
+*
+* Key behaviors:
+* - Values and variables go directly to output
+* - Operators are pushed to stack based on precedence
+* - Functions are pushed to stack and output when closing ) is found
+* - Commas pop operators back to ( without removing the (
+* - Closing ) pops operators, removes (, and outputs function if present
+*
+* @param vectorIn Input vector of tokens to be compiled.
+* @param vectorOut Output vector to store the compiled tokens in postfix notation.
+* @param tag_postfix Tag to indicate the compilation mode (postfix in this case).
+* @return A pair containing a boolean indicating success and a string with an error message if any.
+*/
 std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix)
 {
    std::stack<token> stackOperator;
@@ -944,121 +951,135 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       switch( uTokenType )
       {
       case token_type_s("OPERATOR"):
+      {
+         while( stackOperator.empty() == false )
          {
+            auto stringToken = token_.get_name();
+            auto stringStackOperator = stackOperator.top().get_name();
+
+            // Don't pop past a left parenthesis
+            if( stringStackOperator == "(" ) { break; }
+
+            // Don't pop functions during operator precedence checking
+            if( stackOperator.top().get_token_type() == token_type_s("FUNCTION") ) { break; }
+
+            int iTokenPrecedence;
+            if( stringToken.length() == 1 ) { iTokenPrecedence = to_precedence_g(stringToken[0], tag_optimize{}); }
+            else { iTokenPrecedence = to_precedence_g(stringToken.data(), tag_optimize{}); }
+
+            int iStackPrecedence;
+            if( stringStackOperator.length() == 1 ) { iStackPrecedence = to_precedence_g(stringStackOperator[0], tag_optimize{}); }
+            else { iStackPrecedence = to_precedence_g(stringStackOperator.data(), tag_optimize{}); }
+
+            if( iTokenPrecedence > iStackPrecedence ) { break; }
+
+            vectorOut.push_back(stackOperator.top());
+            stackOperator.pop();
+         }
+
+         stackOperator.push(token_);
+      }
+      break;
+
+      case token_type_s("VALUE"):
+         vectorOut.push_back(token_);
+         break;
+
+      case token_type_s("VARIABLE"):
+         vectorOut.push_back(token_);
+         break;
+
+      case token_type_s("FUNCTION"):
+         stackOperator.push(token_);
+         break;
+
+      case token::token_type_s("SEPARATOR"):
+      {
+         auto stringToken = token_.get_name();
+         char iCharacter = stringToken[0];
+         if( iCharacter == ',' )
+         {
+            // Pop all operators until we reach a left parenthesis
+            // This ensures expressions between commas are fully evaluated
             while( stackOperator.empty() == false )
             {
-               auto stringToken = token_.get_name();
-               auto stringStackOperator = stackOperator.top().get_name();
-               if( stringStackOperator == "(" ) { break; }
-
-               int iTokenPrecedence;
-               if( stringToken.length() == 1 ) { iTokenPrecedence = to_precedence_g(stringToken[0], tag_optimize{}); }
-               else { iTokenPrecedence = to_precedence_g(stringToken.data(), tag_optimize{}); }
-
-               int iStackPrecedence;
-               if( stringStackOperator.length() == 1 ) { iStackPrecedence = to_precedence_g(stringStackOperator[0], tag_optimize{}); }
-               else { iStackPrecedence = to_precedence_g(stringStackOperator.data(), tag_optimize{}); }
-
-               if( iTokenPrecedence > iStackPrecedence ) { break; }
+               if( stackOperator.top().get_name() == "(" ) { break; }
+               if( stackOperator.top().get_token_type() == token_type_s("FUNCTION") ) { break; }
 
                vectorOut.push_back(stackOperator.top());
                stackOperator.pop();
             }
-
-            stackOperator.push(token_);
          }
-      break;
-      case token_type_s("VALUE"):
-         vectorOut.push_back(token_);
-      break;
-      case token_type_s("VARIABLE"):
-         vectorOut.push_back(token_);
-      break;
-      case token_type_s("FUNCTION"):
-         stackOperator.push(token_);
-      break;
-      case token::token_type_s("SEPARATOR"):
+         else if( iCharacter == ';' )
          {
-            auto stringToken = token_.get_name();
-            char iCharacter = stringToken[0];
-            if( iCharacter == ',' )
+            // Pop all operators from stack and put them in vector
+            while( stackOperator.empty() == false )
             {
-               // Pop all operators until we reach a left parenthesis
-               while( stackOperator.empty() == false && stackOperator.top().get_name() != "(" )
-               {
-                  vectorOut.push_back(stackOperator.top());
-                  stackOperator.pop();
-               }
+               vectorOut.push_back(stackOperator.top());
+               stackOperator.pop();
             }
-            else if( iCharacter == ';' )                                       // found ; and that means end of statement, clear result
-            {
-               // ## pop all operators from stack and put them in vector
-               while( stackOperator.empty() == false )
-               {
-                  vectorOut.push_back(stackOperator.top());
-                  stackOperator.pop();
-               }
-               vectorOut.push_back(token_);                                    // ; add to out
-            }
-            else { return { false, "[compile_s] - Unsupported separator: " + std::string(stringToken) }; }
+            vectorOut.push_back(token_);
          }
+         else { return { false, "[compile_s] - Unsupported separator: " + std::string(stringToken) }; }
+      }
       break;
 
       case token_type_s("SPECIAL_CHAR"):
+      {
+         auto stringToken = token_.get_name();
+         char iCharacter = stringToken[0];
+         if( iCharacter == '(' )
          {
-            auto stringToken = token_.get_name();
-            char iCharacter = stringToken[0];
-            if( iCharacter == '(' )
+            stackOperator.push(token_);
+         }
+         else if( iCharacter == ')' )
+         {
+            // Pop operators until we find the matching left parenthesis
+            while( stackOperator.empty() == false )
             {
-               stackOperator.push(token_);
+               auto stringOperator = stackOperator.top().get_name();
+               if( stringOperator == "(" ) { break; }
+               vectorOut.push_back(stackOperator.top());
+               stackOperator.pop();
             }
-            else if( iCharacter == ')' )
-            {
-               // Pop operators until we find the matching left parenthesis
-               while( stackOperator.empty() == false )
-               {
-                  auto stringOperator = stackOperator.top().get_name();
-                  if( stringOperator == "(" ) { break; }
-                  vectorOut.push_back(stackOperator.top());
-                  stackOperator.pop();
-               }
-               
-               // Remove the left parenthesis from stack
-               if( stackOperator.empty() == false ) { stackOperator.pop(); }
-               
-               // If there's a function on top of the stack, add it to output
-               if( stackOperator.empty() == false && 
-                   stackOperator.top().get_token_type() == token_type_s("FUNCTION") )
-               {
-                  vectorOut.push_back(stackOperator.top());
-                  stackOperator.pop();
-               }
+
+            // Remove the left parenthesis from stack
+            if( stackOperator.empty() == false && stackOperator.top().get_name() == "(" ) 
+            { 
+               stackOperator.pop(); 
             }
-            else
+
+            // If there's a function on top of the stack, add it to output
+            if( stackOperator.empty() == false && 
+               stackOperator.top().get_token_type() == token_type_s("FUNCTION") )
             {
-               // Other special characters that are not parentheses
-               vectorOut.push_back(token_);
+               vectorOut.push_back(stackOperator.top());
+               stackOperator.pop();
             }
          }
+         else
+         {
+            // Other special characters that are not parentheses
+            vectorOut.push_back(token_);
+         }
+      }
       break;
 
       default:
          assert( false );
          break;
-
       }
    }
 
+   // Pop any remaining operators
    while( stackOperator.empty() == false )
    {
       vectorOut.push_back( stackOperator.top() );
       stackOperator.pop();
    }
 
-
    return { true, "" };
 }
-
 /** --------------------------------------------------------------------------
  * @brief Compiles the input tokens preserving their order (no precedence handling).
  *
@@ -1503,6 +1524,11 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
       {
       case token::token_type_s("OPERATOR"):
          {
+            if( stackValue.size() < 2 ) // need at least two values on stack for binary operator
+            {
+               return { false, "[calculate_s] - Not enough values on stack for operator: " + std::string(token_.get_name()) };
+            }
+
             auto stringOerator = token_.get_name();                            // get operator character
 
             if( stringOerator == "=" )                                         // special case for assignment
