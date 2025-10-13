@@ -952,26 +952,29 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       {
       case token_type_s("OPERATOR"):
       {
+         // ## Reorder based on precedence ...................................
+         // Pop operators from stack to output while they have higher or equal precedence (higher precedence number means that operation is done before lower precedence)
+         // Sample: if current token is + (precedence 3) and stack top is * (precedence 4), we pop * to output first and * is done before +
+
          while( stackOperator.empty() == false )
          {
             auto stringToken = token_.get_name();
             auto stringStackOperator = stackOperator.top().get_name();
 
-            // Don't pop past a left parenthesis
-            if( stringStackOperator == "(" ) { break; }
+            if( stringStackOperator == "(" ) { break; }                       // Don't pop past a left parenthesis
+            if( stackOperator.top().get_token_type() == token_type_s("FUNCTION") ) { break; } // Don't pop functions during operator precedence checking
 
-            // Don't pop functions during operator precedence checking
-            if( stackOperator.top().get_token_type() == token_type_s("FUNCTION") ) { break; }
+            // ## Reorder based on precedence ................................
 
-            int iTokenPrecedence;
+            int iTokenPrecedence; // Precedence of current token
             if( stringToken.length() == 1 ) { iTokenPrecedence = to_precedence_g(stringToken[0], tag_optimize{}); }
             else { iTokenPrecedence = to_precedence_g(stringToken.data(), tag_optimize{}); }
 
-            int iStackPrecedence;
+            int iStackPrecedence; // Precedence of operator on stack
             if( stringStackOperator.length() == 1 ) { iStackPrecedence = to_precedence_g(stringStackOperator[0], tag_optimize{}); }
             else { iStackPrecedence = to_precedence_g(stringStackOperator.data(), tag_optimize{}); }
 
-            if( iTokenPrecedence > iStackPrecedence ) { break; }
+            if( iTokenPrecedence > iStackPrecedence ) { break; }              // Current token has higher precedence - stop popping
 
             vectorOut.push_back(stackOperator.top());
             stackOperator.pop();
