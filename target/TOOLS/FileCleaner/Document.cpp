@@ -2124,6 +2124,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       ptableKeys->column_add("uint64", 0, "file-linelist-key");               // foreign key to file-linelist table
       ptableKeys->column_add("rstring", 0, "filename");                       // name of file
       ptableKeys->column_add("uint64", 0, "row");                             // row number in file
+      ptableKeys->column_add("rstring", 0, "context");                        // context if used
       ptableKeys->prepare();                                                  // prepare table
       ptableKeys->property_set("id", stringId);                               // set id for table, used to identify table in cache
       CACHE_Add( std::move(ptableKeys) );                                     // add table to cache
@@ -2280,6 +2281,33 @@ void CDocument::CACHE_Add( std::unique_ptr< gd::table::dto::table > ptableAdd )
 {
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );       // locks `m_vectorTableCache`
    m_vectorTableCache.push_back( std::move( ptableAdd ) );                     // insert table to vector
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Check if cache table with id exists
+ * @param stringId id to check for
+ * @return true if table with id exists
+ */ 
+bool CDocument::CACHE_Get(const std::string_view& stringId, pointer_table_t& ptable_ )
+{
+   std::shared_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );
+
+   for( auto it = std::begin( m_vectorTableCache ), itEnd = std::end( m_vectorTableCache ); it != itEnd; it++ )
+   {
+      // Use std::visit to check if the table has the same id
+      bool bFound = std::visit([&stringId, &ptable_](const auto& ptable__)
+      {
+         auto argumentId = ptable__->property_get("id");
+         if( argumentId.is_string() && stringId == static_cast<const char*>(argumentId) ) 
+         { 
+            ptable_ = ptable__.get(); 
+            return true; 
+         }
+         return false;
+      }, *it); // closing the visit lambda   
+      if(bFound) { return true; }
+   }
+   return false;
 }
 
 /** ---------------------------------------------------------------------------
@@ -2480,6 +2508,31 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
    return { true, "" };
 }
 
+/** --------------------------------------------------------------------------- @CODE [tag: where] [description: Filter rows in table based on expression and arguments]
+ * @brief Filters rows in a cache table based on a specified expression and arguments.
+ * 
+ * This method evaluates a given expression against the rows of a cache table identified by `stringId`.
+ * The expression can include arguments that are replaced with their corresponding values before evaluation.
+ * Rows that do not satisfy the expression are removed from the table.
+ * 
+ * @param stringId The identifier of the cache table to be filtered.
+ * @param stringWhere The expression used to filter the rows. The expression should be in infix notation.
+ * @param vectorArgument A vector of argument names that may be used in the expression.
+ * @param ptable_ A pointer to the cache table. If `nullptr`, the method will attempt to retrieve the table from the cache.
+ * 
+ * @return A pair containing:
+ *         - `bool`: `true` if the filtering was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ * 
+ * @details
+ * - The method first retrieves the column names from the specified table to identify valid identifiers in the expression.
+ * - It then converts the infix expression to postfix notation for easier evaluation.
+ * - The method identifies all column names and arguments used in the expression and prepares it for evaluation by replacing them with their corresponding values.
+ * - Finally, it evaluates the expression for each row in the table and removes rows that do not satisfy the expression.
+ * 
+ * @pre The cache table identified by `stringId` must exist and contain data.
+ * @post The cache table is modified to only include rows that satisfy the filtering expression.
+ */
 std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, std::string_view stringWhere, const std::vector<std::string>& vectorArgument, gd::table::arguments::table* ptable_ )
 {
    if(ptable_ == nullptr) { ptable_ = CACHE_GetTableArguments(stringId, false); }                  assert(ptable_ != nullptr);
@@ -2504,6 +2557,86 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
 
    result_ = RunExpression_Where_g(stringExpression, ptable_);
    if( result_.first == false ) return result_;
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CDocument::CACHE_Context( std::string_view stringId, const gd::argument::arguments& argumentsContext )
+{
+   pointer_table_t ptable_;
+   if( CACHE_Get( stringId, ptable_ ) == false ) return { false, "failed to get cache table" };
+
+   int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
+   std::string stringContext = argumentsContext["context"].as_string();
+
+   if( stringContext.empty() == false )
+   {
+      // parse context to numbers
+      auto vectorOffsetCount = CApplication::SplitNumber_s( stringContext );  // get offset value and count
+      size_t position_; // not used
+      if( vectorOffsetCount.size() == 1 ) { iContextCount = std::stoll(vectorOffsetCount[0].data(), &position_); }
+      else if( vectorOffsetCount.size() > 1 )
+      {
+         iContextOffset = std::stoll(vectorOffsetCount[0].data(), &position_);
+         iContextCount = std::stoll(vectorOffsetCount[1].data(), &position_);
+      }
+
+      iContextOffset = iContextOffset % 100;                                  // limit the offset to 100 lines, so we do not get too much context
+      iContextCount = iContextCount % 1000;                                   // limit the count to 1000 lines, so we do not get too much context
+   }
+
+   // ## Add context to each row in table
+   //    ptable_ is variant that can be any of dto table or arguments have double functionality to iterator rows in table
+
+   uint64_t uRowCount = 0;
+   gd::table::dto::table* ptableDto = nullptr;
+   gd::table::arguments::table* ptableArguments = nullptr;
+
+   if( std::holds_alternative< gd::table::dto::table* >( ptable_ ) == true )
+   {
+      ptableDto = std::get< gd::table::dto::table* >( ptable_ );
+      uRowCount = ptableDto->size();
+   }
+   else if( std::holds_alternative< gd::table::arguments::table* >( ptable_ ) == true )
+   {
+      ptableArguments = std::get< gd::table::arguments::table* >( ptable_ );
+      uRowCount = ptableArguments->size();
+   }
+   assert(uRowCount > 0);
+
+   stringContext.clear();
+   for( uint64_t uRow = 0; uRow < uRowCount; ++uRow )
+   {
+      // Read file name and row number from table
+      uint64_t uSourceLine = 0;
+      std::string stringFileName;
+
+      if( ptableDto != nullptr )
+      {
+         uSourceLine = ptableDto->cell_get_variant_view( uRow, "row" ).as_uint64();
+         stringFileName = ptableDto->cell_get_variant_view( uRow, "filename" ).as_string();
+      }
+      else if( ptableArguments != nullptr )
+      {
+         uSourceLine = ptableArguments->cell_get_variant_view( uRow, "row" ).as_uint64();
+         stringFileName = ptableArguments->cell_get_variant_view( uRow, "filename" ).as_string();
+      }
+
+      int64_t iLeadingLines = 0;
+      auto result_ = FILES_ReadLines_g(stringFileName, uSourceLine, iContextOffset, iContextCount, stringContext, &iLeadingLines);
+      if( result_.first == false ) return result_;
+
+      if( ptableDto != nullptr )
+      {
+         ptableDto->cell_set(uRow, "context", stringContext);
+      }
+      else if( ptableArguments != nullptr )
+      {
+         ptableArguments->cell_set(uRow, "context", stringContext);
+      }
+
+      stringContext.clear();
+   }
 
    return { true, "" };
 }
@@ -2954,7 +3087,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
          string_.clear();
          int64_t iLeadingLines = 0;
          FILES_ReadLines_g(pathFile.string(), uLineinSource, iContextOffset, iContextCount, string_, &iLeadingLines);
-         tableResult.cell_set(uNewRow, 2, string_);
+         tableResult.cell_set(uNewRow, eColumnContext, string_);
          tableResult.cell_set(uNewRow, eColumnRow, uLineinSource, gd::types::tag_convert{});
          tableResult.cell_set(uNewRow, eColumnRowLeading, iLeadingLines, gd::types::tag_convert{});
       }
