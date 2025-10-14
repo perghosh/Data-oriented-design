@@ -738,7 +738,7 @@ std::pair<bool, std::string> right_g(const std::vector<value>& vectorArgument, v
    return { false, "right_g - Invalid argument type" };
 }
 
-/// Extract substring (Excel-style: start position is 1-based)
+/// Extract substring 
 std::pair<bool, std::string> mid_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {                                                                                                  assert(vectorArgument.size() > 2);
    const auto& text_ = vectorArgument[2];
@@ -748,7 +748,7 @@ std::pair<bool, std::string> mid_g(const std::vector<value>& vectorArgument, val
    if( text_.is_string() && start_.is_integer() && length_.is_integer() )
    {
       auto stringText = text_.as_string_view();
-      auto iStart = start_.as_integer() - 1; // Convert to 0-based
+      auto iStart = start_.as_integer();
       auto iLength = length_.as_integer();
       
       if( iStart < 0 || iLength < 0 ) { *pvalueResult = std::string(""); }
