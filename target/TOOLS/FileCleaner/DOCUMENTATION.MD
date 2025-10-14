@@ -28,8 +28,9 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, r
   - [help](#help)
   - [version](#version)
 - [Global options](#global-options)
-- [Scripting and Advanced Usage](#scripting-and-advanced-usage)
+- [Rule commands](#rule-commands)
 - [Examples](#examples)
+- [Scripting and Advanced Usage](#scripting-and-advanced-usage)
 - [Supported File Extensions](#supported-file-extensions-and-languages)
 - [Notes](#notes)
 
@@ -91,6 +92,7 @@ Counts lines in files or folders, or counts pattern occurrences.
 - `--table <name>`: Specify a table name for SQL output.
 - `--comment <chars>`: Pair of characters marking start and end for comments.
 - `--string <chars>`: Pair of characters marking start and end for strings.
+- `--where <condition>`: Specify conditions for filtering file names in result. Condition is a script expression that evaluates to true or false. If true the file is included in result.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 - `--vs`: Adapt to Visual Studio output window format, making files clickable.
 - `--win`: Windows-specific functionality, adapting to features specific to Windows.
@@ -124,6 +126,7 @@ Also remember that code is stripped of comments and strings before searching. Fi
 - `--max <count>`: Limit the number of results.
 - `--width <size>`: Width for output formatting.
 - `--match-all`: Require all specified patterns to match within the same line or row for a result to be considered valid.
+- `--where <condition>`: Specify conditions for filtering file names in result. Condition is a script expression that evaluates to true or false. If true the match is included in result.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 - `--vs`: Adapt to Visual Studio output window format, making files clickable.
 - `--win`: Windows-specific functionality, adapting to features specific to Windows.
@@ -147,6 +150,7 @@ Lists rows matching specified patterns in files or folders.
 - `--max <count>`: Limit the number of results.
 - `--segment <type>`: Segment in code to find patterns. Valid segments are: code, **comment**, **string**, and **all** (all = all code).
 - `--match-all`: Require all specified patterns to match within the same row for it to be included in the results.
+- `--where <condition>`: Specify conditions for filtering file names in result. Condition is a script expression that evaluates to true or false. If true the match is included in result.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 - `--vs`: Adapt to Visual Studio output window format, making files clickable.
 - `--win`: Windows-specific functionality, adapting to features specific to Windows.
@@ -178,6 +182,7 @@ Dir differs from normal dir/ls in that it addapted to work for developers or peo
 - `--segment <name>` : Segment in code to find patterns. Valid segment **name** are: code, **comment**, **string**, and **all** (all = all code).
 - `--script <file>`: Execute an external script file for advanced processing of the listed files. Useful for custom formatting or filtering.
 - `--sort <column>`: Sort the output by column name when result is printed to console.
+- `--where <condition>`: Specify conditions for filtering file names in result. Condition is a script expression that evaluates to true or false. If true the file is copied.
 - `-R`: Search recursively in current or selected folder as deep as possible (max 16 levels).
 - `--vs`: Format the output to be compatible with the Visual Studio Output window, enabling seamless integration with the IDE.
 - `--win`: Enable Windows-specific functionality, adapting the listing behavior to leverage Windows operating system features.
@@ -247,10 +252,10 @@ These options can be used with any command to modify its behavior globally. Beha
 - `--explain`: Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding.
 - `--help`: Prints help information about command.
 - `--verbose`: Write information about operations that might be useful for user.
-
+- `--detail <level>`: Set detail level on information presented to user. levels are basic, standard, extended, full or 0,1,2,3. If detail set as flag then standard is used.
 ---
 
-## Scripting and Advanced Usage
+## Rule commands
 
 ### Rule and how to use rules
 Cleaner supports advanced scripting capabilities, allowing users to define custom rules and patterns for searching and manipulating code segments. This feature is particularly useful for complex searches or when integrating cleaner into larger workflows. Or format output to for different purposes.  
@@ -336,6 +341,115 @@ description: ## Open configuration file if it exists.
 
 ---
 
+## Scripting and Advanced Usage
+
+### Scripting Functions Reference
+
+Cleaner provides a powerful set of built-in functions that can be used in scripting expressions, particularly with the `--where`, `--kv-where`, and `--expression` options. These functions are organized into categories and support mathematical operations, string manipulation, and logical evaluations.
+
+#### Basic Syntax
+Functions are called using the format: `function_name(arg1, arg2, ...)`  
+Some functions support both namespace and non-namespace calling:
+- `length(text)` or `str::length(text)`
+- `max(a, b)` or `math::max(a, b)`
+
+#### Mathematical Functions
+
+| Function | Syntax | Description | Example |
+|----------|--------|-------------|---------|
+| `abs` | `abs(number)` | Returns the absolute value of a number | `abs(-5)` → `5` |
+| `average` | `average(a, b)` | Calculates the mean of two numbers | `average(10, 20)` → `15` |
+| `ceil` | `ceil(number)` | Rounds a number up to the nearest integer | `ceil(3.2)` → `4` |
+| `floor` | `floor(number)` | Rounds a number down to the nearest integer | `floor(3.8)` → `3` |
+| `max` | `max(a, b)` | Returns the greater of two values | `max(5, 10)` → `10` |
+| `min` | `min(a, b)` | Returns the lesser of two values | `min(5, 10)` → `5` |
+| `round` | `round(number)` | Rounds a number to the nearest integer | `round(3.5)` → `4` |
+| `sum` | `sum(a, b)` | Adds two numbers together | `sum(3, 7)` → `10` |
+
+#### Logical Functions
+
+| Function | Syntax | Description | Example |
+|----------|--------|-------------|---------|
+| `if` | `if(condition, true_value, false_value)` | Conditional evaluation | `if(size > 1000, "large", "small")` |
+| `is_null` | `is_null(value)` | Checks if a value is null | `is_null(description)` |
+| `is_not_null` | `is_not_null(value)` | Checks if a value is not null | `is_not_null(filename)` |
+
+#### String Functions
+
+All string functions is within the namespace `str::`.
+
+| Function | Syntax | Description | Example |
+|----------|--------|-------------|---------|
+| `char_at` | `char_at(text, index)` | Gets character at specified position (0-based) | `char_at("hello", 1)` → `"e"` |
+| `count` | `count(haystack, needle)` | Counts occurrences of substring | `count("hello", "l")` → `2` |
+| `ends_with` | `ends_with(haystack, suffix)` | Checks if string ends with suffix | `ends_with(filename, ".cpp")` |
+| `find` | `find(text, word, offset)` | Finds substring position (returns -1 if not found) | `find("hello", "ll", 0)` → `2` |
+| `has` | `has(haystack, needle)` | Checks if string contains substring | `has(content, "TODO")` |
+| `has_tag` | `has_tag(text, tag)` | Checks if text contains specific tag | `has_tag(comment, "@CODE")` |
+| `is_alpha` | `is_alpha(text)` | Checks if string contains only alphabetic characters | `is_alpha("Hello")` → `true` |
+| `is_empty` | `is_empty(text)` | Checks if string is empty or whitespace-only | `is_empty("  ")` → `true` |
+| `left` | `left(text, count)` | Gets leftmost characters | `left("hello", 2)` → `"he"` |
+| `length` | `length(text)` | Gets string length | `length("hello")` → `5` |
+| `list_tags` | `list_tags(text)` | Extracts unique tags as CSV | `list_tags("@code @test @code")` → `"code,test"` |
+| `ltrim` | `ltrim(text)` | Removes leading whitespace | `ltrim("  hello")` → `"hello"` |
+| `mid` | `mid(text, start, length)` | Extracts substring (1-based start) | `mid("hello", 2, 3)` → `"ell"` |
+| `missing` | `missing(haystack, needle)` | Checks if string lacks substring | `missing(content, "FIXME")` |
+| `repeat` | `repeat(text, count)` | Repeats string N times | `repeat("ab", 3)` → `"ababab"` |
+| `replace` | `replace(text, old, new)` | Replaces all occurrences | `replace("aabb", "a", "c")` → `"ccbb"` |
+| `reverse` | `reverse(text)` | Reverses character order | `reverse("hello")` → `"olleh"` |
+| `right` | `right(text, count)` | Gets rightmost characters | `right("hello", 2)` → `"lo"` |
+| `rtrim` | `rtrim(text)` | Removes trailing whitespace | `rtrim("hello  ")` → `"hello"` |
+| `starts_with` | `starts_with(haystack, prefix)` | Checks if string starts with prefix | `starts_with(path, "C:\")` |
+| `substring` | `substring(text, start, length)` | Extracts substring (0-based start) | `substring("hello", 1, 3)` → `"ell"` |
+| `tolower` | `tolower(text)` | Converts to lowercase | `tolower("Hello")` → `"hello"` |
+| `toupper` | `toupper(text)` | Converts to uppercase | `toupper("hello")` → `"HELLO"` |
+| `trim` | `trim(text)` | Removes leading/trailing whitespace | `trim("  hello  ")` → `"hello"` |
+
+### Usage Examples with Scripting Functions
+
+#### Filtering files by size and path length:
+```bash
+cleaner dir "*" --where "(size > 5000) and (str::length(path) > 75)"
+```
+
+#### Finding tags containing specific text:
+```bash
+cleaner find "*" --segment comment --pattern "@CODE" --keys "tag" --kv-where "str::find(tag, 'where', 0) != -1"
+```
+
+#### Complex conditional filtering:
+```bash
+cleaner dir "*" --where "if(size > 1000, 'large', 'small') = 'large' and str::ends_with(filename, '.cpp')"
+```
+
+#### String manipulation in conditions:
+```bash
+cleaner find "*" --pattern "@TASK" --kv-where "str::length(description) > 50 and str::has_tag(comment, 'urgent')"
+```
+
+#### Mathematical operations:
+```bash
+cleaner dir "*" --where "(size + 100) > 5000 and is_not_null(modified_date)"
+```
+
+### Rule System
+
+Cleaner supports advanced scripting capabilities through rules, allowing users to define custom patterns for searching and manipulating code segments.
+
+Available rules:
+- `select-between:<start>,<end>`: Selects text between specified start and end markers
+- `select-line:<marker>`: Selects line at the specified line marker (selects match line if no marker specified)
+- `select-all`: Selects all text in the segment
+
+Example extracting code between markers:
+```bash
+cleaner find -R --source "path/to/source" --pattern "@TAG;#database" --match-all --rule "select-between:@code,@endcode"
+```
+
+This will extract sample code between `@code` and `@endcode` markers in source files that are tagged with both `@TAG` and `#database`.
+
+---
+
 ## Supported File Extensions and Languages
 
 | Extension | Language | Comment Styles | String Formats |
@@ -385,6 +499,3 @@ description: ## Open configuration file if it exists.
 - The tool supports various operational modes for different code analysis purposes.
 - Advanced scripting capabilities allow for custom rules and complex automation tasks.
 
----
-
-For further details, refer to the source code or contact the development team.
