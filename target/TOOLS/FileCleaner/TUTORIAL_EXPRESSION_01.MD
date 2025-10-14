@@ -67,8 +67,13 @@ cleaner count --source "C:/dev/home/DOD/target/TOOLS" --recursive 3 --where "\"c
 
 Count only specific files by using the `--filter` option and here only `.cpp` files are counted that have more than 100 lines of code.
 ```bash
-# Count files lines and show files with more than 100 lines of code
+# Count files lines and show files with more than 100 lines of code (code only)
 cleaner count --source "C:/dev/home/DOD/target/TOOLS" --filter "*.cpp" --recursive 3 --where "code > 100"
+```
+
+List lines in cpp files that have less code than half the total line count.
+```bash
+cleaner count --source "C:/dev/home/DOD/target/TOOLS" --filter "*.cpp" --recursive 3 --where "(code * 2) < count"
 ```
 
 
