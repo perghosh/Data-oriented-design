@@ -161,7 +161,7 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
             boost::regex regexPattern(stringPattern);
             vectorRegexPattern.push_back({ regexPattern, stringPattern });                         LOG_DEBUG_RAW("== Regex pattern: " & stringPattern);
          }
-         catch (const boost::regex_error& e)
+         catch(const boost::regex_error& e)
          {                                                                      
             std::string stringError = "Invalid regex pattern: '" + stringPattern + "'. Error: " + e.what();
             return { false, stringError };
