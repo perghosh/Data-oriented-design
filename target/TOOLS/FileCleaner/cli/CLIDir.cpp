@@ -33,10 +33,10 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    if(pdocument->PROPERTY_Exists("detail") == false) { pdocument->PROPERTY_UpdateFromApplication(); }
 
    const gd::cli::options& options_ = *poptionsDir;
-   std::string stringSource = (*poptionsDir)["source"].as_string(); 
+   std::string stringSource = ( *poptionsDir )["source"].as_string();                              LOG_DEBUG_RAW_IF( stringSource.empty() == false, "Source: " & stringSource);
    CApplication::PreparePath_s(stringSource);                                  // if source is empty then set it to current path, otherwiss prepare it
 
-   std::string stringIgnore = options_["ignore"].as_string();
+   std::string stringIgnore = options_["ignore"].as_string();                                      LOG_DEBUG_RAW_IF( stringIgnore.empty() == false, "Ignore: " & stringIgnore);
    if( stringIgnore.empty() == false ) 
    { 
       auto vectorIgnore = CApplication::Split_s(stringIgnore);
