@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 
 #include "gd_expression_method_01.h"
 
