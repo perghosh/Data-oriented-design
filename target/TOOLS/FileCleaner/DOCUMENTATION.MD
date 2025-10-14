@@ -349,11 +349,12 @@ Cleaner provides a powerful set of built-in functions that can be used in script
 
 #### Basic Syntax
 Functions are called using the format: `function_name(arg1, arg2, ...)`  
-Some functions support both namespace and non-namespace calling:
-- `length(text)` or `str::length(text)`
-- `max(a, b)` or `math::max(a, b)`
 
-#### Mathematical Functions
+Namespaces are used to group functions, for example all string functions are within the namespace `str::`, so to call the `length` function you would write: `str::length(text)`.  
+Namespaces makes it easier to find functions and avoid name collisions and supporting a lot more functionality without cluttering the global namespace.
+
+
+#### Mathematical Functions in global namespace
 
 | Function | Syntax | Description | Example |
 |----------|--------|-------------|---------|
@@ -366,7 +367,7 @@ Some functions support both namespace and non-namespace calling:
 | `round` | `round(number)` | Rounds a number to the nearest integer | `round(3.5)` → `4` |
 | `sum` | `sum(a, b)` | Adds two numbers together | `sum(3, 7)` → `10` |
 
-#### Logical Functions
+#### Logical Functions in global namespace
 
 | Function | Syntax | Description | Example |
 |----------|--------|-------------|---------|
@@ -392,7 +393,7 @@ All string functions is within the namespace `str::`.
 | `length` | `length(text)` | Gets string length | `length("hello")` → `5` |
 | `list_tags` | `list_tags(text)` | Extracts unique tags as CSV | `list_tags("@code @test @code")` → `"code,test"` |
 | `ltrim` | `ltrim(text)` | Removes leading whitespace | `ltrim("  hello")` → `"hello"` |
-| `mid` | `mid(text, start, length)` | Extracts substring (1-based start) | `mid("hello", 2, 3)` → `"ell"` |
+| `mid` | `mid(text, start, length)` | Extracts substring | `mid("hello", 2, 3)` → `"ell"` |
 | `missing` | `missing(haystack, needle)` | Checks if string lacks substring | `missing(content, "FIXME")` |
 | `repeat` | `repeat(text, count)` | Repeats string N times | `repeat("ab", 3)` → `"ababab"` |
 | `replace` | `replace(text, old, new)` | Replaces all occurrences | `replace("aabb", "a", "c")` → `"ccbb"` |
