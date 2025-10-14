@@ -1,4 +1,4 @@
-﻿/**                                                                            @TAG #ui.cli #command.find [description: definitions for find methods]
+/**                                                                            @TAG #ui.cli #command.find [description: definitions for find methods]
  * @file CLIFind.cpp
  * @brief This file contains the definitions methods used for the cli find command
  * 
@@ -143,7 +143,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       if( options_.exists("keys") == true || options_.exists("kv") == true )
       {
          gd::argument::shared::arguments argumentsPrint;
-         argumentsPrint.append( options_.get_arguments(), { "keys", "header", "footer", "brief", "width"});
+         argumentsPrint.append( options_.get_arguments(), {"context", "keys", "header", "footer", "brief", "width"});
          if( options_.exists("kv-where") == true ) argumentsPrint.append("where", options_["kv-where"].as_string_view()); // if kv-where is set, add it to the print arguments
          result_ = FindPrintKeyValue_g(pdocument, &argumentsPrint);                             // Print the key-value pairs found in the files
          if( result_.first == false ) return result_;                          // if print failed, return the error
@@ -864,11 +864,13 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
 
       auto result_ = pdocument->CACHE_Where( "keyvalue", stringWhere, vectorColumn );
       if( result_.first == false ) { return result_; }                            // if where filter failed, return the error
+   }
 
-      //std::string stringExpression;                                             // string to hold the expression for filtering
-      //result_ = SHARED_SqlToExpression_g(stringWhere, stringExpression);                           if( result_.first == false ) { return result_; }
-
-      //result_ = RunExpression_Where_g( stringExpression, ptableKeyValue );                         if( result_.first == false ) { return result_;  }
+   if( pargumentsPrint->exists("context") == true )
+   {
+      gd::argument::arguments argumentsContext;
+      argumentsContext.append(*pargumentsPrint, { "context" });               // add context
+      pdocument->CACHE_Context("keyvalue", argumentsContext);
    }
 
 
@@ -934,6 +936,13 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
 
    for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
    {
+      std::string stringContext; // context code if any, this is used to print the context code if any
+      // ### Get context if set
+      if( ptableKeyValue->cell_is_null( uRow, "context" ) == false )
+      {
+         stringContext = ptableKeyValue->cell_get_variant_view(uRow, "context").as_string();
+      }
+
       // ### Prepare header and print line if vectorHeader is not empty
 
       const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(uRow); // get the arguments object from the row
@@ -1039,6 +1048,11 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
          if( stringFooterFormat.empty() == true ) { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentRight, uWidth); }
          else                                     { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentRight, uWidth, stringFooterFormat); }
          pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "footer"}}, gd::types::tag_view{} });
+      }
+
+      if( stringContext.empty() == false )
+      {
+         pdocument->MESSAGE_Display(stringContext, { array_, {{"color", "disabled"}}, gd::types::tag_view{} });
       }
 
       pdocument->MESSAGE_Display("");                                         // add a newline after each row to separate the key-value pairs

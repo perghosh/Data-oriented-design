@@ -2,11 +2,19 @@
 
 ## v1.0.7
 ### New Features
+- Much work done to internal script logic to make cleaner a lot more flexible by configure commands with expressions.
+- Filter result with WHERE conditions for find, list, dir and count commands. Lots of methods added to create advanced filters.
+- Syntax for filtering with where is similar to sql syntax.
 - Added support for case-insensitive and whole-word matching in the find command.
 - Improved performance of pattern matching by using threads for `find` command.
 - Enhanced logging capabilities for better debugging and analysis.
 - `copy` command works similar to cp command in linux, but with options to filter files, folders and content.
 - `copy` command between two folders that recurses into subfolders generating the same folder structure in target as in source.
+- `context` added to find when generating key value output
+- `dir` command have gotten more columns
+- `help` command improved to show information about how commands and options work together
+- Improved logging that can be set using options to cleaner.
+- Global option `detail` with four levels on how much detail to show in output
 
 ## v1.0.6
 ### New Features

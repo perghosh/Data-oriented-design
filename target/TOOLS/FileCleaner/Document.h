@@ -49,6 +49,8 @@ public:
 public:
    /// @brief Type alias for table, which can be either a `gd::table::dto::table` or a `gd::table::arguments::table`.
    using table_t = std::variant< std::unique_ptr< gd::table::dto::table >, std::unique_ptr< gd::table::arguments::table > >;
+   /// @brief Type alias for pointer to table, which can be either a pointer to `gd::table::dto::table` or a pointer to `gd::table::arguments::table`.
+   using pointer_table_t = std::variant< gd::table::dto::table*, gd::table::arguments::table* >;
 
 // ## construction -------------------------------------------------------------
 public: // 0TAG0construct.Document
@@ -155,6 +157,7 @@ public:
    bool CACHE_Add( gd::table::dto::table&& table ) { return CACHE_Add( std::forward<gd::table::dto::table>( table ), std::string_view{}); }
    void CACHE_Add( std::unique_ptr< gd::table::dto::table > ptableAdd );
    /// Return table with cache data
+   bool CACHE_Get(const std::string_view& stringId, pointer_table_t& ptable_ );
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId, bool bPrepare );
    gd::table::dto::table* CACHE_Get( const std::string_view& stringId ) { return CACHE_Get( stringId, true ); }
    gd::table::arguments::table* CACHE_GetTableArguments( const std::string_view& stringId, bool bPrepare );
@@ -166,6 +169,9 @@ public:
    /// Filter cached table based on where expression
    std::pair<bool, std::string> CACHE_Where(std::string_view stringId, std::string_view stringWhere, gd::table::dto::table* ptable_ = nullptr);
    std::pair<bool, std::string> CACHE_Where(std::string_view stringId, std::string_view stringWhere, const std::vector<std::string>& vectorColumn, gd::table::arguments::table* ptable_ = nullptr );
+
+   /// Read context information for specified table;
+   std::pair<bool, std::string> CACHE_Context( std::string_view stringId, const gd::argument::arguments& argumentsContext );
 
    /// Return information to generate cache data
    std::pair<bool, std::string> CACHE_GetInformation( const std::string_view& stringId, gd::argument::arguments& argumentsCache );

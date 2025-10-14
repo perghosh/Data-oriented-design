@@ -647,6 +647,7 @@ public:
    TYPE cell_get( uint64_t uRow, unsigned uColumn ) const noexcept;
 
    bool cell_is_null( uint64_t uRow, unsigned uColumn ) const noexcept;
+   bool cell_is_null( uint64_t uRow, std::string_view stringName ) const noexcept { return cell_is_null(uRow, column_get_index(stringName)); }
    const reference* cell_get_reference( uint64_t uRow, unsigned uColumn ) const noexcept;
 
    gd::variant_view cell_get_variant_view( uint64_t uRow, unsigned uColumn ) const noexcept;
