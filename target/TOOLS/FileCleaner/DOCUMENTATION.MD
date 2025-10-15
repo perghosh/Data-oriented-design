@@ -237,9 +237,6 @@ Displays the version of the application.
 These options can be used with any command to modify its behavior globally. Behaviour might be different depending on the command used.
 
 - `--add-to-history <alias>`: Add to history with alias name
-- `--explain`: Print additional context or descriptions about items
-- `--logging`: Turn on logging functionality.
-- `--logging-csv`: Add csv logger, prints log information using the csv format.
 - `--logging-severity <severity>`: Specify severity level for logging. Valid values are: `verbose`, `debug`, `info`, `warning`, `error`, `fatal`.
 - `--config <file>`: Specify a configuration file to use. If not specified, the default configuration file is used if it exists.
 - `--editor <type>`: Type of editor integration. `vs` (Visual Studio) or `vscode` (Visual Studio Code) are currently supported.
@@ -248,11 +245,15 @@ These options can be used with any command to modify its behavior globally. Beha
 - `--recursive <depth>`: Operation should be recursive, by setting number decide the depth.
 - `--output <file>`: Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set.
 - `--prompt <values>`: Prompts for values that are typed before executing expression. These values will be asked for.
-- `--print`: Results from command should be printed to console.
-- `--explain`: Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding.
-- `--help`: Prints help information about command.
-- `--verbose`: Write information about operations that might be useful for user.
 - `--detail <level>`: Set detail level on information presented to user. levels are basic, standard, extended, full or 0,1,2,3. If detail set as flag then standard is used.
+
+**Flags**
+- `-logging-csv`: Add csv logger, prints log information using the csv format.
+- `-print`: Results from command should be printed to console.
+- `-icase`: Ignore case when matching patterns.
+- `-word`: Match whole words only when patterns are used.
+- `-help`: Prints help information about command.
+- `-verbose`: Write information about operations that might be useful for user.
 ---
 
 ## Rule commands
