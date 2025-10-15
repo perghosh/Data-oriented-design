@@ -516,6 +516,12 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
                piszPosition++;
                continue;
 				}
+            else if( (piszPosition[0] == '<' || piszPosition[0] == '>') && piszPosition[1] == '=' ) // Handle special operators that have two characters like >=, <=
+            {
+               vectorToken.emplace_back(token(uTokenType, std::string_view(piszPosition, 2)));
+               piszPosition += 2;
+               continue;
+            }
             else if( piszPosition[0] == '-' )                                 // special case to handle negate
             {
                auto type_ = vectorToken.empty() == false ? vectorToken.back().get_token_type() : token::token_type_s("OPERATOR");
