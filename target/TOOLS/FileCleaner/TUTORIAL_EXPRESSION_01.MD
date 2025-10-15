@@ -26,19 +26,19 @@ cleaner dir --source "C:\dev\home\DOD\target\TOOLS\FileCleaner\cli" --recursive 
 Some basic expressions:
 ```bash
 # Find files containing the word "main"
-cleaner dir --source "C:\dev\home\DOD\target\TOOLS\FileCleaner" --where "\"str::find( filename, 'main', 0) not -1\""
+cleaner dir --source "C:\dev\home\DOD\target\TOOLS\FileCleaner" --where "str::find( filename, 'main', 0) not -1"
 ```
 ```bash
 # Count files larger than 1000 bytes
-cleaner dir --source "C:\dev\home\DOD\target\TOOLS\FileCleaner" --where "\"size > 1000\"" --recursive 5
+cleaner dir --source "C:\dev\home\DOD\target\TOOLS\FileCleaner" --where "size > 1000" --recursive 5
 ```
 ```bash
 # List all .cpp files
-cleaner dir --source "C:\dev\home\DOD\target\TOOLS\FileCleaner\cli" --where "\"extension == '.cpp'\""
+cleaner dir --source "C:\dev\home\DOD\target\TOOLS\FileCleaner\cli" --where "extension = '.cpp'"
 ```
 ```bash
 # Find files modified in the last 7 days
-cleaner dir --source "C:\dev\home\DOD\target\TOOLS\FileCleaner\cli" --where "\"days < 7\""
+cleaner dir --source "C:\dev\home\DOD\target\TOOLS\FileCleaner\cli" --where "days < 7"
 ```
 
 ### "count": Count content information in files:
@@ -62,7 +62,7 @@ Based on these columns you can create expressions to filter the results.
 For example, to find files with more than 100 lines of code:
 ```bash
 # Find files with more than 100 lines of code
-cleaner count --source "C:/dev/home/DOD/target/TOOLS" --recursive 3 --where "\"code > 100\""
+cleaner count --source "C:/dev/home/DOD/target/TOOLS" --recursive 3 --where "code > 100"
 ```
 
 Count only specific files by using the `--filter` option and here only `.cpp` files are counted that have more than 100 lines of code.
