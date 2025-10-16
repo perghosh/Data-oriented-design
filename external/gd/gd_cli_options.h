@@ -442,6 +442,17 @@ public:
    /// return sub options for specified name
    options sub_get( const std::string_view& stringName ) const;
 
+   // ## alias methods
+   void alias_add(std::string_view stringAlias, const gd::argument::arguments& arguments_) { m_vectorAlias.emplace_back(stringAlias, arguments_); }
+   bool alias_find(const std::string_view& stringAlias, gd::argument::arguments& argumentsSet) const;
+   bool alias_find(const std::string_view& stringAlias, gd::argument::arguments* parguments) const;
+   bool alias_exists(const std::string_view& stringAlias) const;
+   size_t alias_size() const { return m_vectorAlias.size(); }
+   bool alias_empty() const { return m_vectorAlias.empty(); }
+   std::vector<std::pair<std::string, gd::argument::arguments>>::const_iterator alias_begin() const { return m_vectorAlias.begin(); }
+   std::vector<std::pair<std::string, gd::argument::arguments>>::const_iterator alias_end() const { return m_vectorAlias.end(); }
+
+
    /// copy needed data to work with options
    options clone_arguments() const { return options(m_stringName, m_argumentsValue); }
 //@}
@@ -469,6 +480,7 @@ public:
    std::vector<option> m_vectorOption; ///< Valid option values
    gd::argument::arguments m_argumentsValue;///< Argument values
    std::vector< options > m_vectorSubOption;///< Attached subcommands 
+   std::vector< std::pair<std::string, gd::argument::arguments> > m_vectorAlias;///< alias for commands, alias may have hardcoded arguments
 
    const options* m_poptionsParent = nullptr; ///< Pointer to parent options (if this is sub command)
 
@@ -569,5 +581,37 @@ inline void options::clear_all() {
    }
    clear();
 }
+
+/// find alias for specified name
+inline bool options::alias_find(const std::string_view& stringAlias, gd::argument::arguments& argumentsSet) const
+{
+   for(const auto& [alias, arguments_] : m_vectorAlias) {
+      if (alias == stringAlias) { argumentsSet = arguments_;  return true; }
+   }
+   return false;
+}
+
+/// find alias for specified name
+inline bool options::alias_find(const std::string_view& stringAlias, gd::argument::arguments* parguments) const
+{
+   for(const auto& [alias, arguments_] : m_vectorAlias) {
+      if(alias == stringAlias) { 
+         if( parguments != nullptr ) *parguments = arguments_;  
+         return true; 
+      }
+   }
+   return false;
+}
+
+/// check if alias exists
+inline bool options::alias_exists(const std::string_view& stringAlias) const
+{
+   for(const auto& [alias, arguments_] : m_vectorAlias) {
+      if(alias == stringAlias) { return true; }
+   }
+   return false;
+}
+
+
 
 _GD_CLI_END

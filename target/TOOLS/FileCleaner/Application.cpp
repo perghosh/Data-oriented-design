@@ -2373,6 +2373,10 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( "version", "Print version" );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+
+   // ## Prepar aliases for commands
+   optionsApplication.alias_add("ls", { { "command", "dir" }, { "args", "-compact" } } );
+   optionsApplication.alias_add("cp", { { "command", "copy" } } );
 }
 
 // ----------------------------------------------------------------------------
