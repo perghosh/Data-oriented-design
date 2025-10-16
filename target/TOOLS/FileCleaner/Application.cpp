@@ -2375,7 +2375,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
    // ## Prepar aliases for commands
-   optionsApplication.alias_add("ls", { { "command", "dir" }, { "args", "-compact" } } );
+   optionsApplication.alias_add("ls", { { "command", "dir" }, { "compact", true } } );
    optionsApplication.alias_add("cp", { { "command", "copy" } } );
 }
 
