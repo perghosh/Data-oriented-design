@@ -240,14 +240,43 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
       }
       else
       {
+         // ## not option, could be sub command (note that poptionsRoot has to be null for sub commands to be valid)
+
          if( poptionsRoot == nullptr )                                         // check for sub options ? if root is null it means that it can be sub command if any is added
          {
+            poptionsRoot = this;
+
             options* poptions = sub_find( pbszArgument );
             if(poptions != nullptr)
-            {  // ## found sub command, set to active and parse rest with rules from the sub command
-               poptions->set_active();
-               if( poptionsRoot == nullptr ) { poptionsRoot = this; }
+            {  // ### found sub command, set to active and parse rest with rules from the sub command
+               poptions->set_active();                                        // set sub command to active (this is a must)
                return poptions->parse( iArgumentCount - iPosition, &ppbszArgumentValue[iPosition], poptionsRoot );
+            }
+            else
+            {
+               // ### try to find alias for command ..........................
+
+               gd::argument::arguments argumentsAlias;
+               bool bFound = alias_find( pbszArgument, argumentsAlias );
+               if( bFound == true )
+               {
+                  std::string stringCommand = argumentsAlias["command"].to_string(); 
+                  options* poptions = sub_find( stringCommand );
+                  if( poptions == nullptr ) { return { false, std::string("Unknown sub command : ") + pbszArgument }; }
+
+                  poptions->set_active();                                     // set sub command to active (this is a must)
+                  auto result_ = poptions->parse( iArgumentCount - iPosition, &ppbszArgumentValue[iPosition], poptionsRoot );
+                  if( result_.first == false ) return result_;                   // if error then return error
+
+                  // #### append rest of arguments to final argument list ....
+
+                  for( auto it = argumentsAlias.named_begin(), itEnd = argumentsAlias.named_end(); it != itEnd; it++ )
+                  {
+                     if( it->first != "command" ) poptions->add_value( it->first, it->second ); // add all arguments except command that is used to find sub command
+                  }
+
+                  return { true, "" };
+               }
             }
          }
 
