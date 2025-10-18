@@ -5,7 +5,10 @@
 #include <format>
 
 #include "gd/gd_uuid.h"
+#include "gd/gd_file.h"
 #include "gd/math/gd_math_string.h"
+#include "gd/table/gd_table_formater.h"
+
 
 #include "../Command.h"
 #include "../Application.h"
@@ -107,22 +110,19 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
       if(result_.first == false) return result_;
    }
 
+   // ## print the result ....................................................
 
-   /*
-   if(options_.exists("where") == true)
+   value_ = options_.get_variant_view( "compact", gd::cli::options::tag_optional{});
+   if( value_.has_value() == true && value_.value() == true )
    {
-      auto result_ = pdocument->CACHE_Where("file-dir", options_["where"].as_string_view());   // filter table based on where condition
-      if(result_.first == false) return result_;
+      gd::argument::shared::arguments arguments_;
+      DirPrintCompact_g(pdocument, arguments_);                               // print the table similar to ls
+   }
+   else
+   {
+      DirPrint_g(pdocument);                                                  // print the table to the console
    }
 
-   if( options_.exists("sort") == true )
-   {
-      pdocument->CACHE_Sort("file-dir", options_["sort"]);                    // sort the table by the given sort value
-   }
-   */
-
-
-   DirPrint_g(pdocument);                                                     // print the table to the console
 
    return { true, "" };
 }
@@ -266,6 +266,33 @@ std::pair<bool, std::string> DirPrint_g(CDocument* pdocument)
 
    auto stringTable = gd::table::to_string( *ptable_, { {"verbose", true} }, gd::table::tag_io_cli{});
    pdocument->MESSAGE_Display(stringTable);
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::argument::shared::arguments& arguments_ )
+{
+   auto* ptable_ = pdocument->CACHE_Get("file-dir");                                         assert(ptable_ != nullptr);
+
+   // ## Create new table to match what to print that work as ls command .............
+   gd::table::dto::table tableLS( 0, { { "string", 200, "name"}, { "uint64", 0, "size"} }, gd::table::tag_prepare{} );
+   gd::file::path pathFile;
+   for( const auto& itRow : *ptable_ )
+   {
+      std::string stringPath = itRow.cell_get_variant_view("path").as_string();
+      pathFile = stringPath;
+      auto uRow = tableLS.row_add_one();
+      tableLS.cell_set(uRow, 0, pathFile.filename().string());
+      //tableLS.cell_set(uRow, "size", uSize);
+   }
+   
+
+   unsigned uColumnPath = ptable_->column_get_index("path");
+
+   std::string stringOutput;
+   stringOutput = gd::table::format::to_string(tableLS, {0}, 3, gd::argument::arguments{ { "border", false }, { "row-space", 0 } }, gd::types::tag_card{});
+
+   pdocument->MESSAGE_Display(stringOutput);
 
    return { true, "" };
 }
