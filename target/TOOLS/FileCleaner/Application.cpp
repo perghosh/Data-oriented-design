@@ -2255,6 +2255,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "sort", "Sort the listed files based on a **specified column name** (e.g., name, size, date). This organizes the output for easier analysis." });
       optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
       optionsCommand.add_flag_or_option( {"R", "Enable **recursive listing** of files in subfolders. Sets the recursion depth to 16, ensuring all subdirectories are scanned."} );
+      optionsCommand.add_flag({ "compact", "View results in compact format, similar to ls on linux" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, enabling seamless integration with the IDE."} );
       optionsCommand.add_flag( {"win", "Enable **Windows-specific functionality**, adapting the listing behavior to leverage Windows operating system features."} );

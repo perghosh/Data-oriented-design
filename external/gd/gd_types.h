@@ -122,6 +122,7 @@ struct tag_code {};           ///< code is used in some form, like a reference c
 struct tag_comment {};        ///< comment is used in some form, like user notes
 struct tag_date {};           ///< date is used in some form
 struct tag_description {};    ///< description is used in some form
+struct tag_message {};        ///< message is used in some form, like a text message
 struct tag_error {};          ///< error is used in some form
 struct tag_flag {};           ///< flag is used in some form, like true/false or on/off
 struct tag_id {};             ///< id is used in some form
@@ -137,6 +138,10 @@ struct tag_state {};          ///< state is used in some form, like current cond
 struct tag_status {};         ///< status is used in some form, like active/inactive
 struct tag_success {};        ///< success is used in some form
 struct tag_table {};          ///< table is used in some form
+struct tag_card {};           ///< card is used in some form, like a data card or card form
+struct tag_dimension {};      ///< dimension is used in some form, like width/height
+struct tag_duration {};       ///< duration is used in some form, like time duration
+struct tag_measurement {};    ///< measure is used in some form, like a measurement value
 struct tag_tag {};            ///< tag value
 struct tag_timestamp {};      ///< timestamp is used in some form, like a date-time combination
 struct tag_type {};           ///< type is used in some form, like data type or class
@@ -205,7 +210,7 @@ struct tag_yaml {};           ///< data is in YAML format
 // ----------------------------------------------------------------------------
 // ## unit related tag dispatchers
 struct tag_angle {};          ///< data is in angle format, like 10.00 deg or 10.00 rad
-struct tag_area {};           ///< data is in area format, like 10.00 m² or 10.00 ft²
+struct tag_area {};           ///< data is in area format, like 10.00 mÂ² or 10.00 ftÂ²
 struct tag_currency{};        ///< data is in currency format, like 10.00 EUR or 10.00 USD
 struct tag_energy {};         ///< data is in energy format, like 10.00 J or 10.00 kWh
 struct tag_frequency {};      ///< data is in frequency format, like 10.00 Hz or 10.00 kHz

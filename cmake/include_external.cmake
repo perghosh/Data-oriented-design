@@ -33,6 +33,7 @@ file(GLOB GD_SOURCES_DATABASE ${GD_BASE_PATH}/database/*.cpp ${GD_BASE_PATH}/dat
 file(GLOB GD_SOURCES_EXPRESSION ${GD_BASE_PATH}/expression/*.cpp ${GD_BASE_PATH}/expression/*.h)
 file(GLOB GD_SOURCES_IO ${GD_BASE_PATH}/io/*.cpp ${GD_BASE_PATH}/io/*.h)
 file(GLOB GD_SOURCES_PARSE ${GD_BASE_PATH}/parse/*.cpp ${GD_BASE_PATH}/parse/*.h)
+file(GLOB GD_SOURCES_TABLE ${GD_BASE_PATH}/table/*.cpp ${GD_BASE_PATH}/table/*.h)
 
 
 # catch2 code, general code to manage data

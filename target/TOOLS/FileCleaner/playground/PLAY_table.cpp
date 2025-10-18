@@ -24,6 +24,8 @@
 #include "gd/gd_table_io.h"
 #include "gd/gd_sql_value.h"
 
+#include "gd/table/gd_table_formater.h"
+
 #include "gd/expression/gd_expression_value.h"
 #include "gd/expression/gd_expression_token.h"
 #include "gd/expression/gd_expression_method_01.h"
@@ -66,13 +68,49 @@ static std::string CreateTemporaryFile_s();
 @TASK [project: serialize-table][status: ongoing][created: 250905] [assigned: per]
 [title: method to calculate needed size for body]
 [sample: "suggestions
-- serialize_size( tag_body ); 
+- serialize_size( tag_body );
 "]
 
 @TASK [project: serialize-table][status: ongoing][created: 250905] [assigned: per]
 [title: read and write table body data]
 
 */
+
+TEST_CASE("[table] print card", "[table]") {
+   using namespace gd::table::dto;
+   const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+   constexpr unsigned uTableDuplicate = (table::eTableFlagNull32|table::eTableFlagRowStatus|table::eTableFlagDuplicateStrings);
+
+   gd::table::dto::table tablePrint( uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{} );
+
+   std::mt19937 mt19937;
+
+   // Generate 100 random strings using stl
+   std::vector<std::string> vectorRandomStrings;
+   for( int i = 0; i < 10; ++i )
+   {
+      std::string string_;
+      // Generate random number for length of string
+      int iLength = mt19937() % 30 + 1; // Random length between 1 and 30
+      for( int j = 0; j < iLength; ++j )
+      {
+         string_ += stringCharset[mt19937() % stringCharset.size()];
+      }
+      vectorRandomStrings.push_back(string_);
+   }
+
+   for( const auto& string_ : vectorRandomStrings )
+   {
+      auto uRow = tablePrint.row_add_one();
+      tablePrint.row_set(uRow, { {"KeyK", (int64_t)uRow}, {"name", string_}, {"text", string_} });
+   }
+
+   std::string stringOutput;
+   //stringOutput = gd::table::format::to_string(tablePrint, {1}, 50, 200, gd::types::tag_card{});
+   stringOutput = gd::table::format::to_string(tablePrint, {0,1}, 3, gd::argument::arguments{ { "border", false }, { "row-space", 0 } }, gd::types::tag_card{});
+   std::cout << stringOutput << std::endl;
+
+}
 
 TEST_CASE("[table] simd table 01", "[table]") {
    using namespace gd::table::dto;
