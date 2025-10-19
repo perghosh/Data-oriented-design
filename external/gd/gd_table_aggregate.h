@@ -352,6 +352,21 @@ void aggregate<TABLE>::max( std::vector<unsigned>& vectorLength, uint64_t uBegin
    }
 }
 
+/** ---------------------------------------------------------------------------
+* @brief Calculates the maximum length of values in specified columns.
+* 
+* This method iterates through the specified range of rows and columns in the table,
+* determining the maximum length of the values found in the specified columns.
+* It updates the provided vectorLength with the maximum lengths for each specified column.
+* @param vectorLength A reference to a vector that will hold the maximum lengths for each specified column.
+*                    If empty, it will be resized to match the number of specified columns.
+* @param uBeginRow The starting row index for the range to check.
+* @param uCount The number of rows to include in the range.
+* @param vectorColumn A vector containing the indices of the columns to check.
+* @param tag_length A tag indicating that this is a length operation.
+* @note If the range exceeds the number of rows in the table, it is truncated
+*      to the valid range. Null values are ignored during length calculation.
+*/
 template <typename TABLE>
 void aggregate<TABLE>::max( std::vector<unsigned>& vectorLength, uint64_t uBeginRow, uint64_t uCount, const std::vector<unsigned>& vectorColumn, tag_length ) { assert( m_ptable != nullptr );
    if( vectorLength.empty() == true ) vectorLength.resize( vectorColumn.size(), 0);

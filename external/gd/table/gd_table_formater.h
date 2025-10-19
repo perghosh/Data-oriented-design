@@ -56,7 +56,29 @@ inline std::string to_string(const gd::table::dto::table& table_, const std::vec
    return stringResult;
 }
 
-std::string to_string(const gd::table::dto::table& table_, const std::vector<unsigned>& vectorColumn, unsigned uBoxCount, const gd::argument::arguments& argumentOption, gd::types::tag_card);
+/// @brief Format table as string with box drawing for card style
+std::string to_string(const gd::table::dto::table& table_, uint64_t uBegin, uint64_t uCount, const std::vector<unsigned>& vectorColumn, unsigned uTotalWidth, const gd::argument::arguments& argumentOption, gd::types::tag_card);
+
+/// @brief Format table as string with box drawing for card style, this overload uses column names or indexes for columns to include
+inline std::string to_string(const gd::table::dto::table& table_, uint64_t uBegin, uint64_t uCount, const std::vector< std::variant<std::string_view, unsigned> >& vectorColumn, unsigned uBoxCount, const gd::argument::arguments& argumentOption, gd::types::tag_card) {
+   std::vector<unsigned> vectorColumnIndex;
+   for( const auto& column_ : vectorColumn ) {
+      if( std::holds_alternative<unsigned>( column_ ) ) { vectorColumnIndex.push_back( std::get<unsigned>( column_ ) ); }
+      else
+      {
+         const auto& stringName = std::get<std::string_view>( column_ );
+         unsigned uIndex = table_.column_get_index(stringName);
+         vectorColumnIndex.push_back( uIndex );
+      }
+   }
+   return to_string(table_, uBegin, uCount, vectorColumnIndex, uBoxCount, argumentOption, gd::types::tag_card{});
+}
+
+/// @brief Format table as string with box drawing for card style, this overload uses column names or indexes for columns to include and formats entire table
+inline std::string to_string(const gd::table::dto::table& table_, const std::vector< std::variant<std::string_view, unsigned> >& vectorColumn, unsigned uTotalWidth, const gd::argument::arguments& argumentOption, gd::types::tag_card) {
+   return to_string(table_, 0, table_.size(), vectorColumn, uTotalWidth, argumentOption, gd::types::tag_card{});
+}
+
 
 } // namespace format
 

@@ -37,9 +37,8 @@ std::pair<bool, std::string> SHARED_MatchAllPatterns_g(const std::vector<std::st
 /// Open file with its associated application.
 std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFile);
 
-
-/// Convert a SQL-like query string into an expression string.
-std::pair<bool, std::string> SHARED_SqlToExpression_g(std::string_view stringSql, std::string& stringExpression );
+/// Get the width of the terminal window.
+int SHARED_GetTerminalWidth();
 
 NAMESPACE_CLI_END
 

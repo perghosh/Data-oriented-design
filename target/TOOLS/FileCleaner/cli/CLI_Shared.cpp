@@ -121,109 +121,28 @@ std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFil
 #endif
 }
 
-
-/**
- * @brief Converts SQL-like filter syntax to internal expression format
- * 
- * This function transforms SQL WHERE clause syntax into an internal expression format
- * that uses source::get_argument() calls. It handles automatic value quoting, operator
- * conversion, and preserves expressions already in internal format.
- * 
- * @param stringSql Input SQL-like filter expression (read-only string view)
- * @param stringExpression Output parameter that receives the converted expression
- * 
- * @return std::pair<bool, std::string> where:
- *         - first: true if conversion succeeded, false otherwise
- *         - second: error message (empty string on success)
- * 
- * @details
- * The function performs the following transformations:
- * 1. Detects expressions already in internal format (containing "source::")
- * 2. Auto-quotes unquoted values after = and <> operators
- * 3. Converts SQL logical operators (AND/OR) to C++ operators (&&/||)
- * 4. Wraps column references in source::get_argument(args, 'column') calls
- * 5. Converts SQL comparison operators (= becomes ==, <> becomes !=)
- * 
- * Supported SQL operators:
- * - = (equality, converted to ==)
- * - <> (not equal, converted to !=)  
- * - AND/and (converted to &&)
- * - OR/or (converted to ||)
- * - Parentheses for grouping (preserved)
- * 
- * @note The function automatically quotes unquoted values but preserves
- *       already quoted strings. Column names must follow identifier rules
- *       (alphanumeric plus underscore, starting with letter or underscore).
- * 
- * @example
- * // Simple equality
- * Input:  "owner = 'per'"
- * Output: "(source::get_argument(args,'owner') == 'per')"
- * 
- * @example  
- * // Complex expression with logical operators
- * Input:  "(owner = 'per' OR owner = 'kevin') AND status = 'open'"
- * Output: "((source::get_argument(args,'assigned_to') == 'per') || (source::get_argument(args,'assigned_to') == 'kevin')) && (source::get_argument(args,'status') == 'open')"
- * 
- * @example
- * // Not equal operator
- * Input:  "status <> 'open' and assigned_to = 'per'" 
- * Output: "(source::get_argument(args,'status') != 'open') && (source::get_argument(args,'assigned_to') == 'per')"
- * 
- * @example
- * // Auto-quoting unquoted values
- * Input:  "assigned_to = per"
- * Output: "(source::get_argument(args,'assigned_to') == 'per')"
- * 
- * @example
- * // Already in internal format (passthrough)
- * Input:  "(source::get_argument(args,'status') == 'active')"
- * Output: "(source::get_argument(args,'status') == 'active')"
- * 
- * @example
- * // Multiple conditions with mixed case operators
- * Input:  "priority = high AND status <> closed OR owner = admin"
- * Output: "(source::get_argument(args,'priority') == 'high') && (source::get_argument(args,'status') != 'closed') || (source::get_argument(args,'owner') == 'admin')"
+/** --------------------------------------------------------------------------
+ * @brief Gets the width of the terminal window.
+ * @return The width of the terminal in characters.
  */
-std::pair<bool, std::string> SHARED_SqlToExpression_g(std::string_view stringSql, std::string& stringExpression)
+int SHARED_GetTerminalWidth() 
 {
-   // ## Check for markers for internal raw expression format
-   if( stringSql.find("source::") != std::string_view::npos ) { stringExpression = stringSql; return { true, "" };  } // if source:: is found, then it is already in internal format
-
-     // ## Convert SQL-like syntax to internal expression format
-     // sample 1 "owner = 'per'" -> "(source::get_argument(args,'owner') == 'per')"
-     // sample 2 "(owner = 'per' OR owner = 'kevin') AND status = 'open'" -> "((source::get_argument(args,'owner') == 'per') || (source::get_argument(args,'owner') == 'kevin')) && (source::get_argument(args,'status') == 'open')"
-     // sample 3 "status <> 'open' and owner = 'per'" -> "(source::get_argument(args,'status') != 'open') && (source::get_argument(args,'owner') == 'per')"
-     // sample 4 "owner = per" -> "(source::get_argument(args,'owner') == 'per')" (auto-quote unquoted values)
-
-   std::string stringResult;
-   // Convert SQL-like syntax to internal expression format
-   stringResult = stringSql;
-
-   // ## Auto-quote unquoted values after = and <> operators
-   // This works for multiple expressions in the same string by using global replace
-
-   // Match: column_name = unquoted_value (handles multiple occurrences)
-   stringResult = boost::regex_replace(stringResult, 
-      boost::regex("([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*([^'\"\\s\\)\\(&&||]+)(?!['\"])"), 
-      "$1 = '$2'");
-
-   // Match: column_name <> unquoted_value (handles multiple occurrences)
-   stringResult = boost::regex_replace(stringResult, 
-      boost::regex("([a-zA-Z_][a-zA-Z0-9_]*)\\s*<>\\s*([^'\"\\s\\)\\(&&||]+)(?!['\"])"), 
-      "$1 <> '$2'");
-
-   // ## convert SQL operators to internal operators
-   // ### Convert operators first (before column conversions)
-   stringResult = boost::regex_replace(stringResult, boost::regex("\\b(OR|or)\\b"), "||");
-   stringResult = boost::regex_replace(stringResult, boost::regex("\\b(AND|and)\\b"), "&&");
-
-   // ### Convert column comparisons (now all values should be quoted)
-   stringResult = boost::regex_replace(stringResult, boost::regex("([a-zA-Z_][a-zA-Z0-9_]*) = '([^']*)'"), "(source::get_argument(args,'$1') == '$2')");
-   stringResult = boost::regex_replace(stringResult, boost::regex("([a-zA-Z_][a-zA-Z0-9_]*) <> '([^']*)'"), "(source::get_argument(args,'$1') != '$2')");
-
-   stringExpression = stringResult;                         
-   return { true, "" };
+#ifdef _WIN32
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_SCREEN_BUFFER_INFO CSBI_;
+    if(GetConsoleScreenBufferInfo(hConsole, &CSBI_)) 
+    {
+        return CSBI_.srWindow.Right - CSBI_.srWindow.Left + 1;
+    }
+    return 80; // Fallback width
+#else
+    struct winsize winsize_;
+    if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &winsize_) == 0) 
+    {
+        return winsize_.ws_col;
+    }
+    return 80; // Fallback width
+#endif
 }
 
 
