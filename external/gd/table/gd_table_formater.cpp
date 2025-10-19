@@ -254,12 +254,39 @@ void to_string( const gd::table::dto::table& table_, uint64_t uBegin, uint64_t u
    to_string_s(table_, uBegin, uCount, vectorColumn, uBoxWidth, uTotalWidth, argumentOption, stringOut, gd::types::tag_card{});
 }
 
-std::string to_string(const gd::table::dto::table& table_, const std::vector<unsigned>& vectorColumn, unsigned uBoxCount, const gd::argument::arguments& argumentOption, gd::types::tag_card)
+
+/* ---------------------------------------------------------------------------
+ * @brief Print table data as cards/boxes arranged horizontally, with optional bordering and customizable characters.
+ * 
+ * Each row is printed as a vertical card containing the values from the specified columns,
+ * stacked top-down. Cards are arranged in horizontal rows based on the total width.
+ * The box content width is computed as the maximum value length across selected columns.
+ * The full box width (including borders or padding) is used to calculate the number of
+ * cards per horizontal row.
+ * 
+ * @param table_ The table to print.
+ * @param uBegin The starting row index.
+ * @param uCount The number of rows to print.
+ * @param vectorColumn The indices of columns to include in each card.
+ * @param uTotalWidth The total available width for arranging cards horizontally.
+ * @param argumentOption Options for printing:
+ *                       - "count": uint64_t, max rows to print.
+ *                       - "border": bool, whether to draw borders (default: true).
+ *                       - "tl", "tr", "bl", "br": string (length 1), border corner characters (default: "+").
+ *                       - "horizontal": string (length 1), horizontal line character (default: "-").
+ *                       - "vertical": string (length 1), vertical line character (default: "|").
+ *                       - "row-space": unsigned, number of blank lines between rows (default: 1).
+ *                       - "max-value-width": unsigned, truncate content width if exceeded.
+ *                       - "prepend": string, text to prepend to output.
+ * @param tag_card Tag to distinguish this overload for card printing.
+ * @return Formatted string representing the table as cards.
+ */
+std::string to_string(const gd::table::dto::table& table_, uint64_t uBegin, uint64_t uCount, const std::vector<unsigned>& vectorColumn, unsigned uTotalWidth, const gd::argument::arguments& argumentOption, gd::types::tag_card)
 {
    std::string stringOut;
    std::vector<unsigned> vectorWidth;
    gd::table::aggregate aggregateWidth( &table_ );
-   aggregateWidth.max(vectorWidth, 0, table_.size(),  tag_length{}, tag_text{});
+   aggregateWidth.max(vectorWidth, uBegin, uCount, vectorColumn, tag_length{});
 
    // ## Find out max box width across selected columns ......................
    unsigned uBoxWidth = 0;
@@ -267,8 +294,7 @@ std::string to_string(const gd::table::dto::table& table_, const std::vector<uns
 
    unsigned uBorder = 2;
    if( argumentOption.exists("border") == true ) { bool bBorder = argumentOption["border"].is_true() ? 2 : 0; }
-   unsigned uTotalWidth = uBoxCount * ( uBoxWidth + uBorder + 1 ); // box width + borders + separation
-   to_string_s( table_, 0, table_.get_row_count(), vectorColumn, uBoxWidth, uTotalWidth, argumentOption, stringOut, gd::types::tag_card{} );
+   to_string_s( table_, uBegin, uCount, vectorColumn, uBoxWidth, uTotalWidth, argumentOption, stringOut, gd::types::tag_card{} );
    return stringOut;
 }
 

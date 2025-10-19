@@ -73,7 +73,7 @@ std::pair<bool, std::string> Count_g( const gd::cli::options* poptionsCount, CDo
  */
 std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, CDocument* pdocument)
 {                                                                                                  assert( poptionsCount != nullptr );
-   std::array<std::byte, 64> array_; // array to hold the color codes for the output
+   std::array<std::byte, 64> array_; // array to hold data for arguments
    const gd::cli::options& options_ = *poptionsCount;
 
    enum { linecount_report_, patterncount_report_ };

@@ -9,6 +9,8 @@
 #include "gd/math/gd_math_string.h"
 #include "gd/table/gd_table_formater.h"
 
+#include "CLI_Shared.h"
+
 
 #include "../Command.h"
 #include "../Application.h"
@@ -70,12 +72,42 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 
    if( options_.exists("pattern") == true )                                    // 
    {
-      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", stringFilter }, { "pattern", options_["pattern"].as_string() }, { "segment", options_["segment"].as_string() } });
-      auto result_ = DirPattern_g( stringSource, arguments_, pdocument );
+      std::vector<std::string> vectorPattern; // vector to store patterns
+      vectorPattern = options_.get_arguments().get_all<std::string>("pattern"); // get all patterns from options and put them into vectorPattern
+      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", stringFilter }, { "segment", options_["segment"].as_string() } });
+      auto result_ = DirPattern_g( stringSource, vectorPattern, arguments_, pdocument );
+      if( result_.first == false ) return result_;
    }
    else if( options_.exists("rpattern") == true )
    {
+      auto vectorRPattern = options_.get_all("rpattern"); // get all regex patterns
+      std::vector<std::string> vectorPattern; // store regex patterns as strings
+      for( auto& rpattern : vectorRPattern ) { vectorPattern.push_back(rpattern.as_string()); }
 
+      vectorPattern.erase(std::remove_if(vectorPattern.begin(), vectorPattern.end(), [](const std::string& str) { return str.empty(); }), vectorPattern.end());
+      if( vectorPattern.size() == 0 ) return {false, "No regex patterns provided."}; // if no patterns are provided, return an error
+
+      std::vector< std::pair<boost::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
+
+      // ## convert string to regex and put it into vectorRegexPatterns
+
+      for( auto& stringPattern : vectorPattern )
+      {
+         try
+         {
+            boost::regex regexPattern(stringPattern);
+            vectorRegexPattern.push_back({ regexPattern, stringPattern });
+         }
+         catch (const boost::regex_error& e)
+         {                                                                      
+            std::string stringError = "Invalid regex pattern: '" + stringPattern + "'. Error: " + e.what();
+            return { false, stringError };
+         }
+      }
+
+      gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", stringFilter }, { "segment", options_["segment"].as_string() } });
+      auto result_ = DirPattern_g( stringSource, vectorRegexPattern, arguments_, pdocument );
+      if( result_.first == false ) return result_;
    }
    else if( options_.exists("vs") == true || options_.exists("script") == true )
    {
@@ -137,11 +169,12 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
  *   - Displays the filtered result table to the user.
  *
  * @param stringSource The source directory path to search.
+ * @param vectorPattern The vector of patterns to match against.
  * @param arguments_   Arguments containing "filter", "depth", and "pattern" keys.
  * @param pdocument    Pointer to the document object for storing and displaying results.
  * @return std::pair<bool, std::string> Pair indicating success/failure and an error message if any.
  */
-std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, const gd::argument::shared::arguments& arguments_, CDocument* pdocument )
+std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& arguments_, CDocument* pdocument )
 {                                                                                                  assert( stringSource != "" );
    auto ptable = pdocument->CACHE_Get( "file-dir", true );
    auto stringFilter = arguments_["filter"].as_string();
@@ -156,19 +189,15 @@ std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, cons
    std::vector<uint64_t> vectorCount; // vector storing results from COMMAND_CollectPatternStatistics
    std::vector<uint64_t> vectorDeleteRow; 
 
-   // ## Filter the table with the pattern or patterns sent
-   auto stringPattern = arguments_["pattern"].as_string();
-   auto vectorPattern = CApplication::Split_s(stringPattern);
-
    for( const auto& itRowFile : *ptableFile )
    {
       std::string stringFile = itRowFile.cell_get_variant_view("path").as_string(); // get the file path
 
       // ## Match the pattern/patterns with the file
       
-      gd::argument::shared::arguments argumentsdir( {{"source", stringFile} } );
-      if( stringSegment.empty() == false ) argumentsdir.append("segment", stringSegment); // if segment is set, add it to the arguments
-      auto result_ = COMMAND_CollectPatternStatistics( argumentsdir, vectorPattern, vectorCount );
+      gd::argument::shared::arguments argumentsDir( {{"source", stringFile} } );
+      if( stringSegment.empty() == false ) argumentsDir.append("segment", stringSegment); // if segment is set, add it to the arguments
+      auto result_ = COMMAND_CollectPatternStatistics( argumentsDir, vectorPattern, vectorCount );
       if( result_.first == false ) { pdocument->ERROR_Add(result_.second); }
 
       // ## Check for pattern matches, vector contains the number of matches for each pattern
@@ -200,6 +229,85 @@ std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, cons
    return { true, "" };
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief
+ *   Performs a directory search using the specified source path and filter, then applies one or more patterns to the results.
+ *
+ *   - Harvests files from the given directory path using the provided filter and search depth.
+ *   - For each file found, checks if it matches any of the specified patterns.
+ *   - Removes files from the result set that do not match any pattern.
+ *   - Displays the filtered result table to the user.
+ *
+ * @param stringSource The source directory path to search.
+ * @param vectorRegexPattern The vector of regex patterns to match against.
+ * @param arguments_   Arguments containing "filter", "depth", and "pattern" keys.
+ * @param pdocument    Pointer to the document object for storing and displaying results.
+ * @return std::pair<bool, std::string> Pair indicating success/failure and an error message if any.
+ */
+std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPattern, const gd::argument::shared::arguments& arguments_, CDocument* pdocument )
+{                                                                                                  assert( stringSource != "" );
+   auto ptable = pdocument->CACHE_Get( "file-dir", true );
+   auto stringFilter = arguments_["filter"].as_string();
+   unsigned uDepth = arguments_["depth"].as_uint();
+   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable, uDepth, true);        if( result_.first == false ) return result_;
+
+   CountLevel_s(ptable);
+
+   std::string stringSegment = arguments_["segment"].as_string();
+
+   gd::table::dto::table* ptableFile = ptable;                                // get the table pointer
+   std::vector<uint64_t> vectorCount; // vector storing results from COMMAND_CollectPatternStatistics
+   std::vector<uint64_t> vectorDeleteRow; 
+
+   for( const auto& itRowFile : *ptableFile )
+   {
+      std::string stringFile = itRowFile.cell_get_variant_view("path").as_string(); // get the file path
+
+      // ## Match the pattern/patterns with the file
+      
+      gd::argument::shared::arguments argumentsDir( {{"source", stringFile} } );
+      if( stringSegment.empty() == false ) argumentsDir.append("segment", stringSegment); // if segment is set, add it to the arguments
+      auto result_ = COMMAND_CollectPatternStatistics( argumentsDir, vectorRegexPattern, vectorCount );
+      if( result_.first == false ) { pdocument->ERROR_Add(result_.second); }
+
+      // ## Check for pattern matches, vector contains the number of matches for each pattern
+
+      bool bPatternMatch = false;
+      for( unsigned u = 0; u < vectorCount.size(); u++ )
+      {
+         if( vectorCount[u] > 0 ) { bPatternMatch = true; break; }
+      }
+
+      if( bPatternMatch == false )
+      {
+         vectorDeleteRow.push_back(itRowFile.get_row());                       // add the row index to the delete vector
+      }
+
+      vectorCount.resize(vectorRegexPattern.size(), 0);                             // set counters to 0 in vector
+   }
+
+   if( vectorDeleteRow.empty() == false )                                      // if the vector is not empty, delete the rows
+   {
+      ptableFile->erase(vectorDeleteRow);                                      // delete the rows from the table
+      // ## fix the row numbers
+      for( uint64_t uRow = 0; uRow < ptableFile->get_row_count(); uRow++ )
+      {
+         ptableFile->cell_set(uRow, "key", uRow + 1);                          // set new key numbers to make key work for user, like index for each file
+      }
+   }
+
+   return { true, "" };
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Similar to the standard dir command with a filter and optional script execution
+ * @param stringSource source path or paths, separated by a ;
+ * @param arguments_ arguments containing "filter", "depth", and optional "script" keys
+ * @param pdocument pointer to the document object where data is stored
+ * @return a pair of bool and string, where the bool indicates success or failure, and the string contains the error message or result
+ */
 std::pair<bool, std::string> DirFilter_g( const std::string& stringSource, const gd::argument::shared::arguments& arguments_, CDocument* pdocument )
 {                                                                                                  assert( stringSource != "" );
    auto ptable = pdocument->CACHE_Get( "file-dir", true );
@@ -270,12 +378,21 @@ std::pair<bool, std::string> DirPrint_g(CDocument* pdocument)
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Prints the directory table in a compact format similar to the 'ls' command.
+ * @param pdocument pointer to the document object where data is stored
+ * @param arguments_ additional arguments for formatting
+ * @return a pair of bool and string, where the bool indicates success or failure, and the string contains the error message or result
+ */
 std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::argument::shared::arguments& arguments_ )
 {
+   using namespace gd::table::dto;
+   std::string stringCurrentFolder; // hold the current folder path
+
    auto* ptable_ = pdocument->CACHE_Get("file-dir");                                         assert(ptable_ != nullptr);
 
    // ## Create new table to match what to print that work as ls command .............
-   gd::table::dto::table tableLS( 0, { { "string", 200, "name"}, { "uint64", 0, "size"} }, gd::table::tag_prepare{} );
+   gd::table::dto::table tableLS( ( table::eTableFlagNull32 | table::eTableFlagRowStatus ), { { "string", 200, "name"}, { "uint64", 0, "size"}, { "rstring", 0, "folder"} }, gd::table::tag_prepare{} );
    gd::file::path pathFile;
    for( const auto& itRow : *ptable_ )
    {
@@ -283,16 +400,47 @@ std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::
       pathFile = stringPath;
       auto uRow = tableLS.row_add_one();
       tableLS.cell_set(uRow, 0, pathFile.filename().string());
-      //tableLS.cell_set(uRow, "size", uSize);
+
+      stringPath = pathFile.parent_path().string();
+      if( stringPath != stringCurrentFolder )
+      {
+         stringCurrentFolder = stringPath;
+         tableLS.cell_set(uRow, 2, stringCurrentFolder);
+      }
    }
    
 
-   unsigned uColumnPath = ptable_->column_get_index("path");
+   //unsigned uColumnPath = ptable_->column_get_index("path");
 
-   std::string stringOutput;
-   stringOutput = gd::table::format::to_string(tableLS, {0}, 3, gd::argument::arguments{ { "border", false }, { "row-space", 0 } }, gd::types::tag_card{});
+   std::string stringFiles;
+   std::string stringFolder;
+   std::array<std::byte, 64> array_; // array to hold data for arguments
 
-   pdocument->MESSAGE_Display(stringOutput);
+   uint64_t uRowFrom = 0;
+   for( const auto& itRow : tableLS )
+   {
+      uint64_t uRow = itRow.get_row();
+      if( itRow.cell_get_variant_view("folder").is_null() == true ) continue;
+
+      // ## if no folder then just get folder and continue ....................
+      if( stringFolder.empty() == true ) 
+      { 
+         stringFolder = itRow.cell_get_variant_view("folder").as_string(); 
+         if( ( uRow + 1 ) < tableLS.size() ) continue;                          // if not last row then continue
+      }
+
+      uint64_t uCount = uRow - uRowFrom + 1;
+
+      // ## print files ......................................................
+      pdocument->MESSAGE_Display(stringFolder, { array_, {{"color", "header"}}, gd::types::tag_view{} });
+
+      auto uTerminalWidth = (unsigned)SHARED_GetTerminalWidth();
+
+      stringFiles = gd::table::format::to_string(tableLS, uRowFrom, uCount, { "name" }, uTerminalWidth, gd::argument::arguments{ { "border", false }, { "row-space", 0 } }, gd::types::tag_card{});
+      pdocument->MESSAGE_Display(stringFiles, { array_, {{"color", "body"}}, gd::types::tag_view{} });
+      uRowFrom = uRow;
+      stringFolder = itRow.cell_get_variant_view("folder").as_string();
+   }
 
    return { true, "" };
 }
