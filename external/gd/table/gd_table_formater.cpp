@@ -119,33 +119,29 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, const st
       {
          vectorRowValue.clear();
          uint64_t uRow = uStartRow + uCard;
-         table.row_get_variant_view( uRow, vectorRowValue );              // fetch row values
+         table.row_get_variant_view( uRow, vectorRowValue );                  // fetch row values
 
-         std::vector<std::string> vectorBoxValue;                         // strings for this card
+         std::vector<std::string> vectorBoxValue;                             // strings for this card (one per row)
          vectorBoxValue.reserve( vectorColumn.size() );
 
-         // ## extract and convert selected column values to strings
+         // ## extract and convert selected column values to strings .........
          for( unsigned uColumn : vectorColumn )
          {
             const auto& value_ = vectorRowValue[uColumn];
             if( value_.is_null() == true ) { stringValue = ""; }
-            else if( value_.is_string() == true )
-            {
-               const std::string_view text_ = value_.as_string_view();
-               stringValue = text_;
-            }
+            else if( value_.is_string() == true ) { stringValue = value_.as_string_view(); }
             else { stringValue = value_.as_string(); }
 
             vectorBoxValue.push_back( std::move( stringValue ) );
          }
 
          // ## apply callback to modify box values if provided
-         if constexpr (!std::is_same_v<std::decay_t<decltype(callback_)>, std::nullptr_t>)
+         if constexpr( !std::is_same_v<std::decay_t<decltype( callback_ )>, std::nullptr_t> ) // check if callback is provided (not nullptr)
          {
             callback_( uRow, vectorBoxValue );
          }
 
-         // ## truncate and pad values to effective width
+         // ## truncate and pad values to effective width ....................
          for( auto& stringValue : vectorBoxValue )
          {
             if( stringValue.length() > uMaxValueWidth )
