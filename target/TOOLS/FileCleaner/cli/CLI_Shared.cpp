@@ -6,6 +6,9 @@
  * This file contains the implementation of functions shared across CLI tools.
  */
 
+#include <sys/ioctl.h>
+#include <unistd.h>
+
 #include <boost/regex.hpp>
 
 #include "gd/gd_file.h"
