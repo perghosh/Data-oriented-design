@@ -420,7 +420,7 @@ std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::
    for( const auto& itRow : tableLS )
    {
       uint64_t uRow = itRow.get_row();
-      if( itRow.cell_get_variant_view("folder").is_null() == true ) continue;
+      if( uRow != (tableLS.size() - 1) && itRow.cell_get_variant_view("folder").is_null() == true ) continue;
 
       // ## if no folder then just get folder and continue ....................
       if( stringFolder.empty() == true ) 

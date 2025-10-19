@@ -6,8 +6,15 @@
  * This file contains the implementation of functions shared across CLI tools.
  */
 
+#ifdef _WIN32
+ // Windows-specific includes or code
+#else
+
 #include <sys/ioctl.h>
 #include <unistd.h>
+
+#endif
+
 
 #include <boost/regex.hpp>
 
