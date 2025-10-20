@@ -373,16 +373,21 @@ std::pair<bool, std::string> FILES_Harvest_WithWildcard_g(const std::string& str
  */
 std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_)
 {                                                                                                  assert( ptable_ != nullptr );
+   unsigned uRecursive;
+   if( argumentsPath.exists("recursive") == true ) uRecursive = argumentsPath["recursive"].as_uint();
+   else                                            uRecursive = argumentsPath["depth"].as_uint();
 
-   unsigned uRecursive = argumentsPath["recursive"].as_uint();
    std::string stringSource = argumentsPath["source"].as_string();
    std::string stringFilter = argumentsPath["filter"].as_string();
+
+   bool bSize = false;
+   if( argumentsPath.exists("size") == true ) bSize = argumentsPath["size"].as_bool();
 
    auto vectorPath = gd::utf8::split(stringSource, ';');
 
    for( auto itPath : vectorPath )
    {
-      auto [bOk, stringError] = FILES_Harvest_g(std::string(itPath), stringFilter, ptable_, uRecursive); // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+      auto [bOk, stringError] = FILES_Harvest_g(std::string(itPath), stringFilter, ptable_, uRecursive, bSize); // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( bOk == false ) return { false, stringError };
    }
 

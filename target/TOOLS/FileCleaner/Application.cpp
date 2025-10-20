@@ -2254,6 +2254,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "script", "Execute an **external script file** for advanced processing of the listed files. Useful for custom formatting or filtering." });
       optionsCommand.add({ "sort", "Sort the listed files based on a **specified column name** (e.g., name, size, date). This organizes the output for easier analysis." });
       optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
+      optionsCommand.add_flag_or_option( {"parents", "Adds parent folders to file name when listing."} );
       optionsCommand.add_flag_or_option( {"R", "Enable **recursive listing** of files in subfolders. Sets the recursion depth to 16, ensuring all subdirectories are scanned."} );
       optionsCommand.add_flag({ "compact", "View results in compact format, similar to ls on linux" });
 #ifdef _WIN32
@@ -2652,7 +2653,7 @@ unsigned CApplication::PreparePath_s(std::string& stringPath)
 {
    char iSplitCharacter = ':'; // default split character
 
-   if( stringPath.empty() || stringPath == "." || stringPath == "*" || stringPath == "**" ) // If path is empty or just a '.', '*' or '**'
+   if( stringPath.empty() == true || stringPath == "." || stringPath == "*" || stringPath == "**" ) // If path is empty or just a '.', '*' or '**'
    {
       std::filesystem::path pathFile = std::filesystem::current_path(); // take current working directory
       stringPath = pathFile.string();

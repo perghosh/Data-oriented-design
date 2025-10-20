@@ -29,6 +29,9 @@
 
 NAMESPACE_CLI_BEGIN
 
+/// Reads harvest settings to configure how files are harvested based on command line options.
+std::pair<bool, std::string> SHARED_ReadHarvestSetting_g( const gd::cli::options& options_, gd::argument::shared::arguments& arguments_, CDocument* pdocument);
+
 /// Generates a vector of source paths based on the provided command line options.
 std::vector<std::string> SHARED_GetSourcePaths( const gd::cli::options& options_ );
 /// match all patterns in the vectorPattern against the file lines in the document
