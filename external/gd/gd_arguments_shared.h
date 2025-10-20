@@ -729,6 +729,11 @@ public: //0TAG0construct.arguments
    arguments( std::vector<std::pair<std::string_view, gd::variant_view>> vectorPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}   
    arguments( const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair, const arguments& arguments_ );
    arguments( const arguments& arguments_, const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair );
+   template<typename ARGUMENTS>
+   arguments( const ARGUMENTS& arguments_, const std::initializer_list<std::string_view>& list_ ) {
+      zero(); append( arguments_, list_ );
+   }
+
 
    // copy
    arguments(const arguments& o) { common_construct(o); }
@@ -1474,6 +1479,9 @@ public:
    static size_type npos;
 
 };
+
+// ## constructor -------------------------------------------------------------
+
 
 // ## operators ---------------------------------------------------------------
 

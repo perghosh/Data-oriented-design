@@ -30,10 +30,9 @@ NAMESPACE_CLI_BEGIN
 // ## Dir operations
 
 std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocument* pdocument);
-std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& arguments_, CDocument* pdocument );
-std::pair<bool, std::string> DirPattern_g( const std::string& stringSource, const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPattern, const gd::argument::shared::arguments& arguments_, CDocument* pdocument );
-std::pair<bool, std::string> DirFilter_g( const std::string& stringSource, const gd::argument::shared::arguments& arguments_, CDocument* pdocument );
-std::pair<bool, std::string> DirFilter_g(const std::string& stringSource, const std::string& stringFilter, unsigned uDepth, CDocument* pdocument );
+std::pair<bool, std::string> DirPattern_g( const std::vector<std::string>& vectorPattern, const gd::argument::shared::arguments& arguments_, CDocument* pdocument );
+std::pair<bool, std::string> DirPattern_g( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPattern, const gd::argument::shared::arguments& arguments_, CDocument* pdocument );
+std::pair<bool, std::string> DirFilter_g( const gd::argument::shared::arguments& arguments_, CDocument* pdocument );
 
 std::pair<bool, std::string> DirPrint_g( CDocument* pdocument );
 std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::argument::shared::arguments& arguments_ );
