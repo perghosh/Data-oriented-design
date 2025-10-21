@@ -786,6 +786,9 @@ public: //0TAG0operator.arguments
    const argument operator[](unsigned uIndex) const { return get_argument(uIndex); }
    const argument operator[](std::string_view stringName) const { return get_argument(stringName); }
    const argument operator[](arguments::const_pointer p) const { return get_argument(p); }
+   /// returns first found element of those in list
+   const argument operator[](std::initializer_list<std::string_view> list_) const { return get_argument( list_ ); }
+
    /// index operator edit is needed
    argument_edit operator[](const index_edit& index_);
 
@@ -818,24 +821,6 @@ public: //0TAG0operator.arguments
    arguments& operator+=( const char* v_ ) { append( v_ ); return *this; }
    arguments& operator+=( const std::vector<std::pair<std::string_view, gd::variant_view>>& vector_ ) { append( vector_ ); return *this; }
    arguments& operator+=( std::initializer_list<std::pair<std::string_view, gd::variant_view>> list_ );
-
-
-   /*
-   /// Append pair object (name and value)
-   template <typename PAIR> requires concept_arguments_shared_is_pair<PAIR>
-   arguments& operator+=( const PAIR& pair_ ) { 
-      append_argument( pair_ ); return *this; }
-
-   /// Append pair object (name and variant_view)
-   template <typename PAIR> requires concept_arguments_shared_is_pair_view<PAIR>
-   arguments& operator+=( const PAIR& pair_ ) { 
-      append_argument( pair_, tag_view{}); return *this; }
-      */
-
-
-   
-
-
 
    arguments operator<<(const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
 
