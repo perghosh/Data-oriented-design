@@ -2228,11 +2228,13 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
       optionsCommand.add_flag({ "R", "Set recursive to 16, simple to scan all subfolders" });
       optionsCommand.add_flag({ "overwrite", 'o', "Overwrite files existing files"});
+      optionsCommand.add_flag({ "preview","Show preview of changes without applying them"});
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
+   /*
    {  // ## `db` command, use database and configure settings for that
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "db", "Configure database" );
       optionsCommand.add({"file", 'f', "Where to place database file (used for sqlite databases)"});
@@ -2241,6 +2243,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+   */
 
 
    { // ## 'dir' command, list files
