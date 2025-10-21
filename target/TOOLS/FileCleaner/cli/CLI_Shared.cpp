@@ -29,6 +29,52 @@
 
 NAMESPACE_CLI_BEGIN
 
+/** --------------------------------------------------------------------------
+ * @brief Reads and processes harvest settings from command line options
+ * 
+ * This method extracts harvest-related configuration from command line options,
+ * validates and processes them, then applies the settings to both the document
+ * application and shared arguments. It handles source path preparation, ignore
+ * patterns, recursive depth calculation, and file filter configuration.
+ *
+ * @param[in] options_ Command line options container providing access to harvest settings
+ * @param[out] arguments_ Shared arguments object where processed settings will be stored
+ * @param[in] pdocument Pointer to the document object (must not be null)
+ *
+ * @return std::pair<bool, std::string> A pair where:
+ *         - first: boolean indicating success (true) or failure (false)
+ *         - second: error message string (empty on success)
+ *
+ * @note The method performs the following processing steps:
+ *       1. Source path: Prepares and validates the source directory path
+ *       2. Ignore patterns: Processes file/directory ignore patterns and adds to application
+ *       3. Recursive depth: Determines recursion level from "recursive" or "R" options
+ *       4. File filter: Processes file filter patterns with special case handling
+ *       5. Application update: Applies all settings to the document application
+ *
+ * @section option_processing Option Processing Details:
+ *
+ * - **Source**: Path is prepared using CApplication::PreparePath_s()
+ * - **Ignore**: Multiple ignore patterns can be split and added to application
+ * - **Recursive**: Supports both "recursive" (numeric) and "R" (boolean/numeric) options:
+ *   - Default: 0 (current folder only)
+ *   - "R" as boolean: Sets to 16 (find all files)
+ *   - Numeric values: Used directly as recursion depth
+ * - **Filter**: Special cases:
+ *   - Empty or "." → "*.*" (all files)
+ *   - "*", "**", or ".." → Enables recursion if not already set
+ *   - Multiple filters → Combined with semicolon separator
+ *
+ * @pre pdocument != nullptr (asserted at method entry)
+ * @post arguments_ contains validated harvest settings
+ * @post Document application state is updated with new settings
+ *
+ * @see CApplication::PreparePath_s()
+ * @see CApplication::Split_s()
+ * @see CDocument::GetApplication()
+ * @see gd::cli::options
+ * @see gd::argument::shared::arguments
+ */
 std::pair<bool, std::string> SHARED_ReadHarvestSetting_g( const gd::cli::options& options_, gd::argument::shared::arguments& arguments_, CDocument* pdocument)
 {                                                                                                  assert( pdocument != nullptr );
 
