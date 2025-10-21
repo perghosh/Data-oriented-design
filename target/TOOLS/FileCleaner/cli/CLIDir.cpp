@@ -39,40 +39,6 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 
    const gd::cli::options& options_ = *poptionsDir;
 
-   /*
-
-   std::string stringSource = ( *poptionsDir )["source"].as_string();                              LOG_DEBUG_RAW_IF( stringSource.empty() == false, "Source: " & stringSource);
-   CApplication::PreparePath_s(stringSource);                                  // if source is empty then set it to current path, otherwiss prepare it
-
-   std::string stringIgnore = options_["ignore"].as_string();                                      LOG_DEBUG_RAW_IF( stringIgnore.empty() == false, "Ignore: " & stringIgnore);
-   if( stringIgnore.empty() == false ) 
-   { 
-      auto vectorIgnore = CApplication::Split_s(stringIgnore);
-      pdocument->GetApplication()->IGNORE_Add(vectorIgnore);                  // add ignore patterns to the application
-   }
-
-	// ## get recursive value .................................................
-
-   unsigned uRecursive = options_["recursive"].as_uint();
-   if(uRecursive == 0 && options_.exists("R") == true)
-   {
-      if(options_["R"].is_bool() == true) uRecursive = 16;                    // set to 16 if R is set, find all files
-      else { uRecursive = options_["R"].as_uint(); }
-   }
-
-   pdocument->GetApplication()->UpdateApplicationState();
-
-	// ## get filter value ....................................................
-
-   std::string stringFilter = options_["filter"].as_string();
-   if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" ) 
-   { 
-      stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
-      if( uRecursive == 0 ) uRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
-   }
-
-   */
-
    gd::argument::shared::arguments argumentsFileHarvest;
    SHARED_ReadHarvestSetting_g( options_, argumentsFileHarvest, pdocument );
    argumentsFileHarvest.append( options_.get_arguments(), {"segment"});

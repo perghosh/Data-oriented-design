@@ -729,6 +729,8 @@ public: //0TAG0operator.arguments
    const argument operator[](unsigned uIndex) const { return get_argument(uIndex); }
    const argument operator[](std::string_view stringName) const { return get_argument(stringName); }
    const argument operator[](arguments::const_pointer p) const { return get_argument(p); }
+   /// returns first found element of those in list
+   const argument operator[](std::initializer_list<std::string_view> list_) const { return get_argument( list_ ); }
    /// index operator edit is needed
    argument_edit operator[](const index_edit& index_);
 

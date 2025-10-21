@@ -12,6 +12,8 @@
 #include "../Command.h"
 #include "../Application.h"
 
+#include "CLI_Shared.h"
+
 #include "CLICopy.h"
 
 
@@ -25,45 +27,16 @@ NAMESPACE_CLI_BEGIN
 std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocument* pdocument)
 {                                                                                                  assert(poptionsCopy != nullptr );
    const gd::cli::options& options_ = *poptionsCopy;
-   std::string stringSource = (*poptionsCopy)["source"].as_string();
-   CApplication::PreparePath_s(stringSource);                                 // if source is empty then set it to current path, otherwiss prepare it
 
-   std::string stringIgnore = options_["ignore"].as_string();
-   if( stringIgnore.empty() == false ) 
-   { 
-      auto vectorIgnore = CApplication::Split_s(stringIgnore);
-      pdocument->GetApplication()->IGNORE_Add(vectorIgnore);                  // add ignore patterns to the application
-   }
+   gd::argument::shared::arguments argumentsFileHarvest;
+   SHARED_ReadHarvestSetting_g( options_, argumentsFileHarvest, pdocument );
 
-   unsigned uRecursive = options_["recursive"].as_uint();
-   if(uRecursive == 0 && options_.exists("R") == true) uRecursive = 16;        // set to 16 if R is set, find all files
 
-   pdocument->GetApplication()->UpdateApplicationState();
-
-   std::string stringFilter = options_["filter"].as_string();
-   if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" ) 
-   { 
-      stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
-      if( uRecursive == 0 ) uRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
-   }
-
-   /*
-   if( options_.exists("pattern") == true )                                    // 
-   {
-      //gd::argument::shared::arguments arguments_( { { "depth", uRecursive }, { "filter", stringFilter }, { "pattern", options_["pattern"].as_string() }, { "segment", options_["segment"].as_string() } });
-      //auto result_ = DirPattern_g( stringSource, arguments_, pdocument );
-   }
-   else if( options_.exists("rpattern") == true )
-   {
-
-   }
-   */
    if (options_.exists("target") == true)
    {
-      gd::argument::shared::arguments arguments_({ { "depth", uRecursive } } );
-      arguments_.append(options_.get_arguments(), { "filter", "overwrite", "pattern", "rpattern", "segment", "newer", "where"});
+      argumentsFileHarvest.append(options_.get_arguments(), { "filter", "overwrite", "pattern", "rpattern", "segment", "newer", "where"});
 
-      auto result_ = CopyFiles_g(stringSource, options_["target"].as_string(), arguments_, pdocument);
+      auto result_ = CopyFiles_g(options_["target"].as_string(), argumentsFileHarvest, pdocument);
    }
 
    return { true, "" };
@@ -79,18 +52,18 @@ std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocum
  *   - For each file found, verifies its existence and adds it to the copy list.
  *   - Copies files to target folder, creating subdirectories as needed while removing the source folder prefix.
  *
- * @param stringSource      The source directory or file path to copy from.
  * @param stringTargetFolder The target directory path to copy files to.
  * @param arguments_        Options for the copy operation.
  * @param pdocument         Pointer to the document object for storing and displaying results.
  * @return std::pair<bool, std::string> Pair indicating success/failure and an error message if any.
  */
-std::pair<bool, std::string> CopyFiles_g(const std::string& stringSource, const std::string& stringTargetFolder, const gd::argument::shared::arguments& arguments_, CDocument* pdocument)
-{                                                                                               assert( stringSource != "" ); assert( stringTargetFolder != "" ); assert( pdocument != nullptr );
-constexpr std::string_view stringTableId = "file-dir";
+std::pair<bool, std::string> CopyFiles_g( const std::string& stringTargetFolder, const gd::argument::shared::arguments& arguments_, CDocument* pdocument)
+{                                                                                               assert( stringTargetFolder != "" ); assert( pdocument != nullptr );
+   constexpr std::string_view stringTableId = "file-dir";
    auto ptableDir = pdocument->CACHE_Get(stringTableId, true );
    auto stringFilter = arguments_["filter"].as_string();
-   unsigned uDepth = arguments_["depth"].as_uint();
+   unsigned uDepth = arguments_[{"depth", "recursive"}].as_uint();
+   std::string stringSource = arguments_["source"].as_string();
    auto result_ = FILES_Harvest_WithWildcard_g( stringSource, stringFilter, ptableDir, uDepth, true); if( result_.first == false ) return result_;
 
    std::string stringTargetFolder_ = stringTargetFolder;
@@ -102,6 +75,10 @@ constexpr std::string_view stringTableId = "file-dir";
    if( std::filesystem::is_regular_file(stringSource) == true )
    {
       std::filesystem::path pathSourceFile(stringSource);
+
+      // ## Normalize target path for traling slash
+      while(stringTargetFolder_.empty() == false && (stringTargetFolder_.back() == '\\' || stringTargetFolder_.back() == '/')) { stringTargetFolder_.pop_back(); }
+      stringTargetFolder_ = std::filesystem::path(stringTargetFolder_).string(); // Normalize target folder
       std::filesystem::path pathTargetFile(stringTargetFolder_);
 
       // Normalize target path based on special cases
