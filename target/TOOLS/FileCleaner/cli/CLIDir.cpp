@@ -128,6 +128,15 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
       DirPrint_g(pdocument);                                                  // print the table to the console
    }
 
+#ifdef _WIN32
+   // ## VS specific output .................................................
+   if( options_.exists("vs") == true )
+   {
+      auto result_ = DirPrintToVS_g(  pdocument, options_.get_arguments() );
+      if( result_.first == false ) return result_;
+   }
+#endif
+
 
    return { true, "" };
 }
@@ -323,6 +332,12 @@ std::pair<bool, std::string> DirPrint_g(CDocument* pdocument)
 
 /** ---------------------------------------------------------------------------
  * @brief Prints the directory table in a compact format similar to the 'ls' command.
+ * 
+ * @verbatim
+ * folder...
+ * file    file    file    file
+ * file    file    file    file
+ * @endverbatim
  * @param pdocument pointer to the document object where data is stored
  * @param arguments_ additional arguments for formatting
  * @return a pair of bool and string, where the bool indicates success or failure, and the string contains the error message or result
@@ -409,6 +424,35 @@ std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::
       stringFolder = itRow.cell_get_variant_view("folder").as_string();
    }
 
+   return { true, "" };
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Prints the directory table to the Visual Studio output window
+ * @param pdocument pointer to the document object where data is stored
+ * @return a pair of bool and string, where the bool indicates success or failure, and the string contains the error message or result
+ */
+std::pair<bool, std::string> DirPrintToVS_g(CDocument* pdocument, const gd::argument::arguments& arguments_)
+{
+#ifdef _WIN32
+   VS::CVisualStudio visualstudio;
+   auto result_ = visualstudio.Connect();
+   if( result_.first == false ) return result_;
+
+
+   auto* ptable_ = pdocument->CACHE_Get("file-dir");                                         assert(ptable_ != nullptr);
+
+   std::string stringPrintToVSOutput;
+   for( const auto& itRow : *ptable_ )
+   {
+      std::string stringPath = itRow.cell_get_variant_view("path").as_string();
+      stringPrintToVSOutput += stringPath + "\n";
+   }
+
+   result_ = visualstudio.Print(stringPrintToVSOutput, VS::tag_vs_output{});
+   if( result_.first == false ) return result_;
+#endif
    return { true, "" };
 }
 

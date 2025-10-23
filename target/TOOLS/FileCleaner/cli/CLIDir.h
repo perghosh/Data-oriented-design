@@ -37,5 +37,7 @@ std::pair<bool, std::string> DirFilter_g( const gd::argument::shared::arguments&
 std::pair<bool, std::string> DirPrint_g( CDocument* pdocument );
 std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::argument::shared::arguments& arguments_ );
 
+std::pair<bool, std::string> DirPrintToVS_g( CDocument* pdocument, const gd::argument::arguments& arguments_ );
+
 
 NAMESPACE_CLI_END
