@@ -636,7 +636,23 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    if(optionsApplication.exists("detail", gd::types::tag_state_active{}) == true)// if detail the set application detail
    {
       auto stringDetail = optionsApplication.get_variant_view("detail", gd::types::tag_state_active{}).as_string_view();
-      SetDetail(stringDetail);                                                    // set application detail
+      if( stringDetail.empty() == false )
+      {
+         if( isdigit( stringDetail[0] ) ) 
+         {
+            // convert string to number
+            int iDetail = atoi(stringDetail.data());
+            switch( iDetail )
+            {
+               case 1: SetDetail("basic"   ); break;
+               case 2: SetDetail("standard"); break;
+               case 3: SetDetail("extended"); break;
+               case 4: SetDetail("full"    ); break;
+            }
+         }
+         else
+         SetDetail(stringDetail);                                              // set application detail
+      }
    }
 
 
