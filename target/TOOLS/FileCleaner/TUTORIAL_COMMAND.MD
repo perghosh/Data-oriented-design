@@ -14,10 +14,10 @@
 `cleaner history -create -local` : Create a local history file in the current directory 
 
 `cleaner find -R --filter "*.h*"  --segment comment --prompt "pattern" --add-to-history "c-pattern"` : Search for pattern that is asked for in comments and also add it to the history under the name "c-pattern"
+`cleaner history "c-pattern"` : Run "c-pattern" in history to search for the saved command sequence
 
 `cleaner history -print` : prints the local history file if found
 `cleaner history -print -home` : prints the global history for user
 
 `cleaner history -create -home` : Create a global history file for user
 
-```bash
