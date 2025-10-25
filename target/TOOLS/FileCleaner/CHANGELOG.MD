@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.0.8
+### New Features
+- `copy` got an alias `cp` to make it easier to use for linux users.
+- `dir` command got `ls` to make it easier to use for linux users.
+- `copy` now works with `--pattern`
+- `copy` now works with `--rpattern`
+- `dir` now works with `--pattern`
+- `dir` now works with `--rpattern`
+- `preview` added to `copy` to preview what will be copied without actually copying files.
+- `detail` options affect more commands now like `dir` and `copy`
+- `parents` option added to `dir` for making it possible to click to open for files with same name in different folders.
+- `dir` can show file permissions when `detail` level is 3 or higher (full and extended).
+
+
 ## v1.0.7
 ### New Features
 - Much work done to internal script logic to make cleaner a lot more flexible by configure commands with expressions.
