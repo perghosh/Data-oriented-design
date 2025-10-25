@@ -133,6 +133,8 @@ namespace detail {
       ptable_->cell_set(uRow, "extension", pathFile.extension().string());
 
 		bool bDate = ptable_->column_exists("days"); // check if days column exists
+      bool bPermission = ptable_->column_exists("permission"); // check if permission column exists
+
 
       if(bDate == true)
       {
@@ -167,7 +169,7 @@ namespace detail {
 
 
       // get file size
-      if( bSize == true )
+      if( bSize == true )                                                     // get file size ?
       {
          std::string stringFilePath = pathFile.string();
          std::ifstream ifstreamFile(stringFilePath.data(), std::ios::binary | std::ios::ate);
@@ -177,6 +179,16 @@ namespace detail {
             ptable_->cell_set(uRow, "size", (uint64_t)uSize, gd::types::tag_convert{});
          }
          ifstreamFile.close();
+      }
+
+      if( bPermission == true )                                               // get file permission ?
+      {
+         std::pair<uint64_t, std::string> pairPermission;
+         auto result_ = gd::file::read_permission_g(pathFile, &pairPermission);
+         if( result_.first == true )
+         {
+            ptable_->cell_set(uRow, "permission", pairPermission.second, gd::types::tag_convert{});
+         }
       }
 
       return true;                                                             // match, return true

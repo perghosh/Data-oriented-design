@@ -97,9 +97,8 @@ bool is_directory_separator_g( const std::string_view& stringPath );
 
 // ### 
 
-std::pair<int, std::string> file_add_reference_g(const std::string_view& stringFindName);
-
-//std::pair<int, std::string> file_release_reference_g(const std::string_view& stringFindName);
+/// read permission for specified file
+std::pair<bool, std::string> read_permission_g( const std::string_view& stringFile, std::pair<uint64_t, std::string>* ppairPermission );
 
 
 // ----------------------------------------------------------------------------

@@ -667,44 +667,121 @@ bool is_directory_separator_g( const std::string_view& stringPath )
    return false;
 }
 
-std::pair<int, std::string> file_add_reference_g(const std::string_view& stringFileName)
+
+/** ---------------------------------------------------------------------------
+* @brief Read file permissions
+* Read permission bits for file. On Windows this returns a simplified version
+* with read, write, and execute flags. On Linux returns full permission bits.
+* 
+* @code
+* std::pair<uint64_t, std::string> pairPermission;
+* auto result_ = read_permission_g( "test.txt", &pairPermission );
+* if( result_.first == true )
+* {
+*   std::cout << "Permissions: " << std::oct << pairPermission.first << " (" << pairPermission.second << ")" << std::endl;
+* }
+* else
+* {
+*   std::cerr << "Error reading permissions: " << result_.second << std::endl;
+* }
+* @endcode
+* 
+* @param stringFile path to file to read permissions from
+* @param ppairPermission pointer to pair that gets permission bits and text description if not nullptr
+* @return true if permissions were read successfully, false and error message if failed
+*/
+std::pair<bool, std::string> read_permission_g( const std::string_view& stringFile, std::pair<uint64_t, std::string>* ppairPermission )
 {
-   int iReference = 0;
+   if( std::filesystem::exists( stringFile ) == false ) { return { false, "File does not exist: " + std::string(stringFile) }; }
 
-   /*
-   int iReference = 0;  // reference counter found in file
-   int iFileHandle = 0; // handle to file
-   char pbszBuffer[10]
-
-   if( std::filesystem::exists(stringFileName) == false )
+#  ifdef WIN32
+   // ## Windows implementation using GetFileAttributes
+   DWORD uAttributes = ::GetFileAttributesA( stringFile.data() );
+   if( uAttributes == INVALID_FILE_ATTRIBUTES )
    {
-      //bOk = std::filesystem::create_directory(stringPath);
-#  if defined(_WIN32)
-      errno_t iError = ::_sopen_s(&iFileHandle, stringFileName.data(), _O_CREAT|_O_WRONLY|_O_BINARY|_O_NOINHERIT, _SH_DENYWR, _S_IREAD|_S_IWRITE);
-#     else
-      iFileHandle = ::open(stringFileName->data(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-#  endif
+      std::string stringError{ "Failed to get file attributes, error is: " };
+      stringError += std::to_string(GetLastError());
+      return { false, stringError };
+   }
+
+   uint64_t uPermission = 0;
+   std::string stringDescription;
+
+   // Set read permission (all files are readable if we can get attributes)
+   uPermission |= 0x0004; // read bit
+   stringDescription += "r";
+
+   // Check write permission
+   if( (uAttributes & FILE_ATTRIBUTE_READONLY) == 0 )
+   {
+      uPermission |= 0x0002; // write bit
+      stringDescription += "w";
    }
    else
    {
-#  if defined(_WIN32)
-      errno_t iError = ::_sopen_s(&iFileHandle, stringFileName.data(), _O_WRONLY|_O_BINARY|_O_NOINHERIT, _SH_DENYWR, _S_IREAD|_S_IWRITE);
-#     else
-      iFileHandle = ::open(stringFileName->data(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-#  endif
-
-      int iCount = ::_read(iFileHandle, pbszBuffer, 10);
-      auto pPosition = pbszBuffer;
-      auto pEnd = pbszBuffer + sizeof(pbszBuffer);
-      pPosition = gd::utf8::move::next_non_space(pPosition, pEnd);
-      iReference = atoi( pbszBuffer );
+      stringDescription += "-";
    }
 
-   iReference++;
+   // Check if executable (simplified check based on extension or attribute)
+   std::filesystem::path pathFile( stringFile );
+   std::string stringExtension = pathFile.extension().string();
+   std::transform(stringExtension.begin(), stringExtension.end(), stringExtension.begin(), [](unsigned char c){ return std::tolower(c); });
 
-   return { iReference, "" };
-   */
-   return { iReference, "" };
+   if( stringExtension == ".exe" || stringExtension == ".bat" || stringExtension == ".cmd" || stringExtension == ".com" )
+   {
+      uPermission |= 0x0001; // execute bit
+      stringDescription += "x";
+   }
+   else
+   {
+      stringDescription += "-";
+   }
+
+   if( ppairPermission != nullptr )
+   {
+      ppairPermission->first = uPermission;
+      ppairPermission->second = stringDescription;
+   }
+
+#  else
+   // ## Linux/Unix implementation using stat
+   struct stat statBuffer;
+   if( stat( stringFile.data(), &statBuffer ) != 0 )
+   {
+      std::string stringError{ "Failed to get file status, error is: " };
+      stringError += std::strerror(errno);
+      return { false, stringError };
+   }
+
+   uint64_t uPermission = statBuffer.st_mode & 0777; // get permission bits
+
+   if( ppairPermission != nullptr )
+   {
+      ppairPermission->first = uPermission;
+
+      // Build description string (e.g., "rwxr-xr-x")
+      std::string stringDescription;
+
+      // Owner permissions
+      stringDescription += (statBuffer.st_mode & S_IRUSR) ? "r" : "-";
+      stringDescription += (statBuffer.st_mode & S_IWUSR) ? "w" : "-";
+      stringDescription += (statBuffer.st_mode & S_IXUSR) ? "x" : "-";
+
+      // Group permissions
+      stringDescription += (statBuffer.st_mode & S_IRGRP) ? "r" : "-";
+      stringDescription += (statBuffer.st_mode & S_IWGRP) ? "w" : "-";
+      stringDescription += (statBuffer.st_mode & S_IXGRP) ? "x" : "-";
+
+      // Other permissions
+      stringDescription += (statBuffer.st_mode & S_IROTH) ? "r" : "-";
+      stringDescription += (statBuffer.st_mode & S_IWOTH) ? "w" : "-";
+      stringDescription += (statBuffer.st_mode & S_IXOTH) ? "x" : "-";
+
+      ppairPermission->second = stringDescription;
+   }
+#  endif
+
+   return { true, "" };
 }
 
 

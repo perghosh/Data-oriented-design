@@ -1991,11 +1991,11 @@ void CDocument::PROPERTY_UpdateFromApplication()
 
 // 0TAG0CACHE.Document 
 
-/** --------------------------------------------------------------------------- @CODE [tag: cache] [description: Cache management]
+/** --------------------------------------------------------------------------- @CODE [tag: cache, ] [description: Generate tables for selected cache identifiers]
  * @brief Prepares a cache table for the specified identifier.  
  *  
  * This method initializes and prepares a table for caching data associated with the given `stringId`.  
- * If the `stringId` matches specific identifiers like "file", "file-count", or "file-linelist",  
+ * If the `stringId` matches specific identifiers like "file", "file-count", or "file-linelist",
  * it creates tables with predefined columns tailored for their respective purposes:  
  *  
  * - **file**: Stores file information such as folder, filename, size, date, and extension.  
@@ -2059,7 +2059,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
          else
          {
             // file table: key | path | size | date | extension | level | year | month | day
-            ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "days"}, {"string", 20, "extension"}, {"int32", 0, "level"}, {"int32", 0, "year"}, {"int32", 0, "month"}, {"int32", 0, "day"} }, gd::table::tag_prepare{}));
+            ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"double", 0, "days"}, {"string", 20, "extension"}, {"int32", 0, "level"}, {"int32", 0, "year"}, {"int32", 0, "month"}, {"int32", 0, "day"}, {"string", 12, "permission"} }, gd::table::tag_prepare{}));
          }
 
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache

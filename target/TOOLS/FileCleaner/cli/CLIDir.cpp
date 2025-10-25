@@ -424,6 +424,10 @@ std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::
       stringFolder = itRow.cell_get_variant_view("folder").as_string();
    }
 
+   // ## Final print number of found files ....................................
+   uint64_t uTotalFiles = tableLS.size();
+   pdocument->MESSAGE_Display(std::format("\nTotal files: {}", uTotalFiles), { array_, {{"color", "footer"}}, gd::types::tag_view{} });
+
    return { true, "" };
 }
 
