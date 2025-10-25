@@ -466,7 +466,7 @@ std::pair<bool, std::string> DirPrintToVS_g(CDocument* pdocument, const gd::argu
  */
 void CountLevel_s(gd::table::dto::table* ptable_)
 {
-   if( ptable_ == nullptr ) return;
+   if( ptable_ == nullptr || ptable_->column_exists("level") == false ) return;
    char iCharacter = 0;
    for(auto it : *ptable_)
    {
