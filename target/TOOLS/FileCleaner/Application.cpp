@@ -932,7 +932,7 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
    else if( stringCommandName == "version" )
    {
       // For internal use, return version info without console output
-      return { true, "version 1.0.6" };
+      return { true, "version 1.0.8" };
    }
    else if( stringCommandName == "history" )
    {
