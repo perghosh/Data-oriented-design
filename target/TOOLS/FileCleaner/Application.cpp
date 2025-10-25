@@ -2333,6 +2333,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag({ "local", "Create history file in current directory" });
       optionsCommand.add_flag({ "home", "Create history file in user home directory" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
@@ -2379,6 +2380,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( "help", "Print command line help" );
       optionsCommand.add_flag({ "commands", "List all available commands without detailed descriptions" });
       optionsCommand.set_flag((gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0);
+      optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
