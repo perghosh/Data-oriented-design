@@ -2687,6 +2687,10 @@ unsigned CApplication::PreparePath_s(std::string& stringPath)
    {
       iSplitCharacter = stringPath[uPosition];                                // split character
    }
+   else
+   {
+      iSplitCharacter = 0; // no split if none found
+   }
 
    return PreparePath_s( stringPath, iSplitCharacter );
 } 
