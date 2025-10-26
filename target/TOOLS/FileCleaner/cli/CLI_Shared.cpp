@@ -19,6 +19,7 @@
 #include <boost/regex.hpp>
 
 #include "gd/gd_file.h"
+#include "gd/math/gd_math_string.h"
 
 #include "gd/expression/gd_expression_value.h"
 #include "gd/expression/gd_expression_token.h"
@@ -80,7 +81,8 @@ std::pair<bool, std::string> SHARED_ReadHarvestSetting_g( const gd::cli::options
 
    // ## Source option .......................................................
 
-   std::string stringSource = options_["source"].as_string();
+   std::string stringSourceOriginal = options_["source"].as_string();
+   std::string stringSource = stringSourceOriginal;
    CApplication::PreparePath_s(stringSource);                                                      LOG_DEBUG_RAW_IF( stringSource.empty() == false, "Source: " & stringSource);
 
    // ## Ignore option .......................................................
@@ -100,6 +102,13 @@ std::pair<bool, std::string> SHARED_ReadHarvestSetting_g( const gd::cli::options
    { 
       if(options_["R"].is_bool() == true) uRecursive = 16;                    // set to 16 if R is set, find all files
       else { uRecursive = options_["R"].as_uint(); }
+   }
+   else
+   {
+      if( gd::math::string::compare_any( stringSourceOriginal, { "*", "**", ".." } ) == true )
+      {
+         uRecursive = 16;                                                     // set to 16 if source is *, ** or ..
+      }
    }
 
    // ## Filter option .......................................................

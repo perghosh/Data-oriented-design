@@ -222,6 +222,54 @@ bool compare_equals_ignore_case(const std::string_view& stringText1, const std::
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Checks if a string matches any string in a collection.
+ *
+ * This function performs case-sensitive comparison of a string against a 
+ * vector of candidate strings. Returns true on first match for optimal
+ * performance.
+ *
+ * @param stringText The string to search for.
+ * @param vectorText The collection of strings to search in.
+ * @return bool Returns true if stringText matches any string in vectorText, false otherwise.
+ */
+bool compare_any(const std::string_view& stringText, const std::vector<std::string_view>& vectorText) noexcept
+{
+   // ## Early return if collection is empty
+   if(vectorText.empty()) { return false; }
+   
+   for(const auto& stringCandidate : vectorText)
+   {
+      if(stringCandidate == stringText) { return true; }
+   }
+   
+   return false;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Checks if a string matches any string in a collection, ignoring case.
+ *
+ * This function performs case-insensitive comparison of a string against a
+ * vector of candidate strings. Returns true on first match for optimal
+ * performance.
+ *
+ * @param stringText The string to search for.
+ * @param vectorText The collection of strings to search in.
+ * @return bool Returns true if stringText matches any string in vectorText (ignoring case), false otherwise.
+ */
+bool compare_any_ignore_case(const std::string_view& stringText, const std::vector<std::string_view>& vectorText) noexcept
+{
+   // ## Early return if collection is empty
+   if(vectorText.empty()) { return false; }
+   
+   for(const auto& stringCandidate : vectorText)
+   {
+      if(compare_equals_ignore_case(stringText, stringCandidate)) { return true; }
+   }
+   
+   return false;
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Finds the first occurrence of a whole word within a string.
  *
  * This function searches for the specified word as a complete word, not as a substring.
