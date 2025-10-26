@@ -40,6 +40,7 @@ std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocum
       argumentsFileHarvest.append(options_.get_arguments(), { "filter", "overwrite", "pattern", "rpattern", "segment", "newer", "where", "preview"});
 
       auto result_ = CopyFiles_g(options_["target"].as_string(), argumentsFileHarvest, pdocument);
+      if( result_.first == false ) return result_;
    }
 
    return { true, "" };
@@ -126,7 +127,8 @@ std::pair<bool, std::string> CopyFiles_g( const std::string& stringTargetFolder,
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_[{"depth", "recursive"}].as_uint();
    std::string stringSource = arguments_["source"].as_string();
-   auto result_ = FILES_Harvest_WithWildcard_g( stringSource, stringFilter, ptableDir, uDepth, true); if( result_.first == false ) return result_;
+   auto result_ = FILES_Harvest_WithWildcard_g( stringSource, stringFilter, ptableDir, uDepth, true); 
+   if( result_.first == false ) return result_;
 
    std::string stringTargetFolder_ = stringTargetFolder;
 
