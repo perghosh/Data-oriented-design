@@ -15,6 +15,7 @@
 
 `cleaner copy . /user/username/test/,` : Copy files from the current directory to the specified target directory
 `cleaner cp . /user/username/test/, --preview` : Preview copy operation without executing it
+`cleaner copy "**" /user/username/test/ --pattern "*.java"` : Copy all Java files from selected directory and subdirectories to the specified target directory and generate directories if not created
 
 
 **COUNT**

@@ -2698,6 +2698,15 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
    {
       std::string stringNewPath; // new generated path
 
+      // ## If first character is a dot . we need to handle that as current working directory
+      if( stringPath.empty() == true || 
+          (stringPath.front() == '.' && (stringPath[1] == '/' || stringPath[1] == '\\')))
+      {
+         std::filesystem::path pathFile = std::filesystem::current_path();
+         if(stringPath.length() > 1 && (stringPath[1] == '/' || stringPath[1] == '\\')) { pathFile = pathFile / stringPath.substr(2); }
+         stringPath = pathFile.string();
+      }
+
       std::filesystem::path pathFile(stringPath);
       if( pathFile.is_absolute() == false )
       {
@@ -2754,9 +2763,11 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
                }
                else
                {
-                  std::filesystem::path pathAbsolute = std::filesystem::absolute(pathFile);
-                  gd::file::path path_(pathAbsolute);
-                  stringPath = path_.string();
+                  //std::filesystem::path pathAbsolute = std::filesystem::absolute(pathFile);
+                  //gd::file::path path_(pathAbsolute);
+                  //stringPath = path_.string();
+                  pathFile = pathFile.lexically_normal();
+                  stringPath = pathFile.string();
                   uPathCount++;                                               // Increment path count
                }
             }
