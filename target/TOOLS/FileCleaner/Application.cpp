@@ -2672,7 +2672,7 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
  **/
 unsigned CApplication::PreparePath_s(std::string& stringPath)
 {
-   char iSplitCharacter = ':'; // default split character
+   char iSplitCharacter = ';'; // default split character
 
    if( stringPath.empty() == true || stringPath == "." || stringPath == "*" || stringPath == "**" ) // If path is empty or just a '.', '*' or '**'
    {
@@ -2682,7 +2682,7 @@ unsigned CApplication::PreparePath_s(std::string& stringPath)
    }
 
 
-   auto uPosition = stringPath.find_first_of(":;,");                          // Find the first occurrence of ':', `;` or `,` if multiple path
+   auto uPosition = stringPath.find_first_of(";,");                           // Find the first occurrence of `;` or `,` if multiple path
    if( uPosition != std::string::npos )
    {
       iSplitCharacter = stringPath[uPosition];                                // split character
@@ -2702,46 +2702,27 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
    {
       std::string stringNewPath; // new generated path
 
-      // ## If first character is a dot . we need to handle that as current working directory
-      if( stringPath.empty() == true || 
-          (stringPath.front() == '.' && (stringPath[1] == '/' || stringPath[1] == '\\')))
+      auto vectorPath = Split_s(stringPath, iSplitCharacter);               // Split string by `iSplitCharacter` and check files to make them absolute
+      for( const auto& it : vectorPath )
       {
-         std::filesystem::path pathFile = std::filesystem::current_path();
-         if(stringPath.length() > 1 && (stringPath[1] == '/' || stringPath[1] == '\\')) { pathFile = pathFile / stringPath.substr(2); }
-         stringPath = pathFile.string();
-      }
-
-      std::filesystem::path pathFile(stringPath);
-      if( pathFile.is_absolute() == false )
-      {
-         auto vectorPath = Split_s(stringPath, iSplitCharacter);               // Split string by `iSplitCharacter` and check files to make them absolute
-         for( const auto& it : vectorPath )
+         if( it.empty() == false )
          {
-            if( it.empty() == false )
-            {
-               if( stringNewPath.empty() == false )  stringNewPath += iSplitCharacter; // Add split character if not the first path
+            if( stringNewPath.empty() == false )  stringNewPath += iSplitCharacter; // Add split character if not the first path
 
-               std::string stringCheck = it;
-               uPathCount += PreparePath_s(stringCheck, 0);
-               stringNewPath += stringCheck;
-            }
+            std::string stringCheck = it;
+            uPathCount += PreparePath_s(stringCheck, 0);
+            stringNewPath += stringCheck;
          }
-         stringPath = stringNewPath;                                           // Update to the fixed path
       }
-      else
-      {
-         // ## path is absolute, no need to change it
-         stringPath = pathFile.string();                                       // Convert to string
-         uPathCount++;
-      }
+      stringPath = stringNewPath;                                           // Update to the fixed path
    }
    else
    {
-      if( stringPath.empty() || stringPath == "." )                           // no path ?
+      if( stringPath.empty() == true || stringPath == "." )                 // no path ?
       {
-         std::filesystem::path pathFile = std::filesystem::current_path();    // take current working directory
+         std::filesystem::path pathFile = std::filesystem::current_path();  // take current working directory
          stringPath = pathFile.string();
-         uPathCount++;                                                        // Increment path count
+         uPathCount = 1;                                                    // Increment path count
       }
       else
       {
@@ -2751,36 +2732,17 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
 
          if( pathFile.is_absolute() == false )
          {
-            if( pathFile.is_relative() == true )                              // Check if path is relative
-            {
-               // ## make path absolute
-               
-               if( stringPath.find("..") != std::string::npos )               // If path contains "..", we need to resolve it relative to the current working directory   
-               {
-                  // If path contains "..", we need to resolve it relative to the current working directory
-                  gd::file::path path_( std::filesystem::current_path() );
-                  path_ += stringPath;
-                  std::filesystem::path pathAbsolute = std::filesystem::absolute(path_);
-                  //path_. = pathAbsolute;
-                  stringPath = pathAbsolute.string();
-                  uPathCount++;                                               // Increment path count
-               }
-               else
-               {
-                  //std::filesystem::path pathAbsolute = std::filesystem::absolute(pathFile);
-                  //gd::file::path path_(pathAbsolute);
-                  //stringPath = path_.string();
-                  pathFile = pathFile.lexically_normal();
-                  stringPath = pathFile.string();
-                  uPathCount++;                                               // Increment path count
-               }
-            }
-         } // if( pathFile.is_absolute() == false )
+            stringPath = std::filesystem::absolute(pathFile).string();        // Convert relative path to absolute
+         }
+         // If already absolute, no need to modify stringPath
+
+         uPathCount = 1;         
       } // if( stringPath.empty() ) else
-   } // if( uPosition != std::string::npos ) else
+   } // if( iSplitCharacter != 0 ) else
 
    return uPathCount;
 }
+
 
 /** ---------------------------------------------------------------------------
  * @brief Prompts the user for input values for specified command-line options.
