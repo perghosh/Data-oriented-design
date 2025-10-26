@@ -40,7 +40,10 @@ size_t count_character(const std::string_view& stringText, char iCharacter) noex
 int compare_ignore_case(const std::string_view& stringText1, const std::string_view& stringText2) noexcept;
 /// Checks if two strings are equal ignoring case differences.
 bool compare_equals_ignore_case(const std::string_view& stringText1, const std::string_view& stringText2) noexcept;
-
+/// Compare if any of the strings in vectorText are equal to stringText, ignoring case.
+bool compare_any(const std::string_view& stringText, const std::vector<std::string_view>& vectorText) noexcept;
+/// Compare if any of the strings in vectorText are equal to stringText, ignoring case.
+bool compare_any_ignore_case(const std::string_view& stringText, const std::vector<std::string_view>& vectorText) noexcept;
 
 // ## Search methods ..........................................................
 

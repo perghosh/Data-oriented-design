@@ -1,29 +1,40 @@
-**HELP**
+## HELP
+*Show help information, short description on how commands and options work*
+
 `cleaner help` : Show general help information
 `cleaner help -commands` : Show shorer list of all supported commands
 `cleaner <command> -help ` : Show detailed help information for a specific command
 
 
-**DIR**
+## DIR
+*List files, similar to dir on windows or ls on linux but with other features*
 
 `cleaner dir .` : List files in the current directory in table format
 `cleaner ls .` : List files in the current directory and shows only files in rows below
 `cleaner ls "**"` : List files in all subdirectories
 `cleaner ls "**" --parents 2` : List files in all subdirectories and prints them with two parent folders
+`cleaner dir "**" --pattern "<pattern>"` : List files in all subdirectories that contains the specified pattern
+`cleaner dir "**" --rpattern "<pattern>"` : List files in all subdirectories that contains the specified regular expression pattern
 
-**COPY**
+## COPY
+*Copy files from source to target directory with options to filter files on content and preview operations*
 
 `cleaner copy . /user/username/test/,` : Copy files from the current directory to the specified target directory
 `cleaner cp . /user/username/test/, --preview` : Preview copy operation without executing it
-`cleaner copy "**" /user/username/test/ --pattern "*.java"` : Copy all Java files from selected directory and subdirectories to the specified target directory and generate directories if not created
+`cleaner copy "**" /user/username/test/ --filter "*.cpp"` : Copy all Java files from selected directory and subdirectories to the specified target directory and generate directories if not created
 
 
-**COUNT**
+## COUNT
 
 `cleaner count "**"` : Count lines, code lines, code characters, comments and strings in all files in current and subdirectories
 `cleaner count "**" --pattern "assert"` : count all assert occurrences in all files in current and subdirectories
 `cleaner count "**" --segment comment --pattern "TODO"` : count all TODO occurrences in all files in current and subdirectories within comments
 `cleaner count "**" --segment comment --pattern "@PROJECT;@TASK;CODE;TODO"` : count all words between ; in comments
+
+## LIST
+
+`cleaner list "**"` : List all files in the current directory and subdirectories
+`cleaner list "**" --pattern "*.java"` : List all Java files in the current directory and subdirectories
 
 **HISTORY**
 
@@ -40,3 +51,4 @@
 `cleaner history --index <index> --set-alias <alias>` : Set an alias for command and index in history
 
 
+   cleaner copy "**" "D:\temp\test-files" -preview  
