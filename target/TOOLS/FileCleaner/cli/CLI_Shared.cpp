@@ -149,6 +149,82 @@ std::pair<bool, std::string> SHARED_ReadHarvestSetting_g( const gd::cli::options
    return { true, "" };                                                       // return success
 }
 
+/// @brief Overloaded version of SHARED_ReadHarvestSetting_g for non-shared arguments
+std::pair<bool, std::string> SHARED_ReadHarvestSetting_g( const gd::cli::options& options_, gd::argument::arguments& arguments_, CDocument* pdocument)
+{                                                                                                  assert( pdocument != nullptr );
+
+   // ## Source option .......................................................
+
+   unsigned uRecursive = 0; // default recursive value (current folder)
+
+   std::string stringSourceOriginal = options_["source"].as_string();         // get source folders
+   if( stringSourceOriginal.empty() == true )                                 // if empty then filter might hold source folders (hacks for some commands, wher filter and source are same)
+   { 
+      stringSourceOriginal = options_["filter"].as_string(); 
+      if( gd::math::string::compare_any( stringSourceOriginal, { "*", "**", ".." }) == true ) { stringSourceOriginal = "."; uRecursive = 16; }
+      else { stringSourceOriginal = "."; }
+   }
+
+   std::string stringSource = stringSourceOriginal;
+   CApplication::PreparePath_s(stringSource);                                                      LOG_DEBUG_RAW_IF( stringSource.empty() == false, "Source: " & stringSource);
+
+   // ## Ignore option .......................................................
+
+   std::string stringIgnore = options_["ignore"].as_string();                                      LOG_DEBUG_RAW_IF( stringIgnore.empty() == false, "Ignore: " & stringIgnore);
+   if( stringIgnore.empty() == false ) 
+   { 
+      auto vectorIgnore = CApplication::Split_s(stringIgnore);
+      pdocument->GetApplication()->IGNORE_Add(vectorIgnore);                  // add ignore patterns to the application
+   }
+
+   // ## Recursive option ....................................................
+
+   if( options_.exists("recursive") == true ) { uRecursive = options_["recursive"].as_uint(); } // get recursive value from options
+   else if( options_.exists("R") == true ) 
+   { 
+      if(options_["R"].is_bool() == true) uRecursive = 16;                    // set to 16 if R is set, find all files
+      else { uRecursive = options_["R"].as_uint(); }
+   }
+
+   // ## Filter option .......................................................
+
+   std::string stringFilter = options_["filter"].as_string();
+   if( stringFilter.empty() == true || stringFilter == "." )
+   {
+      stringFilter = "*.*";                                                   // all files
+   }
+   else if( stringFilter == "*" || stringFilter == "**" || stringFilter == ".." )
+   {
+      if( uRecursive == 0 ) { uRecursive = 16; }
+   }
+   else if( stringFilter.empty() == false ) 
+   {
+      if( options_.get_arguments().count("filter") > 1 )
+      {
+         auto vectorFilter = options_.get_all("filter");
+         std::string stringCombinedFilter;
+         for( const auto& filter : vectorFilter )
+         {
+            if( stringCombinedFilter.empty() == false ) stringCombinedFilter += ';';
+            stringCombinedFilter += filter.as_string();
+         }
+         stringFilter = stringCombinedFilter;
+      }
+   }
+
+   // ## Set harvest arguments ...............................................
+
+   arguments_.set("source", stringSource);                                    // set source argument
+   arguments_.set("ignore", stringIgnore);                                    // set ignore argument
+   arguments_.set("depth", uRecursive);                                       // set recursive argument
+   arguments_.set("filter", stringFilter);                                    // set filter argument
+
+   pdocument->GetApplication()->UpdateApplicationState();                     // update application state based on new arguments
+
+   return { true, "" };                                                       // return success
+}
+
+
  /** --------------------------------------------------------------------------
  * @brief Retrieves and prepares a list of source file paths from the provided command-line options.
  * @param options_ The command-line options object containing potential source file arguments.

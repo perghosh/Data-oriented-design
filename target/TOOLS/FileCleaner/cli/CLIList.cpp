@@ -15,6 +15,7 @@
 #endif
 
 
+#include "CLI_Shared.h"
 #include "CLIList.h"
 
 
@@ -86,32 +87,20 @@ std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocum
  * @param pdocument Pointer to a CDocument object used for file harvesting, filtering, and result output.
  * @return A std::pair where the first element is a boolean indicating success (true) or failure (false), and the second element is a string containing an error message if the operation failed, or an empty string on success.
  */
-std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList, CDocument* pdocument)
+std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList, CDocument* pdocument)
 {                                                                                                  assert( poptionsList != nullptr ); assert( pdocument != nullptr );
    size_t uSearchPatternCount = 0; // count of patterns to search for
    const gd::cli::options& options_ = *poptionsList;
-   std::string stringSource = options_["source"].as_string();
-   CApplication::PreparePath_s(stringSource);                                 // if source is empty then set it to current path, otherwiss prepare it
 
-   std::string stringIgnore = options_["ignore"].as_string();
-   if( stringIgnore.empty() == false ) 
-   { 
-      auto vectorIgnore = CApplication::Split_s(stringIgnore);
-      pdocument->GetApplication()->IGNORE_Add(vectorIgnore);                  // add ignore patterns to the application
-   }
+   gd::argument::arguments argumentsFileHarvest;
+   SHARED_ReadHarvestSetting_g( options_, argumentsFileHarvest, pdocument );
 
+   int iRecursive = argumentsFileHarvest["depth"].as_int();
 
-   int iRecursive = options_["recursive"].as_int();
-   if (iRecursive == 0 && options_.exists("R") == true) iRecursive = 16; // set to 16 if R is set, find all files
+   std::string stringSource = argumentsFileHarvest["source"].as_string();
+   CApplication::PreparePath_s(stringSource);                                 // if source is empty then set it to current path, otherwise prepare it
 
    std::string stringFilter = options_["filter"].as_string();
-   if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" )   // if filter is set to * or . or ** then we want all files, so clear the filter and deep recursion
-   { 
-      stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
-      if( iRecursive == 0 ) iRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
-   }
-
-   pdocument->GetApplication()->UpdateApplicationState();                     // update the application state to reflect the current state of the application
 
    gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
    auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);       // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
