@@ -76,7 +76,7 @@ std::pair<bool, std::string> CDocument::FILE_Harvest(const gd::argument::shared:
          for( const auto& s_ : vector_ ) { MESSAGE_Display(std::format("source: {}", s_.as_string_view())); }
       }
 
-      auto uCount = argumentsPath["recursive"].as_uint();
+      auto uCount = argumentsPath[{"ecursive","depth"}].as_uint();
       MESSAGE_Display(std::format("recursive: {}", uCount));
    }
 
