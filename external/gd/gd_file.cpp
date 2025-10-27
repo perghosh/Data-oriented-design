@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include <cerrno>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
