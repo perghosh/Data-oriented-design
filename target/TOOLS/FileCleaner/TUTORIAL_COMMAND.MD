@@ -1,69 +1,66 @@
-## HELP
-*Show help information, short description on how commands and options work*
+## Help Commands
+*Display usage info and command details*
 
-`cleaner help` : Show general help information
-`cleaner help -commands` : Show shorer list of all supported commands
-`cleaner <command> -help ` : Show detailed help information for a specific command
+- `cleaner help`: General overview
+- `cleaner help -commands`: Command list
+- `cleaner <cmd> -help`: Specific command details
 
+## Dir/Ls
+*Enhanced file listing (like ls/dir) with content filters*
 
-## DIR
-*List files, similar to dir on windows or ls on linux but with other features*
+- `cleaner dir .`: Table view of current dir
+- `cleaner ls .`: Simple row list of current dir files
+- `cleaner ls "**"`: Recursive file list (all subdirs)
+- `cleaner ls "**" --parents 2`: Recursive with 2 parent paths
+- `cleaner dir "**" --pattern "<pat>"`: Recursive files matching pattern
+- `cleaner dir "**" --rpattern "<regex>"`: Recursive regex matches
+- `cleaner dir --source "**/test**"`: Files in "test"-starting subdirs
 
-`cleaner dir .` : List files in the current directory in table format
-`cleaner ls .` : List files in the current directory and shows only files in rows below
-`cleaner ls "**"` : List files in all subdirectories
-`cleaner ls "**" --parents 2` : List files in all subdirectories and prints them with two parent folders
-`cleaner dir "**" --pattern "<pattern>"` : List files in all subdirectories that contains the specified pattern
-`cleaner dir "**" --rpattern "<pattern>"` : List files in all subdirectories that contains the specified regular expression pattern
-`cleaner dir --source "**/test**"` : List files in all subdirectories with folder starting with "test"
+## Copy/Cp
+*Copy files with content filters and previews*
 
-## COPY
-*Copy files from source to target directory with options to filter files on content and preview operations*
+- `cleaner copy . /target/`: Copy current dir to target
+- `cleaner cp . /target/ --preview`: Dry-run preview
+- `cleaner copy "**" /target/ --filter "*.cpp"`: Recursive filtered copy (auto-mkdirs)
 
-`cleaner copy . /user/username/test/,` : Copy files from the current directory to the specified target directory
-`cleaner cp . /user/username/test/, --preview` : Preview copy operation without executing it
-`cleaner copy "**" /user/username/test/ --filter "*.cpp"` : Copy all Java files from selected directory and subdirectories to the specified target directory and generate directories if not created
+## Count
+*Analyze lines/code/comments/strings or pattern occurrences*
 
+- `cleaner count "**"`: Recursive line/code/comment stats
+- `cleaner count "**" --pattern "assert"`: Count pattern occurrences
+- `cleaner count "**" --segment comment --pattern "TODO"`: Count in comments
+- `cleaner count "**" --segment comment --pattern "@PROJ;@TASK;TODO"`: Count semicolon-separated words in comments
 
-## COUNT
+## List
+*Line-based pattern search with filters/segments*
 
-`cleaner count "**"` : Count lines, code lines, code characters, comments and strings in all files in current and subdirectories
-`cleaner count "**" --pattern "assert"` : count all assert occurrences in all files in current and subdirectories
-`cleaner count "**" --segment comment --pattern "TODO"` : count all TODO occurrences in all files in current and subdirectories within comments
-`cleaner count "**" --segment comment --pattern "@PROJECT;@TASK;CODE;TODO"` : count all words between ; in comments
+- `cleaner list "**"`: Recursive file list
+- `cleaner list "**" --filter "*.py" --pattern "<pat>"`: Filtered Python files
+- `cleaner list "**" --pattern "logging" --filter "*.py"`: Python files with pattern
+- `cleaner list "**" --pattern "logging;WARNING" --filter "*.py" -match-all`: Multi-pattern lines
+- `cleaner list "**" --pattern "WARNING" --filter "*.py" -word -icase`: Case-insensitive whole-word matches
+- `cleaner list "**" --segment comment --pattern "WARNING" --filter "*.py" -word -icase`: In comments only
+- `cleaner list "**" --segment string --rpattern "TODO" --filter "*.js" -word -icase --context 5`: In strings + post-context
 
-## LIST
-*lists found rows with the pattern searched for*
+## Find
+*Text-based search (non-line-bound; multi-line patterns, code-focused; use list for comments/strings)*
 
-`cleaner list "**"` : List all files in the current directory and subdirectories
-`cleaner list "**" --filter "*.py" --pattern "<pattern>"` : List all Python files in the current directory and subdirectories
-`cleaner list  "**" --pattern "logging" --filter "*.py"` : List all Python files in the current directory and subdirectories that contains the pattern "logging"
-`cleaner list  "**" --pattern "logging;WARNING" --filter "*.py" -match-all` : List lines in Python files that contains the patterns "logging" and "WARNING"
-`cleaner list  "**" --pattern "WARNING" --filter "*.py" -word -icase` : List lines in Python files that contains the word "WARNING" in any case format
-`cleaner list  "**" --segment comment --pattern "WARNING" --filter "*.py" -word -icase` : List lines in Python files that contains the word "WARNING" in comments in any case format
-`cleaner list  "**" --segment string --rpattern "TODO" --filter "*.js" -word -icase --context 5` : List lines JavaScript files that contains the word "TODO" in strings in any case format and preview 5 lines after found line
+## History
+*Command reuse and tracking*
 
-## FIND
-*find works like `list` but it searches on all text, not only line based. `find` are able to match patterns across multiple lines and provide more context around the found matches.*
+- `cleaner history -create -local`: Init local history file
+- `cleaner find -R --filter "*.h*" --segment comment --prompt "pat" --add-to-history "c-pat"`: Prompt/search + save as alias
+- `cleaner history "c-pat"`: Run saved command
+- `cleaner history -print`: View local history
+- `cleaner history -print -home`: View global history
+- `cleaner history -create -home`: Init global history
+- `cleaner history -remove --index <n>`: Delete by index
+- `cleaner history --index <n> --set-alias <alias>`: Alias by index
 
-## HISTORY
+## Config
+*Manage tool settings*
 
-`cleaner history -create -local` : Create a local history file in the current directory 
-
-`cleaner find -R --filter "*.h*"  --segment comment --prompt "pattern" --add-to-history "c-pattern"` : Search for pattern that is asked for in comments and also add it to the history under the name "c-pattern"
-`cleaner history "c-pattern"` : Run "c-pattern" in history to search for the saved command sequence
-
-`cleaner history -print` : prints the local history file if found
-`cleaner history -print -home` : prints the global history for user
-
-`cleaner history -create -home` : Create a global history file for user
-`cleaner history -remove --index <index>` : Remove a specific command from history by index
-`cleaner history --index <index> --set-alias <alias>` : Set an alias for command and index in history
-
-## CONFIG
-*Manage configuration settings for FileCleaner tool*
-
-`cleaner config -create -local` : Create a local configuration file in the current directory
-`cleaner config -create -home` : Create a global configuration file for user
-`cleaner config -print -local` : Print the local configuration file if found
-`cleaner config -edit -local` : Tries to open local configuration file in default text editor
+- `cleaner config -create -local`: Init local config
+- `cleaner config -create -home`: Init global config
+- `cleaner config -print -local`: View local config
+- `cleaner config -edit -local`: Edit local config in default editor

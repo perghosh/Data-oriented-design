@@ -12,6 +12,7 @@
 - `detail` options affect more commands now like `dir` and `copy`
 - `parents` option added to `dir` for making it possible to click to open for files with same name in different folders.
 - `dir` can show file permissions when `detail` level is 3 or higher (full and extended).
+- Skanning files now works similar to default `ls` or `dir` commands on linux and windows by showing hidden files and folders by default. Use `--ignore` to ignore files and folders you do not want to see.
 
 
 ## v1.0.7
