@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include <cerrno>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
@@ -9,7 +11,7 @@
 //#undef stat
 
 //#include <sys/types.h>
-//#include <sys/stat.h>
+#include <sys/stat.h>
 
 #include "gd_utf8.hpp"
 
