@@ -32,6 +32,7 @@
 `cleaner count "**" --segment comment --pattern "@PROJECT;@TASK;CODE;TODO"` : count all words between ; in comments
 
 ## LIST
+*lists found rows with the pattern searched for*
 
 `cleaner list "**"` : List all files in the current directory and subdirectories
 `cleaner list "**" --pattern "*.java"` : List all Java files in the current directory and subdirectories

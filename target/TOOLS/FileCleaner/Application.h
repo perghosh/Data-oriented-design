@@ -432,6 +432,7 @@ public:
    // ## Path operations
    static unsigned PreparePath_s( std::string& stringPath );
    static unsigned PreparePath_s( std::string& stringPath, char iSplitCharacter );
+   static unsigned ExpandWildcardPath_s(const std::string& stringPath, std::vector<std::string>& vectorResults, bool bRecursive);
 
    // ## CLI oprations (CLI = command line interface)
 

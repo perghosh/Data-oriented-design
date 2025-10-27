@@ -204,7 +204,8 @@ namespace detail {
   * collecting information about each file and storing it in the provided table. The information 
   * includes the file's folder, filename, extension, and size.
   *
-  * @param stringPath The root directory path to start harvesting files from.
+  * @param stringPath The root directory path to start harvesting files from. If ; is found in the path,
+  *                   it will be split into multiple paths and processed individually.
   * @param stringWildcard A wildcard pattern to filter files. Only files matching this pattern will be added to the table.
   * @param ptable_ A pointer to the table where the harvested file details will be stored.
   *                The table must be pre-initialized and not null.
@@ -236,6 +237,19 @@ namespace detail {
   */
 std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, const std::string& stringWildcard, gd::table::dto::table* ptable_, unsigned uDepth, bool bSize )
 {                                                                                                  assert( ptable_ != nullptr );
+   if( stringPath.find(';') != std::string::npos )
+   {
+      // split path into multiple paths 
+      char iSplit = ';';
+      auto vectorPaths = gd::utf8::split(stringPath, iSplit);
+      for( const auto& path_ : vectorPaths )
+      {
+         auto [bOk, stringError] = FILES_Harvest_g( std::string(path_), stringWildcard, ptable_, uDepth, bSize );
+         if( bOk == false ) return { false, stringError };                     // error in recursive call
+      }
+      return { true, "" };
+   }
+
    try
    {
       if( std::filesystem::is_directory(stringPath) == false )                 // not a directory
