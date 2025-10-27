@@ -2333,6 +2333,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag({ "local", "Create history file in current directory" });
       optionsCommand.add_flag({ "home", "Create history file in user home directory" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
@@ -2379,6 +2380,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( "help", "Print command line help" );
       optionsCommand.add_flag({ "commands", "List all available commands without detailed descriptions" });
       optionsCommand.set_flag((gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0);
+      optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
 
@@ -2644,126 +2646,282 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
    return { true, "" };
 }
 
-
-
-
 /** ---------------------------------------------------------------------------
- * @brief Ensures the provided path is absolute. If the path is empty, it sets it to the current working directory.
+ * @brief Ensures the provided path is absolute. Supports wildcard patterns.
+ * 
+ * @note In sample there are some ** / characters, please remove the space when using it. This to make the documentation parser happy.
  *
- * This method processes a given path string and ensures it is in an absolute format. If the path is empty, it assigns
- * the current working directory to the path. If the path contains multiple entries separated by `;` or `,`, it processes
- * each entry individually to ensure they are absolute paths.
+ * Enhanced version that handles wildcard patterns with multiple scanning modes:
+ * - "test*"     → scans current directory for matching folders
+ * - "** /test*"  → recursively scans current directory and subdirectories
+ * - "/path/test*" → scans specified path for matching folders
  *
  * ### Behavior:
  * - If the path is empty, it assigns the current working directory.
+ * - If the path contains wildcards (* or ?), it expands to matching folders.
+ * - If the pattern starts with "** /" it does recursive scanning.
  * - If the path is relative, it converts it to an absolute path.
- * - If the path contains multiple entries separated by `;` or `,`, it processes each entry individually.
+ * - If the path contains multiple entries separated by `;` or `,`, it processes each entry.
  *
- * @param stringPath A reference to the path string to process. The string is modified in place.
+ * @param stringPath A reference to the path string to process. Modified in place.
+ *                   If wildcards match multiple paths, they are joined with `;`
  *
  * ### Example Usage:
  * ```cpp
- * std::string path = "relative/path";
- * CApplication::PreparePath_s(path);
- * // path is now absolute
+ * // Scan current directory only
+ * std::string path1 = "test*";
+ * CApplication::PreparePath_s(path1);
+ * // path1 might become "test1;test2;testing"
+ * 
+ * // Scan current directory and all subdirectories recursively
+ * std::string path2 = "** /test*";
+ * CApplication::PreparePath_s(path2);
+ * // path2 might become "test1;subdir/test2;deep/path/testing"
+ * 
+ * // Scan specific directory
+ * std::string path3 = "/some/path/test*";
+ * CApplication::PreparePath_s(path3);
+ * // path3 becomes matching folders in /some/path/
  * ```
  **/
 unsigned CApplication::PreparePath_s(std::string& stringPath)
 {
-   char iSplitCharacter = ':'; // default split character
-
-   if( stringPath.empty() == true || stringPath == "." || stringPath == "*" || stringPath == "**" ) // If path is empty or just a '.', '*' or '**'
+   char iSplitCharacter = ';'; // default split character
+   if( stringPath.empty() == true || stringPath == "." ) 
    {
-      std::filesystem::path pathFile = std::filesystem::current_path(); // take current working directory
+      std::filesystem::path pathFile = std::filesystem::current_path();
       stringPath = pathFile.string();
-      return 1; // Return 1 as we have one path
+      return 1;
    }
-
-
-   auto uPosition = stringPath.find_first_of(":;,");                          // Find the first occurrence of ':', `;` or `,` if multiple path
+   
+   // Handle special cases for wildcards
+   if( stringPath == "*" || stringPath == "**" ) 
+   {
+      std::filesystem::path pathFile = std::filesystem::current_path();
+      stringPath = pathFile.string();
+      return 1;
+   }
+   
+   auto uPosition = stringPath.find_first_of(";,");
    if( uPosition != std::string::npos )
    {
-      iSplitCharacter = stringPath[uPosition];                                // split character
-   }
-
-   return PreparePath_s( stringPath, iSplitCharacter );
-} 
-
-unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharacter )
-{
-   unsigned uPathCount = 0;
-   if( iSplitCharacter != 0 )
-   {
-      std::string stringNewPath; // new generated path
-
-      std::filesystem::path pathFile(stringPath);
-      if( pathFile.is_absolute() == false )
-      {
-         auto vectorPath = Split_s(stringPath, iSplitCharacter);               // Split string by `iSplitCharacter` and check files to make them absolute
-         for( const auto& it : vectorPath )
-         {
-            if( it.empty() == false )
-            {
-               if( stringNewPath.empty() == false )  stringNewPath += iSplitCharacter; // Add split character if not the first path
-
-               std::string stringCheck = it;
-               uPathCount += PreparePath_s(stringCheck, 0);
-               stringNewPath += stringCheck;
-            }
-         }
-         stringPath = stringNewPath;                                           // Update to the fixed path
-      }
-      else
-      {
-         // ## path is absolute, no need to change it
-         stringPath = pathFile.string();                                       // Convert to string
-         uPathCount++;
-      }
+      iSplitCharacter = stringPath[uPosition];
    }
    else
    {
-      if( stringPath.empty() || stringPath == "." )                           // no path ?
+      iSplitCharacter = 0;
+   }
+   
+   return PreparePath_s( stringPath, iSplitCharacter );
+}
+
+unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharacter )
+{
+   unsigned uPathCount = 0; // number of paths processed
+   if( iSplitCharacter != 0 )
+   {
+      std::string stringNewPath;
+      auto vectorPath = Split_s(stringPath, iSplitCharacter);
+      for( const auto& it : vectorPath )
       {
-         std::filesystem::path pathFile = std::filesystem::current_path();    // take current working directory
+         if( it.empty() == false )
+         {
+            if( stringNewPath.empty() == false ) { stringNewPath += iSplitCharacter; } // Add split character if not the first path
+            std::string stringCheck = it;
+            uPathCount += PreparePath_s(stringCheck, 0);
+            stringNewPath += stringCheck;
+         }
+      }
+      stringPath = stringNewPath;
+   }
+   else
+   {
+      if( stringPath.empty() == true || stringPath == "." )
+      {
+         std::filesystem::path pathFile = std::filesystem::current_path();
          stringPath = pathFile.string();
-         uPathCount++;                                                        // Increment path count
+         uPathCount = 1;
       }
       else
       {
-         // ## fix path to make it absolute
-
-         std::filesystem::path pathFile(stringPath);
-
-         if( pathFile.is_absolute() == false )
+         // Check if path contains wildcards
+         if(stringPath.find('*') != std::string::npos || stringPath.find('?') != std::string::npos)
          {
-            if( pathFile.is_relative() == true )                              // Check if path is relative
+            std::vector<std::string> vectorMatches;
+            bool bRecursive = false;
+            std::string stringProcessPath = stringPath;
+            
+            // Check for recursive pattern "**/"
+            if(stringPath.find("**/") == 0)
             {
-               // ## make path absolute
-               
-               if( stringPath.find("..") != std::string::npos )               // If path contains "..", we need to resolve it relative to the current working directory   
+               bRecursive = true;
+               stringProcessPath = stringPath.substr(3);                      // Remove "**/" prefix
+            }
+            else if(stringPath.find("**\\") == 0)
+            {
+               bRecursive = true;
+               stringProcessPath = stringPath.substr(3);                      // Remove "**\" prefix
+            }
+            
+            // Make path absolute first if it's relative
+            std::filesystem::path pathInput(stringProcessPath);
+            std::string stringAbsolutePattern;
+            
+            if(pathInput.is_absolute() == false)
+            {
+               std::filesystem::path pathParent = pathInput.parent_path();
+               if(pathParent.empty() == true)
                {
-                  // If path contains "..", we need to resolve it relative to the current working directory
-                  gd::file::path path_( std::filesystem::current_path() );
-                  path_ += stringPath;
-                  std::filesystem::path pathAbsolute = std::filesystem::absolute(path_);
-                  //path_. = pathAbsolute;
-                  stringPath = pathAbsolute.string();
-                  uPathCount++;                                               // Increment path count
+                  // No parent path - scan from current directory
+                  pathParent = std::filesystem::current_path();
                }
                else
                {
-                  std::filesystem::path pathAbsolute = std::filesystem::absolute(pathFile);
-                  gd::file::path path_(pathAbsolute);
-                  stringPath = path_.string();
-                  uPathCount++;                                               // Increment path count
+                  // Relative parent path - make it absolute
+                  pathParent = std::filesystem::absolute(pathParent);
+               }
+               stringAbsolutePattern = (pathParent / pathInput.filename()).string();
+            }
+            else
+            {
+               stringAbsolutePattern = stringProcessPath;
+            }
+            
+            // Expand wildcards
+            uPathCount = ExpandWildcardPath_s(stringAbsolutePattern, vectorMatches, bRecursive);
+            
+            if(uPathCount > 0)
+            {
+               // Join all matches with semicolon
+               stringPath.clear();
+               for(size_t i = 0; i < vectorMatches.size(); ++i)
+               {
+                  if(i > 0) stringPath += ";";
+                  stringPath += vectorMatches[i];
                }
             }
-         } // if( pathFile.is_absolute() == false )
-      } // if( stringPath.empty() ) else
-   } // if( uPosition != std::string::npos ) else
-
+            else
+            {
+               // No matches found, keep original pattern
+               stringPath = stringAbsolutePattern;
+               uPathCount = 0;
+            }
+         }
+         else
+         {
+            // No wildcards, handle as before
+            std::filesystem::path pathFile(stringPath);
+            if( pathFile.is_absolute() == false )
+            {
+               stringPath = std::filesystem::absolute(pathFile).string();
+            }
+            uPathCount = 1;
+         }
+      }
+   }
    return uPathCount;
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Helper function to expand wildcard patterns in paths
+ * 
+ * This function scans directories for folders matching the wildcard pattern.
+ * It can scan:
+ * - The parent directory if a path is specified (e.g., "/some/path/test*")
+ * - The current directory if just a pattern is given (e.g., "test*")
+ * - Child directories recursively if specified
+ *
+ * @param stringPath The path containing wildcard pattern
+ * @param vectorResult Vector to store all matching absolute paths
+ * @param bRecursive If true, scan child directories recursively
+ * @return Number of matching paths found
+ **/
+unsigned CApplication::ExpandWildcardPath_s(const std::string& stringPath, std::vector<std::string>& vectorResult, bool bRecursive)
+{
+   std::filesystem::path pathInput(stringPath); // Input path with potential wildcards
+   std::string stringPattern = pathInput.filename().string(); // Extract the pattern (last part of the path)
+   
+   // Check if pattern contains wildcards
+   if(stringPattern.find('*') == std::string::npos && stringPattern.find('?') == std::string::npos)
+   {
+      // No wildcards, return the path as-is if it exists
+      if(std::filesystem::exists(pathInput))
+      {
+         vectorResult.push_back(std::filesystem::absolute(pathInput).string());
+         return 1;
+      }
+      return 0;
+   }
+   
+   // Determine the directory to scan
+   std::filesystem::path pathToScan;
+   
+   // Check if we have a parent path specified
+   std::filesystem::path pathParent = pathInput.parent_path();
+   
+   if(pathParent.empty() == true ) { pathToScan = std::filesystem::current_path(); } // No parent path specified (e.g., just "test*"). Use current working directory
+   else
+   {
+      // Parent path specified (e.g., "/some/path/test*" or "relative/test*")
+      if(pathParent.is_absolute() == false ) { pathParent = std::filesystem::absolute(pathParent); }
+      pathToScan = pathParent;
+   }
+   
+   // Check if directory exists
+   if(std::filesystem::exists(pathToScan) == false || std::filesystem::is_directory(pathToScan) == false) { return 0; }
+   
+   unsigned uMatchCount = 0;
+   
+   try
+   {
+      if(bRecursive == true)
+      {
+         // Recursive scan - search in current directory and all subdirectories
+         for(const auto& entry : std::filesystem::recursive_directory_iterator(pathToScan))
+         {
+            if(entry.is_directory() == true )
+            {
+               std::string stringFolderName = entry.path().filename().string();
+               
+               // ## If match the add to result
+               bool bMatch = gd::ascii::strcmp( stringFolderName.c_str(), stringFolderName.length(), stringPattern.c_str(), stringPattern.length(), gd::utf8::tag_wildcard() );
+               if(bMatch == true)
+               {
+                  vectorResult.push_back(entry.path().string());
+                  uMatchCount++;
+               }
+            }
+         }
+      }
+      else
+      {
+         // Non-recursive - only scan immediate children
+         for(const auto& entry : std::filesystem::directory_iterator(pathToScan))
+         {
+            if(entry.is_directory() == true )
+            {
+               std::string stringFolderName = entry.path().filename().string();
+               
+               // ## If match the add to result
+               bool bMatch = gd::ascii::strcmp( stringFolderName.c_str(), stringFolderName.length(), stringPattern.c_str(), stringPattern.length(), gd::utf8::tag_wildcard() );
+               if(bMatch == true)
+               {
+                  vectorResult.push_back(entry.path().string());
+                  uMatchCount++;
+               }
+            }
+         }
+      }
+   }
+   catch(const std::filesystem::filesystem_error&)
+   {                                                                                               assert(false);
+      // Handle filesystem errors (permission denied, etc.)
+      return 0;
+   }
+   
+   return uMatchCount;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Prompts the user for input values for specified command-line options.

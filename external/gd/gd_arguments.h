@@ -172,6 +172,7 @@ public:
 
    using tag_pair          = gd::types::tag_pair;                              // tag dispatcher used to select working with pair items
    using tag_view          = gd::types::tag_view;                              // used when working with view objects (not owning its data)
+   using tag_string_view   = gd::types::tag_string_view;                       // string view related operations
    using tag_argument      = gd::types::tag_argument;                          // argument related operations
    using tag_name          = gd::types::tag_name;                              // there is some name related logic involved
    using tag_description   = gd::types::tag_description;                       // tag dispatcher where description is useful
@@ -919,7 +920,7 @@ public:
    arguments& set_uuid(const std::string_view& stringName, const uint8_t* puData) { return set(stringName, eTypeNumberGuid, (const_pointer)puData, 16); }
 
 
-   arguments& set(std::string_view stringName, std::string_view v) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length() + 1); }
+   arguments& set(std::string_view stringName, std::string_view v, tag_string_view) { return set(stringName, (eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length() + 1); }
 
    arguments& set(pointer pPosition, const gd::variant_view& variantValue) { return set(pPosition, variantValue, nullptr); }
    arguments& set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition);

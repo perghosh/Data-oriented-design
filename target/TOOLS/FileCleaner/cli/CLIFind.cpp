@@ -65,7 +65,11 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
 
    papplication_g->Print("background", gd::types::tag_background{} );
 
-   auto vectorSourceToPrepare = options_.get_all("source");                            // get all source arguments, this is used to find files in the source directory
+   gd::argument::arguments argumentsFileHarvest;
+   SHARED_ReadHarvestSetting_g( options_, argumentsFileHarvest, pdocument );
+   options_.get_arguments().append( argumentsFileHarvest, { "depth" } );
+
+   auto vectorSourceToPrepare = argumentsFileHarvest.get_argument_all("source", gd::types::tag_view{}); // get all source arguments, this is used to find files in the source directory
 
    std::vector<std::string> vectorSource; // vector of source paths
 
@@ -74,7 +78,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
    if( vectorSourceToPrepare.size() == 1 )
    {
       std::string stringSource = vectorSourceToPrepare[0].as_string();
-      auto uCount = CApplication::PreparePath_s(stringSource, ':');           // if source is empty then set it to current path, otherwise prepare it
+      auto uCount = CApplication::PreparePath_s(stringSource, ';');           // if source is empty then set it to current path, otherwise prepare it
       if( uCount == 1 ) vectorSource.push_back(stringSource);                 // if there is only one source then add it to the vector
       else if( uCount > 1 )  vectorSource = CApplication::Split_s(stringSource, ':');// if there are multiple sources then split them by ':'
    }
@@ -94,19 +98,11 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       vectorSource.push_back(stringSource);
    }
 
-   // ## Ignore patterns
-   std::string stringIgnore = options_["ignore"].as_string();
-   if( stringIgnore.empty() == false ) 
-   { 
-      auto vectorIgnore = CApplication::Split_s(stringIgnore);
-      pdocument->GetApplication()->IGNORE_Add(vectorIgnore);                  // add ignore patterns to the application
-   }
-
    // ## FIND
    // ## Call the more generic Find_g function
    //    this is to make it possible to call Find_g with different environments, like CLI or GUI
 
-   gd::argument::arguments* pargumentsFind = &options_.get_arguments(); // get the arguments from the command line options
+   gd::argument::arguments* pargumentsFind = &options_.get_arguments();       // get the arguments from the command line options
    auto result_ = Find_g(vectorSource, pargumentsFind, pdocument);            // find files in the source directory based on the find arguments
    if( result_.first == false ) return result_;                               // if find failed, return the error
 
@@ -198,15 +194,9 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
 
    uint64_t uPatternCount = 0; // count of patterns to search for
 
-   int iRecursive = options_["recursive"].as_int();
-   if (iRecursive == 0 && options_.exists("R") == true) iRecursive = 16;      // set to 16 if R is set, find all files
+   int iRecursive = options_["depth"].as_int();
 
    std::string stringFilter = options_["filter"].as_string();
-   if( stringFilter == "*" || stringFilter == "." || stringFilter == "**" )   // if filter is set to * or . or ** then we want all files, so clear the filter and deep recursion
-   { 
-      stringFilter.clear();                                                   // if filter is set to * then clear it, we want all files
-      if( iRecursive == 0 ) iRecursive = 16;                                  // if recursive is not set, set it to 16, find all files
-   }
 
    // ## Prepare the application state
    pdocument->GetApplication()->UpdateApplicationState();                     // update the application state to reflect the current state of the application

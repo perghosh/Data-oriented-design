@@ -40,7 +40,11 @@ size_t count_character(const std::string_view& stringText, char iCharacter) noex
 int compare_ignore_case(const std::string_view& stringText1, const std::string_view& stringText2) noexcept;
 /// Checks if two strings are equal ignoring case differences.
 bool compare_equals_ignore_case(const std::string_view& stringText1, const std::string_view& stringText2) noexcept;
-
+/// Compare if any of the strings in vectorText are equal to stringText, ignoring case.
+bool compare_any(const std::string_view& stringText, const std::vector<std::string_view>& vectorText) noexcept;
+bool compare_any(const std::string_view& stringText, const std::initializer_list<std::string_view>& listText) noexcept;
+/// Compare if any of the strings in vectorText are equal to stringText, ignoring case.
+bool compare_any_ignore_case(const std::string_view& stringText, const std::vector<std::string_view>& vectorText) noexcept;
 
 // ## Search methods ..........................................................
 
@@ -51,6 +55,7 @@ size_t find_word_ignore_case(const std::string_view& stringText, const std::stri
 
 // ## Find all methods .........................................................
 
+/// Finds all occurrences of stringWord as a whole word in stringText.
 std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, std::string_view stringWord, size_t uOffset = 0) noexcept;
 std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, const std::vector<std::string_view>& vectorWord, size_t uOffset = 0) noexcept;
 std::vector< std::pair<size_t, size_t> > find_all_word(const std::string_view& stringText, std::string_view stringWord, const std::array<uint8_t, 256>& arraySkip, size_t uOffset = 0) noexcept;
