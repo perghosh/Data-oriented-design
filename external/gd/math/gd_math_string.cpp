@@ -245,6 +245,18 @@ bool compare_any(const std::string_view& stringText, const std::vector<std::stri
    return false;
 }
 
+/// @brief Overload compare_any
+bool compare_any(const std::string_view& stringText, const std::initializer_list<std::string_view>& listText) noexcept
+{
+   for(const auto& stringCandidate : listText)
+   {
+      if(stringCandidate == stringText) { return true; }
+   }
+   
+   return false;
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Checks if a string matches any string in a collection, ignoring case.
  *
