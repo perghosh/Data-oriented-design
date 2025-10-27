@@ -15,6 +15,7 @@
 `cleaner ls "**" --parents 2` : List files in all subdirectories and prints them with two parent folders
 `cleaner dir "**" --pattern "<pattern>"` : List files in all subdirectories that contains the specified pattern
 `cleaner dir "**" --rpattern "<pattern>"` : List files in all subdirectories that contains the specified regular expression pattern
+`cleaner dir --source "**/test**"` : List files in all subdirectories with folder starting with "test"
 
 ## COPY
 *Copy files from source to target directory with options to filter files on content and preview operations*
@@ -35,9 +36,17 @@
 *lists found rows with the pattern searched for*
 
 `cleaner list "**"` : List all files in the current directory and subdirectories
-`cleaner list "**" --pattern "*.java"` : List all Java files in the current directory and subdirectories
+`cleaner list "**" --filter "*.py" --pattern "<pattern>"` : List all Python files in the current directory and subdirectories
+`cleaner list  "**" --pattern "logging" --filter "*.py"` : List all Python files in the current directory and subdirectories that contains the pattern "logging"
+`cleaner list  "**" --pattern "logging;WARNING" --filter "*.py" -match-all` : List lines in Python files that contains the patterns "logging" and "WARNING"
+`cleaner list  "**" --pattern "WARNING" --filter "*.py" -word -icase` : List lines in Python files that contains the word "WARNING" in any case format
+`cleaner list  "**" --segment comment --pattern "WARNING" --filter "*.py" -word -icase` : List lines in Python files that contains the word "WARNING" in comments in any case format
+`cleaner list  "**" --segment string --rpattern "TODO" --filter "*.js" -word -icase --context 5` : List lines JavaScript files that contains the word "TODO" in strings in any case format and preview 5 lines after found line
 
-**HISTORY**
+## FIND
+*find works like `list` but it searches on all text, not only line based. `find` are able to match patterns across multiple lines and provide more context around the found matches.*
+
+## HISTORY
 
 `cleaner history -create -local` : Create a local history file in the current directory 
 
@@ -51,5 +60,10 @@
 `cleaner history -remove --index <index>` : Remove a specific command from history by index
 `cleaner history --index <index> --set-alias <alias>` : Set an alias for command and index in history
 
+## CONFIG
+*Manage configuration settings for FileCleaner tool*
 
-   cleaner copy "**" "D:\temp\test-files" -preview  
+`cleaner config -create -local` : Create a local configuration file in the current directory
+`cleaner config -create -home` : Create a global configuration file for user
+`cleaner config -print -local` : Print the local configuration file if found
+`cleaner config -edit -local` : Tries to open local configuration file in default text editor
