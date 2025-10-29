@@ -41,7 +41,7 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 
    gd::argument::shared::arguments argumentsFileHarvest;
    SHARED_ReadHarvestSetting_g( options_, argumentsFileHarvest, pdocument );
-   argumentsFileHarvest.append( options_.get_arguments(), {"segment"});
+   argumentsFileHarvest.append( options_.get_arguments(), {"segment", "icase", "word"});
    argumentsFileHarvest.append("size", true);                                 // always get size
 
 	// ## perform the pattern operation if found ..............................
@@ -174,6 +174,7 @@ std::pair<bool, std::string> DirPattern_g( const std::vector<std::string>& vecto
       // ## Match the pattern/patterns with the file
       
       gd::argument::shared::arguments argumentsDir( {{"source", stringFile} } );
+      argumentsDir.append(arguments_, { "icase", "word" });                   // append icase and word if set
       if( stringSegment.empty() == false ) argumentsDir.append("segment", stringSegment); // if segment is set, add it to the arguments
       auto result_ = COMMAND_CollectPatternStatistics( argumentsDir, vectorPattern, vectorCount );
       if( result_.first == false ) { pdocument->ERROR_Add(result_.second); }

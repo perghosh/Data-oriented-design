@@ -10,6 +10,7 @@
 #include "gd/gd_uuid.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_variant_view.h"
+#include "gd/gd_table_column-buffer.h"
 
 #ifndef APPLICATION_APPLICATION_BASIC_BEGIN
 #  define APPLICATION_APPLICATION_BASIC_BEGIN namespace application { namespace basic {
@@ -77,6 +78,7 @@ public:
    std::string PROPERTY_GetName( size_t uIndex ) const { return m_vectorProperty.at(uIndex).first; }
    bool PROPERTY_Has( const std::string_view& stringName );
    size_t PROPERTY_Size() const noexcept { return m_vectorProperty.size(); }
+   std::unique_ptr<gd::table::dto::table> PROPERTY_ToTable() const;
 //@}
 
    /// ## Application version information
@@ -190,6 +192,26 @@ inline bool CApplication::PROPERTY_Has( const std::string_view& stringName )
       if( it->first == stringName ) return true;
    }
    return false;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Convert properties to table format
+ * @return unique pointer to table object with properties
+*/
+inline std::unique_ptr<gd::table::dto::table> CApplication::PROPERTY_ToTable() const
+{
+   auto ptable_ = std::make_unique<gd::table::dto::table>( 0u, 
+      std::vector<std::tuple<std::string_view, std::string_view>>{{"rstring", "key"}, {"rstring", "value"} }, 
+      gd::table::tag_prepare{} );
+
+   for( const auto& it : m_vectorProperty ) 
+   {
+      auto row_ = ptable_->row_add_one();
+      ptable_->cell_set( row_, 0u, it.first, gd::table::tag_convert{} );
+      ptable_->cell_set( row_, 1u, it.second, gd::table::tag_convert{} );
+   }
+
+   return std::move( ptable_ );
 }
 
 

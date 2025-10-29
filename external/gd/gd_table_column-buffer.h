@@ -911,6 +911,7 @@ public:
 
    unsigned cell_get_length( uint64_t uRow, unsigned uColumn ) const noexcept;
 
+   // ### set methods for cells in table
    void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue );
    void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue );
    void cell_set( uint64_t uRow, const std::string_view& stringAlias, const gd::variant_view& variantviewValue, tag_alias );
@@ -934,6 +935,14 @@ public:
    void cell_set( const range& rangeSet, const gd::variant_view& variantviewValue );
    void cell_set( const range& rangeSet, const gd::variant_view& variantviewValue, tag_convert );
 
+   // ### variant overloads for cell_set
+
+   template<typename TYPE> typename std::enable_if<std::is_same<typename std::decay<TYPE>::type, gd::variant>::value>::type
+   cell_set(uint64_t uRow, unsigned uColumn, TYPE&& variantValue, tag_convert) { cell_set( uRow, uColumn, variantValue.as_variant_view(), tag_convert{}); }
+   template<typename TYPE> typename std::enable_if<std::is_same<typename std::decay<TYPE>::type, gd::variant>::value>::type
+   cell_set(uint64_t uRow, const std::string_view& stringName, TYPE&& variantValue, tag_convert) { cell_set( uRow, stringName, variantValue.as_variant_view(), tag_convert{}); }
+
+   
    // ## find methods 0TAG0find.table_column_buffer
 
    int64_t find( unsigned uColumn, const gd::variant_view& variantviewFind ) const noexcept { return find( uColumn, 0, get_row_count(), variantviewFind ); }
