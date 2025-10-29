@@ -3470,9 +3470,10 @@ std::string arguments::print_s(const_pointer pPosition, uint32_t uPairType)
 
 void arguments::print_name_s( const_pointer pPosition, std::string& stringPrint )
 {
-   if( *pPosition == eType_ParameterName )
+   if( is_name_s( pPosition ) == true )
    {
-      stringPrint.append( reinterpret_cast<const char*>( pPosition+ 2), *(pPosition + 1) );
+      auto stringName = get_name_s(pPosition);
+      stringPrint.append( stringName );
    }
 }
 
