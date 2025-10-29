@@ -44,6 +44,10 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
    argumentsFileHarvest.append( options_.get_arguments(), {"segment", "icase", "word"});
    argumentsFileHarvest.append("size", true);                                 // always get size
 
+#ifndef NDEBUG
+   std::string stringHarvest_d = gd::argument::shared::debug::print(  argumentsFileHarvest );
+#endif //
+
 	// ## perform the pattern operation if found ..............................
 
    if( options_.exists("pattern") == true )                                    // 
