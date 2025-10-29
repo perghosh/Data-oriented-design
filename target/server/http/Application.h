@@ -67,8 +67,6 @@ public:
    /// Method that can be used to harvest main arguments
    std::pair<bool, std::string> Main( int iArgumentCount, char* ppbszArgument[], std::function<bool ( const std::string_view&, const gd::variant_view& )> process_ );
 
-   /// Initialize application to connect based on command line arguments
-   std::pair<bool, std::string> Initialize(gd::cli::options& optionsApplication);
    /// Initialize application to connect, load needed data and other stuff to make it work
    std::pair<bool, std::string> Initialize();
    /// Use this for clean up
@@ -135,8 +133,6 @@ public:
 
    // ## free functions ------------------------------------------------------------
 public:
-   //static std::pair<bool, std::string> Start( CApplication* papplication );
-   static int Main_s( int iArgumentCount, char* ppbszArgument[] );
 
    /// Prepare application options for command line
    void Prepare_s( gd::cli::options& optionsApplication );

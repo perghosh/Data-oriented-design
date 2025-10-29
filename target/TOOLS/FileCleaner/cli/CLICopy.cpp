@@ -37,7 +37,7 @@ std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocum
 
    if (options_.exists("target") == true)
    {
-      argumentsFileHarvest.append(options_.get_arguments(), { "filter", "overwrite", "pattern", "rpattern", "segment", "newer", "where", "preview"});
+      argumentsFileHarvest.append(options_.get_arguments(), { "filter", "overwrite", "pattern", "rpattern", "segment", "newer", "where", "preview", "icase", "word"});
 
       auto result_ = CopyFiles_g(options_["target"].as_string(), argumentsFileHarvest, pdocument);
       if( result_.first == false ) return result_;
