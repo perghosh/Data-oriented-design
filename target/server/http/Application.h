@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "gd/gd_database.h"
+#include "gd/gd_table_arguments.h"
 
 #include "HttpServer.h"
 
@@ -80,7 +81,7 @@ public:
 
 /** \name SERVER
 *///@{
-   std::pair<bool, std::string> SERVER_Start();
+   std::pair<bool, std::string> SERVER_Start( unsigned uIndex = 0 );
 //@}
 
 
@@ -104,6 +105,16 @@ public:
     /// Read configuration file, reads settings from xml or json file
    std::pair<bool, std::string> CONFIGURATION_Read( const std::string_view& stringFileName );
 //@}
+
+/** \name SITE
+*///@{
+
+   /// Add site entry
+   void SITE_Add( std::string_view stringIp, uint32_t uPort, std::string_view stringFolder );
+   /// Get site folder for row
+   std::string_view SITE_GetFolder( uint64_t uRow ) const;
+//@}
+
 
 
 
@@ -129,6 +140,8 @@ public:
    std::mutex m_mutexDatabase;   ///< Handle database locking
    gd::database::database_i* m_pdatabase{}; ///< active database
    std::vector<gd::database::database_i*> m_vectorDatabase; ///< list of databases (for most situations only one database is used)
+
+   std::unique_ptr<gd::table::arguments::table> m_ptableSite;  ///< table holding site information like ip and root folder, port etc.
 
 
    // ## free functions ------------------------------------------------------------

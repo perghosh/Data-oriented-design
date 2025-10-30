@@ -72,6 +72,8 @@ _GD_TABLE_BEGIN
 _GD_TABLE_BEGIN
 #endif
 
+// ## 
+
 /// tag dispatcher for speed up unnecessary assignments
 struct tag_undefined {};
 /// tag dispatcher used to construct object where null values are valid
@@ -107,6 +109,7 @@ struct tag_range {};
 /// tag dispatcher for measurement handling
 struct tag_measurement {};
 
+// ## variant related tag dispatchers
 
 /// tag dispatcher used for methods working with variant object
 struct tag_variant {};
@@ -116,8 +119,17 @@ struct tag_variant_view {};
 struct tag_arguments {};
 /// tag dispatcher used for methods working with column object 
 struct tag_column_variant {};
+
+// ## tag dispatchers for sorting and searching
+
 /// tag dispatcher used for methods working with something where the first is sorted
 struct tag_first_sorted {};
+/// tag dispatcher for selection sort
+struct tag_sort_selection {};
+/// tag dispatcher for bubble sort
+struct tag_sort_bubble {};
+
+// ## tag dispatchers for buffer and raw operations, how data is accessed
 
 /// tag dispatcher used for buffer operations
 using tag_buffer = gd::types::tag_buffer;
@@ -128,16 +140,15 @@ struct tag_pointer {};
 /// tag dispatcher used for operations related to text
 struct tag_text {};
 
-/// ## tag dispatchers for sorting
-/// tag dispatcher for selection sort
-struct tag_sort_selection {};
-/// tag dispatcher for bubble sort
-struct tag_sort_bubble {};
+
+// ## tag dispatchers for table structure operations
 
 /// Operation on specified row
 struct tag_row {};
 /// Operation on specified column
 struct tag_column {};
+
+// ## tag dispatchers for text parsing and conversion
 
 /// tag dispatcher used when text is sent as argument and should be parsed to extract values.
 struct tag_parse {};
@@ -153,6 +164,12 @@ struct tag_rows {};
 struct tag_body {};
 /// tag dispatcher used for reference operations
 struct tag_reference {};
+
+// ## C++ related tag dispatchers
+
+using tag_variadic = gd::types::tag_variadic;
+
+
 
 
 /**
