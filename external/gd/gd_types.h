@@ -293,6 +293,9 @@ struct tag_argument {};
 /// namespace used in some form
 struct tag_namespace {}; 
 
+/// variadic is used in some form, like functions with variable number of arguments
+struct tag_variadic {};    
+
 /// declare pointer to character main type as global 
 extern const uint8_t puCharType_g[0x100];
 

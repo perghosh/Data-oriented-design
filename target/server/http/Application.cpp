@@ -117,8 +117,21 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 }
 
 
+/** --------------------------------------------------------------------------- @CODE [tag: initialize] [description: Initialize application]
+ * @brief Initializes the application by setting up base data, reading configuration files, and configuring logging settings.
+ * @return A pair consisting of a boolean indicating success or failure, and a string containing an error message if applicable.
+ */
 std::pair<bool, std::string> CApplication::Initialize()
 {
+   { // ## Initialize base data used in application
+      using namespace gd::table::arguments;
+      unsigned uTableFlags = table::eTableStateNull32|table::eTableFlagArguments;
+
+      // Create table with columns : key (uint32), ip (string 32), root (rstring)
+      m_ptableSite = std::make_unique<gd::table::arguments::table>(uTableFlags, 
+         std::initializer_list< std::tuple< std::string_view, unsigned, std::string_view > >( { { "uint32", 0u, "key"  }, { "string", 32u, "ip"}, { "uint32", 0, "port"}, { "rstring", 0u, "root"} } ), gd::table::tag_prepare{}); 
+   }
+
    {  // ## Read configuration file
       std::string stringConfigurationFile = papplication_g->PROPERTY_Get("configuration").as_string();
 
@@ -223,6 +236,18 @@ std::pair<bool, std::string> CApplication::Initialize()
 
    m_phttpserver = phttpserver;                                               // set http server
 
+   { // ## add main site if values are set ....................................
+      std::string stringIp = papplication_g->PROPERTY_Get("ip").as_string(); // get ip address
+      uint32_t uPort = papplication_g->PROPERTY_Get("port").as_uint(); // get port number
+      std::string stringRoot = papplication_g->PROPERTY_Get("folder-root").as_string(); // get root folder
+      if( stringRoot.empty() == false )
+      {
+         if( uPort == 0 ) uPort = 80;
+         if( stringIp.empty() == true ) stringIp = "127.0.0.1";
+         SITE_Add( stringIp, uPort, stringRoot );
+      }
+   }
+
    return application::basic::CApplication::Initialize();
 }
 
@@ -244,19 +269,20 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
  * @brief Start the web server
  * @return true if ok, false and error information on error
  */
-std::pair<bool, std::string> CApplication::SERVER_Start()
-{
+std::pair<bool, std::string> CApplication::SERVER_Start( unsigned uIndex )
+{                                                                                                  assert( uIndex < m_ptableSite->size() && "You need at least one site to start server");
    unsigned short uPort = 80;
-   std::string stringPort("80");
+   std::string stringIp("127.0.0.1");
+   std::string stringRoot;
 
-   if( PROPERTY_Get("port").empty() == false ) 
-   {
-      uPort = static_cast<unsigned short>( papplication_g->PROPERTY_Get("port").as_uint() );
-      stringPort = std::to_string( uPort );
-   }
+   // ## site
+   uPort = (unsigned short)m_ptableSite->cell_get_variant_view( uIndex, "port" ).as_uint();
+   stringIp = m_ptableSite->cell_get_variant_view(uIndex, "ip").as_string();
+   stringRoot = m_ptableSite->cell_get_variant_view(uIndex, "root").as_string();
+
 
    // ## Prepare ip address
-   std::string stringIp("127.0.0.1");
+   
    if( PROPERTY_Get("ip").empty() == false ) stringIp = papplication_g->PROPERTY_Get("ip").as_string();
 
    // ## Prepare root folder for site on local disk
@@ -276,11 +302,13 @@ std::pair<bool, std::string> CApplication::SERVER_Start()
    int iVersion = 11;
    boost::asio::io_context iocontext_( uThreadCount );
 
-   auto const address = net::ip::make_address(stringIp);
+   
+
+   const boost::asio::ip::address addressIP = net::ip::make_address(stringIp);
    auto const doc_root = std::make_shared<std::string>(stringRootFolder);
-                                                                                                   LOG_DEBUG_RAW("Starting server on http://" & stringIp + ":" & stringPort & " with root folder '" & stringRootFolder & "'");
+                                                                                                   LOG_DEBUG_RAW("Starting server on http://" & stringIp + ":" & uPort & " with root folder '" & stringRootFolder & "'");
    // Create and launch a listening port
-   std::make_shared<listener>( iocontext_,  tcp::endpoint{address, uPort}, doc_root)->run();
+   std::make_shared<listener>( iocontext_,  tcp::endpoint{addressIP, uPort}, doc_root)->run();
 
    std::vector<std::thread> vectorThread;
    vectorThread.reserve(uThreadCount - 1);
@@ -433,6 +461,12 @@ std::pair<bool, std::string> CApplication::CONFIGURATION_Read( const std::string
    }
                                                                                                    LOG_DEBUG_RAW( "Configuration read from file: " & stringFileName );
    return { true, "" };
+}
+
+void CApplication::SITE_Add(std::string_view stringIp, uint32_t uPort, std::string_view stringFolder)
+{
+   auto uRow = m_ptableSite->row_add_one();
+   m_ptableSite->row_set(uRow, gd::table::tag_variadic{}, gd::table::tag_convert{}, uRow + 1, stringIp, uPort, stringFolder);
 }
 
 

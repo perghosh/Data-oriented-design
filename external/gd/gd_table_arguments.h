@@ -552,6 +552,18 @@ public:
    void row_set( uint64_t uRow, const unsigned* puColumn, const std::string_view& stringRowValue, char chSplit, tag_parse );
    bool row_set( uint64_t uRow, unsigned uFirst, const std::string_view& stringRowValue, char chSplit, std::function< bool( std::vector<std::string>& vectorValue )> callback_, tag_parse );
    bool row_set(uint64_t uRow, const unsigned* puColumn, const std::string_view& stringRowValue, char chSplit, std::function< bool( std::vector<std::string>& vectorValue )> callback_, tag_parse);
+
+   /// variadic templates for row_set
+
+   template<typename... ARGUMENTS>
+   void row_set(uint64_t uRow, tag_variadic, ARGUMENTS&&... arguments_) { row_set(uRow, std::initializer_list<gd::variant_view>{gd::variant_view(std::forward<ARGUMENTS>(arguments_))...}); }
+   template<typename... ARGUMENTS>
+   void row_set(uint64_t uRow, unsigned uStart, tag_variadic, ARGUMENTS&&... arguments_) { row_set(uRow, uStart, std::initializer_list<gd::variant_view>{gd::variant_view(std::forward<ARGUMENTS>(arguments_))...}); }
+   template<typename... ARGUMENTS>
+   void row_set(uint64_t uRow, tag_variadic, tag_convert, ARGUMENTS&&... arguments_) { row_set(uRow, std::initializer_list<gd::variant_view>{gd::variant_view(std::forward<ARGUMENTS>(arguments_))...}, tag_convert{}); }
+   template<typename... ARGUMENTS>
+   void row_set(uint64_t uRow, unsigned uStart, tag_variadic, tag_convert, ARGUMENTS&&... arguments_) { row_set(uRow, uStart, std::initializer_list<gd::variant_view>{gd::variant_view(std::forward<ARGUMENTS>(arguments_))...}, tag_convert{}); }
+
    void row_set_null( uint64_t uRow );
    void row_set_null( uint64_t uFrom, uint64_t uCount );
    void row_set_range( uint64_t uRow, const gd::variant_view variantviewSet, tag_convert ) { row_set_range( uRow, 0, get_column_count(), variantviewSet, tag_convert{}); }
