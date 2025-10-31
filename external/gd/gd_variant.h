@@ -323,6 +323,7 @@ public:
 #if defined(__cpp_char8_t)
    void operator=(const char8_t* v) { clear(); m_uType = variant_type::eTypeUtf8String|variant_type::eFlagAllocate; m_uSize = (unsigned int)strlen((const char*)v); m_V.putf8 = (char8_t*)allocate(  m_uSize + 1u ); memcpy( m_V.putf8, v,  m_uSize + 1u ); }
 #endif
+   void operator=( const std::string& v ) { clear(); m_uType = variant_type::eTypeString|variant_type::eFlagAllocate; m_uSize = (unsigned int)v.length(); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize + 1u); }
 
    int32_t operator+(int32_t v) { return m_V.int32 + v; }
    uint32_t operator+(uint32_t v) { return m_V.uint32 + v; }

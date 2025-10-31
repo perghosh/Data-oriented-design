@@ -437,7 +437,9 @@ public:
    // ## CLI oprations (CLI = command line interface)
 
    /// Prompt user for input, adds values to arguments from the prompt
-   static std::pair<bool, std::string>  CliPrompt_s(gd::cli::options* poptionsApplication);
+   static std::pair<bool, std::string> CliPrompt_s(gd::cli::options* poptionsApplication);
+   /// Set value based on settings in arguments
+   static std::pair<bool, std::string> CliSetVariable_s( const gd::argument::arguments& arguments_, gd::variant* pvariantValue );
    /// Setup logging based on command line arguments
    static bool CliLogging_s(gd::cli::options* poptionsApplication);
 

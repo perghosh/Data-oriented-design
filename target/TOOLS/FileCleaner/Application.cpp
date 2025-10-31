@@ -2973,6 +2973,39 @@ std::pair<bool, std::string> CApplication::CliPrompt_s(gd::cli::options* poption
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Sets a variable's value based on rules defined in arguments.
+ * @param arguments_ The arguments containing the rules.
+ * @param pvariantValue The variant to set the value on.
+ * @return A pair indicating success or failure, along with an error message if applicable.
+ */
+std::pair<bool, std::string> CliSetVariable_s(const gd::argument::arguments& arguments_, gd::variant* pvariantValue)
+{
+   if( arguments_["ask"].is_true() == true )
+   {
+      std::string stringDescription = arguments_["description"].as_string();
+      if( stringDescription.empty() == false )
+      {
+         std::cout << stringDescription << std::endl;                         // Print description if provided
+      }
+
+      std::string stringValue;
+      std::getline(std::cin, stringValue);                                    // Get user input
+
+      if( pvariantValue != nullptr )
+      {
+         *pvariantValue = stringValue;                                        // Set value to variant
+      }
+
+      if( stringValue.empty() == true ) 
+      {
+         return { false, "No value provided for variable" };
+      }
+   }
+
+   return { true, "" };
+}
+
 bool CApplication::CliLogging_s(gd::cli::options* poptionsApplication)
 {
    bool bSetLogging = false;
