@@ -33,19 +33,37 @@
  * ### Example Usage
  * Iterate and print values in `arguments`:
  * \code
- * void print(const gd::argument::arguments& args) {
- *    for(auto pos = args.next(); pos != nullptr; pos = args.next(pos)) {
- *       auto name = gd::argument::arguments::get_name_s(pos);
- *       auto value = gd::argument::arguments::get_argument_s(pos).as_variant_view();
- *       std::cout << "Name: " << name << ", Value: " << value.as_string() << "\n";
- *    }
- * }
+void print(const gd::argument::arguments& args) {
+   for(auto pos = args.next(); pos != nullptr; pos = args.next(pos)) {
+      auto name = gd::argument::arguments::get_name_s(pos);
+      auto value = gd::argument::arguments::get_argument_s(pos).as_variant_view();
+      std::cout << "Name: " << name << ", Value: " << value.as_string() << "\n";
+   }
+}
  * \endcode
  *
+ * Set and get values:
+ * \code
+ gd::argument::arguments args;
+ args.set("key1", 42);
+ args.set("key2", "value");
+ std::cout << "Key1: " << args["key1"].get<int>() << "\n";
+ std::cout << "Key2: " << gd::argument::get_g<std::string>( args["key2"] ) << "\n";   
+ args.set("key3", 100.01);
+ std::cout << "Key3: " << args["key3"].as_string() << "\n";
+ args.append("key4", 200.02);
+ std::cout << "Key4: " << args["key4"].as_int() << "\n";
+ args.append( 1000 );
+ std::cout << "index 4 (zero based): " << args[4].as_double() << "\n";
+ * \endcode
+ * 
  * ### Memory Management
  * The class can either own its buffer (allocated on the heap) or use an externally provided buffer. If the buffer is owned,
  * it is automatically freed in the destructor.
  * 
+ */
+
+/**
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0argument` - Represents a single argument in `arguments`.
  * - `0TAG0iterator` - Provides forward traversal of arguments in `arguments`.
@@ -431,6 +449,7 @@ public:
       int          as_int() const { return get_int(); }
       int64_t      as_int64() const { return get_int64(); }
       uint64_t     as_uint64() const { return get_uint64(); }
+      double       as_double() const { return get_double(); }
       std::string  as_string() const { return get_string(); };
       std::string  as_utf8() const { return get_utf8(); };
       gd::variant  as_variant() const { return get_variant(); }
@@ -916,6 +935,10 @@ public:
    arguments& set(const std::string_view& stringName, uint32_t v) { return set(stringName, eTypeNumberUInt32, (const_pointer)&v, sizeof(uint32_t)); }
    arguments& set(const std::string_view& stringName, int64_t v) { return set(stringName, eTypeNumberInt64, (const_pointer)&v, sizeof(int64_t)); }
    arguments& set(const std::string_view& stringName, uint64_t v) { return set(stringName, eTypeNumberUInt64, (const_pointer)&v, sizeof(uint64_t)); }
+
+   arguments& set(const std::string_view& stringName, float v) { return set(stringName, eTypeNumberFloat, (const_pointer)&v, sizeof(float)); }
+   arguments& set(const std::string_view& stringName, double v) { return set(stringName, eTypeNumberDouble, (const_pointer)&v, sizeof(double)); }
+
    arguments& set(const std::string_view& stringName, const char* v) { return set(stringName, std::string_view(v) ); }
    arguments& set_uuid(const std::string_view& stringName, const uint8_t* puData) { return set(stringName, eTypeNumberGuid, (const_pointer)puData, 16); }
 
@@ -1127,7 +1150,7 @@ public:
    /// return first value for name as optional
    std::optional<gd::variant_view> get_variant_view( const std::string_view& stringName, gd::types::tag_optional ) const;
 //@}
-
+                                                                                                   // @CODE [tag: object, glue] [description: Methods to get and set objects into arguments object, add the `get_object` method as free function]
    template<typename OBJECT>
    void get_object( const std::string_view& stringPrefixFind, OBJECT& object_ );
    template<typename OBJECT>
@@ -1404,6 +1427,7 @@ public:
 };
 
 /// Return value as specified template type
+/// Sample usage: `arguments a_( { {"int-number", 100 } } ); a_[0u].get<int>();`
 template<typename TYPE> 
 TYPE arguments::argument::get() const {
    static_assert(std::is_arithmetic_v<TYPE> || 
@@ -1783,6 +1807,17 @@ inline bool arguments::compare(const std::string_view& stringName, const argumen
 }
 
 // ================================================================================================
+// =============================================================================== GLOBAL FUNCTIONS
+// ================================================================================================
+
+template< typename TYPE>
+TYPE get_g( const arguments::argument& argument_ )
+{
+   return argument_.template get<TYPE>();
+}
+
+
+// ================================================================================================
 // ======================================================================================= ITERATOR
 // ================================================================================================
 
@@ -2018,7 +2053,6 @@ constexpr std::string_view arguments::type_name_s(uint32_t uType)
       return "ERROR";
    }
 }
-
 
 _GD_ARGUMENT_END
 
