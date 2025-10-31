@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+   <properties>
+      <property key="port" value="8001"/>
+      <property key="folder-root" value="D:\temp\www"/>
+   </properties>
+</configuration>
