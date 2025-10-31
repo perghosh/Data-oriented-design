@@ -3284,9 +3284,11 @@ unsigned int gd::argument::arguments::sizeof_s(uint32_t uNameLength, param_type 
 
 /// ---------------------------------------------------------------------------
 /// get type number from position, make sure position points to type
-constexpr unsigned int arguments::type_s(const_pointer pposition) noexcept {                       assert( *pposition < CType_MAX );
-   uint32_t uType = *pposition;                                                // get value type
-   return uType;
+unsigned int arguments::type_s(const_pointer pposition) noexcept 
+{
+   pposition = move_to_value_s( pposition );                                                       assert( type_s( *pposition ) < CType_MAX );
+   uint8_t uType = *pposition;                                                // get value type
+   return static_cast<unsigned int>( uType );
 }
 
 

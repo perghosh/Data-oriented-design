@@ -1345,7 +1345,7 @@ public:
    static void print_value_s(const_pointer pPosition, std::string& stringPrint);
 
    /// ## find out type for value
-   constexpr static unsigned int type_s(const_pointer pPosition) noexcept;
+   static unsigned int type_s(const_pointer pPosition) noexcept;
    constexpr static unsigned int type_s(unsigned int uType) { return uType & ~eType_MASK; } // only type (no size)
    constexpr static unsigned int ctype_s(unsigned int uType) { return uType & ~eCType_MASK; } // last byte (type and size)
    constexpr static unsigned int type_number_s(unsigned int uType) { return uType & ~eTypeNumber_MASK; }
@@ -1907,15 +1907,17 @@ struct iterator_named
       return it;
    }
 
-   // Name access methods
+   /// Type number for current argument
+   unsigned type_number() const { return ARGUMENTS::type_s(buffer_offset()); }
+
+   // Is current value named
    bool is_name() const {                                                                          assert(m_parguments->verify_d(buffer_offset()));
       return ARGUMENTS::is_name_s(buffer_offset());
    }
 
+   /// Get name as std::string_view
    std::string_view name() const {                                                                 assert(m_parguments->verify_d(buffer_offset()));
-      if( ARGUMENTS::is_name_s(buffer_offset()) ) {
-         return ARGUMENTS::get_name_s(buffer_offset());
-      }
+      if( ARGUMENTS::is_name_s(buffer_offset()) ) { return ARGUMENTS::get_name_s(buffer_offset()); }
       return std::string_view{};
    }
 
