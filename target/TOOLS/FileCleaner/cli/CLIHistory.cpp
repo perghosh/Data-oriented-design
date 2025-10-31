@@ -687,15 +687,19 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
 {
    // ## Read the history file into the table
 
+   std::string stringRun = argumentsRun["run"].as_string();                                        LOG_DEBUG_RAW( "==> Index/name to run: " + stringRun );
+
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
-   auto result_ = XML_ReadFile_s(*ptable, argumentsRun, [pdocument](std::string_view message) {
+
+   gd::argument::arguments argumentsRead( argumentsRun );
+   if( stringRun.empty() == false ) { argumentsRead.set( "select", stringRun ); }
+   auto result_ = XML_ReadFile_s(*ptable, argumentsRead, [pdocument](std::string_view message) {
       if( pdocument ) { pdocument->MESSAGE_Display(message); }
    }); 
 
    if( result_.first == false ) { return result_; }                           
 
    std::string stringCommand;
-   std::string stringRun = argumentsRun["run"].as_string();                                        LOG_DEBUG_RAW( "==> Index/name to run: " + stringRun );
 
    int64_t iRow = -1;
    if( gd::math::type::is_unsigned(stringRun) ) { iRow = std::stoi(stringRun) - 1; }
@@ -913,15 +917,40 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
    if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
    
    int iRowCount = 0;
+   bool bSetVariable = false;
+   if( argumentsTable["variable"].is_true() == true ) bSetVariable = true;
+
+   gd::variant variantSelect = argumentsTable["select"]; // if only one entry is selected, for example if selected entry is to be run                   
 
    // Iterate through each entry  
+   unsigned uIndex = 0;
    for( auto entry : xmlnodeEntries.children("entry") )
    {
+      uIndex++;
+
+      // ## Check if we only want a specific entry
+
+      if( variantSelect.is_null() == false )
+      {
+         if( variantSelect.is_string() == true )
+         {
+            std::string stringAlias = entry.child("alias").text().get();
+            if( stringAlias != variantSelect.as_string() ) { continue; }       // Skip this entry if it does not match the selected name
+         }
+         else if( variantSelect.as_uint() != uIndex ) { continue; }            // Skip this entry if it does not match the selected index
+      }
+
       std::string stringDate = entry.child("date").text().get();
       std::string stringName = entry.child("name").text().get();
       std::string stringLine = entry.child("line").text().get();
       std::string stringAlias = entry.child("alias").text().get();
       std::string stringDescription = entry.child("description").text().get();
+
+      if( bSetVariable == true )
+      {
+         // ## Prepare line for the entry .....................................
+      }
+
       // Add the entry to the table  
       auto uRow = tableHistory.row_add_one();
 

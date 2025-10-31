@@ -44,17 +44,28 @@ void print(const gd::argument::arguments& args) {
  *
  * Set and get values:
  * \code
- gd::argument::arguments args;
- args.set("key1", 42);
- args.set("key2", "value");
- std::cout << "Key1: " << args["key1"].get<int>() << "\n";
- std::cout << "Key2: " << gd::argument::get_g<std::string>( args["key2"] ) << "\n";   
- args.set("key3", 100.01);
- std::cout << "Key3: " << args["key3"].as_string() << "\n";
- args.append("key4", 200.02);
- std::cout << "Key4: " << args["key4"].as_int() << "\n";
- args.append( 1000 );
- std::cout << "index 4 (zero based): " << args[4].as_double() << "\n";
+gd::argument::arguments args;
+args.set("key1", 42);
+args.set("key2", "value");
+std::cout << "Key1: " << args["key1"].get<int>() << "\n";
+std::cout << "Key2: " << gd::argument::get_g<std::string>( args["key2"] ) << "\n";   
+args.set("key3", 100.01);
+std::cout << "Key3: " << args["key3"].as_string() << "\n";
+args.append("key4", 200.02);
+std::cout << "Key4: " << args["key4"].as_int() << "\n";
+args.append( 1000 );
+std::cout << "index 4 (zero based): " << args[4].as_double() << "\n";
+ * \endcode
+ * 
+ * Named iteration:
+ * \code
+gd::argument::arguments args8( {{ {"int-number", 100 }, {"float-number", 100.01}, {"string-value", "value"}, {"bool-value", true},
+   {"uint64-number", (uint64_t)1000}, {"int64-number", (int64_t)-1000}, {"double-number", 200.02}, {"wstring-value", L"wstring"} } });
+
+for( auto it = args8.named_begin(); it != args8.named_end(); it++ )
+{
+   std::cout << "Key: " << it.name() << ", Type: " << it.type_number() << ", Value: " << it.as_string() << "\n";
+}
  * \endcode
  * 
  * ### Memory Management
