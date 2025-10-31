@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "gd/gd_types.h"
+#include "../gd_arguments.h"
 
 
 #ifndef _GD_PARSE_FORMAT_STRING_BEGIN

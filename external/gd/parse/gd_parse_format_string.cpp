@@ -102,9 +102,9 @@ std::string format_string( const std::string_view& stringFormat, const gd::argum
       // ## Handle empty placeholder {} - use auto-increment index
       if(stringPlaceholder.empty())
       {
-         if(uAutoIndex < args.size())
+         if(uAutoIndex < argumentsValue.size())
          {
-            auto value = argumentsValue[uAutoIndex];
+            auto value = argumentsValue[(unsigned)uAutoIndex];
             stringResult.append(value.as_string());
             uAutoIndex++;
          }
@@ -122,10 +122,10 @@ std::string format_string( const std::string_view& stringFormat, const gd::argum
          try
          {
             size_t uIndex = std::stoull(std::string(stringPlaceholder));
-            if(uIndex < args.size())
+            if(uIndex < argumentsValue.size())
             {
-               auto value = args[uIndex];
-               stringResult.append(value.as_string());
+               auto value_ = argumentsValue[(unsigned)uIndex];
+               stringResult.append(value_.as_string());
             }
             else
             {
@@ -146,7 +146,7 @@ std::string format_string( const std::string_view& stringFormat, const gd::argum
       // ## Named placeholder
       else
       {
-         auto value = args[std::string(stringPlaceholder)];
+         auto value = argumentsValue[std::string(stringPlaceholder)];
          if(value.is_null())
          {
             // Named argument not found, keep placeholder as-is
