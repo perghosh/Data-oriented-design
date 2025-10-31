@@ -16,6 +16,25 @@
  | Debug/Printing      | debug::print(...), debug::print(vector<arguments>&)                                | Methods for printing argument objects and collections for debugging purposes.                  |
  * 
  * 
+ * 
+ * Set and get values:
+ * \code
+ gd::argument::shared::arguments args;
+ args.set("key1", 42);
+ args.set("key2", "value");
+ std::cout << "Key1: " << args["key1"].get<int>() << "\n";
+ std::cout << "Key2: " << gd::argument::get_g<std::string>( args["key2"] ) << "\n";   
+ args.set("key3", 100.01);
+ std::cout << "Key3: " << args["key3"].as_string() << "\n";
+ args.append("key4", 200.02);
+ std::cout << "Key4: " << args["key4"].as_int() << "\n";
+ args.append( 1000 );
+ std::cout << "index 4 (zero based): " << args[4].as_double() << "\n";
+ * \endcode
+ * 
+ */ 
+
+/** 
  * ### 0TAG0 File navigation, mark and jump to often used parts
  * - `0TAG0argument` - Represents a single argument in `arguments`.
  * - `0TAG0iterator` - Provides forward traversal of arguments in `arguments`.
@@ -153,12 +172,12 @@ concept concept_arguments_shared_is_pair_view = requires {
 
 *Iterate values in arguments object and print to console*
  \code
-void print( const gd::argument::arguments& arguments_ )
+void print( const gd::argument::shared::arguments& arguments_ )
 {
    for( auto pPosition = arguments_.next(); pPosition != nullptr; pPosition = arguments_.next(pPosition) )
    {
-      auto stringName = gd::argument::arguments::get_name_s( pPosition );
-      auto value_ = gd::argument::arguments::get_argument_s( pPosition ).as_variant_view();
+      auto stringName = gd::argument::shared::arguments::get_name_s( pPosition );
+      auto value_ = gd::argument::shared::arguments::get_argument_s( pPosition ).as_variant_view();
 
       std::cout << "Name: " << stringName << ", Value: " << value_.as_string() << "\n";
    }
@@ -489,6 +508,7 @@ public:
       int          as_int() const { return get_int(); }
       int64_t      as_int64() const { return get_int64(); }
       uint64_t     as_uint64() const { return get_uint64(); }
+      double       as_double() const { return get_double(); }
       std::string  as_string() const { return get_string(); };
       std::string  as_utf8() const { return get_utf8(); };
       gd::variant  as_variant() const { return get_variant(); }
@@ -977,6 +997,10 @@ public:
    arguments& set(const std::string_view& stringName, uint32_t v) { return set(stringName, eTypeNumberUInt32, (const_pointer)&v, sizeof(uint32_t)); }
    arguments& set(const std::string_view& stringName, int64_t v) { return set(stringName, eTypeNumberInt64, (const_pointer)&v, sizeof(int64_t)); }
    arguments& set(const std::string_view& stringName, uint64_t v) { return set(stringName, eTypeNumberUInt64, (const_pointer)&v, sizeof(uint64_t)); }
+
+   arguments& set(const std::string_view& stringName, float v) { return set(stringName, eTypeNumberFloat, (const_pointer)&v, sizeof(float)); }
+   arguments& set(const std::string_view& stringName, double v) { return set(stringName, eTypeNumberDouble, (const_pointer)&v, sizeof(double)); }
+
    arguments& set(const std::string_view& stringName, const char* v) { return set(stringName, std::string_view(v) ); }
    arguments& set_uuid(const std::string_view& stringName, const uint8_t* puData) { return set(stringName, eTypeNumberGuid, (const_pointer)puData, 16); }
 
@@ -1695,6 +1719,17 @@ inline  arguments arguments::create_s(const std::string_view& stringName, const 
    arguments A(stringName, variantValue, tag_no_initializer_list{});
    return A;
 }
+
+// ================================================================================================
+// =============================================================================== GLOBAL FUNCTIONS
+// ================================================================================================
+
+template< typename TYPE>
+TYPE get_g( const arguments::argument& argument_ )
+{
+   return argument_.template get<TYPE>();
+}
+
 
 
 // ================================================================================================

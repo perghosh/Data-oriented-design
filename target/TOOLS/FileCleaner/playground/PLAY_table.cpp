@@ -76,6 +76,22 @@ static std::string CreateTemporaryFile_s();
 
 */
 
+TEST_CASE("[table] args", "[table]") {
+   gd::argument::arguments a_( { {"int-number", 100 } } ); a_[0u].get<int>();
+
+   gd::argument::shared::arguments args;
+   args.set("key1", 42);
+   args.set("key2", "value");
+   std::cout << "Key1: " << args["key1"].get<int>() << "\n";
+   std::cout << "Key2: " << gd::argument::shared::get_g<std::string>( args["key2"] ) << "\n";   
+   args.set("key3", 100.01);
+   std::cout << "Key3: " << args["key3"].as_string() << "\n";
+   args.append("key4", 200.02);
+   std::cout << "Key4: " << args["key4"].as_int() << "\n";
+   args.append( 1000 );
+   std::cout << "index 4 (zero based): " << args[4].as_double() << "\n";
+}
+
 TEST_CASE("[table] print card", "[table]") {
    using namespace gd::table::dto;
    const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -106,8 +122,7 @@ TEST_CASE("[table] print card", "[table]") {
    }
 
    std::string stringOutput;
-   //stringOutput = gd::table::format::to_string(tablePrint, {1}, 50, 200, gd::types::tag_card{});
-   stringOutput = gd::table::format::to_string(tablePrint, {0,1}, 3, gd::argument::arguments{ { "border", false }, { "row-space", 0 } }, gd::types::tag_card{});
+   stringOutput = gd::table::format::to_string(tablePrint, {0,1}, 50, 200, gd::argument::arguments{ { "border", false }, { "row-space", 0 } }, gd::types::tag_card{});
    std::cout << stringOutput << std::endl;
 
 }
