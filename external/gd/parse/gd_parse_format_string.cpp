@@ -60,15 +60,9 @@ std::string format_string( const std::string_view& stringFormat, const gd::argum
       // ## Find next opening brace
       size_t uBraceStart = stringFormat.find('{', uPosition);
       
-      // ## No more placeholders, append remaining text
-      if(uBraceStart == std::string_view::npos)
-      {
-         stringResult.append(stringFormat.substr(uPosition));
-         break;
-      }
+      if(uBraceStart == std::string_view::npos) { stringResult.append(stringFormat.substr(uPosition)); break; } // No more placeholders, append remaining text
       
-      // ## Append text before the brace
-      stringResult.append(stringFormat.substr(uPosition, uBraceStart - uPosition));
+      stringResult.append(stringFormat.substr(uPosition, uBraceStart - uPosition)); // Append text before the brace
       
       // ## Check for escaped brace {{
       if(uBraceStart + 1 < stringFormat.size() && stringFormat[uBraceStart + 1] == '{')
@@ -111,9 +105,7 @@ std::string format_string( const std::string_view& stringFormat, const gd::argum
          else
          {
             // Index out of bounds, keep placeholder as-is
-            stringResult.append("{");
-            stringResult.append(stringPlaceholder);
-            stringResult.append("}");
+            stringResult.append("{").append(stringPlaceholder).append("}");
          }
       }
       // ## Check if placeholder is numeric (positional argument)
@@ -130,34 +122,25 @@ std::string format_string( const std::string_view& stringFormat, const gd::argum
             else
             {
                // Index out of bounds, keep placeholder as-is
-               stringResult.append("{");
-               stringResult.append(stringPlaceholder);
-               stringResult.append("}");
+               stringResult.append("{").append(stringPlaceholder).append("}");
             }
          }
          catch(...)
          {
             // Invalid index format, keep placeholder as-is
-            stringResult.append("{");
-            stringResult.append(stringPlaceholder);
-            stringResult.append("}");
+            stringResult.append("{").append(stringPlaceholder).append("}");
          }
       }
-      // ## Named placeholder
+      // ### Named placeholder
       else
       {
-         auto value = argumentsValue[std::string(stringPlaceholder)];
-         if(value.is_null())
+         auto value = argumentsValue[stringPlaceholder];
+         if(value.is_null() == false)
          {
             // Named argument not found, keep placeholder as-is
-            stringResult.append("{");
-            stringResult.append(stringPlaceholder);
-            stringResult.append("}");
+            stringResult.append("{").append(stringPlaceholder).append("}");
          }
-         else
-         {
-            stringResult.append(value.as_string());
-         }
+         else { stringResult.append(value.as_string()); }
       }
       
       uPosition = uBraceEnd + 1;

@@ -52,7 +52,7 @@ public:
    /// @brief Type alias for pointer to table, which can be either a pointer to `gd::table::dto::table` or a pointer to `gd::table::arguments::table`.
    using pointer_table_t = std::variant< gd::table::dto::table*, gd::table::arguments::table* >;
 
-// ## construction -------------------------------------------------------------
+   // ## @API [type: construct] [description: Construct document.] 
 public: // 0TAG0construct.Document
    CDocument() {}
    CDocument(CApplication* papplication) : m_papplication(papplication) { m_arguments.append("name", "default"); }
@@ -91,8 +91,10 @@ public:
 //@}
 
 /** @name FILE
-* File operations work on tables stored in cache and ech table is identified by a string id.
+* ## @API [type: file] 
+       [description: Methods that works on files, often finding information and update tables in cache used to store statistics about files]
 *///@{
+
 
    /// @brief Harvest file information and store it in a table (harvest = collect)
    std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath );
@@ -124,8 +126,9 @@ public:
 //@}
 
 /** \name PROPERTY
-* Property accessors for the documents internal state
-* Properties are stored in the `m_arguments` member and it can store any kind of data. Each property is identified by a string name.
+ * ## @API [type: property] 
+        [description: Property accessors for the documents internal state]
+        [detail: Properties are stored in the `m_arguments` member and it can store any kind of data. Each property is identified by a key.]
 *///@{
    gd::argument::shared::arguments& PROPERTY_Get() { return m_arguments; }
    const gd::argument::shared::arguments& PROPERTY_Get() const { return m_arguments; }
@@ -140,11 +143,11 @@ public:
 
 
 /** \name CACHE
- * Documents can cache information and support multiple named caches.
- * Each cache is stored in a named table, which is kept in the document's `m_vectorTableCache` member.
- * Each table also stores a string ID that identifies it within the cache.
- * Tables may also be marked as temporary, meaning they should be removed as soon as they are no longer needed.
- *    CDocument is then used as a data source for moving data between operations.
+ * ## @API [type: table-cache] 
+        [description: Documents can cache information in tables that are named.]
+        [detail: "Each cache is stored in a named table, which is kept in the document's `m_vectorTableCache` member
+         Tables may also be marked as temporary, meaning they should be removed as soon as they are no longer needed."]
+* 
  *///@{
    /// Prepare cache information structure
    void CACHE_Prepare( const std::string_view& stringId );
@@ -204,6 +207,8 @@ public:
 //@}
 
 /** \name MESSAGE
+* @API [type: message] 
+       [description: Pass information to the active output, message is just text that in some way is to be displayed to user]
 *///@{
    /// Display message to user
    void MESSAGE_Display( const std::string_view& stringMessage );
@@ -215,13 +220,15 @@ public:
    /// Display message to user with progress information
    void MESSAGE_Progress( const std::string_view& stringMessage );
    void MESSAGE_Progress( const std::string_view& stringMessage, const gd::argument::arguments& arguments_ );
-
-   //void MESSAGE
+   /// Prompt user for value
+   void MESSAGE_PromptForValue( std::string stringName, std::string stringDescription, gd::variant* pvariantValue );
 
 //@}
 
 
 /** \name ERROR
+* ## @API [type: error] 
+       [description: Document are able to collect error information, for example doing a larger operation where some tasks fail bit it isn't fatal, then store error in document for later display]
 *///@{
 /// Add error to internal list of errors
    void ERROR_Add( const std::string_view& stringError );

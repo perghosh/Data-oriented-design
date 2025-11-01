@@ -3136,6 +3136,14 @@ void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd
    m_papplication->PrintProgress(stringMessage, argumentsMessage );           // display progress message in application
 }
 
+void CDocument::MESSAGE_PromptForValue( std::string stringName, std::string stringDescription, gd::variant* pvariantValue )
+{                                                                                                  assert( pvariantValue != nullptr );
+   auto result_ = CApplication::CliSetVariable_s( {{"ask", true}, {"description", stringDescription}}, pvariantValue);
+   if( result_.first == false )
+   {
+      ERROR_Add( result_.second );
+   }
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Add error to internal list of errors

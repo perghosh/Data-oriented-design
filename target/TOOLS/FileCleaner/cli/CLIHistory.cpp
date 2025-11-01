@@ -26,6 +26,7 @@
 #include "gd/gd_file.h"
 #include "gd/math/gd_math_type.h"
 #include "gd/math/gd_math_string.h"
+#include "gd/parse/gd_parse_format_string.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -76,6 +77,8 @@ static std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableH
 inline std::pair<bool, std::string>  XML_ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable) {
    return XML_ReadFile_s( tableHistory, argumentsTable, [](std::string_view){ } ); 
 }
+/// Read selected history entry from XML file into history table
+static std::pair<bool, std::string> XML_ReadFileEntry_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& arguments_, CDocument* pdocument );
 
 static std::pair<bool, std::string> XML_Write_s(std::string_view stringHistoryFile, const gd::table::dto::table& tableHistory, std::string_view stringSection);
 
@@ -685,30 +688,45 @@ std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argume
  */
 std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument)
 {
+   std::pair<bool, std::string> result_;
    // ## Read the history file into the table
 
-   std::string stringRun = argumentsRun["run"].as_string();                                        LOG_DEBUG_RAW( "==> Index/name to run: " + stringRun );
+   std::string stringEntry = argumentsRun["run"].as_string();                                      LOG_DEBUG_RAW( "==> Index/name to run: " + stringEntry );
 
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
    gd::argument::arguments argumentsRead( argumentsRun );
-   if( stringRun.empty() == false ) { argumentsRead.set( "select", stringRun ); }
-   auto result_ = XML_ReadFile_s(*ptable, argumentsRead, [pdocument](std::string_view message) {
-      if( pdocument ) { pdocument->MESSAGE_Display(message); }
-   }); 
+   if( stringEntry.empty() == false ) 
+   { 
+      if( gd::math::type::is_integer(stringEntry) == true ) 
+      { 
+         int64_t iIndex = std::stoi(stringEntry) - 1; 
+         argumentsRead.set( "select", std::to_string(iIndex) ); 
+      }
+      else { argumentsRead.set( "select", stringEntry ); }
+
+      argumentsRead.append("variable", true);                                 // Enable variable substitution when reading the history file
+      result_ = XML_ReadFileEntry_s(*ptable, argumentsRead, pdocument);
+   }
+   else
+   {
+      result_ = XML_ReadFile_s(*ptable, argumentsRead, [pdocument](std::string_view message) {
+         if( pdocument ) { pdocument->MESSAGE_Display(message); }
+      }); 
+   }
 
    if( result_.first == false ) { return result_; }                           
 
    std::string stringCommand;
 
    int64_t iRow = -1;
-   if( gd::math::type::is_unsigned(stringRun) ) { iRow = std::stoi(stringRun) - 1; }
+   if( gd::math::type::is_unsigned(stringEntry) ) { iRow = std::stoi(stringEntry) - 1; }
    else
    {
-      iRow = ptable->find( "alias", stringRun );
+      iRow = ptable->find( "alias", stringEntry );
    }
 
-   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format( "Invalid row index: {} max is: {} (did you forget -local)", stringRun, ptable->size() ) }; } // Ensure the row index is valid, note that is 1-based index
+   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format( "Invalid row index: {} max is: {} (did you forget -local)", stringEntry, ptable->size() ) }; } // Ensure the row index is valid, note that is 1-based index
 
    // ## Get the command from the specified row and execute it
 
@@ -917,14 +935,58 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
    if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
    
    int iRowCount = 0;
-   bool bSetVariable = false;
-   if( argumentsTable["variable"].is_true() == true ) bSetVariable = true;
 
-   gd::variant variantSelect = argumentsTable["select"]; // if only one entry is selected, for example if selected entry is to be run                   
+   // Iterate through each entry  
+   for( auto entry : xmlnodeEntries.children("entry") )
+   {
+      std::string stringDate = entry.child("date").text().get();
+      std::string stringName = entry.child("name").text().get();
+      std::string stringLine = entry.child("line").text().get();
+      std::string stringAlias = entry.child("alias").text().get();
+      std::string stringDescription = entry.child("description").text().get();
+
+      // Add the entry to the table  
+      auto uRow = tableHistory.row_add_one();
+
+      if( tableHistory.column_exists("index") == true )
+      {
+         //std::string stringRowIndex = std::to_string(uRowCount);
+         tableHistory.cell_set(uRow, "index", iRowCount); // Set the index column if it exists
+         iRowCount++;
+      }
+
+      tableHistory.cell_set(uRow, "date", stringDate);
+      tableHistory.cell_set(uRow, "name", stringName);
+      tableHistory.cell_set(uRow, "line", stringLine);
+      if( stringAlias.empty() == false ) { tableHistory.cell_set(uRow, "alias", stringAlias); }
+      if( stringDescription.empty() == false ) { tableHistory.cell_set(uRow, "description", stringDescription); }
+   }
+   return { true, "" };
+}
+
+std::pair<bool, std::string> XML_ReadFileEntry_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& arguments_, CDocument* pdocument)
+{
+   std::string stringFileName = FILE_GetHistoryFile_s(arguments_);
+
+   if( stringFileName.empty() == true ) { return { false, "No history file found." }; } // No history file found
+
+   pugi::xml_document xmldocument;
+   pugi::xml_parse_result xmlparseresult_ = xmldocument.load_file(stringFileName.c_str());
+   if( !xmlparseresult_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
+
+   // Check if entries exist
+   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("saved");
+   if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
+   
+   int iRowCount = 0;
+   bool bSetVariable = false;
+   if( arguments_["variable"].is_true() == true ) bSetVariable = true;
+
+   gd::variant variantSelect = arguments_["select"]; // if only one entry is selected, for example if selected entry is to be run                   
 
    // Iterate through each entry  
    unsigned uIndex = 0;
-   for( auto entry : xmlnodeEntries.children("entry") )
+   for( auto xmlnodeEntry : xmlnodeEntries.children("entry") )
    {
       uIndex++;
 
@@ -934,21 +996,40 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
       {
          if( variantSelect.is_string() == true )
          {
-            std::string stringAlias = entry.child("alias").text().get();
+            std::string stringAlias = xmlnodeEntry.child("alias").text().get();
             if( stringAlias != variantSelect.as_string() ) { continue; }       // Skip this entry if it does not match the selected name
          }
          else if( variantSelect.as_uint() != uIndex ) { continue; }            // Skip this entry if it does not match the selected index
       }
 
-      std::string stringDate = entry.child("date").text().get();
-      std::string stringName = entry.child("name").text().get();
-      std::string stringLine = entry.child("line").text().get();
-      std::string stringAlias = entry.child("alias").text().get();
-      std::string stringDescription = entry.child("description").text().get();
+      std::string stringDate = xmlnodeEntry.child("date").text().get();
+      std::string stringName = xmlnodeEntry.child("name").text().get();
+      std::string stringLine = xmlnodeEntry.child("line").text().get();
+      std::string stringAlias = xmlnodeEntry.child("alias").text().get();
+      std::string stringDescription = xmlnodeEntry.child("description").text().get();
 
       if( bSetVariable == true )
       {
+         // prepare arguments for variable substitution              6
+         gd::argument::arguments argumentsVariable; 
          // ## Prepare line for the entry .....................................
+         auto children_ = xmlnodeEntry.children("variable");
+         for( auto xmlnodeVariable : children_ )
+         {
+            
+            std::string stringVariableName = xmlnodeVariable.attribute("name").value();
+            std::string stringDescription = xmlnodeVariable.attribute("description").value();
+
+            gd::variant variantValue;
+            pdocument->MESSAGE_PromptForValue(stringVariableName, stringDescription, &variantValue);
+            if( variantValue.empty() == false ) 
+            {
+               argumentsVariable.set( stringVariableName, variantValue.as_variant_view() );
+            }
+         }
+
+         // ## Perform variable substitution .................................
+         stringLine = gd::parse::format::format_string( stringLine, argumentsVariable );
       }
 
       // Add the entry to the table  
@@ -969,6 +1050,7 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
    }
    return { true, "" };
 }
+
 
 /// ---------------------------------------------------------------------------
 /// Generate time string in format "YYYY-MM-DD HH:MM:SS"
