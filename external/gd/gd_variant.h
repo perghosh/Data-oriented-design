@@ -255,8 +255,7 @@ public:
       eLENGTH           = 0x02000000,  ///< item is prefixed with length
    };
 
-
-// construction
+// ## @API [type: construct] [description: construction methods for creating variant instances]
 public:
    variant()               : m_uType(variant_type::eTypeUnknown)    {}
    variant( bool b )       : m_uType(variant_type::eTypeBool)       { m_V.b = b; }
@@ -298,7 +297,8 @@ public:
    variant( const variant& o ) { common_construct( o ); }                        // copy
    variant( variant&& o ) noexcept { move_construct( o ); }                      // move
 
-   // assign
+// ## @API [type: operator] [description: operators like =, +=, -=, +, -]
+
    variant& operator=( const variant& o ) { clear(); common_construct( o ); return *this; }
    variant& operator=( variant&& o ) noexcept { 
       clear();
@@ -343,6 +343,34 @@ public:
    variant& operator-=(int64_t v) { m_V.int64 -= v; return *this; }
    variant& operator-=(uint64_t v) { m_V.uint64 -= v; return *this; }
 
+   operator bool() const      { assert(type_number() == variant_type::eTypeNumberBool); return m_V.b; }
+   operator int8_t() const    { assert(type_number() == variant_type::eTypeNumberInt8); return m_V.int8; }
+   operator int16_t() const   { assert(type_number() == variant_type::eTypeNumberInt16); return m_V.int16; }
+   operator int32_t() const   { assert(type_number() == variant_type::eTypeNumberInt32); return m_V.int32; }
+   operator int64_t() const   { assert(type_number() == variant_type::eTypeNumberInt64); return m_V.int64; }
+   operator uint8_t() const   { assert(type_number() == variant_type::eTypeNumberUInt8); return m_V.uint8; }
+   operator uint16_t() const  { assert(type_number() == variant_type::eTypeNumberUInt16); return m_V.uint16; }
+   operator uint32_t() const  { assert(type_number() == variant_type::eTypeNumberUInt32); return m_V.uint32; }
+   operator uint64_t() const  { assert(type_number() == variant_type::eTypeNumberUInt64); return m_V.uint64; }
+   operator float()  const    { assert(type_number() == variant_type::eTypeNumberFloat); return m_V.f; }
+   operator double() const    { assert(type_number() == variant_type::eTypeNumberDouble); return m_V.d; }
+   operator void*() const     { assert(type_number() == variant_type::eTypeNumberPointer); return m_V.p; }
+   operator const char*() const { assert(type_number() == variant_type::eTypeNumberString || type_number() == variant_type::eTypeNumberUtf8String || type_number() == variant_type::eTypeNumberJson || type_number() == variant_type::eTypeNumberXml ); return m_V.pbsz; }
+   operator std::string() const { assert(type_number() == variant_type::eTypeNumberString || type_number() == variant_type::eTypeNumberUtf8String || type_number() == variant_type::eTypeNumberJson || type_number() == variant_type::eTypeNumberXml ); return std::string( m_V.pbsz, m_uSize ); }
+#if defined(__cpp_char8_t)
+   operator const char8_t*() const { assert(type_number() == variant_type::eTypeNumberUtf8String); return m_V.putf8_const; }
+#endif
+
+   operator const wchar_t*() const { assert(type_number() == variant_type::eTypeNumberWString); return m_V.pwsz; }
+   operator const unsigned char*() const { assert(type_number()== variant_type::eTypeNumberBinary); return m_V.pb; }
+
+   bool operator==( const variant& o ) const { return compare( o ); }
+   bool operator!=( const variant& o ) const { return compare( o ) == false; }
+
+   bool operator<( const variant& o ) const { return less( o ); }
+
+
+// ## @API [type: assign] [description: assign methods, setting value of variant]
 
    void assign( bool v )      { _set_value( v ); }
    void assign( int8_t v )    { _set_value( v ); }
@@ -374,33 +402,6 @@ public:
 
    template <typename VARIANT>
    void assign(const VARIANT& v_, gd::types::tag_value );
-
-   operator bool() const      { assert(type_number() == variant_type::eTypeNumberBool); return m_V.b; }
-   operator int8_t() const    { assert(type_number() == variant_type::eTypeNumberInt8); return m_V.int8; }
-   operator int16_t() const   { assert(type_number() == variant_type::eTypeNumberInt16); return m_V.int16; }
-   operator int32_t() const   { assert(type_number() == variant_type::eTypeNumberInt32); return m_V.int32; }
-   operator int64_t() const   { assert(type_number() == variant_type::eTypeNumberInt64); return m_V.int64; }
-   operator uint8_t() const   { assert(type_number() == variant_type::eTypeNumberUInt8); return m_V.uint8; }
-   operator uint16_t() const  { assert(type_number() == variant_type::eTypeNumberUInt16); return m_V.uint16; }
-   operator uint32_t() const  { assert(type_number() == variant_type::eTypeNumberUInt32); return m_V.uint32; }
-   operator uint64_t() const  { assert(type_number() == variant_type::eTypeNumberUInt64); return m_V.uint64; }
-   operator float()  const    { assert(type_number() == variant_type::eTypeNumberFloat); return m_V.f; }
-   operator double() const    { assert(type_number() == variant_type::eTypeNumberDouble); return m_V.d; }
-   operator void*() const     { assert(type_number() == variant_type::eTypeNumberPointer); return m_V.p; }
-   operator const char*() const { assert(type_number() == variant_type::eTypeNumberString || type_number() == variant_type::eTypeNumberUtf8String || type_number() == variant_type::eTypeNumberJson || type_number() == variant_type::eTypeNumberXml ); return m_V.pbsz; }
-   operator std::string() const { assert(type_number() == variant_type::eTypeNumberString || type_number() == variant_type::eTypeNumberUtf8String || type_number() == variant_type::eTypeNumberJson || type_number() == variant_type::eTypeNumberXml ); return std::string( m_V.pbsz, m_uSize ); }
-#if defined(__cpp_char8_t)
-   operator const char8_t*() const { assert(type_number() == variant_type::eTypeNumberUtf8String); return m_V.putf8_const; }
-#endif
-
-   operator const wchar_t*() const { assert(type_number() == variant_type::eTypeNumberWString); return m_V.pwsz; }
-   operator const unsigned char*() const { assert(type_number()== variant_type::eTypeNumberBinary); return m_V.pb; }
-
-   bool operator==( const variant& o ) const { return compare( o ); }
-   bool operator!=( const variant& o ) const { return compare( o ) == false; }
-
-   bool operator<( const variant& o ) const { return less( o ); }
-
 
 /** \name RAW
 *///@{
@@ -470,7 +471,7 @@ private:
 public:
    
 
-public:
+// ## @API [type: get/set] [description: getter and setter methods]
 
 /** \name GET/SET
 *///@{
@@ -535,9 +536,7 @@ public:
    static variant_type::enumGroup get_type_group_s( unsigned uType ) noexcept { return variant_type::enumGroup(uType & variant_type::enumFilter::eFilterTypeGroup); }
 
 
-
-
-   // ## Group type comparison, check if value is within specified group type
+// ## @API [type: is] [description: is methods used to ask variant for its type and value]
 
    bool is_null() const          { return (m_uType == variant_type::eTypeUnknown); }
    bool is_bool() const          { return (m_uType & variant_type::eGroupBoolean ? true : false); }
@@ -567,12 +566,18 @@ public:
 
    bool is_void() const { return (m_uType & variant_type::enumFilter::eFilterTypeGroup) == variant_type::eTypeNumberVoid ? true : false; }
 
+   // ## @API [type: convert] [description: convert methods for changing the variant's type]
+
    void convert( variant_type::enumType eType );
    void convert( unsigned uType ) { convert( (variant_type::enumType)uType ); }
    void convert( const std::string_view& stringType );
 
+// ## @API [type: compare] [description: methods to compare value in variant]
+
    bool compare( const variant& v ) const;
    bool less( const variant& v ) const;
+
+
    /// return pointer to char buffer
    const char* c_str() const {                                                 assert( is_string() );
       return m_V.pbsz; 
