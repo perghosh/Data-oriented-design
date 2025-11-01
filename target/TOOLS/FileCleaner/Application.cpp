@@ -2979,7 +2979,7 @@ std::pair<bool, std::string> CApplication::CliPrompt_s(gd::cli::options* poption
  * @param pvariantValue The variant to set the value on.
  * @return A pair indicating success or failure, along with an error message if applicable.
  */
-std::pair<bool, std::string> CliSetVariable_s(const gd::argument::arguments& arguments_, gd::variant* pvariantValue)
+std::pair<bool, std::string> CApplication::CliSetVariable_s(const gd::argument::arguments& arguments_, gd::variant* pvariantValue)
 {
    if( arguments_["ask"].is_true() == true )
    {
@@ -2992,12 +2992,9 @@ std::pair<bool, std::string> CliSetVariable_s(const gd::argument::arguments& arg
       std::string stringValue;
       std::getline(std::cin, stringValue);                                    // Get user input
 
-      if( pvariantValue != nullptr )
-      {
-         *pvariantValue = stringValue;                                        // Set value to variant
-      }
+      if( pvariantValue != nullptr ) { *pvariantValue = stringValue; }        // Set value to variant
 
-      if( stringValue.empty() == true ) 
+      if( stringValue.empty() == true && arguments_["required"].is_true() == true )
       {
          return { false, "No value provided for variable" };
       }
