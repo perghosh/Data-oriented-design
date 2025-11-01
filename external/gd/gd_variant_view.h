@@ -63,7 +63,7 @@ private:
    };
 
 
-// construction
+// ## @API [type: construct] [description: construction methods for creating variant instances]
 public:
    variant_view()               : m_uType(variant_type::eTypeUnknown)    {}
    variant_view( bool b )       : m_uType(variant_type::eTypeBool)       { m_V.b = b; }
@@ -105,7 +105,8 @@ public:
    variant_view( const variant_view& o ) { common_construct( o ); }            // copy
    variant_view( variant_view&& o ) noexcept { common_construct( std::move( o ) ); }// move
 
-   // assign
+// ## @API [type: operator] [description: operators like =, +=, -=, +, -]
+
    variant_view& operator=( const variant_view& o ) { 
       common_construct( o ); 
       return *this; 
@@ -153,33 +154,6 @@ public:
    variant_view& operator-=(int64_t v) { m_V.int64 -= v; return *this; }
    variant_view& operator-=(uint64_t v) { m_V.uint64 -= v; return *this; }
 
-
-   void assign( bool v )      { _set_value( v ); }
-   void assign( int8_t v )    { _set_value( v ); }
-   void assign( int16_t v )   { _set_value( v ); }
-   void assign( int32_t v )   { _set_value( v ); }
-   void assign( int64_t v )   { _set_value( v ); }
-   void assign( uint8_t v )   { _set_value( v ); }
-   void assign( uint16_t v )  { _set_value( v ); }
-   void assign( uint32_t v )  { _set_value( v ); }
-   void assign( uint64_t v )  { _set_value( v ); }
-   void assign( float v  )    { _set_value( v ); }
-   void assign( double v )    { _set_value( v ); }
-   void assign( const char* v ) { _set_value( v ); }
-   //void assign( const char* v, uint32_t uLength ) { _set_value( v, uLength ); }
-   void assign( const char* v, uint64_t uLength ) { assert( uLength < std::numeric_limits<uint32_t>::max() ); _set_value( v, (uint32_t)uLength ); }
-   void assign( const std::string_view& v ) { _set_value( v.data(), v.length() ); }
-#if defined(__cpp_char8_t)
-   void assign( const char8_t* v ) { _set_value( v ); }
-#endif
-   void assign( const wchar_t* v ) { _set_value( v ); }
-   void assign( const unsigned char* v, size_t uLength ) { _set_value( v, uLength ); }
-   void assign( const wchar_t* v, unsigned int uLength ) { _set_value( v, uLength ); }
-   void assign( const variant_type::utf8& v ) { _set_value( v ); }
-   void assign( const variant_type::utf8& v, unsigned int uType ) { _set_value( v, uType ); }
-   void assign(const variant_type::uuid& v) { _set_value(v); }
-
-
    operator bool() const      { assert(type_number() == variant_type::eTypeNumberBool); return m_V.b; }
    operator int8_t() const    { assert(type_number() == variant_type::eTypeNumberInt8); return m_V.int8; }
    operator int16_t() const   { assert(type_number() == variant_type::eTypeNumberInt16); return m_V.int16; }
@@ -207,6 +181,32 @@ public:
 
    bool operator<( const variant_view& o ) const { return less( o ); }
 
+// ## @API [type: assign] [description: assign methods, setting value of variant]
+
+   void assign( bool v )      { _set_value( v ); }
+   void assign( int8_t v )    { _set_value( v ); }
+   void assign( int16_t v )   { _set_value( v ); }
+   void assign( int32_t v )   { _set_value( v ); }
+   void assign( int64_t v )   { _set_value( v ); }
+   void assign( uint8_t v )   { _set_value( v ); }
+   void assign( uint16_t v )  { _set_value( v ); }
+   void assign( uint32_t v )  { _set_value( v ); }
+   void assign( uint64_t v )  { _set_value( v ); }
+   void assign( float v  )    { _set_value( v ); }
+   void assign( double v )    { _set_value( v ); }
+   void assign( const char* v ) { _set_value( v ); }
+   //void assign( const char* v, uint32_t uLength ) { _set_value( v, uLength ); }
+   void assign( const char* v, uint64_t uLength ) { assert( uLength < std::numeric_limits<uint32_t>::max() ); _set_value( v, (uint32_t)uLength ); }
+   void assign( const std::string_view& v ) { _set_value( v.data(), v.length() ); }
+#if defined(__cpp_char8_t)
+   void assign( const char8_t* v ) { _set_value( v ); }
+#endif
+   void assign( const wchar_t* v ) { _set_value( v ); }
+   void assign( const unsigned char* v, size_t uLength ) { _set_value( v, uLength ); }
+   void assign( const wchar_t* v, unsigned int uLength ) { _set_value( v, uLength ); }
+   void assign( const variant_type::utf8& v ) { _set_value( v ); }
+   void assign( const variant_type::utf8& v, unsigned int uType ) { _set_value( v, uType ); }
+   void assign(const variant_type::uuid& v) { _set_value(v); }
 
 /** \name RAW
 *///@{
@@ -261,6 +261,8 @@ public:
    
 
 public:
+
+// ## @API [type: get/set] [description: getter and setter methods]
 
 /** \name GET/SET
 *///@{
@@ -330,6 +332,7 @@ public:
    /// Set type, make sure you know why
    void set_type( uint32_t uType ) { m_uType = uType; }
 
+// ## @API [type: is] [description: is methods used to ask variant_view for its type and value]
 
    bool is_null() const { return (m_uType == variant_type::eTypeUnknown); }
    bool is_bool() const { return (m_uType & variant_type::eGroupBoolean ? true : false); }
@@ -375,7 +378,9 @@ public:
    }
 
    const uint8_t* data() const noexcept;
-   
+
+// ## @API [type: compare] [description: methods to compare value in variant_view]
+
    bool compare( const variant_view& v ) const;
    bool compare( const std::string_view& string_, variant_type::tag_explicit ) const noexcept { assert(is_char_string()); return (string_.length() == length() && memcmp( m_V.p, string_.data(), length() ) == 0); }
 
