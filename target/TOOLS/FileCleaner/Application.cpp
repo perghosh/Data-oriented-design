@@ -285,7 +285,7 @@ void CApplication::SetDetail(const std::string_view& stringDetail)
 */
 
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- // @CODE [tag: main, application, log] [description: Application Main method, core startup logic is placed or called from this method, think that is needed to get cleaner to work ]
  * @brief Prepares the application by setting up command-line options.
  *
  * Main in application is similar to main in application, but it is used to prepare
@@ -415,10 +415,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
                result_ = CONFIG_Load(pathConfigLocation.string());                                LOG_WARNING_RAW_IF(result_.first == false, result_.second);
                                                                                                   LOG_DEBUG_RAW_IF(result_.first == true, "== Loaded configuration file: " & pathConfigLocation.string());
             }
-            else
-            {
-               LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories.");
-            }
+            else { LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories."); }
          }
          else
          {
