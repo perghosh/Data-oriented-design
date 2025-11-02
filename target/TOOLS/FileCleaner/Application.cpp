@@ -865,7 +865,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "version" )
    {
-      std::cout << "version 1.0.8" << "\n";
+      std::cout << "version 1.0.9" << "\n";
    }
    else
    {
