@@ -3028,6 +3028,13 @@ std::pair<bool, std::string> CApplication::CliSetVariable_s(const gd::argument::
          std::cout << stringDescription << std::endl;                         // Print description if provided
       }
 
+      std::string stringName = arguments_["name"].as_string();
+      if( stringName.empty() == false ) 
+      { 
+         stringName = std::string().append("(").append(stringName).append("): ");
+         std::cout << stringName;
+      }
+
       std::string stringValue;
       std::getline(std::cin, stringValue);                                    // Get user input
 
