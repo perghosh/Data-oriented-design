@@ -255,7 +255,7 @@ public:
       eLENGTH           = 0x02000000,  ///< item is prefixed with length
    };
 
-// ## @API [type: construct] [description: construction methods for creating variant instances]
+// ## @API [tag: construct] [description: construction methods for creating variant instances]
 public:
    variant()               : m_uType(variant_type::eTypeUnknown)    {}
    variant( bool b )       : m_uType(variant_type::eTypeBool)       { m_V.b = b; }

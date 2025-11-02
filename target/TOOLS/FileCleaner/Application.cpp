@@ -695,26 +695,60 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          } 
          catch(const std::exception& e) 
          {
-            // generate error message
-            std::string stringError = std::format("Error in {} thread: {}", stringCommandName, e.what());
+            std::string stringError = std::format("Error in {} thread: {}", stringCommandName, e.what());// generate error message
             pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
          } 
          catch(...) 
          {
-            // generate error message
-            std::string stringError = std::format("Unknown error in {} thread", stringCommandName);
+            std::string stringError = std::format("Unknown error in {} thread", stringCommandName);// generate error message
             pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
          }
 
          pdocument_->GetApplication()->SetState(eApplicationStateIdle, eApplicationStateWork); // Set idle state
       });
 
-      // Detach thread to run independently
+      // ## Detach thread to run independently
       pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
       thread_.detach();
 
       return { true, "" };
    };
+
+   // ## Lambda to execute CLI functions with options that may be modified in separate threads
+   //    Note that `eApplicationStateWork` is set and should be checked for in application to delay exit
+   auto execute_edit_ = [&stringCommandName](auto call_, gd::cli::options&& options_, auto* pdocument_) -> std::pair<bool, std::string> {
+      std::thread thread_([call_, options_, pdocument_, &stringCommandName]() {
+         try 
+         {
+            pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
+            auto result_ = call_((gd::cli::options*)&options_, pdocument_);
+            if( result_.first == false ) 
+            { 
+               pdocument_->ERROR_Add(result_.second);                          // Add error to the document's error list
+               pdocument_->ERROR_Print();                                      // Print errors to the console
+            }
+         } 
+         catch(const std::exception& e) 
+         {
+            std::string stringError = std::format("Error in {} thread: {}", stringCommandName, e.what());// generate error message
+            pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
+         } 
+         catch(...) 
+         {
+            std::string stringError = std::format("Unknown error in {} thread", stringCommandName);// generate error message
+            pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
+         }
+
+         pdocument_->GetApplication()->SetState(eApplicationStateIdle, eApplicationStateWork); // Set idle state
+      });
+
+      // ## Detach thread to run independently
+      pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
+      thread_.detach();
+
+      return { true, "" };
+   };
+
 
    // return executeInThread(CLI::Count_g, poptionsActive, pdocument, "Count");
 
@@ -751,7 +785,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "find" )
    {
-      // prepare options for list command, this is for usability so that user can use list command without specifying file or pattern
+      // prepare options for find command, this is for usability so that user can use find command without specifying file or pattern
       // Check for only one argument, then this should search for that element
       if(poptionsActive->get_argument_count() == 3)                           // 3 is 3 subtracting program name and command name
       {                                                                                            assert(poptionsActive->exists("R") == false); 
@@ -791,7 +825,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
       // Add a document for the "count" command
       auto* pdocument = DOCUMENT_Get("list", true);
-      if( bUseThreads == true ) { return execute_(CLI::List_g, poptionsActive->clone_arguments(), pdocument); } // list lines in file or directory with the matched pattern in its own thread
+      if( bUseThreads == true ) 
+      { 
+         auto options_ = poptionsActive->clone();
+         return execute_edit_(CLI::List_g, std::move(options_), pdocument);    // list lines in file or directory with the matched pattern in its own thread
+      } 
       else                      { return CLI::List_g(poptionsActive, pdocument); }// list lines in file or directory with the matched pattern
       if( pdocument->ERROR_Empty() == false ) { pdocument->ERROR_Print(); }
    }
@@ -2175,7 +2213,6 @@ bool CApplication::IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view
  */
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
-   optionsApplication.add_flag({"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"});
    optionsApplication.add_flag({"logging", "Turn on logging"});
    optionsApplication.add_flag({"logging-csv", "Add csv logger, prints log information using the csv format"});
    optionsApplication.add_flag({ "help", "Prints help information about command" });
@@ -2307,6 +2344,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "width", "Width for output" });
       optionsCommand.add_flag({ "R", "Enable **recursive search** in subfolders. Sets the recursion depth to 16, ensuring a thorough scan of all subdirectories." });
       optionsCommand.add_flag( {"match-all", "Require **all specified patterns to match** within the same line or row for a result to be considered valid."} );
+      optionsCommand.add_flag({ "clip", "Investigate clipboard for related information (file path or search value)" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, making it easier to navigate results within the IDE."} );
       optionsCommand.add_flag( {"win", "Activate **Windows-specific functionality**, adapting the tool's behavior and features to the Windows operating system."} );
@@ -2351,6 +2389,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "segment", "Limit the search to specific **types of code segments**, such as `code`, `comment`, `string`, or `all`. This refines the search to relevant parts of the file." });
       optionsCommand.add_flag( {"R", "Enable **recursive scanning** of all subfolders. Sets the recursion depth to 16, ensuring a thorough search of subdirectories."} );
       optionsCommand.add_flag( {"match-all", "Require **all specified patterns** to match within the same row for it to be included in the results."} );
+      optionsCommand.add_flag({ "clip", "Investigate clipboard for related information (file path or search value)" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, making file references clickable for easy navigation in the IDE."} );
       optionsCommand.add_flag( {"win", "Enable **Windows-specific functionality**, adapting the tool's behavior to leverage Windows operating system features."} );

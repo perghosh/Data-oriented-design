@@ -1901,7 +1901,17 @@ arguments::const_pointer arguments::find( const std::string_view& stringName, un
 
 /** ---------------------------------------------------------------------------
  * @brief Tries to find two values with same name and return those two in pair object
- * This is more av of conveniance method to find two related values (same name) and put them in a pair object
+ * This is more av of conveniance method to find two related values (same name) and put them in a pair object.
+  If there are more than two values with same name only the first two are returned.
+  If there are less than two values with same name the second value in pair is empty argument object.
+  \code
+   gd::argument::arguments arguments_;
+   arguments_.append("value", 1111);
+   arguments_.append("value", 2222);
+   auto pairValue = arguments_.find_pair("value");
+   // pairValue.first holds argument with value 1111
+   // pairValue.second holds argument with value 2222
+  \endcode
  * @param stringName name that two values are searced for
  * @return std::pair<arguments::argument, arguments::argument> pair object with values found for name
  */

@@ -455,6 +455,7 @@ public:
 
 
    /// copy needed data to work with options
+   options clone() const { return options(*this); }
    options clone_arguments() const { return options(m_stringName, m_argumentsValue); }
 //@}
 

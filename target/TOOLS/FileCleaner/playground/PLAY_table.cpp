@@ -77,6 +77,7 @@ static std::string CreateTemporaryFile_s();
 */
 
 TEST_CASE("[table] args", "[table]") {
+
    // create gd::argument::arguments object with 10 entries
    gd::argument::arguments args10( {{ {"int-number", 100 }, {"float-number", 100.01}, {"string-value", "value"}, {"bool-value", true},
       {"uint64-number", (uint64_t)1000}, {"int64-number", (int64_t)-1000}, {"double-number", 200.02}, {"wstring-value", L"wstring"} } });

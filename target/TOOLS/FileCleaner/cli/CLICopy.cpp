@@ -27,6 +27,17 @@ std::pair<bool, std::string> DoCopy_s( gd::table::dto::table* ptableCopy, const 
 
 // ## Copy operations
 
+/** --------------------------------------------------------------------------- @CODE [tag: cli, command, copy] [description: Main copy method, this is the start for all copy related logic]
+ * @brief Copies files based on command line options.
+ *
+ *   - Reads harvest settings from command line options.
+ *   - If a target is specified, prepares arguments for copying files.
+ *   - Calls the CopyFiles_g function to perform the copy operation.
+ *
+ * @param poptionsCopy Pointer to command line options for the copy operation.
+ * @param pdocument    Pointer to the document object for storing and displaying results.
+ * @return std::pair<bool, std::string> Pair indicating success/failure and an error message if any.
+ */
 std::pair<bool, std::string> Copy_g(const gd::cli::options* poptionsCopy, CDocument* pdocument)
 {                                                                                                  assert(poptionsCopy != nullptr );
    const gd::cli::options& options_ = *poptionsCopy;
