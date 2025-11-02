@@ -31,7 +31,7 @@ NAMESPACE_CLI_BEGIN
 
 // ## Dir operations
 
-std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocument* pdocument);
+std::pair<bool, std::string> List_g(gd::cli::options* poptionsList, CDocument* pdocument);
 std::pair<bool, std::string> ListPattern_g(const gd::cli::options* poptionsList, CDocument* pdocument);
 std::pair<bool, std::string> ListMatchAllPatterns_g( const std::vector<std::string>& vectorPattern, CDocument* pdocument, int iMatchCount = -1);
 std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPattern, CDocument* pdocument, int iMatchCount = -1);

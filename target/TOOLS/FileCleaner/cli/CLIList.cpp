@@ -25,7 +25,7 @@ NAMESPACE_CLI_BEGIN
 
 // ## Dir operations
 
-/** --------------------------------------------------------------------------- @TAG #cli #list
+/** --------------------------------------------------------------------------- @CODE [tag: cli, command, list] [name: list] [description: Processes the 'list' command, line based search in selected files]
  * @brief Processes the 'list' command and performs file harvesting and pattern matching.
  * 
  * This function checks if the command name is 'list' and if the 'explain' option is set. If so, it would display an explanation (currently commented out).
@@ -35,27 +35,29 @@ NAMESPACE_CLI_BEGIN
  * @param pdocument Pointer to a CDocument object used for file harvesting and pattern matching.
  * @return A std::pair where the first element is a boolean indicating success (true) or failure (false), and the second element is a string containing an error message if the operation failed, or an empty string on success.
  */
-std::pair<bool, std::string> List_g(const gd::cli::options* poptionsList, CDocument* pdocument )
+std::pair<bool, std::string> List_g(gd::cli::options* poptionsList, CDocument* pdocument )
 {
    const gd::cli::options& options_ = *poptionsList;
 
+   if( options_.exists("clip") == true && options_["clip"].is_true() == true ) // test for clip argument
+   {
+      std::string stringFile;
+      OS_ReadClipboard_g(stringFile);                                          // read clipboard content
+
+      // ### Check if clipboard content is a valid file path and informtion user if found
+      if( stringFile.empty() == false && std::filesystem::exists( stringFile ) == true )
+      {
+         pdocument->MESSAGE_Display(std::format("File from clipboard as source: {}", stringFile));
+         poptionsList->set_value("source", stringFile);                       // set source to the file from clipboard
+      }
+   }
 
    std::string stringCommandName = options_.name();
    if( stringCommandName == "list" )
    {
-      if( options_.exists("explain") == true )
-      {
-         //std::string stringExplain = ListGetExplain_g(( *poptionsCount )["explain"].as_string());
-         //pdocument->MESSAGE_Display(stringExplain);
-      }
-      else
-      {
          auto result_ = ListPattern_g(poptionsList, pdocument);
          if( result_.first == false ) return result_;
-      }
-
    }
-
 
    return { true, "" };
 }

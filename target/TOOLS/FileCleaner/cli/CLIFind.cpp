@@ -27,8 +27,10 @@
 
 NAMESPACE_CLI_BEGIN
 
-/** --------------------------------------------------------------------------- @TAG #ui.cli #command.find [description: Main find method, this is the start for all find related logic]
+/** --------------------------------------------------------------------------- @CODE [tag: cli, command, find] [description: Searches for patterns in files based on various options, differ from list that this can do multiline searches]
  * @brief Processes the 'find' command and performs file searching based on provided options.
+ *
+ *  - Reads settings from command line options to collect.
  *
  * @param poptionsFind Pointer to a gd::cli::options object containing command-line options.
  * @param poptionsFind.source A vector of source paths to search for files.
@@ -62,16 +64,28 @@ if( result_.first == false ) return result_;
 std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* pdocument)
 {                                                                                                  assert(pdocument != nullptr);assert(poptionsFind != nullptr);
    gd::cli::options& options_ = *poptionsFind; // get the options from the command line arguments
+   std::vector<std::string> vectorSource; // vector of source paths
 
-   papplication_g->Print("background", gd::types::tag_background{} );
+   // ## Check if source is provided in clipboard and it should look there
+
+   if( options_.exists("clip") == true && options_["clip"].is_true() == true ) // test for clip argument
+   {
+      std::string stringFile;
+      OS_ReadClipboard_g(stringFile);                                          // read clipboard content
+
+      // ### Check if clipboard content is a valid file path and informtion user if found
+      if( stringFile.empty() == false && std::filesystem::exists( stringFile ) == true )
+      {
+         pdocument->MESSAGE_Display(std::format("File from clipboard as source: {}", stringFile));
+         poptionsFind->set_value("source", stringFile);                       // set source to the file from clipboard
+      }
+   }
 
    gd::argument::arguments argumentsFileHarvest;
    SHARED_ReadHarvestSetting_g( options_, argumentsFileHarvest, pdocument );
    options_.get_arguments().append( argumentsFileHarvest, { "depth" } );
 
    auto vectorSourceToPrepare = argumentsFileHarvest.get_argument_all("source", gd::types::tag_view{}); // get all source arguments, this is used to find files in the source directory
-
-   std::vector<std::string> vectorSource; // vector of source paths
 
    // ## Source preparation
    //    if source is one then check if it may contain multiple sources that are separated by ':'
@@ -120,6 +134,8 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
 
    if( options_.exists("print") == false || options_["print"].is_true() == true )  // default is to print result
    {
+      papplication_g->Print("background", gd::types::tag_background{} );
+
       // ### Print results from rule
       bool bPrint = false;
       if( options_.exists("rule") == true )
@@ -158,9 +174,9 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
          result_ = FindPrint_g(pdocument, argumentsPrint);                     // Print the results of the find operation
          if( result_.first == false ) return result_;                          // if print failed, return the error
       }
-   }
 
-   papplication_g->Print("", gd::types::tag_background{} );
+      papplication_g->Print("", gd::types::tag_background{} );
+   }
 
    return { true, "" }; 
 }

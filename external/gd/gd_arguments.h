@@ -681,8 +681,7 @@ public:
    using const_iterator =     iterator_<const arguments>;
 
 
-
-// ## construction -------------------------------------------------------------
+   // ## @API [tag: construct] [description: construction methods for creating arguments instances]
 public: //0TAG0construct.arguments
    arguments() { buffer_set(); }
 
@@ -752,7 +751,7 @@ protected:
 
    void zero() { buffer_set(); };
 
-   // ## operator -----------------------------------------------------------------
+   // ## @API [tag: operator] [description: overloaded operators]
 public: //0TAG0operator.arguments
    argument operator[](unsigned uIndex) { return get_argument(uIndex); }
    argument operator[](std::string_view stringName) { return get_argument(stringName); }
@@ -811,7 +810,7 @@ public:
    // return if object owns memory, if it does it should be deleted when arguments goes out of scope
    bool is_owner() const noexcept { return m_bOwner; }
 
-   // ## append adds values to stream 0TAG0append.arguments
+   // ## @API [tag: append] [description: append data to arguments]
    //    note: remember that each value has its type and type in stream is just
    //    one byte. That means that the amount of information about the type is
    //    limited. This is the reason why each type only has it's type number.
@@ -932,7 +931,7 @@ public:
    template<typename OBJECT>
    arguments& append_object( const OBJECT object ) { return append_object( std::string_view(), object ); }
 
-   // ## set methods  0TAG0set.arguments
+   // ## @API [tag: append] [description: set methods, if value exists it is overwritten, otherwise it is appended]
    //    Set values for selected position in buffer, it could be for a name, index or pointer
    //    If position is not found, new value is appended to buffer
 
@@ -968,21 +967,20 @@ public:
    void set( pointer pposition, const argument& argumentSet, tag_argument );
    arguments& set( pointer pposition, const argument& argumentSet ) { set( pposition, argumentSet, tag_argument{}); return *this; }
 
-/** \name INSERT
-*///@{
+   // ## @API [tag: insert] [description: inserts a new argument at the specified position]
+
    pointer insert( size_t uIndex, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
    pointer insert( pointer pPosition, const gd::variant_view& variantviewValue, tag_view );
    pointer insert( pointer pPosition, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
-   // pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
-//@}
 
-/** \name MERGE
- * Add values to arguments if not found
- *///@{
+   // ## @API [tag: merge] [description: merges values from another arguments object]
+
    /// merge values from another arguments object, onlye named values are merged
    arguments& merge(const arguments& arguments_);
-//@}
 
+   // ## @API [tag: iterator] [description: provides iterators for traversing arguments]
+
+   // ### value based iterators, faster but less support for stl iterator logic
 
    iterator begin() { return iterator( this ); }
    iterator end() { return iterator( this, m_uLength ); }
@@ -991,6 +989,8 @@ public:
    const_iterator cbegin() const { return const_iterator( this ); }
    const_iterator cend() const { return const_iterator( this, m_uLength ); }
 
+   // ### named based iterators, slower but with better support for stl iterator logic
+
    named_iterator_t named_begin();
    named_iterator_t named_end();
    const_named_iterator named_begin() const;
@@ -998,19 +998,18 @@ public:
    const_named_iterator named_cbegin() const;
    const_named_iterator named_cend() const;
 
+   // ## @API [tag: count] [description: count related methods, things that information about number of items in arguments, e.g. size, empty, capacity]
 
    [[nodiscard]] unsigned int capacity() const { assert(m_pBuffer != nullptr); return m_uBufferLength; }
 
-/** \name COUNT
-*///@{
    bool empty() const noexcept { return m_uLength == 0; }
    size_t size( tag_memory ) const noexcept { return m_uLength; }
    unsigned int count(std::string_view stringName) const;
-//@}
+   /// number of arguments found in arguments object
+   [[nodiscard]] size_t size() const;
 
-/** \name FIND
-* Find methods, finds position or param value for name
-*///@{
+   // ## @API [tag: find] [description: find methods to find values within arguments objects]
+
    [[nodiscard]] pointer find(unsigned int uIndex);
    [[nodiscard]] const_pointer find(unsigned int uIndex) const;
    [[nodiscard]] pointer find(const std::string_view& stringName);
@@ -1046,20 +1045,14 @@ public:
    [[nodiscard]] std::pair<bool, std::string> exists( const std::initializer_list<std::pair<std::string_view, std::string_view>>& listName, tag_description ) const { return exists_s( *this, listName, tag_description{}); }
    [[nodiscard]] std::pair<bool, std::string> exists_any_of( const std::initializer_list<std::string_view>& listName, tag_name ) const { return exists_any_of_s( *this, listName, tag_name{}); }
 
+   // ## @API [tag: compare] [description: compare methods, checks if values in arguments are equal]
 
-//@}
-
-/** \name COMPARE
-* compare functionality, checks if values in arguments are equal
-*///@{
    [[nodiscard]] bool compare(const std::pair<std::string_view, gd::variant_view>& pairMatch) const { return find(pairMatch) != nullptr; }
    [[nodiscard]] bool compare(const std::string_view& stringName, const arguments& argumentsCompareTo) const;
    [[nodiscard]] bool compare_exists(const arguments& argumentsExists) const { return compare_exists_s( *this, argumentsExists ); }
-//@}
 
-/** \name MOVE move pointer between values in arguments
-* move operations used to move between values, can't go back. only forward
-*///@{
+   // ## @API [tag: walk, iterator] [description: walk between items in arguments, moves pointer to next value, can't go back]
+
    [[nodiscard]] pointer next() { return m_uLength > 0 ? m_pBuffer : nullptr; }
    [[nodiscard]] const_pointer next() const { return m_uLength > 0 ? m_pBuffer : nullptr; }
    [[nodiscard]] pointer next(pointer pPosition) const {                                           assert( verify_d(pPosition) );
@@ -1070,16 +1063,8 @@ public:
       auto p = next_s(pPosition);
       return p < get_buffer_end() ? p : nullptr;
    }
-//@}
 
-/** \name VALIDATE validation operations for argumetns
-* 
-*///@{
-//@}
-
-
-   /// number of arguments found in arguments object
-   [[nodiscard]] size_t size() const;
+   // ## @API [tag: misc] [description: miscellaneous methods for arguments management] 
 
    /// cleans upp interal data and set it as empty
    void clear();
@@ -1087,10 +1072,8 @@ public:
    /// Return raw data buffer
    [[nodiscard]] void* data() { return m_pBuffer; }
 
-/** \name ARGUMENT
-* 0TAG0get.arguments
-* get argument value from arguments
-*///@{
+   // ## @API [tag: get] [description: get methods to retrieve values from arguments objects, note that arguments store `argument` values, argument is a type of variant] 
+
    [[nodiscard]] argument get_argument() const { return get_argument_s(m_pBuffer); }
    [[nodiscard]] argument get_argument(const_pointer pPosition) const {                assert( verify_d(pPosition) );
       return get_argument_s(pPosition); 
@@ -1160,7 +1143,6 @@ public:
    std::optional<gd::variant_view> get_variant_view(size_t uIndex, gd::types::tag_optional) const;
    /// return first value for name as optional
    std::optional<gd::variant_view> get_variant_view( const std::string_view& stringName, gd::types::tag_optional ) const;
-//@}
                                                                                                    // @CODE [tag: object, glue] [description: Methods to get and set objects into arguments object, add the `get_object` method as free function]
    template<typename OBJECT>
    void get_object( const std::string_view& stringPrefixFind, OBJECT& object_ );
@@ -1172,10 +1154,8 @@ public:
    OBJECT get_object( const std::string_view& stringPrefixFind );
 
 
-/** \name PRINT
-* 0TAG0print.arguments
-* Methods used to format argument values into text
-*///@{
+   // ## @API [tag: print] [description: Methods used to format argument values, values are mostly printed into std::string object]
+
    std::string print() const;
    std::string print( const_iterator itBegin ) const { return print(itBegin, cend(), ", "); };
    std::string print( const_iterator itBegin, const_iterator itEnd ) const { return print(itBegin, itEnd, ", "); };
@@ -1187,18 +1167,13 @@ public:
    std::string print_json() const;
 
    std::string print(std::string_view stringFormat) const;
-//@}
-
-   
-
 
 #ifndef NDEBUG
    bool verify_d(const_pointer pPosition) const;
 #endif
-//@}
 
-/** \name BUFFER
-*///@{
+   // ## @API [tag: buffer, remmove] [description: Internal buffer related and methods to remove values]
+
    /// erase argument value at iterator
    iterator erase(iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < end() ? itPosition : end(); }
    /// erase argument value at iterator
@@ -1223,7 +1198,6 @@ public:
    int resize(pointer pPosition, int iOffset, int iNewOffset);
    /// remove unused memory
    void shrink_to_fit();
-//@}
 
    static bool is_name_s(const_pointer pPosition) {
       assert(*pPosition != 0);
@@ -1231,9 +1205,8 @@ public:
    }
    std::string_view get_name(const_pointer pPosition) { return get_name_s( pPosition ); }
 
-/** \name INTERNAL FREE FUNCTIONS
-* 0TAG0free_functions.arguments
-*///@{
+   // ## @API [tag: internal, free-functions] [description: Internal free functions for argument manipulation, if used outside make sure you know the internals]
+
    /// ## Move logic
    static pointer move_to_value_s(pointer pPosition);
    static const_pointer move_to_value_s(const_pointer pPosition);

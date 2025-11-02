@@ -1030,6 +1030,9 @@ public:
    pointer set(pointer pPosition, const gd::variant_view& variantValue, tag_view );
    pointer set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, tag_internal );
 
+   /// Set section with multiple values
+   void set_argument_section( const std::string_view& stringName, const std::vector<gd::variant_view>& vectorValue );
+
 /** \name INSERT
 *///@{
    pointer insert( size_t uIndex, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
@@ -1038,13 +1041,14 @@ public:
    pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
 //@}
 
-/** \name MERGE
- * Add values to arguments if not found
- *///@{
+   // ## @API [tag: merge] [description: merges values from another arguments object]
+
    /// merge values from another arguments object, onlye named values are merged
    arguments& merge(const arguments& argumentsFrom);
-//@}
 
+   // ## @API [tag: iterator] [description: provides iterators for traversing arguments]
+
+   // ### value based iterators, faster but less support for stl iterator logic
 
    iterator begin() { return iterator( this ); }
    iterator end() { return iterator( this, buffer_size() ); }
@@ -1053,6 +1057,8 @@ public:
    const_iterator cbegin() const { return const_iterator( this ); }
    const_iterator cend() const { return const_iterator( this, buffer_size() ); }
 
+   // ### named based iterators, slower but with better support for stl iterator logic
+
    named_iterator_t named_begin();
    named_iterator_t named_end();
    const_named_iterator named_begin() const;
@@ -1060,18 +1066,19 @@ public:
    const_named_iterator named_cbegin() const;
    const_named_iterator named_cend() const;
 
+   // ## @API [tag: count] [description: count related methods, things that information about number of items in arguments, e.g. size, empty, capacity]
+
    [[nodiscard]] uint64_t capacity() const { return buffer_buffer_size(); }
 
-/** \name COUNT
-*///@{
    bool empty() const noexcept { return m_pbuffer->size() == 0; }
    size_t size( tag_memory ) const noexcept { return buffer_size(); }
    unsigned int count(std::string_view stringName) const;
-//@}
+   /// number of arguments found in arguments object
+   [[nodiscard]] size_t size() const;
 
-/** \name FIND
-* Find methods, finds position or param value for name
-*///@{
+
+   // ## @API [tag: find] [description: find methods to find values within arguments objects]
+
    [[nodiscard]] pointer find(unsigned int uIndex);
    [[nodiscard]] const_pointer find(unsigned int uIndex) const;
    [[nodiscard]] pointer find(const std::string_view& stringName);
@@ -1080,8 +1087,6 @@ public:
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch) const;
    /// Find value within section
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch, tag_section ) const;
-
-   
 
    [[nodiscard]] std::pair<argument,argument> find_pair(const std::string_view& stringName) const;
 
@@ -1105,20 +1110,14 @@ public:
    [[nodiscard]] std::pair<bool, std::string> exists( const std::initializer_list<std::pair<std::string_view, std::string_view>>& listName, tag_description ) const { return exists_s( *this, listName, tag_description{}); }
    [[nodiscard]] std::pair<bool, std::string> exists_any_of( const std::initializer_list<std::string_view>& listName, tag_name ) const { return exists_any_of_s( *this, listName, tag_name{}); }
 
+   // ## @API [tag: compare] [description: compare methods, checks if values in arguments are equal]
 
-//@}
-
-/** \name COMPARE
-* compare functionality, checks if values in arguments are equal
-*///@{
    [[nodiscard]] bool compare(const std::pair<std::string_view, gd::variant_view>& pairMatch) const { return find(pairMatch) != nullptr; }
    [[nodiscard]] bool compare(const std::string_view& stringName, const arguments& argumentsCompareTo) const;
    [[nodiscard]] bool compare_exists(const arguments& argumentsExists) const { return compare_exists_s( *this, argumentsExists ); }
-//@}
 
-/** \name MOVE move pointer between values in arguments
-* move operations used to move between values, can't go back. only forward
-*///@{
+   // ## @API [tag: walk, iterator] [description: walk between items in arguments, moves pointer to next value, can't go back]
+
    [[nodiscard]] pointer next() { return m_pbuffer->size() > 0 ? m_pbuffer->data() : nullptr; }
    [[nodiscard]] const_pointer next() const { return m_pbuffer->size() > 0 ? m_pbuffer->data() : nullptr; }
    [[nodiscard]] pointer next(pointer pPosition) {                             assert( verify_d(pPosition) );
@@ -1129,16 +1128,8 @@ public:
       auto p = next_s(pPosition);
       return p < buffer_data_end() ? p : nullptr;
    }
-//@}
 
-/** \name VALIDATE validation operations for argumetns
-* 
-*///@{
-//@}
-
-
-   /// number of arguments found in arguments object
-   [[nodiscard]] size_t size() const;
+   // ## @API [tag: misc] [description: miscellaneous methods for arguments management] 
 
    /// cleans upp interal data and set it as empty
    void clear();
@@ -1146,11 +1137,8 @@ public:
    /// Return raw data buffer
    [[nodiscard]] void* data() { return buffer_data(); }
 
+   // ## @API [tag: get] [description: get methods to retrieve values from arguments objects, note that arguments store `argument` values, argument is a type of variant] 
 
-/** \name ARGUMENT
-* 0TAG0get.arguments
-* get argument value from arguments
-*///@{
    [[nodiscard]] argument get_argument() const { if( buffer_size() ) return get_argument_s(buffer_data()); else return argument();  }
    [[nodiscard]] argument get_argument(const_pointer pPosition) const {                assert( verify_d(pPosition) );
       return get_argument_s(pPosition); 
@@ -1208,9 +1196,6 @@ public:
       return vectorValue;
    }
 
-   void set_argument_section( const std::string_view& stringName, const std::vector<gd::variant_view>& vectorValue );
-
-
    /// return first value for name 
    gd::variant_view get_variant_view( const std::string_view& stringName ) const { return get_argument( stringName ).get_variant_view(); }
    [[nodiscard]] std::pair< std::string_view, gd::variant_view > get_variant_view(unsigned int uIndex, tag_pair ) const;
@@ -1230,11 +1215,8 @@ public:
    template<typename OBJECT>
    OBJECT get_object( const std::string_view& stringPrefixFind );
 
+   // ## @API [tag: print] [description: Methods used to format argument values, values are mostly printed into std::string object]
 
-/** \name PRINT
-* 0TAG0print.arguments
-* Methods used to format argument values into text
-*///@{
    std::string print() const;
    std::string print( const_iterator itBegin) const { return print(itBegin, end(), ", "); };
    std::string print( const_iterator itBegin, const_iterator itEnd ) const { return print(itBegin, itEnd, ", "); };
@@ -1246,7 +1228,6 @@ public:
    std::string print_json() const;
 
    std::string print(std::string_view stringFormat) const;
-//@}
 
    
 
@@ -1254,11 +1235,10 @@ public:
 #if defined(_DEBUG) || defined(DEBUG) || !defined(NODEBUG)
    bool verify_d(const_pointer pPosition) const { return pPosition >= m_pbuffer->data() && pPosition <= ( m_pbuffer->data() + m_pbuffer->size() ) ? true : false; }
 #endif
-//@}
 
-/** \name BUFFER
-*///@{
-/// erase argument value at iterator
+   // ## @API [tag: buffer, remmove] [description: Internal buffer related and methods to remove values]
+
+   /// erase argument value at iterator
    iterator erase(iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < end() ? itPosition : end(); }
    /// erase argument value at iterator
    const_iterator erase(const_iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < cend() ? itPosition : cend(); }
@@ -1277,7 +1257,8 @@ public:
    int64_t resize(pointer pPosition, int64_t iOffset, int64_t iNewOffset);
    /// remove unused memory
    void shrink_to_fit();
-//@}
+
+
 
    static bool is_name_s( uint8_t uType ) { return (uType & ~eType_MASK) == eType_ParameterName; }
    static bool is_name_s( char iType ) { return is_name_s( uint8_t(iType) ); }
@@ -1288,9 +1269,9 @@ public:
    }
    std::string_view get_name(const_pointer pPosition) { return get_name_s( pPosition ); }
 
-/** \name INTERNAL FREE FUNCTIONS
-* 0TAG0free_functions.arguments
-*///@{
+
+   // ## @API [tag: internal, free-functions] [description: Internal free functions for argument manipulation, if used outside make sure you know the internals]
+
    /// ## Move logic
    static pointer move_to_value_s(pointer pPosition);
    static const_pointer move_to_value_s(const_pointer pPosition);
