@@ -93,7 +93,7 @@ static std::filesystem::path CurrentDirectory_s();
 static std::string FolderGetHome_s();
 
 
-/** --------------------------------------------------------------------------- @TAG #cli #history [summary: main dispatcher for history commands]
+/** --------------------------------------------------------------------------- @CODE [tag: cli, command, history] [description: history cli command, history commands works on information found in history files] 
  * @brief Handles history-related CLI commands by dispatching to the appropriate handler based on options.
  *
  * Step-by-step logic for each if/else branch:
@@ -691,6 +691,7 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
    std::pair<bool, std::string> result_;
    // ## Read the history file into the table
 
+   int64_t iRow = -1; // Row index to run
    std::string stringEntry = argumentsRun["run"].as_string();                                      LOG_DEBUG_RAW( "==> Index/name to run: " + stringEntry );
 
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
@@ -700,16 +701,17 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
    { 
       if( gd::math::type::is_integer(stringEntry) == true ) 
       { 
-         int64_t iIndex = std::stoi(stringEntry) - 1; 
-         argumentsRead.set( "select", std::to_string(iIndex) ); 
+         int64_t iIndex = std::stoi(stringEntry); // set runt to execute, note that is 1-based index                        
+         argumentsRead.set( "select", (unsigned)iIndex ); 
       }
       else { argumentsRead.set( "select", stringEntry ); }
 
       argumentsRead.append("variable", true);                                 // Enable variable substitution when reading the history file
       result_ = XML_ReadFileEntry_s(*ptable, argumentsRead, pdocument);
+      iRow = 0; // since we select a specific entry, the row is always 0
    }
    else
-   {
+   { // @TODO [tag: history, refactor] [description: run for history selects one row and that is handled, this loads the complete table and as for now it is not used, run should allways select row in history]
       result_ = XML_ReadFile_s(*ptable, argumentsRead, [pdocument](std::string_view message) {
          if( pdocument ) { pdocument->MESSAGE_Display(message); }
       }); 
@@ -718,13 +720,6 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
    if( result_.first == false ) { return result_; }                           
 
    std::string stringCommand;
-
-   int64_t iRow = -1;
-   if( gd::math::type::is_unsigned(stringEntry) ) { iRow = std::stoi(stringEntry) - 1; }
-   else
-   {
-      iRow = ptable->find( "alias", stringEntry );
-   }
 
    if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format( "Invalid row index: {} max is: {} (did you forget -local)", stringEntry, ptable->size() ) }; } // Ensure the row index is valid, note that is 1-based index
 
