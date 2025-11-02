@@ -134,8 +134,8 @@ if( USE_TARGET_ )
             /Ot                    # Favor fast code
             /Oy                    # Omit frame pointers
             /GL                    # Whole program optimization
-            /arch:AVX2             # Enable AVX2 SIMD instructions
-            /favor:INTEL64         # Optimize for Intel 64-bit
+            #/arch:AVX2             # Enable AVX2 SIMD instructions
+            #/favor:INTEL64         # Optimize for Intel 64-bit
             /fp:fast               # Fast floating-point model
             /GS-                   # Disable security checks for performance
             /Gy                    # Function-level linking

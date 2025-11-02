@@ -3138,7 +3138,7 @@ void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd
 
 void CDocument::MESSAGE_PromptForValue( std::string stringName, std::string stringDescription, gd::variant* pvariantValue )
 {                                                                                                  assert( pvariantValue != nullptr );
-   auto result_ = CApplication::CliSetVariable_s( {{"ask", true}, {"description", stringDescription}}, pvariantValue);
+   auto result_ = CApplication::CliSetVariable_s( {{"ask", true}, {"name", stringName }, {"description", stringDescription}}, pvariantValue);
    if( result_.first == false )
    {
       ERROR_Add( result_.second );

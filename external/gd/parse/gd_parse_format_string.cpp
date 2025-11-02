@@ -135,7 +135,7 @@ std::string format_string( const std::string_view& stringFormat, const gd::argum
       else
       {
          auto value = argumentsValue[stringPlaceholder];
-         if(value.is_null() == false)
+         if(value.is_null() == true)
          {
             // Named argument not found, keep placeholder as-is
             stringResult.append("{").append(stringPlaceholder).append("}");
