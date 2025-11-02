@@ -587,7 +587,7 @@ std::pair<bool, std::string> CApplication::Exit()
 
 // 0TAG0Initialize.Application
 
-/** --------------------------------------------------------------------------- @TAG #option #print #application
+/** --------------------------------------------------------------------------- @CODE [tag: application, option] [description: Initialize application from command line, go here if you want to check whats going to be executed]
  * @brief Initializes the application based on the provided command-line options.
  *
  * This method processes the command-line options and performs initialization tasks
