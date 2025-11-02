@@ -52,7 +52,7 @@ public:
    /// @brief Type alias for pointer to table, which can be either a pointer to `gd::table::dto::table` or a pointer to `gd::table::arguments::table`.
    using pointer_table_t = std::variant< gd::table::dto::table*, gd::table::arguments::table* >;
 
-   // ## @API [type: construct] [description: Construct document.] 
+   // ## @API [tag: construct] [description: Construct document.] 
 public: // 0TAG0construct.Document
    CDocument() {}
    CDocument(CApplication* papplication) : m_papplication(papplication) { m_arguments.append("name", "default"); }
@@ -91,7 +91,7 @@ public:
 //@}
 
 /** @name FILE
-* ## @API [type: file] 
+* ## @API [tag: file] 
        [description: Methods that works on files, often finding information and update tables in cache used to store statistics about files]
 *///@{
 
@@ -126,7 +126,7 @@ public:
 //@}
 
 /** \name PROPERTY
- * ## @API [type: property] 
+ * ## @API [tag: property] 
         [description: Property accessors for the documents internal state]
         [detail: Properties are stored in the `m_arguments` member and it can store any kind of data. Each property is identified by a key.]
 *///@{
@@ -143,7 +143,7 @@ public:
 
 
 /** \name CACHE
- * ## @API [type: table-cache] 
+ * ## @API [tag: table-cache] 
         [description: Documents can cache information in tables that are named.]
         [detail: "Each cache is stored in a named table, which is kept in the document's `m_vectorTableCache` member
          Tables may also be marked as temporary, meaning they should be removed as soon as they are no longer needed."]
@@ -207,7 +207,7 @@ public:
 //@}
 
 /** \name MESSAGE
-* @API [type: message] 
+* @API [tag: message] 
        [description: Pass information to the active output, message is just text that in some way is to be displayed to user]
 *///@{
    /// Display message to user
@@ -227,7 +227,7 @@ public:
 
 
 /** \name ERROR
-* ## @API [type: error] 
+* ## @API [tag: error] 
        [description: Document are able to collect error information, for example doing a larger operation where some tasks fail bit it isn't fatal, then store error in document for later display]
 *///@{
 /// Add error to internal list of errors

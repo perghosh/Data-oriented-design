@@ -836,6 +836,11 @@ std::pair<bool, std::string> has_tag_g(const std::vector< value >& vectorArgumen
       *pvalueResult = bHas;
       return { true, "" };
    }
+   else if( (text_.is_null() == true) || (tag_.is_null() == true) )
+   {
+      *pvalueResult = false;
+      return { true, "" };
+   }
    return { false, "has_tag_g - Invalid argument type" };
 }
 
