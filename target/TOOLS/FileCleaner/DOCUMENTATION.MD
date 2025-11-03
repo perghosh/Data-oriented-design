@@ -44,7 +44,7 @@ Tip: Create a tool folder and set path for that where tools are placed.
 Viruscheckers to check binaries (remember that they often report one or two false positives): 
 - https://www.virustotal.com/ 
 
-## Compare cleaner commands with bash utilities as dotted list:
+## Compare cleaner commands with bash utilities:
 
 - `cleaner dir` / `cleaner ls`: Enhanced file listing with filters (like `ls`/`dir`)
 - `cleaner copy` / `cleaner cp`: Copy files with content filters and previews (like `cp`)
