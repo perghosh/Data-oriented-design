@@ -225,7 +225,7 @@ public:
     * - eSpaceRowState: space where row state data is placed
     * - eSpaceRowGrowBy: default number of rows to grow by
     * - eSpaceFirstAllocate: number of rows to allocate before any values is added
-    */
+    */                                                                        // ## @API [tag: constant] [description: constant values used in table]
    enum 
    { 
       // ## column flags marking column states, how column behaves/works
@@ -339,7 +339,7 @@ public:
    /**
     * @brief iterator to move trough rows in table
     */
-   struct iterator_row
+   struct iterator_row                                                        // ## @API [tag: iterator] [description: row iterator for table]
    {
       iterator_row(): m_uRow(0), m_ptablecolumnbuffer(nullptr) {}
       iterator_row( uint64_t uRow, table_column_buffer* ptablecolumnbuffer ): m_uRow(uRow), m_ptablecolumnbuffer(ptablecolumnbuffer ) {}
@@ -443,8 +443,7 @@ public:
    using difference_type = row_difference_type;
 
 
-// ## construction -------------------------------------------------------------
-// 0TAG0construct.table_column_buffer
+   // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
    /// @name construction
    /// Constructs table_column_buffer objects. 
@@ -505,7 +504,7 @@ private:
    void common_construct( const table_column_buffer& o, const std::vector<unsigned>& vectorColumn, tag_columns );
    void common_construct( table_column_buffer&& o ) noexcept;
 
-// ## operator -----------------------------------------------------------------
+   // ## @API [tag: operator] [description: table operators]
 public:
    std::vector<gd::variant_view> operator[]( uint64_t uRow ) const { return row_get_variant_view( uRow ); }
 
@@ -569,7 +568,7 @@ public:
 /** \name OPERATION
 *///@{
 
-   // ## column methods
+   // ## @API [tag: column] [description: column management methods]
 
    /// @name column_add
    /// Add columns to table, this is typically done before adding values to table. Remember to call @see prepare before adding data
@@ -716,7 +715,7 @@ public:
    std::pair<bool, std::string> prepare();
 
 
-   // ## row methods, row related functionality 
+   // ## @API [tag: row] [description: row management methods]
 
    void row_set_state( uint64_t uRow, unsigned uFlags ) { assert( uRow < m_uReservedRowCount ); *row_get_state( uRow ) = uFlags; }
    void row_set_state( uint64_t uRow, unsigned uSet, unsigned uClear ); 
@@ -889,7 +888,7 @@ public:
    /// return collection object wrapping rows
    gd::table::rows<table_column_buffer> rows() { return gd::table::rows<gd::table::table_column_buffer>( this ); }
 
-   // ## cell methods, cell related functionality  0TAG0cell.table_column_buffer
+   // ## @API [tag: cell] [description: cell management methods]
 
    uint64_t cell_offset( uint64_t uRow, unsigned uColumn ) noexcept;
    uint64_t cell_offset(uint64_t uRow, const std::string_view& stringName) noexcept;
@@ -955,7 +954,7 @@ public:
    cell_set(uint64_t uRow, const std::string_view& stringName, TYPE&& variantValue, tag_convert) { cell_set( uRow, stringName, variantValue.as_variant_view(), tag_convert{}); }
 
    
-   // ## find methods 0TAG0find.table_column_buffer
+   // ## @API [tag: find] [description: find methods for locating data within the table, most methods return the row index or -1 if not found]
 
    int64_t find( unsigned uColumn, const gd::variant_view& variantviewFind ) const noexcept { return find( uColumn, 0, get_row_count(), variantviewFind ); }
    int64_t find( const std::string_view& stringName, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( stringName, 0, get_row_count(), variantviewFind ); }
@@ -1027,9 +1026,8 @@ public:
    gd::argument::arguments::argument property_get( const std::string_view& stringName ) const { return m_argumentsProperty.get_argument( stringName ); }
    bool property_exists( const std::string_view& stringName ) const { return (m_argumentsProperty.find( stringName ) != nullptr); }
 
-   /// @name append
-   /// append row data from another table into this table
-   ///@{
+   // ## @API [tag: append] [description: append row data from one table into this table]
+
    void append( const table_column_buffer& tableFrom );
    void append( const table_column_buffer& tableFrom, tag_convert );
    void append( const table_column_buffer& tableFrom, const std::vector<unsigned>& vectorColumnIndexFrom );
@@ -1063,9 +1061,7 @@ public:
    bool equal( const table_column_buffer& tableEqualTo ) const noexcept { return equal( tableEqualTo, 0, get_row_count() ); }
    ///@}
 
-   /// @name harvest values from table into other type of container objects
-   /// 0TAG0harvest.table_column_buffer
-   ///@{
+   // ## @API [tag: harvest, read] [description: harvest is to extract data from the table into a different format or container]
 
    template <typename TYPE>
    std::vector<TYPE> harvest( uint64_t uRow, unsigned uColumn, unsigned uCount, tag_row ) const noexcept;
@@ -1093,10 +1089,8 @@ public:
 
    void harvest( const std::vector< unsigned >& vectorColumn, const std::vector<uint64_t>& vectorRow, table_column_buffer& tableHarvest ) const;
    void harvest( const std::vector< std::string_view >& vectorColumnName, const std::vector<uint64_t>& vectorRow, table_column_buffer& tableHarvest ) const;
-   ///@}
    
-   // ## plant methods, insert values into table
-   //    0TAG0plant.table_column_buffer
+   // ## @API [tag: plant, write] [description: plant is to insert data into the table from a different format or container]
 
    void plant( const table_column_buffer& table, tag_name );
    void plant( const table_column_buffer& table, tag_name, tag_convert );
@@ -1116,6 +1110,7 @@ public:
    void plant( unsigned uColumn, const gd::variant_view& variantviewValue );
    void plant( unsigned uColumn, const gd::variant_view& variantviewValue, uint64_t uFrom, uint64_t uCount );
 
+   // ## @API [tag: sort, reorder] [description: sort is to reorder the rows in the table based on the values in a specific column]
    void swap( uint64_t uRow1, uint64_t uRow2 );
 
    // https://github.com/kevinhermawan/sortire
@@ -1155,11 +1150,8 @@ public:
    std::vector<table_column_buffer> split( uint64_t uRowCount );
    void split( uint64_t uRowCount, std::vector<table>& vectorSplit );
 
-/** \name ERASE
- * Erase parts in table
- *///@{
-   /// Erase from row index and number of rows from that row
-   void erase( uint64_t uFrom, uint64_t uCount );
+   // ## @API [tag: remove] [description: remove is to delete rows from the table]
+     void erase( uint64_t uFrom, uint64_t uCount );
    /// Erase selected row
    void erase( uint64_t uRow ) { erase( uRow, 1 ); }
    /// Erase selected rows
@@ -1205,8 +1197,7 @@ public:
 //@}
 
 
-// ## attributes ----------------------------------------------------------------
-// 0TAG0attributes.table_column_buffer
+// ## @API [tag: attribute, member] [description: member data to table]
 public:
    uint8_t* m_puData = nullptr;        ///< data to hold values in table
    uint8_t* m_puMetaData = nullptr;    ///< data block with row meta information
@@ -1227,7 +1218,7 @@ public:
 
 
 
-// ## free functions ------------------------------------------------------------
+   // ## @API [tag: static] [description: static member methods]
 public:
    /// return state value for row, moves in row buffer to location where state is stored and return state value
    //static uint32_t get_row_state_s( const uint8_t* puRow ) { return *(uint32_t*)(puRow + eSpaceNullColumns); }
