@@ -134,7 +134,30 @@ class table
 public:
    /** 
     * \brief constant numbers used in table or items used in table
-    */
+    * 
+    * ## Column states
+    * - eColumnStateLength: column value begins with length
+    * - eColumnStateReference: column value is stored in reference object
+    * - eColumnStateKey: column acts as key column
+    * 
+    * ## Row states
+    * - eRowStateUse: row flag marking that row is in use
+    * - eRowStateDeleted: row flag marking that row is deleted
+    *
+    * ## Table flags
+    * - eTableFlagNull32: reserve 32 bit for each row to mark null for column if no value (max 32 columns)
+    * - eTableFlagNull64: reserve 64 bit for each row to mark null for column if no value (max 64 columns)
+    * - eTableFlagRowStatus: enable row status (if row is valid, modified, deleted)
+    * - eTableFlagDuplicateStrings: enable duplicate strings, strings are not checked for duplicates
+    *
+    * ## Size information
+    * - eSpaceNull32Columns: space marking null columns
+    * - eSpaceNull64Columns: space marking null columns
+    * - eSpaceRowState: space where row state data is placed
+    * - eSpaceArguments: space for arguments object,if table is created with arguments support
+    * - eSpaceRowGrowBy: default number of rows to grow by
+    * - eSpaceFirstAllocate: number of rows to allocate before any values is added
+    */                                                                        // ## @API [tag: constant] [description: constant values used in table]
    enum 
    { 
       // ## column flags marking column states, how column behaves/works
@@ -147,15 +170,12 @@ public:
       eRowStateDeleted        = 0x02,                                          ///< row flag marking that row is deleted
 
       // ## table flags marking table states, how table behaves
-      eTableStateNull32       = 0x0001,                                        ///< reserve 32 bit for each row to mark null for column if no value
       eTableFlagNull32        = 0x0001,                                        ///< reserve 32 bit for each row to mark null for column if no value
-      eTableStateNull64       = 0x0002,                                        ///< reserve 64 bit for each row to mark null for column if no value
       eTableFlagNull64        = 0x0002,                                        ///< reserve 64 bit for each row to mark null for column if no value
-      eTableStateRowStatus    = 0x0004,                                        ///< enable row status (if row is valid, modified, deleted)
       eTableFlagRowStatus     = 0x0004,                                        ///< enable row status (if row is valid, modified, deleted)
       eTableFlagArguments     = 0x0008,                                        ///< reserve size for arguments object
       eTableStateMAX          = 0x0010,                                        ///< max state value
-      eTableFlagAll           = eTableStateNull64|eTableFlagRowStatus|eTableFlagArguments,
+      eTableFlagAll           = eTableFlagNull64|eTableFlagRowStatus|eTableFlagArguments,
 
       // ## size information used to calculate space needed by table
       eSpaceNull32Columns     = sizeof( uint32_t ),                            ///< space marking null columns
@@ -172,7 +192,7 @@ public:
    /**
     * @brief iterator to move trough rows in table
    */
-   struct iterator_row
+   struct iterator_row                                                        // ## @API [tag: iterator] [description: row iterator for table]
    {
       iterator_row(): m_uRow(0), m_ptable(nullptr) {}
       iterator_row( uint64_t uRow, table* ptable ): m_uRow(uRow), m_ptable(ptable ) {}
@@ -255,7 +275,7 @@ public:
    using const_iterator = const_iterator_row;
    using difference_type = row_difference_type;
 
-// ## construction -------------------------------------------------------------
+   // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
    /// @name construction
    /// Constructs table_column_buffer objects. 
@@ -300,7 +320,7 @@ private:
    void common_construct( table&& o ) noexcept;
    void common_construct( detail::columns* pcolumns );
 
-// ## operator -----------------------------------------------------------------
+   // ## @API [tag: operator] [description: table operators]
 public:
    std::vector<gd::variant_view> operator[]( uint64_t uRow ) const { return row_get_variant_view( uRow ); }
 
@@ -365,7 +385,7 @@ public:
 /** \name OPERATION
 *///@{
 
-   // ## column methods
+   // ## @API [tag: column] [description: column management methods]
 
    /// @name column_add
    /// Add columns to table, this is typically done before adding values to table. Remember to call @see prepare before adding data
@@ -478,7 +498,7 @@ public:
    std::pair<bool, std::string> prepare();
 
 
-   // ## row methods, row related functionality 
+   // ## @API [tag: row] [description: row management methods]
 
    void row_set_state( uint64_t uRow, unsigned uFlags ) { assert( uRow < m_uReservedRowCount ); *row_get_state( uRow ) = uFlags; }
    void row_set_state( uint64_t uRow, unsigned uSet, unsigned uClear ); 
@@ -677,7 +697,7 @@ public:
 
    unsigned cell_get_length( uint64_t uRow, unsigned uColumn ) const noexcept;
 
-   // ### set methods for cells in table
+   // ## @API [tag: cell] [description: cell management methods]
    void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue );
    void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue );
    void cell_set( uint64_t uRow, const std::string_view& stringAlias, const gd::variant_view& variantviewValue, tag_alias );
@@ -709,7 +729,7 @@ public:
    void cell_set_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue );
    void cell_add_argument( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue );
 
-   // ## find methods
+   // ## @API [tag: find] [description: find methods for locating data within the table, most methods return the row index or -1 if not found]
 
    int64_t find( unsigned uColumn, const gd::variant_view& variantviewFind ) const noexcept { return find( uColumn, 0, get_row_count(), variantviewFind ); }
    int64_t find( const std::string_view& stringName, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( stringName, 0, get_row_count(), variantviewFind ); }
@@ -757,9 +777,8 @@ public:
    gd::argument::arguments::argument property_get( const std::string_view& stringName ) const { return m_argumentsProperty.get_argument( stringName ); }
    bool property_exists( const std::string_view& stringName ) const { return (m_argumentsProperty.find( stringName ) != nullptr); }
 
-   /// @name append
-   /// append row data from one table into this table
-   ///@{
+   // ## @API [tag: append] [description: append row data from one table into this table]
+
    void append( const table& tableFrom );
    void append( const table& tableFrom, tag_convert );
    void append( const table& tableFrom, const std::vector<unsigned>& vectorColumnIndexFrom );
@@ -772,7 +791,6 @@ public:
    void append( const table& tableAppend, tag_name, tag_convert );
    void append( const table& tableFrom, uint64_t uFrom, uint64_t uCount );
    void append( const gd::table::dto::table& tableFrom, uint64_t uFrom, uint64_t uCount );
-   ///@}
 
    /// @brief size is same as `get_row_count and returns number of rows
    size_t size() const { return (size_t)get_row_count(); }
@@ -788,12 +806,10 @@ public:
    ///@{
    bool equal( const table& tableEqualTo, uint64_t uBeginRow, uint64_t uCount ) const noexcept;
    bool equal( const table& tableEqualTo ) const noexcept { return equal( tableEqualTo, 0, get_row_count() ); }
-   ///@}
 
 
-   /// @name harvest values from table into other type of container objects
-   /// 
-   ///@{
+   // ## @API [tag: harvest, read] [description: harvest is to extract data from the table into a different format or container]
+
    template <typename TYPE>
    std::vector<TYPE> harvest( uint64_t uRow, unsigned uColumn, unsigned uCount, tag_row ) const noexcept;
    template <typename TYPE>
@@ -824,25 +840,7 @@ public:
    void harvest( const std::vector< unsigned >& vectorColumn, const std::vector<uint64_t>& vectorRow, gd::table::dto::table& tableHarvest ) const;
    void harvest( const std::vector< std::string_view >& vectorColumnName, const std::vector<uint64_t>& vectorRow, gd::table::dto::table& tableHarvest ) const;
 
-
-   /// gd::argument::arguments harvest( uint64_t uRow, tag_arguments ) const;
-   /// void harvest( uint64_t uRow, gd::argument::arguments& arguments ) const;
-   /// void harvest( uint64_t uRow, unsigned* puColumnIndex, unsigned uCount, gd::argument::arguments& arguments ) const;
-   /// gd::argument::arguments harvest( uint64_t uRow, unsigned* puColumnIndex, unsigned uCount, tag_arguments ) const;
-   /// gd::argument::arguments harvest( uint64_t uRow, const std::vector<unsigned>& vectorColumnIndex, tag_arguments ) const;
-   /// std::vector< gd::argument::arguments > harvest( uint64_t uBeginRow, uint64_t uEndRow, tag_arguments ) const;
-   /// void harvest( uint64_t uBeginRow, uint64_t uEndRow, std::vector< gd::argument::arguments >& vectorArguments ) const;
-   /// void harvest( uint64_t uBeginRow, uint64_t uEndRow, const std::vector<unsigned>& vectorColumnIndex, std::vector< gd::argument::arguments >& vectorArguments ) const;
-   /// void harvest( uint64_t uBeginRow, uint64_t uEndRow, unsigned* puColumnIndex, unsigned uCount, std::vector< gd::argument::arguments >& vectorArguments ) const;
-   /// void harvest( unsigned* puColumnIndex, unsigned uCount, std::vector< gd::argument::arguments >& vectorArguments ) const;
-   /// void harvest( const std::vector<unsigned>& vectorColumnIndex, std::vector< gd::argument::arguments >& vectorArguments ) const;
-   /// std::vector< gd::argument::arguments > harvest( uint64_t uBeginRow, uint64_t uEndRow, const std::vector<unsigned>& vectorColumnIndex, tag_arguments ) const;
-   /// std::vector< gd::argument::arguments > harvest( uint64_t uBeginRow, uint64_t uEndRow, unsigned* puColumnIndex, unsigned uCount, tag_arguments ) const;
-   /// std::vector< gd::argument::arguments > harvest( unsigned* puColumnIndex, unsigned uCount, tag_arguments ) const;
-   /// std::vector< gd::argument::arguments > harvest( const std::vector<unsigned>& vectorColumnIndex, tag_arguments ) const;
-   ///@}
-   /// 
-
+   // ## @API [tag: plant, write] [description: plant is to insert data into the table from a different format or container]
    void plant( const table& table, tag_name );
    void plant( const table& table, const std::string_view& stringColumnName );
    void plant( const table& table, uint64_t uFromRow, uint64_t uToRow, tag_name );
@@ -859,6 +857,7 @@ public:
    void plant( unsigned uColumn, const gd::variant_view& variantviewValue );
    void plant( unsigned uColumn, const gd::variant_view& variantviewValue, uint64_t uFrom, uint64_t uCount );
 
+   // ## @API [tag: sort, reorder] [description: sort is to reorder the rows in the table based on the values in a specific column]
    void swap( uint64_t uRow1, uint64_t uRow2 );
 
    // https://github.com/kevinhermawan/sortire
@@ -890,10 +889,8 @@ public:
    table split( range rangeSplit ) const;
    void split( uint64_t uRowCount, std::vector<table>& vectorSplit ) const;
 
-/** \name ERASE
-* Erase parts in table
-*///@{
-   /// Erase from row index and number of rows from that row
+
+   // ## @API [tag: remove] [description: remove is to delete rows from the table]
    void erase( uint64_t uFrom, uint64_t uCount );
    /// Erase selected row
    void erase( uint64_t uRow ) { erase( uRow, 1 ); }
@@ -925,7 +922,7 @@ public:
 //@}
 
 
-// ## attributes ----------------------------------------------------------------
+// ## @API [tag: attribute, member] [description: member data to table]
 public:
    uint8_t* m_puData = nullptr;        ///< data to hold values in table
    uint8_t* m_puMetaData = nullptr;    ///< data block with row meta information
@@ -945,8 +942,8 @@ public:
 
 
 
-// ## free functions ------------------------------------------------------------
-public:
+   // ## @API [tag: static] [description: static member methods]
+   public:
    /// Create columns object on heap
    static detail::columns* new_columns_s();
    static detail::columns* new_columns_s( const detail::columns* pcolumnsFrom, unsigned* puColumn, unsigned uSize );
@@ -1208,7 +1205,7 @@ inline uint8_t* table::row_get_arguments_meta( uint64_t uRow ) const noexcept { 
    // calculate size for null values to know offset for state value
    unsigned uArgumentsOffset = (m_uFlags & (eTableFlagNull32|eTableFlagNull64));                   assert(( m_uFlags & ( eTableFlagNull32 | eTableFlagNull64 ) ) != 3); // cant be both 32 and 64
    uArgumentsOffset = uArgumentsOffset * sizeof(uint32_t);                                         assert( uArgumentsOffset <= (sizeof(uint32_t) * 2) );
-   uArgumentsOffset += ( m_uFlags & eTableStateRowStatus ) ? eSpaceRowState : 0;// add row state size if used
+   uArgumentsOffset += ( m_uFlags & eTableFlagRowStatus ) ? eSpaceRowState : 0;// add row state size if used
    return reinterpret_cast<uint8_t*>( m_puMetaData + (uRow * m_uRowMetaSize) + uArgumentsOffset ); // return pointer to arguments value
 }
 
