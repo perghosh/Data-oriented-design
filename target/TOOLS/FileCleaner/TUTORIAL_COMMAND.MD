@@ -1,3 +1,24 @@
+## Compare cleaner commands with bash utilities:
+| Cleaner Command                   | Bash Utility Equivalent          | Notes                                         |
+|-----------------------------------|----------------------------------|-----------------------------------------------|
+| `cleaner dir` / `cleaner ls`      | `ls` / `dir`                     | Enhanced file listing with filters            |
+| `cleaner copy` / `cleaner cp`     | `cp`                             | Copy files with content filters and previews  |
+| `cleaner count`                   | `wc`                             | Analyze lines/code/comments/strings or patterns|
+| `cleaner list`                    | `grep`                           | Line-based pattern search with filters/segments|
+| `cleaner find`                    | `find` / `grep`                  | Text-based search (non-line-bound; multi-line)|
+| `cleaner history`                 | Command history utilities        | Command reuse and tracking                    |
+
+## Compare cleaner commands with bash utilities as dotted list:
+
+- `cleaner dir` / `cleaner ls`: Enhanced file listing with filters (like `ls`/`dir`)
+- `cleaner copy` / `cleaner cp`: Copy files with content filters and previews (like `cp`)
+- `cleaner count`: Analyze lines/code/comments/strings or patterns (like `wc`)
+- `cleaner list`: Line-based pattern search with filters/segments (like `grep`)
+- `cleaner find`: Text-based search (non-line-bound; multi-line patterns, code-focused; (like`grep`)
+- `cleaner history`: Command reuse and tracking (like command history utilities)
+- `cleaner config`: Manage tool settings like how to color output, or set characers to improve readability
+- `cleaner` / `cleaner help`: Display usage info and command details
+
 ## Help Commands
 *Display usage info and command details*
 
