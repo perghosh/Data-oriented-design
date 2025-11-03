@@ -1,10 +1,11 @@
 # Changelog
 
-## v1.0.8
+## v1.0.9
 ### New Features
    - `clip` clip flag for commands `list` and `find` and this tries to find if path is stored in clipboard and take that file to search in. This speeds up searches within developer tools
    - Similar to a simpler version of jinja templating to be used in history files, entries there can have variables and those can be prompted for when running history entries. This makes it possible to create more dynamic history entries that can be reused for different searches.
    - Combining history with the has_tag method makes it possible to create powerful searches that can be reused often with different tags.
+   - Variables in history entries can have description that is shown when prompting for values. This makes is a lot simpler to create advances searches with filters using expressions.
 
 ### Bug Fixes
    - The internal scripting engine had a bug that caused it to not work properly with empty strings. This has been fixed and now the scripting engine works as expected with empty strings.

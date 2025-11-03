@@ -14,6 +14,7 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, r
 
 ## Table of Contents
 - [Install](#install)
+- [Compare cleaner commands with bash utilities as dotted list](#compare-cleaner-commands-with-bash-utilities-as-dotted-list)
 - [Usage](#usage)
 - [Commands](#commands)
   - [config](#config)
@@ -38,7 +39,21 @@ Why the name `cleaner`? Managing code often means cleaning—removing clutter, r
 
 ## Install
 
-Easiest is to just copy cleaner executable to windows/system32 or /usr/local/bin if you are running windows or linux.
+Easiest is to just copy cleaner executable to windows/system32 or /usr/local/bin if you are running windows or linux.  
+Tip: Create a tool folder and set path for that where tools are placed.
+Viruscheckers to check binaries (remember that they often report one or two false positives): 
+- https://www.virustotal.com/ 
+
+## Compare cleaner commands with bash utilities as dotted list:
+
+- `cleaner dir` / `cleaner ls`: Enhanced file listing with filters (like `ls`/`dir`)
+- `cleaner copy` / `cleaner cp`: Copy files with content filters and previews (like `cp`)
+- `cleaner count`: Analyze lines/code/comments/strings or patterns (like `wc`)
+- `cleaner list`: Line-based pattern search with filters/segments (like `grep`)
+- `cleaner find`: Text-based search (non-line-bound; multi-line patterns, code-focused; (like`grep`)
+- `cleaner history`: Command reuse and tracking (like command history utilities)
+- `cleaner config`: Manage tool settings like how to color output, or set characers to improve readability
+- `cleaner` / `cleaner help`: Display usage info and command details
 
 ## Usage
 
