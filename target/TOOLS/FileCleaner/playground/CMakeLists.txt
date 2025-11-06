@@ -123,6 +123,33 @@ endif()
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
+   set(LIBSSH2_LIB "${CMAKE_SOURCE_DIR}/external/libssh2/lib/libssh2.lib")    # Add this before target_link_libraries for your target
+
+   message( STATUS "Using LIBSSH2_LIB: ${LIBSSH2_LIB}" )
+
+   set(TEST_NAME_ "PLAY_ssh")
+   add_executable(${TEST_NAME_}
+      ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite} ${external_catch2}
+      ${TARGET_PLAYGROUND_}   
+      ${TARGET_SOURCE_FILES_}
+      ${SOURCE_PLAYGROUND_}
+   
+   
+   "main.cpp"  
+      "${TEST_NAME_}.cpp"
+   )
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+   target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE)
+   target_link_libraries(${TEST_NAME_} ${LIBSSH2_LIB})
+
+   target_compile_definitions(${TEST_NAME_} PRIVATE _WIN32_WINNT=0x0601)
+endif()
+
+
+set( USE_TEST_ ON )
+if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_pugixml")
    add_executable(${TEST_NAME_}
       ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite}
