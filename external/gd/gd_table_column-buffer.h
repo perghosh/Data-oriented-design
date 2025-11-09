@@ -624,7 +624,7 @@ public:
 
    std::pair<bool, std::string> column_add( const std::string_view& stringColumns, tag_parse );
    table_column_buffer& column_add( const argument::column& columnAdd ) { return column_add( columnAdd.type(), columnAdd.size(), columnAdd.name(), columnAdd.alias() ); }
-   table_column_buffer& column_add( const detail::column& column_ );
+   table_column_buffer& column_add( const detail::column& column_, gd::types::tag_detail );
 
    template< typename CLASS >
    table_column_buffer& column_add() { return column_add( CLASS::to_columns(), tag_type_name{} ); }
