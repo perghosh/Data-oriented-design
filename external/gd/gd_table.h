@@ -3,8 +3,19 @@
  *
  * @brief Common table logic. Include this in all table related functionality.
  *
- *
- *
+
+| Object         | Key Methods / Members (Examples)                                   | Description                                                                                |
+|----------------|--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| cell<TABLE>    | operator=, operator T(), as_variant(...), m_ptable, m_uRow, m_uColumn | Represents a single cell in a table, provides type conversion, assignment, and access to cell value. |
+| columns<TABLE> | operator[], size(), empty(), begin(), end(), m_ptable              | Container for columns in a table, supports iteration and access by index.                     |
+| row<TABLE>     | operator[], get_row(), cell_get_variant_view(...), cell_set(...), size(), m_uRow, m_ptable | Represents a single row, allows access to cells by index or name, and setting cell values.     |
+| rows<TABLE>    | operator[], size(), empty(), begin(), end(), m_ptable           | Container for rows, supports iteration and access by index.                                   |
+| range          | contains(...), intersects(...), normalize(), empty(), count(), rows(), cells(), m_uRow1, m_uRow2, m_uColumn1, m_uColumn2 | Represents a rectangular area in a table, provides range operations and iterators.            |
+| page           | first(), last(), next(), goto_first_page(), goto_last_page(), get_page_count(), set_flags(...), m_uPage, m_uPageSize, m_uHeader, m_uFooter, m_uRowCount | Manages paging of rows, tracks page boundaries, flags, and navigation.                        |
+| names          | add(...), get(...), reserve(...), resize(...), clear(), size(), empty(), m_pbBufferNames | Manages a buffer of constant strings (e.g., column names), supports adding and retrieving names. |
+| reference      | read(...), write(...), serialize(...), add_reference(), release(), data(), size(), capacity(), m_iReferenceCount, m_uType, m_uSize, m_uCapacity | Stores binary or string data with reference counting, supports serialization and memory management. |
+| references     | add(...), set(...), find(...), clear(), size(), empty(), begin(), end(), m_vectorReference | Container for multiple reference objects, supports adding, finding, and iterating references.  |
+| argument::column | type(), size(), name(), alias(), clear(), m_uType, m_uSize, m_stringName, m_stringAlias | Data transfer object for column metadata, used for column creation and manipulation.           |
  *
  *
  */
@@ -74,6 +85,10 @@ _GD_TABLE_BEGIN
 
 // ## 
 
+struct tag_table_dto {}; ///< tag dispatcher used to indicate table dto object is used    
+struct tag_table_table {}; ///< tag dispatcher used to indicate table object is used   
+struct tag_table_arguments {}; ///< tag dispatcher used to indicate table arguments object is used   
+
 /// tag dispatcher for speed up unnecessary assignments
 struct tag_undefined {};
 /// tag dispatcher used to construct object where null values are valid
@@ -128,6 +143,9 @@ struct tag_first_sorted {};
 struct tag_sort_selection {};
 /// tag dispatcher for bubble sort
 struct tag_sort_bubble {};
+/// tag dispatcher for some type of find logic
+struct tag_find {}; 
+
 
 // ## tag dispatchers for buffer and raw operations, how data is accessed
 
@@ -1094,11 +1112,6 @@ namespace argument
 
 /// read argument column from vector with strings
 std::pair<bool, std::string> assign_to_column_g( argument::column& c_, const std::vector<std::string_view>& vectorColumnData );
-
-
-
-
-
 
 
 _GD_TABLE_END

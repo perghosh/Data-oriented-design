@@ -24,6 +24,8 @@
 
 NAMESPACE_AUTOMATION_BEGIN
 
+// ## @API [tag: where, expression] [description: ExpressionSource object is used to enable work on code within the expression logic ]
+
 extern const gd::expression::method pmethodSelect_g[];
 extern const size_t uMethodSelectSize_g;
 

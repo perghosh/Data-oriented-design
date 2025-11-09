@@ -18,19 +18,6 @@
 
 #include "gd_table_column-buffer.h"
 
-#if(defined(_M_X64) || (defined(_M_IX86) && defined(_M_IX86_FP) && _M_IX86_FP >= 2) || defined(__x86_64__))
-
-#  include <emmintrin.h>
-#  include <smmintrin.h>
-
-#  define GD_X86
-
-#else
-
-#  define GD_APPLE
-
-#endif
-
 
 #if defined( __clang__ )
    #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
@@ -404,6 +391,7 @@ void table_column_buffer::common_construct( const table_column_buffer& o, tag_co
    m_argumentsProperty = o.m_argumentsProperty;
 }
 
+/// @brief construct table from another table but only selected columns
 void table_column_buffer::common_construct( const table_column_buffer& o, const std::vector<unsigned>& vectorColumn, tag_columns )
 {
    m_uFlags             = o.m_uFlags; 
@@ -424,7 +412,69 @@ void table_column_buffer::common_construct( const table_column_buffer& o, const 
    }
 }
 
+/// @brief construct table from columns objects that is passed and used to store column information
+void table_column_buffer::common_construct( const detail::columns* pcolumns )
+{
+   m_uFlags             = 0; 
+   m_uRowSize           = 0;  
+   m_uRowMetaSize       = 0;
+   m_uRowCount          = 0; 
+   m_uReservedRowCount  = 0;
+   delete m_puData;
+   m_puData = nullptr;
+   m_puMetaData = nullptr;
+   if( pcolumns != nullptr )
+   {
+      for( auto itColumn : *pcolumns )
+      {
+         column_add( itColumn );
+      }
+   }
+}
 
+/// @brief construct table specified from columns objects
+void table_column_buffer::common_construct( const detail::columns* pcolumns, const std::initializer_list<gd::variant_view>& listColumn )
+{
+   m_uFlags             = 0; 
+   m_uRowSize           = 0;  
+   m_uRowMetaSize       = 0;
+   m_uRowCount          = 0; 
+   m_uReservedRowCount  = 0;
+   delete m_puData;
+   m_puData = nullptr;
+   m_puMetaData = nullptr;
+
+   for( const auto& itColumn : listColumn )
+   {
+      int iColumn = pcolumns->find_index( itColumn );
+      if( iColumn >= 0 )
+      {
+         column_add( *pcolumns->get( (unsigned)iColumn ) );
+      }
+   }
+}
+
+/// @brief construct table specified from columns objects
+void table_column_buffer::common_construct( const detail::columns* pcolumns, const std::vector<gd::variant_view>& vectorColumn )
+{
+   m_uFlags             = 0; 
+   m_uRowSize           = 0;  
+   m_uRowMetaSize       = 0;
+   m_uRowCount          = 0; 
+   m_uReservedRowCount  = 0;
+   delete m_puData;
+   m_puData = nullptr;
+   m_puMetaData = nullptr;
+
+   for( const auto& itColumn : vectorColumn )
+   {
+      int iColumn = pcolumns->find_index( itColumn );
+      if( iColumn >= 0 )
+      {
+         column_add( *pcolumns->get( (unsigned)iColumn ) );
+      }
+   }
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Return number of rows for selected state
@@ -889,6 +939,11 @@ table_column_buffer& table_column_buffer::column_add(const std::vector< std::tup
    return *this;
 }
 
+table_column_buffer& table_column_buffer::column_add( const detail::column& column_ ) 
+{ 
+   return column_add( column_.type(), column_.size(), column_.name(), column_.alias() ); 
+}
+
 /** ---------------------------------------------------------------------------
  * @brief find index to column for column name
  * @param stringName column name column index is returned for
@@ -1192,7 +1247,7 @@ tableNumber.column_fill( 3, (int64_t)8 );
  * @return std::pair<bool, std::string> true if ok, false and error information if fail
 */
 std::pair<bool, std::string> table_column_buffer::prepare()
-{                                                                                                  assert( m_vectorColumn.empty() == false ); assert( m_puData == nullptr );
+{                                                                                                  assert( m_vectorColumn.empty() == false ); assert( m_puData == nullptr && "Table have been prepared");
    // ## calculate size for each row
    unsigned uRowSize = 0; // 
 
@@ -2146,6 +2201,40 @@ gd::variant_view table_column_buffer::cell_get_variant_view(uint64_t uRow, std::
    return gd::variant_view();
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief get cell value by finding row that match find criteria
+ * @param vectorFind vector with pair values to find row, first is column index or name and second is value to find
+ * @param uColumn column index to get value from
+ * @return pointer to cell value if found otherwise nullptr
+*/
+const uint8_t* table_column_buffer::cell_get( const std::vector<std::pair<std::variant<unsigned, std::string_view>, gd::variant_view>>& vectorFind, unsigned uColumn, tag_find ) const noexcept
+{
+   int64_t iRow = find( 0, size(),vectorFind, tag_column_variant{} );
+   if( iRow != -1 )
+   {
+      return cell_get( (uint64_t)iRow, uColumn );
+   }
+
+   return nullptr;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief get cell value as variant_view item by finding row that match find criteria
+ * @param vectorFind vector with pair values to find row, first is column index or name and second is value to find
+ * @param uColumn column index to get value from
+ * @return gd::variant_view cell value if found otherwise empty variant_view
+*/
+gd::variant_view table_column_buffer::cell_get_variant_view( const std::vector<std::pair<std::variant<unsigned, std::string_view>, gd::variant_view>>& vectorFind, unsigned uColumn, tag_find ) const noexcept
+{
+   int64_t iRow = find( 0, size(),vectorFind, tag_column_variant{} );
+   if( iRow != -1 )
+   {
+      return cell_get_variant_view( (uint64_t)iRow, uColumn );
+   }
+
+   return gd::variant_view();
+}
+
 
 unsigned table_column_buffer::cell_get_length( uint64_t uRow, unsigned uColumnIndex ) const noexcept
 {
@@ -2905,6 +2994,45 @@ int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std
 
    return find( uStartRow, uCount, vectorFind );
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief find value in table
+ * @param uStartRow row to start search
+ * @param uCount number of rows trying to find value in
+ * @param listFind list of column names and values to find
+ * @return index to row if value was found, -1 if not found
+ */
+int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& vectorMatch, tag_column_variant) const noexcept
+{                                                                                                  assert( m_puData && "Table data is not prepared" );
+   uint64_t uEndRow = uStartRow + uCount;                                                          assert( uEndRow <= get_row_count() );
+   std::vector< std::pair<unsigned, gd::variant_view> > vectorFind;           // hold column names and values to find
+
+#ifndef NDEBUG
+   for( auto it : vectorMatch )                                               // check that all columns exists
+   { 
+      if( std::holds_alternative<std::string_view>(it.first) == true ) { assert( column_exists( std::get<std::string_view>(it.first) ) == true && "Invalid column name"); }
+      else { assert(std::get<unsigned>(it.first) < get_column_count() && "Column index too large" ); }
+   } 
+#endif 
+
+   // ## Convert list to vector with column index and value to find
+   for( auto it : vectorMatch )
+   {
+      if( std::holds_alternative<std::string_view>(it.first) == true )
+      {
+         auto uColumnIndex = column_get_index(std::get<std::string_view>(it.first));
+         assert(uColumnIndex != (unsigned)-1);
+         vectorFind.push_back({ uColumnIndex, it.second });
+      }
+      else
+      {
+         vectorFind.push_back({ std::get<unsigned>(it.first), it.second });
+      }
+   }
+
+   return find( uStartRow, uCount, vectorFind );
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief find all values in table

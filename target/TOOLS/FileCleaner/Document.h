@@ -281,8 +281,8 @@ public:
    static std::pair<bool, std::string> EXPRESSION_PrepareForArgument_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression);
 
    /// Generate result from table where rows in table just are listed top to bottom
-   static std::string RESULT_VisualStudio_s( gd::table::dto::table& table_ );
-   static void RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult );
+   static std::string RESULT_VisualStudio_s( const gd::table::dto::table& table_ );
+   static void RESULT_VisualStudio_s( const gd::table::dto::table& table_, std::string& stringResult );
 
 
 };
@@ -293,7 +293,7 @@ inline void CDocument::CACHE_Prepare( const std::string_view& stringId )
    CACHE_Prepare(stringId, nullptr);
 }
 
-inline std::string CDocument::RESULT_VisualStudio_s(gd::table::dto::table& table_) {
+inline std::string CDocument::RESULT_VisualStudio_s( const gd::table::dto::table& table_) {
    std::string stringResult;
    RESULT_VisualStudio_s( table_, stringResult );
    return stringResult;

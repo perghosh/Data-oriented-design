@@ -159,11 +159,34 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
          if( options_.exists("kv-where") == true ) argumentsPrint.append("where", options_["kv-where"].as_string_view()); // if kv-where is set, add it to the print arguments
          result_ = FindPrintKeyValue_g(pdocument, &argumentsPrint);                             // Print the key-value pairs found in the files
          if( result_.first == false ) return result_;                          // if print failed, return the error
+
+         if( options_.exists("vs") == true ) 
+         { 
+            argumentsPrint.append("vs", true); 
+
+            auto* ptableKeyValue = pdocument->CACHE_GetTableArguments( "keyvalue" );                 assert( ptableKeyValue != nullptr );
+            gd::table::dto::table tableVS( 0, { {"rstring", 0u, "line"} }, gd::table::tag_prepare{} );
+            std::string stringLine;
+            for( auto row : *ptableKeyValue )
+            {
+               stringLine = row.cell_get_variant_view( "filename" ).as_string_view(); // get full filename
+               uint64_t uLineNumber = row.cell_get_variant_view("row").as_uint64(); // get the line number from the line list table
+               auto stringPreview = row.cell_get_variant_view( "preview" ).as_string_view();
+               uLineNumber++;                                                     // add one because lines in table are zero based
+               stringLine += std::format("({}) : {}", uLineNumber, stringPreview );
+
+               tableVS.row_add( { stringLine } );
+            }
+
+            result_ = FindPrintVS_g( tableVS );                                // Print to visual studio output
+            if( result_.first == false ) return result_;                       // if print failed, return the error
+         }
+
          bPrint = true;                                                        // set print to true, we have printed the results
       }
 
 
-      if( bPrint == false || options_.exists("print") == true || options_.exists("vs") == true )
+      if( bPrint == false && (options_.exists("print") == true || options_.exists("vs") == true ))
       {
          gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uint64_t(2u) } }); // hardcode pattern count to 2 for printing results and allways print patterns
          if( options_.exists("context") == true ) argumentsPrint.append("context", options_["context"].as_string_view()); // if context is set, add it to the print arguments
@@ -645,7 +668,6 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
       iContextCount = iContextCount % 1000;                                   // limit the count to 1000 lines, so we do not get too much context
    }
 
-
    gd::argument::arguments argumentsOption( { { "pattern-count", (unsigned)uSearchPatternCount } } );
    if( iContextOffset != 0 || iContextCount != 0 ) { argumentsOption.append( "offset", iContextOffset ); argumentsOption.append( "count", iContextCount ); }
    auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsOption );// generate the result table for pattern line list
@@ -702,27 +724,31 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
 #ifdef _WIN32
    if( argumentsPrint.exists("vs") == true ) // if vs flag is set, then we want to print to Visual Studio output
    {
-      stringCliTable.clear();                                                 // clear the stringCliTable, we will use it to print to Visual Studio output
-      CDocument::RESULT_VisualStudio_s(tableResultLineList, stringCliTable);
-      VS::CVisualStudio visualstudio;
-      auto result_ = visualstudio.Connect();
-      if(result_.first == true) result_ = visualstudio.Print(stringCliTable, VS::tag_vs_output{});
-      if(result_.first == false)
-      {
-         std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
-         pdocument->MESSAGE_Display(stringError);
-      }
-      else
-      {
-         std::string stringPrint = std::format("Printed to Visual Studio output: {} rows", tableResultLineList.get_row_count());
-         pdocument->MESSAGE_Display(stringPrint);
-      }
+      auto result_ = FindPrintVS_g( tableResultLineList );
+      if( result_.first == false ) return result_;
    }
 #endif // _WIN32
 
    pdocument->MESSAGE_Display();                                              // reset the message display
 
    return { true, "" }; 
+}
+
+std::pair<bool, std::string> FindPrintVS_g( const gd::table::dto::table& table_ )
+{
+   std::string stringCliTable; // string to hold the CLI table output
+   // ## Print to Visual Studio output
+   CDocument::RESULT_VisualStudio_s(table_, stringCliTable);
+   VS::CVisualStudio visualstudio;
+   auto result_ = visualstudio.Connect();
+   if(result_.first == true) result_ = visualstudio.Print(stringCliTable, VS::tag_vs_output{});
+   if(result_.first == false)
+   {
+      std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
+      return { false, stringError };
+   }
+                                                                                                   LOG_INFORMATION_RAW( std::format("Printed to Visual Studio output: {} rows", table_.get_row_count()) );
+   return { true, "" };
 }
 
 
@@ -1056,6 +1082,19 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
          pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "footer"}}, gd::types::tag_view{} });
       }
 
+      // ## Prepare preview part
+
+      std::string stringPreview;
+      for( auto it = pargumentsRow->begin(); it != pargumentsRow->end() && stringPreview.length() < 60; ++it )
+      {
+         if( stringPreview.empty() == false ) stringPreview += ", ";
+         stringPreview += it.get_argument(). as_string_view();
+      }
+
+      ptableKeyValue->cell_set( uRow, "preview", stringPreview );
+
+      
+
       if( stringContext.empty() == false )
       {
          pdocument->MESSAGE_Display(stringContext, { array_, {{"color", "disabled"}}, gd::types::tag_view{} });
@@ -1089,6 +1128,17 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    pdocument->MESSAGE_Display(stringSummary, { array_, {{"color", "default"}}, gd::types::tag_view{} });
 
    pdocument->MESSAGE_Display();                                              // reset color to default
+
+
+   // ## check if Visual Studio output is requested ..........................
+   if( (*pargumentsPrint)["vs"].as_bool() == true )
+   {
+
+      //gd::table::dto::table tableVS( *ptableKeyValue );
+
+      //gd::table::dto::table tableVS = gd::table::make_table<gd::table::dto::table>( *ptableKeyValue );
+      
+   }
 
    return { true, "" };                                                       // return success
 }
