@@ -427,7 +427,7 @@ void table_column_buffer::common_construct( const detail::columns* pcolumns )
    {
       for( auto itColumn : *pcolumns )
       {
-         column_add( itColumn );
+         column_add( itColumn, gd::types::tag_detail{});
       }
    }
 }
@@ -449,7 +449,7 @@ void table_column_buffer::common_construct( const detail::columns* pcolumns, con
       int iColumn = pcolumns->find_index( itColumn );
       if( iColumn >= 0 )
       {
-         column_add( *pcolumns->get( (unsigned)iColumn ) );
+         column_add( *pcolumns->get( (unsigned)iColumn ), gd::types::tag_detail{} );
       }
    }
 }
@@ -471,7 +471,7 @@ void table_column_buffer::common_construct( const detail::columns* pcolumns, con
       int iColumn = pcolumns->find_index( itColumn );
       if( iColumn >= 0 )
       {
-         column_add( *pcolumns->get( (unsigned)iColumn ) );
+         column_add( *pcolumns->get( (unsigned)iColumn ), gd::types::tag_detail{} );
       }
    }
 }
@@ -939,7 +939,12 @@ table_column_buffer& table_column_buffer::column_add(const std::vector< std::tup
    return *this;
 }
 
-table_column_buffer& table_column_buffer::column_add( const detail::column& column_ ) 
+/** ---------------------------------------------------------------------------
+ * @brief Add column to table
+ * @param column_ column information for added column
+ * @return reference to table_column_buffer
+ */
+table_column_buffer& table_column_buffer::column_add( const detail::column& column_, gd::types::tag_detail ) 
 { 
    return column_add( column_.type(), column_.size(), column_.name(), column_.alias() ); 
 }
