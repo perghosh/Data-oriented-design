@@ -1,5 +1,3 @@
-#pragma once
-
 #include "gd_parse_format_string.h"
 
 
