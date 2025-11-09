@@ -344,7 +344,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       // ## Parse the command-line arguments
 
-      auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);// @CODE [tag: parse]
+      auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);// @CODE [tag: parse] [description: parse command line arguments]
       if( bOk == false ) 
       { 
          std::string stringHelp;
@@ -384,7 +384,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          if( result_.first == false ) { return result_; }
       }
 
-      // ## Logging ...........................................................
+      // ## Logging ........................................................... ## @CODE [tag: logging] [summary: setup logging] [description: if debug mode logging is activated, set logging severity to debug, otherwise set to info or warning based on configuration ]
 #ifdef GD_LOG_SIMPLE
       bool bSetLogging = CliLogging_s( &optionsApplication );
 #endif // GD_LOG_SIMPLE
@@ -862,7 +862,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "version" )
    {
-      std::cout << "version 1.0.9" << "\n";
+      std::cout << "version 1.1.0" << "\n";
    }
    else
    {
@@ -2188,7 +2188,7 @@ bool CApplication::IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view
 // 0TAG0Options.Application
 
 
-/** ---------------------------------------------------------------------------  @TAG #options.application [description: Prepares the application options for command-line usage]
+/** ---------------------------------------------------------------------------  @API [tag: cli, application ] [summary: prepare application options]
  * @brief Prepares the application options for command-line usage.
  *
  * This method sets up the available command-line options for the application,
@@ -2436,6 +2436,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    // ## Prepar aliases for commands
    optionsApplication.alias_add("ls", { { "command", "dir" }, { "compact", true } } );
    optionsApplication.alias_add("cp", { { "command", "copy" } } );
+   optionsApplication.alias_add("hi", { { "command", "history" } } );
 }
 
 // ----------------------------------------------------------------------------
@@ -2475,7 +2476,7 @@ void CApplication::PrepareLogging_s()
 
 
 
-/** --------------------------------------------------------------------------- @TAG #data.extension [description: Information about source code extensions, source code format] [tags: config ]
+/** --------------------------------------------------------------------------- @API [tag: code, config ] [description: Language rules, what is what in different languages, things like string, comment and code] 
  * @brief Prepares the state for parsing based on the file extension.
  * @param argumentsPath The arguments containing the source path for harvesting files.
  * @param state_ The state object to be prepared.

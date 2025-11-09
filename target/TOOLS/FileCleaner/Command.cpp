@@ -197,7 +197,7 @@ namespace detail {
 }
 
 
- /** --------------------------------------------------------------------------
+/** -------------------------------------------------------------------------- @API [tag: files, harvest] [summary: Harvest files from directory into table] [description: Here files collected and name for file is placed in table that is used later to find information in]
   * @brief Harvests files from a specified directory path and populates a table with their details.
   *
   * This method recursively traverses the directory structure starting from the given path, 

@@ -1,10 +1,10 @@
 /**
-* \file Document.cpp
-* 
-* ### 0TAG0 File navigation, mark and jump to common parts
-* - `0TAG0CACHE.Document` - cache methods
-
-*/
+ * \file Document.cpp
+ * 
+ * ### 0TAG0 File navigation, mark and jump to common parts
+ * - `0TAG0CACHE.Document` - cache methods
+ 
+ */
 
 #include <algorithm>
 #include <filesystem>

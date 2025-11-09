@@ -1,4 +1,4 @@
-/**                                                                            @TAG #ui.cli #command.find [description: definitions for find methods]
+/**                                                                            @FILE [tag: cli, find] [description:definition for methods used for find]
  * @file CLIFind.cpp
  * @brief This file contains the definitions methods used for the cli find command
  * 
@@ -27,7 +27,7 @@
 
 NAMESPACE_CLI_BEGIN
 
-/** --------------------------------------------------------------------------- @CODE [tag: cli, command, find] [description: Searches for patterns in files based on various options, differ from list that this can do multiline searches]
+/** --------------------------------------------------------------------------- @API [tag: cli, command, find] [description: Searches for patterns in files based on various options, differ from list that this can do multiline searches]
  * @brief Processes the 'find' command and performs file searching based on provided options.
  *
  *  - Reads settings from command line options to collect.
@@ -82,7 +82,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
    }
 
    gd::argument::arguments argumentsFileHarvest;
-   SHARED_ReadHarvestSetting_g( options_, argumentsFileHarvest, pdocument );
+   SHARED_ReadHarvestSetting_g( options_, argumentsFileHarvest, pdocument );  // Harvest files to find information in, settings to read from options
    options_.get_arguments().append( argumentsFileHarvest, { "depth" } );
 
    auto vectorSourceToPrepare = argumentsFileHarvest.get_argument_all("source", gd::types::tag_view{}); // get all source arguments, this is used to find files in the source directory
@@ -183,6 +183,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
          }
 
          bPrint = true;                                                        // set print to true, we have printed the results
+         return { true, "" };
       }
 
 
@@ -236,9 +237,6 @@ std::pair<bool, std::string> Find_g( const std::vector<std::string>& vectorSourc
    int iRecursive = options_["depth"].as_int();
 
    std::string stringFilter = options_["filter"].as_string();
-
-   // ## Prepare the application state
-   pdocument->GetApplication()->UpdateApplicationState();                     // update the application state to reflect the current state of the application
 
    gd::argument::shared::arguments argumentsFind; // prepare arguments for the file update
 

@@ -1,4 +1,4 @@
-/**                                                                            @TAG #ui.cli #command.find [description:declaration for methods used for find]
+/**                                                                            @FILE [tag: cli, find] [description:declaration for methods used for find]
 * @file CLIFind.h
 *  
 * @brief Header file for CLI find operations.

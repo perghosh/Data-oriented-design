@@ -1,4 +1,4 @@
-/**
+/** @FILE [tag: document, cache, error, file] [summary: Document stores information for cleaner]
  * \file Document.h
  * 
  * ### 0TAG0 File navigation, mark and jump to common parts
