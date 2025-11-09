@@ -5,7 +5,6 @@
  [description: "## Expession methods
   Methods converts expressions from strings to logic and perform operations on table data.
   What they do is to iterate through table data and perform operations on each line."]
- [tags: "gd::expression, gd::table"]
  */
 
 // ## convert string to tokens
@@ -133,7 +132,7 @@ std::pair<bool, std::string> RunExpression_g(const std::string_view& stringExpre
 
 
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- API [tag: expression, where] [description: run where expression on table]
  * @brief Executes a "where" expression on a table, filtering rows based on the expression.
  * 
  * - configure runtime with methods for default operations
