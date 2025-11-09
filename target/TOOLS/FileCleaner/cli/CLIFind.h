@@ -49,8 +49,11 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
 std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint );
 /// @brief Print method for key-value pairs
 std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint = nullptr );
+
+#ifdef _WIN32
 /// @brief Print method for visual studio format
 std::pair<bool, std::string> FindPrintVS_g( const gd::table::dto::table& table_ );
+#endif
 
 NAMESPACE_CLI_END
 

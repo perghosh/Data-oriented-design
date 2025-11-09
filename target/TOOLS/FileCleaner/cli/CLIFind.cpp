@@ -160,6 +160,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
          result_ = FindPrintKeyValue_g(pdocument, &argumentsPrint);                             // Print the key-value pairs found in the files
          if( result_.first == false ) return result_;                          // if print failed, return the error
 
+#ifdef _WIN32
          if( options_.exists("vs") == true ) 
          { 
             argumentsPrint.append("vs", true); 
@@ -181,6 +182,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
             result_ = FindPrintVS_g( tableVS );                                // Print to visual studio output
             if( result_.first == false ) return result_;                       // if print failed, return the error
          }
+#endif // _WIN32
 
          bPrint = true;                                                        // set print to true, we have printed the results
          return { true, "" };
@@ -731,7 +733,7 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
 
    return { true, "" }; 
 }
-
+#ifdef _WIN32
 std::pair<bool, std::string> FindPrintVS_g( const gd::table::dto::table& table_ )
 {
    std::string stringCliTable; // string to hold the CLI table output
@@ -748,6 +750,7 @@ std::pair<bool, std::string> FindPrintVS_g( const gd::table::dto::table& table_ 
                                                                                                    LOG_INFORMATION_RAW( std::format("Printed to Visual Studio output: {} rows", table_.get_row_count()) );
    return { true, "" };
 }
+#endif // _WIN32
 
 
 /** --------------------------------------------------------------------------- @TAG #cli #snippet
