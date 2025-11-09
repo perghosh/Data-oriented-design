@@ -65,7 +65,7 @@
 _GD_TABLE_BEGIN
 
 class table;
-namespace detail { class columns; }
+namespace detail { class columns; class column; }
 
 /**
  * \brief  Manage table data store as a big block
@@ -481,9 +481,19 @@ public:
    table_column_buffer( const table_column_buffer& o, tag_columns ): m_puData(nullptr) { common_construct( o, tag_columns{}); }
    table_column_buffer( table_column_buffer&& o ) noexcept : m_puData(nullptr) { common_construct( std::move( o ) ); }
    table_column_buffer( const table_column_buffer& o, uint64_t uFrom, uint64_t uCount );
-   table_column_buffer( const table_column_buffer& o, const std::vector<uint64_t> vectorRow );
-   table_column_buffer( const table_column_buffer& o, const range& rangeCopy );
-   table_column_buffer( const table_column_buffer& o, const page& pageCopy );
+   explicit table_column_buffer( const table_column_buffer& o, const std::vector<uint64_t> vectorRow );
+   explicit table_column_buffer( const table_column_buffer& o, const range& rangeCopy );
+   /// copy with page (pages us used to store parts of table data in some kinde of page to dividide)
+   explicit table_column_buffer( const table_column_buffer& o, const page& pageCopy );
+
+   /// copy with selected columns
+   explicit table_column_buffer( const detail::columns* pcolumns_ ) : m_puData( nullptr ) { common_construct( pcolumns_ ); }
+   explicit table_column_buffer( const detail::columns& columns_ ) : m_puData( nullptr ) { common_construct( &columns_ ); }
+   explicit table_column_buffer( const detail::columns* pcolumns_, std::initializer_list<gd::variant_view> listColumn ) : m_puData( nullptr ) { common_construct( pcolumns_, listColumn ); }
+   explicit table_column_buffer( const detail::columns& columns_, std::initializer_list<gd::variant_view> listColumn ) : m_puData( nullptr ) { common_construct( &columns_, listColumn ); }
+   explicit table_column_buffer( const detail::columns* pcolumns_, const std::vector<gd::variant_view>& vectorColumn ) : m_puData( nullptr ) { common_construct( pcolumns_, vectorColumn ); }
+   explicit table_column_buffer( const detail::columns& columns_, const std::vector<gd::variant_view>& vectorColumn ) : m_puData( nullptr ) { common_construct( &columns_, vectorColumn ); }
+
 // assign
    table_column_buffer& operator=( const table_column_buffer& o ) { clear(); common_construct( o ); return *this; }
    table_column_buffer& operator=( table_column_buffer&& o ) noexcept { clear(); common_construct( std::move( o ) ); return *this; }
@@ -503,6 +513,10 @@ private:
    void common_construct( const table_column_buffer& o, tag_columns );
    void common_construct( const table_column_buffer& o, const std::vector<unsigned>& vectorColumn, tag_columns );
    void common_construct( table_column_buffer&& o ) noexcept;
+   void common_construct( const detail::columns* pcolumns );
+   /// construct from columns and specify what columns to use
+   void common_construct( const detail::columns* pcolumns, const std::initializer_list<gd::variant_view>& listColumn );
+   void common_construct( const detail::columns* pcolumns, const std::vector<gd::variant_view>& vectorColumn );
 
    // ## @API [tag: operator] [description: table operators]
 public:
@@ -610,6 +624,7 @@ public:
 
    std::pair<bool, std::string> column_add( const std::string_view& stringColumns, tag_parse );
    table_column_buffer& column_add( const argument::column& columnAdd ) { return column_add( columnAdd.type(), columnAdd.size(), columnAdd.name(), columnAdd.alias() ); }
+   table_column_buffer& column_add( const detail::column& column_ );
 
    template< typename CLASS >
    table_column_buffer& column_add() { return column_add( CLASS::to_columns(), tag_type_name{} ); }
@@ -919,6 +934,11 @@ public:
    /// get cell value using name or column index, if name then column gets index to speed up the process next time value is returned
    gd::variant_view cell_get_variant_view( uint64_t uRow, std::variant< unsigned, std::string_view >* pvariantColumn ) const noexcept;
 
+   // ## @API [tag: cell, get, find] [description: get cell values by searching for row]
+
+   const uint8_t* cell_get(  const std::vector< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& vectorFind, unsigned uColumn, tag_find ) const noexcept;
+   gd::variant_view cell_get_variant_view(  const std::vector< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& vectorFind, unsigned uColumn, tag_find ) const noexcept;
+
 
    unsigned cell_get_length( uint64_t uRow, unsigned uColumn ) const noexcept;
 
@@ -959,6 +979,7 @@ public:
    int64_t find( unsigned uColumn, const gd::variant_view& variantviewFind ) const noexcept { return find( uColumn, 0, get_row_count(), variantviewFind ); }
    int64_t find( const std::string_view& stringName, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( stringName, 0, get_row_count(), variantviewFind ); }
    int64_t find( unsigned uColumn, bool bAscending, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( uColumn, bAscending, 0, get_row_count(), variantviewFind ); }
+   int64_t find( const std::string_view& stringName, bool bAscending, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( column_get_index( stringName ), bAscending, 0, get_row_count(), variantviewFind ); }
    int64_t find( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;
 
    int64_t find_variant_view( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;
@@ -982,6 +1003,7 @@ public:
 
    int64_t find(const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant ) const noexcept { return find(0, get_row_count(), listFind, tag_column_variant{}); }
    int64_t find( uint64_t uStartRow, uint64_t uCount, const std::initializer_list< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& listFind, tag_column_variant ) const noexcept;
+   int64_t find( uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& vectorFind, tag_column_variant ) const noexcept;
 
    // ## find all matching rows
    

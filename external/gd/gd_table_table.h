@@ -1,26 +1,30 @@
 /**
  * \file gd_table_table.h
- * 
- * @brief Table used to store member data or data is fixed, like information about table columns do not change.
- * 
- | Area                | Methods (Examples)                                                                 | Description                                                                                   |
- |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
- | Construction        | table(...), common_construct(...)                                                  | Constructors for various ways to create and copy table buffers, including from other tables.   |
- | Column Management   | column_add(...), column_rename(...), column_exists(...), column_get_index(...)     | Methods for adding, renaming, finding, and managing columns and their metadata.                |
- | Row Management      | row_add(...), row_set(...), row_get_variant_view(...), row_reserve_add(...)        | Methods for adding, setting, retrieving, and reserving rows and their values.                  |
- | Cell Access         | cell_get(...), cell_set(...), cell_get_variant_view(...), cell_get_length(...)     | Methods for accessing and modifying individual cell values, including type conversion.         |
- | Data Operations     | append(...), harvest(...), plant(...), swap(...), erase(...), split(...)           | Methods for copying, merging, splitting, swapping, and erasing data between tables.            |
- | Searching/Sorting   | find(...), find_variant_view(...), sort(...), sort_null(...)                       | Methods for searching for values and sorting rows by column values, including null handling.   |
- | Iteration/ForEach   | column_for_each(...), row_for_each(...)                                            | Methods for iterating over columns and rows with callback functions.                           |
- | Debug/Printing      | debug::print(...), debug::print_row(...), debug::print_column(...)                 | Methods for printing table, row, and column information for debugging purposes.                |
- | Utility/Meta        | clear(), count_used_rows(), count_free_rows(), column_match_s(...), to_columns(...)| Utility methods for clearing, counting, matching, and converting table/column metadata.        |
- * 
+ *
+ * @brief Table for storing fixed or member data, such as column metadata or static table layouts.
+ *
+ * | Area                | Methods (Examples)                                                                 | Description                                                                                   |
+ * |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ * | Construction        | table(...), common_construct(...), operator=, ~table()                              | Constructors, copy/move, assignment, and destructor for table buffers.                        |
+ * | Column Management   | column_add(...), column_rename(...), column_exists(...), column_get_index(...),    | Add, rename, check, and retrieve columns and their properties.                                |
+ * |                     | column_get_type(...), column_get_name(...), column_set_size(...), column_clear()   |                                                                                               |
+ * | Row Management      | row_add(...), row_set(...), row_get(...), row_get_variant_view(...),               | Add, set, retrieve, reserve, and clear rows and their values.                                 |
+ * |                     | row_reserve_add(...), row_clear(), row_delete(), row_set_null(...)                 |                                                                                               |
+ * | Cell Access         | cell_get(...), cell_set(...), cell_get_variant_view(...), cell_get_length(...),    | Access and modify individual cell values, including null and reference handling.              |
+ * |                     | cell_set_null(...), cell_set_not_null(...), cell_is_null(...), cell_get_reference(...) |                                                                                          |
+ * | Data Operations     | append(...), harvest(...), plant(...), swap(...), erase(...), split(...)           | Copy, merge, split, swap, and erase data between tables.                                      |
+ * | Searching/Sorting   | find(...), find_variant_view(...), find_all(...), sort(...), sort_null(...)        | Search for values and sort rows by column values, with null and meta handling.                |
+ * | Iteration/ForEach   | column_for_each(...), row_for_each(...), begin(), end(), rows(), columns()         | Iterate over columns and rows, including STL-style iterators and callback-based iteration.    |
+ * | Utility/Meta        | clear(), count_used_rows(), count_free_rows(), column_match_s(...),                | Utility methods for clearing, counting, matching, and converting table/column metadata.       |
+ * |                     | get_column_count(), get_row_count(), get_reserved_row_count(), size_reserved_total()|                                                                                               |
+ *
  */
 
 #pragma once
 
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <functional>
 #include <string_view>
 #include <string>
@@ -478,6 +482,9 @@ public:
    auto column_cend() const { return m_pcolumns->cend(); }
 
    void column_prepare();
+
+   // ## methods to work on detail::column object, this is to transfer column information between tables
+
    detail::column column_get( std::size_t uIndex ) { return *m_pcolumns->get( uIndex ); }
    const detail::column& column_get( std::size_t uIndex ) const { return *m_pcolumns->get( uIndex ); }
    detail::column* column_get( std::size_t uIndex, tag_pointer ) { return m_pcolumns->get( uIndex ); }
@@ -729,6 +736,7 @@ public:
    int64_t find( unsigned uColumn, const gd::variant_view& variantviewFind ) const noexcept { return find( uColumn, 0, get_row_count(), variantviewFind ); }
    int64_t find( const std::string_view& stringName, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( stringName, 0, get_row_count(), variantviewFind ); }
    int64_t find( unsigned uColumn, bool bAscending, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( uColumn, bAscending, 0, get_row_count(), variantviewFind ); }
+   int64_t find( const std::string_view& stringName, bool bAscending, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( column_get_index( stringName ), bAscending, 0, get_row_count(), variantviewFind ); }
    int64_t find( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;
    
    int64_t find_variant_view( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;

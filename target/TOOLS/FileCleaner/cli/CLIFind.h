@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <iostream>
 
+
 #include "gd/gd_arguments.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
@@ -48,6 +49,8 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
 std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint );
 /// @brief Print method for key-value pairs
 std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint = nullptr );
+/// @brief Print method for visual studio format
+std::pair<bool, std::string> FindPrintVS_g( const gd::table::dto::table& table_ );
 
 NAMESPACE_CLI_END
 

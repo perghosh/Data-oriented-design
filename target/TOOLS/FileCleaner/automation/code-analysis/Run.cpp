@@ -154,7 +154,7 @@ std::pair<bool, std::string> RunExpression_g(const std::string_view& stringExpre
    auto result_ = RunExpression_Where_g(stringExpression, &tableKeyValue);
    @endcode
  */
-std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& stringExpression, gd::table::arguments::table* ptableKeyValue)
+std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& stringExpression, gd::table::arguments::table* ptableKeyValue, std::function<void(const std::vector<uint64_t>&, const gd::table::arguments::table*)> callback_)
 {
    // ## convert string to tokens
 
@@ -198,6 +198,8 @@ std::pair<bool, std::string> RunExpression_Where_g(const std::string_view& strin
 
       if( result_.first == false ) { return result_; }
    }
+
+   if( callback_ ) { callback_( vectorDeleteRow, ptableKeyValue ); }          // call callback before deleting rows
                                                                                                    LOG_VERBOSE_RAW("== Keep Rows: " & (ptableKeyValue->size() - vectorDeleteRow.size()));
    if( vectorDeleteRow.empty() == false ) { ptableKeyValue->erase(vectorDeleteRow); }  // erase rows that did not match the where condition
 
