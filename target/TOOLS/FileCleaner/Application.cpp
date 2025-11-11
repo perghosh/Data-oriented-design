@@ -205,7 +205,7 @@ std::string CApplication::GetUITypeAsString() const
    return  "unknown";
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @CODE [tag: mode, application, configuration] [summary: mode constants for application] [description: cleaners global modes and these modes describe a global state for how cleaner should behave]
  * @brief Sets the mode of the application based on the provided string.
  *
  * This method updates the application's mode based on the input string. If the string does not match any known modes,
@@ -3848,5 +3848,3 @@ CApplication::PROPERTY_Add("folder-current", "current active folder path");
 CApplication::PROPERTY_Add("folder-home", "user home director for cleaner");
 @endcode
 */
-
-
