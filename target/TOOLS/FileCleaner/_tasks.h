@@ -42,20 +42,12 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 [summary : Pin a history item]
 [description: "This task involves adding a pin feature to the history, allowing users to pin specific commands for easy access later."]   
 
-@TASK [title: alias] [project:history] [assignee: kevin] [status:open] [created: 250829]
-[summary : move or copy from saved to alias part and set alias name]
-[description: "This task involves adding an alias to the history row, allowing users to specify a shorthand command for accessing their command history."]   
-[sample: """cleaner history --   """
 */
 
 // ----------------------------------------------------------------------------
 
 /*
 @PROJECT [name: print]
-
-@TASK [title: wrap the brief part] [project:print] [assignee: per] [status:closed] [created: 250828]
-[summary: Wrap brief part]
-[description: "If max width is set then wrap the brief part to that width as the body is wrapped"]
 
 @TASK [title: check that csv print works] [project:print] [assignee: per] [status:open] [created: 250828]
 [summary: Check that CSV print works]
@@ -66,8 +58,8 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 [description: "Frame is used if configured doing find searches with key value, with -frame or similar a frame should be printed even if no header or footer is set."]
 
 @TASK [title: format template] [project:print] [assignee: per] [status:open] [level:4] [created: 250830]
-[summary: specify how to print takes time, work on template on how to format output]
-[description: "To get better way to format output based on what type of search thats done figure out some sort of template to read information from"]
+[summary: template for printing]
+[description: "To get better way to format output based on what type of search thats done figure out some sort of template to read information from. Similar to jinja maybe"]
 
 */
 
@@ -76,9 +68,11 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 /*
 @PROJECT [name: help]
 
-@TASK [title: format command help] [project:help] [assignee: per] [status:closed] [created: 250828]
-[summary : printing command help is not wrapped, that should be wraped as full help is wrapped]
+@TASK [summary: add global options to command help] [project:help] [assignee: per] [status:closed] [created: 251111]
+[summary : print help for specific command, then global options should be printed also]
 
+@TASK [summary: print only global options] [project:help] [assignee: per] [status:closed] [created: 251111]
+[summary : add flag for only print global options]
 */
 
 // ----------------------------------------------------------------------------
@@ -87,4 +81,3 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 @PROJECT [name: serialize-table] [summary: Serialize and deserialize table data]
 
 */
-
