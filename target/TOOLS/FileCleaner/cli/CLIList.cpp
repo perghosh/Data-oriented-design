@@ -1,4 +1,4 @@
-/**
+/**                                                                            @FILE [tag: cli, command, list] [description: Processes the 'list' command, line based search in selected files] [type: source]
  * @file CLIList.cpp
  * @brief Implements the 'list' command used for pattern matching in lines.
  */
@@ -638,4 +638,3 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
 
 
 NAMESPACE_CLI_END
-

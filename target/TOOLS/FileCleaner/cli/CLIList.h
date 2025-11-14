@@ -1,4 +1,4 @@
-/**                                                                            @TAG #ui.cli #command.list [description:declaration for methods used for list command]
+/**                                                                            @FILE [tag: cli, command, list] [description: Processes the 'list' command, line based search in selected files] [type: header]
  * @file CLIList.h
  *  
  * @brief Header file for CLI list operations. "list" command passes arguments to these methods.
