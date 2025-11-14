@@ -1,4 +1,4 @@
-/**                                                                            @TAG #ui.cli #command.paste[description:declaration for methods used for paste command]
+/**                                                                            @FILE [tag: cli, command, paste] [description:implementation for CLI paste operations, command is found in clipboard] [type: source]
 * @file CLIPaste.h
 *  
 */
