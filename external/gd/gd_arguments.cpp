@@ -887,7 +887,12 @@ void arguments::set(pointer pposition, const argument& argumentSet, tag_argument
    }
    else
    {
-      set(pposition, argumentSet.ctype(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
+      auto uType = argumentSet.ctype();
+      auto uLength = argumentSet.length();
+#ifndef NDEBUG
+		const char* piValue_d = (const char*)argumentSet.get_raw_pointer();
+#endif
+      set(pposition, uType, (const_pointer)argumentSet.get_raw_pointer(), uLength);
    }
 }
 
