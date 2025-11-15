@@ -63,7 +63,7 @@ std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& arg
 /// \brief Save XML file for history
 std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argumentsSave, CDocument* pdocument);
 
-std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument);
+std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, const gd::cli::options* poptionsApplication, CDocument* pdocument);
 
 /// \brief Index history entries from table
 std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argumentsIndex, CDocument* pdocument);

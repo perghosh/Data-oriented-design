@@ -2229,7 +2229,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag_or_option({ "detail", "Set detail level on information presented to user. levels are basic, standard, extended, full or 0,1,2,3. If detail set as flag then standard is used." });
 
    {  // ## `count` command, copies file from source to target
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count patterns or lines and segments in selected files" );
+      gd::cli::options optionsCommand( 0, "count", "Count patterns or lines and segments in selected files" );
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "source", 's', "File(s) or folder(s) to count lines in"});
@@ -2253,7 +2253,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
    {  // ## `config` command, manage configuration file
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "config", "Manage configuration" );
+      gd::cli::options optionsCommand( 0, "config", "Manage configuration" );
       optionsCommand.add_flag({"create", "Create configuration file if it doesn't exist"});
       optionsCommand.add_flag({"edit", "Edit configuration file if it exists"});
       optionsCommand.add_flag({"local", "Create configuration file in current directory"});
@@ -2265,7 +2265,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
 
    {  // ## `copy` command, count number of lines in file 
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file or selected files from source to target" );
+      gd::cli::options optionsCommand( 0, "copy", "Copy file or selected files from source to target" );
       optionsCommand.add({ "source", 's', "File or files to copy, if many files then a tip is to set filter with --filter and folders in source" });
       optionsCommand.add({ "target", 't', "Destination, where file is copied to" });
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
@@ -2297,7 +2297,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
 
    { // ## 'dir' command, list files
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List selected files, lots of filtering options to select what to list." );
+      gd::cli::options optionsCommand( 0, "dir", "List selected files, lots of filtering options to select what to list." );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
       optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations. Multiple directories are separated with semicolons (`;`)" });
@@ -2320,7 +2320,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
    { // ## 'find' command, list files
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "find", "Search patterns in files and all filecontent is searched in, this enables multiline patterns" );
+      gd::cli::options optionsCommand( 0, "find", "Search patterns in files and all filecontent is searched in, this enables multiline patterns" );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `*.cpp`) to apply when searching for files. Multiple filters are separated with ;. If no filter is provided, all found text files will be searched for patterns." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
       optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations. Multiple directories are separated with semicolons (`;`)" });
@@ -2367,13 +2367,13 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag({ "edit", "Edit history file if it exists" });
       optionsCommand.add_flag({ "local", "Create history file in current directory" });
       optionsCommand.add_flag({ "home", "Create history file in user home directory" });
-      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent ), 0 );
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
    { // ## 'list' command, list rows with specified patterns @TAG #options.list
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "Search files and list lines matching specified patterns. Searches are performed line-by-line within files." );
+      gd::cli::options optionsCommand( 0, "list", "Search files and list lines matching specified patterns. Searches are performed line-by-line within files." );
       optionsCommand.add({ "filter", "Filter files by name using **wildcard patterns** (e.g., `*.cpp`, `test*`). Multiple patterns can be separated by semicolons (`;`). If omitted, all files are processed." });
       optionsCommand.add({ "pattern", 'p', "**Search patterns** to find in file content. Multiple patterns can be separated by commas (`,`) or semicolons (`;`). Each line is checked for matches." });
       optionsCommand.add({ "source", 's', "Specify the **file(s) or folder(s)** to search for matching rows. This is the starting point for the search operation. Multiple sources are split with (`;`)." });
