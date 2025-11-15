@@ -756,25 +756,9 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
 
       // ## Overload options from the application options .........................
       //    Here we try to find extra arguments passed to history run command, it can take any number of values and these values will overload the options used to run the command from history
-      //    args": [ "history", "file", "--pattern", "\"@APII\"" ],
-      /*
-     <entry>
-        <name>find</name>
-        <line>"**" --segment comment --pattern "@FILE" --header "tag;user;title" --brief "summary" --keys "description;desc;detail;code" --footer "status;note" --kv-where "str::has_tag(tag, '{where}') or str::is_empty('{where}')"</line>
-        <date>2025-11-01 11:10:10</date>
-        <alias>file</alias>
-        <variable ask="1" name="where" description="Enter tag or tags separated with , to select tag. Empty if no filter" />
-     </entry>
-      
-      
-      */
       {  gd::cli::options* poptionsCommand = optionsRun.sub_find_active();    // find the active sub-command options
          if( poptionsCommand != nullptr )
          {
-            //gd::argument::arguments a;
-            //a.append( "run", std::string_view("12"));
-
-
             gd::argument::arguments argumentsOverload( poptionsApplication->get_arguments() );
             argumentsOverload.remove("run");
             poptionsCommand->overload(argumentsOverload);
