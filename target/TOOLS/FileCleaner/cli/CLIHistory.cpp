@@ -208,7 +208,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    {
       gd::argument::arguments argumentsRun;
       argumentsRun.append( options_.get_arguments(), { "run", "local", "home" } );
-      result_ = HistoryRun_g(argumentsRun, poptionsApplication, pdocument);
+      result_ = HistoryRun_g(argumentsRun, poptionsHistory, pdocument);
    }
    else if( options_.exists("index") == true )
    {
@@ -691,17 +691,18 @@ std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argume
  * @param pdocument Pointer to the document object, used to access the cached history table.
  * @return A pair where the first element is a boolean indicating success or failure, and the second element is a string containing an error message if the operation failed.
  */
-std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument)
+std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, const gd::cli::options* poptionsApplication, CDocument* pdocument)
 {
    std::pair<bool, std::string> result_;
    // ## Read the history file into the table
 
    int64_t iRow = -1; // Row index to run
+   // Get the entry to run placed in `stringEntry`
    std::string stringEntry = argumentsRun["run"].as_string();                                      LOG_DEBUG_RAW( "==> Index/name to run: " + stringEntry );
 
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
-   gd::argument::arguments argumentsRead( argumentsRun );
+   gd::argument::arguments argumentsRead( argumentsRun ); // copy run arguments because we will modify them, template arguments are added if needed
    if( stringEntry.empty() == false ) 
    { 
       if( gd::math::type::is_integer(stringEntry) == true ) 
@@ -752,6 +753,33 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
 
       result_ = optionsRun.parse_terminal(stringCommand);                     // Parse the command line from the history entry
       if( result_.first == false ) { return result_; }
+
+      // ## Overload options from the application options .........................
+      //    Here we try to find extra arguments passed to history run command, it can take any number of values and these values will overload the options used to run the command from history
+      //    args": [ "history", "file", "--pattern", "\"@APII\"" ],
+      /*
+     <entry>
+        <name>find</name>
+        <line>"**" --segment comment --pattern "@FILE" --header "tag;user;title" --brief "summary" --keys "description;desc;detail;code" --footer "status;note" --kv-where "str::has_tag(tag, '{where}') or str::is_empty('{where}')"</line>
+        <date>2025-11-01 11:10:10</date>
+        <alias>file</alias>
+        <variable ask="1" name="where" description="Enter tag or tags separated with , to select tag. Empty if no filter" />
+     </entry>
+      
+      
+      */
+      {  gd::cli::options* poptionsCommand = optionsRun.sub_find_active();    // find the active sub-command options
+         if( poptionsCommand != nullptr )
+         {
+            //gd::argument::arguments a;
+            //a.append( "run", std::string_view("12"));
+
+
+            gd::argument::arguments argumentsOverload( poptionsApplication->get_arguments() );
+            argumentsOverload.remove("run");
+            poptionsCommand->overload(argumentsOverload);
+         }
+      }
 
       result_ = papplication_g->InitializeInternal(optionsRun);                      // Initialize the application with parsed options
       if( result_.first == false ) { return result_; }

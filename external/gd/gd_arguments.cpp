@@ -887,7 +887,7 @@ void arguments::set(pointer pposition, const argument& argumentSet, tag_argument
    }
    else
    {
-      set(pposition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
+      set(pposition, argumentSet.ctype(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
    }
 }
 
@@ -1436,7 +1436,43 @@ arguments& arguments::append_argument( const std::vector< std::pair<std::string_
    return *this;
 }
 
-// 0TAG0set.arguments
+/*-----------------------------------------------------------------------------
+ * @brief Sets or updates named values in the arguments buffer from another arguments object.
+ * 
+ * This method iterates through the provided `arguments_` object and sets or updates 
+ * each named value in the current arguments buffer. If a named value already exists, 
+ * it is updated; otherwise, it is appended to the buffer.
+ * 
+ * @param arguments_ A const reference to another `arguments` object containing named values to set or update.
+ * @return arguments& A reference to the current arguments object for chaining.
+ */
+arguments& arguments::set(const arguments& arguments_)
+{
+   for( auto it = std::begin(arguments_); it != std::end(arguments_); it++ )
+   {
+      if( it.is_name() == true )
+      {
+         auto argument_ = it.get_argument();
+         auto name_ = it.name();
+         pointer pposition_ = find(name_);
+         if( pposition_ == nullptr )
+         {
+            append_argument( name_, argument_ );                              // not found, just add it
+         }
+         else
+         {
+            set( pposition_, argument_, tag_argument{} );                     // found, set it
+         }
+      }
+      else
+      {
+         auto argument_ = it.get_argument();
+         append_argument( argument_ );                                        // unnamed value, just add it
+      }
+   }
+
+   return *this;
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Sets or updates a named value in the arguments buffer.
@@ -1704,8 +1740,6 @@ arguments::pointer arguments::insert(pointer pPosition, const std::string_view& 
 
    return pPosition;
 }
-
-// 0TAG0merge.arguments
 
 /** ---------------------------------------------------------------------------
  * @brief Merge two arguments objects

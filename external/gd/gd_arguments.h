@@ -435,6 +435,7 @@ public:
       /// length in bytes for param
       unsigned int length() const;
       /// get param type
+      // @TODO [tag: arguments] [description: this do not return the complete type (with length and array flags) and maybe this is ok but need to be checked, it should return the complete type including flags for size]
       arguments::enumType type() const { return arguments::enumType((unsigned)m_eType & ~eType_MASK); }
       arguments::enumCType type_number() const { return arguments::enumCType((unsigned)m_eType & ~eTypeNumber_MASK); }
       /// return the raw internal type, this has optional flags for type
@@ -931,7 +932,7 @@ public:
    template<typename OBJECT>
    arguments& append_object( const OBJECT object ) { return append_object( std::string_view(), object ); }
 
-   // ## @API [tag: append] [description: set methods, if value exists it is overwritten, otherwise it is appended]
+   // ## @API [tag: set] [description: set methods, if value exists it is overwritten, otherwise it is appended]
    //    Set values for selected position in buffer, it could be for a name, index or pointer
    //    If position is not found, new value is appended to buffer
 
@@ -958,6 +959,8 @@ public:
    arguments& set(pointer pPosition, const gd::variant_view& variantValue) { return set(pPosition, variantValue, nullptr); }
    arguments& set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition);
    arguments& set(std::string_view stringName, const gd::variant_view& variantValue);
+
+   arguments& set(const arguments& arguments_);
 
    arguments& set(std::string_view stringName, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set(stringName.data(), (uint32_t)stringName.length(), uType, pBuffer, uLength); }
    arguments& set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength);

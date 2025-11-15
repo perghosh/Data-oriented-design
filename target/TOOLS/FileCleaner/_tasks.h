@@ -119,3 +119,12 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 [description: count information in files is normally presented for each file, summing up the total count for the folder is also needed]
 
 */
+
+/*
+@PROJECT [name: overload] [summary: Add overloading of arguments using the history command]
+
+@TASK [summary: overload history command arguments] [project:overload] [user: per] [status:open] [created: 251114] [type: code]
+[description: Running history commands reads arguments from saved history string, but to change check what type of arguments that is passed running the history command]
+
+*/
+

@@ -101,6 +101,20 @@ void options::add_flag_or_option(const option& option_)
    m_vectorOption.push_back( std::move(optionAdd) );
 }
 
+/// Overload all option values from sent options_
+void options::overload( const options* poptions )
+{                                                                                                  assert( poptions != nullptr );
+   const auto& arguments_ = poptions->get_arguments();
+   overload( arguments_ );
+}
+
+/// Overload all option values from sent options_
+void options::overload( const gd::argument::arguments& arguments_ )
+{
+   m_argumentsValue.set( arguments_ );
+}
+
+
 /// Get all values for name as variant_view's in list
 std::vector<gd::variant_view> options::get_all(const std::string_view& stringName) const
 {
@@ -125,6 +139,7 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
    int iOptionState = state_unknown;                 
    int iPositionalArgument = -1;                                               // if argument is set as positional
    bool bAllowPositional = true;                                               // if positional arguments are alowed, when first named argument is found this is disabled
+   std::string_view stringNameNotFound;
 
 #ifndef NDEBUG
    std::string stringCommand_d;
@@ -145,6 +160,7 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
 
       if( bOption == true )                                                   // found option
       {
+         stringNameNotFound = std::string_view();                                   // clear not found name
          bAllowPositional = false;                                            // no more positional arguments are allowed
          const char* pbszFindArgument = pbszArgument + 1;                     // move past first dash
          if( *pbszFindArgument == '-' ) pbszFindArgument++;                   // move to argument name
@@ -156,18 +172,32 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
             if( is_parent() == true && poptionsRoot != nullptr ) poptionActive = poptionsRoot->find( pbszFindArgument );
          }
 
-         if(poptionActive == nullptr && is_flag(eFlagUnchecked) == false)     // unknown argument and we do not allow unknown arguments?
+         if(poptionActive == nullptr)                                         // unknown argument and we do not allow unknown arguments?
          {
-            return error_s({ "Unknown option : ", pbszArgument });
+            if( is_flag(eFlagUnchecked) == false ) return error_s({ "Unknown option : ", pbszArgument });
+            else
+            {
+               stringNameNotFound = pbszFindArgument;                         // store name of not found option
+            }
          }
          
-         // ## if no option found and single dash options is not allowed 
-         if( poptionActive != nullptr )
+         // ## if option found
+
+         if( poptionActive != nullptr || stringNameNotFound.empty() == false )
          {
             // ## check for flag if single dash is allowed
-            if( bMayBeFlag == true && poptionActive->is_flag() == true )
+            if( poptionActive != nullptr )
             {
-               add_value( poptionActive, true );
+               if( bMayBeFlag == true && poptionActive->is_flag() == true )
+               {
+                  add_value( poptionActive, true );
+                  iOptionState = state_unknown;
+                  continue;
+               }
+            }
+            else if( bMayBeFlag == true )
+            {
+               add_value( stringNameNotFound, true );
                iOptionState = state_unknown;
                continue;
             }
@@ -182,6 +212,8 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
                {
                   const char* pbszValue = ppbszArgumentValue[iPosition];
                   if( poptionActive != nullptr ) add_value( poptionActive, pbszValue );// add value for option if option is found (when all options are allowed it could be option that do not exist)
+                  else if( stringNameNotFound.empty() == false ) add_value( stringNameNotFound, pbszValue ); // add value for not found option name
+
                   iOptionState = state_unknown;
                }
                else

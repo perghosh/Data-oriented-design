@@ -138,8 +138,6 @@ public:
       eOptionTypeFlag      = 4, ///< flag type
    };
 
-   // 0TAG0option.options
-
    /**
     * \brief Manage data for valid options
     * 
@@ -149,7 +147,7 @@ public:
     */
    struct option
    {
-      // ## construction -------------------------------------------------------------
+      // @API [tag: construct]
 
       option() {}
       option( const std::string_view& stringName ) { set_name( stringName ); }
@@ -310,7 +308,9 @@ public:
    void add_global( const options& options_ );
 	/// Add option that can be flag or option with value
    void add_flag_or_option(const option& option_);
-
+   /// overloads existing options with new options (matching by name)
+   void overload( const options* poptions );
+   void overload( const gd::argument::arguments& arguments_ );
 
    /// Parse application arguments (like they are sent to `main`)
    std::pair<bool, std::string> parse( int iArgumentCount, const char* const* ppbszArgumentValue, const options* poptionsRoot );
