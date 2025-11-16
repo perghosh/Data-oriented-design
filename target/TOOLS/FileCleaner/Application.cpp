@@ -2188,7 +2188,7 @@ bool CApplication::IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view
 // 0TAG0Options.Application
 
 
-/** ---------------------------------------------------------------------------  @API [tag: cli, application ] [summary: prepare application options]
+/** ---------------------------------------------------------------------------  @API [tag: cli, application, options ] [summary: prepare application options]
  * @brief Prepares the application options for command-line usage.
  *
  * This method sets up the available command-line options for the application,
@@ -2478,7 +2478,7 @@ void CApplication::PrepareLogging_s()
 
 
 
-/** --------------------------------------------------------------------------- @API [tag: "code, config" ] [description: "Language rules, what is what in different languages, things like string, comment and code"]
+/** --------------------------------------------------------------------------- @API [tag: "code, config, rule" ] [description: "Language rules, what is what in different languages, things like string, comment and code"]
  * @brief Prepares the state for parsing based on the file extension.
  * @param argumentsPath The arguments containing the source path for harvesting files.
  * @param state_ The state object to be prepared.
@@ -3071,7 +3071,7 @@ bool CApplication::CliLogging_s(gd::cli::options* poptionsApplication)
    return bSetLogging;
 }
 
-/** --------------------------------------------------------------------------- @TAG #folder.home
+/** --------------------------------------------------------------------------- @API [tag: folder, application ] [summary: Get folder to home directory]
  * @brief Retrieves the home directory path for the application.
  *
  * This static method determines the home directory path based on the operating system.
@@ -3124,7 +3124,7 @@ std::pair<bool, std::string> CApplication::FolderGetHome_s(std::string& stringHo
    return { true, "" };
 }
 
-/** --------------------------------------------------------------------------- @TAG #ignore
+/** --------------------------------------------------------------------------- @API [tag: ignore, application ] [summary: Read ignore patterns]
  * @brief Reads ignore patterns from a specified file or directory and populates a vector of ignore rules.
  *
  * This static method attempts to read ignore patterns (such as those found in .gitignore or other ignore files)
@@ -3254,7 +3254,7 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
    return {true, ""};
 }
 
-/** --------------------------------------------------------------------------- @TAG #parse.Application
+/** --------------------------------------------------------------------------- @API [tag: parse, configuration, application ] [summary: Reads configuration from an XML file]
  * @brief Reads configuration from an XML file and populates the application state.
  * @param stringFile The path to the XML file to read.
  * @param tag_xml Unused parameter, kept for compatibility with the function signature.
@@ -3477,7 +3477,7 @@ std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesyst
    return { true, "" };
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @API [tag: history, file, application ] [summary: Find local history file]  
  * @brief Finds the local history file
  *
  * This static method searches for a history file named ".cleaner-history.xml" in the current directory
@@ -3761,7 +3761,7 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
    return { false, std::string("invalid rule: ") + stringRule.data()};
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @API [tag: file, application ] [description: Helper method to check if source code text file, this to avoid checking the internal data in file]
  * @brief Checks if the provided file extension is a known text file type.
  *
  * This function checks if the given file extension matches any of the predefined text file extensions.
