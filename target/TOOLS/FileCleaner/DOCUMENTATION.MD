@@ -184,7 +184,7 @@ Copies files from source to destination.
 
 ---
 
-### dir
+### dir (alias: ls)
 Lists files in a directory.
 Dir differs from normal dir/ls in that it addapted to work for developers or people that work with code related files. For example it can filter files basedon whats inside the file.
 
@@ -212,19 +212,32 @@ Paste text from clipboard or read from input file.
 
 ---
 
-### history
-Handles command history functionality.
+### history (alias: hi)
+Cleaner history management allows you to create "history" files and store commands that you want to execute often. This is useful for re-running commands without having to type them out again, or for keeping track of frequently used commands.  
+History files are named to `.cleaner-history.xml` and cleaner will try to find local history, history file places in current or parent folders. If no local history file is found it will use the global history file placed in the user's home directory under `~/.cleaner/` on Linux or `%USERPROFILE%\.cleaner\` on Windows.
+
+Create history file in home directory: `cleaner history -create -home`  
+Create history file in local directory: `cleaner history -create -local`  
+Print history: `cleaner history -print` or `cleaner history -print -home`.  
+
+Adding entry to history is done using the global option `--add-to-history <alias>` when executing any command.  
+Sample: `cleaner count "**" --add-to-history "count-rows"`.  
+To execute a history entry use `cleaner history --run <entry>` where entry is the alias or index number of the history entry. Or as the `--run` is default so it can be written as `cleaner history <entry>`.
+
+History can handle variables that can be used in commands. These variables are defined when a history entry is created and can be specified when the command is executed. This enables customization of commands based on the user's needs at each execution instance. Cleaner will then ask for the values of these variables before the command is executed. And the value of the variable is replaced in the command before it is executed.  
+
+**Override** options in selected history entry is done by adding the options after the history entry when executing the command. History will then replace the options in the history entry with the new options specified. This allows for further customization of commands without modifying the original history entry.
 
 **Options:**
-- `--create`: Initialize history logic, creates folders and files needed to manage history, also enables configuration settings.
-- `--delete`: Delete history, this will delete all history files and folders.
-- `--print`: Print history, this will print all of the history entries.
-- `--edit`: Edit history file if it exists.
-- `--local`: Create history file in current directory.
-- `--list <criteria>`: Lists all history entries.
-- `--remove <entries>`: Remove specific history entries.
 - `--run <entry>`: Run history entry, this will run the command from history.
+- `-create`: Initialize history logic, creates folders and files needed to manage history, also enables configuration settings.
+- `-delete`: Delete history file (if exists). But of course you can just delete the file manually.
+- `-print`: Print history, this will print all of the history entries.
+- `-edit`: Edit history file if it exists.
+- `-local`: Create history file in current directory.
+- `--remove <entry>`: Remove specific history entry.
 - `--index <number>`: Specify a history entry by its index number when using `--run`, `--set-alias` or `--remove`.
+- `--width <number>`: Specify the width of the output when printing history.
 - `--set-alias <alias>`: Set a custom alias for a specific history entry for easier recall.
 
 ---
@@ -239,7 +252,11 @@ Run command from loaded command templates.
 ---
 
 ### help
-Displays help information for the application.
+Displays help information for the application.  
+
+**Options:**
+- `-commands`: Print list of all available commands.
+
 
 ---
 

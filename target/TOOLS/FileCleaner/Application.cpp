@@ -2396,6 +2396,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
+   /*
    {  // ## `join` command, joins two or more files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "join", "join two or more files" );
       optionsCommand.add({"source", 's', "Files to join"});
@@ -2404,6 +2405,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+   */
 
    {  // ## `paste` checks the clipboard for text or input file reading arguments
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "paste", "Paste text from clipboard or read from input file" );
