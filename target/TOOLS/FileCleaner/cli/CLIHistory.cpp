@@ -1,4 +1,4 @@
-/**
+/**                                                                                                @FILE [tag: cli, history ] [description: definition for methods used for history command]
 * @file CLIHistory.cpp
 * @brief Implements history management for the cleaner console application.
 *

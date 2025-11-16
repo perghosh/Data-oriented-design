@@ -1,4 +1,4 @@
-/**                                                                            @TAG #ui.cli #command.history [description:declaration for methods used for history command]
+/**                                                                            @FILE [tag: cli, history ] [description:declaration for methods used for history command]
  * @file CLIHistory.h
  *  
  */
