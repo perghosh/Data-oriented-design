@@ -1,4 +1,4 @@
-/**                                                                            @FILE [tag: cli, find] [description:definition for methods used for find]
+/**                                                                            @FILE [tag: cli, find] [description: definition for methods used for find]
  * @file CLIFind.cpp
  * @brief This file contains the definitions methods used for the cli find command
  * 
@@ -1151,6 +1151,7 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
 
    // ### print keys used in the output to remind the user what keys are available when querying key-value pairs
    
+   */
 
 
    {
@@ -1166,7 +1167,6 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       pdocument->MESSAGE_Display(stringKeys + "\n", {array_, {{"color", "default"}}, gd::types::tag_view{}});
    }
 
-   */
 
    // ### print summary of key-value pairs
    std::string stringSummary = std::format("Found {} sections with key-value pairs", ptableKeyValue->get_row_count());
@@ -1265,6 +1265,8 @@ std::pair<bool, std::string> PrintKeyValueRowsBasic_s( CDocument* pdocument, gd:
 
       pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "line"}}, gd::types::tag_view{} });
    }// for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
+
+   pdocument->MESSAGE_Display("");                                            // add a newline after each row to separate the key-value pairs
 
    return { true, "" };
 }
