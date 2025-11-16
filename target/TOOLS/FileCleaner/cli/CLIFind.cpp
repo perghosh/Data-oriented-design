@@ -27,6 +27,36 @@
 
 NAMESPACE_CLI_BEGIN
 
+/** ---------------------------------------------------------------------------
+ * @brief Structure to hold formatting parameters for key-value printing.
+ *
+ * This structure groups all formatting-related parameters used when printing
+ * key-value table rows, reducing parameter passing complexity.
+ */
+struct kv_print
+{
+   const std::vector<std::string>* pvectorHeader;                             // keys to include in header
+   const std::vector<std::string>* pvectorBrief;                              // keys to include in brief section
+   const std::vector<std::string>* pvectorBody;                               // keys to include in body section
+   const std::vector<std::string>* pvectorFooter;                             // keys to include in footer section
+   unsigned uWidth;                                                           // width for formatting output lines
+   unsigned uTextWidth;                                                       // width for formatting text content
+   unsigned uKeyMarginWidth;                                                  // margin width for aligning keys
+   std::string_view stringHeaderFormat;                                       // format string for header line
+   std::string_view stringBriefFormat;                                        // format string for brief line
+   std::string_view stringFooterFormat;                                       // format string for footer line
+   std::array<std::byte, 64>* parray;                                         // array to hold color codes
+
+   kv_print() : pvectorHeader(nullptr), pvectorBrief(nullptr), pvectorBody(nullptr), pvectorFooter(nullptr), uWidth(80), uTextWidth(0), uKeyMarginWidth(0), parray(nullptr) {}
+   kv_print( const std::vector<std::string>* pvectorHeader_, const std::vector<std::string>* pvectorBrief_, const std::vector<std::string>* pvectorBody_, const std::vector<std::string>* pvectorFooter_, unsigned uWidth_, unsigned uTextWidth_, unsigned uKeyMarginWidth_, std::string_view stringHeaderFormat_, std::string_view stringBriefFormat_, std::string_view stringFooterFormat_)
+    : pvectorHeader(pvectorHeader_), pvectorBrief(pvectorBrief_), pvectorBody(pvectorBody_), pvectorFooter(pvectorFooter_),uWidth(uWidth_), uTextWidth(uTextWidth_), uKeyMarginWidth(uKeyMarginWidth_), stringHeaderFormat(stringHeaderFormat_), stringBriefFormat(stringBriefFormat_), stringFooterFormat(stringFooterFormat_) {}
+
+};
+
+std::pair<bool, std::string> PrintKeyValueRowsBasic_s( CDocument* pdocument, gd::table::arguments::table* ptableKeyValue, const kv_print& kv_);
+std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::table::arguments::table* ptableKeyValue, const kv_print& kv_);
+
+
 /** --------------------------------------------------------------------------- @API [tag: cli, command, find] [description: Searches for patterns in files based on various options, differ from list that this can do multiline searches]
  * @brief Processes the 'find' command and performs file searching based on provided options.
  *
@@ -132,7 +162,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
 
    // ## Print results
 
-   if( options_.exists("print") == false || options_["print"].is_true() == true )  // default is to print result
+   if( options_.exists("print") == false || options_["print"].is_true() == true )// default is to print result
    {
       papplication_g->Print("background", gd::types::tag_background{} );
 
@@ -958,6 +988,19 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       if( it.size() > uKeyMarginWidth ) uKeyMarginWidth = (unsigned)it.size();// update the key width if the current key is longer
    }
 
+   kv_print kv_{ &vectorHeader, &vectorBrief, &vectorBody, &vectorFooter, 
+                 uWidth, uTextWidth, uKeyMarginWidth, 
+                 stringHeaderFormat, stringBriefFormat, stringFooterFormat };
+
+   if( papplication_g->GetDetail() == CApplication::eDetailBasic )
+   {
+      PrintKeyValueRowsBasic_s( pdocument, ptableKeyValue, kv_ );
+   }
+   else
+   { 
+      PrintKeyValueRows_s( pdocument, ptableKeyValue, kv_ );
+   }
+
 
    // ## Print values in the key-value table ..................................
    //    Print order for each row is:
@@ -966,7 +1009,7 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    //    - Source code file name with row number
    //    - body with key-value pairs
    //    - footer with footer line
-
+/*
    for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
    {
       std::string stringContext; // context code if any, this is used to print the context code if any
@@ -1123,6 +1166,8 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       pdocument->MESSAGE_Display(stringKeys + "\n", {array_, {{"color", "default"}}, gd::types::tag_view{}});
    }
 
+   */
+
    // ### print summary of key-value pairs
    std::string stringSummary = std::format("Found {} sections with key-value pairs", ptableKeyValue->get_row_count());
    stringSummary = gd::math::string::format_header_line(stringSummary, uWidth, '#', '=', '#');
@@ -1142,6 +1187,260 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    }
 
    return { true, "" };                                                       // return success
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Prints all rows from the key-value table in a basic/compact format.
+ *
+ * This static function formats and displays all rows from the key-value table in a basic/compact format,
+ * including header, brief, and filename for each row.
+ *
+ * @param pdocument Pointer to a CDocument instance containing the key-value pairs.
+ * @param ptableKeyValue Pointer to the table containing key-value pairs.
+ * @param format Reference to kv_print structure containing formatting parameters.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> PrintKeyValueRowsBasic_s( CDocument* pdocument, gd::table::arguments::table* ptableKeyValue, const kv_print& kv_)
+{                                                                                                  assert(pdocument != nullptr); assert(ptableKeyValue != nullptr);
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
+      std::string stringPrint; // string to hold the formatted output
+
+   for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
+   {
+      stringPrint.clear();                                                    // clear the stringPrint for the next row
+
+      // ### Prepare header and print line if vectorHeader is not empty
+
+      const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(uRow); // get the arguments object from the row
+      if( kv_.pvectorHeader != nullptr && kv_.pvectorHeader->empty() == false )
+      {
+         for( const auto& key_ : *kv_.pvectorHeader ) 
+         { 
+            auto stingValue = pargumentsRow->get_argument( key_ ).as_string_view(); 
+
+            stringPrint += stingValue; 
+            if( stingValue.empty() == false ) break;
+         }
+      }
+
+      // ### Prepare and print brief line if vectorBrief is not empty
+
+      if( kv_.pvectorBrief != nullptr && kv_.pvectorBrief->empty() == false )
+      {
+         for( const auto& key_ : *kv_.pvectorBrief ) 
+         { 
+
+            std::string stringBrief = pargumentsRow->get_argument( key_ ).as_string(); 
+
+            // Limit brief to 40 characters
+            if( stringBrief.length() > 40 ) stringBrief = stringBrief.substr( 0, 37 ) + "...";
+
+            
+            if( stringBrief.empty() == false ) 
+            { 
+               if( stringPrint.empty() == false ) stringPrint += " :: "; // separator.
+               stringPrint += stringBrief;
+               break;   
+            }
+         }
+      }
+
+      // ### Prepare and print file name
+
+      std::string stringFile = ptableKeyValue->cell_get_variant_view(uRow, "filename").as_string(); // get the filename from the key-value table
+
+      // Only print filename if different from previous row
+      std::filesystem::path path_( stringFile );
+      stringFile = path_.filename().string(); // get only the filename without path
+
+      uint64_t uRowNumber = ptableKeyValue->cell_get_variant_view(uRow, "row").as_uint64(); // get the row number from the key-value table
+      uRowNumber++;                                                           // add one because rows in table are zero based
+      stringFile += std::format("({})", uRowNumber);                          // add the row number to the filename
+      if( stringPrint.empty() == false ) stringPrint += " :: "; // separator.
+
+      stringPrint += stringFile;
+
+      pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "line"}}, gd::types::tag_view{} });
+   }// for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
+
+   return { true, "" };
+}
+
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Prints all rows from the key-value table.
+ *
+ * This static function formats and displays all rows from the key-value table, 
+ * including header, brief, filename, body key-value pairs, footer, and context
+ * for each row. The function follows the display order: header, brief, filename, 
+ * body, footer.
+ *
+ * @param pdocument Pointer to a CDocument instance containing the key-value pairs.
+ * @param ptableKeyValue Pointer to the table containing key-value pairs.
+ * @param format Reference to kv_print structure containing formatting parameters.
+ * @return A pair containing:
+ *         - `bool`: `true` if the operation was successful, `false` otherwise.
+ *         - `std::string`: An empty string on success, or an error message on failure.
+ */
+std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::table::arguments::table* ptableKeyValue, const kv_print& kv_)
+{                                                                                                  assert(pdocument != nullptr); assert(ptableKeyValue != nullptr);
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
+
+   // ## Print values in the key-value table ..................................
+   //    Print order for each row is:
+   //    - header with header line
+   //    - brief with brief line 
+   //    - Source code file name with row number
+   //    - body with key-value pairs
+   //    - footer with footer line
+
+   for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
+   {
+      std::string stringPrint; // string to hold the formatted output
+
+      std::string stringContext; // context code if any, this is used to print the context code if any
+      // ### Get context if set
+      if( ptableKeyValue->cell_is_null( uRow, "context" ) == false )
+      {
+         stringContext = ptableKeyValue->cell_get_variant_view(uRow, "context").as_string();
+      }
+
+      // ### Prepare header and print line if vectorHeader is not empty
+
+      const auto* pargumentsRow = ptableKeyValue->row_get_arguments_pointer(uRow); // get the arguments object from the row
+      if( kv_.pvectorHeader != nullptr && kv_.pvectorHeader->empty() == false )
+      {
+         stringPrint.clear();                                                // clear the stringPrint for the next row
+         for( const auto& key_ : *kv_.pvectorHeader ) 
+         { 
+            auto stingValue = pargumentsRow->get_argument( key_ ).as_string_view(); 
+            if( stringPrint.empty() == false && stingValue.empty() == false ) stringPrint += ", "; // add a separator if the stringPrint is not empty
+
+            stringPrint += stingValue; 
+         }
+
+         if( kv_.stringHeaderFormat.empty() == true ) { stringPrint = gd::math::string::format_header_line(stringPrint, kv_.uWidth); }
+         else                                            { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentLeft , kv_.uWidth, kv_.stringHeaderFormat); }
+
+         pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "header"}}, gd::types::tag_view{} });
+      }
+
+      // ### Prepare and print brief line if vectorBrief is not empty
+
+      if( kv_.pvectorBrief != nullptr && kv_.pvectorBrief->empty() == false )
+      {
+         stringPrint.clear();                                                // clear the stringPrint for the next row
+         for( const auto& key_ : *kv_.pvectorBrief ) 
+         { 
+            if( stringPrint.empty() == false ) stringPrint += "\n";           // add a separator if the stringPrint is not empty
+
+            std::string stringBrief = pargumentsRow->get_argument( key_ ).as_string(); 
+            if( kv_.uTextWidth > 0 && stringBrief.empty() == false)
+            {
+               // format the value to fit in the width, with a margin for the key and separator
+               auto uWidth = kv_.uTextWidth - 2 - kv_.stringBriefFormat.length();
+               if( uWidth < 40 ) uWidth = 40;                                  // ensure the width is at least 40 characters, this is to avoid too narrow output
+               stringBrief = gd::math::string::format_text_width(stringBrief, uWidth);
+               stringBrief = gd::math::string::format_indent(stringBrief, kv_.stringBriefFormat.length(), false); // indent the value with the key margin width + 2 spaces because adds for separator and space after that
+            }
+
+            stringPrint += stringBrief;
+         }
+
+         if( stringPrint.empty() == false )
+         {
+            pdocument->MESSAGE_Display( std::string(kv_.stringBriefFormat) + stringPrint, {array_, {{"color", "brief"}}, gd::types::tag_view{}});
+         }
+      }
+
+      // ### Prepare and print file name
+
+      stringPrint = ptableKeyValue->cell_get_variant_view(uRow, "filename").as_string(); // get the filename from the key-value table
+      uint64_t uRowNumber = ptableKeyValue->cell_get_variant_view(uRow, "row").as_uint64(); // get the row number from the key-value table
+      uRowNumber++;                                                           // add one because rows in table are zero based
+      stringPrint += std::format("({})", uRowNumber);                         // add the row number to the filename
+
+      // If no header line then line is used as header line
+      if( kv_.pvectorHeader == nullptr || kv_.pvectorHeader->empty() == true ) 
+      { 
+         stringPrint += std::format("{:-<80}", stringPrint + "  ");          // add the filename to the stringPrint, with a separator before it
+      }
+
+      pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "line"}}, gd::types::tag_view{} });
+
+      // ### Prepare and print body
+
+      if( pargumentsRow != nullptr && kv_.pvectorBody != nullptr )
+      {
+         stringPrint.clear();
+         for( const auto& key_ : *kv_.pvectorBody )                        // iterate over the keys in the vectorBody
+         {
+            if( pargumentsRow->exists(key_) == false ) continue;              // if the key does not exist in the arguments object, skip this key-value pair
+
+            if( stringPrint.empty() == false ) stringPrint += '\n';
+
+            auto stringValue_ = pargumentsRow->get_argument(key_).as_string();// get the value of the argument
+
+            if( kv_.uTextWidth > 0 )
+            {
+               // format the value to fit in the width, with a margin for the key and separator
+               stringValue_ = gd::math::string::format_text_width(stringValue_, kv_.uTextWidth - kv_.uKeyMarginWidth - 2); 
+            }
+
+            if( stringValue_.find('\n') != std::string::npos ) // if the value contains a newline, indent it
+            {
+               stringValue_ = gd::math::string::format_indent(stringValue_, kv_.uKeyMarginWidth + 2, false); // indent the value with the key margin width + 2 spaces because adds for separator and space after that
+            }
+            // Print name with padding
+            stringPrint += std::format("{:>{}}: {}", key_, kv_.uKeyMarginWidth, stringValue_); // format the key-value pair as "key: value" with padding
+         }
+
+         if( stringPrint.empty() == false ) pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "body"}}, gd::types::tag_view{} });
+      }
+
+      // ### Prepare and print footer
+
+      if( kv_.pvectorFooter != nullptr && kv_.pvectorFooter->empty() == false )
+      {
+          stringPrint.clear();                                                // clear the stringPrint for the next row
+         for( const auto& key_ : *kv_.pvectorFooter ) 
+         { 
+            auto stingValue = pargumentsRow->get_argument( key_ ).as_string_view(); 
+            if( stringPrint.empty() == false && stingValue.empty() == false ) stringPrint += ", "; // add a separator if the stringPrint is not empty
+
+            stringPrint += stingValue; 
+         }
+         if( kv_.stringFooterFormat.empty() == true ) { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentRight, kv_.uWidth); }
+         else                                            { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentRight, kv_.uWidth, kv_.stringFooterFormat); }
+         pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "footer"}}, gd::types::tag_view{} });
+      }
+
+      // ## Prepare preview part
+
+      std::string stringPreview;
+      for( auto it = pargumentsRow->begin(); it != pargumentsRow->end() && stringPreview.length() < 60; ++it )
+      {
+         if( stringPreview.empty() == false ) stringPreview += ", ";
+         stringPreview += it.get_argument().as_string_view();
+      }
+
+      ptableKeyValue->cell_set( uRow, "preview", stringPreview );
+
+      
+
+      if( stringContext.empty() == false )
+      {
+         pdocument->MESSAGE_Display(stringContext, { array_, {{"color", "disabled"}}, gd::types::tag_view{} });
+      }
+
+      pdocument->MESSAGE_Display("");                                         // add a newline after each row to separate the key-value pairs
+   }// for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
+
+   return { true, "" };
 }
 
 NAMESPACE_CLI_END

@@ -2331,7 +2331,7 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
             {
 #ifndef NDEBUG
             auto stringId_d = argumentId.as_string_view();
-               LOG_DEBUG_RAW( "Table found in cache: " & stringId & " number of rows: " & ptable_->size());
+               //LOG_DEBUG_RAW( "Table found in cache: " & stringId & " number of rows: " & ptable_->size());
 #endif // NDEBUG
                return ptable_.get();
             }
@@ -2368,7 +2368,7 @@ gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::stri
             if( argumentId.is_string() && stringId == ( const char* )argumentId )            
             {                                                                                      
 #ifndef NDEBUG
-               LOG_DEBUG_RAW( "Table found in cache: " & stringId & " number of rows: " & ptable_->size());
+               //LOG_DEBUG_RAW( "Table found in cache: " & stringId & " number of rows: " & ptable_->size());
 #endif // NDEBUG
                return ptable_.get();
             }
