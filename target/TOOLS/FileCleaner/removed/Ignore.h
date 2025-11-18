@@ -1,6 +1,6 @@
 /**
 * @file Ignore.h
-*  
+*
 */
 
 #pragma once
@@ -23,12 +23,12 @@
 
 #endif
 
-NAMESPACE_CONFIGURATION_BEGIN  
+NAMESPACE_CONFIGURATION_BEGIN
 
 
 
 
-/**
+/** @CLASS [tag: CIgnore] [summary: Settings for files to ignore  ]
  * \brief
  *
  *
