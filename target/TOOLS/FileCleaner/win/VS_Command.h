@@ -1,5 +1,5 @@
 /*
- * 
+ *
  */
 
 #ifdef _WIN32
@@ -41,7 +41,7 @@ namespace VS
 // tag dispatcher for visual studio output
 struct tag_vs_output {};
 
- /**
+ /** @CLASS [tag: CVisualStudio] [summary: Visual Studio connection]
   * \brief
   *
   *
@@ -140,6 +140,3 @@ inline std::pair<bool, std::string> CVisualStudio::Print_s( const std::string_vi
 
 
 #endif // _WIN32
-
-
-
