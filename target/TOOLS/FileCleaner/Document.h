@@ -1,6 +1,6 @@
 /** @FILE [tag: document, cache, error, file] [summary: Document stores information for cleaner]
  * \file Document.h
- * 
+ *
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0construct.Document` - Represents a single argument in `arguments`.
  */
@@ -32,7 +32,7 @@
 class CApplication;
 
 
-/**
+/** @CLASS [tag: document] [summary: Document class. Facade object for data in cleaner]
  * \brief
  *
  *
@@ -52,7 +52,7 @@ public:
    /// @brief Type alias for pointer to table, which can be either a pointer to `gd::table::dto::table` or a pointer to `gd::table::arguments::table`.
    using pointer_table_t = std::variant< gd::table::dto::table*, gd::table::arguments::table* >;
 
-   // ## @API [tag: construct] [description: Construct document.] 
+   // ## @API [tag: construct] [description: Construct document.]
 public: // 0TAG0construct.Document
    CDocument() {}
    CDocument(CApplication* papplication) : m_papplication(papplication) { m_arguments.append("name", "default"); }
@@ -91,7 +91,7 @@ public:
 //@}
 
 /** @name FILE
-* ## @API [tag: file] 
+* ## @API [tag: file]
        [description: Methods that works on files, often finding information and update tables in cache used to store statistics about files]
 *///@{
 
@@ -116,7 +116,7 @@ public:
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsList, int iThreadCount );
 
    std::pair<bool, std::string> BUFFER_UpdateKeyValue( const gd::argument::shared::arguments& argumentsFile, std::string_view stringFileBuffer, gd::table::dto::table& tableRow, const std::vector<gd::argument::arguments>& vectorRule);
-      
+
 //@}
 
 /** \name RESULT
@@ -126,7 +126,7 @@ public:
 //@}
 
 /** \name PROPERTY
- * ## @API [tag: property] 
+ * ## @API [tag: property]
         [description: Property accessors for the documents internal state]
         [detail: Properties are stored in the `m_arguments` member and it can store any kind of data. Each property is identified by a key.]
 *///@{
@@ -143,11 +143,11 @@ public:
 
 
 /** \name CACHE
- * ## @API [tag: table-cache] 
+ * ## @API [tag: table-cache]
         [description: Documents can cache information in tables that are named.]
         [detail: "Each cache is stored in a named table, which is kept in the document's `m_vectorTableCache` member
          Tables may also be marked as temporary, meaning they should be removed as soon as they are no longer needed."]
-* 
+*
  *///@{
    /// Prepare cache information structure
    void CACHE_Prepare( const std::string_view& stringId );
@@ -211,7 +211,7 @@ public:
 //@}
 
 /** \name MESSAGE
-* @API [tag: message] 
+* @API [tag: message]
        [description: Pass information to the active output, message is just text that in some way is to be displayed to user]
 *///@{
    /// Display message to user
@@ -231,7 +231,7 @@ public:
 
 
 /** \name ERROR
-* ## @API [tag: error] 
+* ## @API [tag: error]
        [description: Document are able to collect error information, for example doing a larger operation where some tasks fail bit it isn't fatal, then store error in document for later display]
 *///@{
 /// Add error to internal list of errors
@@ -263,7 +263,7 @@ public:
 
    // ## cache information is stored in dto tables (dto = data transfer object)
    std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document
-   std::string m_stringCacheConfiguration;      ///< file name for file with cache configuration information 
+   std::string m_stringCacheConfiguration;      ///< file name for file with cache configuration information
 
    /// Mutex lock used when methods within document work on table data
    std::mutex m_mutexCache;
