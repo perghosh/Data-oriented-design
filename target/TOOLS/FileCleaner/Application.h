@@ -1,8 +1,8 @@
-/**                                                                            @FILE [tag: application] [summary: Main application class for FileCleaner tool]
+/**                                                                            @FILE [tag: header, application] [summary: Main application class for FileCleaner tool]
  * @file Application.h
- * 
+ *
  * @brief Main application class for FileCleaner tool. Acts as the entry point for the application, handling initialization, command line arguments, and application state.
- * 
+ *
  * CApplication is the main class for the FileCleaner tool, responsible for managing the application state.
  * Through the application it is possible to acces all other parts of the application. CApplications is
  * like a facade object that provides access to the application functionality.
@@ -14,7 +14,7 @@
  *
  * Application is also responsible to manage starting and stopping the application. What happens when
  * the application is started or stopped is within the application responsibility.
- * 
+ *
  * ## Free functions
  * There are a lot of free functions that acts as some type of utility functions for the application.
  * Header file is included in the application to make it possible to use these functions.
@@ -68,7 +68,7 @@ namespace jsoncons {
    template<typename CharT, typename Policy, typename Allocator>
    class basic_json;
 
-   using json = basic_json<char, sorted_policy, std::allocator<char>>;  // Recreate the alias locally (must match exactly)   
+   using json = basic_json<char, sorted_policy, std::allocator<char>>;  // Recreate the alias locally (must match exactly)
 }
 
 /**
@@ -83,7 +83,7 @@ class CApplication : public application::basic::CApplication
 {
 public:
    // type of mode for the application, Available modes: `review`, `stats`, `search`, `changes`, `audit`, `document`
-   enum enumMode 
+   enum enumMode
    {
       eModeUnknown = 0, ///< Unknown or unspecified mode
       eModeReview,      ///< Review mode, used for reviewing files
@@ -166,9 +166,9 @@ public:
 
    /**
     * \brief ignore information for folders or files to ignore
-    * 
+    *
     * Holds information about folders or files to ignore during processing.
-    * 
+    *
     * Note that rules in ignore is appliced from the project root folder downwards.
     */
    struct ignore
@@ -230,7 +230,7 @@ public:
 *///@{
    enumMode GetMode() const { return m_eMode; }
    void SetMode(enumMode eMode) { m_eMode = eMode; }
-   void SetMode(const std::string_view& stringMode); 
+   void SetMode(const std::string_view& stringMode);
    std::string GetModeAsString() const;
 
 	enumDetail GetDetail() const { return m_eDetail; }
@@ -243,7 +243,7 @@ public:
    std::string GetUITypeAsString() const;
 
    // ## application state checks
-   
+
    bool IsInitialized() const { return ( m_uApplicationState & eApplicationStateInitialized ) != 0; }
    bool IsWork() const { return ( m_uApplicationState & eApplicationStateWork  ) != 0; }
    bool IsIdle() const { return ( m_uApplicationState & eApplicationStateIdle  ) != 0; }
@@ -418,7 +418,7 @@ public:
 	/// Check if detail level matches string
    static bool IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view& stringDetailLevel);
 
-   // ## Prepare Application 
+   // ## Prepare Application
 
    /// Prepare options for application, options are used to parse command-line arguments
    static void Prepare_s( gd::cli::options& optionsApplication );
@@ -475,7 +475,7 @@ public:
 
 
    static bool IsTextFile_s(const std::string_view& stringExtension);
-   
+
 #ifdef _WIN32
    // ## windows specific functions
 

@@ -2176,6 +2176,9 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
          uint64_t uRow = count_newline_(uFindPosition); // Determine which row this match starts in
          const std::string& stringPattern = patternsFind.get_pattern_text(iPattern);
          vectorRow.emplace_back(uRow, stringPattern); // Store the match with its row number and pattern identifier
+#ifndef NDEBUG
+         std::string_view stringFind_d( stringCode.c_str() + uFindPosition, stringCode.length() - uFindPosition );
+#endif
          uPosition = uFindPosition + stringPattern.length(); // Move past the current match
       }
 

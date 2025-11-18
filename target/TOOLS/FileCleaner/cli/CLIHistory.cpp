@@ -700,74 +700,81 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
    // Get the entry to run placed in `stringEntry`
    std::string stringEntry = argumentsRun["run"].as_string();                                      LOG_DEBUG_RAW( "==> Index/name to run: " + stringEntry );
 
-   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+   std::vector<std::string> vectoryEntry = CApplication::Split_s( stringEntry );
+
+   auto ptableHistory = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
    gd::argument::arguments argumentsRead( argumentsRun ); // copy run arguments because we will modify them, template arguments are added if needed
-   if( stringEntry.empty() == false ) 
-   { 
-      if( gd::math::type::is_integer(stringEntry) == true ) 
+
+   for( const auto& stringEntry : vectoryEntry )
+   {
+      ptableHistory->row_clear();                                                // Clear previous table entries
+      if( stringEntry.empty() == false ) 
       { 
-         int64_t iIndex = std::stoi(stringEntry); // set runt to execute, note that is 1-based index                        
-         argumentsRead.set( "select", (unsigned)iIndex ); 
-      }
-      else { argumentsRead.set( "select", stringEntry ); }
-
-      argumentsRead.append("variable", true);                                 // Enable variable substitution when reading the history file
-      result_ = XML_ReadFileEntry_s(*ptable, argumentsRead, pdocument);
-      iRow = 0; // since we select a specific entry, the row is always 0
-   }
-   else
-   { // @TODO [tag: history, refactor] [description: run for history selects one row and that is handled, this loads the complete table and as for now it is not used, run should allways select row in history]
-      result_ = XML_ReadFile_s(*ptable, argumentsRead, [pdocument](std::string_view message) {
-         if( pdocument ) { pdocument->MESSAGE_Display(message); }
-      }); 
-   }
-
-   if( result_.first == false ) { return result_; }                           
-
-   std::string stringCommand;
-
-   if( iRow < 0 || iRow >= (int)ptable->size() )                                                   // Ensure the row index is valid, note that is 1-based index
-   { 
-      std::string stringFileName = FILE_GetHistoryFile_s(argumentsRun);
-
-      std::string stringError = std::format( "Specified entry \"{}\" in history not found", stringEntry );
-      stringError += std::format( "\nHistory file used: {}", stringFileName );
-      if( poptionsApplication->exists("print", gd::types::tag_state_active{}) == false ) { stringError += "\nAdd \"-print\" to arguments and history is printed"; }
-      return { false, stringError }; 
-   }
-
-   // ## Get the command from the specified row and execute it
-
-   std::string stringName = ptable->cell_get_variant_view(iRow, "name").as_string();
-   std::string stringLine = ptable->cell_get_variant_view(iRow, "line").as_string();
-
-   stringCommand = stringName + " " + stringLine; // Construct the full command line
-
-   if( stringCommand.empty() == false )
-   {                                                                                               LOG_DEBUG_RAW( "==> Running history command: " + stringCommand );
-
-      gd::cli::options optionsRun;
-      CApplication::Prepare_s(optionsRun);                                    // prepare command-line options
-      optionsRun.set_first(0);
-
-      result_ = optionsRun.parse_terminal(stringCommand);                     // Parse the command line from the history entry
-      if( result_.first == false ) { return result_; }
-
-      // ## Overload options from the application options .........................
-      //    Here we try to find extra arguments passed to history run command, it can take any number of values and these values will overload the options used to run the command from history
-      {  gd::cli::options* poptionsCommand = optionsRun.sub_find_active();    // find the active sub-command options
-         if( poptionsCommand != nullptr )
-         {
-            gd::argument::arguments argumentsOverload( poptionsApplication->get_arguments() );
-            argumentsOverload.remove("run");
-            poptionsCommand->overload(argumentsOverload);
+         if( gd::math::type::is_integer(stringEntry) == true ) 
+         { 
+            int64_t iIndex = std::stoi(stringEntry); // set runt to execute, note that is 1-based index                        
+            argumentsRead.set( "select", (unsigned)iIndex ); 
          }
+         else { argumentsRead.set( "select", stringEntry ); }
+
+         argumentsRead.append("variable", true);                                 // Enable variable substitution when reading the history file
+         result_ = XML_ReadFileEntry_s(*ptableHistory, argumentsRead, pdocument);
+         if( result_.first == false ) { return result_; }
+         iRow = 0; // since we select a specific entry, the row is always 0
+      }
+      else
+      { // @TODO [tag: history, refactor] [description: run for history selects one row and that is handled, this loads the complete table and as for now it is not used, run should allways select row in history]
+         result_ = XML_ReadFile_s(*ptableHistory, argumentsRead, [pdocument](std::string_view message) {
+            if( pdocument ) { pdocument->MESSAGE_Display(message); }
+         }); 
+         if( result_.first == false ) { return result_; }
       }
 
-      result_ = papplication_g->InitializeInternal(optionsRun);                      // Initialize the application with parsed options
-      if( result_.first == false ) { return result_; }
-   }
+      std::string stringCommand;
+
+      if( iRow < 0 || iRow >= (int)ptableHistory->size() )                    // Ensure the row index is valid, note that is 1-based index
+      { 
+         std::string stringFileName = FILE_GetHistoryFile_s(argumentsRun);
+
+         std::string stringError = std::format( "Specified entry \"{}\" in history not found", stringEntry );
+         stringError += std::format( "\nHistory file used: {}", stringFileName );
+         if( poptionsApplication->exists("print", gd::types::tag_state_active{}) == false ) { stringError += "\nAdd \"-print\" to arguments and history is printed"; }
+         return { false, stringError }; 
+      }
+
+      // ## Get the command from the specified row and execute it
+
+      std::string stringName = ptableHistory->cell_get_variant_view(iRow, "name").as_string();
+      std::string stringLine = ptableHistory->cell_get_variant_view(iRow, "line").as_string();
+
+      stringCommand = stringName + " " + stringLine; // Construct the full command line
+
+      if( stringCommand.empty() == false )
+      {                                                                                               LOG_DEBUG_RAW( "==> Running history command: " + stringCommand );
+
+         gd::cli::options optionsRun;
+         CApplication::Prepare_s(optionsRun);                                    // prepare command-line options
+         optionsRun.set_first(0);
+
+         result_ = optionsRun.parse_terminal(stringCommand);                     // Parse the command line from the history entry
+         if( result_.first == false ) { return result_; }
+
+         // ## Overload options from the application options .........................
+         //    Here we try to find extra arguments passed to history run command, it can take any number of values and these values will overload the options used to run the command from history
+         {  gd::cli::options* poptionsCommand = optionsRun.sub_find_active();    // find the active sub-command options
+            if( poptionsCommand != nullptr )
+            {
+               gd::argument::arguments argumentsOverload( poptionsApplication->get_arguments() );
+               argumentsOverload.remove("run");
+               poptionsCommand->overload(argumentsOverload);
+            }
+         }
+
+         result_ = papplication_g->InitializeInternal(optionsRun);                      // Initialize the application with parsed options
+         if( result_.first == false ) { return result_; }
+      }
+   } // for( const auto& stringEntry : vectoryEntry ) {
 
    return { true, "" };
 }

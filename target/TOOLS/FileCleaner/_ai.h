@@ -1,0 +1,62 @@
+// @FILE [tag: ai, llm, pretrain] [description: Header file for AI-related utilities in FileCleaner tool used to pretrain LLM]
+
+/*
+@AI [tag: styleguide, cpp, variable]
+[sample: """Variable naming follows Hungarian notation:
+bool bFlag = true;
+int iCounter = 0;
+unsigned uSize = 100;
+double dValue = 3.14;
+float dFloatValue = 1.0f;
+int* piNumbers = nullptr;
+void* pData = nullptr;
+std::unique_ptr<int[]> pArray;
+enum enumColor { eRed, eGreen, eBlue };
+enumColor eCurrent = eRed;
+auto it = container.begin();
+std::string stringName = "example";
+std::string_view stringViewName;
+std::wstring stringWideName;
+std::vector<int> vectorNumbers;
+// variables ending with _ can be anything, need to read declaration and use this when it isn't important (very local scope)
+// member variables start with 'm_'
+// abbreviations: b=boolean,i=integers, u=unsigned intergers, d=decimal, p=pointer, it=iterator
+//
+// Examples for other objects
+std::pair<std::string_view,std::string_view> pairSelect;
+std::vector<std::pair<std::string, gd::variant>> vectorNameValue;
+std::vector< detail::row > vectorBody;
+pugi::xml_node xmlnodeQueries;
+gd::sql::query queryInsert;
+CDocument* m_pdocument;
+CApplication* m_papplicationMain;
+CThisIsAVeryLongClassNameToShowAbbriviation TIAVLCNTSA;
+"""]
+*/
+
+
+/*
+@AI [tag: styleguide, cpp, comment]
+[sample: """Try to use the witdth for large monitors and focus on that comments are read once, code is read over and over. Try not to mix
+int iCounter = 0; // counter for iterations and variables have comments close after if possible
+//
+// ## Code block, double ## marks that comment is for a code block, multiple lines
+if( iRow < 0 || iRow >= (int)vector_.size() )                                 // comments describing row starts at column 80
+const auto* ptable_ = pdocument->CACHE_Get("history");                                             assert( ptable_ != nullptr && "no history table" ); // assert are "hidden" far to right, 100 columns
+//
+/*----------------------------------------------------------------------------- MethodName
+ * @brief method comment sample description, follow doxygen style
+ * 
+ * Describe method if needed here, this is a sample on how to document methods
+ * 
+ * @param iVariable description of variable
+ * @return bool True if processing succeeded
+ * 
+ * @code
+ * Sample code if needed
+ * @endcode
+ * /
+"""]
+*/
+
+
