@@ -303,8 +303,8 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::c
 
 std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, std::string_view stringName, gd::argument::arguments* parguments, std::string_view stringSection )
 {                                                                                                  assert( std::filesystem::exists(stringFile) == true );
-   parguments->remove("history");                                             // remove history option if it exists, we do not want to save this in history
-   parguments->remove("add-to-history");                                      // remove add-to-history option if it exists, we do not want to save this in history
+   parguments->remove_all("history");                                         // remove history option if it exists, we do not want to save this in history
+   parguments->remove_all("add-to-history");                                  // remove add-to-history option if it exists, we do not want to save this in history
 
    std::string stringAlias;
 

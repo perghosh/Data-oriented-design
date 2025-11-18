@@ -1251,6 +1251,7 @@ public:
    void remove( const std::string_view& stringName );
    void remove(const_pointer pPosition);
    void remove(const_iterator it) { remove(it); }
+   void remove_all( const std::string_view& stringName );
    /// make sure internal buffer can hold specified number of bytes, no copying just reserving data
 
    /// Resize one argument within arguments object, do not use this if you do not know how arguments work!!
