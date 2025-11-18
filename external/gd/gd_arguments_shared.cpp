@@ -2610,6 +2610,24 @@ void arguments::remove(const_pointer pPosition)
    //m_uLength -= uSize;                                                           assert((int)m_uLength >= 0);
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Removes all arguments from the collection by its name.
+ *
+ * This method searches for all arguments with the specified name and removes it
+ * if found. If no argument with the given name exists, no action is taken.
+ * @param stringName The name of the arguments to remove.
+ */
+void arguments::remove_all(const std::string_view& stringName)
+{
+   auto pposition = find( stringName );
+   while(pposition != nullptr)
+   {
+      remove( pposition );
+      pposition = find( stringName );
+   }
+}
+
+
 
 // TODO: Implement resize in order to be able to modify a value in arguments object
 /*----------------------------------------------------------------------------- resize */ /**
