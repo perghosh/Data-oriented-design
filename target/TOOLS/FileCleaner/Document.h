@@ -179,6 +179,10 @@ public:
    /// Return information to generate cache data
    std::pair<bool, std::string> CACHE_GetInformation( const std::string_view& stringId, gd::argument::arguments& argumentsCache );
    gd::argument::arguments CACHE_GetInformation( const std::string_view& stringId );
+
+   /// Clear all cache data
+   void CACHE_Clear();
+   /// Erase cache with specified id
    void CACHE_Erase( const std::string_view& stringId );
    /// Erase all temporary cache tables
    void CACHE_Erase( gd::types::tag_temporary );
@@ -291,6 +295,12 @@ public:
 inline void CDocument::CACHE_Prepare( const std::string_view& stringId )
 {
    CACHE_Prepare(stringId, nullptr);
+}
+
+inline void CDocument::CACHE_Clear()
+{
+   std::unique_lock lock( m_mutexCache );
+   m_vectorTableCache.clear();
 }
 
 inline std::string CDocument::RESULT_VisualStudio_s( const gd::table::dto::table& table_) {

@@ -1,4 +1,4 @@
-/**
+/**                                                                            @FILE [tag: source, application] [summary: Definitions for  application class]
  * @file Application.cpp
  *
  * ### 0TAG0 File navigation, mark and jump to common parts
@@ -941,6 +941,7 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
    else if( stringCommandName == "find" )
    {
       auto* pdocument = DOCUMENT_Get("find", true);
+      pdocument->CACHE_Clear();
       return CLI::Find_g(poptionsActive, pdocument);
    }
    else if( stringCommandName == "kv" )
@@ -951,6 +952,7 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
    else if( stringCommandName == "list" )
    {
       auto* pdocument = DOCUMENT_Get("list", true);
+      pdocument->CACHE_Clear();
       auto result_ = CLI::List_g(poptionsActive, pdocument);
       if( pdocument->ERROR_Empty() == false ) { pdocument->ERROR_Print(); }
       return result_;
@@ -2339,6 +2341,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "script", "Execute an **external script file** for advanced and custom processing of search results. Ideal for complex automation." });
       optionsCommand.add({ "max", "Set the **maximum number of results** to return. Use this to limit output and improve performance for large searches."});
       optionsCommand.add({ "width", "Width for output" });
+      optionsCommand.add_flag({ "quiet", "Hides filepositions in output" });
       optionsCommand.add_flag({ "R", "Enable **recursive search** in subfolders. Sets the recursion depth to 16, ensuring a thorough scan of all subdirectories." });
       optionsCommand.add_flag( {"match-all", "Require **all specified patterns to match** within the same line or row for a result to be considered valid."} );
       optionsCommand.add_flag({ "clip", "Investigate clipboard for related information (file path or search value)" });
@@ -3477,7 +3480,7 @@ std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesyst
    return { true, "" };
 }
 
-/** --------------------------------------------------------------------------- @API [tag: history, file, application ] [summary: Find local history file]  
+/** --------------------------------------------------------------------------- @API [tag: history, file, application ] [summary: Find local history file]
  * @brief Finds the local history file
  *
  * This static method searches for a history file named ".cleaner-history.xml" in the current directory
