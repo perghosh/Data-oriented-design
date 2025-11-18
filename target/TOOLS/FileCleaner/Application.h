@@ -1,4 +1,4 @@
-/**                                                                            @FILE [tag: header, application] [summary: Main application class for FileCleaner tool]
+/**                                                                            @CLASS [tag: application] [summary: Main application class for FileCleaner tool]
  * @file Application.h
  *
  * @brief Main application class for FileCleaner tool. Acts as the entry point for the application, handling initialization, command line arguments, and application state.

@@ -1152,6 +1152,7 @@ std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::tabl
 
    for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
    {
+      bool bLineIsHeader = true; // flag to check if the line is a header line
       std::string stringPrint; // string to hold the formatted output
 
       std::string stringContext; // context code if any, this is used to print the context code if any
@@ -1181,6 +1182,7 @@ std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::tabl
             else                                         { stringPrint = gd::math::string::format_header_line(stringPrint, gd::math::string::enumAlignment::eAlignmentLeft , kv_.uWidth, kv_.stringHeaderFormat); }
          }
 
+         bLineIsHeader = false;
          pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "header"}}, gd::types::tag_view{} });
       }
 
@@ -1208,6 +1210,7 @@ std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::tabl
 
          if( stringPrint.empty() == false )
          {
+            bLineIsHeader = false;
             pdocument->MESSAGE_Display( std::string(kv_.stringBriefFormat) + stringPrint, {array_, {{"color", "brief"}}, gd::types::tag_view{}});
          }
       }
@@ -1222,7 +1225,7 @@ std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::tabl
          stringPrint += std::format("({})", uRowNumber);                         // add the row number to the filename
 
          // If no header line then line is used as header line
-         if( kv_.pvectorHeader == nullptr || kv_.pvectorHeader->empty() == true ) 
+         if( bLineIsHeader == true ) 
          { 
             stringPrint += std::format("{:-<80}", stringPrint + "  ");          // add the filename to the stringPrint, with a separator before it
          }
