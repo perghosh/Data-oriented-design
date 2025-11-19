@@ -164,7 +164,11 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
          bAllowPositional = false;                                            // no more positional arguments are allowed
          const char* pbszFindArgument = pbszArgument + 1;                     // move past first dash
          if( *pbszFindArgument == '-' ) pbszFindArgument++;                   // move to argument name
-         poptionActive = find( pbszFindArgument );                             
+         poptionActive = find( pbszFindArgument );
+         if( poptionActive == nullptr && poptionsRoot != nullptr )
+         {
+			 poptionActive = poptionsRoot->find(pbszFindArgument);            // try to find in root options if root is set
+         }
 
          if(poptionActive == nullptr && bMayBeFlag == false )
          {
