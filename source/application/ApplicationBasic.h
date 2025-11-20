@@ -77,6 +77,7 @@ public:
    const std::vector<std::pair<std::string_view, gd::variant>> PROPERTY_GetAll() const;
    std::string PROPERTY_GetName( size_t uIndex ) const { return m_vectorProperty.at(uIndex).first; }
    bool PROPERTY_Has( const std::string_view& stringName );
+   bool PROPERTY_Exists( const std::string_view& stringName ) { return PROPERTY_Has( stringName ); }
    size_t PROPERTY_Size() const noexcept { return m_vectorProperty.size(); }
    std::unique_ptr<gd::table::dto::table> PROPERTY_ToTable() const;
 //@}

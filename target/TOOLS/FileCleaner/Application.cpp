@@ -483,14 +483,6 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       PrintMessage( stringHelp, gd::argument::arguments() );
    }
 
-   /*std::filesystem::path pathHistoryLocation;
-   HistoryLocation_s(pathHistoryLocation); // Get the history location
-
-   if( std::filesystem::exists(pathHistoryLocation) == true )
-   {
-      HISTORY_SaveCommand(pathHistoryLocation.string());
-   }*/
-
    return { true, "" };
 }
 
@@ -2103,15 +2095,28 @@ gd::variant_view CApplication::CONFIG_Get( std::string_view stringGroup, const s
 
 
 /** ---------------------------------------------------------------------------
-* @brief Add error to internal list of errors
-* @param stringError error information
-*/
+ * @brief Add error to internal list of errors
+ * @param stringError error information
+ */
 void CApplication::ERROR_Add( const std::string_view& stringError )
 {
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError ); // locks `m_vectorError`
    gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
    m_vectorError.push_back( std::move(argumentsError) );
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Add warning to internal list of errors
+ * @param stringWarning warning information
+ */
+void CApplication::ERROR_AddWarning( const std::string_view& stringWarning )
+{
+   if( PROPERTY_Exists( "verbose" ) == false || PROPERTY_Get( "verbose" ).as_bool() == false ) return; // only add warning in verbose mode
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError ); // locks `m_vectorError`
+   gd::argument::arguments argumentsWarning( { {"text", stringWarning} }, gd::argument::arguments::tag_view{});
+   m_vectorError.push_back( std::move(argumentsWarning) );
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Get error information

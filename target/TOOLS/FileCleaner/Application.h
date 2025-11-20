@@ -362,6 +362,7 @@ public:
 *///@{
 /// Add error to internal list of errors
    void ERROR_Add( const std::string_view& stringError );
+   void ERROR_AddWarning( const std::string_view& stringError );
    std::string ERROR_Report() const;
 
 //@}

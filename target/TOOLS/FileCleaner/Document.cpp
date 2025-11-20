@@ -3168,9 +3168,22 @@ void CDocument::MESSAGE_PromptForValue( std::string stringName, std::string stri
 void CDocument::ERROR_Add( const std::string_view& stringError )
 {
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );           // locks `m_vectorError`
-   gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
+   gd::argument::arguments argumentsError( { {"text", stringError}, {"type", "error"} }, gd::argument::arguments::tag_view{});
    m_vectorError.push_back( std::move(argumentsError) );
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Add warning to internal list of problems
+ * @param stringWarning warning information
+ */
+void CDocument::ERROR_AddWarning( const std::string_view& stringWarning )
+{
+   if( GetApplication()->PROPERTY_Exists( "verbose" ) == false || GetApplication()->PROPERTY_Get( "verbose" ).as_bool() == false ) return; // only add warning in verbose mode
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );           // locks `m_vectorError`
+   gd::argument::arguments argumentsWarning( { {"text", stringWarning}, {"type", "warning"} }, gd::argument::arguments::tag_view{});
+   m_vectorError.push_back( std::move(argumentsWarning) );
+}
+
 
 void CDocument::ERROR_Print( bool bClear ) 
 {
