@@ -305,7 +305,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
                }
                catch( const std::exception& e )
                {
-                  papplication_g->ERROR_Add("Error reading file: " + std::string(e.what()));
+                  papplication_g->ERROR_AddWarning("Error reading file: " + std::string(e.what()));
                }
             }
          }

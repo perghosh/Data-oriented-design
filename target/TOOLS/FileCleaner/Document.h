@@ -236,6 +236,7 @@ public:
 *///@{
 /// Add error to internal list of errors
    void ERROR_Add( const std::string_view& stringError );
+   void ERROR_AddWarning( const std::string_view& stringError );
    bool ERROR_Empty() const { return m_vectorError.empty(); }
    size_t ERROR_Size() const { return m_vectorError.size(); }
    void ERROR_Print( bool bClear = false );
