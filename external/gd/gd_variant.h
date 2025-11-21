@@ -1,12 +1,12 @@
 /**
  * \file gd_variant.h
- * 
+ *
  * \brief variant stores any primitive value and some common derived value types
- * 
+ *
  * Variant is very useful when you need runtime type information for a value.
- * 
- * 
- * 
+ *
+ *
+ *
  */
 
 #pragma once
@@ -175,7 +175,7 @@ namespace variant_type
    /*-----------------------------------------*/ /**
     * \brief wrapper used to handle utf8 text
     */
-   struct utf8 
+   struct utf8
    {
       utf8( const char* pbsz ) : m_pbsz(pbsz), m_uLength( strlen( pbsz ) ) {}
       utf8( const char* pbsz, size_t uLength ) : m_pbsz(pbsz), m_uLength( uLength ) {}
@@ -196,17 +196,17 @@ namespace variant_type
    /*-----------------------------------------*/ /**
     * \brief wrapper used to set uuid value
     */
-   struct uuid 
-   { 
+   struct uuid
+   {
       uuid( const uint8_t* v ): m_pbUuid(v) {}
-      const uint8_t* m_pbUuid; 
+      const uint8_t* m_pbUuid;
    };
 
    #pragma pack(push,1)
    /*-----------------------------------------*/ /**
     * \brief guid compatible with GUID in windows
     */
-   struct guid 
+   struct guid
    {
       unsigned long  Data1;
       unsigned short Data2;
@@ -231,13 +231,13 @@ class variant_view;
  \code
  \endcode
  */
-class variant 
+class variant
 {
 public:
    /*-----------------------------------------*/ /**
     * \brief wrapper used to handle utf8 text
     */
-   struct utf8 
+   struct utf8
    {
       utf8( const char* pbsz ) : m_pbsz(pbsz), m_uLength( strlen( pbsz ) ) {}
       utf8( const char* pbsz, size_t uLength ) : m_pbsz(pbsz), m_uLength( uLength ) {}
@@ -297,10 +297,10 @@ public:
    variant( const variant& o ) { common_construct( o ); }                        // copy
    variant( variant&& o ) noexcept { move_construct( o ); }                      // move
 
-// ## @API [type: operator] [description: operators like =, +=, -=, +, -]
+// ## @API [tag: operator] [description: operators like =, +=, -=, +, -]
 
    variant& operator=( const variant& o ) { clear(); common_construct( o ); return *this; }
-   variant& operator=( variant&& o ) noexcept { 
+   variant& operator=( variant&& o ) noexcept {
       clear();
       if( this != &o ) { ((uint64_t*)this)[0] = ((uint64_t*)&o)[0]; ((uint64_t*)this)[1] = ((uint64_t*)&o)[1]; o.m_uType = variant_type::eTypeUnknown; }
       return *this; }
@@ -370,7 +370,7 @@ public:
    bool operator<( const variant& o ) const { return less( o ); }
 
 
-// ## @API [type: assign] [description: assign methods, setting value of variant]
+// ## @API [tag: assign] [description: assign methods, setting value of variant]
 
    void assign( bool v )      { _set_value( v ); }
    void assign( int8_t v )    { _set_value( v ); }
@@ -469,16 +469,16 @@ private:
 
 // operator
 public:
-   
 
-// ## @API [type: get/set] [description: getter and setter methods]
+
+// ## @API [tag: get/set] [description: getter and setter methods]
 
 /** \name GET/SET
 *///@{
-   bool get_bool() const; 
-   int get_int() const;   
+   bool get_bool() const;
+   int get_int() const;
    int32_t get_int32() const { if(m_uType == variant_type::eTypeUInt32) return m_V.int32; else return (int32_t)get_int(); }
-   unsigned int get_uint() const;   
+   unsigned int get_uint() const;
    int64_t get_int64() const;
    uint64_t get_uint64() const;
    double get_decimal() const;
@@ -536,7 +536,7 @@ public:
    static variant_type::enumGroup get_type_group_s( unsigned uType ) noexcept { return variant_type::enumGroup(uType & variant_type::enumFilter::eFilterTypeGroup); }
 
 
-// ## @API [type: is] [description: is methods used to ask variant for its type and value]
+// ## @API [tag: is] [description: is methods used to ask variant for its type and value]
 
    bool is_null() const          { return (m_uType == variant_type::eTypeUnknown); }
    bool is_bool() const          { return (m_uType & variant_type::eGroupBoolean ? true : false); }
@@ -566,13 +566,13 @@ public:
 
    bool is_void() const { return (m_uType & variant_type::enumFilter::eFilterTypeGroup) == variant_type::eTypeNumberVoid ? true : false; }
 
-   // ## @API [type: convert] [description: convert methods for changing the variant's type]
+   // ## @API [tag: convert] [description: convert methods for changing the variant's type]
 
    void convert( variant_type::enumType eType );
    void convert( unsigned uType ) { convert( (variant_type::enumType)uType ); }
    void convert( const std::string_view& stringType );
 
-// ## @API [type: compare] [description: methods to compare value in variant]
+// ## @API [tag: compare] [description: methods to compare value in variant]
 
    bool compare( const variant& v ) const;
    bool less( const variant& v ) const;
@@ -580,18 +580,18 @@ public:
 
    /// return pointer to char buffer
    const char* c_str() const {                                                 assert( is_string() );
-      return m_V.pbsz; 
+      return m_V.pbsz;
    }
    /// return pointer to wide char buffer
    const wchar_t* c_wstr() const {                                             assert( is_string() );
-      return m_V.pwsz; 
+      return m_V.pwsz;
    }
    /// return pointer to char buffer
    const uint8_t* c_str_uft8() const {                                         assert( is_string() );
-      return m_V.pb_const; 
+      return m_V.pb_const;
    }
 
-   
+
    uint32_t length() const { return m_uSize; }
 
 //@}
@@ -600,9 +600,9 @@ public:
 /** \name LOGICAL
 *///@{
    //bool is_true() const throw();
-   void clear() { 
-      if( (m_uType & variant_type::eFlagAllocate) == variant_type::eFlagAllocate ) { free_(); } 
-      m_uType = variant_type::eTypeUnknown; 
+   void clear() {
+      if( (m_uType & variant_type::eFlagAllocate) == variant_type::eFlagAllocate ) { free_(); }
+      m_uType = variant_type::eTypeUnknown;
    }
    bool empty() const { return m_uType == variant_type::eTypeUnknown; }
    /// return pointer to internal data regardless if it is a primitive type or extended type
@@ -613,16 +613,16 @@ protected:
 /** \name INTERNAL
 *///@{
    void* allocate( size_t uSize ) { return  ::malloc( uSize ); }
-   void free_() { 
+   void free_() {
       if( !(m_uType & variant_type::eFlagLengthPrefix) ) { ::free( m_V.p ); }
-      else                                               { ::free( ((unsigned char*)m_V.p - sizeof(uint32_t)) ); } 
+      else                                               { ::free( ((unsigned char*)m_V.p - sizeof(uint32_t)) ); }
    }
    //@}
 
 // attributes
 public:
    uint32_t m_uType;
-   uint32_t m_uSize;    ///< Holds size for data that varies in size, size should be compatible with type that variant is holding. 
+   uint32_t m_uSize;    ///< Holds size for data that varies in size, size should be compatible with type that variant is holding.
                         ///< If string it could be 0 and they you need to calculate size
    union value
    {
@@ -648,7 +648,7 @@ public:
       const unsigned char* pb_const;
       float       f;
       double      d;
-      void*       p;   
+      void*       p;
    } m_V;
 
 /** \name INTERNAL FREE FUNCTIONS
@@ -693,7 +693,7 @@ public:
    /// Convert variant from one type to another
    static bool convert_to_s( const gd::variant* pvariantFrom, gd::variant* pvariantTo, unsigned uType );
 
-   // ## Methods used to compute meta data about value in variant 
+   // ## Methods used to compute meta data about value in variant
 
    static unsigned compute_digit_count_s( uint32_t uNumber );
    static unsigned compute_digit_count_s( int32_t iNumber );
@@ -736,7 +736,7 @@ auto stringAlsoText = variant_.as<decltype(stringText)>();
 std::cout << stringText << std::endl;
 assert( stringText == stringAlsoText );
  * @endcode
- * @tparam TYPE value type to convert/return 
+ * @tparam TYPE value type to convert/return
  * @return return the value as specified type
  */
 template<typename TYPE>
@@ -779,8 +779,8 @@ inline TYPE variant::as() const {
 
 
 /// Return pointer to internal data regardless if it is a primitive type or extended type
-inline const uint8_t* variant::get_value_buffer() const noexcept { 
-   if( is_primitive() ) return (uint8_t*)this + offsetof(variant, m_V); 
+inline const uint8_t* variant::get_value_buffer() const noexcept {
+   if( is_primitive() ) return (uint8_t*)this + offsetof(variant, m_V);
    return (const uint8_t*)m_V.pb_const;
 }
 
@@ -870,4 +870,3 @@ namespace debug {
 #elif defined(_MSC_VER)
    #pragma warning(pop)
 #endif
-
