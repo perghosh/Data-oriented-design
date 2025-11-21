@@ -80,6 +80,53 @@ static std::string CreateTemporaryFile_s();
 
 */
 
+TEST_CASE("[table] serialize", "[table]") {
+   using namespace gd::table::dto;
+   const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+   constexpr unsigned uTableDuplicate = (table::eTableFlagNull32|table::eTableFlagRowStatus|table::eTableFlagDuplicateStrings);
+
+   gd::table::dto::table tableSerialize( uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{} );
+   gd::table::dto::table tableSerialize1(tableSerialize, gd::table::tag_columns{});
+   tableSerialize1.prepare();
+
+   // Add 10 rows tableSerialize
+   for( int i = 0; i < 10; ++i )
+   {
+      auto uRow = tableSerialize.row_add_one();
+      tableSerialize.row_set( uRow, { {"KeyK", (int64_t)i}, {"name", std::string("name_") + std::to_string(i)}, {"text", std::string("text_") + std::to_string(i)} } );
+   }
+
+   tableSerialize1.append( tableSerialize );
+
+   assert( tableSerialize.size() == tableSerialize1.size() );
+
+   // print tableSerialize1 to cli
+   {
+      std::string stringTable = gd::table::to_string(tableSerialize1, gd::table::tag_io_cli{});
+      std::cout << stringTable << std::endl;
+   }
+
+   /*
+   gd::table::dto::table tableSerialize1(uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{});
+
+   std::mt19937 mt19937;
+
+   // Generate 100 random strings using stl
+   std::vector<std::string> vectorRandomStrings;
+   for( int i = 0; i < 10; ++i )
+   {
+      std::string string_;
+      // Generate random number for length of string
+      int iLength = mt19937() % 30 + 1; // Random length between 1 and 30
+      for( int j = 0; j < iLength; ++j )
+      {
+         string_ += stringCharset[mt19937() % stringCharset.size()];
+      }
+      vectorRandomStrings.push_back(string_);
+   }
+   */
+}
+
 TEST_CASE("[table] construct table", "[table]") {
    using namespace gd::table;
 
