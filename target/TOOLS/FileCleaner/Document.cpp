@@ -624,7 +624,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    {
       for(const auto& stringError : vectorError)
       {
-         ERROR_Add(stringError);
+         ERROR_AddWarning(stringError);
       }
    }
 
@@ -792,7 +792,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    {
       for(const auto& stringError : vectorError)
       {
-         ERROR_Add(stringError);
+         ERROR_AddWarning(stringError);
       }
    }
 
@@ -972,7 +972,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    // ### Handle any collected errors
    if(!vectorError.empty())
    {
-      for(const auto& stringError : vectorError) { ERROR_Add(stringError); }
+      for(const auto& stringError : vectorError) { ERROR_AddWarning(stringError); }
    }
 
    return {true, ""};

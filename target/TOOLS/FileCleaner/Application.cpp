@@ -2693,7 +2693,7 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
    return { true, "" };
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @API [tag: "application, path, preparepath" ] [summary: method preparing paths, important]  [description: "Prepare path, make absolute and handle wildcards"]
  * @brief Ensures the provided path is absolute. Supports wildcard patterns.
  *
  * @note In sample there are some ** / characters, please remove the space when using it. This to make the documentation parser happy.
