@@ -1,4 +1,4 @@
-﻿/*
+/*
 ## Overview
 | Name | Description |
 | - | - |
@@ -96,12 +96,8 @@ namespace gd {
          return !is_npos(uPosition);
       }
 
-      // ## `count` methods is used to count number of characters (`strlen` are wrappers)
+      // ## @API [tag: utf8, count] [description: Count number of characters in utf8 buffer]
 
-      /**
-       * Count number of characters in utf8 buffer
-       */
-      ///@{ 
       std::pair<uint32_t, const uint8_t*> count(const uint8_t* pubszText);                         // count utf8 characters
       inline std::pair<uint32_t, const uint8_t*> count(const std::string_view stringText) { 
          if( stringText.empty() == false ) return count( reinterpret_cast<const uint8_t*>(stringText.data()) );
@@ -126,7 +122,7 @@ namespace gd {
          return count(reinterpret_cast<const uint8_t*>(pbszText)).first;
       };
 
-      /// ## `size` methods is used calculate needed size to store character as utf8 value         @@LINK #utf8.size
+      /// ## @API [tag: utf8, size] [description: calculates the size in bytes for utf8 characters]
 
       uint32_t size( uint8_t ch ); // ------------------------------------------------------------- size
       uint32_t size( uint16_t ch ); // ------------------------------------------------------------ size
@@ -179,7 +175,7 @@ namespace gd {
       inline std::pair<bool, const uint8_t*> validate_hex( const std::string_view& stringText ) { return validate_hex( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length() ); }
 
 
-      // ## `convert*` methods
+      // ## @API [tag: utf8, convert] [description: methods used to convert between different string formats and mostly utf8]
       // A lot of convert methods and what the mostly do is to convert from something
       // to utf8. If there is only one name of a string format than that format is
       // converted to utf8.
@@ -322,9 +318,7 @@ namespace gd {
       ///@}
 
 
-      /**
-       * @brief move operation for pointer in utf-8 buffer
-      */
+      // ## @API [tag: utf8, move] [description: move operation for pointer in utf-8 buffer]
       namespace move {                                                                             // @@LINK #utf8.next
 
          /** \name NEXT OPERATIONS
@@ -518,10 +512,10 @@ namespace gd {
          std::string_view find_nth(const std::string_view& stringText, size_t uNth, uint32_t uCharacter);
       }
 
-      /**
-       * @brief json formated text encoding
+      /** @API [tag: utf8, json] [description: operations used to work with json formated text]
+       * 
        */
-      namespace json {                                                                             // @@LINK #utf8.json
+      namespace json {
          // ## Validation methods
          bool is_encoded( uint8_t uChar );
          std::pair<bool, const uint8_t*> validate( const uint8_t* pubBegin, const uint8_t* pubEnd );
@@ -588,7 +582,7 @@ namespace gd {
 
       }
 
-      /**
+      /** @API [tag: uri] [description: operations used to work with uri/url formated text]
        * @brief operation used to convert between format used in uri/url text
        * |name|description|
        * |-|-|
@@ -735,7 +729,7 @@ namespace gd {
 namespace gd {
    namespace utf8 {
 
-      // ## Trim methods used to remove spaces
+      // ## @API [tag: trim] [description: Trim methods used to remove spaces]
 
       /**
        * @brief find positions in text where characters start and ends
@@ -844,7 +838,7 @@ namespace gd {
       std::string quoted_if_text( const std::string_view& stringToQuote );
 
       
-      // ## Split methods, split string into parts                                                 // @@LINK #utf8.split
+      // ## @API [tag: utf8, split] [description: split string into parts]
 
       /// Split string into std::string_view parts, each part is separated by `chSplit` character
       void split( const char* pbBegin, const char* pbEnd, char chSplit, std::vector<std::string_view>& vectorPart );
