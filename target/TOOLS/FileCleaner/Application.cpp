@@ -611,6 +611,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       std::string stringDocumentation;
 
       HELP_PrintDocumentation( poptionsActive, stringDocumentation );
+      auto* poptionsParent = poptionsActive->get_parent();
+		if(poptionsParent != nullptr)
+      { 
+         HELP_PrintDocumentation( poptionsParent, stringDocumentation);
+      }
 
       PrintMessage( stringDocumentation, gd::argument::arguments() );
       return { true, "" };
@@ -2025,6 +2030,60 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
          stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "header", "default" }).as_string(), gd::types::tag_color{});
          stringDocumentation += "\n\n"; // add newline to description
          stringDocumentation += gd::math::string::format_header_line("GLOBALS", 80, '#', '=', '#'); // format header line
+         stringDocumentation += "\n\n";
+      }
+      else if( (uType & options::eOptionTypeOption) == options::eOptionTypeOption )
+      {
+         // pad to 18 characters
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
+         std::string string_ = std::format("- {:.<16}: ", stringName );
+         stringDocumentation += string_;
+         string_ = stringDescription;
+         if( ( uType & options::eOptionTypeFlag ) == options::eOptionTypeFlag ) { string_ += " (flag)"; } // if flag then add to description
+         string_ = gd::math::string::format_text_width( string_, 60 );
+         string_ = gd::math::string::format_indent( string_, 20, false );
+         stringDocumentation += string_;
+         stringDocumentation += "\n";
+      }
+      else if( uType == options::eOptionTypeFlag )
+      {
+         // pad to 18 characters
+         stringFlags += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
+         std::string string_ = std::format("- {:.<16}: ", stringName );
+         stringFlags += string_;
+         string_ = gd::math::string::format_text_width( stringDescription, 60 );
+         string_ = gd::math::string::format_indent( string_, 20, false );
+         stringFlags += string_;
+         stringFlags += "\n";
+      }
+      else if( uType == 0 )
+      {
+         if( stringFlags.empty() == true ) return; // if no flags then skip
+
+         stringDocumentation += "\nFlags\n";
+         stringDocumentation += stringFlags;
+         stringFlags.clear();
+      }
+   });
+}
+
+void CApplication::HELP_PrintGlobalDocumentation( const gd::cli::options* poptions, std::string& stringDocumentation )
+{
+   using namespace gd::cli; // use namespace for options
+   std::string stringFlags; // temporary string to hold flags
+
+   poptions->print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_, const auto* poptions_) -> void {
+      if( poptions_->get_parent() == nullptr ) { return; }                      // skip globals
+
+      if( uType == options::eOptionTypeCommand )
+      {
+         if( stringName.empty() == false ) { return; }                          // skip commands with name                   
+
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "header", "default" }).as_string(), gd::types::tag_color{});
+         stringDocumentation += "\n\n"; // add newline to description
+         stringDocumentation += gd::math::string::format_header_line(stringName, 80); // format header line for command name
+         stringDocumentation += "\n";
+         stringDocumentation += gd::math::string::format_indent(stringDescription, 2, true); // indent description
          stringDocumentation += "\n\n";
       }
       else if( (uType & options::eOptionTypeOption) == options::eOptionTypeOption )
