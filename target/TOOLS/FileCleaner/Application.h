@@ -351,6 +351,7 @@ public:
 /** \name HELP
 *///@{
    void HELP_PrintDocumentation( const gd::cli::options* poptions, std::string& stringDocumentation );
+   void HELP_PrintGlobalDocumentation( const gd::cli::options* poptions, std::string& stringDocumentation );
 //@}
 
 /** \name HISTORY
