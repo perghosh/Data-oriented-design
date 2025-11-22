@@ -24,6 +24,7 @@
 #include <functional>
 
 #include "gd/gd_file.h"
+#include "gd/gd_parse.h"
 #include "gd/math/gd_math_type.h"
 #include "gd/math/gd_math_string.h"
 #include "gd/parse/gd_parse_format_string.h"
@@ -743,37 +744,68 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
          return { false, stringError }; 
       }
 
-      // ## Get the command from the specified row and execute it
+      // ## Get the command from the specified row and execute it ............
 
       std::string stringName = ptableHistory->cell_get_variant_view(iRow, "name").as_string();
       std::string stringLine = ptableHistory->cell_get_variant_view(iRow, "line").as_string();
 
-      stringCommand = stringName + " " + stringLine; // Construct the full command line
+      std::vector<std::string> vectorCommand;
+      const auto* piBegin = stringLine.c_str();
+      const auto* piEnd = stringLine.c_str() + stringLine.length();
 
-      if( stringCommand.empty() == false )
-      {                                                                                               LOG_DEBUG_RAW( "==> Running history command: " + stringCommand );
-
-         gd::cli::options optionsRun;
-         CApplication::Prepare_s(optionsRun);                                    // prepare command-line options
-         optionsRun.set_first(0);
-
-         result_ = optionsRun.parse_terminal(stringCommand);                     // Parse the command line from the history entry
-         if( result_.first == false ) { return result_; }
-
-         // ## Overload options from the application options .........................
-         //    Here we try to find extra arguments passed to history run command, it can take any number of values and these values will overload the options used to run the command from history
-         {  gd::cli::options* poptionsCommand = optionsRun.sub_find_active();    // find the active sub-command options
-            if( poptionsCommand != nullptr )
-            {
-               gd::argument::arguments argumentsOverload( poptionsApplication->get_arguments() );
-               argumentsOverload.remove("run");
-               poptionsCommand->overload(argumentsOverload);
-            }
-         }
-
-         result_ = papplication_g->InitializeInternal(optionsRun);                      // Initialize the application with parsed options
-         if( result_.first == false ) { return result_; }
+      // ## Split command line into multiple commands if ';' is found outside quotes
+      const auto* piPosition = gd::parse::strchr(piBegin, piEnd, ';', gd::parse::csv());
+      while(piPosition != nullptr)
+      {
+          vectorCommand.emplace_back(stringLine.substr(0, piPosition - stringLine.c_str()));
+          stringLine = stringLine.substr(piPosition - stringLine.c_str() + 1);
+    
+          // ### Update pointers after modifying stringLine ..................
+          piBegin = stringLine.c_str();
+          piEnd = stringLine.c_str() + stringLine.length();
+    
+          piPosition = gd::parse::strchr(piBegin, piEnd, ';', gd::parse::csv());
       }
+
+      // Don't forget to add the remaining part after the last ';'
+      if(stringLine.empty() == false) { vectorCommand.emplace_back(stringLine); }
+
+      for( const auto& command_ : vectorCommand ) 
+      { 
+         std::string stringCommand_( command_ );                              // command line to run
+
+         // ## trim spaces ...................................................
+         stringCommand_.erase(0, stringCommand_.find_first_not_of(" \t"));
+         stringCommand_.erase(stringCommand_.find_last_not_of(" \t") + 1);
+         if( stringCommand_.empty() == true ) { continue; }
+
+         stringCommand = stringName + " " + stringCommand_;                   // Construct the full command line
+
+         if( stringCommand.empty() == false )
+         {                                                                                               LOG_DEBUG_RAW( "==> Running history command: " + stringCommand );
+
+            gd::cli::options optionsRun;
+            CApplication::Prepare_s(optionsRun);                              // prepare command-line options
+            optionsRun.set_first(0);
+
+            result_ = optionsRun.parse_terminal(stringCommand);               // Parse the command line from the history entry
+            if( result_.first == false ) { return result_; }
+
+            // ## Overload options from the application options .........................
+            //    Here we try to find extra arguments passed to history run command, it can take any number of values and these values will overload the options used to run the command from history
+            {  gd::cli::options* poptionsCommand = optionsRun.sub_find_active();// find the active sub-command options
+               if( poptionsCommand != nullptr )
+               {
+                  gd::argument::arguments argumentsOverload( poptionsApplication->get_arguments() );
+                  argumentsOverload.remove("run");
+                  poptionsCommand->overload(argumentsOverload);
+               }
+            }
+
+            result_ = papplication_g->InitializeInternal(optionsRun);         // Initialize the application with parsed options
+            if( result_.first == false ) { return result_; }
+         }
+      } // for( auto& stringLine : vectorCommand ) {
    } // for( const auto& stringEntry : vectoryEntry ) {
 
    return { true, "" };
