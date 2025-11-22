@@ -576,7 +576,7 @@ std::pair<bool, std::string> CApplication::Exit()
 
 // 0TAG0Initialize.Application
 
-/** --------------------------------------------------------------------------- @CODE [tag: application, option] [description: Initialize application from command line, go here if you want to check whats going to be executed]
+/** --------------------------------------------------------------------------- @API [tag: application, option, help] [description: Initialize application from command line, go here if you want to check whats going to be executed, some general logic is also placed here]
  * @brief Initializes the application based on the provided command-line options.
  *
  * This method processes the command-line options and performs initialization tasks
@@ -1932,7 +1932,7 @@ bool CApplication::CONFIG_Exists( std::string_view stringGroup, std::string_view
    return false;
 }
 
-/** --------------------------------------------------------------------------- @TAG #help.Application
+/** --------------------------------------------------------------------------- @API [tag: help, application] [description: "Help and documentation functions for the application."]
  * @brief Print documentation for command-line options
  *
  * This function generates documentation for the provided command-line options
