@@ -279,7 +279,7 @@
     }
 }
 
-/* forest-earth */
+/* **forest**-earth */
 {
     "version": "1.0",
     "cleaner.color": {
