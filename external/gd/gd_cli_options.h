@@ -1,3 +1,4 @@
+// @FILE [tag: cli] [description: General logic for command-line options] [type: header]
 /**
  * \file gd_cli_options.h
  * @brief Header file for command-line interface (CLI) options management.
@@ -392,7 +393,7 @@ public:
    void print_suboption_options(const options& optionSub, std::string& stringDocumentation) const;
 
    /// send documentation to callback function
-   void print_documentation( std::function<void(unsigned uType, const std::string_view, std::string_view, const option*, const options*)> callback_ ) const;
+   void print_documentation( std::function<void(unsigned uType, const std::string_view, std::string_view, const option*, const options*)> callback_, bool bSubOption = true ) const;
 
    /// get option at specified index
    option* at( size_t uIndex ) { return &m_vectorOption.at( uIndex ); }

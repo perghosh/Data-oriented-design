@@ -1,3 +1,4 @@
+// @FILE [tag: cli] [description: General logic for command-line options] [type: source]
 /**
  * \file gd_cli_options.cpp
  * 
@@ -995,7 +996,15 @@ void options::print_documentation( std::string& stringDocumentation, tag_documen
 
 }
 
-void options::print_documentation( std::function<void(unsigned uType, std::string_view, std::string_view, const option*, const options*)> callback_ ) const
+/** ---------------------------------------------------------------------------
+ * @brief Generate documentation using callback method
+ * 
+ * Calls callback method for each command and option found
+ * 
+ * @param callback_ callback method to call for each command and option found
+ * @param bSubOption true to print sub options as well, false to not print sub options
+*/
+void options::print_documentation( std::function<void(unsigned uType, std::string_view, std::string_view, const option*, const options*)> callback_, bool bSubOption ) const
 {
    callback_( eOptionTypeCommand, m_stringName, m_stringDescription, nullptr, this );
 
@@ -1013,9 +1022,12 @@ void options::print_documentation( std::function<void(unsigned uType, std::strin
 
    callback_( 0, std::string_view(), std::string_view(), nullptr, this );
 
-   for(const auto& it : m_vectorSubOption)
+   if( bSubOption == true )
    {
-      it.print_documentation( callback_ );
+      for(const auto& it : m_vectorSubOption)
+      {
+         it.print_documentation( callback_, bSubOption );
+      }
    }
 }
 

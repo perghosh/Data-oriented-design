@@ -1,3 +1,5 @@
+// @FILE [tag: table, dto] [description: Table that works well as data transfer object and to temporary storage] [type: header]
+
 /**
  * \file gd_table_column-buffer.h
  *

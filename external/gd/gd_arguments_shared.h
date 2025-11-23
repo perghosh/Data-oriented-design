@@ -1,3 +1,5 @@
+// @FILE [tag: arguments] [description: Arguments buffer optimized for speed, may use a bit more memory and cant use stack] [type: header]
+
 /**
  * @file gd_arguments_shared.h
  *

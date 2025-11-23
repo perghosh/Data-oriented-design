@@ -1,3 +1,5 @@
+// @FILE [tag: variant] [description: General variant item that owns its data, manages all primitive types and some common] [type: source]
+
 #include <charconv>
 #include <cmath>
 #include <cwchar>
