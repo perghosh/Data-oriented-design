@@ -616,7 +616,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       { 
          stringDocumentation += "\n\n";
          stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
-         stringDocumentation += "+- Globals: -+\n";
+         stringDocumentation += "+- Globals: some of these may be set for command and globally -+\n\n";
          HELP_PrintSingleDocumentation( poptionsParent, stringDocumentation); 
       }
 
