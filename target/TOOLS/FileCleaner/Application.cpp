@@ -612,7 +612,13 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
       HELP_PrintDocumentation( poptionsActive, stringDocumentation );
       auto* poptionsParent = poptionsActive->get_parent();
-		if(poptionsParent != nullptr) { HELP_PrintGlobalDocumentation( poptionsParent, stringDocumentation); }
+		if(poptionsParent != nullptr) 
+      { 
+         stringDocumentation += "\n\n";
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
+         stringDocumentation += "+- Globals: -+\n";
+         HELP_PrintSingleDocumentation( poptionsParent, stringDocumentation); 
+      }
 
       PrintMessage( stringDocumentation, gd::argument::arguments() );
       return { true, "" };
@@ -2064,26 +2070,14 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
    });
 }
 
-void CApplication::HELP_PrintGlobalDocumentation( const gd::cli::options* poptions, std::string& stringDocumentation )
+void CApplication::HELP_PrintSingleDocumentation( const gd::cli::options* poptions, std::string& stringDocumentation )
 {
    using namespace gd::cli; // use namespace for options
    std::string stringFlags; // temporary string to hold flags
 
    poptions->print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_, const auto* poptions_) -> void {
-      if( poptions_->get_parent() == nullptr ) { return; }                      // skip globals
-
-      if( uType == options::eOptionTypeCommand )
-      {
-         if( stringName.empty() == false ) { return; }                          // skip commands with name                   
-
-         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
-         stringDocumentation += "\n\n"; // add newline to description
-         stringDocumentation += gd::math::string::format_header_line(stringName, 80); // format header line for command name
-         stringDocumentation += "\n";
-         stringDocumentation += gd::math::string::format_indent(stringDescription, 2, true); // indent description
-         stringDocumentation += "\n\n";
-      }
-      else if( (uType & options::eOptionTypeOption) == options::eOptionTypeOption )
+      
+      if( (uType & options::eOptionTypeOption) == options::eOptionTypeOption )
       {
          // pad to 18 characters
          stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
@@ -2115,7 +2109,7 @@ void CApplication::HELP_PrintGlobalDocumentation( const gd::cli::options* poptio
          stringDocumentation += stringFlags;
          stringFlags.clear();
       }
-   });
+   }, false);
 }
 
 
