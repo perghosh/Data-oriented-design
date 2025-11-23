@@ -612,10 +612,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
       HELP_PrintDocumentation( poptionsActive, stringDocumentation );
       auto* poptionsParent = poptionsActive->get_parent();
-		if(poptionsParent != nullptr)
-      { 
-         HELP_PrintDocumentation( poptionsParent, stringDocumentation);
-      }
+		if(poptionsParent != nullptr) { HELP_PrintGlobalDocumentation( poptionsParent, stringDocumentation); }
 
       PrintMessage( stringDocumentation, gd::argument::arguments() );
       return { true, "" };
@@ -2079,7 +2076,7 @@ void CApplication::HELP_PrintGlobalDocumentation( const gd::cli::options* poptio
       {
          if( stringName.empty() == false ) { return; }                          // skip commands with name                   
 
-         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "header", "default" }).as_string(), gd::types::tag_color{});
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
          stringDocumentation += "\n\n"; // add newline to description
          stringDocumentation += gd::math::string::format_header_line(stringName, 80); // format header line for command name
          stringDocumentation += "\n";
@@ -2089,7 +2086,7 @@ void CApplication::HELP_PrintGlobalDocumentation( const gd::cli::options* poptio
       else if( (uType & options::eOptionTypeOption) == options::eOptionTypeOption )
       {
          // pad to 18 characters
-         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
          std::string string_ = std::format("- {:.<16}: ", stringName );
          stringDocumentation += string_;
          string_ = stringDescription;
@@ -2102,7 +2099,7 @@ void CApplication::HELP_PrintGlobalDocumentation( const gd::cli::options* poptio
       else if( uType == options::eOptionTypeFlag )
       {
          // pad to 18 characters
-         stringFlags += gd::console::rgb::print( CONFIG_Get("color", { "body", "default" }).as_string(), gd::types::tag_color{});
+         stringFlags += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
          std::string string_ = std::format("- {:.<16}: ", stringName );
          stringFlags += string_;
          string_ = gd::math::string::format_text_width( stringDescription, 60 );

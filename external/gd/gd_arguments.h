@@ -1,3 +1,5 @@
+// @FILE [tag: arguments] [description: arguments that packs data without alignment, optimized for size to use less memory and may can store data on stack] [type: header]
+
 /**
  * @file gd_arguments.h
  * 

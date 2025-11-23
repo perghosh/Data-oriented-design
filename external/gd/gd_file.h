@@ -1,3 +1,5 @@
+// @FILE [tag: file] [description: Miscellaneous file operations] [type: header]
+
 /**
  * \file gd_file.h
  * 

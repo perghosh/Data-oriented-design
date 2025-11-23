@@ -1,3 +1,5 @@
+// @FILE [tag: table, member] [description: Table that holds columnar data and is adapted for use as member variables and in threads, it can share column information] [type: header]
+
 /**
  * \file gd_table_table.h
  *

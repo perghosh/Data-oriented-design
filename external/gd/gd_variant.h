@@ -1,3 +1,5 @@
+// @FILE [tag: variant] [description: General variant item that owns its data, manages all primitive types and some common] [type: header]
+
 /**
  * \file gd_variant.h
  *
@@ -5,8 +7,18 @@
  *
  * Variant is very useful when you need runtime type information for a value.
  *
- *
- *
+ * | Area                | Methods (Examples)                                                                                      | Description                                                                                   |
+ * |---------------------|--------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ * | Construction        | `variant(...)`, `common_construct(...)`, `move_construct(...)`                                         | Constructors for creating, copying, and moving variant instances with various types.          |
+ * | Assignment          | `assign(...)`, `operator=`, `_set_value(...)`, `set_void(...)`                                         | Methods for assigning or updating the value and type of a variant.                            |
+ * | Arithmetic/Operators| `operator+`, `operator-`, `operator+=`, `operator-=`, `operator==`, `operator!=`, `operator<`         | Arithmetic and comparison operators for supported types.                                      |
+ * | Retrieval           | `get_bool()`, `get_int()`, `get_int32()`, `get_uint()`, `get_int64()`, `get_string()`, `as<TYPE>()`    | Methods for retrieving the value in the desired type, including type-safe conversions.        |
+ * | Type Queries        | `type()`, `type_number()`, `type_name()`, `get_type_number()`, `get_type_group()`, `is_*()`            | Methods for querying the type, group, and properties of the stored value.                     |
+ * | Conversion          | `convert(...)`, `cast_as_int16()`, `cast_as_uint16()`, `cast_as_int32()`, `cast_as_uint32()`           | Methods for converting the stored value to another type or casting between compatible types.  |
+ * | Comparison          | `compare(...)`, `less(...)`                                                                            | Methods for comparing values and types between variants.                                      |
+ * | Utility/Meta        | `clear()`, `empty()`, `length()`, `get_value_buffer()`, `allocate(...)`, `free_()`                     | Utility methods for memory management, clearing, and querying variant metadata.               |
+ * | Printing/Debug      | `debug::print(...)`, `debug::print_value(...)`                                                         | Methods for formatting and printing variant values for debugging.                             |
+ * | Static/Helpers      | `find_s(...)`, `convert_to_s(...)`, `compute_digit_count_s(...)`, `format_s(...)`                      | Static helper methods for searching, conversion, formatting, and metadata computation.        |
  */
 
 #pragma once
