@@ -4521,6 +4521,22 @@ static const std::byte* read_s( const std::byte* pFrom, void* pTo, std::size_t u
 static std::byte* write_s( const void* pSource, std::byte* pBuffer, std::size_t uSize);
 
 /** ---------------------------------------------------------------------------
+ * @brief Serialize or deserialize table column buffer to/from buffer
+ * 
+ * @param pBuffer pointer to buffer to read from or write to
+ * @param bSave true if data is saved to buffer, false if data is read from buffer
+ * @return pointer to position after serialized data in buffer
+*/
+std::byte* table_column_buffer::serialize( std::byte* pBuffer, bool bSave )
+{ 
+   std::byte* pposition_ = pBuffer;
+   pposition_ = serialize( pposition_, bSave, tag_columns{} );
+   pposition_ = serialize( pposition_, bSave, tag_body{} );
+   pposition_ = serialize( pposition_, bSave, tag_reference{} );
+   return pposition_;
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Serialize or deserialize columns data to/from buffer
  * 
  * - `sizeof(uint64_t)` total size of column data block
@@ -4697,6 +4713,20 @@ std::byte* table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_re
    while( ( reinterpret_cast<uintptr_t>( pPosition ) % 4 ) != 0 ) pPosition++;
    return pPosition;
 
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Calculate needed size of buffer needed to serialize table column buffer
+ * 
+ * @return uint64_t size of buffer needed to serialize table column buffer
+ */
+uint64_t table_column_buffer::serialize_size() const
+{
+   uint64_t uSize = 0;
+   uSize += serialize_size(tag_columns{});
+   uSize += serialize_size(tag_body{});
+   uSize += serialize_size(tag_reference{});
+   return uSize;
 }
 
 
@@ -5012,12 +5042,32 @@ std::string debug::print( const table_column_buffer& table, tag_columns )
    return stringPrint;
 }
 
+/// print column names for table
+std::string debug::print( const table_column_buffer& table, tag_columns, tag_name )
+{
+   std::string stringPrint;
+   uint32_t uIndex = 0;
+   for( auto it = table.column_begin(), itEnd = table.column_end(); it != itEnd; it++ )
+   {
+      if( stringPrint.empty() == false ) stringPrint += ", ";
+
+      stringPrint += table.column_get_name( *it );
+   }
+
+   return stringPrint;
+}
+
+
 /// print column information in table
 std::string debug::print( const table_column_buffer* ptable, tag_columns ) { return print( *ptable, tag_columns{}); }
 
-/// print column information in table
-std::string debug::print_column( const table_column_buffer* ptable ) { return print( *ptable, tag_columns{}); }
+// ## print column information in table
 
+std::string debug::print_column( const table_column_buffer* ptable ) { return print( *ptable, tag_columns{}); }
+std::string debug::print_column( const table_column_buffer& table_ ) { return print( &table_, tag_columns{}); }
+
+std::string debug::print_column_name( const table_column_buffer* ptable ) { return print( *ptable, tag_columns{}, tag_name{} ); }
+std::string debug::print_column_name( const table_column_buffer& table_ ) { return print( table_, tag_columns{}, tag_name{} ); }
 
 /// print selected row
 std::string debug::print_row( const table_column_buffer& table, uint64_t uRow )

@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <cstdio>
 #include <immintrin.h>
+#include <print>
 
 
 #ifdef _WIN32
@@ -103,6 +104,13 @@ TEST_CASE("[table] serialize", "[table]") {
       std::string stringTable = gd::table::to_string(tableSerialize1, gd::table::tag_io_cli{});
       std::cout << stringTable << std::endl;
    }
+
+   std::string stringColumn_d = gd::table::debug::print_column_name( tableSerialize1 );
+   std::print( "{}\n", stringColumn_d);
+
+   auto uSize = tableSerialize.serialize_size();
+   std::vector<uint8_t> vectorBuffer( uSize );
+   tableSerialize.serialize( (std::byte*)vectorBuffer.data(), true );
 
    /*
    gd::table::dto::table tableSerialize1(uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{});

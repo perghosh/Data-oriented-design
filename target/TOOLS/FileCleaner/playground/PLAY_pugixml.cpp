@@ -1,4 +1,4 @@
-// @TAG #play #xml #pugixml
+// @FILE [tag: xml, pugixml, playground] [description: Playground for testing XML functionality]
 
 #include <filesystem>
 
