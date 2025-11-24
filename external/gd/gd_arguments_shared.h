@@ -16,16 +16,16 @@
  | Iteration           | next_s(...), print(...), print_json(...), print_s(...), print_name_s(...), print_type_s(...), print_value_s(...) | Methods for iterating, printing, and formatting argument values and metadata.                 |
  | Utility/Meta        | size(), buffer_data(), reserve(...), resize(...), sizeof_s(...), sizeof_name_s(...), get_total_param_length_s(...) | Utility methods for buffer management, size calculation, and memory layout.                   |
  | Debug/Printing      | debug::print(...), debug::print(vector<arguments>&)                                | Methods for printing argument objects and collections for debugging purposes.                  |
- * 
- * 
- * 
+ *
+ *
+ *
  * Set and get values:
  * \code
  gd::argument::shared::arguments args;
  args.set("key1", 42);
  args.set("key2", "value");
  std::cout << "Key1: " << args["key1"].get<int>() << "\n";
- std::cout << "Key2: " << gd::argument::get_g<std::string>( args["key2"] ) << "\n";   
+ std::cout << "Key2: " << gd::argument::get_g<std::string>( args["key2"] ) << "\n";
  args.set("key3", 100.01);
  std::cout << "Key3: " << args["key3"].as_string() << "\n";
  args.append("key4", 200.02);
@@ -33,10 +33,10 @@
  args.append( 1000 );
  std::cout << "index 4 (zero based): " << args[4].as_double() << "\n";
  * \endcode
- * 
- */ 
+ *
+ */
 
-/** 
+/**
  * ### 0TAG0 File navigation, mark and jump to often used parts
  * - `0TAG0argument` - Represents a single argument in `arguments`.
  * - `0TAG0iterator` - Provides forward traversal of arguments in `arguments`.
@@ -48,7 +48,7 @@
  * - `0TAG0print.arguments` - Methods for printing values in `arguments`.
  * - `0TAG0free_functions.arguments` - Free functions for working with `arguments`.
  * - `0TAG0buffer.arguments` - Methods for managing the buffer in `arguments`.
- * 
+ *
  */
 
 
@@ -148,19 +148,19 @@ concept concept_arguments_shared_is_pair_view = requires {
  *
  * If you need to store a lot of arguments objects or need store large amount of data then
  * the arguments in shared namespace works better compared to arguments found in argument namespace.
- * 
+ *
  * ## memory layout
  * [type and length for name][name in chars][type and length for data]{[length for non primitive types]}[value data]
  * shorter version
  * [uint32][name][uint32]{[uint32]}[data]
- * 
+ *
  * Values are store in one single buffer, and each value know its type and the length for the value is also known before value data is found.
  * Because lengths are stored it is fast to move between values in arguments object. Also the data length is
  * stored for the specific type in order to generate proper object value for type.
  * Example: strings need to store the zero ending, but that isn't used to get the
  * string lenght. so data length for "123" is four bytes becuase zero ending is stored.
  * But the value is prefixed with length that matches date and there fore the value 3 is stored in front of "123".
- * 
+ *
  * Example: Show memory layout for named char* value
  * - type and length for name                                    : 01 02 03 04
  * - name data                                                   : number of bytes needed to store name
@@ -338,7 +338,7 @@ public:
    /**
     * \brief store data for arguments, all data is stored in one single block of memory
     *
-    * This structure is allocated with extra memory to hold the actual data. 
+    * This structure is allocated with extra memory to hold the actual data.
     * Data is stored right after this structure in memory.
     */
    struct buffer
@@ -359,7 +359,7 @@ public:
 
       int get_reference_count() const { return m_iReferenceCount; }
       int add_reference() { m_iReferenceCount++; return m_iReferenceCount; }
-      /// release buffer, if reference count is zero then delete buffer. 
+      /// release buffer, if reference count is zero then delete buffer.
       ///    Never call this on the empty m_buffer_s and arguments will avoid this when you work with member methods.
       void release() {                                                                             assert( m_iReferenceCount > 0 ); assert( this != &m_buffer_s );
          m_iReferenceCount--;
@@ -381,7 +381,7 @@ public:
 
 
 
-   struct argument  //0TAG0argument 
+   struct argument  //0TAG0argument
    {
       union value;   // forward declare
       /// default constructor
@@ -417,7 +417,7 @@ public:
       argument(unsigned uType,const uint8_t* p) : m_eType((enumType)uType) { m_unionValue.puch = p; }
       argument(const uint8_t* p, enumType eType) : m_eType(eType) { m_unionValue.puch = p; }
 
-      
+
       //@}
 
       argument(const argument& o) {
@@ -495,7 +495,7 @@ public:
       void get_binary_as_hex(std::string& s) const;
       unsigned int get_binary_as_hex(char* pbsz, unsigned int uLength) const;
 
-      /// reset param 
+      /// reset param
       void reset(const argument* pParam = nullptr) {
          if( pParam != nullptr ) {
             *this = *pParam;
@@ -545,7 +545,7 @@ public:
       bool         is_uuid() const { return (type_number() == arguments::eTypeNumberGuid); }
       bool         is_string() const { return (type_number() == arguments::eTypeNumberString); }
       bool         is_utf8() const { return (type_number() == arguments::eTypeNumberUtf8String); }
-      bool         is_wstring() const { return (type_number() == arguments::eTypeNumberWString); } 
+      bool         is_wstring() const { return (type_number() == arguments::eTypeNumberWString); }
       bool         is_true() const;
       bool         is_primitive() const { return (type_number() > arguments::eTypeNumberUnknown && type_number() <= eTypeNumberDouble); } ///< primitive = built in types in C++
       bool         is_text() const { return (m_eType & arguments::eGroupString) != 0;  } ///< text = some sort of string value, ascii, utf8 or unicode
@@ -562,7 +562,7 @@ public:
 
       // attributes
    public:
-      arguments::enumType m_eType;      // type of value valid for m_unionValue 
+      arguments::enumType m_eType;      // type of value valid for m_unionValue
       union value
       {
          bool b;
@@ -628,7 +628,7 @@ public:
    template<typename ARGUMENTS>
    struct iterator_  //0TAG0iterator - iterator used to move forward for values whithin arguments
    {
-      using value_type = argument;  
+      using value_type = argument;
       using iterator_category = std::forward_iterator_tag;
       using self = iterator_;
       using difference_type = std::ptrdiff_t;
@@ -658,7 +658,7 @@ public:
          return *this;
       }
       self operator++(int) {                                                                       assert( m_parguments->verify_d( buffer_offset() ));
-         iterator_ it = *this; 
+         iterator_ it = *this;
          ++(*this);
          return it;
       }
@@ -692,7 +692,7 @@ public:
          return std::string_view();
       }
 
-      bool compare_name(std::string_view stringName) const { 
+      bool compare_name(std::string_view stringName) const {
          if( ARGUMENTS::is_name_s(buffer_offset()) == true )
          {
             if( ARGUMENTS::get_name_s(buffer_offset()) == stringName ) return true;
@@ -748,7 +748,7 @@ public: //0TAG0construct.arguments
    arguments( std::initializer_list<std::pair<std::string_view, gd::variant>> listPair); // construct arguments with vector like {{},{}}
    arguments( std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}
    arguments( std::vector<std::pair<std::string_view, gd::variant_view>> vectorPair ): arguments( vectorPair, tag_view{}) {}
-   arguments( std::vector<std::pair<std::string_view, gd::variant_view>> vectorPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}   
+   arguments( std::vector<std::pair<std::string_view, gd::variant_view>> vectorPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}
    arguments( const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair, const arguments& arguments_ );
    arguments( const arguments& arguments_, const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair );
    template<typename ARGUMENTS>
@@ -768,7 +768,7 @@ public: //0TAG0construct.arguments
    arguments& operator=(const std::initializer_list<std::pair<std::string_view, gd::variant>>& listPair);
    arguments& operator=(const std::vector<std::pair<std::string_view, gd::variant_view>>& vectorPair);
 
-   ~arguments() { 
+   ~arguments() {
       buffer_delete();
       //if( m_bOwner ) delete[] m_pBuffer;
    }
@@ -820,7 +820,7 @@ public: //0TAG0operator.arguments
       return argument_edit();
    }
 
-   argument_edit operator()(std::string_view stringName) { 
+   argument_edit operator()(std::string_view stringName) {
       const_pointer pPosition = find(stringName);
       if( pPosition != nullptr ) { return arguments::get_edit_param_s(this, pPosition); }
       return argument_edit();
@@ -886,8 +886,8 @@ public:
    arguments& append(const char8_t* v, unsigned uLength) { return append((eTypeNumberUtf8String | eValueLength), (const_pointer)v, uLength + 1); }
 #endif
    template<typename VALUE, typename... NEXT>
-   void append_many(VALUE value_, NEXT... next_) { 
-      append( value_ ); 
+   void append_many(VALUE value_, NEXT... next_) {
+      append( value_ );
       if constexpr (sizeof...(next_) > 0) { append_many( next_... ); }
    }
    arguments& append( const argument& argumentValue, tag_argument );
@@ -1131,7 +1131,7 @@ public:
       return p < buffer_data_end() ? p : nullptr;
    }
 
-   // ## @API [tag: misc] [description: miscellaneous methods for arguments management] 
+   // ## @API [tag: misc] [description: miscellaneous methods for arguments management]
 
    /// cleans upp interal data and set it as empty
    void clear();
@@ -1139,11 +1139,11 @@ public:
    /// Return raw data buffer
    [[nodiscard]] void* data() { return buffer_data(); }
 
-   // ## @API [tag: get] [description: get methods to retrieve values from arguments objects, note that arguments store `argument` values, argument is a type of variant] 
+   // ## @API [tag: get] [description: get methods to retrieve values from arguments objects, note that arguments store `argument` values, argument is a type of variant]
 
    [[nodiscard]] argument get_argument() const { if( buffer_size() ) return get_argument_s(buffer_data()); else return argument();  }
    [[nodiscard]] argument get_argument(const_pointer pPosition) const {                assert( verify_d(pPosition) );
-      return get_argument_s(pPosition); 
+      return get_argument_s(pPosition);
    }
 
    [[nodiscard]] argument get_argument(unsigned int uIndex) const;
@@ -1168,13 +1168,13 @@ public:
    [[nodiscard]] std::optional<argument> get_argument(const std::string_view& stringName, gd::types::tag_optional) const;
 
    /**
-    * Try to get value for param name, if not found then insert `vInsert` into params 
+    * Try to get value for param name, if not found then insert `vInsert` into params
     * object and return param for that inserted value.
     * Make sure that vInsert is compatible with values that can be stored as param
     */
    template<typename INSERT_VALUE>
-   [[nodiscard]] argument get_argument(std::string_view stringName, const INSERT_VALUE& vInsert) { 
-      auto paramV = find_argument(stringName); 
+   [[nodiscard]] argument get_argument(std::string_view stringName, const INSERT_VALUE& vInsert) {
+      auto paramV = find_argument(stringName);
       if( paramV.empty() == true ) {
          auto uOffset = get_buffer_end() - get_buffer_start();
          append(stringName, vInsert);
@@ -1198,7 +1198,7 @@ public:
       return vectorValue;
    }
 
-   /// return first value for name 
+   /// return first value for name
    gd::variant_view get_variant_view( const std::string_view& stringName ) const { return get_argument( stringName ).get_variant_view(); }
    [[nodiscard]] std::pair< std::string_view, gd::variant_view > get_variant_view(unsigned int uIndex, tag_pair ) const;
 
@@ -1231,7 +1231,7 @@ public:
 
    std::string print(std::string_view stringFormat) const;
 
-   
+
 
 
 #if defined(_DEBUG) || defined(DEBUG) || !defined(NODEBUG)
@@ -1337,8 +1337,8 @@ public:
    static unsigned int sizeof_s(uint32_t uNameLength, param_type uType, unsigned int uLength);
    static inline unsigned int sizeof_name_s(uint32_t uNameLength) noexcept { return uNameLength + sizeof(uint32_t); }
    static inline unsigned int sizeof_name_s(uint32_t uNameLength, tag_align) noexcept;
-   static inline unsigned int sizeof_name_s(const_pointer pPosition) noexcept; 
-   static inline unsigned int sizeof_name_s(const_pointer pPosition, tag_align) noexcept; 
+   static inline unsigned int sizeof_name_s(const_pointer pPosition) noexcept;
+   static inline unsigned int sizeof_name_s(const_pointer pPosition, tag_align) noexcept;
 
    static constexpr inline unsigned int sizeof_value_prefix(param_type uType) { return uType & eValueLength ? sizeof(uint32_t) + 1 : 1; }
 
@@ -1356,8 +1356,8 @@ public:
 
    /// append multiple pairs
    template<typename First, typename... Argument>
-   static void append_argument_s(arguments& rArguments, const First& pairArgument, Argument... pairNext) { 
-      rArguments.append_argument(pairArgument); 
+   static void append_argument_s(arguments& rArguments, const First& pairArgument, Argument... pairNext) {
+      rArguments.append_argument(pairArgument);
       append_argument_s(rArguments, pairNext...);
    }
 
@@ -1367,7 +1367,7 @@ public:
    }
 
    /// ## Create arguments object
-   /// 
+   ///
    /// Create arguments object from pair
    static arguments create_s(const std::pair<std::string_view, gd::variant>& pairArgument) {
       arguments A;
@@ -1394,11 +1394,11 @@ public:
    constexpr static unsigned int ctype_s(unsigned int uType) noexcept { return uType & ~eCType_MASK; } // last byte (type and size)
    constexpr static unsigned int type_number_s(unsigned int uType) noexcept { return uType & ~eTypeNumber_MASK; }
    constexpr static std::string_view type_name_s(uint32_t uType);
-   
+
 
    /// count zero terminator length in bytes if type is some sort of string
-   constexpr static unsigned int get_string_zero_terminate_length_s(unsigned int uType) { 
-      uType = uType & ~eTypeNumber_MASK;  
+   constexpr static unsigned int get_string_zero_terminate_length_s(unsigned int uType) {
+      uType = uType & ~eTypeNumber_MASK;
       switch( uType ) {
          case eTypeNumberString:
          case eTypeNumberUtf8String:
@@ -1410,13 +1410,13 @@ public:
       }
       return 0;
    }
-   
+
    /// ## `variant` methods
    /// get argument value as variant
    static gd::variant get_variant_s(const argument& argumentValue);
    static gd::variant get_variant_s(const argument& argumentValue, bool);
    static std::vector<gd::variant> get_variant_s( const std::vector<argument>& vectorValue );
-    
+
    static gd::variant_view get_variant_view_s(const argument& argumentValue);
    static std::vector<gd::variant_view> get_variant_view_s(const std::vector<argument>& vectorValue);
 
@@ -1451,8 +1451,8 @@ public:
    uint64_t buffer_size() const { return m_pbuffer->size(); }
    uint64_t buffer_buffer_size() const { return m_pbuffer->buffer_size(); }
    void buffer_set_size( uint64_t uSize ) { m_pbuffer->size( uSize ); }
-   void buffer_release() { 
-      if( is_null() == false ) 
+   void buffer_release() {
+      if( is_null() == false )
       {
          m_pbuffer->release();
          m_pbuffer = &m_buffer_s;
@@ -1481,21 +1481,21 @@ public:
 // ## operators ---------------------------------------------------------------
 
 /// += operator to append values from initializer list
-inline arguments& arguments::operator+=( std::initializer_list<std::pair<std::string_view, gd::variant_view>> list_ ) { 
-   append( list_ ); 
-   return *this; 
+inline arguments& arguments::operator+=( std::initializer_list<std::pair<std::string_view, gd::variant_view>> list_ ) {
+   append( list_ );
+   return *this;
 }
 
 
 /// Return value as specified template type
-template<typename TYPE> 
+template<typename TYPE>
 TYPE arguments::argument::get() const {
-   static_assert(std::is_arithmetic_v<TYPE> || 
-      std::is_same_v<TYPE, std::string> || 
+   static_assert(std::is_arithmetic_v<TYPE> ||
+      std::is_same_v<TYPE, std::string> ||
       std::is_same_v<TYPE, std::string_view> ||
       std::is_same_v<TYPE, std::wstring> ||
       std::is_same_v<TYPE, const char*> ||
-      std::is_same_v<TYPE, const wchar_t*>, 
+      std::is_same_v<TYPE, const wchar_t*>,
       "TYPE must be a primitive type or supported string type");
 
    if constexpr (std::is_same_v<TYPE, bool>) {
@@ -1606,7 +1606,7 @@ inline arguments& arguments::append(const std::string_view& stringName, const st
  * @param arguments_ The arguments object to extract and append arguments from.
  * @param list_ A list of argument names to filter which arguments to append.
  * @return A reference to the modified arguments object (*this) after appending the selected arguments.
- * 
+ *
  * @code
 // Example adding argument values from gd::argument::arguments to gd::argument::shared::arguments
 gd::argument::arguments arguments_;
@@ -1644,14 +1644,14 @@ inline arguments& arguments::append<std::vector<std::pair<std::string_view, gd::
 
 /// appends value if it is true (true, valid pointer, non 0 value for numbers, non empty strings)
 template<typename VALUE>
-inline arguments& arguments::append_if(const std::string_view& stringName, VALUE value ) { 
+inline arguments& arguments::append_if(const std::string_view& stringName, VALUE value ) {
    if constexpr( std::is_pointer_v<VALUE> ) {
       if( value == nullptr ) return *this;
    }
    argument argumentValue( value );
    if( argumentValue.is_true() )
    {
-      return append_argument(stringName, argumentValue); 
+      return append_argument(stringName, argumentValue);
    }
    return *this;
 }
@@ -1723,7 +1723,7 @@ TYPE get_g( const arguments::argument& argument_ )
 
 /**
  * @brief Enhanced iterator for arguments class that provides easy access to both names and values
- * 
+ *
  * This iterator extends the functionality of the existing iterator_ class to provide
  * better access to argument names and supports structured bindings for convenient
  * iteration over name-value pairs.
@@ -1894,28 +1894,28 @@ iterator_named<ARGUMENTS> make_iterator_named(const ARGUMENTS* args, size_t posi
 
 // ## named iterator methods
 
-inline arguments::named_iterator_t arguments::named_begin() { 
-   return named_iterator_t(this); 
+inline arguments::named_iterator_t arguments::named_begin() {
+   return named_iterator_t(this);
 }
 
-inline arguments::named_iterator_t arguments::named_end() { 
-   return named_iterator_t(this, buffer_size()); 
+inline arguments::named_iterator_t arguments::named_end() {
+   return named_iterator_t(this, buffer_size());
 }
 
-inline arguments::const_named_iterator arguments::named_begin() const { 
-   return const_named_iterator(this); 
+inline arguments::const_named_iterator arguments::named_begin() const {
+   return const_named_iterator(this);
 }
 
-inline arguments::const_named_iterator arguments::named_end() const { 
-   return const_named_iterator(this, buffer_size()); 
+inline arguments::const_named_iterator arguments::named_end() const {
+   return const_named_iterator(this, buffer_size());
 }
 
-inline arguments::const_named_iterator arguments::named_cbegin() const { 
-   return const_named_iterator(this); 
+inline arguments::const_named_iterator arguments::named_cbegin() const {
+   return const_named_iterator(this);
 }
 
-inline arguments::const_named_iterator arguments::named_cend() const { 
-   return const_named_iterator(this, buffer_size()); 
+inline arguments::const_named_iterator arguments::named_cend() const {
+   return const_named_iterator(this, buffer_size());
 }
 
 
@@ -1959,7 +1959,7 @@ constexpr uint8_t ctype_size[arguments::CType_MAX] = {
    sizeof(double),// eTypeNumberDouble,
 
    sizeof(void*), //eTypeNumberPointer,
-   16,      // eTypeNumberGuid   
+   16,      // eTypeNumberGuid
 };
 
 /// Append named `argument`
@@ -1975,10 +1975,10 @@ inline arguments& arguments::set(pointer pPosition, const gd::variant_view& vari
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
    unsigned uType = argumentValue.type_number();
    unsigned uLength;
-   if( uType > ARGUMENTS_NO_LENGTH ) 
-   { 
+   if( uType > ARGUMENTS_NO_LENGTH )
+   {
       uLength = variantValue.length(); // + get_string_zero_terminate_length_s( uType );
-      uType |= eValueLength; 
+      uType |= eValueLength;
    }
    else
    {
@@ -1993,9 +1993,9 @@ inline arguments& arguments::set(std::string_view stringName, const gd::variant_
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
    unsigned uType = argumentValue.type_number();
    unsigned uLength;
-   if( uType > ARGUMENTS_NO_LENGTH ) 
-   { 
-      uType |= eValueLength; 
+   if( uType > ARGUMENTS_NO_LENGTH )
+   {
+      uType |= eValueLength;
       uLength = variantValue.length();// + get_string_zero_terminate_length_s( uType );
    }
    else
@@ -2109,6 +2109,9 @@ inline constexpr std::string_view arguments::type_name_s(uint32_t uType)
 _GD_ARGUMENT_SHARED_END
 
 _GD_ARGUMENT_SHARED_BEGIN
+
+// @DEBUG @API [tag: arguments, debug] [summary: Print shared arguments structure and data to string for debug purposes]
+
 namespace debug {
    std::string print( const arguments::argument& argumentToPrint );
    std::string print( const arguments& argumentsToPrint );

@@ -70,8 +70,8 @@ namespace dto {
 /**
  * @class table
  * @brief table optimized for use as member of other objects. Like composite object.
- * 
- * 
+ *
+ *
 
 ## Internal data for table
 
@@ -79,7 +79,7 @@ Table stores its data in one single memory block. First part is cell values and
 each value has a fixed buffer where data is stored.
 int32 is four byte, int64 is 8 byte and string has the max number of bytes specified.
 Same logic is used for all primitives and derived types are set with a max buffer size.
-Table also support references, they work like pointers so for each column set as 
+Table also support references, they work like pointers so for each column set as
 reference value buffer in table is storing a index to reference and that value can have any size.
 
 Optional is to have meta data for table data. If table store information for null values and/or
@@ -132,14 +132,14 @@ class table
 {
    friend table_column_buffer;
 public:
-   /** 
+   /**
     * \brief constant numbers used in table or items used in table
-    * 
+    *
     * ## Column states
     * - eColumnStateLength: column value begins with length
     * - eColumnStateReference: column value is stored in reference object
     * - eColumnStateKey: column acts as key column
-    * 
+    *
     * ## Row states
     * - eRowStateUse: row flag marking that row is in use
     * - eRowStateDeleted: row flag marking that row is deleted
@@ -157,8 +157,8 @@ public:
     * - eSpaceRowGrowBy: default number of rows to grow by
     * - eSpaceFirstAllocate: number of rows to allocate before any values is added
     */                                                                        // ## @API [tag: constant] [description: constant values used in table]
-   enum 
-   { 
+   enum
+   {
       // ## column flags marking column states, how column behaves/works
       eColumnStateLength      = 0x01,                                          ///< column flag marking that value begins with length
       eColumnStateReference   = 0x02,                                          ///< column flag marking that value is stored in reference object
@@ -221,7 +221,7 @@ public:
       void cell_set( unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert ) { m_ptable->cell_set( m_uRow, uColumn, variantviewValue, tag_convert{} ); }
       void cell_set( const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_convert ) { m_ptable->cell_set( m_uRow, stringName, variantviewValue, tag_convert{} ); }
 
-      uint64_t m_uRow;     ///< active row index 
+      uint64_t m_uRow;     ///< active row index
       table* m_ptable; ///< pointer to table that owns the iterator
    };
 
@@ -281,7 +281,7 @@ public:
    // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
    /// @name construction
-   /// Constructs table_column_buffer objects. 
+   /// Constructs table_column_buffer objects.
    /// - `uRowCount` number of rows that are pre allocated when table is prepared
    /// - `uFlags` flags in enum above (eTableFlagNull32 = manage nulls for max 32 columns, eTableFlagNull64 = manage nulls for max 64 columns, eTableFlagRowStatus = reserve space to mark different row states like deleted etc)
    /// - `uGrowBy` how many rows table should grow by if it needs to increase its size.
@@ -509,7 +509,7 @@ public:
    // ## @API [tag: row] [description: row management methods]
 
    void row_set_state( uint64_t uRow, unsigned uFlags ) { assert( uRow < m_uReservedRowCount ); *row_get_state( uRow ) = uFlags; }
-   void row_set_state( uint64_t uRow, unsigned uSet, unsigned uClear ); 
+   void row_set_state( uint64_t uRow, unsigned uSet, unsigned uClear );
    uint8_t* row_get( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); return m_puData + uRow * m_uRowSize; }
    uint8_t* row_get_meta( uint64_t uRow ) const noexcept { return row_get_null( uRow ); }
    /// return pointer to section holding null column information
@@ -596,7 +596,7 @@ public:
    /// set raw data in row, use with care because no checks are done
    void row_set( uint64_t uRow, const void* praw_, tag_raw );
    ///@}
-  
+
    /// @name row_clear
    /// clears all rows in table
    ///@{
@@ -637,7 +637,7 @@ public:
    void row_get_arguments( uint64_t uRow, gd::argument::arguments& argumentsValue ) const;
    gd::argument::arguments row_get_arguments( uint64_t uRow ) const { gd::argument::arguments a_; row_get_arguments( uRow, a_ ); return a_; }
    gd::argument::arguments row_get_arguments( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const;
-   gd::argument::arguments row_get_arguments( uint64_t uRow, const std::vector<unsigned>& vectorIndex ) const { return row_get_arguments( uRow, vectorIndex.data(), (unsigned)vectorIndex.size() ); }   
+   gd::argument::arguments row_get_arguments( uint64_t uRow, const std::vector<unsigned>& vectorIndex ) const { return row_get_arguments( uRow, vectorIndex.data(), (unsigned)vectorIndex.size() ); }
    ///@}
 
    bool row_for_each( std::function<bool( std::vector<gd::variant_view>&, uint64_t )> callback_ );
@@ -654,7 +654,7 @@ public:
    const_iterator_row row_cbegin() const { return const_iterator_row( (uint64_t)00, this); }
    const_iterator_row row_cend() const { return const_iterator_row( get_row_count(), this); }
 
-   /// get row index based on row status 
+   /// get row index based on row status
    int64_t row_get_absolute(uint64_t uRelativeRow, unsigned uStatus) const;
 
    iterator begin() { return row_begin(); }
@@ -740,7 +740,7 @@ public:
    int64_t find( unsigned uColumn, bool bAscending, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( uColumn, bAscending, 0, get_row_count(), variantviewFind ); }
    int64_t find( const std::string_view& stringName, bool bAscending, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( column_get_index( stringName ), bAscending, 0, get_row_count(), variantviewFind ); }
    int64_t find( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;
-   
+
    int64_t find_variant_view( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;
    int64_t find_variant_view( const std::string_view& stringName, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;
    int64_t find_variant_view( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind, tag_meta ) const noexcept;
@@ -800,7 +800,7 @@ public:
 
    /// @brief size is same as `get_row_count and returns number of rows
    size_t size() const { return (size_t)get_row_count(); }
-   /// clears all internal data in table, like a reset (columns are also deleted) 
+   /// clears all internal data in table, like a reset (columns are also deleted)
    void clear();
    /// check if table is empty, don't have and data in table rows
    bool empty() const noexcept { return (m_puData == nullptr || m_uRowSize == 0); }
@@ -978,10 +978,10 @@ public:
 };
 
 inline void table::common_construct( table&& o ) noexcept {            assert( m_puData == nullptr );
-   m_uFlags          = o.m_uFlags; 
-   m_uRowSize        = o.m_uRowSize;  
+   m_uFlags          = o.m_uFlags;
+   m_uRowSize        = o.m_uRowSize;
    m_uRowMetaSize    = o.m_uRowMetaSize;
-   m_uRowCount       = o.m_uRowCount; 
+   m_uRowCount       = o.m_uRowCount;
    m_uReservedRowCount = o.m_uReservedRowCount;
    m_puData          = o.m_puData; o.m_puData = nullptr;
    m_puMetaData      = o.m_puMetaData; o.m_puMetaData = nullptr;
@@ -1050,15 +1050,15 @@ inline void table::column_prepare() {
 
 /** ---------------------------------------------------------------------------
  * @brief Add row to table (note that table has "taken" rows and reserved or allocated rows)
- * 
+ *
  * Add row/rows to table, if number of total rows need larger memory block table will grow
  * with "grow by" member or if "grow by" member is 0 it will grow by adding 50% to
  * total amount of rows.
- * 
+ *
  * @param uCount number of rows to add
 */
-inline void table::row_add( uint64_t uCount ) { 
-   m_uRowCount += uCount; 
+inline void table::row_add( uint64_t uCount ) {
+   m_uRowCount += uCount;
    if( m_uRowCount > m_uReservedRowCount ) {
       uint64_t uAddRowCount = m_uRowCount - m_uReservedRowCount;               // number of rows to grow
       if( m_uRowGrowBy == 0 ) { uAddRowCount += m_uRowCount / 2; }             // add 50% extra rows
@@ -1079,11 +1079,11 @@ inline void table::row_add( uint64_t uCount, tag_null ) {                       
 
 /** ---------------------------------------------------------------------------
  * @brief Adds a single row to the table.
- * 
+ *
  * This method is a simplified version of adding rows to the table, specifically designed for the common operation of adding one row at a time.
  * It increases the row count by one and ensures that the table has enough memory allocated to accommodate the new row.
  * If the table supports null values, the newly added row will have all its columns set to null.
- * 
+ *
  * @return uint64_t The index of the newly added row.
  */
 inline uint64_t table::row_add_one() {
@@ -1097,14 +1097,14 @@ inline uint64_t table::row_add_one() {
 /** ---------------------------------------------------------------------------
  * @brief get column name for column index
  * @param uIndex index to column name is returned for if column has name
- * @return std::string_view with column name, empty string if column do not have a name 
+ * @return std::string_view with column name, empty string if column do not have a name
 */
 inline std::string_view table::column_get_name( unsigned uIndex ) const {      assert( uIndex < m_pcolumns->size() );
    return m_pcolumns->name( uIndex );
 }
 
 /** ---------------------------------------------------------------------------
- * @brief Returns names for columns that has name in vector, empty string if no name 
+ * @brief Returns names for columns that has name in vector, empty string if no name
  * @return std::vector<std::string_view> vector with column names
 */
 inline std::vector<std::string_view> table::column_get_name() const {
@@ -1116,7 +1116,7 @@ inline std::vector<std::string_view> table::column_get_name() const {
 }
 
 /** ---------------------------------------------------------------------------
-* @brief Returns names for columns that has name in vector, empty string if no name 
+* @brief Returns names for columns that has name in vector, empty string if no name
 * @param vectorColumn column indexes names are returned for
 * @return std::vector<std::string_view> vector with names
 */
@@ -1176,7 +1176,7 @@ void table::column_fill( const std::string_view& stringName, const std::vector< 
  * @param uRow index for row null value is returned for
  * @return uint8_t* pointer to row null value section
 */
-inline uint8_t* table::row_get_null( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( m_puMetaData != nullptr ); 
+inline uint8_t* table::row_get_null( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( m_puMetaData != nullptr );
    return reinterpret_cast<uint8_t*>( m_puMetaData + (uRow * m_uRowMetaSize) );
 }
 
@@ -1185,7 +1185,7 @@ inline uint8_t* table::row_get_null( uint64_t uRow ) const noexcept { assert( uR
  * @param uRow index to row where state is located
  * @return uint32_t* pointer to position in internal buffer for row state
 */
-inline uint32_t* table::row_get_state( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( is_rowstatus() == true ); 
+inline uint32_t* table::row_get_state( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( is_rowstatus() == true );
    // calculate number of bytes used to store flags for culumns marked as null (cant be over sizeof(uint32_t) * 2 or 8 bytes)
    // note that state cant be set to both 32 and 64 columns
    unsigned uNullSize = (m_uFlags & (eTableFlagNull32|eTableFlagNull64)) * sizeof(uint32_t);     assert( uNullSize <= (sizeof(uint32_t) * 2) );
@@ -1198,7 +1198,7 @@ inline uint32_t* table::row_get_state( uint64_t uRow ) const noexcept { assert( 
  * @param uSet flags set to row
  * @param uClear flags cleared
 */
-inline void table::row_set_state( uint64_t uRow, unsigned uSet, unsigned uClear ) { assert( uRow < m_uReservedRowCount ); 
+inline void table::row_set_state( uint64_t uRow, unsigned uSet, unsigned uClear ) { assert( uRow < m_uReservedRowCount );
    uint32_t* puFlags = row_get_state( uRow );
    *puFlags |= uSet;
    *puFlags &= ~uClear;
@@ -1209,7 +1209,7 @@ inline void table::row_set_state( uint64_t uRow, unsigned uSet, unsigned uClear 
  * @param uRow index to row where state is located that is checked for use
  * @return bool true if row is used, false if not
 */
-inline bool table::row_is_use( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( is_rowstatus() == true ); 
+inline bool table::row_is_use( uint64_t uRow ) const noexcept { assert( uRow < m_uReservedRowCount ); assert( is_rowstatus() == true );
    // calculate number of bytes used to store flags for culumns marked as null (cant be over sizeof(uint32_t) * 2 or 8 bytes)
    // note that state cant be set to both 32 and 64 columns
    unsigned uNullSize = (m_uFlags & (eTableFlagNull32|eTableFlagNull64)) * sizeof(uint32_t);     assert( uNullSize <= (sizeof(uint32_t) * 2) );
@@ -1269,7 +1269,7 @@ inline bool table::cell_is_null( uint64_t uRow, unsigned uColumn ) const noexcep
    const auto* puRow = row_get_null( uRow );
    if( is_null32() ) uNullRow = (uint64_t)*(uint32_t*)puRow;
    else              uNullRow = *(uint64_t*)puRow;
-   
+
    return (uNullRow & (1ULL << uColumn)) != 0;
 }
 
@@ -1299,17 +1299,17 @@ inline void table::cell_set_null( uint64_t uRow, unsigned uColumn ) { assert( uR
 
 
 /** ---------------------------------------------------------------------------
- * @brief Set value in column to null (marks null flag for column) 
+ * @brief Set value in column to null (marks null flag for column)
  * @param uRow row where cell is
  * @param stringName cell column name
 */
 inline void table::cell_set_null( uint64_t uRow, const std::string_view& stringName ) { assert( uRow < m_uReservedRowCount ); assert( m_uFlags & (eTableFlagNull32|eTableFlagNull64) );
-   unsigned uColumnIndex = column_get_index( stringName ); 
+   unsigned uColumnIndex = column_get_index( stringName );
    cell_set_null( uRow, uColumnIndex);
 }
 
 
-inline void table::cell_set_not_null( uint64_t uRow, unsigned uColumn ) { 
+inline void table::cell_set_not_null( uint64_t uRow, unsigned uColumn ) {
                                                                                                    assert( uRow < m_uReservedRowCount ); assert( m_uFlags & (eTableFlagNull32|eTableFlagNull64) );
    auto puRow = row_get_null( uRow );
 
@@ -1331,7 +1331,7 @@ inline void table::cell_set_not_null( uint64_t uRow, unsigned uColumn ) {
 
 /** ---------------------------------------------------------------------------
  * @brief destruct table
- * Column information is stored in shared object, reference counter is decreased 
+ * Column information is stored in shared object, reference counter is decreased
 */
 inline table::~table() {
    if( m_pcolumns != nullptr ) m_pcolumns->release();                          // release columns information
@@ -1408,8 +1408,8 @@ std::vector<TYPE> table::harvest( uint64_t uRow, unsigned uColumn, unsigned uCou
    std::vector<TYPE> vectorType; // vector that gets values in row
    vectorType.reserve( uCount );
    const TYPE* p_ = (const TYPE*)cell_get( uRow, uColumn );                    // first cell position in row
-   for( auto u = 0; u < uCount; u++ ) { 
-      vectorType.emplace_back( p_[u] ); 
+   for( auto u = 0; u < uCount; u++ ) {
+      vectorType.emplace_back( p_[u] );
    }
    return vectorType;
 }
@@ -1422,10 +1422,10 @@ std::vector<TYPE> table::harvest( uint64_t uRow, unsigned uColumn, unsigned uCou
  * @return vector std::vector< TYPE > vector with harvested values
 */
 template<typename TYPE>
-inline std::vector< TYPE > table::harvest( unsigned uColumn, uint64_t uFrom, uint64_t uCount ) const { 
+inline std::vector< TYPE > table::harvest( unsigned uColumn, uint64_t uFrom, uint64_t uCount ) const {
    std::vector< TYPE > vector_;
    vector_.reserve( uCount );
-   auto uEndRow = uFrom + uCount; 
+   auto uEndRow = uFrom + uCount;
    auto eType = gd::types::type_g<TYPE>( gd::types::tag_ask_compiler{});
    auto uColumnType = column_get_ctype( uColumn );
    if( (( unsigned )eType & 0xff) == (uColumnType & 0xff) )
@@ -1476,7 +1476,7 @@ template<typename TYPE>
 inline std::vector< TYPE > table::harvest( unsigned uColumn, uint64_t uFrom, uint64_t uCount, tag_null ) const {
    std::vector< TYPE > vector_;
    vector_.reserve( uCount );
-   auto uEndRow = uFrom + uCount; 
+   auto uEndRow = uFrom + uCount;
    auto eType = gd::types::type_g<TYPE>( gd::types::tag_ask_compiler{});
    auto uColumnType = column_get_ctype( uColumn );
    if( (( unsigned )eType & 0xff) == (uColumnType & 0xff) )                    // check if return type is same as calculated type, then no conversion is needed (faster)
@@ -1517,7 +1517,7 @@ inline void table::harvest(const std::vector< std::string_view >& vectorColumnNa
 
 
 template<typename TYPE>
-void table::plant( unsigned uColumn, const std::vector< TYPE >& vectorValue, uint64_t uFrom, uint64_t uCount ) { assert( uColumn < get_column_count() ); 
+void table::plant( unsigned uColumn, const std::vector< TYPE >& vectorValue, uint64_t uFrom, uint64_t uCount ) { assert( uColumn < get_column_count() );
    auto eType = gd::types::type_g<TYPE>( gd::types::tag_ask_compiler{});
    auto uColumnType = column_get_ctype( uColumn );
    uint64_t uEndRow = uFrom + uCount;
@@ -1554,6 +1554,7 @@ inline void table::plant( unsigned uColumn, const gd::variant_view& variantviewV
    plant( uColumn, variantviewValue, 0, get_row_count() );
 }
 
+// @DEBUG @API [tag: table, debug] [summary: Print table structure and data to string for debug purposes]
 
 namespace debug {
    std::string print( const table& table, uint64_t uCount );

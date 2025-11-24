@@ -77,10 +77,10 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 @PROJECT [name: help]
 
 @TASK [summary: add global options to command help] [project:help] [user: per] [status:closed] [created: 251111]
-[summary : print help for specific command, then global options should be printed also]
+[description : print help for specific command, then global options should be printed also]
 
 @TASK [summary: print only global options] [project:help] [user: per] [status:closed] [created: 251111]
-[summary : add flag for only print global options]
+[description : add flag for only print global options]
 */
 
 // ----------------------------------------------------------------------------

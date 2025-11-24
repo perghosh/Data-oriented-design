@@ -31,6 +31,8 @@ gd::sql::query queryInsert;
 CDocument* m_pdocument;
 CApplication* m_papplicationMain;
 CThisIsAVeryLongClassNameToShowAbbriviation TIAVLCNTSA;
+Method names should not use Hungarian notation, try to use as few words as possible, do not over explain and arguments is part of method signature so no need to add that in name.
+User allman style for braces.
 """]
 */
 

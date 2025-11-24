@@ -40,3 +40,11 @@
 @TASK #<task-area>.<detail> #user.per [name: <name>] [description: "## <description text>" ]
 ```
 
+
+*   **`@API`**: Describes code sections and endpoints.
+*   **`@FILE`**: Describes the file (always placed at the top).
+*   **`@PROJECT`** & **`@TASK`**: For project management. Searching for a project name lists all its tasks.
+*   **`@TODO`**: For simple to-do items.
+*   **`@SAMPLE`**: For example code snippets.
+*   **`@CLASS`**: classes and structs
+*   **`@DEBUG`**: code used for debug  

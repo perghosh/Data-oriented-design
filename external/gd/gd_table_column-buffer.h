@@ -1934,6 +1934,8 @@ void RunExpression_g( const std::string_view& stringExpression,
  *
  */
 
+ // @DEBUG @API [tag: table, debug] [summary: Print table structure and data to string for debug purposes]
+
 namespace debug {
    std::string print( const table_column_buffer& table, uint64_t uCount );
    std::string print( const table_column_buffer& table );
