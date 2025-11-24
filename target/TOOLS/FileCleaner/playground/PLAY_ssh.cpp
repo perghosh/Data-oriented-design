@@ -1,3 +1,4 @@
+// @FILE [tag: ssh, playground] [description: Playground for testing SSH functionality]
 
 #include <iostream>
 #include <memory>

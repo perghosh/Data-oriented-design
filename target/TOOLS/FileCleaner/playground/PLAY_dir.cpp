@@ -1,4 +1,4 @@
-// @TAG #play #dir
+// @FILE [tag: git, ignore, directory, playground] [description: Playground for testing directory functionality and logic around git and git ignore]
 
 #include <filesystem>
 

@@ -1189,10 +1189,12 @@ public:
 
    // ## @API [tag: serialize] [description: read and write methods to store parts of the table and complete table as binary data]
 
+   std::byte* serialize( std::byte* pBuffer, bool bSave );
    std::byte* serialize( std::byte* pBuffer, bool bSave, tag_columns );
    std::byte* serialize( std::byte* pBuffer, bool bSave, tag_body );
    std::byte* serialize( std::byte* pBuffer, bool bSave, tag_reference );
 
+   uint64_t serialize_size() const;
    uint64_t serialize_size( tag_columns ) const;
    uint64_t serialize_size( tag_body ) const;
    uint64_t serialize_size( tag_reference ) const;
@@ -1940,8 +1942,12 @@ namespace debug {
    std::string print( const table_column_buffer& table, uint64_t uCount );
    std::string print( const table_column_buffer& table );
    std::string print( const table_column_buffer& table, tag_columns );
+   std::string print( const table_column_buffer& table, tag_columns, tag_name );
    std::string print( const table_column_buffer* ptable, tag_columns );
    std::string print_column( const table_column_buffer* ptable );
+   std::string print_column( const table_column_buffer& table_ );
+   std::string print_column_name( const table_column_buffer* ptable );
+   std::string print_column_name( const table_column_buffer& table_ );
    std::string print_row( const table_column_buffer& table, uint64_t uRow );
 }
 
