@@ -866,6 +866,8 @@ variant to_variant_g( const VARIANT& v_, variant_type::tag_std_variant ) {
 // ä'static_assert( sizeof(_variant) == 16, "_variant size isn't 16 bytes" );
 static_assert( sizeof(variant) == 16, "variant size isn't 16 bytes" );
 
+// @DEBUG @API [tag: variant, debug] [summary: Variant debug methods, prints information about variants]
+
 namespace debug {
    std::string print( const variant& v );
    std::string print_value( const variant& v );

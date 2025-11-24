@@ -84,7 +84,7 @@ uint32_t buffers::primitive_add( unsigned uColumnType, unsigned uSize )
 
    // ## allocate storage if needed
    std::tie( m_pbBufferPrimitve, m_uMaxSize ) = reserve_g<uint8_t,m_uBufferGrowBy_s>( m_pbBufferPrimitve, uSizeAndExtra + m_uSize, m_uMaxSize );
-   
+
    uint8_t* pbValue = m_pbBufferPrimitve + uSizeOld;
    *(unsigned*)pbValue = uSize;                                                // buffer size
    pbValue += sizeof(unsigned);
@@ -126,7 +126,7 @@ uint16_t buffers::derived_add(unsigned uColumnType, unsigned uSize)
 /** ---------------------------------------------------------------------------
  * @brief Reize buffer holding fixed values, all fixed values are stored in one single buffer large enough to store all fixed values
  * @param uType number for value type
- * @param uSize max size for value 
+ * @param uSize max size for value
  * @return previous size for buffer
 */
 unsigned buffers::primitive_resize( unsigned uType, unsigned uSize )
@@ -202,12 +202,12 @@ record& record::add( unsigned uColumnType, unsigned uSize, const std::string_vie
    }
 
    m_vectorColumn.push_back( columnAdd );
-   
+
    return *this;
 }
 
 /** ---------------------------------------------------------------------------
- * @brief Add column to record 
+ * @brief Add column to record
  * @param uType type for column
  * @param uCType type for column
  * @param uSizeFixed size if fixed
@@ -245,7 +245,7 @@ record& record::add( unsigned uType, unsigned uCType, unsigned uSizeFixed, unsig
    }
 
    m_vectorColumn.push_back( columnAdd );
-   
+
    return *this;
 }
 
@@ -256,7 +256,7 @@ record& record::add( unsigned uType, unsigned uCType, unsigned uSizeFixed, unsig
  * @return uint8_t* pointer to buffer storing column value data
 */
 uint8_t* record::buffer_get( unsigned uIndex ) const
-{                                                                                                  
+{
    const record::column* pcolumn = get_column( uIndex );                                           assert( pcolumn->size_buffer() != 0 );
    if( pcolumn->size_buffer() != 0 )
    {
@@ -322,7 +322,7 @@ std::vector<unsigned> record::type_get() const
 
 /** ---------------------------------------------------------------------------
  * @brief Get name for column if name is set
- * @param uIndex index to column name is returned for 
+ * @param uIndex index to column name is returned for
  * @return column name if found, empty if no name
 */
 std::string_view record::name_get( unsigned uIndex ) const noexcept
@@ -392,7 +392,7 @@ gd::variant record::get_variant( unsigned uColumnIndex ) const
       case eColumnTypeCompleteString: return gd::variant( (const char*)pbBuffer, (size_t)pcolumn->size() );
       case eColumnTypeCompleteUtf8String: return gd::variant( (const char*)pbBuffer, (size_t)pcolumn->size() );
       case eColumnTypeCompleteBinary: return gd::variant( (unsigned char*)pbBuffer, (size_t)pcolumn->size() );
-         
+
       default: assert(false);
       }
    }
@@ -408,7 +408,7 @@ std::vector<gd::variant> record::get_variant() const
 {
    std::vector<gd::variant> vectorValue;
    for( auto u = 0u, uTo = get_column_count(); u < uTo; u++ )
-   { 
+   {
       vectorValue.push_back( get_variant( u ) );
    }
    return vectorValue;
@@ -439,7 +439,7 @@ gd::variant_view record::get_variant_view( unsigned uColumnIndex ) const
       case eColumnTypeCompleteString: return gd::variant_view( (const char*)pbBuffer, (size_t)pcolumn->size() );
       case eColumnTypeCompleteUtf8String: return gd::variant_view( gd::variant_type::utf8( (const char*)pbBuffer, (size_t)pcolumn->size()) );
       case eColumnTypeCompleteBinary: return gd::variant_view( (unsigned char*)pbBuffer, (size_t)pcolumn->size() );
-         
+
       default: assert(false);
       }
    }
@@ -470,7 +470,7 @@ std::vector<gd::variant_view> record::get_variant_view() const
    std::vector<gd::variant_view> vectorValue;
    vectorValue.reserve( get_column_count() );
    for( auto u = 0u, uTo = get_column_count(); u < uTo; u++ )
-   { 
+   {
       vectorValue.push_back( get_variant_view( u ) );
    }
    return vectorValue;
@@ -527,6 +527,8 @@ unsigned record::size_s( enumColumnTypeNumber eType )
    return uSize;
 }
 
+// @DEBUG @API [tag: database, debug] [summary: debug methods for gd database logic]
+
 namespace debug {
 
    std::string print( const record::column& column )
@@ -553,5 +555,3 @@ namespace debug {
 
 
 _GD_DATABASE_END
-
-

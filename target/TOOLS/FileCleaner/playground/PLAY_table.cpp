@@ -1,6 +1,4 @@
-/** @test [name: PLAY_table.cpp] [category: table] [description: tests for table serialization and expression evaluation]
- * @file PLAY_table.cpp 
- */
+// @FILE [tag: table, playground] [description: Playground for testing table functionality]
 
 #include <iostream>
 #include <fstream>
