@@ -1190,11 +1190,13 @@ public:
    // ## @API [tag: serialize] [description: read and write methods to store parts of the table and complete table as binary data]
 
    std::byte* serialize( std::byte* pBuffer, bool bSave );
+   std::byte* serialize( std::byte* pBuffer, bool bSave, tag_member );
    std::byte* serialize( std::byte* pBuffer, bool bSave, tag_columns );
    std::byte* serialize( std::byte* pBuffer, bool bSave, tag_body );
    std::byte* serialize( std::byte* pBuffer, bool bSave, tag_reference );
 
    uint64_t serialize_size() const;
+   uint64_t serialize_size( tag_member ) const;
    uint64_t serialize_size( tag_columns ) const;
    uint64_t serialize_size( tag_body ) const;
    uint64_t serialize_size( tag_reference ) const;

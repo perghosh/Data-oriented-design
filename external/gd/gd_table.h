@@ -89,6 +89,8 @@ struct tag_table_dto {}; ///< tag dispatcher used to indicate table dto object i
 struct tag_table_table {}; ///< tag dispatcher used to indicate table object is used   
 struct tag_table_arguments {}; ///< tag dispatcher used to indicate table arguments object is used   
 
+/// member is used in some form, like class member variable or function
+using tag_member = gd::types::tag_member;
 /// tag dispatcher for speed up unnecessary assignments
 struct tag_undefined {};
 /// tag dispatcher used to construct object where null values are valid
