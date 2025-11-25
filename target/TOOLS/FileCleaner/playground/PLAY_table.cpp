@@ -112,6 +112,14 @@ TEST_CASE("[table] serialize", "[table]") {
    std::vector<uint8_t> vectorBuffer( uSize );
    tableSerialize.serialize( (std::byte*)vectorBuffer.data(), true );
 
+   {
+      gd::table::dto::table tableRead;
+      tableRead.serialize( (std::byte*)vectorBuffer.data(), false );
+      std::string stringTable = gd::table::to_string(tableRead, gd::table::tag_io_cli{});
+      std::cout << stringTable << std::endl;
+   }
+
+
    /*
    gd::table::dto::table tableSerialize1(uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{});
 

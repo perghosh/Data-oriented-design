@@ -4530,10 +4530,51 @@ static std::byte* write_s( const void* pSource, std::byte* pBuffer, std::size_t 
 std::byte* table_column_buffer::serialize( std::byte* pBuffer, bool bSave )
 { 
    std::byte* pposition_ = pBuffer;
+   pposition_ = serialize( pposition_, bSave, tag_member{} );
    pposition_ = serialize( pposition_, bSave, tag_columns{} );
    pposition_ = serialize( pposition_, bSave, tag_body{} );
    pposition_ = serialize( pposition_, bSave, tag_reference{} );
    return pposition_;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Serialize or deserialize table column buffer member data to/from buffer
+ * 
+ * - `sizeof(uint64_t)` row count
+ * - `sizeof(uint64_t)` row size
+ * - `sizeof(uint64_t)` row meta size
+ * 
+ * @param pBuffer pointer to buffer to read from or write to
+ * @param bSave true if data is saved to buffer, false if data is read from buffer
+ * @param tag_member tag to identify that member data is serialized
+ */
+std::byte* table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_member)
+{                                                                                                  assert(pBuffer != nullptr); assert( reinterpret_cast<uintptr_t>( pBuffer ) % 4 == 0 );
+   std::byte* pPosition = pBuffer;
+   if( bSave == false )
+   {
+      uint64_t uRead;
+      const std::byte* p_ = pPosition;
+      p_ = read_s( p_, &uRead, sizeof(uRead) );                                                    assert( p_ == pBuffer + sizeof(uRead) );
+      p_ = read_s( p_, &m_uFlags, sizeof(m_uFlags) );
+      p_ = read_s( p_, &m_uRowSize, sizeof(m_uRowSize) );
+      p_ = read_s( p_, &m_uRowMetaSize, sizeof(m_uRowMetaSize) );
+      pPosition += ( p_ - pPosition );
+   }
+   else                                                                                            
+   {                                                                                               assert( empty() == false );
+      uint64_t uSave;
+      uSave = serialize_size(tag_member{});
+      pPosition = write_s( &uSave, pPosition, sizeof(uSave) );                                     assert( pPosition == pBuffer + sizeof(uSave) );
+      pPosition = write_s(&m_uFlags, pPosition, sizeof(m_uFlags));
+      pPosition = write_s(&m_uRowSize, pPosition, sizeof(m_uRowSize));
+      pPosition = write_s(&m_uRowMetaSize, pPosition, sizeof(m_uRowMetaSize));
+   }
+
+   // Align pPosition 4 bytes boundary
+   while( ( reinterpret_cast<uintptr_t>( pPosition ) % 4 ) != 0 ) pPosition++;
+
+   return pPosition;
 }
 
 /** ---------------------------------------------------------------------------
@@ -4723,9 +4764,30 @@ std::byte* table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_re
 uint64_t table_column_buffer::serialize_size() const
 {
    uint64_t uSize = 0;
+   uSize += serialize_size(tag_member{});
    uSize += serialize_size(tag_columns{});
    uSize += serialize_size(tag_body{});
    uSize += serialize_size(tag_reference{});
+   return uSize;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Calculate needed size of buffer needed to serialize table member data
+ *
+ * - `sizeof(uint32_t)` flags
+ * - `sizeof(uint32_t)` row size
+ * - `sizeof(uint32_t)` row meta size
+ *
+ * @param tag_member tag to identify that member data is serialized
+ * @return uint64_t size of buffer needed to serialize table member data
+*/
+uint64_t table_column_buffer::serialize_size( tag_member ) const
+{
+   uint64_t uSize = sizeof(uint64_t);
+   uSize += sizeof(m_uFlags);                                             // size for flags
+   uSize += sizeof(m_uRowSize);                                           // size for row size
+   uSize += sizeof(m_uRowMetaSize);                                       // size for row meta size
+   while( ( uSize % 4 ) != 0 ) uSize++;                                   // align to 4 byte boundary
    return uSize;
 }
 

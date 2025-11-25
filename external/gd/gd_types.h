@@ -263,6 +263,9 @@ struct tag_ask_compiler {};
 /// tag dispatcher used to avoid default implicit construction
 struct tag_construct {};
 
+/// member is used in some form, like class member variable or function
+struct tag_member {};   
+
 /// tag dispatcher used to create objects, like creating a new object, allocate etc
 struct tag_create {}; 
 
