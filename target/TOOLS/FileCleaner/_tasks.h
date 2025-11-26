@@ -128,3 +128,10 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 
 */
 
+/*
+@PROJECT [name: ignore] [summary: Global flag to disable ignore settings]
+
+@TASK [summary: flag to not read ignore file when these need to be read] [project:ignore] [user: per] [status:open] [created: 251126] [type: code]
+[description: Sometimes you need to find information within files that are ignored, add flag (global) to disable ignore flags]
+*/
+
