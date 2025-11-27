@@ -1,6 +1,6 @@
-/**
+/** @FILE [tag: document, cache, error, file] [summary: Document stores information for cleaner]
  * \file Document.h
- * 
+ *
  * ### 0TAG0 File navigation, mark and jump to common parts
  * - `0TAG0construct.Document` - Represents a single argument in `arguments`.
  */
@@ -32,7 +32,7 @@
 class CApplication;
 
 
-/**
+/** @CLASS [tag: document] [summary: Document class. Facade object for data in cleaner]
  * \brief
  *
  *
@@ -52,7 +52,7 @@ public:
    /// @brief Type alias for pointer to table, which can be either a pointer to `gd::table::dto::table` or a pointer to `gd::table::arguments::table`.
    using pointer_table_t = std::variant< gd::table::dto::table*, gd::table::arguments::table* >;
 
-// ## construction -------------------------------------------------------------
+   // ## @API [tag: construct] [description: Construct document.]
 public: // 0TAG0construct.Document
    CDocument() {}
    CDocument(CApplication* papplication) : m_papplication(papplication) { m_arguments.append("name", "default"); }
@@ -91,8 +91,10 @@ public:
 //@}
 
 /** @name FILE
-* File operations work on tables stored in cache and ech table is identified by a string id.
+* ## @API [tag: file]
+       [description: Methods that works on files, often finding information and update tables in cache used to store statistics about files]
 *///@{
+
 
    /// @brief Harvest file information and store it in a table (harvest = collect)
    std::pair<bool, std::string> FILE_Harvest( const gd::argument::shared::arguments& argumentsPath );
@@ -114,7 +116,7 @@ public:
    std::pair<bool, std::string> FILE_UpdatePatternFind( const std::vector< std::pair<boost::regex, std::string> >& vectorRegexPatterns, const gd::argument::shared::arguments* pargumentsList, int iThreadCount );
 
    std::pair<bool, std::string> BUFFER_UpdateKeyValue( const gd::argument::shared::arguments& argumentsFile, std::string_view stringFileBuffer, gd::table::dto::table& tableRow, const std::vector<gd::argument::arguments>& vectorRule);
-      
+
 //@}
 
 /** \name RESULT
@@ -124,8 +126,9 @@ public:
 //@}
 
 /** \name PROPERTY
-* Property accessors for the documents internal state
-* Properties are stored in the `m_arguments` member and it can store any kind of data. Each property is identified by a string name.
+ * ## @API [tag: property]
+        [description: Property accessors for the documents internal state]
+        [detail: Properties are stored in the `m_arguments` member and it can store any kind of data. Each property is identified by a key.]
 *///@{
    gd::argument::shared::arguments& PROPERTY_Get() { return m_arguments; }
    const gd::argument::shared::arguments& PROPERTY_Get() const { return m_arguments; }
@@ -140,11 +143,11 @@ public:
 
 
 /** \name CACHE
- * Documents can cache information and support multiple named caches.
- * Each cache is stored in a named table, which is kept in the document's `m_vectorTableCache` member.
- * Each table also stores a string ID that identifies it within the cache.
- * Tables may also be marked as temporary, meaning they should be removed as soon as they are no longer needed.
- *    CDocument is then used as a data source for moving data between operations.
+ * ## @API [tag: table-cache]
+        [description: Documents can cache information in tables that are named.]
+        [detail: "Each cache is stored in a named table, which is kept in the document's `m_vectorTableCache` member
+         Tables may also be marked as temporary, meaning they should be removed as soon as they are no longer needed."]
+*
  *///@{
    /// Prepare cache information structure
    void CACHE_Prepare( const std::string_view& stringId );
@@ -176,6 +179,10 @@ public:
    /// Return information to generate cache data
    std::pair<bool, std::string> CACHE_GetInformation( const std::string_view& stringId, gd::argument::arguments& argumentsCache );
    gd::argument::arguments CACHE_GetInformation( const std::string_view& stringId );
+
+   /// Clear all cache data
+   void CACHE_Clear();
+   /// Erase cache with specified id
    void CACHE_Erase( const std::string_view& stringId );
    /// Erase all temporary cache tables
    void CACHE_Erase( gd::types::tag_temporary );
@@ -204,6 +211,8 @@ public:
 //@}
 
 /** \name MESSAGE
+* @API [tag: message]
+       [description: Pass information to the active output, message is just text that in some way is to be displayed to user]
 *///@{
    /// Display message to user
    void MESSAGE_Display( const std::string_view& stringMessage );
@@ -215,16 +224,19 @@ public:
    /// Display message to user with progress information
    void MESSAGE_Progress( const std::string_view& stringMessage );
    void MESSAGE_Progress( const std::string_view& stringMessage, const gd::argument::arguments& arguments_ );
-
-   //void MESSAGE
+   /// Prompt user for value
+   void MESSAGE_PromptForValue( std::string stringName, std::string stringDescription, gd::variant* pvariantValue );
 
 //@}
 
 
 /** \name ERROR
+* ## @API [tag: error]
+       [description: Document are able to collect error information, for example doing a larger operation where some tasks fail bit it isn't fatal, then store error in document for later display]
 *///@{
 /// Add error to internal list of errors
    void ERROR_Add( const std::string_view& stringError );
+   void ERROR_AddWarning( const std::string_view& stringError );
    bool ERROR_Empty() const { return m_vectorError.empty(); }
    size_t ERROR_Size() const { return m_vectorError.size(); }
    void ERROR_Print( bool bClear = false );
@@ -252,7 +264,7 @@ public:
 
    // ## cache information is stored in dto tables (dto = data transfer object)
    std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document
-   std::string m_stringCacheConfiguration;      ///< file name for file with cache configuration information 
+   std::string m_stringCacheConfiguration;      ///< file name for file with cache configuration information
 
    /// Mutex lock used when methods within document work on table data
    std::mutex m_mutexCache;
@@ -274,8 +286,8 @@ public:
    static std::pair<bool, std::string> EXPRESSION_PrepareForArgument_s(const std::string_view& stringExpression, const std::vector< std::pair<size_t, size_t> >& vectorPosition, std::string& stringPreparedExpression);
 
    /// Generate result from table where rows in table just are listed top to bottom
-   static std::string RESULT_VisualStudio_s( gd::table::dto::table& table_ );
-   static void RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult );
+   static std::string RESULT_VisualStudio_s( const gd::table::dto::table& table_ );
+   static void RESULT_VisualStudio_s( const gd::table::dto::table& table_, std::string& stringResult );
 
 
 };
@@ -286,7 +298,13 @@ inline void CDocument::CACHE_Prepare( const std::string_view& stringId )
    CACHE_Prepare(stringId, nullptr);
 }
 
-inline std::string CDocument::RESULT_VisualStudio_s(gd::table::dto::table& table_) {
+inline void CDocument::CACHE_Clear()
+{
+   std::unique_lock lock( m_mutexCache );
+   m_vectorTableCache.clear();
+}
+
+inline std::string CDocument::RESULT_VisualStudio_s( const gd::table::dto::table& table_) {
    std::string stringResult;
    RESULT_VisualStudio_s( table_, stringResult );
    return stringResult;

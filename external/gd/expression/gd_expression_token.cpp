@@ -203,7 +203,7 @@ uint32_t token::read_string_s(const char* piszBegin, const char* piszEnd, std::s
    unsigned uDelimiterLength = 1;
    while( piszBegin[uDelimiterLength] == iDelimiter ) uDelimiterLength++;
 
-   const char* pisz_ = uDelimiterLength != 2 ? piszBegin + uDelimiterLength : nullptr;
+   const char* pisz_ = uDelimiterLength != 2 ? piszBegin + uDelimiterLength : nullptr; // move to first character or if empty string, it is set to null
 
    if( pisz_ != nullptr )
    {
@@ -224,8 +224,13 @@ uint32_t token::read_string_s(const char* piszBegin, const char* piszEnd, std::s
          }
       }
    }
+   else
+   {
+      string_ = std::string_view();                                            // empty string
+      pisz_ = piszBegin;                                                       // set past first quote character
+   }
 
-   if( ppiszReadTo != nullptr ) { *ppiszReadTo = pisz_ + uDelimiterLength; }
+   if( ppiszReadTo != nullptr ) { *ppiszReadTo = pisz_ + uDelimiterLength; }   // Move past the ending delimiter
 
    return STRING_DELIMITER_BIT;
 }

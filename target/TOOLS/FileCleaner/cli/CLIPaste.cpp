@@ -1,4 +1,4 @@
-/**
+/**                                                                            @FILE [tag: cli, command, paste] [description:implementation for CLI paste operations] [type: source]
  * @file CLIPaste.cpp
  * @brief Implementation file for CLI paste operations.
  */

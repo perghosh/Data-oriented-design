@@ -29,7 +29,7 @@ and a configurable line width for better readability in terminals.
 
 
 
-int main(int iArgumentCount, char** ppbszArgument)                             // @TAG #main
+int main(int iArgumentCount, char** ppbszArgument)                             // @CODE [tag: main] [description: Main entry point for the FileCleaner command line application]
 {
    using namespace gd::console;
 

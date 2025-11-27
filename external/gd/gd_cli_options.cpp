@@ -1,3 +1,4 @@
+// @FILE [tag: cli] [description: General logic for command-line options] [type: source]
 /**
  * \file gd_cli_options.cpp
  * 
@@ -101,6 +102,20 @@ void options::add_flag_or_option(const option& option_)
    m_vectorOption.push_back( std::move(optionAdd) );
 }
 
+/// Overload all option values from sent options_
+void options::overload( const options* poptions )
+{                                                                                                  assert( poptions != nullptr );
+   const auto& arguments_ = poptions->get_arguments();
+   overload( arguments_ );
+}
+
+/// Overload all option values from sent options_
+void options::overload( const gd::argument::arguments& arguments_ )
+{
+   m_argumentsValue.set( arguments_ );
+}
+
+
 /// Get all values for name as variant_view's in list
 std::vector<gd::variant_view> options::get_all(const std::string_view& stringName) const
 {
@@ -125,6 +140,7 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
    int iOptionState = state_unknown;                 
    int iPositionalArgument = -1;                                               // if argument is set as positional
    bool bAllowPositional = true;                                               // if positional arguments are alowed, when first named argument is found this is disabled
+   std::string_view stringNameNotFound;
 
 #ifndef NDEBUG
    std::string stringCommand_d;
@@ -145,10 +161,15 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
 
       if( bOption == true )                                                   // found option
       {
+         stringNameNotFound = std::string_view();                                   // clear not found name
          bAllowPositional = false;                                            // no more positional arguments are allowed
          const char* pbszFindArgument = pbszArgument + 1;                     // move past first dash
          if( *pbszFindArgument == '-' ) pbszFindArgument++;                   // move to argument name
-         poptionActive = find( pbszFindArgument );                             
+         poptionActive = find( pbszFindArgument );
+		 if(poptionActive == nullptr && poptionsRoot != nullptr && is_parent() == true) // try to find in parent options if parent is enabled and flag set for that
+         {
+            poptionActive = poptionsRoot->find(pbszFindArgument);             // try to find in root options if root is set
+         }
 
          if(poptionActive == nullptr && bMayBeFlag == false )
          {
@@ -156,18 +177,32 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
             if( is_parent() == true && poptionsRoot != nullptr ) poptionActive = poptionsRoot->find( pbszFindArgument );
          }
 
-         if(poptionActive == nullptr && is_flag(eFlagUnchecked) == false)     // unknown argument and we do not allow unknown arguments?
+         if(poptionActive == nullptr)                                         // unknown argument and we do not allow unknown arguments?
          {
-            return error_s({ "Unknown option : ", pbszArgument });
+            if( is_flag(eFlagUnchecked) == false ) return error_s({ "Unknown option : ", pbszArgument });
+            else
+            {
+               stringNameNotFound = pbszFindArgument;                         // store name of not found option
+            }
          }
          
-         // ## if no option found and single dash options is not allowed 
-         if( poptionActive != nullptr )
+         // ## if option found
+
+         if( poptionActive != nullptr || stringNameNotFound.empty() == false )
          {
             // ## check for flag if single dash is allowed
-            if( bMayBeFlag == true && poptionActive->is_flag() == true )
+            if( poptionActive != nullptr )
             {
-               add_value( poptionActive, true );
+               if( bMayBeFlag == true && poptionActive->is_flag() == true )
+               {
+                  add_value( poptionActive, true );
+                  iOptionState = state_unknown;
+                  continue;
+               }
+            }
+            else if( bMayBeFlag == true )
+            {
+               add_value( stringNameNotFound, true );
                iOptionState = state_unknown;
                continue;
             }
@@ -182,6 +217,8 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
                {
                   const char* pbszValue = ppbszArgumentValue[iPosition];
                   if( poptionActive != nullptr ) add_value( poptionActive, pbszValue );// add value for option if option is found (when all options are allowed it could be option that do not exist)
+                  else if( stringNameNotFound.empty() == false ) add_value( stringNameNotFound, pbszValue ); // add value for not found option name
+
                   iOptionState = state_unknown;
                }
                else
@@ -959,7 +996,15 @@ void options::print_documentation( std::string& stringDocumentation, tag_documen
 
 }
 
-void options::print_documentation( std::function<void(unsigned uType, std::string_view, std::string_view, const option*, const options*)> callback_ ) const
+/** ---------------------------------------------------------------------------
+ * @brief Generate documentation using callback method
+ * 
+ * Calls callback method for each command and option found
+ * 
+ * @param callback_ callback method to call for each command and option found
+ * @param bSubOption true to print sub options as well, false to not print sub options
+*/
+void options::print_documentation( std::function<void(unsigned uType, std::string_view, std::string_view, const option*, const options*)> callback_, bool bSubOption ) const
 {
    callback_( eOptionTypeCommand, m_stringName, m_stringDescription, nullptr, this );
 
@@ -977,9 +1022,12 @@ void options::print_documentation( std::function<void(unsigned uType, std::strin
 
    callback_( 0, std::string_view(), std::string_view(), nullptr, this );
 
-   for(const auto& it : m_vectorSubOption)
+   if( bSubOption == true )
    {
-      it.print_documentation( callback_ );
+      for(const auto& it : m_vectorSubOption)
+      {
+         it.print_documentation( callback_, bSubOption );
+      }
    }
 }
 

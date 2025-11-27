@@ -197,7 +197,7 @@ namespace detail {
 }
 
 
- /** --------------------------------------------------------------------------
+/** -------------------------------------------------------------------------- @API [tag: files, harvest] [summary: Harvest files from directory into table] [description: Here files collected and name for file is placed in table that is used later to find information in]
   * @brief Harvests files from a specified directory path and populates a table with their details.
   *
   * This method recursively traverses the directory structure starting from the given path, 
@@ -305,7 +305,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
                }
                catch( const std::exception& e )
                {
-                  papplication_g->ERROR_Add("Error reading file: " + std::string(e.what()));
+                  papplication_g->ERROR_AddWarning("Error reading file: " + std::string(e.what()));
                }
             }
          }
@@ -2176,6 +2176,9 @@ std::pair<bool, std::string> COMMAND_FindPattern_g(const std::string& stringCode
          uint64_t uRow = count_newline_(uFindPosition); // Determine which row this match starts in
          const std::string& stringPattern = patternsFind.get_pattern_text(iPattern);
          vectorRow.emplace_back(uRow, stringPattern); // Store the match with its row number and pattern identifier
+#ifndef NDEBUG
+         std::string_view stringFind_d( stringCode.c_str() + uFindPosition, stringCode.length() - uFindPosition );
+#endif
          uPosition = uFindPosition + stringPattern.length(); // Move past the current match
       }
 
@@ -2502,7 +2505,7 @@ std::pair<bool, std::string> EXPRESSION_FilterOnColumn_g( gd::table::dto::table*
 }
 
 
-/** --------------------------------------------------------------------------- @TAG #command.clipboard
+/** --------------------------------------------------------------------------- @CODE [tag: clipboard]
  * @brief Reads the clipboard content and returns it as a UTF-8 encoded string.
  * 
  * This function attempts to read the clipboard content, first trying to retrieve

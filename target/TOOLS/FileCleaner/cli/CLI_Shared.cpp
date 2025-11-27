@@ -30,7 +30,7 @@
 
 NAMESPACE_CLI_BEGIN
 
-/** --------------------------------------------------------------------------
+/** -------------------------------------------------------------------------- @API [tag: cli, options] [summary: Process settings for what files to harvest] [description: Checks and validates settings to know what files to work with]
  * @brief Reads and processes harvest settings from command line options
  * 
  * This method extracts harvest-related configuration from command line options,

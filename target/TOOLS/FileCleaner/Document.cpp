@@ -1,10 +1,10 @@
 /**
-* \file Document.cpp
-* 
-* ### 0TAG0 File navigation, mark and jump to common parts
-* - `0TAG0CACHE.Document` - cache methods
-
-*/
+ * \file Document.cpp
+ * 
+ * ### 0TAG0 File navigation, mark and jump to common parts
+ * - `0TAG0CACHE.Document` - cache methods
+ 
+ */
 
 #include <algorithm>
 #include <filesystem>
@@ -624,7 +624,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    {
       for(const auto& stringError : vectorError)
       {
-         ERROR_Add(stringError);
+         ERROR_AddWarning(stringError);
       }
    }
 
@@ -792,7 +792,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    {
       for(const auto& stringError : vectorError)
       {
-         ERROR_Add(stringError);
+         ERROR_AddWarning(stringError);
       }
    }
 
@@ -972,7 +972,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    // ### Handle any collected errors
    if(!vectorError.empty())
    {
-      for(const auto& stringError : vectorError) { ERROR_Add(stringError); }
+      for(const auto& stringError : vectorError) { ERROR_AddWarning(stringError); }
    }
 
    return {true, ""};
@@ -2125,6 +2125,7 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       ptableKeys->column_add("rstring", 0, "filename");                       // name of file
       ptableKeys->column_add("uint64", 0, "row");                             // row number in file
       ptableKeys->column_add("rstring", 0, "context");                        // context if used
+      ptableKeys->column_add( "rstring", 0, "preview" );                      // preview of line or section found if used
       ptableKeys->prepare();                                                  // prepare table
       ptableKeys->property_set("id", stringId);                               // set id for table, used to identify table in cache
       CACHE_Add( std::move(ptableKeys) );                                     // add table to cache
@@ -2326,10 +2327,14 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
          {
             auto& ptable_ = std::get< std::unique_ptr< gd::table::dto::table > >(*it);
             auto argumentId = ptable_->property_get("id");                                         assert( argumentId.is_string() == true );
+            if( argumentId.is_string() && stringId == argumentId.as_string_view() )
+            {
 #ifndef NDEBUG
             auto stringId_d = argumentId.as_string_view();
-#endif
-            if( argumentId.is_string() && stringId == argumentId.as_string_view() ) return ptable_.get();
+               //LOG_DEBUG_RAW( "Table found in cache: " & stringId & " number of rows: " & ptable_->size());
+#endif // NDEBUG
+               return ptable_.get();
+            }
          }
       }
    }
@@ -2344,6 +2349,11 @@ gd::table::dto::table* CDocument::CACHE_Get( const std::string_view& stringId, b
    return nullptr;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Get pointer to arguments table with specified id
+ * @param stringId id to table that is returned
+ * @return pointer to table with id
+ */
 gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::string_view& stringId, bool bPrepare )
 {
    {
@@ -2355,7 +2365,13 @@ gd::table::arguments::table* CDocument::CACHE_GetTableArguments( const std::stri
          {
             auto& ptable_ = std::get< std::unique_ptr< gd::table::arguments::table > >(*it);
             auto argumentId = ptable_->property_get("id");
-            if( argumentId.is_string() && stringId == ( const char* )argumentId ) return ptable_.get();
+            if( argumentId.is_string() && stringId == ( const char* )argumentId )            
+            {                                                                                      
+#ifndef NDEBUG
+               //LOG_DEBUG_RAW( "Table found in cache: " & stringId & " number of rows: " & ptable_->size());
+#endif // NDEBUG
+               return ptable_.get();
+            }
          }
       }
    }
@@ -2508,7 +2524,7 @@ std::pair<bool, std::string> CDocument::CACHE_Where(std::string_view stringId, s
    return { true, "" };
 }
 
-/** --------------------------------------------------------------------------- @CODE [tag: where] [description: Filter rows in table based on expression and arguments]
+/** --------------------------------------------------------------------------- @API [tag: where] [description: Filter rows in table based on expression and arguments]
  * @brief Filters rows in a cache table based on a specified expression and arguments.
  * 
  * This method evaluates a given expression against the rows of a cache table identified by `stringId`.
@@ -3136,6 +3152,14 @@ void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd
    m_papplication->PrintProgress(stringMessage, argumentsMessage );           // display progress message in application
 }
 
+void CDocument::MESSAGE_PromptForValue( std::string stringName, std::string stringDescription, gd::variant* pvariantValue )
+{                                                                                                  assert( pvariantValue != nullptr );
+   auto result_ = CApplication::CliSetVariable_s( {{"ask", true}, {"name", stringName }, {"description", stringDescription}}, pvariantValue);
+   if( result_.first == false )
+   {
+      ERROR_Add( result_.second );
+   }
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Add error to internal list of errors
@@ -3144,9 +3168,22 @@ void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd
 void CDocument::ERROR_Add( const std::string_view& stringError )
 {
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );           // locks `m_vectorError`
-   gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
+   gd::argument::arguments argumentsError( { {"text", stringError}, {"type", "error"} }, gd::argument::arguments::tag_view{});
    m_vectorError.push_back( std::move(argumentsError) );
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Add warning to internal list of problems
+ * @param stringWarning warning information
+ */
+void CDocument::ERROR_AddWarning( const std::string_view& stringWarning )
+{
+   if( GetApplication()->PROPERTY_Exists( "verbose" ) == false || GetApplication()->PROPERTY_Get( "verbose" ).as_bool() == false ) return; // only add warning in verbose mode
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError );           // locks `m_vectorError`
+   gd::argument::arguments argumentsWarning( { {"text", stringWarning}, {"type", "warning"} }, gd::argument::arguments::tag_view{});
+   m_vectorError.push_back( std::move(argumentsWarning) );
+}
+
 
 void CDocument::ERROR_Print( bool bClear ) 
 {
@@ -3221,23 +3258,15 @@ std::pair<bool, std::string> CDocument::EXPRESSION_PrepareForArgument_s(const st
 }
 
 
-void CDocument::RESULT_VisualStudio_s( gd::table::dto::table& table_, std::string& stringResult )
+void CDocument::RESULT_VisualStudio_s( const gd::table::dto::table& table_, std::string& stringResult )
 {  
    unsigned uColumnCount = table_.get_column_count(); // get number of columns
 
-   for( const auto& itRow : table_ )
+   //for( auto& itRow : table_ )
+   for( auto itRow = table_.begin(); itRow != table_.end(); ++itRow )
    {
       // combine all columns into one row
       std::string stringRow = itRow.cell_get_variant_view("line").as_string();
-      /*
-      std::string stringRow;
-      for( unsigned uColumn = 0; uColumn < (uColumnCount - 3); uColumn++ )
-      {
-         if( uColumn != 0 ) stringRow += "\t"; // add tab between columns
-         auto stringColumn = itRow.cell_get_variant_view(uColumn).as_string();
-         if( stringColumn.empty() == false ) stringRow += stringColumn;
-      }
-      */
       stringRow += "\n";
       stringResult += stringRow;
    }
