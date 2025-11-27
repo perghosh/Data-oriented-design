@@ -18,19 +18,6 @@
 
 #include "gd_table_column-buffer.h"
 
-#if(defined(_M_X64) || (defined(_M_IX86) && defined(_M_IX86_FP) && _M_IX86_FP >= 2) || defined(__x86_64__))
-
-#  include <emmintrin.h>
-#  include <smmintrin.h>
-
-#  define GD_X86
-
-#else
-
-#  define GD_APPLE
-
-#endif
-
 
 #if defined( __clang__ )
    #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
@@ -404,6 +391,7 @@ void table_column_buffer::common_construct( const table_column_buffer& o, tag_co
    m_argumentsProperty = o.m_argumentsProperty;
 }
 
+/// @brief construct table from another table but only selected columns
 void table_column_buffer::common_construct( const table_column_buffer& o, const std::vector<unsigned>& vectorColumn, tag_columns )
 {
    m_uFlags             = o.m_uFlags; 
@@ -424,7 +412,69 @@ void table_column_buffer::common_construct( const table_column_buffer& o, const 
    }
 }
 
+/// @brief construct table from columns objects that is passed and used to store column information
+void table_column_buffer::common_construct( const detail::columns* pcolumns )
+{
+   m_uFlags             = 0; 
+   m_uRowSize           = 0;  
+   m_uRowMetaSize       = 0;
+   m_uRowCount          = 0; 
+   m_uReservedRowCount  = 0;
+   delete m_puData;
+   m_puData = nullptr;
+   m_puMetaData = nullptr;
+   if( pcolumns != nullptr )
+   {
+      for( auto itColumn : *pcolumns )
+      {
+         column_add( itColumn, gd::types::tag_detail{});
+      }
+   }
+}
 
+/// @brief construct table specified from columns objects
+void table_column_buffer::common_construct( const detail::columns* pcolumns, const std::initializer_list<gd::variant_view>& listColumn )
+{
+   m_uFlags             = 0; 
+   m_uRowSize           = 0;  
+   m_uRowMetaSize       = 0;
+   m_uRowCount          = 0; 
+   m_uReservedRowCount  = 0;
+   delete m_puData;
+   m_puData = nullptr;
+   m_puMetaData = nullptr;
+
+   for( const auto& itColumn : listColumn )
+   {
+      int iColumn = pcolumns->find_index( itColumn );
+      if( iColumn >= 0 )
+      {
+         column_add( *pcolumns->get( (unsigned)iColumn ), gd::types::tag_detail{} );
+      }
+   }
+}
+
+/// @brief construct table specified from columns objects
+void table_column_buffer::common_construct( const detail::columns* pcolumns, const std::vector<gd::variant_view>& vectorColumn )
+{
+   m_uFlags             = 0; 
+   m_uRowSize           = 0;  
+   m_uRowMetaSize       = 0;
+   m_uRowCount          = 0; 
+   m_uReservedRowCount  = 0;
+   delete m_puData;
+   m_puData = nullptr;
+   m_puMetaData = nullptr;
+
+   for( const auto& itColumn : vectorColumn )
+   {
+      int iColumn = pcolumns->find_index( itColumn );
+      if( iColumn >= 0 )
+      {
+         column_add( *pcolumns->get( (unsigned)iColumn ), gd::types::tag_detail{} );
+      }
+   }
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Return number of rows for selected state
@@ -890,6 +940,16 @@ table_column_buffer& table_column_buffer::column_add(const std::vector< std::tup
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Add column to table
+ * @param column_ column information for added column
+ * @return reference to table_column_buffer
+ */
+table_column_buffer& table_column_buffer::column_add( const detail::column& column_, gd::types::tag_detail ) 
+{ 
+   return column_add( column_.type(), column_.size(), column_.name(), column_.alias() ); 
+}
+
+/** ---------------------------------------------------------------------------
  * @brief find index to column for column name
  * @param stringName column name column index is returned for
  * @return int index to column for column name if found, -1 if not found
@@ -1192,7 +1252,7 @@ tableNumber.column_fill( 3, (int64_t)8 );
  * @return std::pair<bool, std::string> true if ok, false and error information if fail
 */
 std::pair<bool, std::string> table_column_buffer::prepare()
-{                                                                                                  assert( m_vectorColumn.empty() == false ); assert( m_puData == nullptr );
+{                                                                                                  assert( m_vectorColumn.empty() == false ); assert( m_puData == nullptr && "Table have been prepared");
    // ## calculate size for each row
    unsigned uRowSize = 0; // 
 
@@ -2146,6 +2206,40 @@ gd::variant_view table_column_buffer::cell_get_variant_view(uint64_t uRow, std::
    return gd::variant_view();
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief get cell value by finding row that match find criteria
+ * @param vectorFind vector with pair values to find row, first is column index or name and second is value to find
+ * @param uColumn column index to get value from
+ * @return pointer to cell value if found otherwise nullptr
+*/
+const uint8_t* table_column_buffer::cell_get( const std::vector<std::pair<std::variant<unsigned, std::string_view>, gd::variant_view>>& vectorFind, unsigned uColumn, tag_find ) const noexcept
+{
+   int64_t iRow = find( 0, size(),vectorFind, tag_column_variant{} );
+   if( iRow != -1 )
+   {
+      return cell_get( (uint64_t)iRow, uColumn );
+   }
+
+   return nullptr;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief get cell value as variant_view item by finding row that match find criteria
+ * @param vectorFind vector with pair values to find row, first is column index or name and second is value to find
+ * @param uColumn column index to get value from
+ * @return gd::variant_view cell value if found otherwise empty variant_view
+*/
+gd::variant_view table_column_buffer::cell_get_variant_view( const std::vector<std::pair<std::variant<unsigned, std::string_view>, gd::variant_view>>& vectorFind, unsigned uColumn, tag_find ) const noexcept
+{
+   int64_t iRow = find( 0, size(),vectorFind, tag_column_variant{} );
+   if( iRow != -1 )
+   {
+      return cell_get_variant_view( (uint64_t)iRow, uColumn );
+   }
+
+   return gd::variant_view();
+}
+
 
 unsigned table_column_buffer::cell_get_length( uint64_t uRow, unsigned uColumnIndex ) const noexcept
 {
@@ -2905,6 +2999,45 @@ int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std
 
    return find( uStartRow, uCount, vectorFind );
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief find value in table
+ * @param uStartRow row to start search
+ * @param uCount number of rows trying to find value in
+ * @param listFind list of column names and values to find
+ * @return index to row if value was found, -1 if not found
+ */
+int64_t table_column_buffer::find(uint64_t uStartRow, uint64_t uCount, const std::vector< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& vectorMatch, tag_column_variant) const noexcept
+{                                                                                                  assert( m_puData && "Table data is not prepared" );
+   uint64_t uEndRow = uStartRow + uCount;                                                          assert( uEndRow <= get_row_count() );
+   std::vector< std::pair<unsigned, gd::variant_view> > vectorFind;           // hold column names and values to find
+
+#ifndef NDEBUG
+   for( auto it : vectorMatch )                                               // check that all columns exists
+   { 
+      if( std::holds_alternative<std::string_view>(it.first) == true ) { assert( column_exists( std::get<std::string_view>(it.first) ) == true && "Invalid column name"); }
+      else { assert(std::get<unsigned>(it.first) < get_column_count() && "Column index too large" ); }
+   } 
+#endif 
+
+   // ## Convert list to vector with column index and value to find
+   for( auto it : vectorMatch )
+   {
+      if( std::holds_alternative<std::string_view>(it.first) == true )
+      {
+         auto uColumnIndex = column_get_index(std::get<std::string_view>(it.first));
+         assert(uColumnIndex != (unsigned)-1);
+         vectorFind.push_back({ uColumnIndex, it.second });
+      }
+      else
+      {
+         vectorFind.push_back({ std::get<unsigned>(it.first), it.second });
+      }
+   }
+
+   return find( uStartRow, uCount, vectorFind );
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief find all values in table
@@ -4388,6 +4521,63 @@ static const std::byte* read_s( const std::byte* pFrom, void* pTo, std::size_t u
 static std::byte* write_s( const void* pSource, std::byte* pBuffer, std::size_t uSize);
 
 /** ---------------------------------------------------------------------------
+ * @brief Serialize or deserialize table column buffer to/from buffer
+ * 
+ * @param pBuffer pointer to buffer to read from or write to
+ * @param bSave true if data is saved to buffer, false if data is read from buffer
+ * @return pointer to position after serialized data in buffer
+*/
+std::byte* table_column_buffer::serialize( std::byte* pBuffer, bool bSave )
+{ 
+   std::byte* pposition_ = pBuffer;
+   pposition_ = serialize( pposition_, bSave, tag_member{} );
+   pposition_ = serialize( pposition_, bSave, tag_columns{} );
+   pposition_ = serialize( pposition_, bSave, tag_body{} );
+   pposition_ = serialize( pposition_, bSave, tag_reference{} );
+   return pposition_;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Serialize or deserialize table column buffer member data to/from buffer
+ * 
+ * - `sizeof(uint64_t)` row count
+ * - `sizeof(uint64_t)` row size
+ * - `sizeof(uint64_t)` row meta size
+ * 
+ * @param pBuffer pointer to buffer to read from or write to
+ * @param bSave true if data is saved to buffer, false if data is read from buffer
+ * @param tag_member tag to identify that member data is serialized
+ */
+std::byte* table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_member)
+{                                                                                                  assert(pBuffer != nullptr); assert( reinterpret_cast<uintptr_t>( pBuffer ) % 4 == 0 );
+   std::byte* pPosition = pBuffer;
+   if( bSave == false )
+   {
+      uint64_t uRead;
+      const std::byte* p_ = pPosition;
+      p_ = read_s( p_, &uRead, sizeof(uRead) );                                                    assert( p_ == pBuffer + sizeof(uRead) );
+      p_ = read_s( p_, &m_uFlags, sizeof(m_uFlags) );
+      p_ = read_s( p_, &m_uRowSize, sizeof(m_uRowSize) );
+      p_ = read_s( p_, &m_uRowMetaSize, sizeof(m_uRowMetaSize) );
+      pPosition += ( p_ - pPosition );
+   }
+   else                                                                                            
+   {                                                                                               assert( empty() == false );
+      uint64_t uSave;
+      uSave = serialize_size(tag_member{});
+      pPosition = write_s( &uSave, pPosition, sizeof(uSave) );                                     assert( pPosition == pBuffer + sizeof(uSave) );
+      pPosition = write_s(&m_uFlags, pPosition, sizeof(m_uFlags));
+      pPosition = write_s(&m_uRowSize, pPosition, sizeof(m_uRowSize));
+      pPosition = write_s(&m_uRowMetaSize, pPosition, sizeof(m_uRowMetaSize));
+   }
+
+   // Align pPosition 4 bytes boundary
+   while( ( reinterpret_cast<uintptr_t>( pPosition ) % 4 ) != 0 ) pPosition++;
+
+   return pPosition;
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Serialize or deserialize columns data to/from buffer
  * 
  * - `sizeof(uint64_t)` total size of column data block
@@ -4564,6 +4754,41 @@ std::byte* table_column_buffer::serialize(std::byte* pBuffer, bool bSave, tag_re
    while( ( reinterpret_cast<uintptr_t>( pPosition ) % 4 ) != 0 ) pPosition++;
    return pPosition;
 
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Calculate needed size of buffer needed to serialize table column buffer
+ * 
+ * @return uint64_t size of buffer needed to serialize table column buffer
+ */
+uint64_t table_column_buffer::serialize_size() const
+{
+   uint64_t uSize = 0;
+   uSize += serialize_size(tag_member{});
+   uSize += serialize_size(tag_columns{});
+   uSize += serialize_size(tag_body{});
+   uSize += serialize_size(tag_reference{});
+   return uSize;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Calculate needed size of buffer needed to serialize table member data
+ *
+ * - `sizeof(uint32_t)` flags
+ * - `sizeof(uint32_t)` row size
+ * - `sizeof(uint32_t)` row meta size
+ *
+ * @param tag_member tag to identify that member data is serialized
+ * @return uint64_t size of buffer needed to serialize table member data
+*/
+uint64_t table_column_buffer::serialize_size( tag_member ) const
+{
+   uint64_t uSize = sizeof(uint64_t);
+   uSize += sizeof(m_uFlags);                                             // size for flags
+   uSize += sizeof(m_uRowSize);                                           // size for row size
+   uSize += sizeof(m_uRowMetaSize);                                       // size for row meta size
+   while( ( uSize % 4 ) != 0 ) uSize++;                                   // align to 4 byte boundary
+   return uSize;
 }
 
 
@@ -4879,12 +5104,32 @@ std::string debug::print( const table_column_buffer& table, tag_columns )
    return stringPrint;
 }
 
+/// print column names for table
+std::string debug::print( const table_column_buffer& table, tag_columns, tag_name )
+{
+   std::string stringPrint;
+   uint32_t uIndex = 0;
+   for( auto it = table.column_begin(), itEnd = table.column_end(); it != itEnd; it++ )
+   {
+      if( stringPrint.empty() == false ) stringPrint += ", ";
+
+      stringPrint += table.column_get_name( *it );
+   }
+
+   return stringPrint;
+}
+
+
 /// print column information in table
 std::string debug::print( const table_column_buffer* ptable, tag_columns ) { return print( *ptable, tag_columns{}); }
 
-/// print column information in table
-std::string debug::print_column( const table_column_buffer* ptable ) { return print( *ptable, tag_columns{}); }
+// ## print column information in table
 
+std::string debug::print_column( const table_column_buffer* ptable ) { return print( *ptable, tag_columns{}); }
+std::string debug::print_column( const table_column_buffer& table_ ) { return print( &table_, tag_columns{}); }
+
+std::string debug::print_column_name( const table_column_buffer* ptable ) { return print( *ptable, tag_columns{}, tag_name{} ); }
+std::string debug::print_column_name( const table_column_buffer& table_ ) { return print( table_, tag_columns{}, tag_name{} ); }
 
 /// print selected row
 std::string debug::print_row( const table_column_buffer& table, uint64_t uRow )

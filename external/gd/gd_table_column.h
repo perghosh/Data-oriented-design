@@ -74,11 +74,11 @@ public:
 // ## construction -------------------------------------------------------------
 public:
    column( tag_undefined ) {}
-   column( unsigned uType ) : m_uState{}, m_uType{uType}, m_uCType{uType}, m_uPosition{}, m_uSize{}, m_uPrimitiveSize{ gd::types::value_size_g(uType) } {}
-   column( unsigned uType, const std::string_view& stringName ) : m_uState{}, m_uType{ uType }, m_uCType{ uType }, m_uPosition{}, m_uSize{}, m_uPrimitiveSize{ gd::types::value_size_g(uType) }, m_stringName{ stringName } {}
-   column( unsigned uType, unsigned uSize ) : m_uState{}, m_uType{ uType }, m_uCType{ uType }, m_uPosition{}, m_uSize{ uSize }, m_uPrimitiveSize{ gd::types::value_size_g(uType) } {}
-   column( unsigned uType, unsigned uSize, const std::string_view& stringName ) : m_uState{}, m_uType{ uType }, m_uCType{ uType }, m_uPosition{}, m_uSize{ uSize }, m_uPrimitiveSize{ gd::types::value_size_g(uType) }, m_stringName{ stringName } {}
-   column( unsigned uType, unsigned uCType, unsigned uSize, unsigned uPrimitiveSize, unsigned uPosition, const std::string_view& stringName, const std::string_view& stringAlias ) 
+   explicit column( unsigned uType ) : m_uState{}, m_uType{uType}, m_uCType{uType}, m_uPosition{}, m_uSize{}, m_uPrimitiveSize{ gd::types::value_size_g(uType) } {}
+   explicit column( unsigned uType, const std::string_view& stringName ) : m_uState{}, m_uType{ uType }, m_uCType{ uType }, m_uPosition{}, m_uSize{}, m_uPrimitiveSize{ gd::types::value_size_g(uType) }, m_stringName{ stringName } {}
+   explicit column( unsigned uType, unsigned uSize ) : m_uState{}, m_uType{ uType }, m_uCType{ uType }, m_uPosition{}, m_uSize{ uSize }, m_uPrimitiveSize{ gd::types::value_size_g(uType) } {}
+   explicit column( unsigned uType, unsigned uSize, const std::string_view& stringName ) : m_uState{}, m_uType{ uType }, m_uCType{ uType }, m_uPosition{}, m_uSize{ uSize }, m_uPrimitiveSize{ gd::types::value_size_g(uType) }, m_stringName{ stringName } {}
+   explicit column( unsigned uType, unsigned uCType, unsigned uSize, unsigned uPrimitiveSize, unsigned uPosition, const std::string_view& stringName, const std::string_view& stringAlias ) 
       : m_uState{}, m_uType{ uType }, m_uCType{ uCType }, m_uSize{ uSize }, m_uPrimitiveSize{ uPrimitiveSize }, m_uPosition{uPosition}, m_stringName{ stringName }, m_stringAlias{ stringAlias } {}
    column( unsigned uState, unsigned uType, unsigned uCType, unsigned uSize, unsigned uPrimitiveSize, unsigned uPosition, const std::string_view& stringName, const std::string_view& stringAlias ) 
       : m_uState{uState}, m_uType{ uType }, m_uCType{ uCType }, m_uSize{ uSize }, m_uPrimitiveSize{ uPrimitiveSize }, m_uPosition{uPosition}, m_stringName{ stringName }, m_stringAlias{ stringAlias } {}
@@ -181,7 +181,7 @@ public:
 // ==================================================================== columns
 // ============================================================================
 
-/**
+/**                                                                                                @API [tag: class, class, table] [description: columns class holding column information]
  * \brief Store information about columns in table
  *
  * This class holds all information about columns used a table. The reason behind
@@ -272,6 +272,7 @@ public:
    const column* get( size_t uIndex ) const { assert( uIndex < size() ); return &m_vectorColumn[uIndex]; }
 #endif
    int find_index( const std::string_view& stringName ) const noexcept;
+   int find_index( const gd::variant_view& column_ ) const noexcept;
 
    unsigned state( unsigned uIndex ) const { return get( uIndex )->state(); }
    unsigned ctype( unsigned uIndex ) const { return get( uIndex )->ctype(); }

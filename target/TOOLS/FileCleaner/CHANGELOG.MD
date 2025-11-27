@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.1.1
+### New Features
+
+
+## v1.1.0
+### New Features
+   - Add `no-ignore` to disable ignore settings from configuration file for commands `list`, `find`, `dir` and `count`. This makes it possible to override ignore settings from configuration file on command line.
+
+## v1.0.9
+
+### Bug Fixes
+   - The internal scripting engine had a bug that caused it to not work properly with empty strings. This has been fixed and now the scripting engine works as expected with empty strings.
+
+
 ## v1.0.8
 ### New Features
 - `copy` got an alias `cp` to make it easier to use for linux users.

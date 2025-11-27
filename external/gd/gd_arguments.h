@@ -1,9 +1,11 @@
+// @FILE [tag: arguments] [description: arguments that packs data without alignment, optimized for size to use less memory and may can store data on stack] [type: header]
+
 /**
  * @file gd_arguments.h
- * 
+ *
  * @brief Pack primitive and common derived values into a byte buffer for efficient storage and access with focus on memory size. Like key-value pairs in one single buffer.
- * 
- * 
+ *
+ *
  | Area                | Methods (Examples)                                                                 | Description                                                                                   |
  |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
  | Construction        | arguments(...), common_construct(...), zero(), buffer_set(...)                     | Constructors for various ways to create, copy, and initialize arguments buffers.              |
@@ -48,7 +50,7 @@ gd::argument::arguments args;
 args.set("key1", 42);
 args.set("key2", "value");
 std::cout << "Key1: " << args["key1"].get<int>() << "\n";
-std::cout << "Key2: " << gd::argument::get_g<std::string>( args["key2"] ) << "\n";   
+std::cout << "Key2: " << gd::argument::get_g<std::string>( args["key2"] ) << "\n";
 args.set("key3", 100.01);
 std::cout << "Key3: " << args["key3"].as_string() << "\n";
 args.append("key4", 200.02);
@@ -56,7 +58,7 @@ std::cout << "Key4: " << args["key4"].as_int() << "\n";
 args.append( 1000 );
 std::cout << "index 4 (zero based): " << args[4].as_double() << "\n";
  * \endcode
- * 
+ *
  * Named iteration:
  * \code
 gd::argument::arguments args8( {{ {"int-number", 100 }, {"float-number", 100.01}, {"string-value", "value"}, {"bool-value", true},
@@ -67,11 +69,11 @@ for( auto it = args8.named_begin(); it != args8.named_end(); it++ )
    std::cout << "Key: " << it.name() << ", Type: " << it.type_number() << ", Value: " << it.as_string() << "\n";
 }
  * \endcode
- * 
+ *
  * ### Memory Management
  * The class can either own its buffer (allocated on the heap) or use an externally provided buffer. If the buffer is owned,
  * it is automatically freed in the destructor.
- * 
+ *
  */
 
 /**
@@ -366,7 +368,7 @@ public:
       argument(unsigned uType,const uint8_t* p) : m_eType((enumType)uType) { m_unionValue.puch = p; }
       argument(const uint8_t* p, enumType eType) : m_eType(eType) { m_unionValue.puch = p; }
 
-      
+
       //@}
 
       argument(const argument& o) {
@@ -435,6 +437,7 @@ public:
       /// length in bytes for param
       unsigned int length() const;
       /// get param type
+      // @TODO [tag: arguments] [description: this do not return the complete type (with length and array flags) and maybe this is ok but need to be checked, it should return the complete type including flags for size]
       arguments::enumType type() const { return arguments::enumType((unsigned)m_eType & ~eType_MASK); }
       arguments::enumCType type_number() const { return arguments::enumCType((unsigned)m_eType & ~eTypeNumber_MASK); }
       /// return the raw internal type, this has optional flags for type
@@ -445,7 +448,7 @@ public:
       void get_binary_as_hex(std::string& s) const;
       unsigned int get_binary_as_hex(char* pbsz, unsigned int uLength) const;
 
-      /// reset param 
+      /// reset param
       void reset(const argument* pParam = nullptr) {
          if( pParam != nullptr ) {
             *this = *pParam;
@@ -496,7 +499,7 @@ public:
       bool         is_uuid() const { return (type_number() == arguments::eTypeNumberGuid); }
       bool         is_string() const { return (type_number() == arguments::eTypeNumberString); }
       bool         is_utf8() const { return (type_number() == arguments::eTypeNumberUtf8String); }
-      bool         is_wstring() const { return (type_number() == arguments::eTypeNumberWString); } 
+      bool         is_wstring() const { return (type_number() == arguments::eTypeNumberWString); }
       bool         is_true() const;
       bool         is_primitive() const { return (type_number() > arguments::eTypeNumberUnknown && type_number() <= eTypeNumberDouble); } ///< primitive = built in types in C++
       bool         is_text() const { return (m_eType & arguments::eGroupString) != 0;  } ///< text = some sort of string value, ascii, utf8 or unicode
@@ -513,7 +516,7 @@ public:
 
       // attributes
    public:
-      arguments::enumType m_eType;      // type of value valid for m_unionValue 
+      arguments::enumType m_eType;      // type of value valid for m_unionValue
       union value
       {
          bool b;
@@ -579,7 +582,7 @@ public:
    template<typename ARGUMENTS>
    struct iterator_  //0TAG0iterator - iterator used to move forward for values whithin arguments
    {
-      using value_type = argument;  
+      using value_type = argument;
       using iterator_category = std::forward_iterator_tag;
       using self = iterator_;
       using difference_type = std::ptrdiff_t;
@@ -609,7 +612,7 @@ public:
          return *this;
       }
       self operator++(int) {                                                                       assert( m_parguments->verify_d( buffer_offset() ));
-         iterator_ it = *this; 
+         iterator_ it = *this;
          ++(*this);
          return it;
       }
@@ -646,7 +649,7 @@ public:
       }
 
       /// compare name with string
-      bool compare_name(const std::string_view& stringName) const { 
+      bool compare_name(const std::string_view& stringName) const {
          if( ARGUMENTS::is_name_s(buffer_offset()) == true )
          {
             if( ARGUMENTS::get_name_s(buffer_offset()) == stringName ) return true;
@@ -681,8 +684,7 @@ public:
    using const_iterator =     iterator_<const arguments>;
 
 
-
-// ## construction -------------------------------------------------------------
+   // ## @API [tag: construct] [description: construction methods for creating arguments instances]
 public: //0TAG0construct.arguments
    arguments() { buffer_set(); }
 
@@ -702,7 +704,7 @@ public: //0TAG0construct.arguments
    }
    arguments( std::initializer_list<std::pair<std::string_view, gd::variant>> listPair); // construct arguments with vector like {{},{}}
    arguments( std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}
-   arguments( std::vector<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}   
+   arguments( std::vector<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}
    arguments( const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair, const arguments& arguments_ );
    arguments( const arguments& arguments_, const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair );
 
@@ -711,7 +713,7 @@ public: //0TAG0construct.arguments
    arguments( const std::array<std::byte, SIZE>& buffer, std::initializer_list<std::pair<std::string_view, gd::variant>> listPair ) :
       arguments( (pointer)buffer.data(), (unsigned int)buffer.size(), listPair ) { static_assert(SIZE >= 8, "why less than 8?"); }
 
-   arguments( pointer pBuffer, unsigned int uSize, std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); 
+   arguments( pointer pBuffer, unsigned int uSize, std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view );
    template <size_t SIZE>
    arguments( const std::array<std::byte, SIZE>& buffer, std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ) :
       arguments( (pointer)buffer.data(), (unsigned int)buffer.size(), listPair, tag_view{} ) { static_assert(SIZE >= 8, "why less than 8?"); }
@@ -752,7 +754,7 @@ protected:
 
    void zero() { buffer_set(); };
 
-   // ## operator -----------------------------------------------------------------
+   // ## @API [tag: operator] [description: overloaded operators]
 public: //0TAG0operator.arguments
    argument operator[](unsigned uIndex) { return get_argument(uIndex); }
    argument operator[](std::string_view stringName) { return get_argument(stringName); }
@@ -771,7 +773,7 @@ public: //0TAG0operator.arguments
       return argument_edit();
    }
 
-   argument_edit operator()(std::string_view stringName) { 
+   argument_edit operator()(std::string_view stringName) {
       pointer pPosition = find(stringName);
       if( pPosition != nullptr ) { return arguments::get_edit_param_s(this, pPosition); }
       return argument_edit();
@@ -796,7 +798,7 @@ public: //0TAG0operator.arguments
    // ## methods ------------------------------------------------------------------
 public:
 /** \name GET/SET
-*///@{ 
+*///@{
 /// return start position to buffer where values are stored
    pointer get_buffer_start() { return m_pBuffer; }
    const_pointer get_buffer_start() const { return m_pBuffer; }
@@ -811,7 +813,7 @@ public:
    // return if object owns memory, if it does it should be deleted when arguments goes out of scope
    bool is_owner() const noexcept { return m_bOwner; }
 
-   // ## append adds values to stream 0TAG0append.arguments
+   // ## @API [tag: append] [description: append data to arguments]
    //    note: remember that each value has its type and type in stream is just
    //    one byte. That means that the amount of information about the type is
    //    limited. This is the reason why each type only has it's type number.
@@ -832,8 +834,8 @@ public:
    arguments& append(const char8_t* v, unsigned uLength) { return append((eTypeNumberUtf8String | eValueLength), (const_pointer)v, uLength + 1); }
 #endif
    template<typename VALUE, typename... NEXT>
-   void append_many(VALUE value_, NEXT... next_) { 
-      append( value_ ); 
+   void append_many(VALUE value_, NEXT... next_) {
+      append( value_ );
       if constexpr (sizeof...(next_) > 0) { append_many( next_... ); }
    }
    arguments& append( const argument& argumentValue, tag_argument );
@@ -932,7 +934,7 @@ public:
    template<typename OBJECT>
    arguments& append_object( const OBJECT object ) { return append_object( std::string_view(), object ); }
 
-   // ## set methods  0TAG0set.arguments
+   // ## @API [tag: set] [description: set methods, if value exists it is overwritten, otherwise it is appended]
    //    Set values for selected position in buffer, it could be for a name, index or pointer
    //    If position is not found, new value is appended to buffer
 
@@ -960,6 +962,8 @@ public:
    arguments& set(pointer pPosition, const gd::variant_view& variantValue, pointer* ppPosition);
    arguments& set(std::string_view stringName, const gd::variant_view& variantValue);
 
+   arguments& set(const arguments& arguments_);
+
    arguments& set(std::string_view stringName, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set(stringName.data(), (uint32_t)stringName.length(), uType, pBuffer, uLength); }
    arguments& set(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength);
    arguments& set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength) { return set( pPosition, uType, pBuffer, uLength, nullptr ); }
@@ -968,21 +972,20 @@ public:
    void set( pointer pposition, const argument& argumentSet, tag_argument );
    arguments& set( pointer pposition, const argument& argumentSet ) { set( pposition, argumentSet, tag_argument{}); return *this; }
 
-/** \name INSERT
-*///@{
+   // ## @API [tag: insert] [description: inserts a new argument at the specified position]
+
    pointer insert( size_t uIndex, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
    pointer insert( pointer pPosition, const gd::variant_view& variantviewValue, tag_view );
    pointer insert( pointer pPosition, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_view );
-   // pointer insert(pointer pPosition, argument_type uType, const_pointer pBuffer, unsigned int uLength);
-//@}
 
-/** \name MERGE
- * Add values to arguments if not found
- *///@{
+   // ## @API [tag: merge] [description: merges values from another arguments object]
+
    /// merge values from another arguments object, onlye named values are merged
    arguments& merge(const arguments& arguments_);
-//@}
 
+   // ## @API [tag: iterator] [description: provides iterators for traversing arguments]
+
+   // ### value based iterators, faster but less support for stl iterator logic
 
    iterator begin() { return iterator( this ); }
    iterator end() { return iterator( this, m_uLength ); }
@@ -991,6 +994,8 @@ public:
    const_iterator cbegin() const { return const_iterator( this ); }
    const_iterator cend() const { return const_iterator( this, m_uLength ); }
 
+   // ### named based iterators, slower but with better support for stl iterator logic
+
    named_iterator_t named_begin();
    named_iterator_t named_end();
    const_named_iterator named_begin() const;
@@ -998,19 +1003,18 @@ public:
    const_named_iterator named_cbegin() const;
    const_named_iterator named_cend() const;
 
+   // ## @API [tag: count] [description: count related methods, things that information about number of items in arguments, e.g. size, empty, capacity]
 
    [[nodiscard]] unsigned int capacity() const { assert(m_pBuffer != nullptr); return m_uBufferLength; }
 
-/** \name COUNT
-*///@{
    bool empty() const noexcept { return m_uLength == 0; }
    size_t size( tag_memory ) const noexcept { return m_uLength; }
    unsigned int count(std::string_view stringName) const;
-//@}
+   /// number of arguments found in arguments object
+   [[nodiscard]] size_t size() const;
 
-/** \name FIND
-* Find methods, finds position or param value for name
-*///@{
+   // ## @API [tag: find] [description: find methods to find values within arguments objects]
+
    [[nodiscard]] pointer find(unsigned int uIndex);
    [[nodiscard]] const_pointer find(unsigned int uIndex) const;
    [[nodiscard]] pointer find(const std::string_view& stringName);
@@ -1046,20 +1050,14 @@ public:
    [[nodiscard]] std::pair<bool, std::string> exists( const std::initializer_list<std::pair<std::string_view, std::string_view>>& listName, tag_description ) const { return exists_s( *this, listName, tag_description{}); }
    [[nodiscard]] std::pair<bool, std::string> exists_any_of( const std::initializer_list<std::string_view>& listName, tag_name ) const { return exists_any_of_s( *this, listName, tag_name{}); }
 
+   // ## @API [tag: compare] [description: compare methods, checks if values in arguments are equal]
 
-//@}
-
-/** \name COMPARE
-* compare functionality, checks if values in arguments are equal
-*///@{
    [[nodiscard]] bool compare(const std::pair<std::string_view, gd::variant_view>& pairMatch) const { return find(pairMatch) != nullptr; }
    [[nodiscard]] bool compare(const std::string_view& stringName, const arguments& argumentsCompareTo) const;
    [[nodiscard]] bool compare_exists(const arguments& argumentsExists) const { return compare_exists_s( *this, argumentsExists ); }
-//@}
 
-/** \name MOVE move pointer between values in arguments
-* move operations used to move between values, can't go back. only forward
-*///@{
+   // ## @API [tag: walk, iterator] [description: walk between items in arguments, moves pointer to next value, can't go back]
+
    [[nodiscard]] pointer next() { return m_uLength > 0 ? m_pBuffer : nullptr; }
    [[nodiscard]] const_pointer next() const { return m_uLength > 0 ? m_pBuffer : nullptr; }
    [[nodiscard]] pointer next(pointer pPosition) const {                                           assert( verify_d(pPosition) );
@@ -1070,16 +1068,8 @@ public:
       auto p = next_s(pPosition);
       return p < get_buffer_end() ? p : nullptr;
    }
-//@}
 
-/** \name VALIDATE validation operations for argumetns
-* 
-*///@{
-//@}
-
-
-   /// number of arguments found in arguments object
-   [[nodiscard]] size_t size() const;
+   // ## @API [tag: misc] [description: miscellaneous methods for arguments management]
 
    /// cleans upp interal data and set it as empty
    void clear();
@@ -1087,13 +1077,11 @@ public:
    /// Return raw data buffer
    [[nodiscard]] void* data() { return m_pBuffer; }
 
-/** \name ARGUMENT
-* 0TAG0get.arguments
-* get argument value from arguments
-*///@{
+   // ## @API [tag: get] [description: get methods to retrieve values from arguments objects, note that arguments store `argument` values, argument is a type of variant]
+
    [[nodiscard]] argument get_argument() const { return get_argument_s(m_pBuffer); }
    [[nodiscard]] argument get_argument(const_pointer pPosition) const {                assert( verify_d(pPosition) );
-      return get_argument_s(pPosition); 
+      return get_argument_s(pPosition);
    }
 
    [[nodiscard]] argument get_argument(unsigned int uIndex) const;
@@ -1119,13 +1107,13 @@ public:
 
 
    /**
-    * Try to get value for param name, if not found then insert `vInsert` into params 
+    * Try to get value for param name, if not found then insert `vInsert` into params
     * object and return param for that inserted value.
     * Make sure that vInsert is compatible with values that can be stored as param
     */
    template<typename INSERT_VALUE>
-   [[nodiscard]] argument get_argument(std::string_view stringName, const INSERT_VALUE& vInsert) { 
-      auto paramV = find_argument(stringName); 
+   [[nodiscard]] argument get_argument(std::string_view stringName, const INSERT_VALUE& vInsert) {
+      auto paramV = find_argument(stringName);
       if( paramV.empty() == true ) {
          auto uOffset = get_buffer_end() - get_buffer_start();
          append(stringName, vInsert);
@@ -1152,7 +1140,7 @@ public:
 
    std::vector<argument> get_argument( std::vector< std::string_view > vectorName ) const;
 
-   /// return first value for name 
+   /// return first value for name
    gd::variant_view get_variant_view( const std::string_view& stringName ) const { return get_argument( stringName ).get_variant_view(); }
    [[nodiscard]] std::pair< std::string_view, gd::variant_view > get_variant_view(unsigned int uIndex, tag_pair ) const;
 
@@ -1160,7 +1148,6 @@ public:
    std::optional<gd::variant_view> get_variant_view(size_t uIndex, gd::types::tag_optional) const;
    /// return first value for name as optional
    std::optional<gd::variant_view> get_variant_view( const std::string_view& stringName, gd::types::tag_optional ) const;
-//@}
                                                                                                    // @CODE [tag: object, glue] [description: Methods to get and set objects into arguments object, add the `get_object` method as free function]
    template<typename OBJECT>
    void get_object( const std::string_view& stringPrefixFind, OBJECT& object_ );
@@ -1172,10 +1159,8 @@ public:
    OBJECT get_object( const std::string_view& stringPrefixFind );
 
 
-/** \name PRINT
-* 0TAG0print.arguments
-* Methods used to format argument values into text
-*///@{
+   // ## @API [tag: print] [description: Methods used to format argument values, values are mostly printed into std::string object]
+
    std::string print() const;
    std::string print( const_iterator itBegin ) const { return print(itBegin, cend(), ", "); };
    std::string print( const_iterator itBegin, const_iterator itEnd ) const { return print(itBegin, itEnd, ", "); };
@@ -1187,18 +1172,13 @@ public:
    std::string print_json() const;
 
    std::string print(std::string_view stringFormat) const;
-//@}
-
-   
-
 
 #ifndef NDEBUG
    bool verify_d(const_pointer pPosition) const;
 #endif
-//@}
 
-/** \name BUFFER
-*///@{
+   // ## @API [tag: buffer, remmove] [description: Internal buffer related and methods to remove values]
+
    /// erase argument value at iterator
    iterator erase(iterator itPosition) { remove(static_cast<const_pointer>( itPosition )); return itPosition < end() ? itPosition : end(); }
    /// erase argument value at iterator
@@ -1212,6 +1192,8 @@ public:
    void remove( size_t uIndex );
    void remove(const_pointer pPosition);
    void remove(const_iterator it) { remove( static_cast<const_pointer>(it) ); }
+   void remove_all( const std::string_view& stringName );
+
    /// make sure internal buffer can hold specified number of bytes, no copying just reserving data
    pointer reserve_no_copy(unsigned int uCount) {
       if( is_owner() == false || m_pBuffer == nullptr || uCount > m_uBufferLength ) { return _reserve_no_copy(uCount + (uCount >> 1)); }
@@ -1223,7 +1205,6 @@ public:
    int resize(pointer pPosition, int iOffset, int iNewOffset);
    /// remove unused memory
    void shrink_to_fit();
-//@}
 
    static bool is_name_s(const_pointer pPosition) {
       assert(*pPosition != 0);
@@ -1231,9 +1212,8 @@ public:
    }
    std::string_view get_name(const_pointer pPosition) { return get_name_s( pPosition ); }
 
-/** \name INTERNAL FREE FUNCTIONS
-* 0TAG0free_functions.arguments
-*///@{
+   // ## @API [tag: internal, free-functions] [description: Internal free functions for argument manipulation, if used outside make sure you know the internals]
+
    /// ## Move logic
    static pointer move_to_value_s(pointer pPosition);
    static const_pointer move_to_value_s(const_pointer pPosition);
@@ -1294,7 +1274,7 @@ public:
    static unsigned int sizeof_s( const std::string_view& stringName, const gd::variant_view& VV_, tag_view );
    static unsigned int sizeof_s(uint32_t uNameLength, param_type uType, unsigned int uLength);
    static inline unsigned int sizeof_name_s(uint32_t uNameLength) { return uNameLength + 2; }
-   static inline unsigned int sizeof_name_s(const_pointer pPosition) { 
+   static inline unsigned int sizeof_name_s(const_pointer pPosition) {
       if( *pPosition == eType_ParameterName ) return 2 + pPosition[1];           // name marker = 1 byte, name length = 1 byte and the total name length
       return 0;
    }
@@ -1315,8 +1295,8 @@ public:
 
    /// append multiple pairs
    template<typename First, typename... Argument>
-   static void append_argument_s(arguments& rArguments, const First& pairArgument, Argument... pairNext) { 
-      rArguments.append_argument(pairArgument); 
+   static void append_argument_s(arguments& rArguments, const First& pairArgument, Argument... pairNext) {
+      rArguments.append_argument(pairArgument);
       append_argument_s(rArguments, pairNext...);
    }
 
@@ -1326,7 +1306,7 @@ public:
    }
 
    /// ## Create arguments object
-   /// 
+   ///
    /// Create arguments object from pair
    static arguments create_s(const std::pair<std::string_view, gd::variant>& pairArgument) {
       arguments A;
@@ -1361,11 +1341,11 @@ public:
    constexpr static unsigned int ctype_s(unsigned int uType) { return uType & ~eCType_MASK; } // last byte (type and size)
    constexpr static unsigned int type_number_s(unsigned int uType) { return uType & ~eTypeNumber_MASK; }
    constexpr static std::string_view type_name_s(uint32_t uType);
-   
+
 
    /// count zero terminator length in bytes if type is some sort of string
-   constexpr static unsigned int get_string_zero_terminate_length_s(unsigned int uType) { 
-      uType = uType & ~eTypeNumber_MASK;  
+   constexpr static unsigned int get_string_zero_terminate_length_s(unsigned int uType) {
+      uType = uType & ~eTypeNumber_MASK;
       switch( uType ) {
          case eTypeNumberString:
          case eTypeNumberUtf8String:
@@ -1377,13 +1357,13 @@ public:
       }
       return 0;
    }
-   
+
    /// ## `variant` methods
    /// get argument value as variant
    static gd::variant get_variant_s(const argument& argumentValue);
    static gd::variant get_variant_s(const argument& argumentValue, bool);
    static std::vector<gd::variant> get_variant_s( const std::vector<argument>& vectorValue );
-    
+
    static gd::variant_view get_variant_view_s(const argument& argumentValue);
    static std::vector<gd::variant_view> get_variant_view_s(const std::vector<argument>& vectorValue);
 
@@ -1406,7 +1386,7 @@ public:
    //@}
 
 
-// ## 
+// ##
 public:
    // ## buffer methods, used to access buffer data 0TAG0buffer.arguments
 
@@ -1439,14 +1419,14 @@ public:
 
 /// Return value as specified template type
 /// Sample usage: `arguments a_( { {"int-number", 100 } } ); a_[0u].get<int>();`
-template<typename TYPE> 
+template<typename TYPE>
 TYPE arguments::argument::get() const {
-   static_assert(std::is_arithmetic_v<TYPE> || 
-      std::is_same_v<TYPE, std::string> || 
+   static_assert(std::is_arithmetic_v<TYPE> ||
+      std::is_same_v<TYPE, std::string> ||
       std::is_same_v<TYPE, std::string_view> ||
       std::is_same_v<TYPE, std::wstring> ||
       std::is_same_v<TYPE, const char*> ||
-      std::is_same_v<TYPE, const wchar_t*>, 
+      std::is_same_v<TYPE, const wchar_t*>,
       "TYPE must be a primitive type or supported string type");
 
    if constexpr (std::is_same_v<TYPE, bool>) {
@@ -1587,7 +1567,7 @@ inline arguments& arguments::append(const std::string_view& stringName, const st
  * @param arguments_ The arguments object to extract and append arguments from.
  * @param list_ A list of argument names to filter which arguments to append.
  * @return A reference to the modified arguments object (*this) after appending the selected arguments.
- * 
+ *
  * @code
 // Example adding argument values from gd::argument::arguments to gd::argument::shared::arguments
 gd::argument::arguments arguments_;
@@ -1626,14 +1606,14 @@ inline arguments& arguments::append<std::vector<std::pair<std::string_view, gd::
 
 /// appends value if it is true (true, valid pointer, non 0 value for numbers, non empty strings)
 template<typename VALUE>
-inline arguments& arguments::append_if(const std::string_view& stringName, VALUE value ) { 
+inline arguments& arguments::append_if(const std::string_view& stringName, VALUE value ) {
    if constexpr( std::is_pointer_v<VALUE> ) {
       if( value == nullptr ) return *this;
    }
    argument argumentValue( value );
    if( argumentValue.is_true() )
    {
-      return append_argument(stringName, argumentValue); 
+      return append_argument(stringName, argumentValue);
    }
    return *this;
 }
@@ -1675,12 +1655,12 @@ inline OBJECT arguments::get_object( const std::string_view& stringPrefixFind ) 
 }
 
 #ifndef NDEBUG
-inline bool arguments::verify_d(const_pointer pPosition) const { 
+inline bool arguments::verify_d(const_pointer pPosition) const {
    bool bOk = ( pPosition >= buffer_data() );
    if( bOk == true ){
-      bOk = ( pPosition <= buffer_data_end() );  
+      bOk = ( pPosition <= buffer_data_end() );
    }
-   return bOk; 
+   return bOk;
 }
 #endif
 
@@ -1724,7 +1704,7 @@ constexpr uint8_t ctype_size[arguments::CType_MAX] = {
    sizeof(double),// eTypeNumberDouble,
 
    sizeof(void*), //eTypeNumberPointer,
-   16,      // eTypeNumberGuid   
+   16,      // eTypeNumberGuid
 };
 
 /// Append named `argument`
@@ -1740,10 +1720,10 @@ inline arguments& arguments::set(pointer pPosition, const gd::variant_view& vari
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
    unsigned uType = argumentValue.type_number();
    unsigned uLength;
-   if( uType > ARGUMENTS_NO_LENGTH ) 
-   { 
+   if( uType > ARGUMENTS_NO_LENGTH )
+   {
       uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
-      uType |= eValueLength; 
+      uType |= eValueLength;
    }
    else
    {
@@ -1758,9 +1738,9 @@ inline arguments& arguments::set(std::string_view stringName, const gd::variant_
    const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
    unsigned uType = argumentValue.type_number();                               // get full type, including length
    unsigned uLength;
-   if( uType > ARGUMENTS_NO_LENGTH ) 
-   { 
-      uType |= eValueLength; 
+   if( uType > ARGUMENTS_NO_LENGTH )
+   {
+      uType |= eValueLength;
       uLength = variantValue.length() + get_string_zero_terminate_length_s( uType );
    }
    else
@@ -1835,7 +1815,7 @@ TYPE get_g( const arguments::argument& argument_ )
 
 /**
  * @brief Enhanced iterator for arguments class that provides easy access to both names and values
- * 
+ *
  * This iterator extends the functionality of the existing iterator_ class to provide
  * better access to argument names and supports structured bindings for convenient
  * iteration over name-value pairs.
@@ -2008,28 +1988,28 @@ iterator_named<ARGUMENTS> make_iterator_named(const ARGUMENTS* args, size_t posi
 
 // ## named iterator methods
 
-inline arguments::named_iterator_t arguments::named_begin() { 
-   return named_iterator_t(this); 
+inline arguments::named_iterator_t arguments::named_begin() {
+   return named_iterator_t(this);
 }
 
-inline arguments::named_iterator_t arguments::named_end() { 
-   return named_iterator_t(this, m_uLength); 
+inline arguments::named_iterator_t arguments::named_end() {
+   return named_iterator_t(this, m_uLength);
 }
 
-inline arguments::const_named_iterator arguments::named_begin() const { 
-   return const_named_iterator(this); 
+inline arguments::const_named_iterator arguments::named_begin() const {
+   return const_named_iterator(this);
 }
 
-inline arguments::const_named_iterator arguments::named_end() const { 
-   return const_named_iterator(this, m_uLength); 
+inline arguments::const_named_iterator arguments::named_end() const {
+   return const_named_iterator(this, m_uLength);
 }
 
-inline arguments::const_named_iterator arguments::named_cbegin() const { 
-   return const_named_iterator(this); 
+inline arguments::const_named_iterator arguments::named_cbegin() const {
+   return const_named_iterator(this);
 }
 
-inline arguments::const_named_iterator arguments::named_cend() const { 
-   return const_named_iterator(this, m_uLength); 
+inline arguments::const_named_iterator arguments::named_cend() const {
+   return const_named_iterator(this, m_uLength);
 }
 
 
@@ -2070,6 +2050,9 @@ constexpr std::string_view arguments::type_name_s(uint32_t uType)
 _GD_ARGUMENT_END
 
 _GD_ARGUMENT_BEGIN
+
+// @DEBUG @API [tag: arguments, debug] [summary: Print arguments structure and data to string for debug purposes]
+
 namespace debug {
    std::string print( const arguments::argument& argumentToPrint );
    std::string print( const arguments& argumentsToPrint );

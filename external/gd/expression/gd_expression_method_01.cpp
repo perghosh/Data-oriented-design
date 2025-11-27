@@ -823,17 +823,26 @@ std::pair<bool, std::string> has_tag_g(const std::vector< value >& vectorArgumen
    {
       auto stringText = text_.as_string_view();
       auto stringTag = tag_.as_string_view();
-      auto vectorTags = detail::read_tags(stringText);
-      bool bHas = false;
-      for(const auto& tagView : vectorTags)
+      auto vectorText = detail::read_tags(stringText);
+      auto vectorTags = detail::read_tags(stringTag);
+      for(const auto& tagText : vectorText)
       {
-         if(tagView == stringTag)
+         for( const auto& tag_ : vectorTags )
          {
-            bHas = true;
-            break;
+            if(tagText == tag_)
+            {
+               *pvalueResult = true;
+               return { true, "" };
+            }
          }
       }
-      *pvalueResult = bHas;
+
+      *pvalueResult = false;
+      return { true, "" };
+   }
+   else if( (text_.is_null() == true) || (tag_.is_null() == true) )
+   {
+      *pvalueResult = false;
       return { true, "" };
    }
    return { false, "has_tag_g - Invalid argument type" };

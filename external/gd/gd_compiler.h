@@ -1,3 +1,5 @@
+// @FILE [tag: compiler] [description: Compiler detection and feature support] [type: header]
+
 /**
 * @file gd_compiler.h
 * @brief Provide macros to identify the compiler and its support for the C++20 and C++23 standards.

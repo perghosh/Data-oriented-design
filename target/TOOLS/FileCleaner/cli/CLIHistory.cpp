@@ -1,4 +1,4 @@
-/**
+/**                                                                                                @FILE [tag: cli, history ] [description: definition for methods used for history command]
 * @file CLIHistory.cpp
 * @brief Implements history management for the cleaner console application.
 *
@@ -24,8 +24,10 @@
 #include <functional>
 
 #include "gd/gd_file.h"
+#include "gd/gd_parse.h"
 #include "gd/math/gd_math_type.h"
 #include "gd/math/gd_math_string.h"
+#include "gd/parse/gd_parse_format_string.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -76,6 +78,8 @@ static std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableH
 inline std::pair<bool, std::string>  XML_ReadFile_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& argumentsTable) {
    return XML_ReadFile_s( tableHistory, argumentsTable, [](std::string_view){ } ); 
 }
+/// Read selected history entry from XML file into history table
+static std::pair<bool, std::string> XML_ReadFileEntry_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& arguments_, CDocument* pdocument );
 
 static std::pair<bool, std::string> XML_Write_s(std::string_view stringHistoryFile, const gd::table::dto::table& tableHistory, std::string_view stringSection);
 
@@ -90,7 +94,7 @@ static std::filesystem::path CurrentDirectory_s();
 static std::string FolderGetHome_s();
 
 
-/** --------------------------------------------------------------------------- @TAG #cli #history [summary: main dispatcher for history commands]
+/** --------------------------------------------------------------------------- @CODE [tag: cli, command, history] [description: history cli command, history commands works on information found in history files] 
  * @brief Handles history-related CLI commands by dispatching to the appropriate handler based on options.
  *
  * Step-by-step logic for each if/else branch:
@@ -131,7 +135,19 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
 
    std::pair<bool, std::string> result_;
    const gd::cli::options& options_ = *poptionsHistory;
-   //const gd::cli::options& optionsApplication = *poptionsApplication;
+
+   if( options_.exists("print") == true )                                 // Print history entries from history file
+   {
+      gd::argument::arguments argumentsPrint;
+      argumentsPrint.append( options_.get_arguments(), { "print", "local", "home", "width" } );
+      result_ = HistoryPrint_g(argumentsPrint, pdocument);
+      if( result_.first == false ) return result_;
+
+      // ## History table need to be cleared because other command may follow that have different behavior, they need to have clean state
+      auto ptable = pdocument->CACHE_Get("history", false);
+      if( ptable != nullptr ) { ptable->row_clear(); }                    // only clear rows, keep structure
+   }
+
    if( options_.exists("create") == true )
    {
       gd::argument::arguments argumentsCreate;
@@ -177,11 +193,11 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
       argumentsList.append(options_.get_arguments(), { "edit", "local", "home" });
       result_ = HistoryList_g(argumentsList, pdocument);
    }
-   else if( options_.exists("print") == true )                                 // Print history entries from history file
+	else if(options_.exists("menu") == true)                                   // list history entries from history file
    {
-      gd::argument::arguments argumentsPrint;
-      argumentsPrint.append( options_.get_arguments(), { "print", "local", "home", "width" } );
-      result_ = HistoryPrint_g(argumentsPrint, pdocument);
+      gd::argument::arguments argumentsMenu;
+      argumentsMenu.append(options_.get_arguments(), { "menu", "local", "home" });
+      result_ = HistoryMenu_g(argumentsMenu, poptionsHistory, pdocument);
    }
    else if( options_.exists("remove") == true )                                // Remove history entries from history file and clear the history table in cache
    {
@@ -199,7 +215,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    {
       gd::argument::arguments argumentsRun;
       argumentsRun.append( options_.get_arguments(), { "run", "local", "home" } );
-      result_ = HistoryRun_g(argumentsRun, poptionsApplication, pdocument);
+      result_ = HistoryRun_g(argumentsRun, poptionsHistory, pdocument);
    }
    else if( options_.exists("index") == true )
    {
@@ -225,16 +241,15 @@ std::pair<bool, std::string> HistoryCreate_g( const gd::argument::arguments& arg
 
 
    // ## Prepare folder for history file ......................................
+   stringHistoryFileName = ".cleaner-history.xml";
 
    if( bCurrentDirectory == true )
    {
-      stringHistoryFileName = ".cleaner-history.xml";                         // Local history file name, note that it is hidden file on Unix systems
       pathDirectory = CurrentDirectory_s();                                   // Get the local history path based on the current directory
    }
    else
    {
-      stringHistoryFileName = ".cleaner-history.xml";                          // Default history file name
-      std::string stringPath = FolderGetHome_s();                               // Get the user home folder
+      std::string stringPath = FolderGetHome_s();                             // Get the user home folder
       pathDirectory = std::filesystem::path(stringPath);                                     // Get the history path based on the operating system
    }
                                                                                                    LOG_DEBUG_RAW( "==> History file path: " + (pathDirectory / stringHistoryFileName).string() );
@@ -295,8 +310,8 @@ std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, gd::c
 
 std::pair<bool, std::string> HistoryAppend_g( std::string_view stringFile, std::string_view stringName, gd::argument::arguments* parguments, std::string_view stringSection )
 {                                                                                                  assert( std::filesystem::exists(stringFile) == true );
-   parguments->remove("history");                                             // remove history option if it exists, we do not want to save this in history
-   parguments->remove("add-to-history");                                      // remove add-to-history option if it exists, we do not want to save this in history
+   parguments->remove_all("history");                                         // remove history option if it exists, we do not want to save this in history
+   parguments->remove_all("add-to-history");                                  // remove add-to-history option if it exists, we do not want to save this in history
 
    std::string stringAlias;
 
@@ -676,60 +691,128 @@ std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argume
 }
 
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @API [tag: cli, history, run] [summary: Execute a command from history, most common operation?]
  * @brief Executes a command from the history table based on the specified row index.
  * @param argumentsRun The set of arguments containing the row index and other parameters.
  * @param poptionsApplication Pointer to the application's CLI options, which will be configured and used for command execution.
  * @param pdocument Pointer to the document object, used to access the cached history table.
  * @return A pair where the first element is a boolean indicating success or failure, and the second element is a string containing an error message if the operation failed.
  */
-std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument)
+std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, const gd::cli::options* poptionsApplication, CDocument* pdocument)
 {
+   std::pair<bool, std::string> result_;
    // ## Read the history file into the table
 
-   std::string stringRun = argumentsRun["run"].as_string();                                        LOG_DEBUG_RAW( "==> Index/name to run: " + stringRun );
+   int64_t iRow = -1; // Row index to run
+   // Get the entry to run placed in `stringEntry`
+   std::string stringEntry = argumentsRun["run"].as_string();                                      LOG_DEBUG_RAW( "==> Index/name to run: " + stringEntry );
 
-   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+   std::vector<std::string> vectoryEntry = CApplication::Split_s( stringEntry );
 
-   gd::argument::arguments argumentsRead( argumentsRun );
-   if( stringRun.empty() == false ) { argumentsRead.set( "select", stringRun ); }
-   auto result_ = XML_ReadFile_s(*ptable, argumentsRead, [pdocument](std::string_view message) {
-      if( pdocument ) { pdocument->MESSAGE_Display(message); }
-   }); 
+   auto ptableHistory = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
-   if( result_.first == false ) { return result_; }                           
+   gd::argument::arguments argumentsRead( argumentsRun ); // copy run arguments because we will modify them, template arguments are added if needed
 
-   std::string stringCommand;
-
-   int64_t iRow = -1;
-   if( gd::math::type::is_unsigned(stringRun) ) { iRow = std::stoi(stringRun) - 1; }
-   else
+   for( const auto& stringEntry : vectoryEntry )
    {
-      iRow = ptable->find( "alias", stringRun );
-   }
+      ptableHistory->row_clear();                                                // Clear previous table entries
+      if( stringEntry.empty() == false ) 
+      { 
+         if( gd::math::type::is_integer(stringEntry) == true ) 
+         { 
+            int64_t iIndex = std::stoi(stringEntry); // set runt to execute, note that is 1-based index                        
+            argumentsRead.set( "select", (unsigned)iIndex ); 
+         }
+         else { argumentsRead.set( "select", stringEntry ); }
 
-   if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format( "Invalid row index: {} max is: {} (did you forget -local)", stringRun, ptable->size() ) }; } // Ensure the row index is valid, note that is 1-based index
+         argumentsRead.append("variable", true);                                 // Enable variable substitution when reading the history file
+         result_ = XML_ReadFileEntry_s(*ptableHistory, argumentsRead, pdocument);
+         if( result_.first == false ) { return result_; }
+         iRow = 0; // since we select a specific entry, the row is always 0
+      }
+      else
+      { // @TODO [tag: history, refactor] [description: run for history selects one row and that is handled, this loads the complete table and as for now it is not used, run should allways select row in history]
+         result_ = XML_ReadFile_s(*ptableHistory, argumentsRead, [pdocument](std::string_view message) {
+            if( pdocument ) { pdocument->MESSAGE_Display(message); }
+         }); 
+         if( result_.first == false ) { return result_; }
+      }
 
-   // ## Get the command from the specified row and execute it
+      std::string stringCommand;
 
-   std::string stringName = ptable->cell_get_variant_view(iRow, "name").as_string();
-   std::string stringLine = ptable->cell_get_variant_view(iRow, "line").as_string();
+      if( iRow < 0 || iRow >= (int)ptableHistory->size() )                    // Ensure the row index is valid, note that is 1-based index
+      { 
+         std::string stringFileName = FILE_GetHistoryFile_s(argumentsRun);
 
-   stringCommand = stringName + " " + stringLine; // Construct the full command line
+         std::string stringError = std::format( "Specified entry \"{}\" in history not found", stringEntry );
+         stringError += std::format( "\nHistory file used: {}", stringFileName );
+         if( poptionsApplication->exists("print", gd::types::tag_state_active{}) == false ) { stringError += "\nAdd \"-print\" to arguments and history is printed"; }
+         return { false, stringError }; 
+      }
 
-   if( stringCommand.empty() == false )
-   {                                                                                               LOG_DEBUG_RAW( "==> Running history command: " + stringCommand );
+      // ## Get the command from the specified row and execute it ............
 
-      gd::cli::options optionsRun;
-      CApplication::Prepare_s(optionsRun);                                    // prepare command-line options
-      optionsRun.set_first(0);
+      std::string stringName = ptableHistory->cell_get_variant_view(iRow, "name").as_string();
+      std::string stringLine = ptableHistory->cell_get_variant_view(iRow, "line").as_string();
 
-      result_ = optionsRun.parse_terminal(stringCommand);                     // Parse the command line from the history entry
-      if( result_.first == false ) { return result_; }
+      std::vector<std::string> vectorCommand;
+      const auto* piBegin = stringLine.c_str();
+      const auto* piEnd = stringLine.c_str() + stringLine.length();
 
-      result_ = papplication_g->InitializeInternal(optionsRun);                      // Initialize the application with parsed options
-      if( result_.first == false ) { return result_; }
-   }
+      // ## Split command line into multiple commands if ';' is found outside quotes
+      const auto* piPosition = gd::parse::strchr(piBegin, piEnd, ';', gd::parse::csv());
+      while(piPosition != nullptr)
+      {
+          vectorCommand.emplace_back(stringLine.substr(0, piPosition - stringLine.c_str()));
+          stringLine = stringLine.substr(piPosition - stringLine.c_str() + 1);
+    
+          // ### Update pointers after modifying stringLine ..................
+          piBegin = stringLine.c_str();
+          piEnd = stringLine.c_str() + stringLine.length();
+    
+          piPosition = gd::parse::strchr(piBegin, piEnd, ';', gd::parse::csv());
+      }
+
+      // Don't forget to add the remaining part after the last ';'
+      if(stringLine.empty() == false) { vectorCommand.emplace_back(stringLine); }
+
+      for( const auto& command_ : vectorCommand ) 
+      { 
+         std::string stringCommand_( command_ );                              // command line to run
+
+         // ## trim spaces ...................................................
+         stringCommand_.erase(0, stringCommand_.find_first_not_of(" \t"));
+         stringCommand_.erase(stringCommand_.find_last_not_of(" \t") + 1);
+         if( stringCommand_.empty() == true ) { continue; }
+
+         stringCommand = stringName + " " + stringCommand_;                   // Construct the full command line
+
+         if( stringCommand.empty() == false )
+         {                                                                                               LOG_DEBUG_RAW( "==> Running history command: " + stringCommand );
+
+            gd::cli::options optionsRun;
+            CApplication::Prepare_s(optionsRun);                              // prepare command-line options
+            optionsRun.set_first(0);
+
+            result_ = optionsRun.parse_terminal(stringCommand);               // Parse the command line from the history entry
+            if( result_.first == false ) { return result_; }
+
+            // ## Overload options from the application options .........................
+            //    Here we try to find extra arguments passed to history run command, it can take any number of values and these values will overload the options used to run the command from history
+            {  gd::cli::options* poptionsCommand = optionsRun.sub_find_active();// find the active sub-command options
+               if( poptionsCommand != nullptr )
+               {
+                  gd::argument::arguments argumentsOverload( poptionsApplication->get_arguments() );
+                  argumentsOverload.remove("run");
+                  poptionsCommand->overload(argumentsOverload);
+               }
+            }
+
+            result_ = papplication_g->InitializeInternal(optionsRun);         // Initialize the application with parsed options
+            if( result_.first == false ) { return result_; }
+         }
+      } // for( auto& stringLine : vectorCommand ) {
+   } // for( const auto& stringEntry : vectoryEntry ) {
 
    return { true, "" };
 }
@@ -750,6 +833,54 @@ std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argum
    int64_t iRow = std::stoi(stringIndex) - 1;
 
    if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format("Invalid row index: {} max is: {} (did you forget -local)", stringIndex, ptable->size()) }; } // Ensure the row index is valid, note that is 1-based index
+
+
+   return { true, "" };
+}
+
+// @TASK [project: history] [title: history menu command] [assignee: per] [status: active] 
+
+/** ---------------------------------------------------------------------------
+ * @brief Displays a menu of history entries and allows the user to select a command to run.
+ * @param argumentsMenu The arguments used for displaying the menu.
+ * @param poptionsApplication Pointer to the application's CLI options.
+ * @param pdocument Pointer to the document object containing the cached history table.
+ * @return A pair where the first element is true if the operation was successful, and false otherwise; the second element is an error message if applicable.
+ */
+std::pair<bool, std::string> HistoryMenu_g(const gd::argument::arguments& argumentsMenu, const gd::cli::options* poptionsApplication, CDocument* pdocument)
+{ 
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
+   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+
+   if( ptable->size() == 0 )
+   { 
+      auto result_ = XML_ReadFile_s( *ptable, argumentsMenu );                // Read the history file into the table
+      if( result_.first == false ) { return result_; }
+   }
+
+   // ### Prepare menu options ..............................................
+
+   std::string stringMenu = "## Menu:\n";
+   unsigned uIndex = 1;
+   for( size_t uRow = 0; uRow < ptable->size(); ++uRow )
+   {
+      std::string stringAlias = ptable->cell_get_variant_view(uRow, "alias").as_string();
+      if( stringAlias.empty() == true) continue;
+
+      std::string stringMenuEntry = std::format( "-- [{}]: {}", uIndex, stringAlias );
+      stringMenu += stringMenuEntry + "\n";
+      uIndex++;
+   }
+
+   pdocument->MESSAGE_Display(stringMenu, { array_, {{"color", "default"}}, gd::types::tag_view{} });
+
+   // ## Wait for user input ..............................................
+   std::string stringInput;
+   stringMenu = "Select command to run (empty to skip): ";
+   pdocument->MESSAGE_Display(stringMenu, { array_, {{"color", "highlight"}}, gd::types::tag_view{} });
+   std::getline( std::cin, stringInput );
+
+   if( stringInput.empty() == true ) { return { true, "" }; }
 
 
    return { true, "" };
@@ -783,6 +914,24 @@ std::pair<bool, std::string> PrepareEmptyXml_s( std::string_view stringHistoryFi
    xmlnodeRoot.append_child("pinned");                                         // "pinned" = child and used to pin important entries
    xmlnodeRoot.append_child("saved");                                          // "saved" = child and used to save important entries
    xmlnodeRoot.append_child("recent");                                         // "recent" = child and used for recent entries
+
+   // ## Add node comment with description ...................................
+   xmlnodeRoot.append_child(pugi::node_comment).set_value(
+   R"( Node description:
+   - <saved> : the default section where arguments are saved when using 'cleaner --add-to-history'
+   - <named> : section for named entries, this feature is not yet implemented
+   - <pinned>: section for pinned entries, this feature is not yet implemented
+   - <recent>: section for recent entries, if history is set to keep all arguments used, like recording, this feature is not yet implemented
+
+   Elements in <saved>;
+   - <entry> : each entry represents a saved command
+       - <name>    : command name, name of the sub-command
+       - <line>    : the full command line arguments
+       - <date>    : the date and time when the command was saved
+       - <alias>   : an optional alias for the command
+       - <variable>: optional variable substitutions, this is like a template logic where cleaner will ask for variables that are used to modify the command line
+   )"
+   );
 
    // Save the XML document to the specified file
    bool bSucceeded = xmldocument.save_file(stringHistoryFile.data(), "  ", pugi::format_default);
@@ -843,13 +992,18 @@ std::pair<bool, std::string> PrepareXml_s(const gd::argument::arguments& argumen
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Appends a new entry to the history table in the document cache.
+ * @param argumentsEntry The arguments containing the entry details, including 'file', 'date', 'name', and multiple 'line' entries.
+ * @param pdocument Pointer to the document object containing the history table.
+ * @return A pair where the first element is a boolean indicating success (true if the entry was appended, false otherwise), and the second element is a string containing an error message if the operation failed, or an empty string on success.
+ */
 std::pair<bool, std::string> TABLE_AppendEntry_s(const gd::argument::arguments& argumentsEntry, CDocument* pdocument)
 {
    std::string stringFileName = argumentsEntry["file"].as_string();
                                                                                assert(!stringFileName.empty());
    std::string stringDate = argumentsEntry["date"].as_string();
    std::string stringName = argumentsEntry["name"].as_string();
-   //std::string stringLine = argumentsEntry["line"].as_string();
 
    std::vector<gd::argument::arguments::argument> vectorLines = argumentsEntry.get_argument_all("line");
 
@@ -859,7 +1013,6 @@ std::pair<bool, std::string> TABLE_AppendEntry_s(const gd::argument::arguments& 
    {
       std::string stringTemp = it.as_string();
       stringLine += stringTemp + " ";
-      //xmlnodeEntry.append_child("line").text().set(stringLine.c_str());
    }
 
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
@@ -917,14 +1070,72 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
    if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
    
    int iRowCount = 0;
-   bool bSetVariable = false;
-   if( argumentsTable["variable"].is_true() == true ) bSetVariable = true;
 
-   gd::variant variantSelect = argumentsTable["select"]; // if only one entry is selected, for example if selected entry is to be run                   
+   // Iterate through each entry  
+   for( auto entry : xmlnodeEntries.children("entry") )
+   {
+      std::string stringDate = entry.child("date").text().get();
+      std::string stringName = entry.child("name").text().get();
+      std::string stringLine = entry.child("line").text().get();
+      std::string stringAlias = entry.child("alias").text().get();
+      std::string stringDescription = entry.child("description").text().get();
+
+      // Add the entry to the table  
+      auto uRow = tableHistory.row_add_one();
+
+      if( tableHistory.column_exists("index") == true )
+      {
+         //std::string stringRowIndex = std::to_string(uRowCount);
+         tableHistory.cell_set(uRow, "index", iRowCount); // Set the index column if it exists
+         iRowCount++;
+      }
+
+      tableHistory.cell_set(uRow, "date", stringDate);
+      tableHistory.cell_set(uRow, "name", stringName);
+      tableHistory.cell_set(uRow, "line", stringLine);
+      if( stringAlias.empty() == false ) { tableHistory.cell_set(uRow, "alias", stringAlias); }
+      if( stringDescription.empty() == false ) { tableHistory.cell_set(uRow, "description", stringDescription); }
+   }
+   return { true, "" };
+}
+
+/** --------------------------------------------------------------------------- @API [tag: cli, history, xml] [summary: Read specific entry from history]
+ * @brief Reads specific history entries from an XML file and populates a table with the data.
+ * 
+ * This function loads an XML file containing history entries, parses the entries, and populates a provided table with the data.
+ * It allows for selecting specific entries based on an index or name, and can perform variable substitution if requested.
+ * Each entry in the XML file is expected to have child nodes for "date", "name", "line", "alias", and "description".
+ * 
+ * @note The function checks for the existence of the history file in both the local directory and the user's home directory.
+ * 
+ * @param tableHistory Reference to a table object where the history entries will be stored.
+ * @param arguments_ The arguments containing options for reading the history, such as the file name and selection criteria.
+ * @param pdocument Pointer to the document object, used for prompting variable values if needed.
+ * @return A pair containing a boolean indicating success or failure, and a string with an error message if applicable.
+ */
+std::pair<bool, std::string> XML_ReadFileEntry_s(gd::table::dto::table& tableHistory, const gd::argument::arguments& arguments_, CDocument* pdocument)
+{
+   std::string stringFileName = FILE_GetHistoryFile_s(arguments_);
+
+   if( stringFileName.empty() == true ) { return { false, "No history file found." }; } // No history file found
+
+   pugi::xml_document xmldocument;
+   pugi::xml_parse_result xmlparseresult_ = xmldocument.load_file(stringFileName.c_str());
+   if( !xmlparseresult_ ) { return { false, "Failed to load XML file: " + stringFileName }; }
+
+   // Check if entries exist
+   pugi::xml_node xmlnodeEntries = xmldocument.child("history").child("saved");
+   if( xmlnodeEntries.empty() ) { return { false, "No entries node found in XML file: " + stringFileName }; }
+   
+   int iRowCount = 0;
+   bool bSetVariable = false;
+   if( arguments_["variable"].is_true() == true ) bSetVariable = true;
+
+   gd::variant variantSelect = arguments_["select"]; // if only one entry is selected, for example if selected entry is to be run                   
 
    // Iterate through each entry  
    unsigned uIndex = 0;
-   for( auto entry : xmlnodeEntries.children("entry") )
+   for( auto xmlnodeEntry : xmlnodeEntries.children("entry") )
    {
       uIndex++;
 
@@ -934,21 +1145,40 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
       {
          if( variantSelect.is_string() == true )
          {
-            std::string stringAlias = entry.child("alias").text().get();
+            std::string stringAlias = xmlnodeEntry.child("alias").text().get();
             if( stringAlias != variantSelect.as_string() ) { continue; }       // Skip this entry if it does not match the selected name
          }
          else if( variantSelect.as_uint() != uIndex ) { continue; }            // Skip this entry if it does not match the selected index
       }
 
-      std::string stringDate = entry.child("date").text().get();
-      std::string stringName = entry.child("name").text().get();
-      std::string stringLine = entry.child("line").text().get();
-      std::string stringAlias = entry.child("alias").text().get();
-      std::string stringDescription = entry.child("description").text().get();
+      std::string stringDate = xmlnodeEntry.child("date").text().get();
+      std::string stringName = xmlnodeEntry.child("name").text().get();
+      std::string stringLine = xmlnodeEntry.child("line").text().get();
+      std::string stringAlias = xmlnodeEntry.child("alias").text().get();
+      std::string stringDescription = xmlnodeEntry.child("description").text().get();
 
       if( bSetVariable == true )
       {
+         // prepare arguments for variable substitution              6
+         gd::argument::arguments argumentsVariable; 
          // ## Prepare line for the entry .....................................
+         auto children_ = xmlnodeEntry.children("variable");
+         for( auto xmlnodeVariable : children_ )
+         {
+            
+            std::string stringVariableName = xmlnodeVariable.attribute("name").value();
+            std::string stringDescription = xmlnodeVariable.attribute("description").value();
+
+            gd::variant variantValue;
+            pdocument->MESSAGE_PromptForValue(stringVariableName, stringDescription, &variantValue);
+            if( variantValue.empty() == false ) 
+            {
+               argumentsVariable.set( stringVariableName, variantValue.as_variant_view() );
+            }
+         }
+
+         // ## Perform variable substitution .................................
+         stringLine = gd::parse::format::format_string( stringLine, argumentsVariable );
       }
 
       // Add the entry to the table  
@@ -969,6 +1199,7 @@ std::pair<bool, std::string> XML_ReadFile_s(gd::table::dto::table& tableHistory,
    }
    return { true, "" };
 }
+
 
 /// ---------------------------------------------------------------------------
 /// Generate time string in format "YYYY-MM-DD HH:MM:SS"

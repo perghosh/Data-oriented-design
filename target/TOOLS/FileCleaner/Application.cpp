@@ -1,12 +1,12 @@
-/**
+/**                                                                            @FILE [tag: source, application] [summary: Definitions for  application class]
  * @file Application.cpp
- * 
+ *
  * ### 0TAG0 File navigation, mark and jump to common parts
- * - `0TAG0Initialize.Application` - Initialize the application from command line 
+ * - `0TAG0Initialize.Application` - Initialize the application from command line
  * - `0TAG0RUN.Application` - run commands, there are a number of commands that can be run
  * - `0TAG0Options.Application` - prepare command line options
  * - `0TAG0Settings.Application` - settings operations
- * 
+ *
  */
 
 
@@ -95,19 +95,19 @@ CApplication::CApplication()
 }
 
 // Copy constructor
-CApplication::CApplication(const CApplication& o) 
+CApplication::CApplication(const CApplication& o)
 {
    common_construct(o);
 }
 
 // Move constructor
-CApplication::CApplication(CApplication&& o) noexcept 
+CApplication::CApplication(CApplication&& o) noexcept
 {
    common_construct(std::move(o));
 }
 
 // Copy assignment operator
-CApplication& CApplication::operator=(const CApplication& o) 
+CApplication& CApplication::operator=(const CApplication& o)
 {
    if( this != &o )
    {
@@ -117,7 +117,7 @@ CApplication& CApplication::operator=(const CApplication& o)
 }
 
 // Move assignment operator
-CApplication& CApplication::operator=(CApplication&& o) noexcept 
+CApplication& CApplication::operator=(CApplication&& o) noexcept
 {
    if( this != &o )
    {
@@ -140,7 +140,7 @@ CApplication::~CApplication()
 
 /** ---------------------------------------------------------------------------
  * @brief Common construction logic for copy constructor and copy assignment operator.
- * 
+ *
  * @param o The source object to copy from.
  */
 void CApplication::common_construct(const CApplication& o)
@@ -155,10 +155,10 @@ void CApplication::common_construct(const CApplication& o)
 
 /** ---------------------------------------------------------------------------
  * @brief Common construction logic for move constructor and move assignment operator.
- * 
+ *
  * @param o The source object to move from.
  */
-void CApplication::common_construct(CApplication&& o) noexcept 
+void CApplication::common_construct(CApplication&& o) noexcept
 {
    // Move the document vector
    m_vectorDocument = std::move(o.m_vectorDocument);
@@ -166,7 +166,7 @@ void CApplication::common_construct(CApplication&& o) noexcept
 
 /** --------------------------------------------------------------------------- @TAG #type
  * @brief Returns the string representation of the current mode.
- */ 
+ */
 std::string CApplication::GetModeAsString() const
 {
    switch (m_eMode)
@@ -205,7 +205,7 @@ std::string CApplication::GetUITypeAsString() const
    return  "unknown";
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @CODE [tag: mode, application, configuration] [summary: mode constants for application] [description: cleaners global modes and these modes describe a global state for how cleaner should behave]
  * @brief Sets the mode of the application based on the provided string.
  *
  * This method updates the application's mode based on the input string. If the string does not match any known modes,
@@ -228,7 +228,7 @@ void CApplication::SetMode(const std::string_view& stringMode)
  * @brief Returns the string representation of the current detail level.
  */
 std::string CApplication::GetDetailAsString() const
-{                                  
+{
    switch (m_eDetail)
    {
    case eDetailUnknown:  return "unknown";
@@ -273,7 +273,7 @@ void CApplication::SetDetail(const std::string_view& stringDetail)
 
 /*
 @TASK #user.kevin #area.options[name:save history no document][user: kevin]
-[description:"   
+[description:"
 -check if document exists
 -if document doesn't exist, create it
 -CACHE_Prepare history key
@@ -281,16 +281,16 @@ void CApplication::SetDetail(const std::string_view& stringDetail)
 -add arguments to history table
 -save history file
 "]
-[state:closed]   
+[state:closed]
 */
 
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- // @CODE [tag: main, application, log] [description: Application Main method, core startup logic is placed or called from this method, think that is needed to get cleaner to work ]
  * @brief Prepares the application by setting up command-line options.
  *
  * Main in application is similar to main in application, but it is used to prepare
  * based on command line arguments. Here tha actual work is done.
- * 
+ *
  * @param iArgumentCount The number of command-line arguments.
  * @param ppbszArgument The command-line arguments.
  * @param process_ A function to process the command-line arguments.
@@ -316,7 +316,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          papplication_g->PROPERTY_Add("os", "wsl");                            // set OS to WSL
       }
    }
-#endif   
+#endif
 
    PrepareLogging_s();
 
@@ -333,7 +333,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       std::string stringArgument = gd::cli::options::to_string_s(iArgumentCount, ppbszArgument, 1);
 #ifndef NDEBUG
       // Debug: parse the arguments into a vector of strings to check if parsing works correctly
-      auto vectorArgument_d = gd::cli::options::parse_s(stringArgument);                           assert( vectorArgument_d.size() == (iArgumentCount - 1) ); 
+      auto vectorArgument_d = gd::cli::options::parse_s(stringArgument);                           assert( vectorArgument_d.size() == (iArgumentCount - 1) );
 #endif
 
 
@@ -344,9 +344,9 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       // ## Parse the command-line arguments
 
-      auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);// @CODE [tag: parse]
-      if( bOk == false ) 
-      { 
+      auto [bOk, stringError] = optionsApplication.parse(iArgumentCount, ppbszArgument);// @CODE [tag: parse] [description: parse command line arguments]
+      if( bOk == false )
+      {
          std::string stringHelp;
          const gd::cli::options* poptionsActive = optionsApplication.find_active();
          if( poptionsActive != nullptr )
@@ -357,9 +357,27 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
             stringError += "\n\n" + stringHelp;
          }
-         
-         return { false, stringError }; 
+
+         return { false, stringError };
       }
+
+      if( optionsApplication.exists("no-ignore", gd::types::tag_state_active{}) == false )
+      {
+         // ## Try to find ignore information
+
+         std::string stringCurrentPath = PROPERTY_Get( "folder-current", "" ).as_string();         assert( stringCurrentPath.empty() == false );
+
+         std::vector<ignore> vectorIgnore;
+         result_ = ReadIgnoreFile_s( stringCurrentPath, vectorIgnore );
+         if( result_.first == false ) return result_;
+
+         // Add ignore paths
+         if( vectorIgnore.empty() == false )
+         {                                                                                         LOG_INFORMATION_RAW("== Read: " & vectorIgnore.size() & " ignore patterns");
+            IGNORE_Add( vectorIgnore );
+         }
+      }
+
 
       optionsApplication.set_argument_count( iArgumentCount );
 
@@ -384,7 +402,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          if( result_.first == false ) { return result_; }
       }
 
-      // ## Logging ...........................................................
+      // ## Logging ........................................................... ## @CODE [tag: logging] [summary: setup logging] [description: if debug mode logging is activated, set logging severity to debug, otherwise set to info or warning based on configuration ]
 #ifdef GD_LOG_SIMPLE
       bool bSetLogging = CliLogging_s( &optionsApplication );
 #endif // GD_LOG_SIMPLE
@@ -415,10 +433,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
                result_ = CONFIG_Load(pathConfigLocation.string());                                LOG_WARNING_RAW_IF(result_.first == false, result_.second);
                                                                                                   LOG_DEBUG_RAW_IF(result_.first == true, "== Loaded configuration file: " & pathConfigLocation.string());
             }
-            else
-            {
-               LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories.");
-            }
+            else { LOG_DEBUG_RAW("Configuration file not found in current directory or parent directories."); }
          }
          else
          {
@@ -434,7 +449,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          {
             auto eSeverityNumber = gd::log::severity_get_type_number_g(stringSeverity);
             if( eSeverityNumber != gd::log::enumSeverityNumber::eSeverityNumberNone )
-            {                                                                                      
+            {
                gd::log::logger<0>* plogger = gd::log::get_s();
                plogger->set_severity( eSeverityNumber );                                           LOG_INFORMATION_RAW("== Set logging severity to: " & stringSeverity);
             }
@@ -445,17 +460,17 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       // ## Configure hardware ................................................
 
-      { 
-         auto uThreadCount = std::thread::hardware_concurrency(); 
-         if( uThreadCount > 0 ) 
-         { 
+      {
+         auto uThreadCount = std::thread::hardware_concurrency();
+         if( uThreadCount > 0 )
+         {
             PROPERTY_Add("threads", uThreadCount);                                                 LOG_INFORMATION_RAW("== Hardware concurrency: " & std::to_string(uThreadCount) & " threads");
          }
          else
          {
             PROPERTY_Add("threads", 1);                                                            LOG_INFORMATION_RAW("== Hardware concurrency: unknown, set to 1 thread");
          }
-      } 
+      }
 
 
       // ## Process the command-line arguments
@@ -486,14 +501,6 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       PrintMessage( stringHelp, gd::argument::arguments() );
    }
 
-   /*std::filesystem::path pathHistoryLocation;
-   HistoryLocation_s(pathHistoryLocation); // Get the history location
-
-   if( std::filesystem::exists(pathHistoryLocation) == true )
-   {
-      HISTORY_SaveCommand(pathHistoryLocation.string());
-   }*/
-
    return { true, "" };
 }
 
@@ -503,11 +510,11 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
  *
  * This method performs the initial setup of the application, including setting up paths,
  * loading configuration, and preparing the application state.
- * 
+ *
  * ## Steps:
  * 1. Set up OS-specific settings.
  * 2. Configure paths used by the application.
- * 3. Load configuration. 
+ * 3. Load configuration.
  * 4. Read ignore information if found.
  *
  * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
@@ -521,7 +528,7 @@ std::pair<bool, std::string> CApplication::Initialize()
    if( result_.first == false ) return result_;
 #endif
 
-   // ## Configure current paths 
+   // ## Configure current paths
 
    // ### Get the current working directory
    std::filesystem::path pathCurrent = std::filesystem::current_path();        // Get the current working directory
@@ -534,25 +541,6 @@ std::pair<bool, std::string> CApplication::Initialize()
    if( result_.first == false ) { LOG_DEBUG_RAW( result_.second ); }
    else { PROPERTY_Add("folder-home", stringHomePath); }                      // Add home folder to properties
 
-   // ## Try to find ignore information
-
-   std::vector<ignore> vectorIgnore;
-   result_ = ReadIgnoreFile_s( stringCurrentPath, vectorIgnore );
-   if( result_.first == false ) return result_;
-
-   // Add ignore paths
-   if( vectorIgnore.empty() == false ) 
-   {                                                                                               LOG_INFORMATION_RAW("== Read: " & vectorIgnore.size() & " ignore patterns");
-      IGNORE_Add( vectorIgnore ); 
-   }
-
-
-
-   // Perform initialization tasks here
-   // For example, you might want to initialize documents or other resources
-
-   // Example: Initialize documents
-   // DOCUMENT_Add("example_document");
 
    // If initialization is successful
    return {true, ""};
@@ -568,7 +556,7 @@ std::pair<bool, std::string> CApplication::Exit()
 
    // Example: Clear documents
    DOCUMENT_Clear();
-   
+
    std::string stringArguments = PROPERTY_Get("arguments").as_string();
 
    //HistorySaveArguments_s(stringArguments);
@@ -587,7 +575,7 @@ std::pair<bool, std::string> CApplication::Exit()
 
 // 0TAG0Initialize.Application
 
-/** --------------------------------------------------------------------------- @TAG #option #print #application
+/** --------------------------------------------------------------------------- @API [tag: application, option, help] [description: Initialize application from command line, go here if you want to check whats going to be executed, some general logic is also placed here]
  * @brief Initializes the application based on the provided command-line options.
  *
  * This method processes the command-line options and performs initialization tasks
@@ -616,12 +604,20 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    // Set argument count to found active options command if set to main options object, that might affect behaviour based on implementation
    if(optionsApplication.get_argument_count() != -1) { poptionsActive->set_argument_count(optionsApplication.get_argument_count()); }
 
-   if( poptionsActive->exists("help") == true ) 
+   if( poptionsActive->exists("help") == true )
    {
-      // @TODO #user.per [name: options] [description: improve format for help information, wrap lines, set indentation and site line width] [idea: add callback to format output ] [state: open] 
+      // @TODO #user.per [name: options] [description: improve format for help information, wrap lines, set indentation and site line width] [idea: add callback to format output ] [state: open]
       std::string stringDocumentation;
 
       HELP_PrintDocumentation( poptionsActive, stringDocumentation );
+      auto* poptionsParent = poptionsActive->get_parent();
+		if(poptionsParent != nullptr)
+      {
+         stringDocumentation += "\n\n";
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
+         stringDocumentation += "+- Globals: some of these may be set for command and globally -+\n\n";
+         HELP_PrintSingleDocumentation( poptionsParent, stringDocumentation);
+      }
 
       PrintMessage( stringDocumentation, gd::argument::arguments() );
       return { true, "" };
@@ -638,7 +634,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       auto stringDetail = optionsApplication.get_variant_view("detail", gd::types::tag_state_active{}).as_string_view();
       if( stringDetail.empty() == false )
       {
-         if( isdigit( stringDetail[0] ) ) 
+         if( isdigit( stringDetail[0] ) )
          {
             // convert string to number
             int iDetail = atoi(stringDetail.data());
@@ -683,38 +679,72 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    //    Note that `eApplicationStateWork` is set and should be checked for in application to delay exit
    auto execute_ = [&stringCommandName](auto call_, const gd::cli::options& options_, auto* pdocument_) -> std::pair<bool, std::string> {
       std::thread thread_([call_, options_, pdocument_, &stringCommandName]() {
-         try 
+         try
          {
             pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
             auto result_ = call_(&options_, pdocument_);
-            if( result_.first == false ) 
-            { 
+            if( result_.first == false )
+            {
                pdocument_->ERROR_Add(result_.second);                          // Add error to the document's error list
                pdocument_->ERROR_Print();                                      // Print errors to the console
             }
-         } 
-         catch(const std::exception& e) 
+         }
+         catch(const std::exception& e)
          {
-            // generate error message
-            std::string stringError = std::format("Error in {} thread: {}", stringCommandName, e.what());
+            std::string stringError = std::format("Error in {} thread: {}", stringCommandName, e.what());// generate error message
             pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
-         } 
-         catch(...) 
+         }
+         catch(...)
          {
-            // generate error message
-            std::string stringError = std::format("Unknown error in {} thread", stringCommandName);
+            std::string stringError = std::format("Unknown error in {} thread", stringCommandName);// generate error message
             pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
          }
 
          pdocument_->GetApplication()->SetState(eApplicationStateIdle, eApplicationStateWork); // Set idle state
       });
 
-      // Detach thread to run independently
+      // ## Detach thread to run independently
       pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
       thread_.detach();
 
       return { true, "" };
    };
+
+   // ## Lambda to execute CLI functions with options that may be modified in separate threads
+   //    Note that `eApplicationStateWork` is set and should be checked for in application to delay exit
+   auto execute_edit_ = [&stringCommandName](auto call_, gd::cli::options&& options_, auto* pdocument_) -> std::pair<bool, std::string> {
+      std::thread thread_([call_, options_, pdocument_, &stringCommandName]() {
+         try
+         {
+            pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
+            auto result_ = call_((gd::cli::options*)&options_, pdocument_);
+            if( result_.first == false )
+            {
+               pdocument_->ERROR_Add(result_.second);                          // Add error to the document's error list
+               pdocument_->ERROR_Print();                                      // Print errors to the console
+            }
+         }
+         catch(const std::exception& e)
+         {
+            std::string stringError = std::format("Error in {} thread: {}", stringCommandName, e.what());// generate error message
+            pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
+         }
+         catch(...)
+         {
+            std::string stringError = std::format("Unknown error in {} thread", stringCommandName);// generate error message
+            pdocument_->ERROR_Add(stringError);                               // Add error to the document's error list
+         }
+
+         pdocument_->GetApplication()->SetState(eApplicationStateIdle, eApplicationStateWork); // Set idle state
+      });
+
+      // ## Detach thread to run independently
+      pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
+      thread_.detach();
+
+      return { true, "" };
+   };
+
 
    // return executeInThread(CLI::Count_g, poptionsActive, pdocument, "Count");
 
@@ -751,10 +781,10 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "find" )
    {
-      // prepare options for list command, this is for usability so that user can use list command without specifying file or pattern
+      // prepare options for find command, this is for usability so that user can use find command without specifying file or pattern
       // Check for only one argument, then this should search for that element
       if(poptionsActive->get_argument_count() == 3)                           // 3 is 3 subtracting program name and command name
-      {                                                                                            assert(poptionsActive->exists("R") == false); 
+      {                                                                                            assert(poptionsActive->exists("R") == false);
          // move from filter to pattern
 		   auto stringPattern = (*poptionsActive)["filter"].as_string_view();
          poptionsActive->add_value("pattern", stringPattern);
@@ -782,7 +812,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 		// prepare options for list command, this is for usability so that user can use list command without specifying file or pattern
       // Check for only one argument, then this should search for that element
 		if(poptionsActive->get_argument_count() == 3)                           // 3 is 3 subtracting program name and command name
-      {                                                                                            assert(poptionsActive->exists("R") == false); 
+      {                                                                                            assert(poptionsActive->exists("R") == false);
          // move from filter to pattern
 		   auto stringPattern = (*poptionsActive)["filter"].as_string_view();
          poptionsActive->add_value("pattern", stringPattern);
@@ -791,7 +821,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
       // Add a document for the "count" command
       auto* pdocument = DOCUMENT_Get("list", true);
-      if( bUseThreads == true ) { return execute_(CLI::List_g, poptionsActive->clone_arguments(), pdocument); } // list lines in file or directory with the matched pattern in its own thread
+      if( bUseThreads == true )
+      {
+         auto options_ = poptionsActive->clone();
+         return execute_edit_(CLI::List_g, std::move(options_), pdocument);    // list lines in file or directory with the matched pattern in its own thread
+      }
       else                      { return CLI::List_g(poptionsActive, pdocument); }// list lines in file or directory with the matched pattern
       if( pdocument->ERROR_Empty() == false ) { pdocument->ERROR_Print(); }
    }
@@ -800,7 +834,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       return CLI::Paste_g( poptionsActive, &optionsApplication );
    }
    else if( stringCommandName == "run" )
-   { 
+   {
       std::string stringCommand = ( *poptionsActive )["command"].as_string();
 
       return CLI::Run_g(stringCommand, this);
@@ -815,11 +849,11 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
       using namespace gd::cli; // use namespace for options
       std::string stringDocumentation, stringFlags;
 
-      stringDocumentation += "\n\n"; 
+      stringDocumentation += "\n\n";
       stringDocumentation += gd::console::rgb::print(CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
       std::string stringTemp =  "Requested help for commands";
       stringDocumentation += gd::math::string::format_header_line(stringTemp, 80); // format header line for command name
-      stringDocumentation += "\n\n"; 
+      stringDocumentation += "\n\n";
 
       HELP_PrintDocumentation( &optionsApplication, stringDocumentation );
 
@@ -827,7 +861,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "version" )
    {
-      std::cout << "version 1.0.8" << "\n";
+      std::cout << "version 1.1.0" << "\n";
    }
    else
    {
@@ -873,7 +907,7 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
 
    // Get command name
 	std::string stringCommandName = poptionsActive->name();                                         LOG_DEBUG_RAW("== Internal command: " & stringCommandName);
-   
+
    // Set basic properties without verbose logging
    PROPERTY_Set("command", stringCommandName);
 
@@ -906,6 +940,7 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
    else if( stringCommandName == "find" )
    {
       auto* pdocument = DOCUMENT_Get("find", true);
+      pdocument->CACHE_Clear();
       return CLI::Find_g(poptionsActive, pdocument);
    }
    else if( stringCommandName == "kv" )
@@ -916,6 +951,7 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
    else if( stringCommandName == "list" )
    {
       auto* pdocument = DOCUMENT_Get("list", true);
+      pdocument->CACHE_Clear();
       auto result_ = CLI::List_g(poptionsActive, pdocument);
       if( pdocument->ERROR_Empty() == false ) { pdocument->ERROR_Print(); }
       return result_;
@@ -925,7 +961,7 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
       return CLI::Paste_g(poptionsActive, &optionsApplication);
    }
    else if( stringCommandName == "run" )
-   { 
+   {
       std::string stringCommand = ( *poptionsActive )["command"].as_string();
       return CLI::Run_g(stringCommand, this);
    }
@@ -949,11 +985,11 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
 
 /** ---------------------------------------------------------------------------
  * @brief Updates the application state based on information from application data.
- * 
+ *
  * This function is responsible for updating the internal state of the application
  * based on the current configuration and options. Application state are information
  * that are global, it affects everything in the application.
- */ 
+ */
 void CApplication::UpdateApplicationState()
 {
    // ## Update ignore state based on ignore information
@@ -962,11 +998,11 @@ void CApplication::UpdateApplicationState()
    SetState( 0, (eApplicationStateCheckIgnoreFolder|eApplicationStateCheckIgnoreFile) );
    for( const auto& it : m_vectorIgnore )
    {
-      if( it.is_file() == true ) 
+      if( it.is_file() == true )
       {
          uIgnore |= eApplicationStateCheckIgnoreFile; // set ignore file state
       }
-      else if( it.is_folder() == true ) 
+      else if( it.is_folder() == true )
       {
          uIgnore |= eApplicationStateCheckIgnoreFolder; // set ignore folder state
       }
@@ -977,10 +1013,10 @@ void CApplication::UpdateApplicationState()
 
 /** --------------------------------------------------------------------------- @TAG #directory
  * @brief Creates application specific directory where files used for cleaner are stored
- * 
+ *
  * Cleaner can be configured with configuration file and it also handles history
  * On Windows this is stored in %APPDATA%/tools/cleaner and on Linux in ~/.config/cleaner
- * 
+ *
  * @return std::pair<bool, std::string> - (success, error message)
  *         - success: true if directory was created or already exists, false on failure
  *         - error message: empty string on success, descriptive error on failure
@@ -1012,11 +1048,11 @@ std::pair<bool, std::string> CApplication::CreateDirectory()
    if( pbszXDG_CONFIG_HOME != nullptr && *pbszXDG_CONFIG_HOME != '\0' )
    {
       stringConfigurationBase = pbszXDG_CONFIG_HOME;
-   } 
-   else 
+   }
+   else
    {
       const char* pbszHome = std::getenv("HOME");                             // Get home directory
-      if( pbszHome != nullptr ) 
+      if( pbszHome != nullptr )
       {
          /* TODO: Uncomment if you want to use getpwuid as fallback, do no work with static linking
          struct passwd* pw = getpwuid(getuid());                              // Fallback to getpwuid if $HOME is not set
@@ -1031,7 +1067,7 @@ std::pair<bool, std::string> CApplication::CreateDirectory()
    pathTarget = std::filesystem::path(stringConfigurationBase) / "cleaner";    // Construct full path: ~/.config/cleaner
 #endif
 
-   try 
+   try
    {
       if(!std::filesystem::exists(pathTarget) == false )                       // Create directory if it doesn't exist (recursive creation for 'tools' on Windows)
       {
@@ -1040,12 +1076,12 @@ std::pair<bool, std::string> CApplication::CreateDirectory()
             return { false, "Failed to create directory: " + pathTarget.string() };
          }
       }
-   } 
-   catch (const std::filesystem::filesystem_error& e) 
+   }
+   catch (const std::filesystem::filesystem_error& e)
    {
       return { false, "Failed to create directory: " + std::string(e.what()) };
-   } 
-   catch (const std::exception& e) 
+   }
+   catch (const std::exception& e)
    {
       return { false, "Unexpected error: " + std::string(e.what()) };
    }
@@ -1074,7 +1110,7 @@ std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& 
 
    enumUIType eUIType = m_eUIType; // Get the UI type from the application instance
 
-   if( argumentsFormat.exists("ui") == true ) 
+   if( argumentsFormat.exists("ui") == true )
    {
       std::string stringUIType = argumentsFormat["ui"].as_string();
       eUIType = GetUITypeFromString_s( stringUIType );
@@ -1109,12 +1145,12 @@ std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& 
 #ifdef _WIN32
    case eUITypeVS:
       {
-         auto result_ = VS::CVisualStudio::Print_s( stringMessage, VS::tag_vs_output{});            
-         if( result_.first == false ) 
-         { 
+         auto result_ = VS::CVisualStudio::Print_s( stringMessage, VS::tag_vs_output{});
+         if( result_.first == false )
+         {
             std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
             std::cerr << stringError << "\n";
-            return result_; 
+            return result_;
          }
       }
       break;
@@ -1138,7 +1174,7 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
 {
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutex );
 
-   
+
    constexpr size_t uMaxLength = 100; // Maximum length for the message
    constexpr size_t uMIN_LENGTH_PROGRESS = 60; // Minimum length for the progress bar
    constexpr size_t uMAX_LENGTH_PROGRESS = 120; // Maximum length for the progress bar
@@ -1156,7 +1192,7 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
    }
 
 
-   if( argumentsFormat.exists("ui") == true ) 
+   if( argumentsFormat.exists("ui") == true )
    {
       std::string stringUIType = argumentsFormat["ui"].as_string();
       eUIType = GetUITypeFromString_s( stringUIType );
@@ -1166,7 +1202,7 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
 
    switch(eUIType)
    {
-   case eUITypeConsole: 
+   case eUITypeConsole:
    {
       if( argumentsFormat.empty() == false )
       {
@@ -1210,7 +1246,7 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
          {
             m_console.clear_line();                                            // Clear the current line in the console
          }
-         
+
       }
       else
       {
@@ -1230,11 +1266,11 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
    case eUITypeVS:
    {
       auto result_ = VS::CVisualStudio::Print_s( stringMessage, VS::tag_vs_output{});
-      if( result_.first == false ) 
-      { 
+      if( result_.first == false )
+      {
          std::string stringError = std::format("Failed to print to Visual Studio: {}", result_.second);
          std::cerr << stringError << "\n";
-         return result_; 
+         return result_;
       }
    }
    break;
@@ -1251,7 +1287,7 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
          stringPrint.append(uMaxLength, ' ');                                  // Fill the line with spaces
          stringPrint += "\r";                                                  // Move the cursor to the beginning of the line
       }
-      
+
       std::cout << "\033[A\033[2K\r" << stringPrint << std::flush;
    }
    break;
@@ -1282,7 +1318,7 @@ void CApplication::Print( std::string_view stringColor,  gd::types::tag_backgrou
    {
       // ## Reset all attributes and clear the screen to return to the default state
       std::cout << "\033[0m";
-      //std::cout << "\033[2J"; 
+      //std::cout << "\033[2J";
       //std::cout << "\033[H";
    }
 }
@@ -1323,7 +1359,7 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
             }
             xmlnode = xmlnode.next_sibling();                                  // get next statement
          }
-         
+
          xmlnodeStatements = xmlnodeStatements.next_sibling("statements");     // get next statements
       }
    }
@@ -1334,10 +1370,10 @@ std::pair<bool, std::string> CApplication::STATEMENTS_Load(const std::string_vie
 
 /** ---------------------------------------------------------------------------
  * @brief Adds a new document with the specified name.
- * 
+ *
  * @param stringName The name of the document to add.
  */
-CDocument* CApplication::DOCUMENT_Add(const std::string_view& stringName) 
+CDocument* CApplication::DOCUMENT_Add(const std::string_view& stringName)
 {
    auto pdocument = std::make_unique<CDocument>( this, stringName );
    m_vectorDocument.push_back(std::move(pdocument));
@@ -1346,10 +1382,10 @@ CDocument* CApplication::DOCUMENT_Add(const std::string_view& stringName)
 
 /** ---------------------------------------------------------------------------
  * @brief Adds a new document based on the provided arguments.
- * 
+ *
  * @param arguments_ The arguments used to create the document.
  */
-CDocument* CApplication::DOCUMENT_Add(const gd::argument::shared::arguments& arguments_) 
+CDocument* CApplication::DOCUMENT_Add(const gd::argument::shared::arguments& arguments_)
 {
    auto pdocument = std::make_unique<CDocument>( arguments_ );
    // Assuming CDocument has a method to initialize from arguments
@@ -1360,15 +1396,15 @@ CDocument* CApplication::DOCUMENT_Add(const gd::argument::shared::arguments& arg
 
 /** ---------------------------------------------------------------------------
  * @brief Retrieves a document by its name.
- * 
+ *
  * @param stringName The name of the document to retrieve.
  * @return CDocument* Pointer to the document if found, otherwise nullptr.
  */
-const CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName) const 
+const CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName) const
 {
-   for( const auto& pdocument : m_vectorDocument ) 
+   for( const auto& pdocument : m_vectorDocument )
    {
-      if(pdocument->GetName() == stringName) 
+      if(pdocument->GetName() == stringName)
       {
          return pdocument.get();
       }
@@ -1378,19 +1414,19 @@ const CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName) 
 
 /** ---------------------------------------------------------------------------
  * @brief Retrieves a document by its name.
- * 
+ *
  * @param stringName The name of the document to retrieve.
  * @return CDocument* Pointer to the document if found, otherwise nullptr.
  */
-CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName) 
+CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName)
 {
-   for( const auto& pdocument : m_vectorDocument ) 
+   for( const auto& pdocument : m_vectorDocument )
    {
 #ifndef NDEBUG
       auto stringName_d = pdocument->GetName();
 #endif // !NDEBUG
 
-      if(pdocument->GetName() == stringName) 
+      if(pdocument->GetName() == stringName)
       {
          return pdocument.get();
       }
@@ -1400,7 +1436,7 @@ CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName)
 
 /** ---------------------------------------------------------------------------
  * @brief Retrieves a document by its name, creating it if it doesn't exist.
- * 
+ *
  * @param stringName The name of the document to retrieve or create.
  * @param bCreate Whether to create the document if it doesn't exist and bCreate is true.
  * @return CDocument* Pointer to the document if found or created, otherwise nullptr.
@@ -1418,10 +1454,10 @@ CDocument* CApplication::DOCUMENT_Get(const std::string_view& stringName, bool b
 
 /** ---------------------------------------------------------------------------
  * @brief Removes a document by its name.
- * 
+ *
  * @param stringName The name of the document to remove.
  */
-void CApplication::DOCUMENT_Remove(const std::string_view& stringName) 
+void CApplication::DOCUMENT_Remove(const std::string_view& stringName)
 {
    m_vectorDocument.erase(
       std::remove_if(m_vectorDocument.begin(), m_vectorDocument.end(),
@@ -1433,20 +1469,20 @@ void CApplication::DOCUMENT_Remove(const std::string_view& stringName)
 
 /** ---------------------------------------------------------------------------
  * @brief Gets the number of documents.
- * 
+ *
  * @return size_t The number of documents.
  */
-size_t CApplication::DOCUMENT_Size() const 
+size_t CApplication::DOCUMENT_Size() const
 {
    return m_vectorDocument.size();
 }
 
 /** ---------------------------------------------------------------------------
  * @brief Checks if there are no documents.
- * 
+ *
  * @return bool True if there are no documents, otherwise false.
  */
-bool CApplication::DOCUMENT_Empty() const 
+bool CApplication::DOCUMENT_Empty() const
 {
    return m_vectorDocument.empty();
 }
@@ -1454,7 +1490,7 @@ bool CApplication::DOCUMENT_Empty() const
 /** -
  * @brief Clears all documents.
  */
-void CApplication::DOCUMENT_Clear() 
+void CApplication::DOCUMENT_Clear()
 {
    m_vectorDocument.clear();
 }
@@ -1490,12 +1526,12 @@ void CApplication::IGNORE_Add(const std::vector<std::string> vectorIgnore)     /
    }
 }
 
-/// --------------------------------------------------------------------------- 
+/// ---------------------------------------------------------------------------
 /// Checks if the given file path matches any ignore pattern in m_vectorIgnore.
 /// Normalizes the path to use forward slashes. Uses os_fnmatch for pattern matching.
 /// Returns true if the path should be ignored, false otherwise.
 bool CApplication::IGNORE_Match(const std::string_view& stringPath, const std::string_view& stringRoot) const
-{                                                                                                  assert(stringPath.empty() == false); // Ensure the path is not empty                                    
+{                                                                                                  assert(stringPath.empty() == false); // Ensure the path is not empty
    auto normalize_ = [](std::string s_) -> std::string {
       std::replace(s_.begin(), s_.end(), '\\', '/');
       return s_;
@@ -1607,7 +1643,7 @@ std::pair<bool, std::string> CApplication::DATABASE_Open(const gd::argument::sha
    if( stringPath.empty() == false )
    {
       gd::argument::arguments argumentsCreate({ {"file", stringPath}, { "create", bCreate} } );
-         
+
       gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i();     // create database interface
       pdatabase->add_reference();
       auto result_ = pdatabase->open(argumentsCreate);
@@ -1651,33 +1687,33 @@ std::pair<bool, std::string> CApplication::DATABASE_Update()
  *
  * @param uVersion The current version of the database
  * @return std::pair<bool, std::string> True if successful, false and error message if failed
- */ 
+ */
 std::pair<bool, std::string> CApplication::DATABASE_Upgrade(uint64_t uVersion)
 {
    std::string_view stringSql;
-   
+
    if( uVersion == 0 )
    {
       stringSql = R"sql(
 CREATE TABLE TVersion( VersionK INTEGER PRIMARY KEY, FVersion INTEGER, FMajor INTEGER, FMinor INTEGER, FBuild INTEGER, FRevision INTEGER );
 
-CREATE TABLE TProject( ProjectK INTEGER PRIMARY KEY, TypeC INTEGER, StateC INTEGER, FName TEXT, FFolder VARCHAR(260), FDescription TEXT, FVersion INTEGER ); 
+CREATE TABLE TProject( ProjectK INTEGER PRIMARY KEY, TypeC INTEGER, StateC INTEGER, FName TEXT, FFolder VARCHAR(260), FDescription TEXT, FVersion INTEGER );
 
 CREATE TABLE TFile( FileK INTEGER PRIMARY KEY, ProjectK INTEGER, TypeC INTEGER, FName TEXT, FSize INTEGER, FDescription TEXT );
-CREATE TABLE TFileProperty( 
+CREATE TABLE TFileProperty(
    FilePropertyK INTEGER PRIMARY KEY, FileK INTEGER, ValueType INTEGER, FName TEXT, FValue TEXT, FDate REAL,
    FOREIGN KEY( FileK ) REFERENCES TFile( FileK ) ON DELETE CASCADE
 );
 
 CREATE TABLE TCodeGroup( CodeGroupK INTEGER PRIMARY KEY, FName TEXT, FDescription TEXT );
-CREATE TABLE TCode( 
-   CodeK INTEGER PRIMARY KEY, CodeGroupK INTEGER, FName VARCHAR(100), FDescription TEXT, 
-   FOREIGN KEY( CodeGroupK ) REFERENCES TCodeGroup( CodeGroupK ) 
+CREATE TABLE TCode(
+   CodeK INTEGER PRIMARY KEY, CodeGroupK INTEGER, FName VARCHAR(100), FDescription TEXT,
+   FOREIGN KEY( CodeGroupK ) REFERENCES TCodeGroup( CodeGroupK )
 );
 
 INSERT INTO TVersion( FVersion, FMajor, FMinor, FBuild, FRevision ) VALUES ( 1, 0, 0, 0, 0 );
 INSERT INTO TProject( ProjectK, FName, FDescription, FVersion ) VALUES ( 1, 'demo', 'demo project', 1 );
-)sql"; 
+)sql";
       auto result_ = m_pdatabase->execute(stringSql);
       if( result_.first == false ) { return { false, result_.second }; }
    }
@@ -1688,7 +1724,7 @@ INSERT INTO TProject( ProjectK, FName, FDescription, FVersion ) VALUES ( 1, 'dem
 /** ---------------------------------------------------------------------------
  * @brief Connect to database
  * Connect to database based on string that holds information on how to connect
- * 
+ *
  * @param stringConnect connection string
  * @return true if ok, false and error information if failed
  */
@@ -1713,10 +1749,10 @@ std::pair<bool, std::string> CApplication::DATABASE_Connect( const std::string_v
    std::string stringError;
    gd::database::database_i* pdatabaseMain = nullptr;
 
-   
+
    if(true)
    {
-#ifdef GD_DATABASE_ODBC_USE      
+#ifdef GD_DATABASE_ODBC_USE
       gd::database::odbc::database_i* pdatabase = new gd::database::odbc::database_i();  // create database interface
       pdatabase->add_reference();
       std::tie(bOk, stringError) = pdatabase->open( stringConnectionName );
@@ -1724,7 +1760,7 @@ std::pair<bool, std::string> CApplication::DATABASE_Connect( const std::string_v
 #else
       bOk = false;
       stringError = "Only file connection is enabled, make sure to connect to file database (sqlite)";
-#endif      
+#endif
    }
    else
    {
@@ -1748,10 +1784,10 @@ std::pair<bool, std::string> CApplication::DATABASE_Connect( const std::string_v
    return { true, "" };
 }
 
-void CApplication::DATABASE_Append( gd::database::database_i* pdatabase, bool bActivate ) 
+void CApplication::DATABASE_Append( gd::database::database_i* pdatabase, bool bActivate )
 {                                                                                                  assert( pdatabase != nullptr );
    pdatabase->add_reference();
-   m_vectorDatabase.push_back( pdatabase ); 
+   m_vectorDatabase.push_back( pdatabase );
    if( bActivate == true )
    {
       if( m_pdatabase != nullptr ) m_pdatabase->release();
@@ -1790,7 +1826,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
    using namespace jsoncons;
    using namespace gd::table;
 
-   if( m_ptableConfig != nullptr ) return { true, "" }; // If config table is already set, return success   
+   if( m_ptableConfig != nullptr ) return { true, "" }; // If config table is already set, return success
 
    constexpr std::string_view stringConfigurationFileName = "cleaner-configuration.json"; // Default configuration file name
 
@@ -1801,7 +1837,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
 
 
    if( stringFolder.empty() == true )
-   { 
+   {
       stringFolder = PROPERTY_Get("folder-home").as_string();                 // Get home folder from properties
    }
 
@@ -1814,7 +1850,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
    if( std::filesystem::exists(pathConfiguration) == false ) { return { false, std::format("configuration file not found: {}", pathConfiguration.string()) }; } // Check if configuration file exists
 
    // ## Load settings from file
-   try 
+   try
    {
       // Create a new config table with the path to the configuration file
       m_ptableConfig = std::make_unique<table>( table( table::eTableFlagNull32, {{"rstring", 0, "group"}, {"rstring", 0, "name"}, {"rstring", 0, "value"}, {"string", 6, "type"} }, tag_prepare{} ) );
@@ -1826,7 +1862,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
       json jsonDocument = json::parse( ifstreamJson );
 
       // ## Iterate through the JSON object and populate the config table
-      for( const auto& keyvalueRoot : jsonDocument.object_range() ) 
+      for( const auto& keyvalueRoot : jsonDocument.object_range() )
       {
          if( keyvalueRoot.value().is_object() == false ) continue;            // Skip if value is not an object
 
@@ -1842,7 +1878,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
          if( stringCleaner != "cleaner" ) continue;                           // Skip if group is not "cleaner"
 
          auto stringGroup = vectorSplit[1];                                   // Second part is the group name
-         for( const auto& value_ : keyvalueRoot.value().object_range() ) 
+         for( const auto& value_ : keyvalueRoot.value().object_range() )
          {
             if( value_.value().is_null() ) continue;                          // Skip if value is null
             auto stringName = value_.key();
@@ -1855,18 +1891,18 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
       // Use the json object (e.g., print it)
       //std::cout << pretty_print(j) << std::endl;
    }
-   catch (const std::exception& e) 
+   catch (const std::exception& e)
    {
       std::string stringError = std::format("Error: {}", e.what());
       return { false, stringError };
    }
-                                                                           
+
    return { true, "" }; // Placeholder for settings loading logic
 }
 
 /** ---------------------------------------------------------------------------
  * @brief Get configuration value from the config table
- * 
+ *
  * @param stringGroup The group name of the configuration
  * @param stringName The name of the configuration
  * @return gd::variant_view The value of the configuration, or an empty variant view if not found
@@ -1888,7 +1924,7 @@ gd::variant_view CApplication::CONFIG_Get(std::string_view stringGroup, std::str
 
 /** ---------------------------------------------------------------------------
  * @brief Check if configuration exists in the config table
- * 
+ *
  * @param stringGroup The group name of the configuration
  * @param stringName The name of the configuration
  * @return bool True if the configuration exists, false otherwise
@@ -1903,9 +1939,9 @@ bool CApplication::CONFIG_Exists( std::string_view stringGroup, std::string_view
    return false;
 }
 
-/** --------------------------------------------------------------------------- @TAG #help.Application
+/** --------------------------------------------------------------------------- @API [tag: help, application] [description: "Help and documentation functions for the application."]
  * @brief Print documentation for command-line options
- * 
+ *
  * This function generates documentation for the provided command-line options
  * and appends it to the given string.
  *
@@ -1979,7 +2015,7 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
          if( stringFlags.empty() == true ) return; // if no flags then skip
 
          stringDocumentation += "\nFlags\n";
-         stringDocumentation += stringFlags; 
+         stringDocumentation += stringFlags;
          stringFlags.clear();
       }
    });
@@ -2027,29 +2063,71 @@ void CApplication::HELP_PrintDocumentation( const gd::cli::options* poptions, st
          if( stringFlags.empty() == true ) return; // if no flags then skip
 
          stringDocumentation += "\nFlags\n";
-         stringDocumentation += stringFlags; 
+         stringDocumentation += stringFlags;
          stringFlags.clear();
       }
    });
 }
 
+void CApplication::HELP_PrintSingleDocumentation( const gd::cli::options* poptions, std::string& stringDocumentation )
+{
+   using namespace gd::cli; // use namespace for options
+   std::string stringFlags; // temporary string to hold flags
+
+   poptions->print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_, const auto* poptions_) -> void {
+
+      if( (uType & options::eOptionTypeOption) == options::eOptionTypeOption )
+      {
+         // pad to 18 characters
+         stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
+         std::string string_ = std::format("- {:.<16}: ", stringName );
+         stringDocumentation += string_;
+         string_ = stringDescription;
+         if( ( uType & options::eOptionTypeFlag ) == options::eOptionTypeFlag ) { string_ += " (flag)"; } // if flag then add to description
+         string_ = gd::math::string::format_text_width( string_, 60 );
+         string_ = gd::math::string::format_indent( string_, 20, false );
+         stringDocumentation += string_;
+         stringDocumentation += "\n";
+      }
+      else if( uType == options::eOptionTypeFlag )
+      {
+         // pad to 18 characters
+         stringFlags += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
+         std::string string_ = std::format("- {:.<16}: ", stringName );
+         stringFlags += string_;
+         string_ = gd::math::string::format_text_width( stringDescription, 60 );
+         string_ = gd::math::string::format_indent( string_, 20, false );
+         stringFlags += string_;
+         stringFlags += "\n";
+      }
+      else if( uType == 0 )
+      {
+         if( stringFlags.empty() == true ) return; // if no flags then skip
+
+         stringDocumentation += "\nFlags\n";
+         stringDocumentation += stringFlags;
+         stringFlags.clear();
+      }
+   }, false);
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Get configuration value from the config table using a list of names
- * 
+ *
  * This function searches for the specified configuration names within the given group
  * and returns the value of the first found configuration.
  *
  * @param stringGroup The group name of the configuration
  * @param listName A list of names to search for in the configuration
  * @return gd::variant_view The value of the configuration, or an empty variant view if not found
- * 
+ *
  * @code
  * auto value_ = application_.CONFIG_Get("color", { "header", "default" });
  * @endcode
  */
 gd::variant_view CApplication::CONFIG_Get( std::string_view stringGroup, const std::initializer_list<std::string_view> listName ) const
-{  
+{
    if( m_ptableConfig == nullptr ) return gd::variant_view(); // If no config table is set, return empty variant view
 
    for( const auto& stringName : listName )
@@ -2066,9 +2144,9 @@ gd::variant_view CApplication::CONFIG_Get( std::string_view stringGroup, const s
 
 
 /** ---------------------------------------------------------------------------
-* @brief Add error to internal list of errors
-* @param stringError error information
-*/
+ * @brief Add error to internal list of errors
+ * @param stringError error information
+ */
 void CApplication::ERROR_Add( const std::string_view& stringError )
 {
    std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError ); // locks `m_vectorError`
@@ -2077,8 +2155,21 @@ void CApplication::ERROR_Add( const std::string_view& stringError )
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Add warning to internal list of errors
+ * @param stringWarning warning information
+ */
+void CApplication::ERROR_AddWarning( const std::string_view& stringWarning )
+{
+   if( PROPERTY_Exists( "verbose" ) == false || PROPERTY_Get( "verbose" ).as_bool() == false ) return; // only add warning in verbose mode
+   std::unique_lock<std::shared_mutex> lock_( m_sharedmutexError ); // locks `m_vectorError`
+   gd::argument::arguments argumentsWarning( { {"text", stringWarning} }, gd::argument::arguments::tag_view{});
+   m_vectorError.push_back( std::move(argumentsWarning) );
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief Get error information
- * 
+ *
  * If no errors then empty string is returned
  * @return std::string error information
  */
@@ -2153,7 +2244,7 @@ bool CApplication::IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view
 // 0TAG0Options.Application
 
 
-/** ---------------------------------------------------------------------------  @TAG #options.application [description: Prepares the application options for command-line usage]
+/** ---------------------------------------------------------------------------  @API [tag: cli, application, options ] [summary: prepare application options]
  * @brief Prepares the application options for command-line usage.
  *
  * This method sets up the available command-line options for the application,
@@ -2175,7 +2266,6 @@ bool CApplication::IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view
  */
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 {
-   optionsApplication.add_flag({"explain", "Print additional context or descriptions about items, which can be especially useful if you need clarification or a deeper understanding"});
    optionsApplication.add_flag({"logging", "Turn on logging"});
    optionsApplication.add_flag({"logging-csv", "Add csv logger, prints log information using the csv format"});
    optionsApplication.add_flag({ "help", "Prints help information about command" });
@@ -2184,6 +2274,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag({ "verbose", "Write information about operations that might be useful for user" });
    optionsApplication.add_flag({ "icase", "Ignore case when matching patterns" });
    optionsApplication.add_flag({ "word", "Match whole words only when patterns are used" });
+   optionsApplication.add_flag({ "no-ignore", "Disable ignoring files" });
    optionsApplication.add({ "config", "specify configuration file to use configuring cleaner" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "add-to-history", "Add to history with alias name" });
@@ -2195,7 +2286,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag_or_option({ "detail", "Set detail level on information presented to user. levels are basic, standard, extended, full or 0,1,2,3. If detail set as flag then standard is used." });
 
    {  // ## `count` command, copies file from source to target
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "count", "Count patterns or lines and segments in selected files" );
+      gd::cli::options optionsCommand( 0, "count", "Count patterns or lines and segments in selected files" );
       optionsCommand.add({ "filter", "Filter to apply (wildcard file name matching). If empty, all found text files are counted" });
       optionsCommand.add({ "pattern", 'p', "patterns to search for, multiple values are separated by , or ;"});
       optionsCommand.add({ "source", 's', "File(s) or folder(s) to count lines in"});
@@ -2219,7 +2310,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
    {  // ## `config` command, manage configuration file
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "config", "Manage configuration" );
+      gd::cli::options optionsCommand( 0, "config", "Manage configuration" );
       optionsCommand.add_flag({"create", "Create configuration file if it doesn't exist"});
       optionsCommand.add_flag({"edit", "Edit configuration file if it exists"});
       optionsCommand.add_flag({"local", "Create configuration file in current directory"});
@@ -2230,8 +2321,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
 
-   {  // ## `copy` command, count number of lines in file 
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "copy", "Copy file or selected files from source to target" );
+   {  // ## `copy` command, count number of lines in file
+      gd::cli::options optionsCommand( 0, "copy", "Copy file or selected files from source to target" );
       optionsCommand.add({ "source", 's', "File or files to copy, if many files then a tip is to set filter with --filter and folders in source" });
       optionsCommand.add({ "target", 't', "Destination, where file is copied to" });
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
@@ -2263,7 +2354,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
 
    { // ## 'dir' command, list files
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "dir", "List selected files, lots of filtering options to select what to list." );
+      gd::cli::options optionsCommand( 0, "dir", "List selected files, lots of filtering options to select what to list." );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `database.*`) to match file names. Multiple filters can be separated with semicolons (`;`). If no filter is provided, all files in the directory are listed." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
       optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations. Multiple directories are separated with semicolons (`;`)" });
@@ -2286,7 +2377,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    }
 
    { // ## 'find' command, list files
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "find", "Search patterns in files and all filecontent is searched in, this enables multiline patterns" );
+      gd::cli::options optionsCommand( 0, "find", "Search patterns in files and all filecontent is searched in, this enables multiline patterns" );
       optionsCommand.add({ "filter", "Specify a **wildcard filter** (e.g., `*.txt`, `*.cpp`) to apply when searching for files. Multiple filters are separated with ;. If no filter is provided, all found text files will be searched for patterns." });
       optionsCommand.add({ "pattern", 'p', "Provide one or more **patterns to search for** within file content. Separate multiple patterns with semicolons (`;`)."});
       optionsCommand.add({ "source", 's', "Specify the **directory to begin searching** for files. This is the starting point for all file operations. Multiple directories are separated with semicolons (`;`)" });
@@ -2305,8 +2396,10 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "script", "Execute an **external script file** for advanced and custom processing of search results. Ideal for complex automation." });
       optionsCommand.add({ "max", "Set the **maximum number of results** to return. Use this to limit output and improve performance for large searches."});
       optionsCommand.add({ "width", "Width for output" });
+      optionsCommand.add_flag({ "quiet", "Hides filepositions in output" });
       optionsCommand.add_flag({ "R", "Enable **recursive search** in subfolders. Sets the recursion depth to 16, ensuring a thorough scan of all subdirectories." });
       optionsCommand.add_flag( {"match-all", "Require **all specified patterns to match** within the same line or row for a result to be considered valid."} );
+      optionsCommand.add_flag({ "clip", "Investigate clipboard for related information (file path or search value)" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, making it easier to navigate results within the IDE."} );
       optionsCommand.add_flag( {"win", "Activate **Windows-specific functionality**, adapting the tool's behavior and features to the Windows operating system."} );
@@ -2331,14 +2424,15 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag({ "print", "Print history, this will print all of the history entries" });
       optionsCommand.add_flag({ "edit", "Edit history file if it exists" });
       optionsCommand.add_flag({ "local", "Create history file in current directory" });
-      optionsCommand.add_flag({ "home", "Create history file in user home directory" });
-      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
+      optionsCommand.add_flag({ "home", "History file is in user home directory" });
+      optionsCommand.add_flag({ "menu", "Present history menu" });
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent ), 0 );
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
    { // ## 'list' command, list rows with specified patterns @TAG #options.list
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "list", "Search files and list lines matching specified patterns. Searches are performed line-by-line within files." );
+      gd::cli::options optionsCommand( 0, "list", "Search files and list lines matching specified patterns. Searches are performed line-by-line within files." );
       optionsCommand.add({ "filter", "Filter files by name using **wildcard patterns** (e.g., `*.cpp`, `test*`). Multiple patterns can be separated by semicolons (`;`). If omitted, all files are processed." });
       optionsCommand.add({ "pattern", 'p', "**Search patterns** to find in file content. Multiple patterns can be separated by commas (`,`) or semicolons (`;`). Each line is checked for matches." });
       optionsCommand.add({ "source", 's', "Specify the **file(s) or folder(s)** to search for matching rows. This is the starting point for the search operation. Multiple sources are split with (`;`)." });
@@ -2351,6 +2445,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "segment", "Limit the search to specific **types of code segments**, such as `code`, `comment`, `string`, or `all`. This refines the search to relevant parts of the file." });
       optionsCommand.add_flag( {"R", "Enable **recursive scanning** of all subfolders. Sets the recursion depth to 16, ensuring a thorough search of subdirectories."} );
       optionsCommand.add_flag( {"match-all", "Require **all specified patterns** to match within the same row for it to be included in the results."} );
+      optionsCommand.add_flag({ "clip", "Investigate clipboard for related information (file path or search value)" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, making file references clickable for easy navigation in the IDE."} );
       optionsCommand.add_flag( {"win", "Enable **Windows-specific functionality**, adapting the tool's behavior to leverage Windows operating system features."} );
@@ -2360,6 +2455,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsApplication.sub_add(std::move(optionsCommand));
    }
 
+   /*
    {  // ## `join` command, joins two or more files
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "join", "join two or more files" );
       optionsCommand.add({"source", 's', "Files to join"});
@@ -2368,6 +2464,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
+   */
 
    {  // ## `paste` checks the clipboard for text or input file reading arguments
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "paste", "Paste text from clipboard or read from input file" );
@@ -2400,6 +2497,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    // ## Prepar aliases for commands
    optionsApplication.alias_add("ls", { { "command", "dir" }, { "compact", true } } );
    optionsApplication.alias_add("cp", { { "command", "copy" } } );
+   optionsApplication.alias_add("hi", { { "command", "history" } } );
 }
 
 // ----------------------------------------------------------------------------
@@ -2420,14 +2518,14 @@ void CApplication::PrepareLogging_s()
 
    plogger->append( std::make_unique<gd::log::printer_console>() );           // append printer to logger, this prints to console
 
-   // ## set margin for log messages, this to make it easier to read. a bit hacky 
+   // ## set margin for log messages, this to make it easier to read. a bit hacky
    auto* pprinter_console = (gd::log::printer_console*)plogger->get( 0 );
    // ## color console messages in debug mode
    pprinter_console->set_margin( 8 );                                         // set log margin
    pprinter_console->set_margin_color( eColorBrightBlack );
 
    unsigned uSeverity = unsigned(eSeverityError);
-   plogger->set_severity( uSeverity ); 
+   plogger->set_severity( uSeverity );
 
 #ifndef NDEBUG
    uSeverity = unsigned(eSeverityDebug);                                      // set debug severity
@@ -2439,7 +2537,7 @@ void CApplication::PrepareLogging_s()
 
 
 
-/** --------------------------------------------------------------------------- @TAG #data.extension [description: Information about source code extensions, source code format] [tags: config ]
+/** --------------------------------------------------------------------------- @API [tag: "code, config, rule" ] [description: "Language rules, what is what in different languages, things like string, comment and code"]
  * @brief Prepares the state for parsing based on the file extension.
  * @param argumentsPath The arguments containing the source path for harvesting files.
  * @param state_ The state object to be prepared.
@@ -2450,7 +2548,7 @@ void CApplication::PrepareLogging_s()
 std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::shared::arguments& argumentsPath, gd::expression::parse::state& state_)
 {
    std::string stringFile = argumentsPath["source"].as_string();                                   assert(stringFile.empty() == false);
-   
+
    gd::file::path pathFile(stringFile);
    std::string stringExtension = pathFile.extension().string();
 
@@ -2470,7 +2568,7 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
          return { true, "" };
       }
    }
-   
+
    if( stringExtension == ".cs" || stringExtension == ".fs" || stringExtension == ".kt" || stringExtension == ".swift" )
    {
       state_.add(std::string_view("LINECOMMENT"), "//", "\n");
@@ -2561,7 +2659,7 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
    {
       state_.add(std::string_view("STRING"), "\"", "\"");
    }
-   else if( stringExtension == ".pl" || stringExtension == ".pm" ) 
+   else if( stringExtension == ".pl" || stringExtension == ".pm" )
    {
       state_.add(std::string_view("LINECOMMENT"), "#", "\n");
       state_.add(std::string_view("STRING"), "\"", "\"", "\\");
@@ -2642,13 +2740,13 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
    {
       return { false, "Unknown file type: " + stringFile };
    }
-   
+
    return { true, "" };
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @API [tag: "application, path, preparepath" ] [summary: method preparing paths, important]  [description: "Prepare path, make absolute and handle wildcards"]
  * @brief Ensures the provided path is absolute. Supports wildcard patterns.
- * 
+ *
  * @note In sample there are some ** / characters, please remove the space when using it. This to make the documentation parser happy.
  *
  * Enhanced version that handles wildcard patterns with multiple scanning modes:
@@ -2672,12 +2770,12 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
  * std::string path1 = "test*";
  * CApplication::PreparePath_s(path1);
  * // path1 might become "test1;test2;testing"
- * 
+ *
  * // Scan current directory and all subdirectories recursively
  * std::string path2 = "** /test*";
  * CApplication::PreparePath_s(path2);
  * // path2 might become "test1;subdir/test2;deep/path/testing"
- * 
+ *
  * // Scan specific directory
  * std::string path3 = "/some/path/test*";
  * CApplication::PreparePath_s(path3);
@@ -2687,21 +2785,21 @@ std::pair<bool, std::string> CApplication::PrepareState_s(const gd::argument::sh
 unsigned CApplication::PreparePath_s(std::string& stringPath)
 {
    char iSplitCharacter = ';'; // default split character
-   if( stringPath.empty() == true || stringPath == "." ) 
+   if( stringPath.empty() == true || stringPath == "." )
    {
       std::filesystem::path pathFile = std::filesystem::current_path();
       stringPath = pathFile.string();
       return 1;
    }
-   
+
    // Handle special cases for wildcards
-   if( stringPath == "*" || stringPath == "**" ) 
+   if( stringPath == "*" || stringPath == "**" )
    {
       std::filesystem::path pathFile = std::filesystem::current_path();
       stringPath = pathFile.string();
       return 1;
    }
-   
+
    auto uPosition = stringPath.find_first_of(";,");
    if( uPosition != std::string::npos )
    {
@@ -2711,7 +2809,7 @@ unsigned CApplication::PreparePath_s(std::string& stringPath)
    {
       iSplitCharacter = 0;
    }
-   
+
    return PreparePath_s( stringPath, iSplitCharacter );
 }
 
@@ -2750,7 +2848,7 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
             std::vector<std::string> vectorMatches;
             bool bRecursive = false;
             std::string stringProcessPath = stringPath;
-            
+
             // Check for recursive pattern "**/"
             if(stringPath.find("**/") == 0)
             {
@@ -2762,11 +2860,11 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
                bRecursive = true;
                stringProcessPath = stringPath.substr(3);                      // Remove "**\" prefix
             }
-            
+
             // Make path absolute first if it's relative
             std::filesystem::path pathInput(stringProcessPath);
             std::string stringAbsolutePattern;
-            
+
             if(pathInput.is_absolute() == false)
             {
                std::filesystem::path pathParent = pathInput.parent_path();
@@ -2786,10 +2884,10 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
             {
                stringAbsolutePattern = stringProcessPath;
             }
-            
+
             // Expand wildcards
             uPathCount = ExpandWildcardPath_s(stringAbsolutePattern, vectorMatches, bRecursive);
-            
+
             if(uPathCount > 0)
             {
                // Join all matches with semicolon
@@ -2824,7 +2922,7 @@ unsigned CApplication::PreparePath_s( std::string& stringPath, char iSplitCharac
 
 /** ---------------------------------------------------------------------------
  * @brief Helper function to expand wildcard patterns in paths
- * 
+ *
  * This function scans directories for folders matching the wildcard pattern.
  * It can scan:
  * - The parent directory if a path is specified (e.g., "/some/path/test*")
@@ -2840,7 +2938,7 @@ unsigned CApplication::ExpandWildcardPath_s(const std::string& stringPath, std::
 {
    std::filesystem::path pathInput(stringPath); // Input path with potential wildcards
    std::string stringPattern = pathInput.filename().string(); // Extract the pattern (last part of the path)
-   
+
    // Check if pattern contains wildcards
    if(stringPattern.find('*') == std::string::npos && stringPattern.find('?') == std::string::npos)
    {
@@ -2852,13 +2950,13 @@ unsigned CApplication::ExpandWildcardPath_s(const std::string& stringPath, std::
       }
       return 0;
    }
-   
+
    // Determine the directory to scan
    std::filesystem::path pathToScan;
-   
+
    // Check if we have a parent path specified
    std::filesystem::path pathParent = pathInput.parent_path();
-   
+
    if(pathParent.empty() == true ) { pathToScan = std::filesystem::current_path(); } // No parent path specified (e.g., just "test*"). Use current working directory
    else
    {
@@ -2866,12 +2964,12 @@ unsigned CApplication::ExpandWildcardPath_s(const std::string& stringPath, std::
       if(pathParent.is_absolute() == false ) { pathParent = std::filesystem::absolute(pathParent); }
       pathToScan = pathParent;
    }
-   
+
    // Check if directory exists
    if(std::filesystem::exists(pathToScan) == false || std::filesystem::is_directory(pathToScan) == false) { return 0; }
-   
+
    unsigned uMatchCount = 0;
-   
+
    try
    {
       if(bRecursive == true)
@@ -2882,7 +2980,7 @@ unsigned CApplication::ExpandWildcardPath_s(const std::string& stringPath, std::
             if(entry.is_directory() == true )
             {
                std::string stringFolderName = entry.path().filename().string();
-               
+
                // ## If match the add to result
                bool bMatch = gd::ascii::strcmp( stringFolderName.c_str(), stringFolderName.length(), stringPattern.c_str(), stringPattern.length(), gd::utf8::tag_wildcard() );
                if(bMatch == true)
@@ -2901,7 +2999,7 @@ unsigned CApplication::ExpandWildcardPath_s(const std::string& stringPath, std::
             if(entry.is_directory() == true )
             {
                std::string stringFolderName = entry.path().filename().string();
-               
+
                // ## If match the add to result
                bool bMatch = gd::ascii::strcmp( stringFolderName.c_str(), stringFolderName.length(), stringPattern.c_str(), stringPattern.length(), gd::utf8::tag_wildcard() );
                if(bMatch == true)
@@ -2918,7 +3016,7 @@ unsigned CApplication::ExpandWildcardPath_s(const std::string& stringPath, std::
       // Handle filesystem errors (permission denied, etc.)
       return 0;
    }
-   
+
    return uMatchCount;
 }
 
@@ -2965,7 +3063,7 @@ std::pair<bool, std::string> CApplication::CliPrompt_s(gd::cli::options* poption
             std::getline(std::cin, stringValue);                              // Get user input
 
             if( stringValue.empty() == true ) continue;                       // Skip empty values
-            poptionsActive->set_value(argument_, stringValue);                // Set value to active options 
+            poptionsActive->set_value(argument_, stringValue);                // Set value to active options
          }
       }
    }
@@ -2979,7 +3077,7 @@ std::pair<bool, std::string> CApplication::CliPrompt_s(gd::cli::options* poption
  * @param pvariantValue The variant to set the value on.
  * @return A pair indicating success or failure, along with an error message if applicable.
  */
-std::pair<bool, std::string> CliSetVariable_s(const gd::argument::arguments& arguments_, gd::variant* pvariantValue)
+std::pair<bool, std::string> CApplication::CliSetVariable_s(const gd::argument::arguments& arguments_, gd::variant* pvariantValue)
 {
    if( arguments_["ask"].is_true() == true )
    {
@@ -2989,15 +3087,19 @@ std::pair<bool, std::string> CliSetVariable_s(const gd::argument::arguments& arg
          std::cout << stringDescription << std::endl;                         // Print description if provided
       }
 
+      std::string stringName = arguments_["name"].as_string();
+      if( stringName.empty() == false )
+      {
+         stringName = std::string().append("(").append(stringName).append("): ");
+         std::cout << stringName;
+      }
+
       std::string stringValue;
       std::getline(std::cin, stringValue);                                    // Get user input
 
-      if( pvariantValue != nullptr )
-      {
-         *pvariantValue = stringValue;                                        // Set value to variant
-      }
+      if( pvariantValue != nullptr ) { *pvariantValue = stringValue; }        // Set value to variant
 
-      if( stringValue.empty() == true ) 
+      if( stringValue.empty() == true && arguments_["required"].is_true() == true )
       {
          return { false, "No value provided for variable" };
       }
@@ -3017,18 +3119,18 @@ bool CApplication::CliLogging_s(gd::cli::options* poptionsApplication)
       {
          auto eSeverityNumber = gd::log::severity_get_type_number_g(stringSeverity);
          if( eSeverityNumber != gd::log::enumSeverityNumber::eSeverityNumberNone )
-         {                                                                                      
+         {
             gd::log::logger<0>* plogger = gd::log::get_s();
             plogger->set_severity( eSeverityNumber );                                              LOG_INFORMATION_RAW("== Set logging severity to: " & stringSeverity);
             bSetLogging = true;                                                // set logging is set
          }
       }
    }
-#endif 
+#endif
    return bSetLogging;
 }
 
-/** --------------------------------------------------------------------------- @TAG #folder.home
+/** --------------------------------------------------------------------------- @API [tag: folder, application ] [summary: Get folder to home directory]
  * @brief Retrieves the home directory path for the application.
  *
  * This static method determines the home directory path based on the operating system.
@@ -3062,10 +3164,10 @@ std::pair<bool, std::string> CApplication::FolderGetHome_s(std::string& stringHo
 #else
    // Linux: ~/.local/share/cleaner/cleaner-configuration.json
    const char* piDir = getenv("HOME");
-   if( piDir == nullptr ) 
+   if( piDir == nullptr )
    {
       piDir = getenv("XDG_DATA_HOME");
-      if(piDir != nullptr) 
+      if(piDir != nullptr)
       {
          piDir = getenv("USERPROFILE"); // Windows compatibility
          if(piDir == nullptr) { return { false, "Failed to get home directory" };}
@@ -3078,10 +3180,10 @@ std::pair<bool, std::string> CApplication::FolderGetHome_s(std::string& stringHo
 
    stringHomePath = stringPath; // Set the home path
 
-   return { true, "" }; 
+   return { true, "" };
 }
 
-/** --------------------------------------------------------------------------- @TAG #ignore
+/** --------------------------------------------------------------------------- @API [tag: ignore, application ] [summary: Read ignore patterns]
  * @brief Reads ignore patterns from a specified file or directory and populates a vector of ignore rules.
  *
  * This static method attempts to read ignore patterns (such as those found in .gitignore or other ignore files)
@@ -3118,7 +3220,7 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
       else
       {
          // ## if no .gitignore file we try to find some file that have the ignore pattern in folder
-         
+
          unsigned uMax = 20; // Limit the number of files to read, to avoid too many files
          for( const auto& entry_ : std::filesystem::directory_iterator(pathForderOrFile) )
          {
@@ -3165,7 +3267,7 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
 
          // ### If we have don't have a rule, but a pointer then process it (this is code)
 
-         if( iRule == -1 && piPosition != nullptr )                      
+         if( iRule == -1 && piPosition != nullptr )
          {
             auto [ iRule, stringValue ] = state_.read_first( stringLine );    // get line value
 
@@ -3211,11 +3313,11 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
    return {true, ""};
 }
 
-/** --------------------------------------------------------------------------- @TAG #parse.Application
+/** --------------------------------------------------------------------------- @API [tag: parse, configuration, application ] [summary: Reads configuration from an XML file]
  * @brief Reads configuration from an XML file and populates the application state.
  * @param stringFile The path to the XML file to read.
  * @param tag_xml Unused parameter, kept for compatibility with the function signature.
- * 
+ *
  * @verbatim
 <templates>
    <template name="template-name" description="optional description">
@@ -3227,14 +3329,14 @@ std::pair<bool, std::string> CApplication::ReadIgnoreFile_s(const std::string_vi
       </metadata>
       <configuration>
          <options>
-            <option name="option-name" type="boolean|integer|decimal|string" required="true" default="value" description="optional description"></option>   
-            <option name="option-name" type="boolean|integer|decimal|string" required="true" default="value" description="optional description"></option>   
+            <option name="option-name" type="boolean|integer|decimal|string" required="true" default="value" description="optional description"></option>
+            <option name="option-name" type="boolean|integer|decimal|string" required="true" default="value" description="optional description"></option>
          </options>
       </configuration>
    </template>
 </templates>
  * @endverbatim
- * 
+ *
  * @return A pair containing:
  *         - `bool`: `true` if the operation was successful, `false` otherwise.
  *         - `std::string`: An empty string on success, or an error message on failure.
@@ -3244,15 +3346,15 @@ std::pair<bool, std::string> CApplication::SettingsRead_s(const std::string_view
 
    pugi::xml_document xmldocument; // Create an XML document object to hold the parsed XML data
    CONFIGURATION::CSettings settings_; // Create a settings object to hold configuration data
-   
+
    // Load the XML file
    pugi::xml_parse_result result = xmldocument.load_file(stringFile.data());
    if(!result) { return { false, std::string("Failed to load XML file: ") + result.description() }; }
-   
+
    // Get the root templates node
    pugi::xml_node xmlnodeTemplates = xmldocument.child("templates");
    if(!xmlnodeTemplates) { return { false, "No 'templates' root node found in XML" }; }
-   
+
    // ## Iterate through each template
    for(pugi::xml_node xmlnodeTemplate = xmlnodeTemplates.child("template"); xmlnodeTemplate; xmlnodeTemplate = xmlnodeTemplate.next_sibling("template"))
    {
@@ -3286,8 +3388,8 @@ std::pair<bool, std::string> CApplication::SettingsRead_s(const std::string_view
       {
          psettingsAdd = settings_.Add(stringTemplateName, stringTemplateDescription); // Add command to settings
       }
-      
-      
+
+
       // Read configuration node
       pugi::xml_node xmlnodeConfiguration = xmlnodeTemplate.child("configuration");
       if(xmlnodeConfiguration)
@@ -3303,23 +3405,23 @@ std::pair<bool, std::string> CApplication::SettingsRead_s(const std::string_view
                std::string stringOptionRequired = xmlnodeOption.attribute("required").value();
                std::string stringOptionDefault = xmlnodeOption.attribute("default").value();
                std::string stringOptionDesc = xmlnodeOption.attribute("description").value();
-               
+
                if(stringOptionName.empty() == true) { return { false, "Option missing required 'name' attribute" }; }
-               
+
                // ## Validate option type
                if(stringOptionType.empty() == false &&
-                  stringOptionType != "boolean" && 
-                  stringOptionType != "integer" && 
-                  stringOptionType != "decimal" && 
+                  stringOptionType != "boolean" &&
+                  stringOptionType != "integer" &&
+                  stringOptionType != "decimal" &&
                   stringOptionType != "string") { return { false, "Invalid option type: " + stringOptionType }; }
-               
+
                // Here you would typically store the parsed data in your configuration structure
                // For example: m_vectorOptions.push_back({stringOptionName, stringOptionType, ...});
             }
          }
       }
    }
-   
+
    return { true, "" };
 }
 
@@ -3349,7 +3451,7 @@ void CApplication::Read_s( gd::database::cursor_i* pcursorSelect, gd::table::tab
 
    if( ptablecolumnbuffer->empty() == true )
    {
-      if( ptablecolumnbuffer->get_reserved_row_count() == 0 ) ptablecolumnbuffer->set_reserved_row_count( 10 ); //pre allocate data to hold 10 rows 
+      if( ptablecolumnbuffer->get_reserved_row_count() == 0 ) ptablecolumnbuffer->set_reserved_row_count( 10 ); //pre allocate data to hold 10 rows
       ptablecolumnbuffer->set_flags( gd::table::tag_full_meta{});
       Read_s( precord, ptablecolumnbuffer );
       ptablecolumnbuffer->prepare();
@@ -3434,7 +3536,7 @@ std::pair<bool, std::string> CApplication::ConfigurationFindFile_s(std::filesyst
    return { true, "" };
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @API [tag: history, file, application ] [summary: Find local history file]
  * @brief Finds the local history file
  *
  * This static method searches for a history file named ".cleaner-history.xml" in the current directory
@@ -3560,7 +3662,7 @@ std::pair<bool, std::string> CApplication::HISTORY_SaveCommand(const std::string
 
 /** ---------------------------------------------------------------------------
  * @brief Splits a string into a vector of strings based on the specified delimiter.
- * 
+ *
  * *Sample code*
  * ```cpp
  * std::string stringText = "apple;banana;cherry";
@@ -3573,7 +3675,7 @@ std::pair<bool, std::string> CApplication::HISTORY_SaveCommand(const std::string
  * @param iDelimiter The delimiter character to use for splitting. If 0, it will try to determine the delimiter.
  * @return std::vector<std::string> A vector of strings obtained by splitting the input string.
  */
-std::vector<std::string> CApplication::Split_s(const std::string& stringText, char iDelimiter) 
+std::vector<std::string> CApplication::Split_s(const std::string& stringText, char iDelimiter)
 {
    std::vector<std::string> vectorResult; // vector to hold the split strings
 
@@ -3659,7 +3761,7 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
 
    unsigned uState = eKey; // Start with key state
 
-   auto add_ = [pargumentsKVRule, &uState](std::string& stringValue) -> void 
+   auto add_ = [pargumentsKVRule, &uState](std::string& stringValue) -> void
    {
       if( stringValue.empty() == true ) return;
 
@@ -3685,7 +3787,7 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
 
 
    // ## Parse value until we hit a delimiter
-   
+
    for( auto it = std::begin( stringRule ); it != std::end( stringRule ); it++ )
    {
       const char iCharacter = *it;
@@ -3702,8 +3804,8 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
          uState = ePattern;
       }
       else
-      { 
-         string_ += iCharacter; 
+      {
+         string_ += iCharacter;
       }
    }
 
@@ -3718,7 +3820,7 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
    return { false, std::string("invalid rule: ") + stringRule.data()};
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------- @API [tag: file, application ] [description: Helper method to check if source code text file, this to avoid checking the internal data in file]
  * @brief Checks if the provided file extension is a known text file type.
  *
  * This function checks if the given file extension matches any of the predefined text file extensions.
@@ -3730,7 +3832,7 @@ std::pair<bool, std::string> CApplication::ParseKeyValueRule_s(const std::string
 bool CApplication::IsTextFile_s(const std::string_view& stringExtension)
 {
    // Check if the file extension is one of the known text file types
-   static const std::set<std::string_view> setTextFileExtension = 
+   static const std::set<std::string_view> setTextFileExtension =
    {
       ".txt", ".md", ".csv", ".json", ".xml", ".html", ".htm", ".css", ".js", ".ts",
       ".jsx", ".tsx", ".py", ".java", ".c", ".cpp", ".cxx", ".h", ".hpp", ".ipp", ".go",
@@ -3748,7 +3850,7 @@ bool CApplication::IsTextFile_s(const std::string_view& stringExtension)
 
 #ifdef _WIN32
 
-std::pair<bool, std::string> CApplication::PrepareWindows_s() 
+std::pair<bool, std::string> CApplication::PrepareWindows_s()
 {
    // Initialize COM library
    HRESULT iResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -3771,7 +3873,7 @@ std::pair<bool, std::string> CApplication::PrepareWindows_s()
       nullptr                         // Reserved
    );
 
-   if(FAILED(hr)) 
+   if(FAILED(hr))
    {
       CoUninitialize(); // Clean up COM if security initialization fails
       return {false, "Failed to initialize COM security. HRESULT: " + std::to_string(hr)};
@@ -3807,5 +3909,3 @@ CApplication::PROPERTY_Add("folder-current", "current active folder path");
 CApplication::PROPERTY_Add("folder-home", "user home director for cleaner");
 @endcode
 */
-
-

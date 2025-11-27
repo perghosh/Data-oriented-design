@@ -263,6 +263,9 @@ struct tag_ask_compiler {};
 /// tag dispatcher used to avoid default implicit construction
 struct tag_construct {};
 
+/// member is used in some form, like class member variable or function
+struct tag_member {};   
+
 /// tag dispatcher used to create objects, like creating a new object, allocate etc
 struct tag_create {}; 
 
@@ -294,7 +297,9 @@ struct tag_argument {};
 struct tag_namespace {}; 
 
 /// variadic is used in some form, like functions with variable number of arguments
-struct tag_variadic {};    
+struct tag_variadic {}; 
+
+struct tag_detail {};        ///< detail is used in some form, like detailed information
 
 /// declare pointer to character main type as global 
 extern const uint8_t puCharType_g[0x100];

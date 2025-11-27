@@ -1,4 +1,4 @@
-/**                                                                            @TAG #ui.cli #command.history [description:declaration for methods used for history command]
+/**                                                                            @FILE [tag: cli, history ] [description:declaration for methods used for history command]
  * @file CLIHistory.h
  *  
  */
@@ -63,7 +63,10 @@ std::pair<bool, std::string> HistoryGetRow_g( const gd::argument::arguments& arg
 /// \brief Save XML file for history
 std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argumentsSave, CDocument* pdocument);
 
-std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, gd::cli::options* poptionsApplication, CDocument* pdocument);
+std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, const gd::cli::options* poptionsApplication, CDocument* pdocument);
+
+/// \brief print menu to terminal and let user select entry to run
+std::pair<bool, std::string> HistoryMenu_g(const gd::argument::arguments& argumentsMenu, const gd::cli::options* poptionsApplication, CDocument* pdocument);
 
 /// \brief Index history entries from table
 std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argumentsIndex, CDocument* pdocument);

@@ -887,7 +887,12 @@ void arguments::set(pointer pposition, const argument& argumentSet, tag_argument
    }
    else
    {
-      set(pposition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
+      auto uType = argumentSet.ctype();
+      auto uLength = argumentSet.length();
+#ifndef NDEBUG
+		const char* piValue_d = (const char*)argumentSet.get_raw_pointer();
+#endif
+      set(pposition, uType, (const_pointer)argumentSet.get_raw_pointer(), uLength);
    }
 }
 
@@ -1436,7 +1441,43 @@ arguments& arguments::append_argument( const std::vector< std::pair<std::string_
    return *this;
 }
 
-// 0TAG0set.arguments
+/*-----------------------------------------------------------------------------
+ * @brief Sets or updates named values in the arguments buffer from another arguments object.
+ * 
+ * This method iterates through the provided `arguments_` object and sets or updates 
+ * each named value in the current arguments buffer. If a named value already exists, 
+ * it is updated; otherwise, it is appended to the buffer.
+ * 
+ * @param arguments_ A const reference to another `arguments` object containing named values to set or update.
+ * @return arguments& A reference to the current arguments object for chaining.
+ */
+arguments& arguments::set(const arguments& arguments_)
+{
+   for( auto it = std::begin(arguments_); it != std::end(arguments_); it++ )
+   {
+      if( it.is_name() == true )
+      {
+         auto argument_ = it.get_argument();
+         auto name_ = it.name();
+         pointer pposition_ = find(name_);
+         if( pposition_ == nullptr )
+         {
+            append_argument( name_, argument_ );                              // not found, just add it
+         }
+         else
+         {
+            set( pposition_, argument_, tag_argument{} );                     // found, set it
+         }
+      }
+      else
+      {
+         auto argument_ = it.get_argument();
+         append_argument( argument_ );                                        // unnamed value, just add it
+      }
+   }
+
+   return *this;
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Sets or updates a named value in the arguments buffer.
@@ -1705,8 +1746,6 @@ arguments::pointer arguments::insert(pointer pPosition, const std::string_view& 
    return pPosition;
 }
 
-// 0TAG0merge.arguments
-
 /** ---------------------------------------------------------------------------
  * @brief Merge two arguments objects
  @code
@@ -1901,7 +1940,17 @@ arguments::const_pointer arguments::find( const std::string_view& stringName, un
 
 /** ---------------------------------------------------------------------------
  * @brief Tries to find two values with same name and return those two in pair object
- * This is more av of conveniance method to find two related values (same name) and put them in a pair object
+ * This is more av of conveniance method to find two related values (same name) and put them in a pair object.
+  If there are more than two values with same name only the first two are returned.
+  If there are less than two values with same name the second value in pair is empty argument object.
+  \code
+   gd::argument::arguments arguments_;
+   arguments_.append("value", 1111);
+   arguments_.append("value", 2222);
+   auto pairValue = arguments_.find_pair("value");
+   // pairValue.first holds argument with value 1111
+   // pairValue.second holds argument with value 2222
+  \endcode
  * @param stringName name that two values are searced for
  * @return std::pair<arguments::argument, arguments::argument> pair object with values found for name
  */
@@ -2279,6 +2328,24 @@ void arguments::remove(const_pointer pPosition)
 
    m_uLength -= uSize;                                                           assert((int)m_uLength >= 0);
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Removes all arguments from the collection by its name.
+ *
+ * This method searches for all arguments with the specified name and removes it
+ * if found. If no argument with the given name exists, no action is taken.
+ * @param stringName The name of the arguments to remove.
+ */
+void arguments::remove_all(const std::string_view& stringName)
+{
+   auto pposition = find( stringName );
+   while(pposition != nullptr)
+   {
+      remove( pposition );
+      pposition = find( stringName );
+   }
+}
+
 
 arguments::pointer arguments::_reserve_no_copy(unsigned int uCount)
 {

@@ -1,3 +1,5 @@
+// @FILE [tag: log, logging] [description: Core logging functionality, general logic] [type: header]
+
 /**
  * \file gd_log_logger.h
  * 

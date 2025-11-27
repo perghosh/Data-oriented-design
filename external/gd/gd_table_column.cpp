@@ -244,6 +244,21 @@ int columns::find_index( const std::string_view& stringName ) const noexcept
    return -1;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief find index to column for column name
+ * @param stringName column name column index is returned for
+ * @return int index to column for column name if found, -1 if not found
+*/
+int columns::find_index( const gd::variant_view& column_ ) const noexcept
+{
+   if( column_.is_string() == true ) return find_index( column_.as_string_view() );
+
+   unsigned uColumn = column_.cast_as_uint32();
+
+   return uColumn < m_vectorColumn.size() ? (int)uColumn : -1;
+}
+
+
 
 
 _GD_TABLE_DETAIL_END

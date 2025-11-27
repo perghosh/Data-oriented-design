@@ -23,6 +23,29 @@ NAMESPACE_CLI_BEGIN
 
 // ## History operations
 
+/** --------------------------------------------------------------------------- @API [tag: cli, command, count] [summary: Counts strings within files]
+ * @brief Executes the "count" command based on the provided options.
+ *
+ * This method processes the "count" command, which involves harvesting files,
+ * applying filters, counting rows, and optionally saving or printing results.
+ *
+ * ### Arguments in optionsApplication:
+ * - `source` (string, required): Specifies the file or folder to count lines in.
+ * - `recursive` (integer, optional): Specifies the depth for recursive operations.
+ * - `R` hardcoded recursive and sets depth to 16 (all).
+ * - `sort` (string, optional): Specifies the column to sort the results by.
+ * - `stats` (string, optional): Specifies the statistics to calculate (sum, count, relation).
+ * - `max` (integer, optional): Specifies the maximum number of lines to process.
+ * - `segment` (string, optional): Specifies the type of segment to search in (code, comment, string).
+ * - `filter` (string, optional): A filter to apply to the files. If empty, all files are counted.
+ * - `pattern` (string, optional): Patterns to search for, separated by `,` or `;`.
+ * - `print` (flag, optional): Indicates whether to print the results to the console.
+ * - `output` (string, optional): Specifies the file to save the output. Defaults to stdout if not set.
+ * - `table` (string, optional): Specifies the table name for generating SQL insert queries.
+ *
+ * @param poptionsActive The active command-line options that should be on 'count'.
+ * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
+ */
 std::pair<bool, std::string> Count_g( const gd::cli::options* poptionsCount, CDocument* pdocument )
 {                                                                                                  assert( poptionsCount != nullptr );
    const gd::cli::options& options_ = *poptionsCount;

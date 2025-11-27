@@ -1,12 +1,11 @@
-/** @test [name: PLAY_table.cpp] [category: table] [description: tests for table serialization and expression evaluation]
- * @file PLAY_table.cpp 
- */
+// @FILE [tag: table, playground] [description: Playground for testing table functionality]
 
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <cstdio>
 #include <immintrin.h>
+#include <print>
 
 
 #ifdef _WIN32
@@ -26,6 +25,10 @@
 
 #include "gd/table/gd_table_formater.h"
 
+#include "gd/gd_table.h"
+#include "gd/gd_table_column-buffer.h"
+#include "gd/gd_table_table.h"
+#include "gd/gd_table_arguments.h"
 #include "gd/expression/gd_expression_value.h"
 #include "gd/expression/gd_expression_token.h"
 #include "gd/expression/gd_expression_method_01.h"
@@ -49,7 +52,7 @@ static std::string CreateTemporaryFile_s();
 - serialize( void* pBuffer, bool bSave, tag_columns )
 - write( void* pBuffer, tag_columns ); read( void* pBuffer, tag_columns );
 - write( void* pBuffer, tag_full ); read( void* pBuffer, tag_full );
-"]
+"]]
 
 @TASK [project: serialize-table][status: ongoing][created: 250905] [assigned: per]
 [title: size methods] [description: methods needed to calculate needed memory size for parts in table]
@@ -76,7 +79,109 @@ static std::string CreateTemporaryFile_s();
 
 */
 
+TEST_CASE("[table] serialize", "[table]") {
+   using namespace gd::table::dto;
+   const std::string stringCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+   constexpr unsigned uTableDuplicate = (table::eTableFlagNull32|table::eTableFlagRowStatus|table::eTableFlagDuplicateStrings);
+
+   gd::table::dto::table tableSerialize( uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{} );
+   gd::table::dto::table tableSerialize1(tableSerialize, gd::table::tag_columns{});
+   tableSerialize1.prepare();
+
+   // Add 10 rows tableSerialize
+   for( int i = 0; i < 10; ++i )
+   {
+      auto uRow = tableSerialize.row_add_one();
+      tableSerialize.row_set( uRow, { {"KeyK", (int64_t)i}, {"name", std::string("name_") + std::to_string(i)}, {"text", std::string("text_") + std::to_string(i)} } );
+   }
+
+   tableSerialize1.append( tableSerialize );
+
+   assert( tableSerialize.size() == tableSerialize1.size() );
+
+   // print tableSerialize1 to cli
+   {
+      std::string stringTable = gd::table::to_string(tableSerialize1, gd::table::tag_io_cli{});
+      std::cout << stringTable << std::endl;
+   }
+
+   std::string stringColumn_d = gd::table::debug::print_column_name( tableSerialize1 );
+   std::print( "{}\n", stringColumn_d);
+
+   auto uSize = tableSerialize.serialize_size();
+   std::vector<uint8_t> vectorBuffer( uSize );
+   tableSerialize.serialize( (std::byte*)vectorBuffer.data(), true );
+
+   {
+      gd::table::dto::table tableRead;
+      tableRead.serialize( (std::byte*)vectorBuffer.data(), false );
+      std::string stringTable = gd::table::to_string(tableRead, gd::table::tag_io_cli{});
+      std::cout << stringTable << std::endl;
+   }
+
+
+   /*
+   gd::table::dto::table tableSerialize1(uTableDuplicate, { { "int64", 0, "KeyK"}, { "rstring", 0, "name"}, { "rstring", 0, "text"} }, gd::table::tag_prepare{});
+
+   std::mt19937 mt19937;
+
+   // Generate 100 random strings using stl
+   std::vector<std::string> vectorRandomStrings;
+   for( int i = 0; i < 10; ++i )
+   {
+      std::string string_;
+      // Generate random number for length of string
+      int iLength = mt19937() % 30 + 1; // Random length between 1 and 30
+      for( int j = 0; j < iLength; ++j )
+      {
+         string_ += stringCharset[mt19937() % stringCharset.size()];
+      }
+      vectorRandomStrings.push_back(string_);
+   }
+   */
+}
+
+TEST_CASE("[table] construct table", "[table]") {
+   using namespace gd::table;
+
+   table table1( 0, { {"int32", 0, "column1"}, {"rstring", 0, "column2"}, {"double", 0, "column3"} }, gd::table::tag_prepare{} );
+   dto::table table2( table1.get_columns() );
+   table2.prepare();
+
+   // Generate 100 rows with random values
+   std::mt19937 rng(std::random_device{}());
+   std::uniform_int_distribution<int32_t> distributionInt32(0, 10000);
+   std::uniform_real_distribution<double> distributionDouble(0.0, 10000.0);
+   const std::string charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+   std::uniform_int_distribution<size_t> distributionStrLen(5, 20);
+   std::uniform_int_distribution<size_t> distributionChar(0, charset.size() - 1);
+
+   for (int i = 0; i < 100; ++i) {
+      int32_t valInt = distributionInt32(rng);
+      double valDouble = distributionDouble(rng);
+      size_t strLen = distributionStrLen(rng);
+      std::string valStr;
+      valStr.reserve(strLen);
+      for (size_t j = 0; j < strLen; ++j) {
+         valStr += charset[distributionChar(rng)];
+      }
+      auto uRow = table1.row_add_one();
+      table1.row_set(uRow, { {"column1", valInt}, {"column2", valStr}, {"column3", valDouble} });
+      uRow = table2.row_add_one();
+      table2.row_set(uRow, { {"column1", valInt}, {"column2", valStr}, {"column3", valDouble} });
+
+      auto value_ = table2.cell_get_variant_view( { {"column1", valInt}, {"column2", valStr} }, 2, tag_find{});
+      std::cout << value_.as_string() << std::endl;
+   }
+
+   table2.cell_get(0, 0);
+   table2.cell_get(0, 1);
+   table2.cell_get(0, 2);
+
+}
+
 TEST_CASE("[table] args", "[table]") {
+
    // create gd::argument::arguments object with 10 entries
    gd::argument::arguments args10( {{ {"int-number", 100 }, {"float-number", 100.01}, {"string-value", "value"}, {"bool-value", true},
       {"uint64-number", (uint64_t)1000}, {"int64-number", (int64_t)-1000}, {"double-number", 200.02}, {"wstring-value", L"wstring"} } });

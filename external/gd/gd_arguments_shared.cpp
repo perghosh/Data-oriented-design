@@ -1441,7 +1441,7 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
 /** --------------------------------------------------------------------------
  * @brief Appends a named argument with a string value to the arguments collection, converting it to an appropriate type.
  *
- * This method takes a name and a string value, detects the value’s type (e.g., integer, floating-point, or string), 
+ * This method takes a name and a string value, detects the valueâ€™s type (e.g., integer, floating-point, or string), 
  * and appends it to the collection as a variant. It attempts to convert the string to an integer or double if applicable, 
  * falling back to the original string value otherwise.
  *
@@ -2095,7 +2095,17 @@ arguments::const_pointer arguments::find(const std::pair<std::string_view, gd::v
 
 /** ---------------------------------------------------------------------------
  * @brief Tries to find two values with same name and return those two in pair object
- * This is more av of conveniance method to find two related values (same name) and put them in a pair object
+ * This is more av of conveniance method to find two related values (same name) and put them in a pair object.
+  If there are more than two values with same name only the first two are returned.
+  If there are less than two values with same name the second value in pair is empty argument object.
+  \code
+   gd::argument::shared::arguments arguments_;
+   arguments_.append("value", 1111);
+   arguments_.append("value", 2222);
+   auto pairValue = arguments_.find_pair("value");
+   // pairValue.first holds argument with value 1111
+   // pairValue.second holds argument with value 2222
+  \endcode
  * @param stringName name that two values are searced for
  * @return std::pair<arguments::argument, arguments::argument> pair object with values found for name
  */
@@ -2161,6 +2171,12 @@ std::vector<arguments::argument> arguments::get_argument( std::vector<std::strin
    return vectorValue;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Set value at position that pointer is at, make sure that pPosition is on a valid position
+ * @param pPosition pointer to position where value is set
+ * @param variantValue value to set
+ * @return position where the value was copied to
+ */
 arguments::pointer arguments::set( pointer pPosition, const gd::variant_view& variantValue, tag_view)
 {
    auto argumentValue = get_argument_s(variantValue);
@@ -2181,6 +2197,11 @@ arguments::pointer arguments::set( pointer pPosition, const gd::variant_view& va
    return pPosition;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Set argument section, section is a name and the trailing values without name
+ * @param stringName name for section
+ * @param vectorValue values to set in section
+ */
 void arguments::set_argument_section(const std::string_view& stringName, const std::vector<gd::variant_view>& vectorValue)
 {
 #ifndef NDEBUG
@@ -2588,6 +2609,24 @@ void arguments::remove(const_pointer pPosition)
 
    //m_uLength -= uSize;                                                           assert((int)m_uLength >= 0);
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Removes all arguments from the collection by its name.
+ *
+ * This method searches for all arguments with the specified name and removes it
+ * if found. If no argument with the given name exists, no action is taken.
+ * @param stringName The name of the arguments to remove.
+ */
+void arguments::remove_all(const std::string_view& stringName)
+{
+   auto pposition = find( stringName );
+   while(pposition != nullptr)
+   {
+      remove( pposition );
+      pposition = find( stringName );
+   }
+}
+
 
 
 // TODO: Implement resize in order to be able to modify a value in arguments object

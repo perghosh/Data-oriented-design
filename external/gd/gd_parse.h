@@ -1,3 +1,5 @@
+// @FILE [tag: parse] [description: Core parse logic for common patterns] [type: header]
+
 /**
  * \file gd_parse.h
  * 
@@ -715,7 +717,7 @@ inline std::string_view get_line_g(const std::string_view& stringtext, const csv
 }
 
 
-// ## strchr methods mimics the c variant of strchr but has rules on how to find character
+// @API [tag: strchr] [description: Find character in text with rules for csv, sql, json formats and mimic the C method strchr]
 const char* strchr( const char* pbszText, char chFind );
 inline const uint8_t* strchr( const uint8_t* puText, char chFind ) { return (const uint8_t*)strchr( (const char*)puText, chFind ); }
 const char* strchr( const char* pbszText, const char* pbszEnd, char chFind );
@@ -723,7 +725,6 @@ const char* strchr( const char* pbszText, char chFind, const csv& csv, const uin
 inline const char* strchr( const char* pbszText, char chFind, const csv& csv ) { return strchr( pbszText, chFind, csv, nullptr ); }
 inline const char* strchr( const char* pbszText, char chFind, const uint8_t* puCharacterClass ) { return strchr( pbszText, chFind, csv(), puCharacterClass ); }
 const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, const csv& csv, const uint8_t* puCharacterClass );
-//inline const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind ) { return strchr( pbszBegin, pbszEnd, chFind, csv(), nullptr ); }
 inline const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, const csv& csv ) { return strchr( pbszBegin, pbszEnd, chFind, csv, nullptr ); }
 inline const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, const uint8_t* puCharacterClass ) { return strchr( pbszBegin, pbszEnd, chFind, csv(), puCharacterClass ); }
 

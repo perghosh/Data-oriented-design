@@ -361,8 +361,6 @@ void table::common_construct( detail::columns* pcolumns )
    m_pcolumns->add_reference();
 }
 
-
-
 /** ---------------------------------------------------------------------------
  * @brief Return number of rows for selected state
  * @param uState state to match if row is counted

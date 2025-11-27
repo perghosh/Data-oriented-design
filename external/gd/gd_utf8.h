@@ -1,4 +1,4 @@
-﻿/*
+/*
 ## Overview
 | Name | Description |
 | - | - |
@@ -41,7 +41,7 @@
 
 
 
-namespace gd { 
+namespace gd {
    namespace utf8 {
       // tag dispatcher for utf8 if no support for char8_t
       struct tag_utf8{};
@@ -69,7 +69,7 @@ namespace gd {
       constexpr uint32_t SIZE32_MAX_UTF_SIZE = 6;
 
 
-      ///@{ 
+      ///@{
       void normalize( uint32_t uCharacter, char& value );
       uint32_t character(const uint8_t* pubszText); // -------------------------------------------- character
       template <typename UTF8_TYPE>
@@ -96,27 +96,23 @@ namespace gd {
          return !is_npos(uPosition);
       }
 
-      // ## `count` methods is used to count number of characters (`strlen` are wrappers)
+      // ## @API [tag: utf8, count] [description: Count number of characters in utf8 buffer]
 
-      /**
-       * Count number of characters in utf8 buffer
-       */
-      ///@{ 
       std::pair<uint32_t, const uint8_t*> count(const uint8_t* pubszText);                         // count utf8 characters
-      inline std::pair<uint32_t, const uint8_t*> count(const std::string_view stringText) { 
+      inline std::pair<uint32_t, const uint8_t*> count(const std::string_view stringText) {
          if( stringText.empty() == false ) return count( reinterpret_cast<const uint8_t*>(stringText.data()) );
          return { 0, nullptr };
       };
       template <typename UTF8_TYPE>
       std::pair<uint32_t, const uint8_t*> count(const UTF8_TYPE* pbszText) {                       // count utf8 characters
          static_assert( sizeof(UTF8_TYPE) == 1, "Value isn't compatible with uint8_t");
-         return count( reinterpret_cast<const uint8_t*>(pbszText) ); 
+         return count( reinterpret_cast<const uint8_t*>(pbszText) );
       };
       std::pair<uint32_t, const uint8_t*> count( const uint8_t* pubszText, const uint8_t* pubszEnd );
       template <typename UTF8_TYPE>
       std::pair<uint32_t, const uint8_t*> count(const UTF8_TYPE* pbszText, const UTF8_TYPE* pbszEnd) { // count utf8 characters
          static_assert( sizeof(UTF8_TYPE) == 1, "Value isn't compatible with uint8_t");
-         return count( reinterpret_cast<const uint8_t*>(pbszText), reinterpret_cast<const uint8_t*>(pbszEnd) ); 
+         return count( reinterpret_cast<const uint8_t*>(pbszText), reinterpret_cast<const uint8_t*>(pbszEnd) );
       };
       inline uint32_t strlen(const uint8_t* pubszText) { return count(pubszText).first; };         // count utf8 characters
       inline uint32_t strlen(const std::string_view stringText) { return count( reinterpret_cast<const uint8_t*>(stringText.data()) ).first; };
@@ -126,7 +122,7 @@ namespace gd {
          return count(reinterpret_cast<const uint8_t*>(pbszText)).first;
       };
 
-      /// ## `size` methods is used calculate needed size to store character as utf8 value         @@LINK #utf8.size
+      /// ## @API [tag: utf8, size] [description: calculates the size in bytes for utf8 characters]
 
       uint32_t size( uint8_t ch ); // ------------------------------------------------------------- size
       uint32_t size( uint16_t ch ); // ------------------------------------------------------------ size
@@ -163,7 +159,7 @@ namespace gd {
 
       ///@}
 
-      ///@{ 
+      ///@{
       /// Count number of utf8 bytes needed to store char text
       uint32_t size( const char* pbszText, uint32_t uLength ); // --------------------------------- size
       ///@}
@@ -179,15 +175,15 @@ namespace gd {
       inline std::pair<bool, const uint8_t*> validate_hex( const std::string_view& stringText ) { return validate_hex( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length() ); }
 
 
-      // ## `convert*` methods
+      // ## @API [tag: utf8, convert] [description: methods used to convert between different string formats and mostly utf8]
       // A lot of convert methods and what the mostly do is to convert from something
       // to utf8. If there is only one name of a string format than that format is
       // converted to utf8.
       // There are also some methods that convert between two different formats
       // that is not utf8. Then both format names are in the method name.
-      // Same when text is converted from utf8 to ano format, then 
+      // Same when text is converted from utf8 to ano format, then
       // both names are in method name.
-      // sample: 
+      // sample:
       // - `convert_ascii` converts from ascii to utf8
       // - `convert_utf8_to_ascii` converts from utf8 to ascii
       //                                                                                           @@LINK #utf8.convert
@@ -208,8 +204,8 @@ namespace gd {
          static_assert(sizeof(UTF8_TYPE) == 1, "Value isn't compatible with char8_t");
          auto _result = convert_utf16_to_uft8( reinterpret_cast<const char16_t*>(pwszUtf16), reinterpret_cast<char8_t*>(pbszUtf8) );
          return std::tuple<bool, const UTF16_TYPE*, UTF8_TYPE*>(
-            std::get<0>(_result), 
-            reinterpret_cast<const UTF16_TYPE*>(std::get<1>(_result)), 
+            std::get<0>(_result),
+            reinterpret_cast<const UTF16_TYPE*>(std::get<1>(_result)),
             reinterpret_cast<UTF8_TYPE*>(std::get<2>(_result))
          );
       }
@@ -249,13 +245,13 @@ namespace gd {
       std::pair<bool, const uint16_t*> convert_unicode(const uint16_t* pbszFrom, uint8_t* pbszTo, const uint8_t* pbszEnd);
       template <typename UNICODE_TYPE, typename UTF8_TYPE>
       std::pair<bool, const uint16_t*> convert_unicode(const UNICODE_TYPE* pwszFrom, UTF8_TYPE* pbszTo, UTF8_TYPE* pbszEnd) {
-#ifdef _MSC_VER         
+#ifdef _MSC_VER
          static_assert(sizeof(UNICODE_TYPE) == 2, "Value isn't compatible with uint16_t");
-#endif         
+#endif
          static_assert(sizeof(UTF8_TYPE) == 1, "Value isn't compatible with uint8_t");
 #ifndef NDEBUG
          [[maybe_unused]] const wchar_t* pwszFrom_d = (const wchar_t*)reinterpret_cast<const uint16_t*>(pwszFrom);
-#endif // !NDEBUG        
+#endif // !NDEBUG
          return convert_unicode(reinterpret_cast<const uint16_t*>(pwszFrom), reinterpret_cast<uint8_t*>(pbszTo), reinterpret_cast<const uint8_t*>(pbszEnd));
       }
       ///@}
@@ -300,7 +296,7 @@ namespace gd {
       inline char* itoa( int64_t iNumber, char* pbszTo ) { return (char*)itoa( iNumber, (uint8_t*)pbszTo ); }
       uint8_t* utoa( uint64_t uNumber, uint8_t* pbszTo );
       inline char* utoa( uint64_t uNumber, char* pbszTo ) { return (char*)utoa( uNumber, (uint8_t*)pbszTo ); }
-      
+
       [[nodiscard]] inline std::string itoa_to_string(int32_t iNumber) { uint8_t p[12]; itoa(iNumber, p); return std::string((char*)p); }
       [[nodiscard]] inline std::string utoa_to_string(uint32_t uNumber) { uint8_t p[12]; utoa(uNumber, p); return std::string((char*)p); }
       [[nodiscard]] inline std::string itoa_to_string(int64_t iNumber) { uint8_t p[23]; itoa(iNumber, p); return std::string((char*)p); }
@@ -322,9 +318,7 @@ namespace gd {
       ///@}
 
 
-      /**
-       * @brief move operation for pointer in utf-8 buffer
-      */
+      // ## @API [tag: utf8, move] [description: move operation for pointer in utf-8 buffer]
       namespace move {                                                                             // @@LINK #utf8.next
 
          /** \name NEXT OPERATIONS
@@ -340,10 +334,10 @@ namespace gd {
 | `next_space` | moves to first space character (space = space, tab or carriage return) |
 | `next_non_space` | moves to next character |
 | `previous` | move backwards |
-         *///@{ 
+         *///@{
 
          // move to next utf8 character in buffer pointer points at
-         const uint8_t* next(const uint8_t* pubszPosition); // ------------------------------------ next                                       
+         const uint8_t* next(const uint8_t* pubszPosition); // ------------------------------------ next
          // move to next utf8 character in buffer pointer points at
          inline uint8_t* next(uint8_t* pubszPosition) { return const_cast<uint8_t*>( next( static_cast<const uint8_t*>(pubszPosition) ) ); } // next
          // move to next utf8 character in buffer pointer points at
@@ -407,7 +401,7 @@ namespace gd {
 
 
 
-         ///@{ 
+         ///@{
          // move to previous utf8 character in buffer pointer points at
          const uint8_t* previous(const uint8_t* pubszPosition); // -------------------------------- previous
          inline uint8_t* previous(uint8_t* pubszPosition) { return const_cast<uint8_t*>( previous( static_cast<const uint8_t*>(pubszPosition) ) ); }// move to previous utf8 character in buffer pointer points at
@@ -427,7 +421,7 @@ namespace gd {
          inline uint8_t* previous(uint8_t* pubszPosition, uint32_t uCount ) { return const_cast<uint8_t*>( previous( static_cast<const uint8_t*>(pubszPosition), uCount ) ); } // // move backwards specified count in utf8 character buffer pointer points at
          // move backwards specified count in utf8 character buffer pointer points at
          template <typename UTF8_TYPE>
-         const UTF8_TYPE* previous( const UTF8_TYPE* pubszPosition, uint32_t uCount ) { // -------- previous     
+         const UTF8_TYPE* previous( const UTF8_TYPE* pubszPosition, uint32_t uCount ) { // -------- previous
             static_assert(sizeof(UTF8_TYPE) == 1, "Value isn't compatible with uint8_t");
             return reinterpret_cast<const UTF8_TYPE*>( previous( reinterpret_cast<const uint8_t*>(pubszPosition), uCount ) );
          };
@@ -449,7 +443,7 @@ namespace gd {
          ///@}
 
          // move to end of string (finds zero character and stop)
-         const uint8_t* end(const uint8_t* pubszPosition); // ------------------------------------- end 
+         const uint8_t* end(const uint8_t* pubszPosition); // ------------------------------------- end
          inline uint8_t* end(uint8_t* pubszPosition) { return const_cast<uint8_t*>( end( static_cast<const uint8_t*>(pubszPosition) ) ); }// move to end of string (finds zero character and stop)
          template <typename UTF8_TYPE>
          const UTF8_TYPE* end(const UTF8_TYPE* pubszPosition) { // -------------------------------- end
@@ -518,10 +512,10 @@ namespace gd {
          std::string_view find_nth(const std::string_view& stringText, size_t uNth, uint32_t uCharacter);
       }
 
-      /**
-       * @brief json formated text encoding
+      /** @API [tag: utf8, json] [description: operations used to work with json formated text]
+       *
        */
-      namespace json {                                                                             // @@LINK #utf8.json
+      namespace json {
          // ## Validation methods
          bool is_encoded( uint8_t uChar );
          std::pair<bool, const uint8_t*> validate( const uint8_t* pubBegin, const uint8_t* pubEnd );
@@ -569,26 +563,26 @@ namespace gd {
 
          std::pair<bool, const uint8_t*> convert_utf8_to_json( const uint8_t* pubszText, const uint8_t* pubszEnd, uint8_t* pbszTo );
          inline std::pair<bool, const uint8_t*> convert_utf8_to_json( const uint8_t* pubszText, uint8_t* pbszTo ) { return convert_utf8_to_json( pubszText, pubszText + strlen(pubszText), pbszTo); };
-         inline std::pair<bool, const uint8_t*> convert_utf8_to_json( const std::string_view& stringText, uint8_t* pbszTo ) { 
-            return convert_utf8_to_json( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), pbszTo); 
+         inline std::pair<bool, const uint8_t*> convert_utf8_to_json( const std::string_view& stringText, uint8_t* pbszTo ) {
+            return convert_utf8_to_json( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), pbszTo);
          };
 
          bool convert_utf8_to_json(const uint8_t* pubszText, const uint8_t* pubszEnd, std::string& stringTo );
          inline bool convert_utf8_to_json( const char* pbszText, std::string& stringTo ) {
-            return convert_utf8_to_json( reinterpret_cast<const uint8_t*>(pbszText), reinterpret_cast<const uint8_t*>(pbszText) + strlen(pbszText), stringTo); 
+            return convert_utf8_to_json( reinterpret_cast<const uint8_t*>(pbszText), reinterpret_cast<const uint8_t*>(pbszText) + strlen(pbszText), stringTo);
          };
-         inline bool convert_utf8_to_json( const std::string_view& stringText, std::string& stringTo ) { 
-            return convert_utf8_to_json( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), stringTo); 
+         inline bool convert_utf8_to_json( const std::string_view& stringText, std::string& stringTo ) {
+            return convert_utf8_to_json( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), stringTo);
          };
-         inline std::string convert_utf8_to_json( const std::string_view& stringText ) { 
+         inline std::string convert_utf8_to_json( const std::string_view& stringText ) {
             std::string stringTo;
-            convert_utf8_to_json( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), stringTo); 
+            convert_utf8_to_json( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), stringTo);
             return stringTo;
          };
 
       }
 
-      /**
+      /** @API [tag: uri] [description: operations used to work with uri/url formated text]
        * @brief operation used to convert between format used in uri/url text
        * |name|description|
        * |-|-|
@@ -611,8 +605,8 @@ namespace gd {
 
          // ## calculate number of utf8 characters found in text
          std::pair<uint32_t, const uint8_t*> count(const uint8_t* pubszText, const uint8_t* pubszEnd);
-         inline std::pair<uint32_t, const char*> count(const std::string_view& stringText) { 
-            auto result_ = uri::count( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length()); 
+         inline std::pair<uint32_t, const char*> count(const std::string_view& stringText) {
+            auto result_ = uri::count( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length());
             return { result_.first, reinterpret_cast<const char*>( result_.second ) };
          }
 
@@ -620,7 +614,7 @@ namespace gd {
          bool is_encoded( uint8_t uChar );
          std::pair<bool, const uint8_t*> validate( const uint8_t* pubBegin, const uint8_t* pubEnd );
 
-         // ## Calculate needed buffer size to store uri text as utf8 text 
+         // ## Calculate needed buffer size to store uri text as utf8 text
          uint32_t get_character_size( const uint8_t* pubszText, const uint8_t* pubszEnd );
          inline uint32_t get_character_size( const std::string_view& stringText ) {
             return uri::get_character_size( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length() );
@@ -634,24 +628,24 @@ namespace gd {
          // ## convert uri formated text to utf7
          std::pair<bool, const uint8_t*> convert_uri_to_uf8( const uint8_t* pubszText, const uint8_t* pubszEnd, uint8_t* pbszTo );
          inline std::pair<bool, const uint8_t*> convert_uri_to_uf8( const uint8_t* pubszText, uint8_t* pbszTo ) { return convert_uri_to_uf8( pubszText, pubszText + strlen(pubszText), pbszTo); };
-         inline std::pair<bool, const uint8_t*> convert_uri_to_uf8( const std::string_view& stringText, uint8_t* pbszTo ) { 
-            return convert_uri_to_uf8( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), pbszTo); 
+         inline std::pair<bool, const uint8_t*> convert_uri_to_uf8( const std::string_view& stringText, uint8_t* pbszTo ) {
+            return convert_uri_to_uf8( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), pbszTo);
          };
          std::pair<bool, const uint8_t*> convert_uri_to_uf8( const std::string_view& stringUri, std::string& stringUtf8 );
 
          // ## convert utf8 text to uri escaped text
          std::pair<bool, const uint8_t*> convert_utf8_to_uri( const uint8_t* pubszText, const uint8_t* pubszEnd, uint8_t* pbszTo );
          inline std::pair<bool, const uint8_t*> convert_utf8_to_uri( const uint8_t* pubszText, uint8_t* pbszTo ) { return convert_utf8_to_uri( pubszText, pubszText + strlen(pubszText), pbszTo); };
-         inline std::pair<bool, const uint8_t*> convert_utf8_to_uri( const std::string_view& stringText, uint8_t* pbszTo ) { 
-            return convert_utf8_to_uri( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), pbszTo); 
+         inline std::pair<bool, const uint8_t*> convert_utf8_to_uri( const std::string_view& stringText, uint8_t* pbszTo ) {
+            return convert_utf8_to_uri( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), pbszTo);
          };
          bool convert_utf8_to_uri( const uint8_t* pubszText, const uint8_t* pubszEnd, std::string& stringTo );
          inline bool convert_utf8_to_uri( const char* pbszText, std::string& stringTo ) {
-            return convert_utf8_to_uri( reinterpret_cast<const uint8_t*>(pbszText), reinterpret_cast<const uint8_t*>(pbszText) + strlen(pbszText), stringTo); 
+            return convert_utf8_to_uri( reinterpret_cast<const uint8_t*>(pbszText), reinterpret_cast<const uint8_t*>(pbszText) + strlen(pbszText), stringTo);
          };
          inline bool convert_utf8_to_uri( const uint8_t* pubszText, std::string& stringTo ) { return convert_utf8_to_uri( pubszText, pubszText + strlen(pubszText), stringTo); };
-         inline bool convert_utf8_to_uri( const std::string_view& stringText, std::string& stringTo ) { 
-            return convert_utf8_to_uri( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), stringTo); 
+         inline bool convert_utf8_to_uri( const std::string_view& stringText, std::string& stringTo ) {
+            return convert_utf8_to_uri( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), stringTo);
          };
 
 
@@ -668,25 +662,25 @@ namespace gd {
          // ## convert utf8 text to xml escaped text
          std::pair<bool, const uint8_t*> convert_utf8_to_xml( const uint8_t* pubszText, const uint8_t* pubszEnd, uint8_t* pbszTo );
          inline std::pair<bool, const uint8_t*> convert_utf8_to_xml( const uint8_t* pubszText, uint8_t* pbszTo ) { return convert_utf8_to_xml( pubszText, pubszText + strlen(pubszText), pbszTo); };
-         inline std::pair<bool, const uint8_t*> convert_utf8_to_xml( const std::string_view& stringText, uint8_t* pbszTo ) { 
-            return convert_utf8_to_xml( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), pbszTo); 
+         inline std::pair<bool, const uint8_t*> convert_utf8_to_xml( const std::string_view& stringText, uint8_t* pbszTo ) {
+            return convert_utf8_to_xml( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), pbszTo);
          };
 
          bool convert_utf8_to_xml( const uint8_t* pubszText, const uint8_t* pubszEnd, std::string& stringTo );
          inline bool convert_utf8_to_xml( const char* pbszText, std::string& stringTo ) {
-            return convert_utf8_to_xml( reinterpret_cast<const uint8_t*>(pbszText), reinterpret_cast<const uint8_t*>(pbszText) + strlen(pbszText), stringTo); 
+            return convert_utf8_to_xml( reinterpret_cast<const uint8_t*>(pbszText), reinterpret_cast<const uint8_t*>(pbszText) + strlen(pbszText), stringTo);
          };
-         inline bool convert_utf8_to_xml( const std::string_view& stringText, std::string& stringTo ) { 
-            return convert_utf8_to_xml( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), stringTo); 
+         inline bool convert_utf8_to_xml( const std::string_view& stringText, std::string& stringTo ) {
+            return convert_utf8_to_xml( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), stringTo);
          };
-         inline std::string convert_utf8_to_xml( const std::string_view& stringText ) { 
+         inline std::string convert_utf8_to_xml( const std::string_view& stringText ) {
             std::string stringTo;
-            convert_utf8_to_xml( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), stringTo); 
+            convert_utf8_to_xml( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), stringTo);
             return stringTo;
          };
 
       }
-   } 
+   }
 
    namespace utf16 {
 
@@ -708,7 +702,7 @@ namespace gd {
       /**
        * compare two strings
        */
-      ///@{ 
+      ///@{
       int strcmp( const char* pbsz1, const char* pbsz2, utf8::tag_wildcard );
       bool strcmp( const char* piText, size_t uTextLength, const char* piMatch, size_t uMatchLength, utf8::tag_wildcard );
       inline bool strcmp(const std::string_view& stringText, const char* piPattern, size_t uPatternLength, utf8::tag_wildcard) {
@@ -735,7 +729,7 @@ namespace gd {
 namespace gd {
    namespace utf8 {
 
-      // ## Trim methods used to remove spaces
+      // ## @API [tag: trim] [description: Trim methods used to remove spaces]
 
       /**
        * @brief find positions in text where characters start and ends
@@ -766,7 +760,7 @@ namespace gd {
       /// find positions in text where characters start
       inline std::pair<const uint8_t*, const uint8_t*> trim(const uint8_t* puText) { return trim(puText, puText + std::strlen((const char*)puText)); }
       inline std::pair<const uint8_t*, const uint8_t*> trim(const std::string_view& stringText) { return trim((const uint8_t*)stringText.data(), (const uint8_t*)stringText.data() + stringText.length()); }
-      inline std::string_view trim(const std::string_view& stringText, gd::types::tag_view) { 
+      inline std::string_view trim(const std::string_view& stringText, gd::types::tag_view) {
          auto pair_ = trim((const uint8_t*)stringText.data(), (const uint8_t*)stringText.data() + stringText.length());
          return std::string_view(reinterpret_cast<const char*>( pair_.first ), pair_.second - pair_.first);
       }
@@ -843,8 +837,8 @@ namespace gd {
       std::string quoted( const std::string_view& stringToQuote );
       std::string quoted_if_text( const std::string_view& stringToQuote );
 
-      
-      // ## Split methods, split string into parts                                                 // @@LINK #utf8.split
+
+      // ## @API [tag: utf8, split] [description: split string into parts]
 
       /// Split string into std::string_view parts, each part is separated by `chSplit` character
       void split( const char* pbBegin, const char* pbEnd, char chSplit, std::vector<std::string_view>& vectorPart );
@@ -1021,7 +1015,7 @@ namespace gd {
 }
 
 
-
+// @DEBUG @API [tag: utf8, debug] [summary: utf8 debug methods]
 
 namespace gd {
    namespace utf8 {
@@ -1034,4 +1028,3 @@ namespace gd {
       }
    }
 }
-

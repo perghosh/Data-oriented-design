@@ -1,3 +1,4 @@
+// @FILE [tag: cli] [description: General logic for command-line options] [type: header]
 /**
  * \file gd_cli_options.h
  * @brief Header file for command-line interface (CLI) options management.
@@ -138,8 +139,6 @@ public:
       eOptionTypeFlag      = 4, ///< flag type
    };
 
-   // 0TAG0option.options
-
    /**
     * \brief Manage data for valid options
     * 
@@ -149,7 +148,7 @@ public:
     */
    struct option
    {
-      // ## construction -------------------------------------------------------------
+      // @API [tag: construct]
 
       option() {}
       option( const std::string_view& stringName ) { set_name( stringName ); }
@@ -310,7 +309,9 @@ public:
    void add_global( const options& options_ );
 	/// Add option that can be flag or option with value
    void add_flag_or_option(const option& option_);
-
+   /// overloads existing options with new options (matching by name)
+   void overload( const options* poptions );
+   void overload( const gd::argument::arguments& arguments_ );
 
    /// Parse application arguments (like they are sent to `main`)
    std::pair<bool, std::string> parse( int iArgumentCount, const char* const* ppbszArgumentValue, const options* poptionsRoot );
@@ -392,7 +393,7 @@ public:
    void print_suboption_options(const options& optionSub, std::string& stringDocumentation) const;
 
    /// send documentation to callback function
-   void print_documentation( std::function<void(unsigned uType, const std::string_view, std::string_view, const option*, const options*)> callback_ ) const;
+   void print_documentation( std::function<void(unsigned uType, const std::string_view, std::string_view, const option*, const options*)> callback_, bool bSubOption = true ) const;
 
    /// get option at specified index
    option* at( size_t uIndex ) { return &m_vectorOption.at( uIndex ); }
@@ -455,6 +456,7 @@ public:
 
 
    /// copy needed data to work with options
+   options clone() const { return options(*this); }
    options clone_arguments() const { return options(m_stringName, m_argumentsValue); }
 //@}
 
