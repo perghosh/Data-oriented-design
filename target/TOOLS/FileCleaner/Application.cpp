@@ -2424,7 +2424,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag({ "print", "Print history, this will print all of the history entries" });
       optionsCommand.add_flag({ "edit", "Edit history file if it exists" });
       optionsCommand.add_flag({ "local", "Create history file in current directory" });
-      optionsCommand.add_flag({ "home", "Create history file in user home directory" });
+      optionsCommand.add_flag({ "home", "History file is in user home directory" });
+      optionsCommand.add_flag({ "menu", "Present history menu" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent ), 0 );
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
