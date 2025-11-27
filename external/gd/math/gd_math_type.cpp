@@ -27,7 +27,7 @@ _GD_MATH_TYPE_BEGIN
  * bool result5 = is_number("abc");     // false
  * @endcode
  */
-   bool is_number( const std::string_view& stringText ) noexcept
+   bool is_number( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -65,7 +65,7 @@ _GD_MATH_TYPE_BEGIN
  * bool result5 = is_integer("abc");    // false
  * @endcode
  */
-bool is_integer( const std::string_view& stringText ) noexcept
+bool is_integer( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -120,7 +120,7 @@ bool is_integer( const std::string_view& stringText ) noexcept
  * bool result5 = is_unsigned("12.3");  // false (decimal)
  * @endcode
  */
-bool is_unsigned( const std::string_view& stringText ) noexcept
+bool is_unsigned( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -168,7 +168,7 @@ bool is_unsigned( const std::string_view& stringText ) noexcept
  * bool result5 = is_decimal("12.34.5"); // false
  * @endcode
  */
-bool is_decimal( const std::string_view& stringText ) noexcept
+bool is_decimal( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -238,7 +238,7 @@ bool is_decimal( const std::string_view& stringText ) noexcept
  * bool result5 = is_hex("123");      // false (no 0x prefix)
  * @endcode
  */
-bool is_hex( const std::string_view& stringText ) noexcept
+bool is_hex( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -305,7 +305,7 @@ bool is_hex( const std::string_view& stringText ) noexcept
  * bool result5 = is_binary("1010");    // false (no 0b prefix)
  * @endcode
  */
-bool is_binary( const std::string_view& stringText ) noexcept
+bool is_binary( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -369,7 +369,7 @@ bool is_binary( const std::string_view& stringText ) noexcept
  * bool result5 = is_octal("123");    // false (no leading '0')
  * @endcode
  */
-bool is_octal( const std::string_view& stringText ) noexcept
+bool is_octal( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -431,7 +431,7 @@ bool is_octal( const std::string_view& stringText ) noexcept
  * bool result5 = is_alpha("");          // false
  * @endcode
  */
-bool is_alpha( const std::string_view& stringText ) noexcept
+bool is_alpha( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -480,7 +480,7 @@ bool is_alpha( const std::string_view& stringText ) noexcept
  * bool result5 = is_alphanumeric("");             // false
  * @endcode
  */
-bool is_alphanumeric( const std::string_view& stringText ) noexcept
+bool is_alphanumeric( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -529,7 +529,7 @@ bool is_alphanumeric( const std::string_view& stringText ) noexcept
  * bool result5 = is_lowercase("");           // false
  * @endcode
  */
-bool is_lowercase( const std::string_view& stringText ) noexcept
+bool is_lowercase( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -578,7 +578,7 @@ bool is_lowercase( const std::string_view& stringText ) noexcept
  * bool result5 = is_uppercase("");           // false
  * @endcode
  */
-bool is_uppercase( const std::string_view& stringText ) noexcept
+bool is_uppercase( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -625,7 +625,7 @@ bool is_uppercase( const std::string_view& stringText ) noexcept
  * bool result5 = is_whitespace("  \t  ");    // true
  * @endcode
  */
-bool is_whitespace( const std::string_view& stringText ) noexcept
+bool is_whitespace( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -662,7 +662,7 @@ bool is_whitespace( const std::string_view& stringText ) noexcept
  * bool result5 = is_printable("");            // false
  * @endcode
  */
-bool is_printable( const std::string_view& stringText ) noexcept
+bool is_printable( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -699,7 +699,7 @@ bool is_printable( const std::string_view& stringText ) noexcept
  * bool result5 = is_ascii("");             // true
  * @endcode
  */
-bool is_ascii( const std::string_view& stringText ) noexcept
+bool is_ascii( std::string_view stringText ) noexcept
 {
    // ## Empty string is valid ASCII
    if( stringText.empty() ) { return true; }
@@ -737,7 +737,7 @@ bool is_ascii( const std::string_view& stringText ) noexcept
  * bool result5 = is_utf8("");              // true
  * @endcode
  */
-bool is_utf8( const std::string_view& stringText ) noexcept
+bool is_utf8( std::string_view stringText ) noexcept
 {
    // ## Empty string is valid UTF-8
    if( stringText.empty() ) { return true; }
@@ -804,7 +804,7 @@ bool is_utf8( const std::string_view& stringText ) noexcept
  * bool result6 = is_complex("abc");       // false
  * @endcode
  */
-bool is_complex( const std::string_view& stringText ) noexcept
+bool is_complex( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -961,7 +961,7 @@ bool is_complex( const std::string_view& stringText ) noexcept
  * bool result9 = is_boolean("maybe");  // false
  * @endcode
  */
-bool is_boolean( const std::string_view& stringText ) noexcept
+bool is_boolean( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -1095,7 +1095,7 @@ bool is_base_n( const std::string_view& stringText, int iBase ) noexcept
  * bool result5 = is_expression("a-b+c");    // true
  * @endcode
  */
-bool is_expression( const std::string_view& stringText ) noexcept
+bool is_expression( std::string_view stringText ) noexcept
 {
    // ## Handle empty string
    if( stringText.empty() ) { return false; }
@@ -1142,7 +1142,7 @@ bool is_expression( const std::string_view& stringText ) noexcept
  * bool result6 = is_balanced_parentheses("((a+b)");       // false
  * @endcode
  */
-bool is_balanced_parentheses( const std::string_view& stringText ) noexcept
+bool is_balanced_parentheses( std::string_view stringText ) noexcept
 {
    // ## Empty string is balanced
    if( stringText.empty() ) { return true; }
