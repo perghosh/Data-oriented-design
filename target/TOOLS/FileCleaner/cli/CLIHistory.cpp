@@ -193,6 +193,12 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
       argumentsList.append(options_.get_arguments(), { "edit", "local", "home" });
       result_ = HistoryList_g(argumentsList, pdocument);
    }
+	else if(options_.exists("menu") == true)                                   // list history entries from history file
+   {
+      gd::argument::arguments argumentsMenu;
+      argumentsMenu.append(options_.get_arguments(), { "menu", "local", "home" });
+      result_ = HistoryMenu_g(argumentsMenu, poptionsHistory, pdocument);
+   }
    else if( options_.exists("remove") == true )                                // Remove history entries from history file and clear the history table in cache
    {
       gd::argument::arguments argumentsRemove;
@@ -827,6 +833,54 @@ std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argum
    int64_t iRow = std::stoi(stringIndex) - 1;
 
    if( iRow < 0 || iRow >= (int)ptable->size() ) { return { false, std::format("Invalid row index: {} max is: {} (did you forget -local)", stringIndex, ptable->size()) }; } // Ensure the row index is valid, note that is 1-based index
+
+
+   return { true, "" };
+}
+
+// @TASK [project: history] [title: history menu command] [assignee: per] [status: active] 
+
+/** ---------------------------------------------------------------------------
+ * @brief Displays a menu of history entries and allows the user to select a command to run.
+ * @param argumentsMenu The arguments used for displaying the menu.
+ * @param poptionsApplication Pointer to the application's CLI options.
+ * @param pdocument Pointer to the document object containing the cached history table.
+ * @return A pair where the first element is true if the operation was successful, and false otherwise; the second element is an error message if applicable.
+ */
+std::pair<bool, std::string> HistoryMenu_g(const gd::argument::arguments& argumentsMenu, const gd::cli::options* poptionsApplication, CDocument* pdocument)
+{ 
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
+   auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
+
+   if( ptable->size() == 0 )
+   { 
+      auto result_ = XML_ReadFile_s( *ptable, argumentsMenu );                // Read the history file into the table
+      if( result_.first == false ) { return result_; }
+   }
+
+   // ### Prepare menu options ..............................................
+
+   std::string stringMenu = "## Menu:\n";
+   unsigned uIndex = 1;
+   for( size_t uRow = 0; uRow < ptable->size(); ++uRow )
+   {
+      std::string stringAlias = ptable->cell_get_variant_view(uRow, "alias").as_string();
+      if( stringAlias.empty() == true) continue;
+
+      std::string stringMenuEntry = std::format( "-- [{}]: {}", uIndex, stringAlias );
+      stringMenu += stringMenuEntry + "\n";
+      uIndex++;
+   }
+
+   pdocument->MESSAGE_Display(stringMenu, { array_, {{"color", "default"}}, gd::types::tag_view{} });
+
+   // ## Wait for user input ..............................................
+   std::string stringInput;
+   stringMenu = "Select command to run (empty to skip): ";
+   pdocument->MESSAGE_Display(stringMenu, { array_, {{"color", "highlight"}}, gd::types::tag_view{} });
+   std::getline( std::cin, stringInput );
+
+   if( stringInput.empty() == true ) { return { true, "" }; }
 
 
    return { true, "" };
