@@ -125,7 +125,7 @@ std::pair<bool, std::string> CApplication::Initialize()
 {
    { // ## Initialize base data used in application
       using namespace gd::table::arguments;
-      unsigned uTableFlags = table::eTableStateNull32|table::eTableFlagArguments;
+      unsigned uTableFlags = table::eTableFlagNull32|table::eTableFlagArguments;
 
       // Create table with columns : key (uint32), ip (string 32), root (rstring)
       m_ptableSite = std::make_unique<gd::table::arguments::table>(uTableFlags, 
