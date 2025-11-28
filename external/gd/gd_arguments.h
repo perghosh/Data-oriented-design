@@ -481,7 +481,7 @@ public:
       std::string  get_utf8() const;
       gd::variant  get_variant() const { return arguments::get_variant_s(*this); }
       gd::variant_view  get_variant_view() const { return arguments::get_variant_view_s(*this); }
-      gd::variant  get_variant( bool ) const { return arguments::get_variant_s(*this, false); } /// for speed, do not copy data
+      gd::variant  get_variant( bool ) const { return is_null() == false ? arguments::get_variant_s(*this, false) : variant(); } /// for speed, do not copy data
       value        get_value() { return m_unionValue; }
       const value& get_value() const { return m_unionValue; }
       std::string_view get_string_view() const { return arguments::get_variant_view_s(*this).as_string_view(); }

@@ -65,6 +65,9 @@ std::pair<bool, std::string> HistorySave_g(const gd::argument::arguments& argume
 
 std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumentsRun, const gd::cli::options* poptionsApplication, CDocument* pdocument);
 
+/// \brief print menu to terminal and let user select entry to run
+std::pair<bool, std::string> HistoryMenu_g(const gd::argument::arguments& argumentsMenu, const gd::cli::options* poptionsApplication, CDocument* pdocument);
+
 /// \brief Index history entries from table
 std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argumentsIndex, CDocument* pdocument);
 
