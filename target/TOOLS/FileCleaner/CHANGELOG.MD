@@ -1,13 +1,12 @@
 # Changelog
 
+## v1.1.1
+### New Features
+
+
 ## v1.1.0
 ### New Features
-   - Override options arguments in history entries with command line arguments. This makes history entries more flexible and reusable for different searches.
-   - `clip` clip flag for commands `list` and `find` and this tries to find if path is stored in clipboard and take that file to search in. This speeds up searches within developer tools
-   - Similar to a simpler version of jinja templating to be used in history files, entries there can have variables and those can be prompted for when running history entries. This makes it possible to create more dynamic history entries that can be reused for different searches.
-   - Combining history with the has_tag method makes it possible to create powerful searches that can be reused often with different tags.
-   - Variables in history entries can have description that is shown when prompting for values. This makes is a lot simpler to create advances searches with filters using expressions.
-   - A compressed version of key value pair printing using the `find` command. This makes key value pair much more usefull for bookmarking and similar tasks.
+   - Add `no-ignore` to disable ignore settings from configuration file for commands `list`, `find`, `dir` and `count`. This makes it possible to override ignore settings from configuration file on command line.
 
 ## v1.0.9
 

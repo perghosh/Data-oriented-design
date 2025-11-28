@@ -40,7 +40,7 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 
 @TASK [title: pin history item] [project:history] [user: per] [status:open] [created: 250828]
 [summary : Pin a history item]
-[description: "This task involves adding a pin feature to the history, allowing users to pin specific commands for easy access later."]   
+[description: "This task involves adding a pin feature to the history, allowing users to pin specific commands for easy access later."]
 
 @TASK [title: unpin history item] [project:history] [user: per] [status:open] [created: 250828]
 [summary : Unpin a history item]
@@ -131,7 +131,16 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 /*
 @PROJECT [name: ignore] [summary: Global flag to disable ignore settings]
 
-@TASK [summary: flag to not read ignore file when these need to be read] [project:ignore] [user: per] [status:open] [created: 251126] [type: code]
+@TASK [summary: flag to not read ignore file when these need to be read] [project:ignore] [user: per] [status:closed] [created: 251126] [type: code]
 [description: Sometimes you need to find information within files that are ignored, add flag (global) to disable ignore flags]
 */
 
+/*
+@PROJECT [name: history] [summary: add menu and list to history]
+
+@TASK [summary: menu shows aliases with numbers to select] [project:history] [user: per] [status:open] [created: 251126] [type: code]
+[description: menu should list aliases with numbers to be selected, also comment if it exists]
+
+@TASK [summary: list alias values for history items] [project:history] [user: per] [status:open] [created: 251126] [type: code]
+[description: menu should list aliases with numbers to be selected, also comment if it exists]
+*/

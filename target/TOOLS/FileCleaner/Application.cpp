@@ -361,6 +361,24 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
          return { false, stringError };
       }
 
+      if( optionsApplication.exists("no-ignore", gd::types::tag_state_active{}) == false )
+      {
+         // ## Try to find ignore information
+
+         std::string stringCurrentPath = PROPERTY_Get( "folder-current", "" ).as_string();         assert( stringCurrentPath.empty() == false );
+
+         std::vector<ignore> vectorIgnore;
+         result_ = ReadIgnoreFile_s( stringCurrentPath, vectorIgnore );
+         if( result_.first == false ) return result_;
+
+         // Add ignore paths
+         if( vectorIgnore.empty() == false )
+         {                                                                                         LOG_INFORMATION_RAW("== Read: " & vectorIgnore.size() & " ignore patterns");
+            IGNORE_Add( vectorIgnore );
+         }
+      }
+
+
       optionsApplication.set_argument_count( iArgumentCount );
 
 		// ### Set print state if print flag is found ..........................
@@ -523,25 +541,6 @@ std::pair<bool, std::string> CApplication::Initialize()
    if( result_.first == false ) { LOG_DEBUG_RAW( result_.second ); }
    else { PROPERTY_Add("folder-home", stringHomePath); }                      // Add home folder to properties
 
-   // ## Try to find ignore information
-
-   std::vector<ignore> vectorIgnore;
-   result_ = ReadIgnoreFile_s( stringCurrentPath, vectorIgnore );
-   if( result_.first == false ) return result_;
-
-   // Add ignore paths
-   if( vectorIgnore.empty() == false )
-   {                                                                                               LOG_INFORMATION_RAW("== Read: " & vectorIgnore.size() & " ignore patterns");
-      IGNORE_Add( vectorIgnore );
-   }
-
-
-
-   // Perform initialization tasks here
-   // For example, you might want to initialize documents or other resources
-
-   // Example: Initialize documents
-   // DOCUMENT_Add("example_document");
 
    // If initialization is successful
    return {true, ""};
@@ -612,12 +611,12 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
       HELP_PrintDocumentation( poptionsActive, stringDocumentation );
       auto* poptionsParent = poptionsActive->get_parent();
-		if(poptionsParent != nullptr) 
-      { 
+		if(poptionsParent != nullptr)
+      {
          stringDocumentation += "\n\n";
          stringDocumentation += gd::console::rgb::print( CONFIG_Get("color", { "disabled", "default" }).as_string(), gd::types::tag_color{});
          stringDocumentation += "+- Globals: some of these may be set for command and globally -+\n\n";
-         HELP_PrintSingleDocumentation( poptionsParent, stringDocumentation); 
+         HELP_PrintSingleDocumentation( poptionsParent, stringDocumentation);
       }
 
       PrintMessage( stringDocumentation, gd::argument::arguments() );
@@ -2076,7 +2075,7 @@ void CApplication::HELP_PrintSingleDocumentation( const gd::cli::options* poptio
    std::string stringFlags; // temporary string to hold flags
 
    poptions->print_documentation([this,&stringDocumentation, &stringFlags](auto uType, auto stringName, auto stringDescription, const auto* poption_, const auto* poptions_) -> void {
-      
+
       if( (uType & options::eOptionTypeOption) == options::eOptionTypeOption )
       {
          // pad to 18 characters
@@ -2275,6 +2274,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag({ "verbose", "Write information about operations that might be useful for user" });
    optionsApplication.add_flag({ "icase", "Ignore case when matching patterns" });
    optionsApplication.add_flag({ "word", "Match whole words only when patterns are used" });
+   optionsApplication.add_flag({ "no-ignore", "Disable ignoring files" });
    optionsApplication.add({ "config", "specify configuration file to use configuring cleaner" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "add-to-history", "Add to history with alias name" });
@@ -2424,7 +2424,8 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add_flag({ "print", "Print history, this will print all of the history entries" });
       optionsCommand.add_flag({ "edit", "Edit history file if it exists" });
       optionsCommand.add_flag({ "local", "Create history file in current directory" });
-      optionsCommand.add_flag({ "home", "Create history file in user home directory" });
+      optionsCommand.add_flag({ "home", "History file is in user home directory" });
+      optionsCommand.add_flag({ "menu", "Present history menu" });
       optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent ), 0 );
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
