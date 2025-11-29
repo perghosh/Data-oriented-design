@@ -103,6 +103,9 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    gd::cli::options optionsApplication;
    Prepare_s(optionsApplication);
 
+   // ## Initialize application
+   auto result_ = Initialize();                                                                    assert( result_.first );
+
    // ## Parse arguments if sent
    if( iArgumentCount > 1 )											           // do we have arguments ? (first is application)
    {
@@ -111,6 +114,14 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
       result_ = Read_s(this, optionsApplication);
       if( result_.first == false ) { return result_; }
+
+      // ## Check active command and execute
+      auto poptionsActive = optionsApplication.sub_find_active();
+      if( poptionsActive != nullptr )
+      {
+         result_ = Execute( *poptionsActive);
+         if( result_.first == false ) { return result_; }
+      }
    }
 
    return application::basic::CApplication::Main( iArgumentCount, ppbszArgument, nullptr );
@@ -260,12 +271,46 @@ std::pair<bool, std::string> CApplication::Exit()
    return application::basic::CApplication::Exit();
 }
 
+/** --------------------------------------------------------------------------- @API [tag: options, configure] [description: Configure application from command-line options]
+ * @brief Configure application specific options
+ * @param optionsApplication The command-line options to configure.
+ * @return A pair consisting of a boolean indicating success or failure, and a string containing an error message if applicable.
+ */
 std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& optionsApplication)
 {
+
+
+
    return std::pair<bool, std::string>();
 }
 
-/** --------------------------------------------------------------------------- @CODE [tag: server] [title: start server] [description: Start the web server]
+std::pair< bool, std::string > CApplication::Execute( gd::cli::options& optionsCommand )
+{
+   std::string stringCommandName = optionsCommand.name(); 
+
+   if( stringCommandName == "http" )
+   {
+      auto stringIp = optionsCommand["ip"].as_string();
+      if( stringIp.empty() == false ) { PROPERTY_Set("ip", stringIp ); }
+      auto uPort = optionsCommand["port"].as_uint();
+      if( uPort != 0 ) { PROPERTY_Set("port", uPort ); }
+      
+      // ## add site
+      /*
+      std::string stringRoot = papplication_g->PROPERTY_Get("folder-root").as_string();
+      if( stringRoot.empty() == false )
+      {
+         SITE_Add( stringIp, uPort, stringRoot );
+      }
+      */
+
+      return SERVER_Start( 0 );
+   }
+
+   return std::pair<bool, std::string>( true, "" );
+}
+
+/** --------------------------------------------------------------------------- @API [tag: server] [summary: start server] [description: Start the web server]
  * @brief Start the web server
  * @return true if ok, false and error information on error
  */
@@ -326,7 +371,7 @@ std::pair<bool, std::string> CApplication::SERVER_Start( unsigned uIndex )
 
 
 
-/** --------------------------------------------------------------------------- @CODE [tag: options] [title: configure options] [description: Prepare application specific arguments]
+/** --------------------------------------------------------------------------- @API [tag: options] [title: configure options] [description: Prepare application specific arguments]
  * @brief Prepare application specific arguments
  */
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
@@ -347,9 +392,17 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({"path", "Global path variable used to find files in any of the folders if not found in selected folder, folders are separated by semicolon"});
    optionsApplication.add({"folder-configuration", "Folder where to read configuration files"});
    optionsApplication.add({"folder-logging", "Set folder where logger places log files"});
+
+   {  // ## `http` command, manage settings for http server
+      gd::cli::options optionsCommand( 0, "http", "Webserver configuration" );
+      optionsCommand.add({ "ip", "IP address to bind the server to" });
+      optionsCommand.add( { "port", "Port number to bind the server to" } );
+      optionsCommand.parent(&optionsApplication);
+      optionsApplication.sub_add( std::move( optionsCommand ) );
+   }
 }
 
-/** --------------------------------------------------------------------------- @CODE [tag: options] [title: read options] [description: Read command-line options]
+/** --------------------------------------------------------------------------- @API [tag: options] [title: read options] [description: Read command-line options]
  * @brief Reads and processes application options, updating application properties based on the provided command-line options.
  * @param papplication_ Pointer to the CApplication instance whose properties will be updated.
  * @param optionsApplication Reference to the root options object containing command-line arguments and sub-options.

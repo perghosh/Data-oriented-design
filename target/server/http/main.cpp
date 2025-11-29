@@ -15,8 +15,8 @@ int main( int iArgumentCount, char* ppbszArgument[] )
    //std::cout << "we have a message";
 
    papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
-   auto result_ = papplication_->Initialize();                                                     assert( result_.first );
-   result_ = papplication_->SERVER_Start();
+   
+   //result_ = papplication_->SERVER_Start();
 
    return 0;
 }
