@@ -1,0 +1,65 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+   "context_servers": {
+      "mcp-server-context7": {
+         "source": "extension",
+         "enabled": false,
+         "settings": {}
+      },
+      "mcp-server-github": {
+         "source": "extension",
+         "enabled": true,
+         "settings": {
+            "github_personal_access_token": "GITHUB_PERSONAL_ACCESS_TOKEN"
+         }
+      }
+   },
+   "agent": {
+      "default_model": {
+         "provider": "copilot_chat",
+         "model": "gpt-4.1"
+      },
+      "model_parameters": []
+   },
+   "languages": {
+      "Python": {
+         "language_servers": ["pyright"],
+         "preferred_line_length": 100,
+         "tab_size": 4
+      }
+   },
+   "buffer_font_family": "Liberation Mono",
+   "telemetry": {
+      "diagnostics": true,
+      "metrics": false
+   },
+   "icon_theme": {
+      "mode": "light",
+      "light": "Catppuccin Mocha",
+      "dark": "Zed (Default)"
+   },
+   "ui_font_size": 16,
+   "buffer_font_size": 15,
+   "theme": {
+      "mode": "light",
+      "light": "Dracula Light (Alucard)",
+      "dark": "One Dark"
+   },
+   "tab_size": 3,
+   "terminal": {
+      "cursor_shape": "underline",
+      "dock": "bottom",
+      "font_family": "FiraMono Nerd Font"
+   },
+   "git": {
+      "inline_blame": { "enabled": false }
+   },
+   "wrap_guides": [79, 99, 119]
+}
