@@ -210,8 +210,7 @@ std::pair<bool, std::string> CApplication::Initialize()
             uSeverity = papplication_g->PROPERTY_Get( "log-console" ).as_uint();
             if((uSeverity & 0xff) >= eSeverityNumberMAX)
             {
-               std::cout << "ERROR: `log-console` Sverity value 0-6 is allowed, Not " << int(uSeverity & 0xff) << "\n";
-               return 1;
+               return { false, "Log console severity level is invalid, max level is " + std::to_string( eSeverityNumberMAX - 1 ) };
             }
          }
       }
@@ -292,8 +291,19 @@ std::pair< bool, std::string > CApplication::Execute( gd::cli::options& optionsC
    {
       auto stringIp = optionsCommand["ip"].as_string();
       if( stringIp.empty() == false ) { PROPERTY_Set("ip", stringIp ); }
+      else { stringIp = PROPERTY_Get( "ip" ).as_string(); }
+
       auto uPort = optionsCommand["port"].as_uint();
       if( uPort != 0 ) { PROPERTY_Set("port", uPort ); }
+      else { uPort = PROPERTY_Get( "port" ).as_uint(); }
+
+      auto stringSite = optionsCommand["site"].as_string();
+      if( stringSite.empty() == false ) { PROPERTY_Set( "folder-root", stringSite ); }
+      else { stringSite = PROPERTY_Get( "folder-root" ).as_string(); }
+
+
+
+      SITE_Add( stringIp, uPort, stringSite );
       
       // ## add site
       /*
@@ -397,6 +407,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       gd::cli::options optionsCommand( 0, "http", "Webserver configuration" );
       optionsCommand.add({ "ip", "IP address to bind the server to" });
       optionsCommand.add( { "port", "Port number to bind the server to" } );
+      optionsCommand.add( { "site", "Folder on disk where to find files"});
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
@@ -517,7 +528,7 @@ std::pair<bool, std::string> CApplication::CONFIGURATION_Read( const std::string
 }
 
 void CApplication::SITE_Add(std::string_view stringIp, uint32_t uPort, std::string_view stringFolder)
-{
+{                                                                                                  LOG_DEBUG_RAW( "Add site - ip: " & stringIp & " port: " & uPort & " directory: " & stringFolder);
    auto uRow = m_ptableSite->row_add_one();
    m_ptableSite->row_set(uRow, gd::table::tag_variadic{}, gd::table::tag_convert{}, uRow + 1, stringIp, uPort, stringFolder);
 }
