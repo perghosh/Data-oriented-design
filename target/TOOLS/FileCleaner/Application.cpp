@@ -24,6 +24,8 @@
 #include "gd/gd_file.h"
 #include "gd/parse/gd_parse_window_line.h"
 #include "gd/math/gd_math_string.h"
+#include "gd/math/gd_math_type.h"
+
 
 
 #ifdef _WIN32
@@ -251,6 +253,16 @@ std::string CApplication::GetDetailAsString() const
  */
 void CApplication::SetDetail(const std::string_view& stringDetail)
 {
+   if( gd::math::type::is_integer(stringDetail) )
+   {
+      int iDetail = std::stoi(stringDetail.data());
+      if( iDetail >= 0 && iDetail < eDetailMAX )
+      {
+         m_eDetail = static_cast<enumDetail>(iDetail);
+         return;
+      }
+   }
+
    // convert to lowercase
    std::string stringDetailLower( stringDetail );
    std::transform(stringDetailLower.begin(), stringDetailLower.end(), stringDetailLower.begin(), ::tolower);
@@ -902,6 +914,12 @@ std::pair<bool, std::string> CApplication::InitializeInternal( gd::cli::options&
 {
    gd::cli::options* poptionsActive = optionsApplication.find_active();
    if( poptionsActive == nullptr ) { return { false, "No active options found" }; }
+
+   if( poptionsActive->exists("detail") == true )
+   {
+      std::string stringDetail = poptionsActive->get_variant_view("detail").as_string();
+      SetDetail( stringDetail );                                              // set application detail
+   }
 
    bool bSetLogging = CliLogging_s(&optionsApplication);
 
