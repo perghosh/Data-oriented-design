@@ -1,3 +1,5 @@
+// @FILE [tag: database] [description: types used in work with database] [type: header]
+
 /**
  * \file gd_database_types.h
  * 
