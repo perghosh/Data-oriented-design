@@ -110,7 +110,8 @@ public:
 		eDetailBasic,     ///< Basic detail level
       eDetailStandard,  ///< Standard detail level (this is default)
       eDetailExtended,  ///< Extended detail level
-      eDetailFull       ///< Full detail level
+      eDetailFull,      ///< Full detail level
+      eDetailMAX
 	};
 
 

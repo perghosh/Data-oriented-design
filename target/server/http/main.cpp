@@ -6,6 +6,9 @@
 CApplication* papplication_g = nullptr;
 
 
+/** --------------------------------------------------------------------------- @API [tag: main] [description: start application] [type: method]
+ * @brief man is as you know where the application starts
+ */
 int main( int iArgumentCount, char* ppbszArgument[] )
 {
    // ## Initialize application and configure to get the server running

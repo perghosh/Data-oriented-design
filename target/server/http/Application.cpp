@@ -320,7 +320,7 @@ std::pair< bool, std::string > CApplication::Execute( gd::cli::options& optionsC
    return std::pair<bool, std::string>( true, "" );
 }
 
-/** --------------------------------------------------------------------------- @API [tag: server] [summary: start server] [description: Start the web server]
+/** --------------------------------------------------------------------------- @API [tag: server] [summary: start server] [description: Start the web server] [type: member method]
  * @brief Start the web server
  * @return true if ok, false and error information on error
  */
