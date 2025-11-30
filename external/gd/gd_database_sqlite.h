@@ -1,3 +1,5 @@
+// @FILE [tag: database, sqlite] [description: wrapper class for SQLite database] [type: header]
+
 /*
 | name | description |
 | ---- | ----------- |
