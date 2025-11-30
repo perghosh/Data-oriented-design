@@ -855,6 +855,7 @@ std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argum
 std::pair<bool, std::string> HistoryMenu_g(const gd::argument::arguments& argumentsMenu, const gd::cli::options* poptionsApplication, CDocument* pdocument)
 { 
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
+   std::vector<std::string> vectorCommands; // vector to hold the commands from history, this is used to match against from user input
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
    if( ptable->size() == 0 )
@@ -871,6 +872,8 @@ std::pair<bool, std::string> HistoryMenu_g(const gd::argument::arguments& argume
    {
       std::string stringAlias = ptable->cell_get_variant_view(uRow, "alias").as_string();
       if( stringAlias.empty() == true) continue;
+
+      vectorCommands.push_back( stringAlias );
 
       std::string stringDescription = ptable->cell_get_variant_view(uRow, "description").as_string();
       std::string stringDate = ptable->cell_get_variant_view(uRow, "date").as_string();
@@ -901,36 +904,41 @@ std::pair<bool, std::string> HistoryMenu_g(const gd::argument::arguments& argume
    else
    {
       // Find by alias
-      for( size_t uRow = 0; uRow < ptable->size(); ++uRow )
+      size_t uIndex = 0;
+      for( const auto& stringAlias : vectorCommands )
       {
-         std::string stringAlias = ptable->cell_get_variant_view(uRow, "alias").as_string();
          if( stringAlias == stringInput )
          {
-            iSelectedIndex = (int)uRow;
+            iSelectedIndex = (unsigned)uIndex;
             break;
          }
+         uIndex++;
       }
 
       if( iSelectedIndex < 0 )
       {
+         uIndex = 0;
          // Try to match by starting text
-         for( size_t uRow = 0; uRow < ptable->size(); ++uRow )
+         for( const auto& stringAlias : vectorCommands )
          {
-            std::string stringAlias = ptable->cell_get_variant_view(uRow, "alias").as_string();
             if( stringAlias.starts_with(stringInput) )
             {
-               iSelectedIndex = (int)uRow;
+               iSelectedIndex = (unsigned)uIndex;
                break;
             }
+            uIndex++;
          }
       }
    }
 
-   if( iSelectedIndex < 0 || iSelectedIndex >= (int)ptable->size() ) { return { false, "Invalid selection: " + stringInput }; } // Ensure the row index is valid
+   if( iSelectedIndex < 0 || iSelectedIndex >= (int)vectorCommands.size() ) { return { false, "Invalid selection: " + stringInput }; } // Ensure the row index is valid
 
    // ## Extract the alias for command to run ................................
-   auto stringAlias = ptable->cell_get_variant_view(iSelectedIndex, "alias").as_string();
+   auto stringAlias = vectorCommands[iSelectedIndex];
    if( stringAlias.empty() == true ) { return { false, "Failed to get alias for selection: " + stringInput }; }
+
+   std::string stringSelected = "You selected command: " + stringAlias;
+   pdocument->MESSAGE_Display(stringSelected, { array_, {{"color", "disabled"}}, gd::types::tag_view{} });
 
    // ## Call HistoryRun_g to execute the selected command ...................
    gd::argument::arguments argumentsRun;

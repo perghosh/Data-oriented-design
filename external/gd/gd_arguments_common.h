@@ -1,3 +1,4 @@
+// @FILE [tag: arguments] [description: Core logic for arguments objects] [type: header]
 /**
  * \file gd_arguments_common.h
  * 
@@ -33,9 +34,24 @@ struct tag_section {};                                                         /
 
 
 /**
- * \brief
+ * \brief Index object used to edit or access items in arguments that are editable
  *
- *
+ * This struct is used to represent an index in the arguments list, allowing for easy access and modification of argument values.
+ * 
+ * @code
+   using namespace gd::argument;
+   gd::argument::arguments arguments_;
+   arguments_.append("1", 1);
+   arguments_.append("2", "2");
+   arguments_.append("3", 3);
+   gd::argument::index_edit index1 = "2"_edit;          // access by name
+   gd::argument::index_edit index2 = 0_edit;            // access by index
+   gd::argument::index_edit index3 = "3"_edit;          // access by name
+
+   arguments_[index1] = "modified";                     // modify by name
+   arguments_[index2] = 100;
+   arguments_[index3] = 300;
+ * @endcode
  */
 struct index_edit
 {

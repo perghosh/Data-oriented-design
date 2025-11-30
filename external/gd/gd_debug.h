@@ -1,17 +1,19 @@
-/**
-* @file gd_debug.h
-* 
-* @brief Debugging utilities
-* 
-* Information about console 
-* Format switching between different colors
-* `\033[<style>;<foreground_color>;<background_color>m`
-* 
-* \033[38;5;<color_code>m  // Set foreground (text) color
-* \033[48;5;<color_code>m  // Set background color
+// @FILE [tag: debug] [description: Debugging utilities] [type: header]
 
-* 
-*/
+/**
+ * @file gd_debug.h
+ * 
+ * @brief Debugging utilities
+ * 
+ * Information about console 
+ * Format switching between different colors
+ * `\033[<style>;<foreground_color>;<background_color>m`
+ * 
+ * \033[38;5;<color_code>m  // Set foreground (text) color
+ * \033[48;5;<color_code>m  // Set background color
+
+ * 
+ */
 
 
 

@@ -212,9 +212,11 @@ Paste text from clipboard or read from input file.
 
 ---
 
-### history (alias: hi)
+### history
 Cleaner history management allows you to create "history" files and store commands that you want to execute often. This is useful for re-running commands without having to type them out again, or for keeping track of frequently used commands.  
-History files are named to `.cleaner-history.xml` and cleaner will try to find local history, history file places in current or parent folders. If no local history file is found it will use the global history file placed in the user's home directory under `~/.cleaner/` on Linux or `%USERPROFILE%\.cleaner\` on Windows.
+History files are named to `.cleaner-history.xml` and cleaner will try to find local history, history file places in current or parent folders. If no local history file is found it will use the global history file placed in the user's home directory under `~/.cleaner/` on Linux or `%USERPROFILE%\.cleaner\` on Windows.  
+
+- Alias for history are `hi`, typing `cleaner hi` is same as `cleaner history`. This speeds up usage of history command because its used often.
 
 Create history file in home directory: `cleaner history -create -home`  
 Create history file in local directory: `cleaner history -create -local`  
@@ -235,6 +237,7 @@ History can handle variables that can be used in commands. These variables are d
 - `-print`: Print history, this will print all of the history entries.
 - `-edit`: Edit history file if it exists.
 - `-local`: Create history file in current directory.
+- `-menu`: Show history menu for easier navigation and execution of history entries.
 - `--remove <entry>`: Remove specific history entry.
 - `--index <number>`: Specify a history entry by its index number when using `--run`, `--set-alias` or `--remove`.
 - `--width <number>`: Specify the width of the output when printing history.

@@ -1,3 +1,5 @@
+// @FILE [tag: sql] [description: Core logic for SQL queries] [type: header]
+
 #pragma once
 
 #include <cassert>
