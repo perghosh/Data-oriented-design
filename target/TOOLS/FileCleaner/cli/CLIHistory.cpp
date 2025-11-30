@@ -1348,7 +1348,7 @@ std::string MENU_FormatEntry_s(unsigned uIndex, const std::string& stringAlias, 
  * @param uWidth The total width of the box (default: 76)
  * @return Formatted box string with header, title, separator, and footer
  */
-std::string MENU_CreateBox_s(const std::string& stringTitle, unsigned uWidth )
+std::string CreateMenuBox_s(const std::string& stringTitle, unsigned uWidth = 76)
 {
     // Ensure width is reasonable
     if( uWidth < 20 ) uWidth = 20;
@@ -1362,10 +1362,13 @@ std::string MENU_CreateBox_s(const std::string& stringTitle, unsigned uWidth )
     size_t uPaddingLeft = uPaddingTotal / 2;
     size_t uPaddingRight = uPaddingTotal - uPaddingLeft;
     
-    // Build box using std::format
-    std::string stringBox = std::format("╔{:═>{}}╗\n", "", uInnerWidth);
-    stringBox += std::format("║{:^{}}║\n", stringTitle, uInnerWidth);
-    stringBox += std::format("╠{:═>{}}╣\n", "", uInnerWidth);
+    // Build box using std::format with string repetition for borders
+    std::string stringHorizontal(uInnerWidth, '=');
+    
+    std::string stringBox = std::format("╔{}╗\n", stringHorizontal);
+    stringBox += std::format("║{:>{}}{}║\n", "", uPaddingLeft, stringTitle);
+    stringBox += std::format("{:<{}}║\n", "", uPaddingRight);
+    stringBox += std::format("╠{}╣\n", stringHorizontal);
     
     return stringBox;
 }
