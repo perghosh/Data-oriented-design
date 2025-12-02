@@ -1,5 +1,67 @@
 // @FILE [tag: sql] [description: Core logic for SQL queries] [type: header]
 
+/*
+## class query
+| Area                | Methods (Examples)                                                                 | Description                                                                                   |
+|---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Construction        | query(), query(query&), query(query&&)                                              | Constructors for creating query objects with copy and move support.                                |
+| Assignment          | operator=(query&), operator=(query&&)                                                | Copy and move assignment operators for query objects.                                             |
+| Table Management    | table_add(...), table_get(...), table_exists(), table_size(), table_empty()         | Add, retrieve, check existence and count tables in query.                              |
+| Table Iteration     | table_begin(), table_end()                                                          | Iterator methods for traversing tables in query.                                                |
+| Field Management    | field_add(...), field_add_many(...), field_add_as_orderby(...), field_get(...), field_size(), field_empty() | Add, retrieve and count fields in query, including special orderby fields. |
+| Field Iteration     | field_begin(), field_end()                                                          | Iterator methods for traversing fields in query.                                                |
+| Condition Management | condition_add(...), condition_add_raw(...), condition_empty(), condition_size() | Add conditions, raw conditions and check status of conditions.                         |
+| Condition Iteration | condition_begin(), condition_end()                                                    | Iterator methods for traversing conditions in query.                                             |
+| Query Building      | add(...), operator+=(), set_attribute(...)                                        | Build and modify query components like tables, fields, conditions.                      |
+| SQL Generation      | sql_get(), sql_get_select(), sql_get_from(), sql_get_where(), ...            | Generate SQL statements for different query parts and complete queries.                  |
+| Dialect Support     | sql_set_dialect(...)                                                              | Set SQL dialect (SQLite, SQL Server, PostgreSQL, MySQL).                            |
+| Attribute Access    | distinct(), limit()                                                                | Methods to access and modify query attributes like DISTINCT and LIMIT.                             |
+| Key Management     | next_key()                                                                         | Method to generate unique keys for query components.                                             |
+| Utility            | get_join_type_s(...), sql_get_join_text_s(...), get_where_operator_number_s(...) | Static utility methods for SQL syntax elements and operators.                                      |
+
+## struct table (nested in query)
+| Area                | Methods (Examples)                                                                 | Description                                                                                   |
+|---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Construction        | table(), table(unsigned, stringView), table(..., ...)                               | Constructors for table objects with various initialization options.                                |
+| Assignment          | operator=(table&), operator=(table&&)                                                | Copy and move assignment operators for table objects.                                             |
+| Property Access     | name(), alias(), alias(stringView), parent(), schema(), owner(), join(), key(), fk() | Access and modify table properties like name, alias, and relationships.                          |
+| Arguments Access    | get_arguments()                                                                     | Access internal argument storage for table metadata.                                   |
+| Modification       | append(...), append_if(...), set(...)                                            | Modify table properties and add new attributes.                                       |
+| Comparison         | compare(...), has(...)                                                              | Compare table properties and check for specific attributes.                            |
+| Reference Counting  | add_reference()                                                                     | Manage reference counting for table objects.                                          |
+
+## struct field (nested in query)
+| Area                | Methods (Examples)                                                                 | Description                                                                                   |
+|---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Construction        | field(), field(..., ...)                                                            | Constructors for field objects with various initialization options.                                 |
+| Assignment          | operator=(field&), operator=(field&&)                                                | Copy and move assignment operators for field objects.                                             |
+| Property Access     | operator[](...), name(), alias(), raw(), get_useandtype(), set_useandtype(...), get_table_key(), get_value() | Methods to access and modify field properties like name, alias, and type.                       |
+| Arguments Access    | get_arguments()                                                                     | Access internal argument storage for field metadata.                                   |
+| Modification       | append(...), append_argument(...), set(...)                                        | Field properties and add new attributes.                                       |
+| Comparison         | compare(...), has(...)                                                              | Compare field properties and check for specific attributes.                            |
+| Special Flags      | is_groupby(), is_orderby(), is_select()                                            | Check special field usage flags for GROUP BY, ORDER BY, and SELECT clauses.          |
+
+## struct condition (nested in query)
+| Area                | Methods (Examples)                                                                 | Description                                                                                   |
+|---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Construction        | condition(), condition(..., ...)                                                     | Constructors for condition objects with various initialization options.                              |
+| Assignment          | operator=(condition&), operator=(condition&&)                                         | Copy and move assignment operators for condition objects.                                          |
+| Property Access     | value(), name(), value_string(), raw(), get_table_key(), get_operator()            | Access condition properties like field name, operator, and value.                     |
+| Arguments Access    | get_arguments()                                                                     | Access internal argument storage for condition metadata.                                |
+| Modification       | append(...), append_argument(...), set(...)                                        | Modify condition properties and add new attributes.                                   |
+| Comparison         | compare(...), has(...)                                                              | Compare condition properties and check for specific attributes.                          |
+
+## Enums and Constants
+| Area                | Values                                                                            | Description                                                                                   |
+|---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| SQL Dialect        | eSqlDialectSqlServer, eSqlDialectSqlite, eSqlDialectPostgreSql, eSqlDialectMySql | Supported SQL dialects for query generation.                                                   |
+| Format Options      | eFormatUseQuotes, eFormatAddASKeyword, eFormatAddINNERKeyword                    | Formatting options for SQL generation syntax.                                                    |
+| Join Types          | eJoinInner, eJoinLeft, eJoinRight, eJoinFull                                     | Supported SQL JOIN types for table relationships.                                                 |
+| Operator Types      | eOperatorEqual, eOperatorNotEqual, eOperatorLess, eOperatorLike, ...        | Supported SQL operators for WHERE conditions.                                                    |
+| Query Parts          | eSqlSelect, eSqlInsert, eSqlUpdate, eSqlDelete, eSqlFrom, ...                | SQL statement part identifiers for query building.                                               |
+
+*/
+
 #pragma once
 
 #include <cassert>
@@ -152,17 +214,17 @@ enum enumOperatorMask
 
 /**
  * \brief Important sql parts to build sql queries.
- * 
+ *
  * `query` are able to generate sql queries, different parts can be selected
  * for generation. To combine parts you can sett flags for wich parts that
  * is generated. Flags from `enumSqlPart` are used for that.
- * 
+ *
  */
 enum enumSqlPart
 {
    eSqlPartUnknown =       0b0000'0000'0000'0000'0000'0000'0000'0000,
    //                        3       2 2       1 1
-   //                        1       4 3       6 5       8 7       0       
+   //                        1       4 3       6 5       8 7       0
    eSqlPartSelect =        0b0000'0000'0000'0001'0000'0000'0000'0000,
    eSqlPartInsert =        0b0000'0000'0000'0010'0000'0000'0000'0000,
    eSqlPartUpdate =        0b0000'0000'0000'0100'0000'0000'0000'0000,
@@ -188,7 +250,7 @@ enum enumSql
 /**
  * @brief Generate sql queries
  *
- * 
+ *
  *
  @code
 TEST_CASE( "Create sql for the FROM part between two tables", "[sql]" ) {
@@ -200,22 +262,22 @@ TEST_CASE( "Create sql for the FROM part between two tables", "[sql]" ) {
 
 	queryJoin.table_add( "child", "", "parent" );   // add table that has foreign key to "parent", is a type of child table for "parent"
 
-	auto stringJoin = queryJoin.sql_get_from();     // generate join sql 
+	auto stringJoin = queryJoin.sql_get_from();     // generate join sql
 	std::cout << stringJoin << "\n";
 }
 
  @endcode
  */
-class query 
+class query
 {
-   
+
 public:
    /*-----------------------------------------*/ /**
     * \brief information for tables used in query
     *
     *
     */
-   struct table 
+   struct table
    {
       table() {}
       explicit table( unsigned uTable ): m_uKey(uTable) {}
@@ -226,12 +288,12 @@ public:
       table( table&& o ) noexcept { common_construct( o ); }
       table& operator=( const table& o ) { common_construct( o ); return *this; }
       table& operator=( table&& o ) noexcept { common_construct( o ); return *this; }
-   
+
       void common_construct(const table& o) { m_uKey = o.m_uKey; m_iReferenceCount = o.m_iReferenceCount; m_argumentsTable = o.m_argumentsTable; }
       void common_construct( table&& o ) noexcept { m_uKey = o.m_uKey; m_iReferenceCount = o.m_iReferenceCount; m_argumentsTable = std::move( o.m_argumentsTable ); }
 
       operator unsigned() const { return m_uKey;  }
-      
+
 
       std::string name() const { return m_argumentsTable["name"].get_string(); }
       std::string alias() const { return m_argumentsTable["alias"].get_string(); }
@@ -261,12 +323,12 @@ public:
       bool compare(unsigned uKey) const { return m_uKey == uKey; }
 
       void add_reference() { m_iReferenceCount++; }
-   
+
       // attributes
       public:
          unsigned m_uKey = 0;        ///< key to table used by other object in query (field belongs to table)
          int m_iReferenceCount = 0;  ///< if table is in use by other items
-         arguments m_argumentsTable; ///< all table properties 
+         arguments m_argumentsTable; ///< all table properties
    };
 
 
@@ -275,7 +337,7 @@ public:
     *
     *
     */
-   struct field 
+   struct field
    {
       field() {}
       explicit field(unsigned uTable) : m_uTableKey(uTable) {}
@@ -288,7 +350,7 @@ public:
       field( field&& o ) noexcept { common_construct( o ); }
       field& operator=( const field& o ) { common_construct( o ); return *this; }
       field& operator=( field&& o ) noexcept { common_construct( o ); return *this; }
-   
+
       void common_construct(const field& o) { m_uTableKey = o.m_uTableKey; m_uUseAndType = o.m_uUseAndType; m_argumentsField = o.m_argumentsField; }
       void common_construct( field&& o ) noexcept { m_uTableKey = o.m_uTableKey; m_uUseAndType = o.m_uUseAndType; m_argumentsField = std::move( o.m_argumentsField ); }
 
@@ -320,13 +382,13 @@ public:
       bool is_orderby() const { return m_uUseAndType & eSqlPartOrderBy; }
       bool is_select() const { return m_uUseAndType == 0 || m_uUseAndType & eSqlPartSelect; }
 
-   
+
       // attributes
       public:
          unsigned m_uTableKey = 0;   ///< table that owns field
          unsigned m_uUseAndType = 0; ///< Field has specific rules (format or where to place it) flags and use type is used
                                      ///< default (m_uUseAndType = 0) and field is only used in select part
-         arguments m_argumentsField; ///< all field properties 
+         arguments m_argumentsField; ///< all field properties
    };
 
    /*-----------------------------------------*/ /**
@@ -334,7 +396,7 @@ public:
     *
     *
     */
-   struct condition 
+   struct condition
    {
       condition() {}
       explicit condition(unsigned uTable) : m_uTableKey(uTable) {}
@@ -345,7 +407,7 @@ public:
       condition& operator=( condition&& o ) noexcept { common_construct( o ); return *this; }
 
       operator arguments() const { return m_argumentsCondition; }
-   
+
       void common_construct(const condition& o) { m_uTableKey = o.m_uTableKey; m_argumentsCondition = o.m_argumentsCondition; }
       void common_construct(condition&& o) noexcept { m_uTableKey = o.m_uTableKey; m_argumentsCondition = std::move(o.m_argumentsCondition); }
 
@@ -372,13 +434,13 @@ public:
       bool compare(const std::pair<std::string_view, gd::variant_view>& pairMatch) const { return m_argumentsCondition.find(pairMatch) != nullptr; }
       /// compare named value with sent condition, if both condition values for name match return true, otherwise false
       bool compare(const std::string_view& stringName, const condition* pconditionCompareTo) const { return m_argumentsCondition.compare( stringName, *pconditionCompareTo ); }
-      
 
-   
+
+
       // attributes
       public:
          unsigned m_uTableKey = 0;   ///< table that owns condition
-         arguments m_argumentsCondition; ///< all condition properties 
+         arguments m_argumentsCondition; ///< all condition properties
    };
 
 // ## construction -------------------------------------------------------------
@@ -391,7 +453,7 @@ public:
    // assign
    query& operator=( const query& o ) { common_construct( o ); return *this; }
    query& operator=( query&& o ) noexcept { common_construct( std::move( o ) ); return *this; }
-   
+
 	~query() {}
 private:
    // common copy
@@ -402,13 +464,13 @@ private:
 public:
 
    query& operator+=( const query& v ) { return add( v ); }
-   
+
 
 // ## methods ------------------------------------------------------------------
 public:
 /** \name GET/SET
 *///@{
-   
+
 //@}
 
 /** \name TABLE
@@ -545,13 +607,13 @@ public:
    [[nodiscard]] std::string sql_get( enumSql eSql ) const;
    [[nodiscard]] std::string sql_get( enumSql eSql, const unsigned* puPartOrder ) const;
 
-   
+
 //@}
 
 protected:
 /** \name INTERNAL
 *///@{
-   
+
 //@}
 
 // ## attributes ----------------------------------------------------------------
@@ -593,7 +655,7 @@ public:
    /// add text and surround it with specified character, common operation when sql is generated
    static void format_add_and_surround_s(std::string& stringValue, const std::string_view& stringAdd, char chCharacter);
 
-   // ## values methods, values used to build edit queries, values are formatted 
+   // ## values methods, values used to build edit queries, values are formatted
    //    to work in sql queries
    static std::pair<bool, std::string> value_get_s( gd::variant_view& variantviewValue );
    static void value_get_s( const gd::variant_view& variantviewValue, std::string& stringSql );
@@ -607,7 +669,7 @@ public:
 
    static std::pair<bool, std::string> add_s( query& queryTo, const query& queryFrom );
 
-   
+
 
 };
 
@@ -682,23 +744,23 @@ inline query& query::add( const gd::variant_view& variantTable, const std::strin
    field_add( variantTable, stringName, stringAlias ); return *this;
 }
 
-inline query& query::add( const gd::variant_view& variantTable, const std::initializer_list< const char* > listField, tag_field ) { 
+inline query& query::add( const gd::variant_view& variantTable, const std::initializer_list< const char* > listField, tag_field ) {
    for( const auto& it : listField ) {                                                             assert( it != nullptr );
-      field_add( variantTable, it ); 
+      field_add( variantTable, it );
    }
    return *this;
 }
 
 /*
-inline query& query::add( const gd::variant_view& variantTable, std::initializer_list< std::pair<const std::string_view, const std::string_view> > listField, tag_field ) { 
+inline query& query::add( const gd::variant_view& variantTable, std::initializer_list< std::pair<const std::string_view, const std::string_view> > listField, tag_field ) {
    for( const auto& it : listField ) {                                                             assert( it.first.empty() == false );
-      field_add( variantTable, it.first, it.second ); 
+      field_add( variantTable, it.first, it.second );
    }
    return *this;
 }
 */
 
-inline query& query::add( const gd::variant_view& variantTable, std::initializer_list< std::pair<const char*, const char*> > listField, tag_field ) { 
+inline query& query::add( const gd::variant_view& variantTable, std::initializer_list< std::pair<const char*, const char*> > listField, tag_field ) {
    for( const auto& it : listField ) {
       assert( it.first != nullptr );
       if( it.second != nullptr ) field_add( variantTable, it.first, it.second );
@@ -707,10 +769,10 @@ inline query& query::add( const gd::variant_view& variantTable, std::initializer
    return *this;
 }
 
-inline query& query::add( const gd::variant_view& variantTable, const std::vector< std::pair<const std::string_view, const std::string_view> >& vectorField, tag_field ) { 
+inline query& query::add( const gd::variant_view& variantTable, const std::vector< std::pair<const std::string_view, const std::string_view> >& vectorField, tag_field ) {
    for( const auto& it : vectorField ) {                                                           assert( it.first.empty() == false );
-      if( it.second.empty() == false ) field_add( variantTable, it.first, it.second ); 
-      else                             field_add( variantTable, it.first ); 
+      if( it.second.empty() == false ) field_add( variantTable, it.first, it.second );
+      else                             field_add( variantTable, it.first );
    }
    return *this;
 }
@@ -725,9 +787,9 @@ inline query& query::add( const gd::variant_view& variantTable, const std::strin
 
 
 template<typename FLAG>
-bool query::flag_has_s(unsigned uTest, FLAG uFlag) { 
+bool query::flag_has_s(unsigned uTest, FLAG uFlag) {
    static_assert( sizeof(FLAG) >= 4, "Value isn't compatible with unsigned (4 byte)");
-   return (uTest & (unsigned)uFlag) == 0; 
+   return (uTest & (unsigned)uFlag) == 0;
 }
 
 /// add surrounded value to string, like XXXX => "XXXX"
