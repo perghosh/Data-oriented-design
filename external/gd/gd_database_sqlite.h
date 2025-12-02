@@ -6,13 +6,13 @@
 |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
 | Construction        | database(), database(sqlite3*), database(void*), database(void*, bool)             | Constructors for creating database objects with or without existing SQLite connections.       |
 | Assignment          | operator=(const database&), operator=(database&&)                                 | Copy and move assignment operators for database objects.                                      |
-| Connection          | open(stringView, unsigned), open(stringView)                                       | Methods to open/create SQLite database files with optional flags.                             |
-| Status              | is_owner(), is_open()                                                              | Methods to check database ownership and connection status.                                   |
-| Execution           | execute(stringView), ask(stringView, variant*), transaction(variant_view)         | Methods for executing SQL statements, querying single values, and managing transactions.     |
-| Key Information     | get_insert_key(), get_insert_key(variant&), get_insert_key_raw()                  | Methods to retrieve the last inserted row ID from the database.                             |
-| Change Information  | get_change_count()                                                                 | Method to get the number of rows affected by the last statement.                             |
-| Resource Management | close(), release()                                                                 | Methods to close the database connection and release ownership.                              |
-| Access              | get_sqlite3(), set_flags(unsigned, unsigned), is_flag(unsigned)                   | Methods to access the underlying SQLite handle and manage flags.                            |
+| Connection          | open(stringView, unsigned), open(stringView)                                       | Open/create SQLite database files with optional flags.                                        |
+| Status              | is_owner(), is_open()                                                              | Check database ownership and connection status.                                               |
+| Execution           | execute(stringView), ask(stringView, variant*), transaction(variant_view)         | Execute SQL statements, query single values, and manage transactions.                       |
+| Key Information     | get_insert_key(), get_insert_key(variant&), get_insert_key_raw()                  | Retrieve the last inserted row ID from the database.                                         |
+| Change Information  | get_change_count()                                                                 | Get the number of rows affected by the last statement.                                       |
+| Resource Management | close(), release()                                                                 | Close the database connection and release ownership.                                        |
+| Access              | get_sqlite3(), set_flags(unsigned, unsigned), is_flag(unsigned)                   | Access the underlying SQLite handle and manage flags.                                       |
 | Static Utilities    | open_s(stringView, int), execute_s(sqlite3*, stringView), bind_s(...), close_s(...) | Static utility functions for database operations independent of instances.                  |
 
 ## class cursor
@@ -20,17 +20,17 @@
 |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
 | Construction        | cursor(), cursor(database*)                                                        | Constructors for creating cursor objects, optionally with a database connection.              |
 | Assignment          | operator=(const cursor&), operator=(cursor&&)                                     | Copy and move assignment operators for cursor objects.                                        |
-| Connection          | open(), open(stringView), open(stringView, function)                               | Methods to execute SQL queries and prepare result sets.                                       |
-| Preparation         | prepare(stringView), prepare(stringView, initializer_list), prepare(stringView, vector) | Methods to prepare SQL statements with optional parameter binding.                           |
-| Parameter Binding   | bind_parameter(int, variant_view), bind_parameter(int, initializer_list), bind_parameter(int, vector) | Methods to bind values to SQL statement parameters.                                          |
-| Execution           | execute()                                                                          | Method to execute prepared statements.                                                       |
-| Navigation          | next(), reset(), is_valid_row()                                                    | Methods for navigating through result sets and checking row validity.                        |
-| Data Access         | operator[](unsigned), operator[](stringView), get_variant(), get_variant_view()   | Methods for accessing column values as variants or variant views.                           |
-| Metadata            | get_column_count(), get_parameter_count(), get_parameter_name()                    | Methods to retrieve information about result columns and parameters.                         |
-| Record Access       | get_record(), get_record() const, operator const record&()                         | Methods to access the underlying record structure.                                           |
-| Resource Management | close()                                                                            | Method to close the cursor and release resources.                                           |
-| Index Operations    | get_index(stringView)                                                              | Method to get column index by name.                                                          |
-| Static Utilities    | get_column_type_s(const char*), get_column_ctype_s(const char*), bind_columns_s(...) | Static utility functions for type detection and column binding.                              |
+| Connection          | open(), open(stringView), open(stringView, function)                               | Execute SQL queries and prepare result sets.                                                  |
+| Preparation         | prepare(stringView), prepare(stringView, initializer_list), prepare(stringView, vector) | Prepare SQL statements with optional parameter binding.                                     |
+| Parameter Binding   | bind_parameter(int, variant_view), bind_parameter(int, initializer_list), bind_parameter(int, vector) | Bind values to SQL statement parameters.                                                     |
+| Execution           | execute()                                                                          | Execute prepared statements.                                                                 |
+| Navigation          | next(), reset(), is_valid_row()                                                    | Navigate through result sets and check row validity.                                         |
+| Data Access         | operator[](unsigned), operator[](stringView), get_variant(), get_variant_view()   | Access column values as variants or variant views.                                          |
+| Metadata            | get_column_count(), get_parameter_count(), get_parameter_name()                    | Retrieve information about result columns and parameters.                                     |
+| Record Access       | get_record(), get_record() const, operator const record&()                         | Access the underlying record structure.                                                      |
+| Resource Management | close()                                                                            | Close the cursor and release resources.                                                     |
+| Index Operations    | get_index(stringView)                                                              | Get column index by name.                                                                    |
+| Static Utilities    | get_column_type_s(const char*), get_column_ctype_s(const char*), bind_columns_s(...) | Static utility functions for type detection and column binding.                             |
 
 ## class database_i
 | Area                | Methods (Examples)                                                                 | Description                                                                                   |
@@ -38,13 +38,13 @@
 | Construction        | database_i(), database_i(stringView), database_i(stringView, stringView)          | Constructors for creating interface objects with optional name and dialect.                    |
 | Assignment          | operator=(database_i&&)                                                            | Move assignment operator for database interface objects.                                     |
 | Interface           | query_interface(guid, void**), add_reference(), release()                           | COM-style interface methods for reference counting and queryInterface.                       |
-| Connection          | open(stringView), open(arguments)                                                  | Methods to open database connections using connection strings or arguments.                 |
-| Execution           | execute(stringView), ask(stringView, variant*), transaction(variant_view)         | Methods for executing SQL statements, querying single values, and managing transactions.     |
-| Cursor Creation     | get_cursor(cursor_i**)                                                             | Method to create and retrieve cursor objects for query execution.                             |
-| Resource Management | close(), erase(), get_pointer()                                                    | Methods to close connections, erase database, and access internal pointer.                   |
-| Metadata            | name(), dialect(), set(stringView, variant_view)                                  | Methods to get/set database name, dialect, and configuration properties.                     |
-| Key Information     | get_insert_key()                                                                   | Method to retrieve the last inserted row ID.                                                 |
-| Change Information  | get_change_count()                                                                 | Method to get the number of rows affected by the last statement.                             |
+| Connection          | open(stringView), open(arguments)                                                  | Open database connections using connection strings or arguments.                             |
+| Execution           | execute(stringView), ask(stringView, variant*), transaction(variant_view)         | Execute SQL statements, query single values, and manage transactions.                         |
+| Cursor Creation     | get_cursor(cursor_i**)                                                             | Create and retrieve cursor objects for query execution.                                       |
+| Resource Management | close(), erase(), get_pointer()                                                    | Close connections, erase database, and access internal pointer.                               |
+| Metadata            | name(), dialect(), set(stringView, variant_view)                                  | Get/set database name, dialect, and configuration properties.                                |
+| Key Information     | get_insert_key()                                                                   | Retrieve the last inserted row ID.                                                           |
+| Change Information  | get_change_count()                                                                 | Get the number of rows affected by the last statement.                                       |
 
 
 ## class cursor_i
@@ -53,15 +53,15 @@
 | Construction        | cursor_i(), cursor_i(database*)                                                    | Constructors for creating cursor interface objects, optionally with a database connection.    |
 | Assignment          | operator=(cursor_i&&)                                                              | Move assignment operator for cursor interface objects.                                        |
 | Interface           | query_interface(guid, void**), add_reference(), release()                           | COM-style interface methods for reference counting and queryInterface.                       |
-| Connection          | open(), open(stringView)                                                           | Methods to execute SQL queries and prepare result sets.                                      |
-| Preparation         | prepare(stringView), prepare(stringView, vector)                                   | Methods to prepare SQL statements with optional parameter binding.                           |
-| Parameter Binding   | bind(vector), bind(unsigned, vector)                                               | Methods to bind values to SQL statement parameters.                                          |
-| Execution           | execute()                                                                          | Method to execute prepared statements.                                                       |
-| Navigation          | next()                                                                             | Method to advance to the next row in the result set.                                        |
-| Data Access         | get_record(record**), get_record(), get_record() const                             | Methods to access the underlying record structure.                                           |
-| Status              | is_open(), is_valid_row()                                                          | Methods to check cursor state and row validity.                                              |
-| Resource Management | close()                                                                            | Method to close the cursor and release resources.                                           |
-| Metadata            | get_column_count()                                                                 | Method to get the number of columns in the result set.                                      |
+| Connection          | open(), open(stringView)                                                           | Execute SQL queries and prepare result sets.                                                 |
+| Preparation         | prepare(stringView), prepare(stringView, vector)                                   | Prepare SQL statements with optional parameter binding.                                      |
+| Parameter Binding   | bind(vector), bind(unsigned, vector)                                               | Bind values to SQL statement parameters.                                                     |
+| Execution           | execute()                                                                          | Execute prepared statements.                                                                 |
+| Navigation          | next()                                                                             | Advance to the next row in the result set.                                                  |
+| Data Access         | get_record(record**), get_record(), get_record() const                             | Access the underlying record structure.                                                      |
+| Status              | is_open(), is_valid_row()                                                          | Check cursor state and row validity.                                                         |
+| Resource Management | close()                                                                            | Close the cursor and release resources.                                                     |
+| Metadata            | get_column_count()                                                                 | Get the number of columns in the result set.                                                |
 
 
 
