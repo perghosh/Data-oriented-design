@@ -1,4 +1,4 @@
-/**
+/**                                                                           @FILE [tag: cli, configuration] [description: Implementation file for CLI configuration operations] [type: source]
  * @file CLIConfig.cpp
  * @brief Implementation file for CLI configuration operations.
  */
@@ -32,6 +32,16 @@ static std::string_view GetDefaultConfigData_s();
 /// Create configuration file and write default configuration data to it.
 static std::pair<bool, std::string> ConfigurationCreateFile_g( std::string_view stringFileName, std::string_view stringConfig );
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Main function to get to process configuration operations
+ * @param poptionsConfiguration Pointer to the command line options
+ * @param poptionsConfiguration.create If true, create configuration file
+ * @param poptionsConfiguration.local if true work on local configuration file
+ * @param poptionsConfiguration.edit If true, edit configuration file
+ *
+ * @return A pair where the first element is a boolean indicating success (true) or failure (false), and the second element is a string message describing the result.
+ */
 std::pair<bool, std::string> Configuration_g(const gd::cli::options* poptionsConfiguration)
 {                                                                                                  assert(poptionsConfiguration != nullptr);
    std::pair<bool, std::string> result_; // result to return, this is used to return success or failure of the operation
@@ -39,13 +49,12 @@ std::pair<bool, std::string> Configuration_g(const gd::cli::options* poptionsCon
 
    if( options_["create"].is_true() == true )
    {
-      if( options_["local"].is_true() == true )
+      if( options_["local"].is_true() == true )                               // Create configuration file in the current working directory
       {
-
          result_ = ConfigurationCreateWorking_g();
          if( result_.first == false ) { return result_; }
       }
-      else
+      else                                                                    // Create configuration file in the user's home directory
       {
          result_ = ConfigurationCreate_g();
          if( result_.first == false ) { return result_; }
@@ -71,16 +80,19 @@ std::pair<bool, std::string> Configuration_g(const gd::cli::options* poptionsCon
    return {true, ""};
 }
 
-
+/** ---------------------------------------------------------------------------
+ * @brief Creates a default configuration file in the current working directory if it does not already exist.
+ * @return A pair where the first element is a boolean indicating success (true if the configuration file was created or already exists, false if an error occurred), and the second element is a string message describing the result.
+ */
 std::pair<bool, std::string>  ConfigurationCreateWorking_g()
 {
    constexpr std::string_view stringConfigurationFileName( ".cleaner-configuration.json" );
-
-   auto stringPath = papplication_g->PROPERTY_Get("folder-current").as_string();                assert(stringPath.empty() == false);
+   auto stringPath = papplication_g->PROPERTY_Get("folder-current").as_string();                   assert(stringPath.empty() == false);
+   std::string stringFilePath; // contains the full path to the configuration file
 
    std::filesystem::path pathCurrent(stringPath);
 
-   try 
+   try
    {
       // Get the current working directory
       std::filesystem::path pathCurrent = std::filesystem::current_path();
@@ -94,6 +106,7 @@ std::pair<bool, std::string>  ConfigurationCreateWorking_g()
       std::string stringConfig(GetDefaultConfigData_s());
       auto result_ = ConfigurationCreateFile_g(pathConfigFile.string(), stringConfig);
       if( result_.first == false ) { return result_; }
+      stringFilePath = pathConfigFile.string();
    }
    catch( const std::filesystem::filesystem_error& e )
    {
@@ -104,13 +117,13 @@ std::pair<bool, std::string>  ConfigurationCreateWorking_g()
       return { false, "Error creating configuration: " + std::string(e.what()) };
    }
 
-   return { true, "Configuration file created successfully at: " + pathCurrent.string() };
+   return { true, "Configuration file created: " + stringFilePath };
 }
 
 
 /** ---------------------------------------------------------------------------
  * @brief Creates a default configuration file for the application if it does not already exist, handling platform-specific paths and directory creation.
- * 
+ *
  * Create the configuration file if it doesn't exist
  * For Windows: C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json
  * For Linux: ~/.local/share/cleaner/cleaner-configuration.json
@@ -135,10 +148,10 @@ std::pair<bool, std::string> ConfigurationCreate_g()
 #else
       // Linux: ~/.local/share/cleaner/cleaner-configuration.json
       const char* piDir = getenv("HOME");
-      if( piDir == nullptr ) 
+      if( piDir == nullptr )
       {
          piDir = getenv("XDG_DATA_HOME");
-         if(piDir != nullptr) 
+         if(piDir != nullptr)
          {
             piDir = getenv("USERPROFILE"); // Windows compatibility
             if(piDir == nullptr) { return { false, "Failed to get home directory" };}
@@ -184,6 +197,16 @@ std::pair<bool, std::string> ConfigurationCreate_g()
 }
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Opens the configuration file in the system's default editor for editing.
+ *
+ * This function first attempts to find a local configuration file by searching up the directory tree.
+ * If no local configuration file is found, it looks for the configuration file in the user's home directory.
+ * Once the configuration file is located, it opens the file using the system's default editor.
+ *
+ * @return A std::pair where the first element is a boolean indicating success (true if the file was opened successfully, false otherwise),
+ *         and the second element is a string message describing the result or any error that occurred.
+ */
 std::pair<bool,std::string> ConfigurationEdit_g()
 {
    // ## Try to find local configuration file
@@ -214,7 +237,7 @@ std::pair<bool,std::string> ConfigurationEdit_g()
 
 /** ---------------------------------------------------------------------------
  * @brief Returns the default configuration data as a string_view.
- * 
+ *
  * This function provides a JSON formatted string that represents the default configuration
  * for the application. The configuration includes color settings, format settings, logging
  * settings, and ignore patterns for folders and files.
@@ -263,7 +286,7 @@ static std::string_view GetDefaultConfigData_s()
 
 /** ---------------------------------------------------------------------------
  * @brief Creates a configuration file with the specified name and writes the provided configuration data to it.
- * 
+ *
  * This function attempts to create a file at the specified path and write the given configuration data into it.
  * If the file creation or writing fails, it returns an error message.
  *
@@ -283,6 +306,6 @@ static std::pair<bool, std::string> ConfigurationCreateFile_g( std::string_view 
    if( ofstreamFile.fail() ) { return { false, "Failed to write to configuration file: " + std::string(stringFileName) }; }
 
    return { true, "Configuration file created successfully at: " + std::string(stringFileName) };
-}  
+}
 
 NAMESPACE_CLI_END
