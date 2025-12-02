@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <format>
 #include <set>
+#include <string>
 #include <thread>
 
 #include "pugixml/pugixml.hpp"
@@ -1544,6 +1545,22 @@ void CApplication::IGNORE_Add(const std::vector<std::string> vectorIgnore)     /
    }
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Adds a folder to the ignore list.
+ * @param stringFolder The folder to add to the ignore list.
+ */
+void CApplication::IGNORE_AddFolder(const std::string_view& stringFolder)
+{                                                                                                  assert( stringFolder.empty() == false && "Empty folder value");
+   if( stringFolder.empty() == true ) { return; }                              // Ignore empty folder values
+
+   std::string string_( stringFolder ); // string to process folder value
+
+   if( string_.back() == '/' ) string_ = string_.substr(0, string_.size() - 1);
+
+   std::replace(string_.begin(), string_.end(), '\\', '/');
+   m_vectorIgnore.push_back( { unsigned(ignore::eTypeFolder), string_ } );
+}
+
 /// ---------------------------------------------------------------------------
 /// Checks if the given file path matches any ignore pattern in m_vectorIgnore.
 /// Normalizes the path to use forward slashes. Uses os_fnmatch for pattern matching.
@@ -1846,7 +1863,7 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
 
    if( m_ptableConfig != nullptr ) return { true, "" }; // If config table is already set, return success
 
-   constexpr std::string_view stringConfigurationFileName = "cleaner-configuration.json"; // Default configuration file name
+   constexpr std::string_view stringConfigurationFileName = ".cleaner-configuration.json"; // Default configuration file name
 
    std::string stringFolder( stringFileName );
 
@@ -1899,7 +1916,21 @@ std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& s
          for( const auto& value_ : keyvalueRoot.value().object_range() )
          {
             if( value_.value().is_null() ) continue;                          // Skip if value is null
+
             auto stringName = value_.key();
+
+            if( value_.value().is_array() == true )
+            {
+               // ## Handle array values
+               gd::argument::shared::arguments argumentsArray;
+               for( const auto& arrayValue : value_.value().array_range() )
+               {
+                  argumentsArray.append( arrayValue.as_string() );            // Convert each array element to string and add to arguments
+               }
+               CONFIG_HandleArray(stringGroup, stringName, argumentsArray);
+               continue;
+            }
+
             auto stringValue = value_.value().as_string();                    // Convert JSON value to string
             auto uRow = m_ptableConfig->row_add_one();
             m_ptableConfig->row_set(uRow, { stringGroup, stringName, stringValue }); // Set value, each value is store as string and belongs to group and name
@@ -1940,6 +1971,14 @@ gd::variant_view CApplication::CONFIG_Get(std::string_view stringGroup, std::str
    return gd::variant_view();
 }
 
+void CApplication::CONFIG_Set(std::string_view stringGroup, std::string_view stringName, const gd::variant_view& value_)
+{
+   if( stringGroup == "ignore" )
+   {
+      if( stringName == "folder" && value_.is_string() && value_.as_string().size() > 0 ) IGNORE_AddFolder(value_.as_string_view());
+   }
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Check if configuration exists in the config table
  *
@@ -1955,6 +1994,31 @@ bool CApplication::CONFIG_Exists( std::string_view stringGroup, std::string_view
    if( iRow != -1 ) { return true; }
 
    return false;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Handles array values in the configuration file by converting them to comma-separated strings.
+ *
+ * This function is called when a configuration value is an array. It converts each array element
+ * to a string and joins them with commas, storing the result as a single string in the configuration table.
+ *
+ * @param stringGroup The group name of the configuration
+ * @param stringName The name of the configuration parameter
+ * @param arguments_ The arguments containing the array values to process
+ */
+void CApplication::CONFIG_HandleArray( std::string_view stringGroup, std::string_view stringName, const gd::argument::shared::arguments& arguments_ )
+{
+   for( const auto& argument : arguments_ )
+   {
+      // Convert each array element to a string and join them with commas
+      std::string stringValue = argument.as_string();
+
+      if( stringValue.empty() == false )
+      {
+         CONFIG_Set( stringGroup, stringName, stringValue );
+         continue;
+      }
+   }
 }
 
 /** --------------------------------------------------------------------------- @API [tag: help, application] [description: "Help and documentation functions for the application."]

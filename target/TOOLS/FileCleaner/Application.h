@@ -319,6 +319,7 @@ public:
    void IGNORE_Add( unsigned uType, const std::string_view& stringIgnore ) { m_vectorIgnore.push_back( { uType, std::string( stringIgnore ) } ); }
    void IGNORE_Add( const std::vector<ignore>& vectorIgnore ) { m_vectorIgnore.insert( m_vectorIgnore.end(), vectorIgnore.begin(), vectorIgnore.end() ); }
    void IGNORE_Add( const std::vector<std::string> vectorIgnore );
+   void IGNORE_AddFolder(const std::string_view& stringFolder);
 
    /// Ccheck if paths is to be ignored
    bool IGNORE_Match( const std::string_view& stringPath, const std::string_view& stringRoot ) const;
@@ -335,8 +336,8 @@ public:
 //@}
 
 
-/** \name CONFIG
-*///@{
+// ## @API [tag: configuration] [description: Configuration management in application]
+
    std::pair<bool, std::string> CONFIG_Load(); /// Load configuration from default file
    /// Load configuration from specified file
    std::pair<bool, std::string> CONFIG_Load(const std::string_view& stringFileName );
@@ -344,10 +345,14 @@ public:
    gd::variant_view CONFIG_Get( std::string_view stringGroup, std::string_view stringName ) const;
    gd::variant_view CONFIG_Get( std::string_view stringGroup, const std::initializer_list<std::string_view> listName ) const;
 
+   void CONFIG_Set( std::string_view stringGroup, std::string_view stringName, const gd::variant_view& value_ );
+
    /// Checks if configuration is not loaded, if pointer to configuration is null than it has not been loaded
    bool CONFIG_Empty() const { return m_ptableConfig == nullptr; }
    bool CONFIG_Exists( std::string_view stringGroup, std::string_view stringName ) const;
-//@}
+
+   /// Handle array values
+   void CONFIG_HandleArray( std::string_view stringGroup, std::string_view stringName, const gd::argument::shared::arguments& arguments_ );
 
 /** \name HELP
 *///@{
