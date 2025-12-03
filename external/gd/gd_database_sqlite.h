@@ -1,9 +1,69 @@
+// @FILE [tag: database, sqlite] [description: wrapper class for SQLite database] [type: header]
+
 /*
-| name | description |
-| ---- | ----------- |
-| `` |  |
-| `` |  |
-| `` |  |
+## class database
+| Area                | Methods (Examples)                                                                 | Description                                                                                   |
+|---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Construction        | database(), database(sqlite3*), database(void*), database(void*, bool)             | Constructors for creating database objects with or without existing SQLite connections.       |
+| Assignment          | operator=(const database&), operator=(database&&)                                 | Copy and move assignment operators for database objects.                                      |
+| Connection          | open(stringView, unsigned), open(stringView)                                       | Open/create SQLite database files with optional flags.                                        |
+| Status              | is_owner(), is_open()                                                              | Check database ownership and connection status.                                               |
+| Execution           | execute(stringView), ask(stringView, variant*), transaction(variant_view)         | Execute SQL statements, query single values, and manage transactions.                       |
+| Key Information     | get_insert_key(), get_insert_key(variant&), get_insert_key_raw()                  | Retrieve the last inserted row ID from the database.                                         |
+| Change Information  | get_change_count()                                                                 | Get the number of rows affected by the last statement.                                       |
+| Resource Management | close(), release()                                                                 | Close the database connection and release ownership.                                        |
+| Access              | get_sqlite3(), set_flags(unsigned, unsigned), is_flag(unsigned)                   | Access the underlying SQLite handle and manage flags.                                       |
+| Static Utilities    | open_s(stringView, int), execute_s(sqlite3*, stringView), bind_s(...), close_s(...) | Static utility functions for database operations independent of instances.                  |
+
+## class cursor
+| Area                | Methods (Examples)                                                                 | Description                                                                                   |
+|---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Construction        | cursor(), cursor(database*)                                                        | Constructors for creating cursor objects, optionally with a database connection.              |
+| Assignment          | operator=(const cursor&), operator=(cursor&&)                                     | Copy and move assignment operators for cursor objects.                                        |
+| Connection          | open(), open(stringView), open(stringView, function)                               | Execute SQL queries and prepare result sets.                                                  |
+| Preparation         | prepare(stringView), prepare(stringView, initializer_list), prepare(stringView, vector) | Prepare SQL statements with optional parameter binding.                                     |
+| Parameter Binding   | bind_parameter(int, variant_view), bind_parameter(int, initializer_list), bind_parameter(int, vector) | Bind values to SQL statement parameters.                                                     |
+| Execution           | execute()                                                                          | Execute prepared statements.                                                                 |
+| Navigation          | next(), reset(), is_valid_row()                                                    | Navigate through result sets and check row validity.                                         |
+| Data Access         | operator[](unsigned), operator[](stringView), get_variant(), get_variant_view()   | Access column values as variants or variant views.                                          |
+| Metadata            | get_column_count(), get_parameter_count(), get_parameter_name()                    | Retrieve information about result columns and parameters.                                     |
+| Record Access       | get_record(), get_record() const, operator const record&()                         | Access the underlying record structure.                                                      |
+| Resource Management | close()                                                                            | Close the cursor and release resources.                                                     |
+| Index Operations    | get_index(stringView)                                                              | Get column index by name.                                                                    |
+| Static Utilities    | get_column_type_s(const char*), get_column_ctype_s(const char*), bind_columns_s(...) | Static utility functions for type detection and column binding.                             |
+
+## class database_i
+| Area                | Methods (Examples)                                                                 | Description                                                                                   |
+|---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Construction        | database_i(), database_i(stringView), database_i(stringView, stringView)          | Constructors for creating interface objects with optional name and dialect.                    |
+| Assignment          | operator=(database_i&&)                                                            | Move assignment operator for database interface objects.                                     |
+| Interface           | query_interface(guid, void**), add_reference(), release()                           | COM-style interface methods for reference counting and queryInterface.                       |
+| Connection          | open(stringView), open(arguments)                                                  | Open database connections using connection strings or arguments.                             |
+| Execution           | execute(stringView), ask(stringView, variant*), transaction(variant_view)         | Execute SQL statements, query single values, and manage transactions.                         |
+| Cursor Creation     | get_cursor(cursor_i**)                                                             | Create and retrieve cursor objects for query execution.                                       |
+| Resource Management | close(), erase(), get_pointer()                                                    | Close connections, erase database, and access internal pointer.                               |
+| Metadata            | name(), dialect(), set(stringView, variant_view)                                  | Get/set database name, dialect, and configuration properties.                                |
+| Key Information     | get_insert_key()                                                                   | Retrieve the last inserted row ID.                                                           |
+| Change Information  | get_change_count()                                                                 | Get the number of rows affected by the last statement.                                       |
+
+
+## class cursor_i
+| Area                | Methods (Examples)                                                                 | Description                                                                                   |
+|---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Construction        | cursor_i(), cursor_i(database*)                                                    | Constructors for creating cursor interface objects, optionally with a database connection.    |
+| Assignment          | operator=(cursor_i&&)                                                              | Move assignment operator for cursor interface objects.                                        |
+| Interface           | query_interface(guid, void**), add_reference(), release()                           | COM-style interface methods for reference counting and queryInterface.                       |
+| Connection          | open(), open(stringView)                                                           | Execute SQL queries and prepare result sets.                                                 |
+| Preparation         | prepare(stringView), prepare(stringView, vector)                                   | Prepare SQL statements with optional parameter binding.                                      |
+| Parameter Binding   | bind(vector), bind(unsigned, vector)                                               | Bind values to SQL statement parameters.                                                     |
+| Execution           | execute()                                                                          | Execute prepared statements.                                                                 |
+| Navigation          | next()                                                                             | Advance to the next row in the result set.                                                  |
+| Data Access         | get_record(record**), get_record(), get_record() const                             | Access the underlying record structure.                                                      |
+| Status              | is_open(), is_valid_row()                                                          | Check cursor state and row validity.                                                         |
+| Resource Management | close()                                                                            | Close the cursor and release resources.                                                     |
+| Metadata            | get_column_count()                                                                 | Get the number of columns in the result set.                                                |
+
+
 
 
 *Sample on how to write vector storing pair double values in to database*
@@ -45,7 +105,7 @@ TEST_CASE( "Write pair with doubles into sqlite database", "[Write]" ) {
    for( decltype(table.get_row_count()) uRow = 0; uRow < table.get_row_count(); uRow++ )
    {
       auto vectorAddRow = table.cell_get_variant_view( uRow );
-      
+
       // ## add two dummy values, need to complete values in TMeasurement table
       vectorAddRow.push_back( double(9999.9) );
       vectorAddRow.push_back( int64_t(888) );
@@ -340,7 +400,7 @@ public:
 public:
    unsigned m_uState;            ///< cursor state
    sqlite3_stmt* m_pstmt;        ///< sqlite statement for active result
-   database* m_pdatabase;        ///< database cursor reads data from 
+   database* m_pdatabase;        ///< database cursor reads data from
    record m_recordRow;           ///< buffer used to store data from active row
 
 
@@ -408,10 +468,10 @@ inline std::pair<bool, std::string> cursor::bind_parameter( int iOffset, const s
 
 /// close cursor if open, open is same as it has one active statement
 inline void cursor::close() {
-   if(m_pstmt != nullptr) { 
-      ::sqlite3_finalize(m_pstmt); m_pstmt = nullptr; 
+   if(m_pstmt != nullptr) {
+      ::sqlite3_finalize(m_pstmt); m_pstmt = nullptr;
       m_pstmt = nullptr;
-      m_uState = 0; 
+      m_uState = 0;
       m_recordRow.clear();
    }
 }
@@ -447,7 +507,7 @@ public:
    // assign
    cursor_i& operator=( cursor_i&& o ) noexcept { common_construct( std::move( o ) ); return *this; }
 
-   virtual ~cursor_i() { 
+   virtual ~cursor_i() {
       if( m_pcursor ) { m_pcursor->close(); }
       m_pcursor = nullptr;
    }
@@ -542,7 +602,7 @@ public:
    //database_i& operator=( const database_i& o ) { common_construct( o ); return *this; }
    database_i& operator=( database_i&& o ) noexcept { common_construct( std::move( o ) ); return *this; }
 
-   ~database_i() { 
+   ~database_i() {
       if( m_pdatabase ) { m_pdatabase->close(); }
       m_pdatabase = nullptr;
    }

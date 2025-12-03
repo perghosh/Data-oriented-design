@@ -1,4 +1,4 @@
-#pragma once
+// @FILE [tag: database, record] [description: Database record management. Logic used to store information from database select queries where one row is represented as a record] [type: header]  
 
 #include <cassert>
 #include <cstring>

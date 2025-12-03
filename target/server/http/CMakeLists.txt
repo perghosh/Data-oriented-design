@@ -38,6 +38,7 @@ endfunction()
 set( USE_TARGET_ ON ) # ========================================================= ${http}
 if( USE_TARGET_ )
    file(GLOB HTTP_FILES_ *.cpp )                                               # all cpp files in root directory
+   file(GLOB HTTP_STATE_FILES_  state/*.cpp )                                  # all cpp files in state subdirectory
    set(TARGET_NAME_ "http")
 
    add_executable(${TARGET_NAME_}
@@ -47,7 +48,7 @@ if( USE_TARGET_ )
       ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
 
      ${HTTP_FILES_}                                                           # current directory files
-      
+     ${HTTP_STATE_FILES_}                                                     # files from state subdirectory
       "main.cpp"                                                              # main file where method main is located
    )
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)

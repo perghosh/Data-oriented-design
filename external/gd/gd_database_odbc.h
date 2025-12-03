@@ -1,3 +1,5 @@
+// @FILE [tag: database, odbc] [description: wrapper class for ODBC database] [type: header]
+
 #pragma once
 
 #ifdef GD_DATABASE_ODBC_USE

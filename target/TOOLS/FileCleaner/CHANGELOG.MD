@@ -2,6 +2,8 @@
 
 ## v1.1.1
 ### New Features
+- Added `menu` to history, this shows a menu with saved history items to select from. Makes it easier to select saved commands to run.
+- Some global application settings now works in history saved commands, like `prompt` and `logging-severity`.
 
 
 ## v1.1.0

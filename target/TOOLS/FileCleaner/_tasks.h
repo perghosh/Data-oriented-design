@@ -144,3 +144,12 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 @TASK [summary: list alias values for history items] [project:history] [user: per] [status:open] [created: 251126] [type: code]
 [description: menu should list aliases with numbers to be selected, also comment if it exists]
 */
+
+
+/*
+@PROJECT [name: command-find-tags] [summary: print all tags for selected key]
+
+@TASK [summary: command to find all tags for selected key] [project:command-find-tags] [user: per] [status:open] [created: 251130] [type: code]
+[description: Add command to find all tags for selected key, similar to find keys but only print tags for those keys. This is important to see what tags that are selectable]
+
+*/

@@ -76,6 +76,9 @@ public:
    /// Configure global application arguments
    std::pair< bool, std::string > Configure( const gd::cli::options& optionsApplication );
 
+   /// Execute command from command line
+   std::pair< bool, std::string > Execute( gd::cli::options& optionsCommand );
+
 
 //@}
 
