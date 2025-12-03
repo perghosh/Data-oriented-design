@@ -87,6 +87,9 @@ static std::string FILE_GetHistoryFile_s( const gd::argument::arguments& argumen
 
 static std::string DATE_CurrentTime_s();
 
+static std::string MENU_FormatEntry_s(unsigned uIndex, const std::string& stringAlias,  const std::string& stringDescription = "",  const std::string& stringDate = "");
+static std::string MENU_CreateBox_s(const std::string& stringTitle, unsigned uWidth = 76);
+
 static std::filesystem::path GetHistoryPath_s();
 
 static std::filesystem::path CurrentDirectory_s();
@@ -718,6 +721,8 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
       ptableHistory->row_clear();                                                // Clear previous table entries
       if( stringEntry.empty() == false ) 
       { 
+         // ## Set select key to know what to read from history file ............
+
          if( gd::math::type::is_integer(stringEntry) == true ) 
          { 
             int64_t iIndex = std::stoi(stringEntry); // set runt to execute, note that is 1-based index                        
@@ -752,8 +757,8 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
 
       // ## Get the command from the specified row and execute it ............
 
-      std::string stringName = ptableHistory->cell_get_variant_view(iRow, "name").as_string();
-      std::string stringLine = ptableHistory->cell_get_variant_view(iRow, "line").as_string();
+      std::string stringName = ptableHistory->cell_get_variant_view( iRow, "name" ).as_string(); // sub command name for cleaner
+      std::string stringLine = ptableHistory->cell_get_variant_view( iRow, "line" ).as_string(); // command line arguments
 
       std::vector<std::string> vectorCommand;
       const auto* piBegin = stringLine.c_str();
@@ -802,7 +807,7 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
             {  gd::cli::options* poptionsCommand = optionsRun.sub_find_active();// find the active sub-command options
                if( poptionsCommand != nullptr )
                {
-                  gd::argument::arguments argumentsOverload( poptionsApplication->get_arguments() );
+                  gd::argument::arguments argumentsOverload( poptionsApplication->get_arguments() ); // append overloaded arguments from application options (overwrite options from history)
                   argumentsOverload.remove("run");
                   poptionsCommand->overload(argumentsOverload);
                }
@@ -850,6 +855,7 @@ std::pair<bool, std::string> HistoryIndex_g(const gd::argument::arguments& argum
 std::pair<bool, std::string> HistoryMenu_g(const gd::argument::arguments& argumentsMenu, const gd::cli::options* poptionsApplication, CDocument* pdocument)
 { 
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
+   std::vector<std::string> vectorCommands; // vector to hold the commands from history, this is used to match against from user input
    auto ptable = pdocument->CACHE_Get("history"); // Get the history table from the cache
 
    if( ptable->size() == 0 )
@@ -867,23 +873,78 @@ std::pair<bool, std::string> HistoryMenu_g(const gd::argument::arguments& argume
       std::string stringAlias = ptable->cell_get_variant_view(uRow, "alias").as_string();
       if( stringAlias.empty() == true) continue;
 
-      std::string stringMenuEntry = std::format( "-- [{}]: {}", uIndex, stringAlias );
+      vectorCommands.push_back( stringAlias );
+
+      std::string stringDescription = ptable->cell_get_variant_view(uRow, "description").as_string();
+      std::string stringDate = ptable->cell_get_variant_view(uRow, "date").as_string();
+
+      std::string stringMenuEntry = MENU_FormatEntry_s(uIndex, stringAlias, stringDescription, stringDate);
       stringMenu += stringMenuEntry + "\n";
       uIndex++;
    }
 
    pdocument->MESSAGE_Display(stringMenu, { array_, {{"color", "default"}}, gd::types::tag_view{} });
 
-   // ## Wait for user input ..............................................
+   // ## Get user input ......................................................
    std::string stringInput;
-   stringMenu = "Select command to run (empty to skip): ";
-   pdocument->MESSAGE_Display(stringMenu, { array_, {{"color", "highlight"}}, gd::types::tag_view{} });
+   std::string stringPrompt = "Select command [number/alias/prefix] or press Enter to cancel: ";
+   pdocument->MESSAGE_Display(stringPrompt, { array_, {{"color", "highlight"}}, gd::types::tag_view{} });
    std::getline( std::cin, stringInput );
 
    if( stringInput.empty() == true ) { return { true, "" }; }
 
+   // ## Find the selected command ...........................................
+   //    If input is integer, use as index, else find by alias, then by starting text
 
-   return { true, "" };
+   int iSelectedIndex = -1;
+   if( gd::math::type::is_integer(stringInput) == true )
+   {
+      iSelectedIndex = std::stoi(stringInput) - 1;
+   }
+   else
+   {
+      // Find by alias
+      size_t uIndex = 0;
+      for( const auto& stringAlias : vectorCommands )
+      {
+         if( stringAlias == stringInput )
+         {
+            iSelectedIndex = (unsigned)uIndex;
+            break;
+         }
+         uIndex++;
+      }
+
+      if( iSelectedIndex < 0 )
+      {
+         uIndex = 0;
+         // Try to match by starting text
+         for( const auto& stringAlias : vectorCommands )
+         {
+            if( stringAlias.starts_with(stringInput) )
+            {
+               iSelectedIndex = (unsigned)uIndex;
+               break;
+            }
+            uIndex++;
+         }
+      }
+   }
+
+   if( iSelectedIndex < 0 || iSelectedIndex >= (int)vectorCommands.size() ) { return { false, "Invalid selection: " + stringInput }; } // Ensure the row index is valid
+
+   // ## Extract the alias for command to run ................................
+   auto stringAlias = vectorCommands[iSelectedIndex];
+   if( stringAlias.empty() == true ) { return { false, "Failed to get alias for selection: " + stringInput }; }
+
+   std::string stringSelected = "You selected command: " + stringAlias;
+   pdocument->MESSAGE_Display(stringSelected, { array_, {{"color", "disabled"}}, gd::types::tag_view{} });
+
+   // ## Call HistoryRun_g to execute the selected command ...................
+   gd::argument::arguments argumentsRun;
+   argumentsRun.append("run",stringAlias);
+
+   return HistoryRun_g( argumentsRun, poptionsApplication, pdocument );
 }
 
 /** ---------------------------------------------------------------------------
@@ -1257,6 +1318,70 @@ std::filesystem::path GetHistoryPath_s()
    return pathDirectory;
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Helper function to format a menu entry with optional description and date
+ * @param uIndex The menu index number
+ * @param stringAlias The command alias
+ * @param stringDescription Optional description of the command
+ * @param stringDate Optional date when command was saved
+ * @return Formatted menu entry string
+ */
+std::string MENU_FormatEntry_s(unsigned uIndex, const std::string& stringAlias, const std::string& stringDescription ,  const std::string& stringDate )
+{
+    std::string stringEntry;
+    
+    // Format: [#] alias - description (date)
+    stringEntry = std::format("  [{:2}] {:15}", uIndex, stringAlias);
+    
+    if( stringDescription.empty() == false )
+    {
+        stringEntry += std::format(" - {}", stringDescription);
+    }
+
+    if( stringDate.empty() == false )
+    {
+        // Extract just the date part (YYYY-MM-DD) from datetime
+        std::string stringDateOnly = stringDate.substr(0, 10);
+        stringEntry += std::format(" ({})", stringDateOnly);
+    }
+    
+    return stringEntry;
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Creates a decorative box with title centered at the top
+ * @param stringTitle The title text to display in the header
+ * @param uWidth The total width of the box (default: 76)
+ * @return Formatted box string with header, title, separator, and footer
+ */
+std::string CreateMenuBox_s(const std::string& stringTitle, unsigned uWidth = 76)
+{
+    // Ensure width is reasonable
+    if( uWidth < 20 ) uWidth = 20;
+    if( uWidth > 200 ) uWidth = 200;
+    
+    size_t uInnerWidth = uWidth - 2; // Account for left and right borders
+    
+    // Calculate padding for centered title
+    size_t uTitleLength = stringTitle.length();
+    size_t uPaddingTotal = (uTitleLength < uInnerWidth) ? (uInnerWidth - uTitleLength) : 0;
+    size_t uPaddingLeft = uPaddingTotal / 2;
+    size_t uPaddingRight = uPaddingTotal - uPaddingLeft;
+    
+    // Build box using std::format with string repetition for borders
+    std::string stringHorizontal(uInnerWidth, '=');
+    
+    std::string stringBox = std::format("╔{}╗\n", stringHorizontal);
+    stringBox += std::format("║{:>{}}{}║\n", "", uPaddingLeft, stringTitle);
+    stringBox += std::format("{:<{}}║\n", "", uPaddingRight);
+    stringBox += std::format("╠{}╣\n", stringHorizontal);
+    
+    return stringBox;
+}
+
+
 std::filesystem::path CurrentDirectory_s()
 {
    std::filesystem::path pathDirectory = std::filesystem::current_path();
@@ -1271,5 +1396,6 @@ std::string FolderGetHome_s()
 
    return stringHome;
 }
+
 
 NAMESPACE_CLI_END

@@ -1534,6 +1534,18 @@ void table::row_set_range( uint64_t uRow, unsigned uBeginColumn, unsigned uCount
    }
 }
 
+void table::reserve(uint64_t uCount)
+{
+   if( uCount > m_uReservedRowCount )
+   {
+      row_reserve_add( uCount - m_uReservedRowCount );
+   }
+   else
+   {
+      m_uRowCount = uCount;
+   }
+}
+
 
 
 /** ---------------------------------------------------------------------------

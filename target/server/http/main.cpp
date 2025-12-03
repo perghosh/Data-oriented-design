@@ -6,6 +6,9 @@
 CApplication* papplication_g = nullptr;
 
 
+/** --------------------------------------------------------------------------- @API [tag: main] [description: start application] [type: method]
+ * @brief man is as you know where the application starts
+ */
 int main( int iArgumentCount, char* ppbszArgument[] )
 {
    // ## Initialize application and configure to get the server running
@@ -15,8 +18,8 @@ int main( int iArgumentCount, char* ppbszArgument[] )
    //std::cout << "we have a message";
 
    papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
-   auto result_ = papplication_->Initialize();                                                     assert( result_.first );
-   result_ = papplication_->SERVER_Start();
+   
+   //result_ = papplication_->SERVER_Start();
 
    return 0;
 }

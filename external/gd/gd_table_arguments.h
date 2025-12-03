@@ -293,7 +293,7 @@ public:
    // ## @API [tag: construct] [description: table construction, lots of constructors to simplify how to create new tables]
 public:
    /// @name construction
-   /// Constructs table_column_buffer objects.
+   /// Constructs table objects.
    /// - `uRowCount` number of rows that are pre allocated when table is prepared
    /// - `uFlags` flags in enum above (eTableFlagNull32 = manage nulls for max 32 columns, eTableFlagNull64 = manage nulls for max 64 columns, eTableFlagRowStatus = reserve space to mark different row states like deleted etc)
    /// - `uGrowBy` how many rows table should grow by if it needs to increase its size.
@@ -622,6 +622,7 @@ public:
    /// @name row_reserve_add
    /// reserve memory to store more rows in table
    ///@{
+   void reserve(uint64_t uCount);
    void row_reserve_add( uint64_t uCount );
    void row_reserve_add() { row_reserve_add( 1 ); }
    ///@}
