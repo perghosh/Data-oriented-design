@@ -2131,6 +2131,14 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
       CACHE_Add( std::move(ptableKeys) );                                     // add table to cache
       return;                                                                 // exit, table is already added to cache
    }
+   else if( stringId == "llm-output" )
+   {
+      // type | tag | filename | content | row | priority
+      ptable_ = std::make_unique<table>(table(uTableStyle,
+         { {"string", 16, "type"}, {"rstring", 0, "tag"}, {"rstring", 0, "filename"}, {"rstring", 0, "content"}, {"uint64", 0, "row"}, {"uint64", 0, "priority"} }, gd::table::tag_prepare{})
+      );
+      ptable_->property_set("id", stringId);                                  // set id for table, used to identify table in cache
+   }
    else if( stringId == "history" )
    {
       // file table: index | date | command | line 

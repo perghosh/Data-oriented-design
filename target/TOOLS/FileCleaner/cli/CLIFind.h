@@ -49,6 +49,8 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
 std::pair<bool, std::string> FindPrintSnippet_g( CDocument* pdocument, const gd::argument::shared::arguments& argumentsPrint );
 /// @brief Print method for key-value pairs
 std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint = nullptr );
+/// @brief Print method for LLM output
+std::pair<bool, std::string> FindPrintLLMOutput_g( CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint = nullptr );
 
 #ifdef _WIN32
 /// @brief Print method for visual studio format
