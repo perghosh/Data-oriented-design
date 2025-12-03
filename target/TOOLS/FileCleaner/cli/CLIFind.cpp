@@ -1039,6 +1039,16 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    return { true, "" };                                                       // return success
 }
 
+std::pair<bool, std::string> FindPrintLLMOutput_g( CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint )
+{                                                                                                  assert(pdocument != nullptr); assert(pargumentsPrint != nullptr);
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
+   auto* ptableLLMOutput = pdocument->CACHE_Get("llm-output"); // get table for LLM output from the cache
+
+   // ## Fill LLM output table from result
+
+   return { true, "" };                                                       // return success
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Prints all rows from the key-value table in a basic/compact format.
