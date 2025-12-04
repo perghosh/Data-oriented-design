@@ -1991,7 +1991,7 @@ void CDocument::PROPERTY_UpdateFromApplication()
 
 // 0TAG0CACHE.Document 
 
-/** --------------------------------------------------------------------------- @CODE [tag: cache, ] [description: Generate tables for selected cache identifiers]
+/** --------------------------------------------------------------------------- @API [tag: cache, table ] [description: Generate tables for selected cache identifiers]
  * @brief Prepares a cache table for the specified identifier.  
  *  
  * This method initializes and prepares a table for caching data associated with the given `stringId`.  
@@ -3032,6 +3032,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
    // Define the result table structure  
    constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );
    table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"}, {"rstring", 0, "context"}, {"uint64", 0, "row"}, {"uint64", 0, "row-leading"} }, gd::table::tag_prepare{});
+   tableResult.property_set("id", "context");
 
    // Retrieve the file-pattern cache table  
    auto* ptableFile = CACHE_Get("file");                                                           assert(ptableFile != nullptr);

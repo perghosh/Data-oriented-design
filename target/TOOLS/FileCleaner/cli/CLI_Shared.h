@@ -45,6 +45,8 @@ std::pair<bool, std::string> SHARED_OpenFile_g(const std::string_view& stringFil
 /// Get the width of the terminal window.
 int SHARED_GetTerminalWidth();
 
+std::pair<bool, std::string> SHARED_TransformTableForLLMPretrain_g( const gd::table::dto::table* ptableFrom, CDocument* pdocument );
+
 NAMESPACE_CLI_END
 
 
