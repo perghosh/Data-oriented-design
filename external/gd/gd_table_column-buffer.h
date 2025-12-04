@@ -374,6 +374,8 @@ public:
       std::vector< gd::variant_view > get_variant_view( const std::vector<unsigned>& vectorColumn ) const { return m_ptablecolumnbuffer->row_get_variant_view( m_uRow, vectorColumn ); }
       std::vector< gd::variant_view > get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const { return m_ptablecolumnbuffer->row_get_variant_view( m_uRow, puIndex, uSize ); }
 
+      gd::argument::arguments get_arguments() const { return m_ptablecolumnbuffer->row_get_arguments( m_uRow ); } 
+
       gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptablecolumnbuffer->cell_get_variant_view( m_uRow, uIndex ); }
       gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptablecolumnbuffer->cell_get_variant_view( m_uRow, stringName ); }
 

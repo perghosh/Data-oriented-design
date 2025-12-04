@@ -52,6 +52,8 @@ _GD_TABLE_BEGIN
 struct tag_io_header {};
 /// tag dispatcher for body information
 struct tag_io_body {};
+/// tag dispatcher for object information
+struct tag_io_object {};
 /// tag dispatcher for naming, value is in some way attached to name
 struct tag_io_name {};
 /// tag dispatcher for column information

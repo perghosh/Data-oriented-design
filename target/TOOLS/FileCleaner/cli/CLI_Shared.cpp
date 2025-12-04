@@ -6,6 +6,7 @@
  * This file contains the implementation of functions shared across CLI tools.
  */
 
+#include <string>
 #ifdef _WIN32
  // Windows-specific includes or code
 #else
@@ -349,6 +350,74 @@ int SHARED_GetTerminalWidth()
     }
     return 80; // Fallback width
 #endif
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Transform a table for LLM pretraining.
+ * 
+ * @param ptableFrom The source table.
+ * @param pdocument The document.
+ * @return A pair of bool and string.
+ */
+std::pair<bool, std::string> SHARED_TransformTableForLLMPretrain_g( const gd::table::dto::table* ptableFrom, CDocument* pdocument )
+{                                                                                                  assert( pdocument != nullptr ); assert( ptableFrom != nullptr );
+   auto ptableLLMOutput = pdocument->CACHE_Get("llm-output"); // get the file line list from the cache
+   
+   const std::string stringTableId = ptableFrom->property_get( "id" ).as_string(); // get the table id
+   
+   enum class enumTableType { eNone, eTableLineList, eTableContext };
+   enumTableType eTableType = enumTableType::eNone;
+   
+   if( stringTableId == "file-linelist") eTableType = enumTableType::eTableLineList;
+   else if( stringTableId == "context") eTableType = enumTableType::eTableContext;
+   else return { false, "Unsupported source table type for LLM transformation" };
+   
+   // ## iterate over all rows in source table and transform them to LLM output format
+   for( auto itRow = std::begin( *ptableFrom ); itRow != std::end( *ptableFrom ); ++itRow )
+   {
+      switch( eTableType )
+      {
+         case enumTableType::eTableLineList:
+         {
+            // Extract data from file-linelist table
+            const auto filename_ = itRow.cell_get_variant_view("filename");
+            const auto line_ = itRow.cell_get_variant_view("line");
+            const auto row_ = itRow.cell_get_variant_view("row");
+            const auto segment_ = itRow.cell_get_variant_view("segment");
+
+            // ## Create new row in LLM output table
+            const auto uLLMRow = ptableLLMOutput->row_add_one();
+            ptableLLMOutput->cell_set(uLLMRow, "filename", filename_, gd::table::tag_convert{});
+            ptableLLMOutput->cell_set(uLLMRow, "content", line_, gd::table::tag_convert{});
+            ptableLLMOutput->cell_set(uLLMRow, "row", row_, gd::table::tag_convert{});
+            ptableLLMOutput->cell_set(uLLMRow, "priority", (uint64_t)1);       // default priority
+         }
+         break;
+         case enumTableType::eTableContext:
+         {
+            // Extract data from context table
+            const auto file_ = itRow.cell_get_variant_view("file");
+            const auto line_ = itRow.cell_get_variant_view("line");
+            const auto context_ = itRow.cell_get_variant_view("context");
+            const auto row_ = itRow.cell_get_variant_view("row");
+
+            // ## Create new row in LLM output table
+            const auto uLLMRow = ptableLLMOutput->row_add_one();
+            ptableLLMOutput->cell_set(uLLMRow, "filename", file_, gd::table::tag_convert{});
+            ptableLLMOutput->cell_set(uLLMRow, "content", context_, gd::table::tag_convert{});
+            ptableLLMOutput->cell_set(uLLMRow, "row", row_, gd::table::tag_convert{});
+            ptableLLMOutput->cell_set(uLLMRow, "priority", (uint64_t)1);       // default priority
+            break;
+         }
+         
+         case enumTableType::eNone:
+         default:
+            // Skip unknown table types
+            break;
+      }
+   }
+   
+   return { true, "" };
 }
 
 

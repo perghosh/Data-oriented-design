@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <format>
 
+#include "gd/gd_table_io.h"
 #include "gd/console/gd_console_console.h"
 #include "gd/math/gd_math_string.h"
 
@@ -175,6 +176,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
          if( options_.exists("vs") == true ) 
          { 
             argumentsPrint.append("vs", true); 
+            if( options_.exists("llm-output") == true ) argumentsPrint.append("llm", true);
             result_ = FindPrint_g(pdocument, argumentsPrint);                  // Print the results of the find operation
             if( result_.first == false ) return result_;                       // if print failed, return the error
          }
@@ -227,11 +229,21 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
          // check if vs flag is set, if so then print to Visual Studio output
          if( options_.exists("vs") == true ) { argumentsPrint.append("vs", true); }
 
+         if( options_.exists("llm-output") == true ) argumentsPrint.append("llm", true);
+
          result_ = FindPrint_g(pdocument, argumentsPrint);                     // Print the results of the find operation
          if( result_.first == false ) return result_;                          // if print failed, return the error
       }
 
       papplication_g->Print("", gd::types::tag_background{} );
+   }
+
+   // ## Check for llm output
+   const auto* ptableLLM = pdocument->CACHE_Get("llm-output", false);
+   if( ptableLLM != nullptr )
+   {
+      auto stringLLM = gd::table::to_string( *ptableLLM, gd::table::tag_io_json{}, gd::table::tag_io_name{});
+
    }
 
    return { true, "" }; 
@@ -700,7 +712,9 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
 
    gd::argument::arguments argumentsOption( { { "pattern-count", (unsigned)uSearchPatternCount } } );
    if( iContextOffset != 0 || iContextCount != 0 ) { argumentsOption.append( "offset", iContextOffset ); argumentsOption.append( "count", iContextCount ); }
+   
    auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsOption );// generate the result table for pattern line list
+   if( argumentsPrint.exists("llm") ) { SHARED_TransformTableForLLMPretrain_g( &tableResultLineList, pdocument ); }
 
    auto uRowCount = tableResultLineList.get_row_count(); // get the number of rows in the result table
 
