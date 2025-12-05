@@ -165,6 +165,8 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
 void to_string( const dto::table& table, const std::vector<uint64_t>& vectorRow, const gd::argument::arguments& argumentsOption, const std::function<bool (const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_json );
 void to_string( const dto::table& table, const std::vector<uint64_t>& vectorRow, const gd::argument::arguments& argumentsOption, const std::function<bool (const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_header, tag_io_json );
 
+void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_object, tag_io_json );
+
 inline void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_json) {
    return to_string( table, uBegin, uCount, gd::argument::arguments(), format_text_, stringOut, tag_io_json{});
 }
@@ -226,6 +228,20 @@ inline std::string to_string( const dto::table& table, tag_io_json, tag_io_name 
 
 void to_string( const dto::table& table, std::string& stringOut, tag_io_json, tag_io_column );
 void to_string( const dto::table& table, std::string& stringOut, const std::vector<gd::argument::arguments>& vectorExtra, tag_io_json, tag_io_column );
+
+
+inline std::string to_string( const dto::table& table, tag_io_object, tag_io_json ) {
+   std::string stringOut;
+   to_string( table, 0, table.get_row_count(), {}, nullptr, stringOut, tag_io_object{}, tag_io_json{} );
+   return stringOut;
+}
+
+inline std::string to_string( const dto::table& table, const gd::argument::arguments& argumentsOption, tag_io_object, tag_io_json ) {
+   std::string stringOut;
+   to_string( table, 0, table.get_row_count(), argumentsOption, nullptr, stringOut, tag_io_object{}, tag_io_json{} );
+   return stringOut; 
+}
+
 
 
 // ## CLI IO (command line interface) -----------------------------------------
