@@ -1,7 +1,7 @@
 /**
  * @file gd_expression_token.h
  * @brief Token item struct, definitions for expression parsing and evaluation using tokens
- * 
+ *
  * | Area                | Methods (Examples)                                                                 | Description                                                                                   |
  * |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
  * | Construction        | token(), token(uint32_t, const std::string_view&), operator=(...), common_construct(...) | Constructors and assignment operators for creating and copying token objects.                 |
@@ -34,14 +34,14 @@
 #define _GD_EXPRESSION_END } }
 #endif
 
-_GD_EXPRESSION_BEGIN 
+_GD_EXPRESSION_BEGIN
 
 struct tag_formula {}; ///< tag for formula
 struct tag_formula_keyword {}; ///< tag for formula with keywords
 struct tag_expression {}; ///< tag for expression
 struct tag_postfix {}; ///< tag for postfix
-struct tag_postfix_keyword {};
-struct tag_postfix_no_precedence {};
+struct tag_postfix_keyword {}; ///< tag for postfix with keywords
+struct tag_postfix_no_precedence {}; ///< tag for postfix without precedence (no precedence meanns that no reorder is needed)
 
 enum enumTokenType
 {
@@ -95,7 +95,7 @@ enum enumFunction
 enum enumValueType
 {
    eValueTypeNone            = 0,
-   eValueTypeBoolean         = 1, 
+   eValueTypeBoolean         = 1,
    eValueTypeInteger         = 8,
    eValueTypeDecimal         = 11,
    eValueTypePointer         = 12,
@@ -115,11 +115,11 @@ enum enumTokenPart
  *
  * A token is a fundamental unit of an expression, such as an operator, operand, or identifier.
  * Each token has a type and a name, which help in parsing and evaluating expressions.
- * 
+ *
  * The name in this token is a string view that references the original expression string, avoiding unnecessary copies
  * or using the list of operators that exists as from the static member method called operator_s
  */
-struct token 
+struct token
 {
    /// @brief constant values for operator types
    enum enumOperator
@@ -254,9 +254,9 @@ struct token
 
 	// ## read methods
 
-   static uint32_t read_number_s(const char* piszBegin, const char* piszEnd, std::string_view& string_); 
+   static uint32_t read_number_s(const char* piszBegin, const char* piszEnd, std::string_view& string_);
    static uint32_t read_string_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo );
-   static std::pair<uint32_t, uint32_t> read_variable_and_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo); 
+   static std::pair<uint32_t, uint32_t> read_variable_and_s(const char* piszBegin, const char* piszEnd, std::string_view& string_, const char**  ppiszReadTo);
 
    static uint32_t type_s( uint32_t uType, enumTokenPart eTokenPart );
    static uint32_t to_type_s( uint32_t uType, enumTokenPart eTokenPart );

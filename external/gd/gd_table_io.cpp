@@ -28,10 +28,10 @@ bool format_if( const std::string_view& stringText, std::string& stringNew, tag_
 }
 
 /** ---------------------------------------------------------------------------
- * @brief 
- * @param stringTableData 
- * @param table 
- * @return 
+ * @brief
+ * @param stringTableData
+ * @param table
+ * @return
 */
 /*
 std::pair<bool, std::string> to_table( const std::string_view& stringTableData, dto::table& table )
@@ -94,7 +94,7 @@ void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const 
       {
          stringName = table.column_get_alias( *it );
       }
-      else 
+      else
       {
          stringName = table.column_get_name( *it );
       }
@@ -484,7 +484,7 @@ std::pair<bool, const char*> read_g(dto::table& table, const std::string_view& s
 std::pair<bool, const char*> read_g(std::vector<std::string>& vectorHeader, const std::string_view& stringCsv, char chSeparator, char chNewLine, tag_io_csv)
 {
    gd::parse::csv csvRule( chSeparator, chNewLine );                           // csv rules used to parse values
-   
+
    return std::pair<bool, const char*>();
 }
 
@@ -499,7 +499,7 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
    std::vector<gd::variant_view> vectorValue;   // used to fetch values from table
 
    if( format_text_ ) { functionFormat = format_text_; }
-   
+
    if( argumentsOption["scientific"].is_true() == true ) uOptions |= eOptionScientific;
 
    auto uEnd = uBegin + uCount;
@@ -615,6 +615,96 @@ void to_string( const dto::table& table, const std::vector<uint64_t>& vectorRow,
    else stringOut += stringResult;
 }
 
+/** ---------------------------------------------------------------------------
+ * Converts a table to a string representation.
+ *
+ * @param table The table to convert.
+ * @param uBegin The starting index for conversion.
+ * @param uCount The number of rows to convert.
+ * @param argumentsOption The options for conversion.
+ * @param format_text_ The function to format text.
+ * @param stringOut The output string.
+ * @param tag_io_object The object tag.
+ * @param tag_io_json The JSON tag.
+ */
+void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_object, tag_io_json )
+{
+   // ## Configuration from argumentsOption
+   const bool bSkipNull = argumentsOption["skip_null"].is_true();
+   const bool bSkipEmpty = argumentsOption["skip_empty"].is_true();
+   unsigned uOptions = 0;
+   if( argumentsOption["scientific"].is_true() == true ) uOptions |= eOptionScientific;
+
+   std::function<bool(std::string_view, std::string& stringNew)> functionFormat( format_copy );
+   if( format_text_ ) { functionFormat = format_text_; }
+
+   // --- Preparation ---
+   std::string stringResult;
+   std::vector<gd::variant_view> vectorValue;
+
+   std::vector<std::string_view> vectorHeaders = table.column_get_name(); // Get header names to use as keys
+
+   const auto uColumnCount = vectorHeaders.size();
+
+   // ## Row Iteration
+   auto uEnd = uBegin + uCount;
+   for( auto uRow = uBegin; uRow < uEnd; uRow++ )
+   {
+      if( uRow != uBegin ) stringResult += ",\n"; // Comma between row objects
+      stringResult += "{";
+
+      // Get values for the current row
+      vectorValue.clear();
+      table.row_get_variant_view( uRow, vectorValue );
+
+      bool bFirstPair = true; // To handle commas between key-value pairs
+
+      // ## Column Iteration 
+      for( uint64_t uColumn = 0; uColumn < uColumnCount; ++uColumn )
+      {
+         if( uColumn >= vectorValue.size() ) continue; // Safety check for malformed tables
+
+         auto value_ = vectorValue[uColumn];
+
+         bool bShouldSkip = false;
+         if( bSkipNull && value_.is_null() ) { bShouldSkip = true; }
+         else if( bSkipEmpty && value_.is_string() && value_.as_string_view().empty() ) { bShouldSkip = true; }
+
+         if( bShouldSkip ) continue;
+
+         // Add comma separator between key-value pairs
+         if( !bFirstPair ) stringResult += ",";
+         bFirstPair = false;
+
+         // ## Add Key (Header)
+         stringResult += "\"";
+         stringResult += vectorHeaders[uColumn]; // Assuming headers are simple and don't need escaping
+         stringResult += "\":";
+
+         if( value_.is_null() == true ) { stringResult += "null"; }
+         else if( value_.is_string() == true )
+         {
+            stringResult += "\"";
+            const std::string_view text_ = value_.as_string_view();
+            bool bOk = functionFormat( text_, stringResult ); assert( bOk == true );
+            stringResult += "\"";
+         }
+         else
+         {
+            if( uOptions & eOptionScientific ) stringResult += value_.as_string( gd::variant_type::tag_scientific{} );
+            else                               stringResult += value_.as_string();
+         }
+      }
+
+      stringResult += '}';
+   }
+
+   if( !stringResult.empty() ) stringResult += "\n";
+
+   if( stringOut.empty() == true ) stringOut = std::move( stringResult );
+   else stringOut += stringResult;
+}
+
 namespace internal {
    void header_to_string(const dto::table& table, std::string& stringOut, tag_io_json)
    {
@@ -638,7 +728,7 @@ namespace internal {
          {
             stringOut += table.column_get_alias( *it );
          }
-         else 
+         else
          {
             stringOut += table.column_get_name( *it );
          }
@@ -723,7 +813,7 @@ void to_string(const dto::table& table, uint64_t uBegin, uint64_t uCount, const 
             gd::utf8::json::convert_utf8_to_json( name_, stringName );
             stringResult += stringName;
          }
-         
+
          stringResult += std::string_view("\": ");
 
          if( value_.is_null() == true )
@@ -764,9 +854,9 @@ namespace {
 
 /** ---------------------------------------------------------------------------
  * @brief Print table header information
- * @param table table object 
- * @param stringOut 
- * @param  
+ * @param table table object
+ * @param stringOut
+ * @param
  */
 template <typename TABLE>
 void to_string_s(const TABLE& table, const gd::argument::arguments& argumentOption, std::string& stringOut, tag_io_header)
@@ -812,8 +902,8 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
    bool bRaw = true; // argumentOption["raw"].is_true(); // dont add quotes around text?
 
    if( argumentOption.exists("max_column_width") == true )                     // check for max column width and shrink if above
-   { 
-      uMax = argumentOption["max_column_width"].as_uint(); 
+   {
+      uMax = argumentOption["max_column_width"].as_uint();
       std::for_each( std::begin( vectorWidth ), std::end( vectorWidth ), [uMax]( auto& uWidth ) { if( uWidth > uMax ) uWidth = uMax; });
    }
 
@@ -852,11 +942,11 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
    {
       unsigned uColumn = 0;
       auto it = std::begin(vectorWidth);
-      if( bNr == true ) 
-      { 
-         it++; 
+      if( bNr == true )
+      {
+         it++;
          stringHeader += '#';
-         stringHeader.insert( stringHeader.begin() + 1, 2 + vectorWidth.at( 0 ), ' '); 
+         stringHeader.insert( stringHeader.begin() + 1, 2 + vectorWidth.at( 0 ), ' ');
       };
 
       // ## iterate over witdh vector and add column names
@@ -910,7 +1000,7 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
 
    stringResult += stringHeader;
    stringResult += stringLineDivide;                                           // add divide line
-   
+
    for( auto uRow = uBegin; uRow < uEnd; uRow++ )
    {
       stringResult += "| ";
@@ -973,11 +1063,11 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
 
 /** ---------------------------------------------------------------------------
  * @brief Converts a table to a formatted string with support for multi-line cell values.
- * 
+ *
  * This function prints the table in a human-readable format, suitable for console output.
  * Each cell is wrapped to fit the specified column width and supports embedded newlines.
  * The output includes column headers, row dividers, and optionally row numbers.
- * 
+ *
  * @tparam TABLE Type of the table (must support required interface).
  * @param table Table to print.
  * @param uBegin Index of the first row to print.
@@ -985,7 +1075,7 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
  * @param vectorWidth Vector specifying the maximum width for each column.
  * @param argumentOption Options for formatting output (e.g., "nr" for row numbers, "verbose" for wrapping headers, "max_column_width" to limit column width, "prepend" to add a string before output, "divide" to add dividers).
  * @param stringOut Output string receiving the formatted table.
- * 
+ *
  * @details
  * - Each cell is split into lines based on embedded newlines and column width.
  * - Cells with more lines than others in the same row will cause the row to expand vertically.
@@ -1013,8 +1103,8 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
    bool bRaw = true; // argumentOption["raw"].is_true(); // dont add quotes around text?
 
    if( argumentOption.exists("max_column_width") == true )                     // check for max column width and shrink if above
-   { 
-      uMax = argumentOption["max_column_width"].as_uint(); 
+   {
+      uMax = argumentOption["max_column_width"].as_uint();
       std::for_each( std::begin( vectorWidth ), std::end( vectorWidth ), [uMax]( auto& uWidth ) { if( uWidth > uMax ) uWidth = uMax; });
    }
 
@@ -1049,11 +1139,11 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
    //    Returns a vector of strings, each representing a line
    auto split_text_to_lines_ = [&](const std::string& stringText, unsigned uMaxWidth) -> std::vector<std::string> {
       std::vector<std::string> vectorLine;
-      
+
       // ## First split by existing newlines
       std::string stringRemainingText = stringText;
       size_t uPosition = 0;
-      while((uPosition = stringRemainingText.find('\n')) != std::string::npos) 
+      while((uPosition = stringRemainingText.find('\n')) != std::string::npos)
       {
          std::string stringLine = stringRemainingText.substr(0, uPosition);
          stringRemainingText = stringRemainingText.substr(uPosition + 1);
@@ -1065,9 +1155,9 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
          }
          if(stringLine.empty() == false) { vectorLine.push_back(stringLine); }
       }
-      
+
       // Handle remaining text (no newlines)
-      while(stringRemainingText.length() > uMaxWidth) 
+      while(stringRemainingText.length() > uMaxWidth)
       {
          vectorLine.push_back(stringRemainingText.substr(0, uMaxWidth));
          stringRemainingText = stringRemainingText.substr(uMaxWidth);
@@ -1087,11 +1177,11 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
    {
       unsigned uColumn = 0;
       auto it = std::begin(vectorWidth);
-      if( bNr == true ) 
-      { 
-         it++; 
+      if( bNr == true )
+      {
+         it++;
          stringHeader += '#';
-         stringHeader.insert( stringHeader.begin() + 1, 2 + vectorWidth.at( 0 ), ' '); 
+         stringHeader.insert( stringHeader.begin() + 1, 2 + vectorWidth.at( 0 ), ' ');
       };
 
       // ## iterate over witdh vector and add column names
@@ -1147,7 +1237,7 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
    stringResult += stringLineDivide;                                           // add divide line
 
    // ## Process each row
-   
+
    for( auto uRow = uBegin; uRow < uEnd; uRow++ )
    {
       if( bDivide == true && uRow > uBegin ) stringResult += stringLineDivide; // add divide line before first row if option is set and not first row in table
@@ -1160,7 +1250,7 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
       // ### Process each cell and split into lines
       std::vector<std::vector<std::string>> vectorCellLines; // Each cell's lines (advanced !!)
       unsigned uMaxLinesInRow = 1; // max number of lines in any cell in this row
-      
+
       unsigned uColumn = 0;
       auto itWidth = std::begin( vectorWidth );
       for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it < itEnd; it++, itWidth++, uColumn++ )
@@ -1184,14 +1274,14 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
          std::vector<std::string> vectorLine = split_text_to_lines_(stringCell, uCellWidth);
 
          // ### Pad each line to column width and apply alignment
-         for (auto& line_ : vectorLine) 
+         for (auto& line_ : vectorLine)
          {
             if(line_.length() > uCellWidth) { line_ = line_.substr(0, uCellWidth); }
 
-            if(*itWidth > line_.length()) 
+            if(*itWidth > line_.length())
             {
                unsigned uAlign = gd::types::align_g( value_.type_number() );
-               if( uAlign == 0 ) { gd::utf8::format::pad_right( line_, *itWidth, ' ' ); } 
+               if( uAlign == 0 ) { gd::utf8::format::pad_right( line_, *itWidth, ' ' ); }
                else { gd::utf8::format::pad_left( line_, *itWidth, ' ' ); }
             }
          }
@@ -1202,22 +1292,22 @@ void to_string_newlines_s( const TABLE& table, uint64_t uBegin, uint64_t uCount,
 
       // ## Render the row with proper multi-line support
 
-      for(unsigned uLineIndex = 0; uLineIndex < uMaxLinesInRow; uLineIndex++) 
+      for(unsigned uLineIndex = 0; uLineIndex < uMaxLinesInRow; uLineIndex++)
       {
          stringResult += "| ";
 
-         for(unsigned uColumnIndex = 0; uColumnIndex < vectorCellLines.size(); uColumnIndex++) 
+         for(unsigned uColumnIndex = 0; uColumnIndex < vectorCellLines.size(); uColumnIndex++)
          {
             if(uColumnIndex > 0) { stringResult.append(std::string_view{" | "}); }
-            
+
             // Get the line for this cell, or empty string if this cell has fewer lines
             std::string stringLine;
-            if(uLineIndex < vectorCellLines[uColumnIndex].size()) { stringLine = vectorCellLines[uColumnIndex][uLineIndex]; } 
+            if(uLineIndex < vectorCellLines[uColumnIndex].size()) { stringLine = vectorCellLines[uColumnIndex][uLineIndex]; }
             else { stringLine.assign(vectorWidth[uColumnIndex], ' '); }           // Pad with spaces to maintain column width
 
             stringResult += stringLine;
          }
-         
+
          stringResult.append(std::string_view{" |\n"});
       }
    }// for( auto uRow = uBegin; uRow < uEnd; uRow++ ) {
@@ -1259,8 +1349,8 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
    bool bRaw = true; // argumentOption["raw"].is_true(); // dont add quotes around text?
 
    if( argumentOption.exists("max_column_width") == true )                     // check for max column width and shrink if above
-   { 
-      uMax = argumentOption["max_column_width"].as_uint(); 
+   {
+      uMax = argumentOption["max_column_width"].as_uint();
       std::for_each( std::begin( vectorWidth ), std::end( vectorWidth ), [uMax]( auto& uWidth ) { if( uWidth > uMax ) uWidth = uMax; });
    }
 
@@ -1295,11 +1385,11 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, std::vec
    // ## Print column names
    {
       auto it = std::begin(vectorWidth);
-      if( bNr == true ) 
-      { 
-         it++; 
+      if( bNr == true )
+      {
+         it++;
          stringHeader += '#';
-         stringHeader.insert( stringHeader.begin() + 1, 2 + vectorWidth.at( 0 ), ' '); 
+         stringHeader.insert( stringHeader.begin() + 1, 2 + vectorWidth.at( 0 ), ' ');
       };
 
       unsigned uColumn = 0;
@@ -1481,7 +1571,7 @@ void to_string( const dto::table& table, std::string& stringOut, const std::vect
                }
                else
                {
-                  stringColumns += value_.as_string();   
+                  stringColumns += value_.as_string();
                }
             }
             */
@@ -1493,6 +1583,7 @@ void to_string( const dto::table& table, std::string& stringOut, const std::vect
 
    stringOut += stringColumns;
 }
+
 
 /// raw table to string conversion, used for CLI output
 template <typename TABLE>
@@ -1518,8 +1609,8 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, const gd
    // ## Print column names
    {
       unsigned uColumn = 0;
-      if( bNr == true ) 
-      { 
+      if( bNr == true )
+      {
          uColumnCount++;
          stringHeader += "#";
          stringHeader += stringColumnDivide;
@@ -1536,7 +1627,7 @@ void to_string_s( const TABLE& table, uint64_t uBegin, uint64_t uCount, const gd
    }
 
    stringResult += stringHeader;
-   
+
    for( auto uRow = uBegin; uRow < uEnd; uRow++ )
    {
       vectorValue.clear();
@@ -1660,7 +1751,7 @@ std::string stringCsvCodeGroup = R"(1,Group1,Group1 description, 1)";
  auto vectorType = tableCodeGroup.column_get_type();
  gd::table::read_g( tableCodeGroup, stringCsvCodeGroup, ',', '\n', gd::table::tag_io_csv{} );
  std::string stringInsert;
- gd::table::write_insert_g( "TCodeGroup", tableCodeGroup, stringInsert, gd::table::tag_io_sql{} );  
+ gd::table::write_insert_g( "TCodeGroup", tableCodeGroup, stringInsert, gd::table::tag_io_sql{} );
  std::cout << stringInsert << std::endl;
  * @endcode
  * @param stringTableName Table name to generate insert statement for
@@ -1672,7 +1763,7 @@ std::string stringCsvCodeGroup = R"(1,Group1,Group1 description, 1)";
  * @param argumentsOption.names {string} comma separated text with column names used to generate insert query
 */
 void write_insert_g(const std::string_view& stringTableName, const dto::table& table, uint64_t uBegin, uint64_t uCount, std::string& stringInsert, const gd::argument::arguments& argumentsOption, tag_io_sql)
-{                                                                                                  assert( (uBegin + uCount) <= table.get_row_count() ); 
+{                                                                                                  assert( (uBegin + uCount) <= table.get_row_count() );
    std::string stringValues;
    stringInsert += std::string_view{ "INSERT INTO " };
    stringInsert += stringTableName;
@@ -1741,7 +1832,7 @@ void write_insert_g( const std::string_view& stringTableName, const dto::table& 
 
 
 void write_insert_g(const std::string_view& stringTableName, const dto::table& table, uint64_t uBegin, uint64_t uCount, const std::vector<unsigned>& vectorColumn, std::string& stringInsert, const gd::argument::arguments& argumentsOption, tag_io_sql)
-{                                                                                                  assert( (uBegin + uCount) <= table.get_row_count() ); 
+{                                                                                                  assert( (uBegin + uCount) <= table.get_row_count() );
    std::string stringValues;
    stringInsert += std::string_view{ "INSERT INTO " };
    stringInsert += stringTableName;

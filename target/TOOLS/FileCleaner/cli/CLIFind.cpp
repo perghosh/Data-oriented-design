@@ -239,10 +239,11 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
    }
 
    // ## Check for llm output
-   const auto* ptableLLM = pdocument->CACHE_Get("llm-output", false);
+   const auto* ptableLLM = pdocument->CACHE_Get( "llm-output", false );          // @API [tag: option, llm-output] [description: Table output for LLM pretraining]
    if( ptableLLM != nullptr )
    {
-      auto stringLLM = gd::table::to_string( *ptableLLM, gd::table::tag_io_json{}, gd::table::tag_io_name{});
+      FindPrintLLMOutput_g( pdocument, nullptr );
+      //auto stringLLM = gd::table::to_string( *ptableLLM, gd::table::tag_io_json{}, gd::table::tag_io_name{});
 
    }
 
@@ -1056,9 +1057,11 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
 std::pair<bool, std::string> FindPrintLLMOutput_g( CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint )
 {                                                                                                  assert(pdocument != nullptr); assert(pargumentsPrint != nullptr);
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
-   auto* ptableLLMOutput = pdocument->CACHE_Get("llm-output"); // get table for LLM output from the cache
+   auto* ptableLLM = pdocument->CACHE_Get("llm-output"); // get table for LLM output from the cache
+                                                                                                   assert( ptableLLM != nullptr );
 
-   // ## Fill LLM output table from result
+
+   auto stringLLM = gd::table::to_string( *ptableLLM, gd::table::tag_io_json{}, gd::table::tag_io_name{});
 
    return { true, "" };                                                       // return success
 }
