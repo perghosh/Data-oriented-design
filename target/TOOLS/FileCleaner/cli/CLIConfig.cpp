@@ -250,24 +250,26 @@ static std::string_view GetDefaultConfigData_s()
 "version": "1.0",
 "cleaner.color": {
    "background": null,
-   "body": null,
-   "border": null,
-   "default": null,
-   "disabled": null,
-   "error": null,
-   "even": null,
-   "footer": null,
-   "header": null,
-   "highlight": null,
-   "info": null,
-   "line": null,
-   "odd": null,
-   "success": null,
-   "warning": null
+   "body": "#F5DEB3",
+   "brief": "#DEB887",
+   "default": "#D4C5A9",
+   "disabled": "#556655",
+   "error": "#DC143C",
+   "even": "#929F92",
+   "footer": "#CD853F",
+   "header": "#DAA520",
+   "highlight": "#90EE90",
+   "info": "#B8860B",
+   "line": "#CB8553",
+   "odd": "#5D6A5D",
+   "success": "#228B22",
+   "warning": "#DC143C"
 },
 "cleaner.format": {
-   "keyvalue": null,
-   "header-line": null
+   "kv": "[]:",
+   "header-line": "0xDAC4BF", // ascii in hex format for header line
+   "footer-line": "0xC0C4D9", // ascii in hex format for footer line
+   "brief": ">>> "
 },
 "cleaner.result": {
    "max-lines": 500

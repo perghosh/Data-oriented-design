@@ -226,7 +226,9 @@ inline std::string to_string( const dto::table& table, tag_io_json, tag_io_name 
    return stringOut;
 }
 
+/// print table values as json where each row is formated as key value pair as in json objects
 void to_string( const dto::table& table, std::string& stringOut, tag_io_json, tag_io_column );
+/// print table values as json where each row is formated as key value pair as in json objects
 void to_string( const dto::table& table, std::string& stringOut, const std::vector<gd::argument::arguments>& vectorExtra, tag_io_json, tag_io_column );
 
 

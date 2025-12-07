@@ -1,23 +1,52 @@
 ```json
+/* neon-cyberpunk */
+{
+    "version": "1.0",
+    "cleaner.color": {
+        "background": "#0A0A0F",
+        "body": "#F0F0F0",
+        "brief": "#FF69B4",
+        "default": "#E0E0E0",
+        "disabled": "#444449",
+        "error": "#FF073A",
+        "even": "#1A1A1F",
+        "footer": "#FF1493",
+        "header": "#00FFFF",
+        "highlight": "#FFFF00",
+        "info": "#FF00FF",
+        "line": "#FF00FF",
+        "odd": "#151519",
+        "success": "#00FF7F",
+        "warning": "#FF073A"
+    },
+    "cleaner.format": {
+       "kv": "[]:",
+       "header-line": "0xDAC4BF",
+       "footer-line": "0xC0C4D9",
+       "brief": ">>> "
+    }
+}
+
+
 /* volcanic-ash */
 {
     "version": "1.0",
     "cleaner.color": {
         "background": "#2C2C2C",
-        "body": "#F5F5F5",
-        "brief": "#FFB366",
-        "default": "#E0E0E0",
-        "disabled": "#666666",
-        "error": "#FF4444",
-        "even": "#3A3A3A",
-        "footer": "#FF8C00",
-        "header": "#FFD700",
-        "highlight": "#FF6B35",
-        "info": "#FF9500",
-        "line": "#FF6B35",
-        "odd": "#333333",
-        "success": "#4CAF50",
-        "warning": "#FF4444"
+        "body": "#F5DEB3",
+        "brief": "#DEB887",
+        "default": "#D4C5A9",
+        "disabled": "#556655",
+        "error": "#DC143C",
+        "even": "#929F92",
+        "footer": "#CD853F",
+        "header": "#DAA520",
+        "highlight": "#90EE90",
+        "info": "#B8860B",
+        "line": "#CB8553",
+        "odd": "#5D6A5D",
+        "success": "#228B22",
+        "warning": "#DC143C"
     },
     "cleaner.format": {
        "kv": "[]:",
@@ -298,34 +327,6 @@
         "odd": "#354235",
         "success": "#228B22",
         "warning": "#DC143C"
-    },
-    "cleaner.format": {
-       "kv": "[]:",
-       "header-line": "0xDAC4BF",
-       "footer-line": "0xC0C4D9",
-       "brief": ">>> "
-    }
-}
-
-/* neon-cyberpunk */
-{
-    "version": "1.0",
-    "cleaner.color": {
-        "background": "#0A0A0F",
-        "body": "#F0F0F0",
-        "brief": "#FF69B4",
-        "default": "#E0E0E0",
-        "disabled": "#444449",
-        "error": "#FF073A",
-        "even": "#1A1A1F",
-        "footer": "#FF1493",
-        "header": "#00FFFF",
-        "highlight": "#FFFF00",
-        "info": "#FF00FF",
-        "line": "#FF00FF",
-        "odd": "#151519",
-        "success": "#00FF7F",
-        "warning": "#FF073A"
     },
     "cleaner.format": {
        "kv": "[]:",
