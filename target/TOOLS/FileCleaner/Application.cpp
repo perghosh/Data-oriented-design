@@ -1165,7 +1165,15 @@ std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& 
                std::cout << stringColor;                                      // Print the color code before the message
             }
          }
-         std::cout << stringMessage << std::endl;
+
+         if( argumentsFormat.exists("no-newline") == true )
+         {
+            std::cout << stringMessage;                                     // Print without newline
+         }
+         else 
+         { 
+            std::cout << stringMessage << std::endl; 
+         }
       }
       break;
    case eUITypeWeb:

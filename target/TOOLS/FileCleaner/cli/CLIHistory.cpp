@@ -451,8 +451,16 @@ std::pair<bool, std::string> HistoryEdit_g( const gd::argument::arguments& argum
 
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Print items in history as they should have been used if typed on command line
+ * @param argumentsList The arguments used to determine the location of the history file.
+ * @param pdocument Pointer to the document object containing the history table and message display functionality.
+ * @return A pair where the first element is a boolean indicating success (true if the history file was loaded, false otherwise), and the second element is a string containing an error message if the operation failed, or an empty string on success.
+ */
 std::pair<bool, std::string> HistoryList_g(const gd::argument::arguments& argumentsList, CDocument* pdocument)
 {
+   std::array<std::byte, 64> array_; // array to hold the color codes for the output
+
    std::string stringHistoryFile = FILE_GetHistoryFile_s( argumentsList );
    if( stringHistoryFile.empty() == true ) return { false, "Failed to get history file path." };   
    if( std::filesystem::exists(stringHistoryFile) == false ) { return { false, "History file does not exist: " + stringHistoryFile }; }
@@ -466,6 +474,15 @@ std::pair<bool, std::string> HistoryList_g(const gd::argument::arguments& argume
 	});
 
    if(result_.first == false) { return { false, "Failed to read history file: " + stringHistoryFile }; }
+
+   for( size_t uRow = 0; uRow < ptableHistory->size(); ++uRow )
+   {
+      auto stringName = ptableHistory->cell_get_variant_view(uRow, "name").as_string();
+      stringName += " ";                                                      // add space to separate name from line
+      pdocument->MESSAGE_Display(stringName, { array_, {{"color", "default"}, {"no-newline", true} }, gd::types::tag_view{} });
+      auto stringLine = ptableHistory->cell_get_variant_view(uRow, "line").as_string();
+      pdocument->MESSAGE_Display(stringLine, { array_, {{"color", "line"}}, gd::types::tag_view{} });
+   }
 
 
 	return { true, "" };
