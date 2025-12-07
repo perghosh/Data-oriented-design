@@ -1,7 +1,7 @@
-// @FILE [tag: ai, llm, pretrain] [description: Header file for AI-related utilities in FileCleaner tool used to pretrain LLM]
+// @FILE [tag: ai, llm, pretrain] [description: Header file for AI-related utilities in FileCleaner tool used to pretrain LLM] [llm: core]
 
 /*
-@AI [tag: styleguide, cpp, variable]
+@AI [tag: styleguide, cpp, variable] [llm: core]
 [sample: """Variable naming follows Hungarian notation:
 bool bFlag = true;
 int iCounter = 0;
@@ -31,14 +31,18 @@ gd::sql::query queryInsert;
 CDocument* m_pdocument;
 CApplication* m_papplicationMain;
 CThisIsAVeryLongClassNameToShowAbbriviation TIAVLCNTSA;
+value objects, values that is like primitive types, use lowercase for all names and no C prefix.
 Method names should not use Hungarian notation, try to use as few words as possible, do not over explain and arguments is part of method signature so no need to add that in name.
 User allman style for braces.
+if statements = if( condition ), no space after if
+if statement with single statement = if( condition ) { statement; }
+If with multiple statements = use allman style with braces on new line
 """]
 */
 
 
 /*
-@AI [tag: styleguide, cpp, comment]
+@AI [tag: styleguide, cpp, comment] [llm: core]
 [sample: """Try to use the witdth for large monitors and focus on that comments are read once, code is read over and over. Try not to mix
 int iCounter = 0; // counter for iterations and variables have comments close after if possible
 //
@@ -57,7 +61,7 @@ const auto* ptable_ = pdocument->CACHE_Get("history");                          
  * @code
  * Sample code if needed
  * @endcode
- * /
+ * /  (note, no space between "* /", only here to work with pretrain data )
 """]
 */
 
