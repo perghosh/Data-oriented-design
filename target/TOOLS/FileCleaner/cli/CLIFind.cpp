@@ -239,11 +239,14 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
    }
 
    // ## Check for llm output
-   const auto* ptableLLM = pdocument->CACHE_Get( "llm-output", false );          // @API [tag: option, llm-output] [description: Table output for LLM pretraining]
+   const auto* ptableLLM = pdocument->CACHE_Get( "llm-output", false );       // @API [tag: option, llm-output] [description: Table output for LLM pretraining]
    if( ptableLLM != nullptr )
    {
-      FindPrintLLMOutput_g( pdocument, nullptr );
-      //auto stringLLM = gd::table::to_string( *ptableLLM, gd::table::tag_io_json{}, gd::table::tag_io_name{});
+      gd::argument::shared::arguments argumentsLLM;
+      argumentsLLM.append( options_.get_arguments(), {"llm-output"});
+      auto result_ = FindPrintLLMOutput_g( pdocument, &argumentsLLM );
+      if( result_.first == false ) return result_;                            // if print failed, return the error
+      auto stringLLM = gd::table::to_string( *ptableLLM, gd::table::tag_io_json{}, gd::table::tag_io_name{});
 
    }
 
@@ -735,7 +738,8 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
       for( auto itRow : tableResultLineList )
       {
          std::string stringLine = itRow.cell_get_variant_view("line").as_string(); // get the line text
-         stringLine += "\n";                                                  // add a newline to the line text
+         pdocument->MESSAGE_Display(stringLine, { array_, {{"color", "line"}}, gd::types::tag_view{} });
+
          std::string stringContext = itRow.cell_get_variant_view("context").as_string(); // get the context code
          gd::utf8::indent(stringContext, "-- ");                              // indent the context code by 3 spaces
          auto uRow = table_.row_add_one();
@@ -753,15 +757,10 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
             stringContext[uIndex] = '>';                                      // mark the leading row with a '>' character
          }
 
-         stringLine += stringContext;                                         // add the context code to the line text
-
-         table_.cell_set(uRow, "line", stringLine);                           // set the line text in the result table
+         pdocument->MESSAGE_Display(stringContext, { array_, {{"color", "body"}}, gd::types::tag_view{} });
       }
-
-      stringCliTable = gd::table::to_string(table_, gd::table::tag_io_raw{});
    }
 
-   if( stringCliTable.empty() == false ) pdocument->MESSAGE_Display( stringCliTable );// display the result table to the user
    // Print number of lines found
    std::string stringMessage = std::format("\nFound {} lines", uRowCount);
    pdocument->MESSAGE_Display(stringMessage);                                 // display the number of lines found
@@ -1054,14 +1053,55 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
    return { true, "" };                                                       // return success
 }
 
-std::pair<bool, std::string> FindPrintLLMOutput_g( CDocument* pdocument, const gd::argument::shared::arguments* pargumentsPrint )
-{                                                                                                  assert(pdocument != nullptr); assert(pargumentsPrint != nullptr);
+/** ---------------------------------------------------------------------------
+ * @brief Finds the LLM output in the document cache and, if specified, writes it to a file.
+ * @param pdocument Pointer to the CDocument object containing the cache and application context.
+ * @param pargumentLLM Pointer to the arguments object containing options, including the output file path for the LLM output.
+ * @return A std::pair where the first element is a boolean indicating success (true) or failure (false), and the second element is a string containing an error message if an error occurred, or an empty string on success.
+ */
+std::pair<bool, std::string> FindPrintLLMOutput_g( CDocument* pdocument, const gd::argument::shared::arguments* pargumentLLM )
+{
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
+   std::string stringFileLLM; // string to hold the LLM output file path
    auto* ptableLLM = pdocument->CACHE_Get("llm-output"); // get table for LLM output from the cache
                                                                                                    assert( ptableLLM != nullptr );
+   if( ptableLLM->size() == 0 ) { return { true, "" }; } // if no LLM output found, return
+   
+   if( pargumentLLM != nullptr )
+   {
+      gd::argument::arguments argumentsOption({{ "ignore", 3 }});
+      auto stringLLM = gd::table::to_string( *ptableLLM, argumentsOption, gd::table::tag_io_object{}, gd::table::tag_io_json{});
 
+      // ## Get ouput file and make sure it is absolute path .................
+      std::string stringFileOutput = (*pargumentLLM)["llm-output"].get<std::string>();
+      if( stringFileOutput.empty() == false )
+      {
+         std::filesystem::path pathOutput( stringFileOutput );
+         if( pathOutput.is_absolute() == false ) // if the path is not absolute, make it absolute
+         {
+            auto stringCurrentPath = pdocument->GetApplication()->PROPERTY_Get("folder-current").as_string();
+            pathOutput = std::filesystem::path( stringCurrentPath ) / pathOutput;
+            stringFileLLM = pathOutput.string();
+         }
+         else
+         {
+            stringFileLLM = stringFileOutput;
+         }
+      }
 
-   auto stringLLM = gd::table::to_string( *ptableLLM, gd::table::tag_io_json{}, gd::table::tag_io_name{});
+      // ## Append LLM output to file .......................................
+      std::ofstream ofstreamOutput( stringFileLLM, std::ios::out | std::ios::app );
+      if( ofstreamOutput.is_open() == false )
+      {
+         std::string stringError = std::format("Failed to open LLM output file: {}", stringFileLLM );
+         return { false, stringError };
+      }
+      ofstreamOutput.write(stringLLM.data(), stringLLM.size());
+      ofstreamOutput.close();
+
+      pdocument->MESSAGE_Display(std::format( "\nLLM output written to file: {}", stringFileLLM ), { array_, {{"color", "info"}}, gd::types::tag_view{} });
+                                                                                                LOG_INFORMATION_RAW( std::format("LLM output written to file: {}", stringFileLLM ) );
+   }
 
    return { true, "" };                                                       // return success
 }

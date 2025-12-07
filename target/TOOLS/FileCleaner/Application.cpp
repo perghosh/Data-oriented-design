@@ -298,7 +298,7 @@ void CApplication::SetDetail(const std::string_view& stringDetail)
 */
 
 
-/** --------------------------------------------------------------------------- // @CODE [tag: main, application, log] [description: Application Main method, core startup logic is placed or called from this method, think that is needed to get cleaner to work ]
+/** --------------------------------------------------------------------------- // @API [tag: main, application, log] [description: Application Main method, core startup logic is placed or called from this method, think that is needed to get cleaner to work ]
  * @brief Prepares the application by setting up command-line options.
  *
  * Main in application is similar to main in application, but it is used to prepare
@@ -373,10 +373,25 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 
          return { false, stringError };
       }
+      
+ 
+      // ## Check for current directory set from command line .................
+
+      if( optionsApplication.exists("current-directory", gd::types::tag_state_active{}) == true )
+      {
+         const gd::cli::options* poptionsActive = optionsApplication.find_active();
+         std::string stringCurrentPath = poptionsActive->get_variant_view("current-directory" ).as_string();
+         if( std::filesystem::exists(stringCurrentPath) == true && std::filesystem::is_directory(stringCurrentPath) == true)
+         {
+            PROPERTY_Set( "folder-current", stringCurrentPath );
+         }
+      }
+
+      // ## Add ignore files if not disabled ..................................
 
       if( optionsApplication.exists("no-ignore", gd::types::tag_state_active{}) == false )
       {
-         // ## Try to find ignore information
+         // ### Try to find ignore information
 
          std::string stringCurrentPath = PROPERTY_Get( "folder-current", "" ).as_string();         assert( stringCurrentPath.empty() == false );
 
@@ -1845,17 +1860,12 @@ void CApplication::DATABASE_CloseActive()
 }
 #endif // 0
 
-// 0TAG0Settings.Application @TAG #settings.Application
-
-/*
-@TASK #configuration.load #user.per [name: config]
---
-[description: "## Load application configuration file into table used to store configuration in application table used for this." ]
-[priority: high] [state: open] [owner: per]
-[idea: "Method for loading configuration is called `CONFIG_Load'."]
-*/
-
-
+/** --------------------------------------------------------------------------- @API [tag: configuration, load] [description: Load configuration from a JSON file into the config table]
+ * @brief Load configuration from a JSON file into the config table
+ *
+ * @param stringFileName The path to the configuration file
+ * @return std::pair<bool, std::string> True if successful, false and error message if failed
+ */
 std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& stringFileName)
 {                                                                                                 assert( (bool)m_ptableConfig == false );
    using namespace jsoncons;
@@ -2357,6 +2367,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add_flag({ "icase", "Ignore case when matching patterns" });
    optionsApplication.add_flag({ "word", "Match whole words only when patterns are used" });
    optionsApplication.add_flag({ "no-ignore", "Disable ignoring files" });
+   optionsApplication.add({ "current-directory", "Specify the current directory for the operation" });
    optionsApplication.add({ "config", "specify configuration file to use configuring cleaner" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
    optionsApplication.add({ "add-to-history", "Add to history with alias name" });

@@ -629,9 +629,26 @@ void to_string( const dto::table& table, const std::vector<uint64_t>& vectorRow,
  */
 void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const gd::argument::arguments& argumentsOption, const std::function<bool(const std::string_view&, std::string& stringNew)>& format_text_, std::string& stringOut, tag_io_object, tag_io_json )
 {
+   bool bSkipNull = false;
+   bool bSkipEmpty = false;
+
    // ## Configuration from argumentsOption
-   const bool bSkipNull = argumentsOption["skip_null"].is_true();
-   const bool bSkipEmpty = argumentsOption["skip_empty"].is_true();
+   if( argumentsOption.exists( "ignore" ) == true )
+   {
+      if( argumentsOption["ignore"].is_string() == true )
+      {
+         std::string stringIgnore = argumentsOption["ignore"].as_string();
+         if( stringIgnore.find("null") != std::string::npos ) { bSkipNull = true; }
+         else if( stringIgnore.find("empty") != std::string::npos ) { bSkipEmpty = true; }
+      }
+      else
+      {
+         enum { eNull = 1, eEmpty = 2 };
+         unsigned uIgnoreFlags = argumentsOption["ignore"].as_uint();
+         if( uIgnoreFlags & eNull ) { bSkipNull = true; }
+         if( uIgnoreFlags & eEmpty ) { bSkipEmpty = true; }
+      }
+   }
    unsigned uOptions = 0;
    if( argumentsOption["scientific"].is_true() == true ) uOptions |= eOptionScientific;
 
@@ -673,7 +690,7 @@ void to_string( const dto::table& table, uint64_t uBegin, uint64_t uCount, const
          if( bShouldSkip ) continue;
 
          // Add comma separator between key-value pairs
-         if( !bFirstPair ) stringResult += ",";
+         if( !bFirstPair ) stringResult += ",\n";
          bFirstPair = false;
 
          // ## Add Key (Header)
