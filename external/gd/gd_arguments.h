@@ -137,7 +137,7 @@ mdtable
    #pragma warning( disable : 26495 26812 )
 #endif
 
-
+// @AI [tag: gd, arguments] [llm: core]
 
 #ifndef _GD_ARGUMENT_BEGIN
 #define _GD_ARGUMENT_BEGIN namespace gd::argument {

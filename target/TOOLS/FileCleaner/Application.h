@@ -71,7 +71,7 @@ namespace jsoncons {
    using json = basic_json<char, sorted_policy, std::allocator<char>>;  // Recreate the alias locally (must match exactly)
 }
 
-/**
+/** 
  * \brief
  *
  *
@@ -79,7 +79,7 @@ namespace jsoncons {
  \code
  \endcode
  */
-class CApplication : public application::basic::CApplication
+class CApplication : public application::basic::CApplication // @AI [tag: application] [llm: core]
 {
 public:
    // type of mode for the application, Available modes: `review`, `stats`, `search`, `changes`, `audit`, `document`

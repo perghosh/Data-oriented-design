@@ -51,6 +51,7 @@
    #pragma warning( disable : 4267 26495 26812 )
 #endif
 
+// @AI [tag: gd, variant] [llm: core]
 
 #ifndef _GD_BEGIN
 namespace gd {

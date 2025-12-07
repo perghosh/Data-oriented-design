@@ -40,7 +40,7 @@ class CApplication;
  \code
  \endcode
  */
-class CDocument
+class CDocument // @AI [tag: document, data] [llm: core]
 {
 public:
    /// tag dispatcher used to state dependet operations

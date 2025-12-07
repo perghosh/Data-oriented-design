@@ -41,6 +41,8 @@
 #define _GD_TYPES
 #endif
 
+// @AI [tag: gd, type, constants] [llm: core]
+
 #ifndef _GD_TYPES_BEGIN
 #define _GD_TYPES_BEGIN namespace gd { namespace types {
 #define _GD_TYPES_END } }

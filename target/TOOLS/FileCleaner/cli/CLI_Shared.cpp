@@ -371,6 +371,8 @@ std::pair<bool, std::string> SHARED_TransformTableForLLMPretrain_g( const gd::ta
    if( stringTableId == "file-linelist") eTableType = enumTableType::eTableLineList;
    else if( stringTableId == "context") eTableType = enumTableType::eTableContext;
    else return { false, "Unsupported source table type for LLM transformation" };
+
+   std::string string_; // temporary string variable
    
    // ## iterate over all rows in source table and transform them to LLM output format
    for( auto itRow = std::begin( *ptableFrom ); itRow != std::end( *ptableFrom ); ++itRow )
@@ -388,7 +390,8 @@ std::pair<bool, std::string> SHARED_TransformTableForLLMPretrain_g( const gd::ta
             // ## Create new row in LLM output table
             const auto uLLMRow = ptableLLMOutput->row_add_one();
             ptableLLMOutput->cell_set(uLLMRow, "filename", filename_, gd::table::tag_convert{});
-            ptableLLMOutput->cell_set(uLLMRow, "content", line_, gd::table::tag_convert{});
+            string_ = gd::math::string::trim_repeated_chars( line_ );
+            ptableLLMOutput->cell_set(uLLMRow, "content", string_, gd::table::tag_convert{});
             ptableLLMOutput->cell_set(uLLMRow, "row", row_, gd::table::tag_convert{});
             ptableLLMOutput->cell_set(uLLMRow, "priority", (uint64_t)1);       // default priority
          }
@@ -404,7 +407,8 @@ std::pair<bool, std::string> SHARED_TransformTableForLLMPretrain_g( const gd::ta
             // ## Create new row in LLM output table
             const auto uLLMRow = ptableLLMOutput->row_add_one();
             ptableLLMOutput->cell_set(uLLMRow, "filename", file_, gd::table::tag_convert{});
-            ptableLLMOutput->cell_set(uLLMRow, "content", context_, gd::table::tag_convert{});
+            string_ = gd::math::string::trim_repeated_chars( context_ );
+            ptableLLMOutput->cell_set(uLLMRow, "content", string_, gd::table::tag_convert{});
             ptableLLMOutput->cell_set(uLLMRow, "row", row_, gd::table::tag_convert{});
             ptableLLMOutput->cell_set(uLLMRow, "priority", (uint64_t)1);       // default priority
             break;
