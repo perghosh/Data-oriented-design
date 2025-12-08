@@ -1088,7 +1088,7 @@ std::pair<bool, std::string> FindPrintLLMOutput_g( CDocument* pdocument, const g
       }
 
       // ## Append LLM output to file .......................................
-      std::ofstream ofstreamOutput( stringFileLLM, std::ios::out | std::ios::app );
+      std::ofstream ofstreamOutput( stringFileLLM, std::ios::out | std::ios::app | std::ios::binary );
       if( ofstreamOutput.is_open() == false )
       {
          std::string stringError = std::format("Failed to open LLM output file: {}", stringFileLLM );
