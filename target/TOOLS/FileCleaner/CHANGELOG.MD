@@ -4,6 +4,9 @@
 ### New Features
 - Added `menu` to history, this shows a menu with saved history items to select from. Makes it easier to select saved commands to run.
 - Some global application settings now works in history saved commands, like `prompt` and `logging-severity`.
+- added `llm-output` to support outputting to a file for use in LLM to pre train.
+- `list` in `history` command now prints command line as it was typed on command line, making it easier to see what options was used.
+- `config` now get default settings, color and border for frames in output.
 
 
 ## v1.1.0

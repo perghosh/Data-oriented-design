@@ -46,11 +46,12 @@ struct kv_print
    std::string_view stringHeaderFormat;                                       // format string for header line
    std::string_view stringBriefFormat;                                        // format string for brief line
    std::string_view stringFooterFormat;                                       // format string for footer line
-   std::array<std::byte, 64>* parray;                                         // array to hold color codes
+   std::array<std::byte, 64>* parray = nullptr;                               // array to hold color codes
+   bool bLLM = false;                                                          // flag to indicate if LLM output is requested
 
-   kv_print() : pvectorHeader(nullptr), pvectorBrief(nullptr), pvectorBody(nullptr), pvectorFooter(nullptr), uWidth(80), uTextWidth(0), uKeyMarginWidth(0), parray(nullptr) {}
-   kv_print( const std::vector<std::string>* pvectorHeader_, const std::vector<std::string>* pvectorBrief_, const std::vector<std::string>* pvectorBody_, const std::vector<std::string>* pvectorFooter_, unsigned uWidth_, unsigned uTextWidth_, unsigned uKeyMarginWidth_, std::string_view stringHeaderFormat_, std::string_view stringBriefFormat_, std::string_view stringFooterFormat_)
-    : pvectorHeader(pvectorHeader_), pvectorBrief(pvectorBrief_), pvectorBody(pvectorBody_), pvectorFooter(pvectorFooter_),uWidth(uWidth_), uTextWidth(uTextWidth_), uKeyMarginWidth(uKeyMarginWidth_), stringHeaderFormat(stringHeaderFormat_), stringBriefFormat(stringBriefFormat_), stringFooterFormat(stringFooterFormat_) {}
+   kv_print() : pvectorHeader(nullptr), pvectorBrief(nullptr), pvectorBody(nullptr), pvectorFooter(nullptr), uWidth(80), uTextWidth(0), uKeyMarginWidth(0), parray(nullptr), bLLM(false) {}
+   kv_print( const std::vector<std::string>* pvectorHeader_, const std::vector<std::string>* pvectorBrief_, const std::vector<std::string>* pvectorBody_, const std::vector<std::string>* pvectorFooter_, unsigned uWidth_, unsigned uTextWidth_, unsigned uKeyMarginWidth_, std::string_view stringHeaderFormat_, std::string_view stringBriefFormat_, std::string_view stringFooterFormat_, bool bLLM_)
+    : pvectorHeader(pvectorHeader_), pvectorBrief(pvectorBrief_), pvectorBody(pvectorBody_), pvectorFooter(pvectorFooter_),uWidth(uWidth_), uTextWidth(uTextWidth_), uKeyMarginWidth(uKeyMarginWidth_), stringHeaderFormat(stringHeaderFormat_), stringBriefFormat(stringBriefFormat_), stringFooterFormat(stringFooterFormat_), bLLM(bLLM_) {}
 
 };
 
@@ -188,6 +189,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       {
          gd::argument::shared::arguments argumentsPrint;
          argumentsPrint.append( options_.get_arguments(), {"context", "keys", "header", "footer", "brief", "width", "quiet"});
+         if( options_.exists("llm-output") == true ) argumentsPrint.append("llm", true);
          if( options_.exists("kv-where") == true ) argumentsPrint.append("where", options_["kv-where"].as_string_view()); // if kv-where is set, add it to the print arguments
          result_ = FindPrintKeyValue_g(pdocument, &argumentsPrint);                             // Print the key-value pairs found in the files
          if( result_.first == false ) return result_;                          // if print failed, return the error
@@ -217,11 +219,8 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
 #endif // _WIN32
 
          bPrint = true;                                                        // set print to true, we have printed the results
-         return { true, "" };
       }
-
-
-      if( bPrint == false || (options_.exists("print") == true || options_.exists("vs") == true ))
+      else if( bPrint == false || (options_.exists("print") == true || options_.exists("vs") == true ))
       {
          gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uint64_t(2u) } }); // hardcode pattern count to 2 for printing results and allways print patterns
          if( options_.exists("context") == true ) argumentsPrint.append("context", options_["context"].as_string_view()); // if context is set, add it to the print arguments
@@ -246,8 +245,6 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       argumentsLLM.append( options_.get_arguments(), {"llm-output"});
       auto result_ = FindPrintLLMOutput_g( pdocument, &argumentsLLM );
       if( result_.first == false ) return result_;                            // if print failed, return the error
-      auto stringLLM = gd::table::to_string( *ptableLLM, gd::table::tag_io_json{}, gd::table::tag_io_name{});
-
    }
 
    return { true, "" }; 
@@ -1002,9 +999,10 @@ std::pair<bool, std::string> FindPrintKeyValue_g(CDocument* pdocument, const gd:
       if( it.size() > uKeyMarginWidth ) uKeyMarginWidth = (unsigned)it.size();// update the key width if the current key is longer
    }
 
+   bool bLLM = ( *pargumentsPrint )["llm"].as_bool(); // check if LLM output is requested
    kv_print kv_{ &vectorHeader, &vectorBrief, &vectorBody, &vectorFooter, 
                  uWidth, uTextWidth, uKeyMarginWidth, 
-                 stringHeaderFormat, stringBriefFormat, stringFooterFormat };
+                 stringHeaderFormat, stringBriefFormat, stringFooterFormat, bLLM };
 
    if( papplication_g->GetDetail() == CApplication::eDetailBasic )
    {
@@ -1207,6 +1205,7 @@ std::pair<bool, std::string> PrintKeyValueRowsBasic_s( CDocument* pdocument, gd:
  */
 std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::table::arguments::table* ptableKeyValue, const kv_print& kv_, bool bQuiet)
 {                                                                                                  assert(pdocument != nullptr); assert(ptableKeyValue != nullptr);
+   auto bLLM = kv_.bLLM; // check if LLM output is requested
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
 
    // ## Print values in the key-value table ..................................
@@ -1217,8 +1216,22 @@ std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::tabl
    //    - body with key-value pairs
    //    - footer with footer line
 
+   std::string string_; // string to hold temporary values
+   gd::table::dto::table* ptableLLM = nullptr;
+   if( bLLM == true ) { ptableLLM = pdocument->CACHE_Get( "llm-output", true ); }
+
+   uint64_t uRowLLM = 0; // row number for LLM output table
    for( auto uRow = 0u; uRow < ptableKeyValue->get_row_count(); ++uRow )
    {
+      if( bLLM == true ) 
+      {
+         uRowLLM = ptableLLM->row_add_one();
+         auto file_ = ptableKeyValue->cell_get_variant_view( uRow, "filename" );
+         ptableLLM->cell_set( uRowLLM, "filename", file_ );
+         auto row_ = ptableKeyValue->cell_get_variant_view( uRow, "row" );
+         ptableLLM->cell_set( uRowLLM, "row", row_ );
+      }
+
       bool bLineIsHeader = true; // flag to check if the line is a header line
       std::string stringPrint; // string to hold the formatted output
 
@@ -1235,13 +1248,23 @@ std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::tabl
       if( kv_.pvectorHeader != nullptr && kv_.pvectorHeader->empty() == false )
       {
          stringPrint.clear();                                                // clear the stringPrint for the next row
+         string_.clear();
+         
          for( const auto& key_ : *kv_.pvectorHeader ) 
          { 
-            auto stingValue = pargumentsRow->get_argument( key_ ).as_string_view(); 
-            if( stringPrint.empty() == false && stingValue.empty() == false ) stringPrint += ", "; // add a separator if the stringPrint is not empty
+            auto stringValue = pargumentsRow->get_argument( key_ ).as_string_view(); 
+            if( stringPrint.empty() == false && stringValue.empty() == false ) stringPrint += ", "; // add a separator if the stringPrint is not empty
 
-            stringPrint += stingValue; 
+            if( bLLM == true && stringValue.empty() == false )
+            {
+               if( string_.empty() == false ) string_ += " "; // separator
+               string_ += stringValue; 
+            }
+
+            stringPrint += stringValue; 
          }
+
+         if( bLLM == true ) { ptableLLM->cell_set( uRowLLM, "tag", string_ ); } // set the tag value in the LLM output table if LLM output is requested
 
          if( bQuiet == false ) 
          {
@@ -1304,14 +1327,23 @@ std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::tabl
 
       if( pargumentsRow != nullptr && kv_.pvectorBody != nullptr )
       {
+         string_.clear();
          stringPrint.clear();
-         for( const auto& key_ : *kv_.pvectorBody )                        // iterate over the keys in the vectorBody
+         for( const auto& key_ : *kv_.pvectorBody )                           // iterate over the keys in the vectorBody
          {
             if( pargumentsRow->exists(key_) == false ) continue;              // if the key does not exist in the arguments object, skip this key-value pair
 
             if( stringPrint.empty() == false ) stringPrint += '\n';
 
             auto stringValue_ = pargumentsRow->get_argument(key_).as_string();// get the value of the argument
+
+            if( bLLM == true && stringValue_.empty() == false )
+            {
+               string_ += key_;
+               string_ += " : ";
+               string_ += stringValue_; 
+               string_ += '\n';
+            }
 
             if( kv_.uTextWidth > 0 )
             {
@@ -1323,11 +1355,17 @@ std::pair<bool, std::string> PrintKeyValueRows_s( CDocument* pdocument, gd::tabl
             {
                stringValue_ = gd::math::string::format_indent(stringValue_, kv_.uKeyMarginWidth + 2, false); // indent the value with the key margin width + 2 spaces because adds for separator and space after that
             }
+            
             // Print name with padding
             stringPrint += std::format("{:>{}}: {}", key_, kv_.uKeyMarginWidth, stringValue_); // format the key-value pair as "key: value" with padding
          }
 
          if( stringPrint.empty() == false ) pdocument->MESSAGE_Display(stringPrint, { array_, {{"color", "body"}}, gd::types::tag_view{} });
+
+         if( bLLM == true && string_.empty() == false )
+         {
+            ptableLLM->cell_set( uRowLLM, "content", string_ );
+         }
       }
 
       // ### Prepare and print footer
