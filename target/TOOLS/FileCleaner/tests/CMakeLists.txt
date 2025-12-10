@@ -44,6 +44,18 @@ set(SOURCE_TEST_ "main.h" "main.cpp")
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
+   set(TEST_NAME_ "TEST_Arguments")
+   add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${GD_SOURCES_ALL} ${external_catch2} 
+      "${TEST_NAME_}.cpp"
+      "main.cpp"
+   )
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+endif()
+
+set( USE_TEST_ ON )
+if( USE_TEST_ )
    set(TEST_NAME_ "TEST_Expression")
    add_executable(${TEST_NAME_} ${SOURCE_PLAYGROUND_} ${GD_SOURCES_ALL} ${external_pugixml} ${external_sqlite} ${external_catch2} 
       "${TARGET_SOURCE_FILES_}"
