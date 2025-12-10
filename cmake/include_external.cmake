@@ -17,6 +17,7 @@ file(GLOB external_gd_core
    ${CMAKE_SOURCE_DIR}/external/gd/gd_utf8_2.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_strings.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_variant.cpp
+   ${CMAKE_SOURCE_DIR}/external/gd/gd_variant_arg.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_variant_view.cpp
 )
 

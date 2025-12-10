@@ -1,4 +1,18 @@
 // @FILE [tag: ai, llm, pretrain] [description: Header file for AI-related utilities in FileCleaner tool used to pretrain LLM] [llm: core]
+// 
+// 
+/*
+@AI [tag: styleguide, cpp, commenting] [llm: core]
+[sample: """Hints about commenting
+Try to use markdown syntax to make comments more readable.
+If the comment starts with ## that means that it describes more than one line, like next block of code.
+And if there are sub-sections, use ### for each sub-section.
+## Sub-section example
+### Sub-sub-section example
+All variables should have a comment after or just before if declared separately.
+Try to avoid comments in code, when code on row is described if possible try to start at column 80 after line. or if line is longer just put it when code ends on that line.
+"""]
+*/
 
 /*
 @AI [tag: styleguide, cpp, variable] [llm: core]
@@ -64,5 +78,3 @@ const auto* ptable_ = pdocument->CACHE_Get("history");                          
  * /  (note, no space between "* /", only here to work with pretrain data )
 """]
 */
-
-

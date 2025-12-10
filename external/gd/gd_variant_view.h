@@ -62,10 +62,11 @@
 // @AI [tag: gd, variant_view] [llm: core]
 
 #ifndef _GD_BEGIN
-namespace gd {
-#else
-_GD_BEGIN
+#define _GD_BEGIN namespace gd {
+#define _GD_END }
 #endif
+
+_GD_BEGIN
 
 /**
  * \brief variant_view holds type and value
@@ -677,10 +678,7 @@ namespace debug {
    std::string print( const std::vector<variant_view>& v_, std::function< std::string( const variant_view& ) > callback_ );
 }
 
-} // namespace gd
-
-
-
+_GD_END
 
 #if defined(__clang__)
    #pragma GCC diagnostic pop

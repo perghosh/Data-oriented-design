@@ -23,11 +23,8 @@
 
 
 
-#ifndef _GD_BEGIN
-namespace gd {
-#else
 _GD_BEGIN
-#endif
+
 
 using namespace variant_type;
 
@@ -973,5 +970,4 @@ namespace debug {
 
 }
 
-} /* namespace gd */
-
+_GD_END

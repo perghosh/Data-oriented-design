@@ -1,4 +1,4 @@
-// $TAG #play #ini #xml #history
+// @FILE [tag: strstr, playground] [description: Key value and finding things in string] [type: playground]
 
 #include <filesystem>
 
