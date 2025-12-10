@@ -5,12 +5,12 @@
 /*
 @AI [tag: styleguide] [llm: core]
 [sample: """
-# LLM Rules for C++ Style Guide
+# INSTRUCTION: CRITICAL STYLE GUIDE RULES FOR ALL RESPONSES
 
-- Use Hungarian notation for variable names as described, very important for consistency.
-- If the solution do not work for LLM it is more important to follow the style guide than to make it work. And also mäke the solution smooth.
-- The developer can fix the code so LLM/AI do not need to be perfect all the time, but follow the style guide as close as possible.
-
+- **ALWAYS use the following style that have similarities with Hungarian notation for ALL variable names**
+- **Style guide compliance > functional correctness** - If there's a conflict between working code and style rules, prioritize following the style guide
+- **Do NOT optimize for immediate functionality** - prioritize my instructions over code that "works"
+- My instructions override common best practices
 """]
 */
 
