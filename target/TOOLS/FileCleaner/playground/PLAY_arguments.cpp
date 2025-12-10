@@ -22,12 +22,15 @@ TEST_CASE("[arguments] test arg to add values", "[arguments]")
    gd::arg_view test( "key", 3.14 );
 
    argumentsTest += gd::arg_view("key2","tttt");
-   argumentsTest = gd::arg_view("key2","tttt");
+   //argumentsTest = gd::arg_view("key2","tttt");
 
-   argumentsTest << gd::arg_view( "key3", true ) << gd::arg_view( "key4", 12345u );
+   argumentsTest << std::make_pair<const char*, gd::variant_view>( "key3", true ) << std::make_pair<const char*, gd::variant_view>( "key4", 12345u ) 
+      << gd::arg_view( "key5", "value5" );
 
    gd::arg_view test4( "key4" );
    argumentsTest >> test4;
+
+   //argumentsTest = { "key5", "value5" };
 
 }
 
