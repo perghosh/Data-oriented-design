@@ -103,6 +103,7 @@ for( auto it = args8.named_begin(); it != args8.named_end(); it++ )
 
 #include "gd_variant.h"
 #include "gd_variant_view.h"
+#include "gd_variant_arg.h"
 #include "gd_arguments_common.h"
 
 
@@ -793,7 +794,18 @@ public: //0TAG0operator.arguments
 
    /// Append values from another arguments object
    arguments& operator+=( const arguments& arguments_ ) { return append( arguments_ ); }
+   arguments& operator+=( const gd::arg_view& arg_ ) { return append_argument(arg_.get_key(), arg_.get_value()); }
 
+   arguments& operator=( const gd::arg_view& arg_ ) { return set( arg_.get_key(), arg_.get_value() ); }
+
+   arguments& operator<<( const gd::arg_view& arg_ ) { return append_argument(arg_.get_key(), arg_.get_value()); }
+
+   arguments& operator>>( gd::arg_view& arg_ ) { 
+      if( exists(arg_.get_key()) == true ) { 
+         arg_.set_value( this->get_argument(arg_.get_key()).as_variant_view() ); 
+      }
+      return *this; 
+   }
 
    // ## methods ------------------------------------------------------------------
 public:
