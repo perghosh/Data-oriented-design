@@ -845,13 +845,16 @@ public: //0TAG0operator.arguments
    arguments& operator+=( const std::vector<std::pair<std::string_view, gd::variant_view>>& vector_ ) { append( vector_ ); return *this; }
    arguments& operator+=( std::initializer_list<std::pair<std::string_view, gd::variant_view>> list_ );
 
-   arguments operator<<(const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
+
+   template<typename VALUE>
+   arguments& operator+=( std::pair<const char*, VALUE>&& pair ) { return append_argument(std::string_view(pair.first), gd::variant_view(pair.second)); }
+   template<typename VALUE>
+   arguments& operator+=( std::pair<std::string_view, VALUE>&& pair ) { return append_argument(pair.first, gd::variant_view(pair.second)); }
 
    /// Append values from another arguments object
    arguments& operator+=( const arguments& arguments_ ) { return append( arguments_ ); }
 
    arguments& operator+=( const gd::arg_view& arg_ ) { return append_argument(arg_.get_key(), arg_.get_value()); }
-   arguments& operator=( const gd::arg_view& arg_ ) { return set( arg_.get_key(), arg_.get_value() ); }
    arguments& operator<<( const gd::arg_view& arg_ ) { return append_argument(arg_.get_key(), arg_.get_value()); }
 
    arguments& operator>>( gd::arg_view& arg_ );
