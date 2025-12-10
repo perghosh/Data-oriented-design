@@ -795,17 +795,10 @@ public: //0TAG0operator.arguments
    /// Append values from another arguments object
    arguments& operator+=( const arguments& arguments_ ) { return append( arguments_ ); }
    arguments& operator+=( const gd::arg_view& arg_ ) { return append_argument(arg_.get_key(), arg_.get_value()); }
-
    arguments& operator=( const gd::arg_view& arg_ ) { return set( arg_.get_key(), arg_.get_value() ); }
-
    arguments& operator<<( const gd::arg_view& arg_ ) { return append_argument(arg_.get_key(), arg_.get_value()); }
 
-   arguments& operator>>( gd::arg_view& arg_ ) { 
-      if( exists(arg_.get_key()) == true ) { 
-         arg_.set_value( this->get_argument(arg_.get_key()).as_variant_view() ); 
-      }
-      return *this; 
-   }
+   arguments& operator>>( gd::arg_view& arg_ );
 
    // ## methods ------------------------------------------------------------------
 public:
@@ -1520,6 +1513,16 @@ inline arguments& arguments::operator=( const std::vector<std::pair<std::string_
    clear();
    return append(vectorPair);
 }
+
+/// extract argument value into arg_view object
+inline arguments& arguments::operator>>( gd::arg_view& arg_ ) 
+{ 
+   if( exists(arg_.get_key()) == true ) { 
+      arg_.set_value( this->get_argument(arg_.get_key()).as_variant_view() ); 
+   }
+   return *this; 
+}
+
 
 /// append values from vector with variant_view items
 inline arguments& arguments::append( const std::vector<gd::variant_view>& vectorValue ) {
