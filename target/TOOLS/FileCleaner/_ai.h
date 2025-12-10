@@ -1,6 +1,20 @@
 // @FILE [tag: ai, llm, pretrain] [description: Header file for AI-related utilities in FileCleaner tool used to pretrain LLM] [llm: core]
 // 
 // 
+
+/*
+@AI [tag: styleguide] [llm: core]
+[sample: """
+# LLM Rules for C++ Style Guide
+
+- Use Hungarian notation for variable names as described, very important for consistency.
+- If the solution do not work for LLM it is more important to follow the style guide than to make it work. And also mäke the solution smooth.
+- The developer can fix the code so LLM/AI do not need to be perfect all the time, but follow the style guide as close as possible.
+
+"""]
+*/
+
+
 /*
 @AI [tag: styleguide, cpp, commenting] [llm: core]
 [sample: """Hints about commenting
@@ -14,24 +28,43 @@ Try to avoid comments in code, when code on row is described if possible try to 
 """]
 */
 
+
+/*
+@AI [tag: styleguide, cpp, variable, hungarian-notation] [llm: core]
+[sample: """
+| Postfix | Description | Sample |
+| ------------ | ----------- | ------ |
+| `b`* | **boolean** | `bool bOk, bIsOk;` |
+| `i`* | **signed integer** (all sizes) | `int iCount;` `int64_t iBigValue;` `char iCharacter;` |
+| `u`* | **unsigned integer** (all sizes) | `unsigned uCount;` `uint64_t uBigValue;` `uint8_t uCharacter;` `size_t uLength;` |
+| `d`* | **decimal values** (double, float) | `double dSalary;` `float dXAxis;`|
+| `p`* | **pointer** (all, including smart pointers) | `int* piNumber;` `int piNumber[20];` `void* pUnknown;` `std::unique_ptr<std::atomic<uint64_t>[]> pThreadResult;` |
+| `e`* | **enum values** | `enum enumBodyType { eUnknown, eXml, eJson };`  `enumBodyType eType = eJson;` |
+| `it`* | **iterator** | `for( auto it : vectorValue ) {...}` `for( auto it = std::begin( m_vectorOption ), itEnd = std::end( m_vectorOption ); it != itEnd; it++ ) {...}` |
+| `m_`* | **member variables** | `uint64_t m_uRowCount;`  `std::vector<column> m_vectorColumn;` `uint8_t* m_puTableData = nullptr;` |
+| `string`* | **all string objects** | `std::string_view stringName;`  `std::string stringName;` `std::wstring stringName;` |
+| *`_` | **view declaration** | `std::string body_;` |
+"""]
+*/
+
 /*
 @AI [tag: styleguide, cpp, variable] [llm: core]
 [sample: """Variable naming follows Hungarian notation:
-bool bFlag = true;
-int iCounter = 0;
-unsigned uSize = 100;
-double dValue = 3.14;
-float dFloatValue = 1.0f;
-int* piNumbers = nullptr;
-void* pData = nullptr;
-std::unique_ptr<int[]> pArray;
-enum enumColor { eRed, eGreen, eBlue };
+bool bFlag = true; // prefix b for boolean
+int iCounter = 0; // prefix i for signed integer (all sizes)
+unsigned uSize = 100; // prefix u for unsigned integer (all sizes)
+double dValue = 3.14; // prefix d for decimal values like float and double
+float dFloatValue = 1.0f; // prefix d for decimal values
+int* piNumbers = nullptr; // prefix p for pointer
+void* pData = nullptr; int* piData = nullptr;
+std::unique_ptr<int[]> piArray; std::unique_ptr<uint16_t[]> puArray;
+enum enumColor { eRed, eGreen, eBlue }; // prefix e for enum types
 enumColor eCurrent = eRed;
-auto it = container.begin();
+auto it = container.begin(); // prefix it for iterator
 std::string stringName = "example";
 std::string_view stringViewName;
-std::wstring stringWideName;
-std::vector<int> vectorNumbers;
+std::wstring stringWideName; // all string types start with "string"
+std::vector<int> vectorNumbers; // use complete class name all other
 // variables ending with _ can be anything, need to read declaration and use this when it isn't important (very local scope)
 // member variables start with 'm_'
 // abbreviations: b=boolean,i=integers, u=unsigned intergers, d=decimal, p=pointer, it=iterator
@@ -64,7 +97,7 @@ int iCounter = 0; // counter for iterations and variables have comments close af
 if( iRow < 0 || iRow >= (int)vector_.size() )                                 // comments describing row starts at column 80
 const auto* ptable_ = pdocument->CACHE_Get("history");                                             assert( ptable_ != nullptr && "no history table" ); // assert are "hidden" far to right, 100 columns
 //
-/*----------------------------------------------------------------------------- MethodName
+/** -------------------------------------------------------------------------- MethodName
  * @brief method comment sample description, follow doxygen style
  * 
  * Describe method if needed here, this is a sample on how to document methods
