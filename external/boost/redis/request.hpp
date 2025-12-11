@@ -7,28 +7,30 @@
 #ifndef BOOST_REDIS_REQUEST_HPP
 #define BOOST_REDIS_REQUEST_HPP
 
-#include <boost/redis/resp3/type.hpp>
 #include <boost/redis/resp3/serialization.hpp>
+#include <boost/redis/resp3/type.hpp>
 
+#include <algorithm>
 #include <string>
 #include <tuple>
-#include <algorithm>
 
 // NOTE: For some commands like hset it would be a good idea to assert
 // the value type is a pair.
 
 namespace boost::redis {
 
-namespace detail{
+namespace detail {
 auto has_response(std::string_view cmd) -> bool;
-}
+struct request_access;
+}  // namespace detail
 
-/** \brief Creates Redis requests.
- *  \ingroup high-level-api
+/** @brief Represents a Redis request.
  *  
  *  A request is composed of one or more Redis commands and is
- *  referred to in the redis documentation as a pipeline, see
- *  https://redis.io/topics/pipelining. For example
+ *  referred to in the redis documentation as a pipeline. See
+ *  <a href="https://redis.io/topics/pipelining"></a> for more info.
+ *
+ *  For example:
  *
  *  @code
  *  request r;
@@ -39,64 +41,86 @@ auto has_response(std::string_view cmd) -> bool;
  *  r.push("QUIT");
  *  @endcode
  *
- *  \remarks
- *
- *  Uses a std::string for internal storage.
+ *  Uses a `std::string` for internal storage.
  */
 class request {
 public:
    /// Request configuration options.
    struct config {
-      /** \brief If `true` calls to `connection::async_exec` will
+      /** @brief (Deprecated) If `true`, calls to @ref basic_connection::async_exec will
        * complete with error if the connection is lost while the
        * request hasn't been sent yet.
+       *
+       * @par Deprecated
+       * This setting is deprecated and should be always left out as the default
+       * (waiting for a connection to be established again).
+       * If you need to limit how much time a @ref basic_connection::async_exec
+       * operation is allowed to take, use `asio::cancel_after`, instead.
        */
-      bool cancel_on_connection_lost = true;
+      bool cancel_on_connection_lost = false;
 
-      /** \brief If `true` `connection::async_exec` will complete with
-       * `boost::redis::error::not_connected` if the call happens
+      /** @brief (Deprecated) If `true`, @ref basic_connection::async_exec will complete with
+       * @ref boost::redis::error::not_connected if the call happens
        * before the connection with Redis was established.
+       *
+       * @par Deprecated
+       * This setting is deprecated and should be always left out as the default
+       * (waiting for a connection to be established).
+       * If you need to limit how much time a @ref basic_connection::async_exec
+       * operation is allowed to take, use `asio::cancel_after`, instead.
        */
       bool cancel_if_not_connected = false;
 
-      /** \brief If `false` `connection::async_exec` will not
+      /** @brief If `false`, @ref basic_connection::async_exec will not
        * automatically cancel this request if the connection is lost.
-       * Affects only requests that have been written to the socket
-       * but remained unresponded when
-       * `boost::redis::connection::async_run` completed.
+       * Affects only requests that have been written to the server
+       * but have not been responded when
+       * the connection is lost.
        */
       bool cancel_if_unresponded = true;
 
-      /** \brief If this request has a `HELLO` command and this flag
-       * is `true`, the `boost::redis::connection` will move it to the
+      /** @brief (Deprecated) If this request has a `HELLO` command and this flag
+       * is `true`, it will be moved to the
        * front of the queue of awaiting requests. This makes it
-       * possible to send `HELLO` and authenticate before other
+       * possible to send `HELLO` commands and authenticate before other
        * commands are sent.
+       *
+       * @par Deprecated
+       * This field has been superseded by @ref config::setup.
+       * This setup request will always be run first on connection establishment.
+       * Please use it to run any required setup commands.
+       * This field will be removed in subsequent releases.
        */
       bool hello_with_priority = true;
    };
 
-   /** \brief Constructor
+   /** @brief Constructor
     *  
-    *  \param cfg Configuration options.
+    *  @param cfg Configuration options.
     */
-    explicit
-    request(config cfg = config{true, false, true, true})
-    : cfg_{cfg} {}
+   explicit request(config cfg = config{false, false, true, true})
+   : cfg_{cfg}
+   { }
 
-    //// Returns the number of responses expected for this request.
+   /// Returns the number of responses expected for this request.
    [[nodiscard]] auto get_expected_responses() const noexcept -> std::size_t
-      { return expected_responses_;};
+   {
+      return expected_responses_;
+   };
 
-    //// Returns the number of commands contained in this request.
-   [[nodiscard]] auto get_commands() const noexcept -> std::size_t
-      { return commands_;};
+   /// Returns the number of commands contained in this request.
+   [[nodiscard]] auto get_commands() const noexcept -> std::size_t { return commands_; };
 
-   [[nodiscard]] auto payload() const noexcept -> std::string_view
-      { return payload_;}
+   [[nodiscard]] auto payload() const noexcept -> std::string_view { return payload_; }
 
-   [[nodiscard]] auto has_hello_priority() const noexcept -> auto const&
-      { return has_hello_priority_;}
+   [[nodiscard]]
+   BOOST_DEPRECATED(
+      "The hello_with_priority attribute and related functions are deprecated. "
+      "Use config::setup to run setup commands, instead.") auto has_hello_priority() const noexcept
+      -> auto const&
+   {
+      return has_hello_priority_;
+   }
 
    /// Clears the request preserving allocated memory.
    void clear()
@@ -107,40 +131,43 @@ public:
       has_hello_priority_ = false;
    }
 
-   /// Calls std::string::reserve on the internal storage.
-   void reserve(std::size_t new_cap = 0)
-      { payload_.reserve(new_cap); }
-
-   /// Returns a const reference to the config object.
-   [[nodiscard]] auto get_config() const noexcept -> auto const& {return cfg_; }
+   /// Calls `std::string::reserve` on the internal storage.
+   void reserve(std::size_t new_cap = 0) { payload_.reserve(new_cap); }
 
    /// Returns a reference to the config object.
-   [[nodiscard]] auto get_config() noexcept -> auto& {return cfg_; }
+   [[nodiscard]] auto get_config() const noexcept -> config const& { return cfg_; }
+
+   /// Returns a reference to the config object.
+   [[nodiscard]] auto get_config() noexcept -> config& { return cfg_; }
 
    /** @brief Appends a new command to the end of the request.
     *
-    *  For example
+    *  For example:
     *
-    *  \code
+    *  @code
     *  request req;
     *  req.push("SET", "key", "some string", "EX", "2");
-    *  \endcode
+    *  @endcode
     *
-    *  will add the `set` command with value "some string" and an
+    *  This will add a `SET` command with value `"some string"` and an
     *  expiration of 2 seconds.
     *
-    *  \param cmd The command e.g redis or sentinel command.
-    *  \param args Command arguments.
-    *  \tparam Ts Non-string types will be converted to string by calling `boost_redis_to_bulk` on each argument. This function must be made available over ADL and must have the following signature
+    *  Command arguments should either be convertible to `std::string_view`
+    *  or support the `boost_redis_to_bulk` function.
+    *  This function is a customization point that must be made available
+    *  using ADL and must have the following signature:
     *
     *  @code
     *  void boost_redis_to_bulk(std::string& to, T const& t);
-    *  {
-    *     boost::redis::resp3::boost_redis_to_bulk(to, serialize(t));
-    *  }
     *  @endcode
     *
+    *
     *  See cpp20_serialization.cpp
+    *
+    *  @param cmd The command to execute. It should be a redis or sentinel command, like `"SET"`.
+    *  @param args Command arguments. Non-string types will be converted to string by calling `boost_redis_to_bulk` on each argument.
+    *  @tparam Ts Types of the command arguments.
+    *
     */
    template <class... Ts>
    void push(std::string_view cmd, Ts const&... args)
@@ -156,7 +183,7 @@ public:
    /** @brief Appends a new command to the end of the request.
     *  
     *  This overload is useful for commands that have a key and have a
-    *  dynamic range of arguments. For example
+    *  dynamic range of arguments. For example:
     *
     *  @code
     *  std::map<std::string, std::string> map
@@ -166,32 +193,34 @@ public:
     *     };
     *
     *  request req;
-    *  req.push_range("HSET", "key", std::cbegin(map), std::cend(map));
+    *  req.push_range("HSET", "key", map.cbegin(), map.cend());
     *  @endcode
-    *  
-    *  \param cmd The command e.g. Redis or Sentinel command.
-    *  \param key The command key.
-    *  \param begin Iterator to the begin of the range.
-    *  \param end Iterator to the end of the range.
-    *  \tparam Ts Non-string types will be converted to string by calling `boost_redis_to_bulk` on each argument. This function must be made available over ADL and must have the following signature
+    *
+    *  Command arguments should either be convertible to `std::string_view`
+    *  or support the `boost_redis_to_bulk` function.
+    *  This function is a customization point that must be made available
+    *  using ADL and must have the following signature:
     *
     *  @code
     *  void boost_redis_to_bulk(std::string& to, T const& t);
-    *  {
-    *     boost::redis::resp3::boost_redis_to_bulk(to, serialize(t));
-    *  }
     *  @endcode
+    *  
+    *  @param cmd The command to execute. It should be a redis or sentinel command, like `"SET"`.
+    *  @param key The command key. It will be added as the first argument to the command.
+    *  @param begin Iterator to the begin of the range.
+    *  @param end Iterator to the end of the range.
+    *  @tparam ForwardIterator A forward iterator with an element type that is convertible to `std::string_view`
+    *          or supports `boost_redis_to_bulk`.
     *
     *  See cpp20_serialization.cpp
     */
    template <class ForwardIterator>
-   void
-   push_range(
-      std::string_view const& cmd,
-      std::string_view const& key,
+   void push_range(
+      std::string_view cmd,
+      std::string_view key,
       ForwardIterator begin,
       ForwardIterator end,
-      typename std::iterator_traits<ForwardIterator>::value_type * = nullptr)
+      typename std::iterator_traits<ForwardIterator>::value_type* = nullptr)
    {
       using value_type = typename std::iterator_traits<ForwardIterator>::value_type;
 
@@ -205,7 +234,7 @@ public:
       resp3::add_bulk(payload_, key);
 
       for (; begin != end; ++begin)
-	 resp3::add_bulk(payload_, *begin);
+         resp3::add_bulk(payload_, *begin);
 
       check_cmd(cmd);
    }
@@ -213,37 +242,39 @@ public:
    /** @brief Appends a new command to the end of the request.
     *
     *  This overload is useful for commands that have a dynamic number
-    *  of arguments and don't have a key. For example
+    *  of arguments and don't have a key. For example:
     *
-    *  \code
+    *  @code
     *  std::set<std::string> channels
-    *     { "channel1" , "channel2" , "channel3" }
+    *     { "channel1" , "channel2" , "channel3" };
     *
     *  request req;
     *  req.push("SUBSCRIBE", std::cbegin(channels), std::cend(channels));
-    *  \endcode
+    *  @endcode
     *
-    *  \param cmd The Redis command
-    *  \param begin Iterator to the begin of the range.
-    *  \param end Iterator to the end of the range.
-    *  \tparam ForwardIterator If the value type is not a std::string it will be converted to a string by calling `boost_redis_to_bulk`. This function must be made available over ADL and must have the following signature
+    *  Command arguments should either be convertible to `std::string_view`
+    *  or support the `boost_redis_to_bulk` function.
+    *  This function is a customization point that must be made available
+    *  using ADL and must have the following signature:
     *
     *  @code
     *  void boost_redis_to_bulk(std::string& to, T const& t);
-    *  {
-    *     boost::redis::resp3::boost_redis_to_bulk(to, serialize(t));
-    *  }
     *  @endcode
+    *  
+    *  @param cmd The command to execute. It should be a redis or sentinel command, like `"SET"`.
+    *  @param begin Iterator to the begin of the range.
+    *  @param end Iterator to the end of the range.
+    *  @tparam ForwardIterator A forward iterator with an element type that is convertible to `std::string_view`
+    *          or supports `boost_redis_to_bulk`.
     *
     *  See cpp20_serialization.cpp
     */
    template <class ForwardIterator>
-   void
-   push_range(
-      std::string_view const& cmd,
+   void push_range(
+      std::string_view cmd,
       ForwardIterator begin,
       ForwardIterator end,
-      typename std::iterator_traits<ForwardIterator>::value_type * = nullptr)
+      typename std::iterator_traits<ForwardIterator>::value_type* = nullptr)
    {
       using value_type = typename std::iterator_traits<ForwardIterator>::value_type;
 
@@ -256,7 +287,7 @@ public:
       resp3::add_bulk(payload_, cmd);
 
       for (; begin != end; ++begin)
-	 resp3::add_bulk(payload_, *begin);
+         resp3::add_bulk(payload_, *begin);
 
       check_cmd(cmd);
    }
@@ -265,19 +296,20 @@ public:
     *  
     *  Equivalent to the overload taking a range of begin and end
     *  iterators.
-    *
-    *  \param cmd Redis command.
-    *  \param key Redis key.
-    *  \param range Range to send e.g. `std::map`.
-    *  \tparam A type that can be passed to `std::cbegin()` and `std::cend()`.
+    *  
+    *  @param cmd The command to execute. It should be a redis or sentinel command, like `"SET"`.
+    *  @param key The command key. It will be added as the first argument to the command.
+    *  @param range Range containing the command arguments.
+    *  @tparam Range A type that can be passed to `std::begin()` and `std::end()` to obtain
+    *          iterators. The range elements should be convertible to `std::string_view`
+    *          or support `boost_redis_to_bulk`.
     */
    template <class Range>
-   void
-   push_range(
-      std::string_view const& cmd,
-      std::string_view const& key,
+   void push_range(
+      std::string_view cmd,
+      std::string_view key,
       Range const& range,
-      decltype(std::begin(range)) * = nullptr)
+      decltype(std::begin(range))* = nullptr)
    {
       using std::begin;
       using std::end;
@@ -288,22 +320,34 @@ public:
     *
     *  Equivalent to the overload taking a range of begin and end
     *  iterators.
-    *
-    *  \param cmd Redis command.
-    *  \param range Range to send e.g. `std::map`.
-    *  \tparam A type that can be passed to `std::cbegin()` and `std::cend()`.
+    *  
+    *  @param cmd The command to execute. It should be a redis or sentinel command, like `"SET"`.
+    *  @param range Range containing the command arguments.
+    *  @tparam Range A type that can be passed to `std::begin()` and `std::end()` to obtain
+    *          iterators. The range elements should be convertible to `std::string_view`
+    *          or support `boost_redis_to_bulk`.
     */
    template <class Range>
-   void
-   push_range(
+   void push_range(
       std::string_view cmd,
       Range const& range,
-      decltype(std::cbegin(range)) * = nullptr)
+      decltype(std::cbegin(range))* = nullptr)
    {
       using std::cbegin;
       using std::cend;
       push_range(cmd, cbegin(range), cend(range));
    }
+
+   /** @brief Appends the commands in another request to the end of the request.
+    *
+    *  Appends all the commands contained in `other` to the end of
+    *  this request. Configuration flags in `*this`,
+    *  like @ref config::cancel_if_unresponded, are *not* modified,
+    *  even if `other` has a different config than `*this`.
+    *  
+    *  @param other The request containing the commands to append.
+    */
+   void append(const request& other);
 
 private:
    void check_cmd(std::string_view cmd)
@@ -322,8 +366,22 @@ private:
    std::size_t commands_ = 0;
    std::size_t expected_responses_ = 0;
    bool has_hello_priority_ = false;
+
+   friend struct detail::request_access;
 };
 
-} // boost::redis::resp3
+namespace detail {
 
-#endif // BOOST_REDIS_REQUEST_HPP
+struct request_access {
+   inline static void set_priority(request& r, bool value) { r.has_hello_priority_ = value; }
+   inline static bool has_priority(const request& r) { return r.has_hello_priority_; }
+};
+
+// Creates a HELLO 3 request
+request make_hello_request();
+
+}  // namespace detail
+
+}  // namespace boost::redis
+
+#endif  // BOOST_REDIS_REQUEST_HPP

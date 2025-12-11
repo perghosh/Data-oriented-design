@@ -94,7 +94,7 @@ struct async_initiate_spawn
             alloc, asio::get_associated_executor(h, exec), std::move(recs), std::move(h), sl
         }).address());
 
-    asio::dispatch(exec, std::coroutine_handle<detail::task_promise<T>>::from_promise(*p->promise));
+    asio::dispatch(exec, unique_handle<detail::task_promise<T>>::from_promise(*p->promise));
   }
 
   template<typename Handler>
@@ -144,9 +144,12 @@ struct async_initiate_spawn
       executor_type exec_;
       decltype(recs) r;
       Handler handler;
+      asio::cancellation_slot sl;
 
       void operator()()
       {
+        if (sl.is_connected())
+          sl.clear();
         auto ex = r->exception;
         r.reset();
         std::move(handler)(ex);
@@ -154,10 +157,10 @@ struct async_initiate_spawn
     };
 
     p->awaited_from.reset(detail::post_coroutine(completion_handler{
-        alloc, asio::get_associated_executor(h, exec), std::move(recs), std::forward<Handler>(h)
+        alloc, asio::get_associated_executor(h, exec), std::move(recs), std::forward<Handler>(h), sl
       }).address());
 
-    asio::dispatch(exec, std::coroutine_handle<detail::task_promise<void>>::from_promise(*p->promise));
+    asio::dispatch(exec, unique_handle<detail::task_promise<void>>::from_promise(*p->promise));
   }
 };
 

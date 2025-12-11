@@ -1,5 +1,5 @@
 /* A less simple result type
-(C) 2017-2024 Niall Douglas <http://www.nedproductions.biz/> (20 commits)
+(C) 2017-2025 Niall Douglas <http://www.nedproductions.biz/> (20 commits)
 File Created: June 2017
 
 
@@ -41,6 +41,11 @@ DEALINGS IN THE SOFTWARE.
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"  // Standardese markup confuses clang
+#endif
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma warning(push)
+#pragma warning(disable : 6287)  // redundant code
 #endif
 
 BOOST_OUTCOME_V2_NAMESPACE_EXPORT_BEGIN
@@ -1144,6 +1149,10 @@ SIGNATURE NOT RECOGNISED
 }  // namespace hooks
 
 BOOST_OUTCOME_V2_NAMESPACE_END
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma warning(pop)
+#endif
 
 #ifdef __clang__
 #pragma clang diagnostic pop

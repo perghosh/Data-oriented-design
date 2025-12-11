@@ -115,7 +115,7 @@ namespace boost { namespace parser {
             bool & success,
             int & indent,
             ErrorHandler const & error_handler,
-            nope &,
+            nope const &,
             symbol_table_tries_t & symbol_table_tries,
             pending_symbol_table_operations_t &
                 pending_symbol_table_operations) noexcept;
@@ -142,6 +142,8 @@ namespace boost { namespace parser {
         {};
 
         struct punct_chars
+        {};
+        struct symb_chars
         {};
         struct lower_case_chars
         {};
@@ -207,7 +209,7 @@ namespace boost { namespace parser {
         `ParserTuple`, not the order of the parsers' matches.  It is an error
         to specialize `perm_parser` with a `ParserTuple` template parameter
         that includes an `eps_parser`. */
-    template<typename ParserTuple>
+    template<typename ParserTuple, typename DelimiterParser>
     struct perm_parser;
 
     /** Applies each parser in `ParserTuple`, in order.  The parse succeeds
@@ -380,7 +382,10 @@ namespace boost { namespace parser {
 
     /** Matches a string delimited by quotation marks; produces a
         `std::string` attribute. */
-    template<typename Quotes = detail::nope, typename Escapes = detail::nope>
+    template<
+        typename Quotes = detail::nope,
+        typename Escapes = detail::nope,
+        typename CharParser = char_parser<detail::nope>>
     struct quoted_string_parser;
 
     /** Matches an end-of-line (`NewlinesOnly == true`), whitespace
@@ -399,8 +404,8 @@ namespace boost { namespace parser {
         and at most `MaxDigits`, producing an attribute of type `T`.  Fails on
         any other input.  The parse will also fail if `Expected` is anything
         but `detail::nope` (which it is by default), and the produced
-        attribute is not equal to `expected_`.  `Radix` must be in `[2,
-        36]`. */
+        attribute is not equal to `expected_`.  `Radix` must be one of `2`,
+        `8`, `10`, or `16`. */
     template<
         typename T,
         int Radix = 10,

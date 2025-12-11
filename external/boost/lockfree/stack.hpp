@@ -7,6 +7,12 @@
 #ifndef BOOST_LOCKFREE_STACK_HPP_INCLUDED
 #define BOOST_LOCKFREE_STACK_HPP_INCLUDED
 
+#include <boost/config.hpp>
+#ifdef BOOST_HAS_PRAGMA_ONCE
+#    pragma once
+#endif
+
+
 #include <boost/assert.hpp>
 #include <boost/core/allocator_access.hpp>
 #include <boost/core/no_exceptions_support.hpp>
@@ -23,12 +29,9 @@
 #include <boost/lockfree/detail/uses_optional.hpp>
 #include <boost/lockfree/lockfree_forward.hpp>
 
+#include <cstdint>
 #include <tuple>
 #include <type_traits>
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#    pragma once
-#endif
 
 namespace boost { namespace lockfree {
 namespace detail {
@@ -800,13 +803,13 @@ private:
 #ifndef BOOST_DOXYGEN_INVOKED
     detail::atomic< tagged_node_handle > tos;
 
-    static const int padding_size = BOOST_LOCKFREE_CACHELINE_BYTES - sizeof( tagged_node_handle );
+    static const int padding_size = detail::cacheline_bytes - sizeof( tagged_node_handle );
     char             padding[ padding_size ];
 
     pool_t pool;
 #endif
 };
 
-}}     // namespace boost::lockfree
+}} // namespace boost::lockfree
 
 #endif /* BOOST_LOCKFREE_STACK_HPP_INCLUDED */

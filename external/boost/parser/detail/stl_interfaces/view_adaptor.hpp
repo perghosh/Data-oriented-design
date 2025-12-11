@@ -24,8 +24,12 @@
 #define BOOST_PARSER_USE_CPP23_STD_RANGE_ADAPTOR_CLOSURE 0
 #endif
 
-#if !BOOST_PARSER_USE_CPP23_STD_RANGE_ADAPTOR_CLOSURE &&               \
-    BOOST_PARSER_DETAIL_STL_INTERFACES_USE_CONCEPTS && defined(__GNUC__) && 12 <= __GNUC__
+#if !BOOST_STL_INTERFACES_USE_CPP23_STD_RANGE_ADAPTOR_CLOSURE &&               \
+    BOOST_STL_INTERFACES_USE_CONCEPTS && defined(BOOST_GCC) && 14 <= __GNUC__
+#define BOOST_PARSER_USE_LIBSTDCPP_GCC14_RANGE_ADAPTOR_CLOSURE 1
+#elif !BOOST_PARSER_USE_CPP23_STD_RANGE_ADAPTOR_CLOSURE &&                     \
+    BOOST_PARSER_DETAIL_STL_INTERFACES_USE_CONCEPTS &&                         \
+    defined(BOOST_PARSER_GCC) && 12 <= __GNUC__
 #define BOOST_PARSER_USE_LIBSTDCPP_GCC12_RANGE_ADAPTOR_CLOSURE 1
 #else
 #define BOOST_PARSER_USE_LIBSTDCPP_GCC12_RANGE_ADAPTOR_CLOSURE 0
@@ -197,6 +201,11 @@ namespace boost::parser::detail { namespace stl_interfaces {
     template<typename D>
     using range_adaptor_closure = std::ranges::range_adaptor_closure<D>;
 
+#elif BOOST_PARSER_USE_LIBSTDCPP_GCC14_RANGE_ADAPTOR_CLOSURE
+
+    template<typename D>
+    using range_adaptor_closure = std::views::__adaptor::_RangeAdaptorClosure<D>;
+
 #elif BOOST_PARSER_USE_LIBSTDCPP_GCC12_RANGE_ADAPTOR_CLOSURE
 
     template<typename D>
@@ -258,7 +267,7 @@ namespace boost::parser::detail { namespace stl_interfaces {
     template<typename F>
     struct closure : range_adaptor_closure<closure<F>>
     {
-        constexpr closure(F f) : f_(f) {}
+        constexpr closure(F f) : f_(std::move(f)) {}
 
 #if BOOST_PARSER_DETAIL_STL_INTERFACES_USE_CONCEPTS
         template<typename T>
@@ -326,25 +335,22 @@ namespace boost::parser::detail { namespace stl_interfaces {
     template<typename F>
     struct adaptor
     {
-        constexpr adaptor(F f) : f_(f) {}
+        constexpr adaptor(F f) : f_(std::move(f)) {}
 
-        // clang-format off
         template<typename... Args>
         constexpr auto operator()(Args &&... args) const
-        // clang-format on
         {
 #if BOOST_PARSER_DETAIL_STL_INTERFACES_USE_CONCEPTS
             if constexpr (std::is_invocable_v<F const &, Args...>) {
-                return f_((Args &&) args...);
+                return f_((Args &&)args...);
             } else {
-                return closure(
-                    stl_interfaces::bind_back(f_, (Args &&) args...));
+                return closure(stl_interfaces::bind_back(f_, (Args &&)args...));
             }
 #else
             return detail::adaptor_impl<
                 F const &,
                 detail::is_invocable_v<F const &, Args...>,
-                Args...>::call(f_, (Args &&) args...);
+                Args...>::call(f_, (Args &&)args...);
 #endif
         }
 

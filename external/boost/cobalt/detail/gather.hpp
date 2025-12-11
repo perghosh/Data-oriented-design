@@ -40,6 +40,7 @@ struct gather_variadic_impl
 {
   using tuple_type = std::tuple<decltype(get_awaitable_type(std::declval<Args&&>()))...>;
 
+  BOOST_COBALT_MSVC_NOINLINE
   gather_variadic_impl(Args && ... args)
       : args{std::forward<Args>(args)...}
   {
@@ -188,9 +189,7 @@ struct gather_variadic_impl
     template<typename T>
     using result_part = system::result<co_await_result_t<T>, std::exception_ptr>;
 
-#if _MSC_VER
-    BOOST_NOINLINE
-#endif
+    BOOST_COBALT_MSVC_NOINLINE
     std::tuple<result_part<Args> ...> await_resume()
     {
       return mp11::tuple_transform(
@@ -255,6 +254,7 @@ struct gather_ranged_impl
     std::vector<asio::cancellation_signal> cancel{std::size(aws), alloc};
     std::vector<result_storage_type> result{cancel.size(), alloc};
 #endif
+
 
 
     awaitable(Range & aws_, std::false_type /* needs operator co_await */)
@@ -384,9 +384,7 @@ struct gather_ranged_impl
       return true;
     }
 
-#if _MSC_VER
-    BOOST_NOINLINE
-#endif
+    BOOST_COBALT_MSVC_NOINLINE
     auto await_resume()
     {
 #if !defined(BOOST_COBALT_NO_PMR)

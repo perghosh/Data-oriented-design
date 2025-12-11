@@ -88,10 +88,12 @@ namespace boost::parser::detail { namespace text {
     {
         V base_ = V();
 
-        template<bool Const>
-        class iterator;
+        // HACK: SentType is here to work around irritating big-3
+        // implementation inconsistencies.
         template<bool Const>
         class sentinel;
+        template<bool Const, typename SentType = sentinel<Const>>
+        class iterator;
 
     public:
         constexpr project_view()
@@ -140,7 +142,7 @@ namespace boost::parser::detail { namespace text {
 #else
     template<typename V, typename F>
 #endif
-    template<bool Const>
+    template<bool Const, typename SentType>
     class project_view<V, F>::iterator
         : public boost::parser::detail::stl_interfaces::proxy_iterator_interface<
               iterator<Const>,
@@ -161,7 +163,7 @@ namespace boost::parser::detail { namespace text {
             decltype(detail::function_for_tag<F>(0))
 #endif
             ;
-        using sentinel = project_view<V, F>::sentinel<Const>;
+        using sentinel = SentType;
 
         friend boost::parser::detail::stl_interfaces::access;
         iterator_type & base_reference() noexcept { return it_; }
@@ -169,7 +171,7 @@ namespace boost::parser::detail { namespace text {
 
         iterator_type it_ = iterator_type();
 
-        friend project_view<V, F>::sentinel<Const>;
+        friend project_view<V, F>::template sentinel<Const>;
 
         template<bool OtherConst>
 #if BOOST_PARSER_DETAIL_TEXT_USE_CONCEPTS
@@ -423,49 +425,57 @@ namespace boost::parser::detail { namespace text {
 #if defined(__cpp_char8_t)
     inline constexpr detail::as_charn_impl<char8_view, format::utf8> as_char8_t;
 #endif
-    inline constexpr detail::as_charn_impl<char16_view, format::utf16> as_char16_t;
-    inline constexpr detail::as_charn_impl<char32_view, format::utf32> as_char32_t;
+    inline constexpr detail::as_charn_impl<char16_view, format::utf16>
+        as_char16_t;
+    inline constexpr detail::as_charn_impl<char32_view, format::utf32>
+        as_char32_t;
 
-    // clang-format off
 #if BOOST_PARSER_DETAIL_TEXT_USE_CONCEPTS
     template<utf_range V>
-    requires std::ranges::view<V> && std::ranges::forward_range<V>
+        requires std::ranges::view<V> && std::ranges::forward_range<V>
 #else
     template<typename V>
 #endif
-    class unpacking_view : public stl_interfaces::view_interface<unpacking_view<V>> {
-      V base_ = V();
+    class unpacking_view
+        : public stl_interfaces::view_interface<unpacking_view<V>>
+    {
+        V base_ = V();
 
     public:
-      constexpr unpacking_view()
+        constexpr unpacking_view()
 #if BOOST_PARSER_DETAIL_TEXT_USE_CONCEPTS
-          requires std::default_initializable<V>
+            requires std::default_initializable<V>
 #endif
-      = default;
-      constexpr unpacking_view(V base) : base_(std::move(base)) {}
+        = default;
+        constexpr unpacking_view(V base) : base_(std::move(base)) {}
 
-      constexpr V base() const &
+        constexpr V base() const &
 #if BOOST_PARSER_DETAIL_TEXT_USE_CONCEPTS
-          requires std::copy_constructible<V>
+            requires std::copy_constructible<V>
 #endif
-      { return base_; }
-      constexpr V base() && { return std::move(base_); }
+        {
+            return base_;
+        }
+        constexpr V base() && { return std::move(base_); }
 
-      constexpr auto code_units() const noexcept {
-        auto unpacked = boost::parser::detail::text::unpack_iterator_and_sentinel(detail::begin(base_), detail::end(base_));
-        return BOOST_PARSER_DETAIL_TEXT_SUBRANGE(unpacked.first, unpacked.last);
-      }
+        constexpr auto code_units() const noexcept
+        {
+            auto unpacked =
+                boost::parser::detail::text::unpack_iterator_and_sentinel(
+                    detail::begin(base_), detail::end(base_));
+            return BOOST_PARSER_DETAIL_TEXT_SUBRANGE(
+                unpacked.first, unpacked.last);
+        }
 
-      constexpr auto begin() { return code_units().begin(); }
-      constexpr auto begin() const { return code_units().begin(); }
+        constexpr auto begin() { return code_units().begin(); }
+        constexpr auto begin() const { return code_units().begin(); }
 
-      constexpr auto end() { return code_units().end(); }
-      constexpr auto end() const { return code_units().end(); }
+        constexpr auto end() { return code_units().end(); }
+        constexpr auto end() const { return code_units().end(); }
     };
 
     template<class R>
     unpacking_view(R &&) -> unpacking_view<detail::all_t<R>>;
-    // clang-format on
 
 #if BOOST_PARSER_DETAIL_TEXT_USE_CONCEPTS
     template<format Format, utf_range V>

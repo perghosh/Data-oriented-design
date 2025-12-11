@@ -16,8 +16,26 @@
 #else
 #define BOOST_COBALT_DECL BOOST_SYMBOL_IMPORT
 #endif
+#if defined(BOOST_COBALT_IO_SOURCE)
+#define BOOST_COBALT_IO_DECL BOOST_SYMBOL_EXPORT
 #else
+#define BOOST_COBALT_IO_DECL BOOST_SYMBOL_IMPORT
+#endif
+#if defined(BOOST_COBALT_SSL_SOURCE)
+#define BOOST_COBALT_SSL_DECL  BOOST_SYMBOL_EXPORT
+#else
+#define BOOST_COBALT_SSL_DECL BOOST_SYMBOL_IMPORT
+#endif
+#else
+#define BOOST_COBALT_SSL_DECL
 #define BOOST_COBALT_DECL
+#define BOOST_COBALT_IO_DECL
+#endif
+
+#if _MSC_VER
+#define BOOST_COBALT_MSVC_NOINLINE BOOST_NOINLINE
+#else
+#define BOOST_COBALT_MSVC_NOINLINE
 #endif
 
 #if defined(BOOST_COBALT_USE_IO_CONTEXT)
@@ -73,5 +91,13 @@ namespace pmr = std::pmr;
 #endif
 
 }
+
+#if !defined(BOOST_COBALT_SOURCE) && !defined(BOOST_ALL_NO_LIB) && !defined(BOOST_COBALT_NO_LIB)
+#define BOOST_LIB_NAME boost_cobalt
+#if defined(BOOST_ALL_DYN_LINK) || defined(BOOST_COBALT_DYN_LINK)
+#define BOOST_DYN_LINK
+#endif
+#include <boost/config/auto_link.hpp>
+#endif
 
 #endif //BOOST_COBALT_CONFIG_HPP
