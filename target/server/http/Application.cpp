@@ -3,6 +3,7 @@
 #include <ctime>
 #include <filesystem>
 #include <iostream>
+#include <fstream>
 #include <queue>
 #include <thread>
 
@@ -12,17 +13,19 @@
 #include <boost/asio.hpp>
 
 #include "pugixml/pugixml.hpp"
+#include "jsoncons/json.hpp"
+#include "jsoncons_ext/jsonpath/jsonpath.hpp"
+
 
 #include "gd/gd_file.h"
 #include "gd/gd_file_rotate.h"
-
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_printer.h"
 #include "gd/gd_log_logger_define.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
 
-
+#include "gd/console/gd_console_console.h"
 
 #if defined(_MSC_VER)
 #   include "windows.h"   
@@ -531,6 +534,282 @@ void CApplication::SITE_Add(std::string_view stringIp, uint32_t uPort, std::stri
 {                                                                                                  LOG_DEBUG_RAW( "Add site - ip: " & stringIp & " port: " & uPort & " directory: " & stringFolder);
    auto uRow = m_ptableSite->row_add_one();
    m_ptableSite->row_set(uRow, gd::table::tag_variadic{}, gd::table::tag_convert{}, uRow + 1, stringIp, uPort, stringFolder);
+}
+
+/** --------------------------------------------------------------------------- @API [tag: configuration, load] [description: Load configuration from a JSON file into the config table]
+ * @brief Load configuration from a JSON file into the config table
+ *
+ * @param stringFileName The path to the configuration file
+ * @return std::pair<bool, std::string> True if successful, false and error message if failed
+ */
+std::pair<bool, std::string> CApplication::CONFIG_Load(const std::string_view& stringFileName)
+{                                                                                                 assert( (bool)m_ptableConfig == false );
+   using namespace jsoncons;
+   using namespace gd::table;
+
+   if( m_ptableConfig != nullptr ) return { true, "" }; // If config table is already set, return success
+
+   constexpr std::string_view stringConfigurationFileName = ".http-configuration.json"; // Default configuration file name
+
+   std::string stringFolder( stringFileName );
+
+
+   // ## Try to find local configuration file
+
+
+   if( stringFolder.empty() == true )
+   {
+      stringFolder = PROPERTY_Get("folder-home").as_string();                 // Get home folder from properties
+   }
+
+   if( stringFolder.empty() == true ) return { false, "No home folder set" }; // If no home folder is set, return error
+
+   // ## Prepare configuration path
+   gd::file::path pathConfiguration(stringFolder);
+   if( pathConfiguration.has_extension() == false ) { pathConfiguration += stringConfigurationFileName; } // Add filename if not provided
+
+   if( std::filesystem::exists(pathConfiguration) == false ) { return { false, std::format("configuration file not found: {}", pathConfiguration.string()) }; } // Check if configuration file exists
+
+   // ## Load settings from file
+   try
+   {
+      // Create a new config table with the path to the configuration file
+      m_ptableConfig = std::make_unique<table>( table( table::eTableFlagNull32, {{"rstring", 0, "group"}, {"rstring", 0, "name"}, {"rstring", 0, "value"}, {"string", 6, "type"} }, tag_prepare{} ) );
+      // Open the JSON file
+      std::ifstream ifstreamJson(pathConfiguration);
+      if( ifstreamJson.is_open() == false ) { return { false, std::format("Failed to open configuration file: {}", pathConfiguration.string()) }; } // Check if file opened successfully
+
+      // Parse JSON data from the file into a json object
+      json jsonDocument = json::parse( ifstreamJson );
+
+      // ## Iterate through the JSON object and populate the config table
+      for( const auto& keyvalueRoot : jsonDocument.object_range() )
+      {
+         if( keyvalueRoot.value().is_object() == false ) continue;            // Skip if value is not an object
+
+         std::string stringKey = keyvalueRoot.key();
+
+         // ## split string between group and name, splitting by '.' and set stringGroup and stringName
+
+         auto vectorSplit = gd::utf8::split(stringKey, '.');                  // Split the string by '.'
+         if( vectorSplit.size() < 2 ) continue;                               // Skip if less than 2 parts after splitting
+
+         auto stringCleaner = vectorSplit[0];                                 // First part is the 'cleaner'  marker, all config values belongs to key objects where first part is "cleaner"
+
+         if( stringCleaner != "cleaner" ) continue;                           // Skip if group is not "cleaner"
+
+         auto stringGroup = vectorSplit[1];                                   // Second part is the group name
+         for( const auto& value_ : keyvalueRoot.value().object_range() )
+         {
+            if( value_.value().is_null() ) continue;                          // Skip if value is null
+
+            auto stringName = value_.key();
+
+            if( value_.value().is_array() == true )
+            {
+               // ## Handle array values
+               gd::argument::shared::arguments argumentsArray;
+               for( const auto& arrayValue : value_.value().array_range() )
+               {
+                  argumentsArray.append( arrayValue.as_string() );            // Convert each array element to string and add to arguments
+               }
+               CONFIG_HandleArray(stringGroup, stringName, argumentsArray);
+               continue;
+            }
+
+            auto stringValue = value_.value().as_string();                    // Convert JSON value to string
+            auto uRow = m_ptableConfig->row_add_one();
+            m_ptableConfig->row_set(uRow, { stringGroup, stringName, stringValue }); // Set value, each value is store as string and belongs to group and name
+         }
+      }
+
+      // Use the json object (e.g., print it)
+      //std::cout << pretty_print(j) << std::endl;
+   }
+   catch (const std::exception& e)
+   {
+      std::string stringError = std::format("Error: {}", e.what());
+      return { false, stringError };
+   }
+
+   return { true, "" }; // Placeholder for settings loading logic
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get configuration value from the config table
+ *
+ * @param stringGroup The group name of the configuration
+ * @param stringName The name of the configuration
+ * @return gd::variant_view The value of the configuration, or an empty variant view if not found
+ */
+gd::variant_view CApplication::CONFIG_Get(std::string_view stringGroup, std::string_view stringName) const
+{
+   if( m_ptableConfig == nullptr ) return gd::variant_view(); // If no config table is set, return empty variant view
+
+   auto iRow = m_ptableConfig->find({ {"group", stringGroup }, {"name", stringName} }); // Find the row with the specified group and name
+
+   if( iRow != -1 )                                                           // If row is found
+   {
+      auto value_ = m_ptableConfig->cell_get_variant_view(iRow, "value");     // Return the value from the found row
+      return value_;
+   }
+
+   return gd::variant_view();
+}
+
+void CApplication::CONFIG_Set(std::string_view stringGroup, std::string_view stringName, const gd::variant_view& value_)
+{
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Check if configuration exists in the config table
+ *
+ * @param stringGroup The group name of the configuration
+ * @param stringName The name of the configuration
+ * @return bool True if the configuration exists, false otherwise
+ */
+bool CApplication::CONFIG_Exists( std::string_view stringGroup, std::string_view stringName ) const
+{
+   if( m_ptableConfig == nullptr ) return false;
+
+   auto iRow = m_ptableConfig->find({ {"group", stringGroup }, {"name", stringName} }); // Find the row with the specified group and name
+   if( iRow != -1 ) { return true; }
+
+   return false;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Handles array values in the configuration file by converting them to comma-separated strings.
+ *
+ * This function is called when a configuration value is an array. It converts each array element
+ * to a string and joins them with commas, storing the result as a single string in the configuration table.
+ *
+ * @param stringGroup The group name of the configuration
+ * @param stringName The name of the configuration parameter
+ * @param arguments_ The arguments containing the array values to process
+ */
+void CApplication::CONFIG_HandleArray( std::string_view stringGroup, std::string_view stringName, const gd::argument::shared::arguments& arguments_ )
+{
+   for( const auto& argument : arguments_ )
+   {
+      // Convert each array element to a string and join them with commas
+      std::string stringValue = argument.as_string();
+
+      if( stringValue.empty() == false )
+      {
+         CONFIG_Set( stringGroup, stringName, stringValue );
+         continue;
+      }
+   }
+}
+
+
+
+/** --------------------------------------------------------------------------- @TAG #print
+ * @brief Prints a message to the console or other output based on the UI type.
+ *
+ * This method handles printing messages to different output targets based on the application's UI type.
+ * It supports console, web, WIMP (Windows, macOS, Linux), Visual Studio Code, and Sublime Text.
+ *
+ * @param stringMessage The message to print.
+ * @param argumentsFormat Optional formatting arguments for the message.
+ * @return std::pair<bool, std::string> A pair indicating success or failure and an error message if applicable.
+ */
+std::pair<bool, std::string> CApplication::PrintMessage(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat)
+{
+   // Optionally extract formatting options from argumentsFormat
+   // For example: severity, color, output target, etc.
+   // Example: std::string_view severity = argumentsFormat["severity"].as_string_view();
+
+   std::unique_lock<std::mutex> lock_( m_mutex );
+
+   return {true, ""};
+}
+
+/**
+ * @brief Prints a progress message to the console or other output based on the UI type.
+ */
+std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat) // @TAG #progress.Application
+{
+   std::unique_lock<std::mutex> lock_( m_mutex );
+
+
+   return {true, ""};
+}
+
+std::pair<bool, std::string> CApplication::PrintError(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat)
+{
+   std::cout << "\n##\n## ERROR \n## ------\n" << stringMessage << std::flush;
+   return {true, ""};
+}
+
+void CApplication::Print( std::string_view stringColor,  gd::types::tag_background )
+{
+   std::string stringColorCode = CONFIG_Get("color", stringColor).as_string();
+   if( stringColorCode.empty() == false )
+   {
+      stringColorCode = gd::console::rgb::print(stringColorCode, gd::types::tag_background{});
+      std::cout << stringColorCode;                                           // Print the color code before the message
+      std::cout << "\033[2J";
+      std::cout << "\033[H";
+   }
+   else
+   {
+      // ## Reset all attributes and clear the screen to return to the default state
+      std::cout << "\033[0m";
+   }
+}
+
+
+
+
+
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Add error to internal list of errors
+ * @param stringError error information
+ */
+void CApplication::ERROR_Add( const std::string_view& stringError )
+{
+   std::unique_lock<std::mutex> lock_( m_mutexError ); // locks `m_vectorError`
+   gd::argument::arguments argumentsError( { {"text", stringError} }, gd::argument::arguments::tag_view{});
+   m_vectorError.push_back( std::move(argumentsError) );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Add warning to internal list of errors
+ * @param stringWarning warning information
+ */
+void CApplication::ERROR_AddWarning( const std::string_view& stringWarning )
+{
+   if( PROPERTY_Exists( "verbose" ) == false || PROPERTY_Get( "verbose" ).as_bool() == false ) return; // only add warning in verbose mode
+   std::unique_lock<std::mutex> lock_( m_mutexError ); // locks `m_vectorError`
+   gd::argument::arguments argumentsWarning( { {"text", stringWarning} }, gd::argument::arguments::tag_view{});
+   m_vectorError.push_back( std::move(argumentsWarning) );
+}
+
+
+/** ---------------------------------------------------------------------------
+ * @brief Get error information
+ *
+ * If no errors then empty string is returned
+ * @return std::string error information
+ */
+std::string CApplication::ERROR_Report() const
+{
+   if( m_vectorError.empty() == false )
+   {
+      std::string stringError;
+      for( const auto& error_ : m_vectorError )
+      {
+         stringError += error_.print();
+         stringError += "\n";
+      }
+      return stringError;
+   }
+
+   return std::string();
 }
 
 
