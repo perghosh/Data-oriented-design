@@ -1,4 +1,64 @@
 // @FILE [tag: variant, arg] [description: Argument objects for variant key-value pairs] [type: header]
+//
+/*
+
+
+## args_view
+Container for non-owning arg_view elements
+
+| Area | Methods (Examples) | Description |
+|------|--------------------|-------------|
+| Construction | `args_view()`, `args_view(initializer_list)` | Constructors for creating args_view instances |
+| Iteration | `begin()`, `end()`, `rbegin()`, `rend()`, `cbegin()`, `cend()` | Iterator methods for traversing the container |
+| Access | `at()`, `operator[]`, `front()`, `back()`, `data()` | Methods for accessing elements in the container |
+| Capacity | `empty()`, `size()`, `capacity()`, `reserve()` | Methods for querying and managing container capacity |
+| Modifiers | `push_back()`, `pop_back()`, `insert()`, `erase()`, `clear()`, `resize()` | Methods for modifying the contents of the container |
+| Comparison | `operator==`, `operator!=` | Equality comparison operators for args_view instances |
+| Operations | `swap()`, `find()`, `contains()`, `count()` | Utility methods for searching and comparing |
+| Algorithms | `find_if()`, `find_if_reverse()`, `any_of()`, `all_of()`, `none_of()` | Template methods for applying algorithms to elements |
+
+| Area | Methods (Examples) | Description |
+|------|--------------------|-------------|
+| Construction | `arg()`, `arg(stringKey)`, `arg(stringKey, value_)`, `arg(argview_)` | Constructors for creating arg instances with various initialization options |
+| Assignment | `set(...)`, `set_key(...)`, `set_value(...)` | Methods for updating the key, value, or both of the arg |
+| Comparison | `operator==`, `operator!=` | Equality comparison operators for arg instances |
+| Retrieval | `get_key()`, `get_value()`, `first()`, `second()` | Methods for accessing the key and value stored in the arg |
+| Queries | `empty()`, `empty_key()`, `empty_value()` | Methods for checking the state of the arg components |
+| Conversion | `operator arg_view()` (from arg) | Conversion operator from arg to arg_view |
+
+## args
+   Container for owning arg elements
+
+| Area | Methods (Examples) | Description |
+|------|--------------------|-------------|
+| Construction | `args()`, `args(initializer_list)`, `args(argsview_)` | Constructors for creating args instances with various initialization options |
+| Iteration | `begin()`, `end()`, `rbegin()`, `rend()`, `cbegin()`, `cend()` | Iterator methods for traversing the container |
+| Access | `at()`, `operator[]`, `front()`, `back()`, `data()` | Methods for accessing elements in the container |
+| Capacity | `empty()`, `size()`, `capacity()`, `reserve()` | Methods for querying and managing container capacity |
+| Modifiers | `push_back()`, `pop_back()`, `insert()`, `erase()`, `clear()`, `resize()` | Methods for modifying the contents of the container |
+| Comparison | `operator==`, `operator!=` | Equality comparison operators for args instances |
+| Operations | `swap()`, `find()`, `contains()`, `count()`, `remove()` | Utility methods for searching and modifying |
+| Conversion | `operator args_view()` | Conversion operator from args to args_view |
+| Algorithms | `find_if()`, `find_if_reverse()`, `any_of()`, `all_of()`, `none_of()` | Template methods for applying algorithms to elements |
+| Batch Operations | `assign()` | Methods for batch assignment of elements |
+
+## class args
+   Container for owning arg elements
+
+| Area | Methods (Examples) | Description |
+|------|--------------------|-------------|
+| Construction | `args()`, `args(initializer_list)`, `args(argsview_)` | Constructors for creating args instances with various initialization options |
+| Iteration | `begin()`, `end()`, `rbegin()`, `rend()`, `cbegin()`, `cend()` | Iterator methods for traversing the container |
+| Access | `at()`, `operator[]`, `front()`, `back()`, `data()` | Methods for accessing elements in the container |
+| Capacity | `empty()`, `size()`, `capacity()`, `reserve()` | Methods for querying and managing container capacity |
+| Modifiers | `push_back()`, `pop_back()`, `insert()`, `erase()`, `clear()`, `resize()` | Methods for modifying the contents of the container |
+| Comparison | `operator==`, `operator!=` | Equality comparison operators for args instances |
+| Operations | `swap()`, `find()`, `contains()`, `count()`, `remove()` | Utility methods for searching and modifying |
+| Conversion | `operator args_view()` | Conversion operator from args to args_view |
+| Algorithms | `find_if()`, `find_if_reverse()`, `any_of()`, `all_of()`, `none_of()` | Template methods for applying algorithms to elements |
+| Batch Operations | `assign()` | Methods for batch assignment of elements |
+
+ */
 
 #pragma once
 #include <algorithm>
@@ -19,7 +79,7 @@
 
 // ## Arg objects for storing key-value pairs
 // This file defines two argument objects that can hold key-value pairs.
-// These objects are commonly used throughout the codebase to pass arguments 
+// These objects are commonly used throughout the codebase to pass arguments
 // to functions and methods in a standardized way.
 
 #if defined( __clang__ )
@@ -70,7 +130,7 @@ struct arg_view
 
       return m_VVValue.compare(o.m_VVValue) == 0;
    }
-   
+
    bool operator!=(const arg_view& other) const { return !(*this == other); }
 
    std::string_view get_key() const { return m_stringKey; }
@@ -100,7 +160,7 @@ inline void arg_view::set( std::string_view stringKey, const variant_view& value
 }
 
 
-/** @CLASS [tag: variant, arg] [description: Argument object with owning key-value pairs] [name: arg] 
+/** @CLASS [tag: variant, arg] [description: Argument object with owning key-value pairs] [name: arg]
  * @brief Argument object with string key and variant value
  *
  * This object owns its data and is used when you need to store
@@ -115,12 +175,12 @@ struct arg
 {
    // ## construction ------------------------------------------------------------
    arg() = default;
-   
+
    arg(const std::string& stringKey): m_stringKey(stringKey){ }
    arg(const std::string& stringKey, const gd::variant& value_): m_stringKey(stringKey), m_VValue(value_){ }
-   
+
    arg(std::string&& stringKey, gd::variant&& value_) : m_stringKey(std::move(stringKey)), m_VValue(std::move(value_)) {}
-   
+
    arg(const arg_view& argview_)                                            // Construct from arg_view (copies data)
       : m_stringKey(argview_.get_key()), m_VValue(argview_.get_value().as_variant()) {}
 
@@ -136,7 +196,7 @@ struct arg
 
       return m_VValue.compare(o.m_VValue) == 0;
    }
-   
+
    bool operator!=(const arg& other) const { return !(*this == other); }
 
    const std::string& get_key() const { return m_stringKey; }
@@ -263,11 +323,11 @@ struct args_view
    const_iterator end() const { return m_vectorArgs.end(); }
    const_iterator cbegin() const { return m_vectorArgs.cbegin(); }
    const_iterator cend() const { return m_vectorArgs.cend(); }
-   
+
    // ## Reverse iteration
    using reverse_iterator = std::vector<arg_view>::reverse_iterator;
    using const_reverse_iterator = std::vector<arg_view>::const_reverse_iterator;
-   
+
    reverse_iterator rbegin() { return m_vectorArgs.rbegin(); }
    reverse_iterator rend() { return m_vectorArgs.rend(); }
    const_reverse_iterator rbegin() const { return m_vectorArgs.rbegin(); }
@@ -280,10 +340,10 @@ struct args_view
    const arg_view& at(size_t uIndex) const { return m_vectorArgs.at(uIndex); }
    arg_view& operator[](size_t uIndex) { return m_vectorArgs[uIndex]; }
    const arg_view& operator[](size_t uIndex) const { return m_vectorArgs[uIndex]; }
-   
+
    bool operator==(const args_view& other) const;
    bool operator!=(const args_view& other) const { return !(*this == other); }
-   
+
    // ## Capacity
    bool empty() const { return m_vectorArgs.empty(); }
    size_t size() const { return m_vectorArgs.size(); }
@@ -295,21 +355,21 @@ struct args_view
    void push_back(const arg_view& argview_) { m_vectorArgs.push_back(argview_); }
    void push_back(arg_view&& argview_) { m_vectorArgs.push_back(std::move(argview_)); }
    void pop_back() { m_vectorArgs.pop_back(); }
-   
+
    template<typename... Args>
    void emplace_back(Args&&... args) { m_vectorArgs.emplace_back(std::forward<Args>(args)...); }
-   
+
    void resize(size_t uSize) { m_vectorArgs.resize(uSize); }
    void resize(size_t uSize, const arg_view& argview_) { m_vectorArgs.resize(uSize, argview_); }
-   
+
    iterator insert(const_iterator it, const arg_view& argview_) { return m_vectorArgs.insert(it, argview_); }
    iterator insert(const_iterator it, arg_view&& argview_) { return m_vectorArgs.insert(it, std::move(argview_)); }
    iterator insert(const_iterator it, size_t uCount, const arg_view& argview_) { return m_vectorArgs.insert(it, uCount, argview_); }
    iterator insert(const_iterator it, std::initializer_list<arg_view> list_) { return m_vectorArgs.insert(it, list_); }
-   
+
    template<typename... Args>
    iterator emplace(const_iterator it, Args&&... args) { return m_vectorArgs.emplace(it, std::forward<Args>(args)...); }
-   
+
    iterator erase(const_iterator it) { return m_vectorArgs.erase(it); }
    iterator erase(const_iterator itFirst, const_iterator itLast) { return m_vectorArgs.erase(itFirst, itLast); }
 
@@ -318,9 +378,9 @@ struct args_view
 
    // ## Finding
    const_iterator find(std::string_view stringKey) const;
-   
+
    bool contains(std::string_view stringKey) const { return find(stringKey) != end();  }
-   
+
    // ## Utility methods
    template<typename PREDICATE>
    const_iterator find_if(PREDICATE predicate_) const
@@ -331,7 +391,7 @@ struct args_view
       }
       return end();
    }
-   
+
    template<typename PREDICATE>
    const_reverse_iterator find_if_reverse(PREDICATE predicate_) const
    {
@@ -350,19 +410,19 @@ struct args_view
 
    template<typename PREDICATE>
    bool none_of(PREDICATE predicate_) const { return std::none_of(begin(), end(), predicate_); }
-   
+
    size_t count(std::string_view stringKey) const;
-   
+
    // ## Front/back access
    arg_view& front() { return m_vectorArgs.front(); }
    const arg_view& front() const { return m_vectorArgs.front(); }
    arg_view& back() { return m_vectorArgs.back(); }
    const arg_view& back() const { return m_vectorArgs.back(); }
-   
+
    // ## Data access
    arg_view* data() { return m_vectorArgs.data(); }
    const arg_view* data() const { return m_vectorArgs.data(); }
-   
+
    std::vector<arg_view> m_vectorArgs; // Container for arg_view objects
 };
 
@@ -429,7 +489,7 @@ struct args
    // ## construction ------------------------------------------------------------
    args() = default;
    args(std::initializer_list<arg> list) : m_vectorArgs(list) {}
-   args(const args_view& argsview_) { 
+   args(const args_view& argsview_) {
       m_vectorArgs.reserve(argsview_.size());
       for(const auto& argview_ : argsview_) {
          m_vectorArgs.emplace_back(argview_);
@@ -438,7 +498,7 @@ struct args
    ~args() = default;
 
    // ## methods -----------------------------------------------------------------
-   
+
    // ## Forward iteration
    iterator begin() { return m_vectorArgs.begin(); }
    iterator end() { return m_vectorArgs.end(); }
@@ -446,11 +506,11 @@ struct args
    const_iterator end() const { return m_vectorArgs.end(); }
    const_iterator cbegin() const { return m_vectorArgs.cbegin(); }
    const_iterator cend() const { return m_vectorArgs.cend(); }
-   
+
    // ## Reverse iteration
    using reverse_iterator = std::vector<arg>::reverse_iterator;
    using const_reverse_iterator = std::vector<arg>::const_reverse_iterator;
-   
+
    reverse_iterator rbegin() { return m_vectorArgs.rbegin(); }
    reverse_iterator rend() { return m_vectorArgs.rend(); }
    const_reverse_iterator rbegin() const { return m_vectorArgs.rbegin(); }
@@ -475,21 +535,21 @@ struct args
    void push_back(const arg& arg_) { m_vectorArgs.push_back(arg_); }
    void push_back(arg&& arg_) { m_vectorArgs.push_back(std::move(arg_)); }
    void pop_back() { m_vectorArgs.pop_back(); }
-   
+
    template<typename... Args>
    auto& emplace_back(Args&&... args) { return m_vectorArgs.emplace_back(std::forward<Args>(args)...); }
-   
+
    void resize(size_t uSize) { m_vectorArgs.resize(uSize); }
    void resize(size_t uSize, const arg& arg_) { m_vectorArgs.resize(uSize, arg_); }
-   
+
    iterator insert(const_iterator it, const arg& arg_) { return m_vectorArgs.insert(it, arg_); }
    iterator insert(const_iterator it, arg&& arg_) { return m_vectorArgs.insert(it, std::move(arg_)); }
    iterator insert(const_iterator it, size_t uCount, const arg& arg_) { return m_vectorArgs.insert(it, uCount, arg_); }
    iterator insert(const_iterator it, std::initializer_list<arg> list) { return m_vectorArgs.insert(it, list); }
-   
+
    template<typename... Args>
    iterator emplace(const_iterator it, Args&&... args) { return m_vectorArgs.emplace(it, std::forward<Args>(args)...); }
-   
+
    iterator erase(const_iterator it) { return m_vectorArgs.erase(it); }
    iterator erase(const_iterator itFirst, const_iterator itLast) { return m_vectorArgs.erase(itFirst, itLast); }
 
@@ -500,7 +560,7 @@ struct args
    iterator find(std::string_view stringKey);
    const_iterator find(std::string_view stringKey) const;
    bool contains(std::string_view stringKey) const { return find(stringKey) != end(); }
-   
+
    // ## Conversion
    operator args_view() const
    {
@@ -512,11 +572,11 @@ struct args
       }
       return argsview_;
    }
-   
+
    // ## Comparison operators
    bool operator==(const args& other) const;
    bool operator!=(const args& other) const { return !(*this == other); }
-   
+
    // ## Utility methods
    template<typename PREDICATE>
    auto find_if(PREDICATE predicate_)
@@ -557,55 +617,55 @@ struct args
       }
       return rend();
    }
-   
+
    template<typename PREDICATE>
    bool any_of(PREDICATE pred) const
    {
       return std::any_of(begin(), end(), pred);
    }
-   
+
    template<typename PREDICATE>
    bool all_of(PREDICATE predicate_) const
    {
       return std::all_of(begin(), end(), predicate_);
    }
-   
+
    template<typename PREDICATE>
    bool none_of(PREDICATE predicate_) const
    {
       return std::none_of(begin(), end(), predicate_);
    }
-   
+
    // ## Batch operations
    template<typename InputIt>
    void assign(InputIt first, InputIt last)
    {
       m_vectorArgs.assign(first, last);
    }
-   
+
    void assign(size_type uCount, const arg& arg_)
    {
       m_vectorArgs.assign(uCount, arg_);
    }
-   
+
    void assign(std::initializer_list<arg> list)
    {
       m_vectorArgs.assign(list);
    }
-   
+
    size_t count(std::string_view stringKey) const;
    iterator remove(std::string_view stringKey);
-   
+
    // ## Front/back access
    arg& front() { return m_vectorArgs.front(); }
    const arg& front() const { return m_vectorArgs.front(); }
    arg& back() { return m_vectorArgs.back(); }
    const arg& back() const { return m_vectorArgs.back(); }
-   
+
    // ## Data access
    arg* data() { return m_vectorArgs.data(); }
    const arg* data() const { return m_vectorArgs.data(); }
-   
+
    std::vector<arg> m_vectorArgs; // Container for arg objects
 };
 
@@ -658,14 +718,14 @@ inline size_t args::count(std::string_view stringKey) const
 /// @brief Remove arguments with a given key
 inline args::iterator args::remove(std::string_view stringKey)
 {
-   auto it = std::remove_if(begin(), end(), 
+   auto it = std::remove_if(begin(), end(),
       [&stringKey](const arg& arg_) { return arg_.get_key() == stringKey; });
    return m_vectorArgs.erase(it, end());
 }
 
 // @API [tag: variant, arg, args, factory] [description: Factory functions for creating args and args_view objects]
 
-/// @brief Create an args_view from initializer list 
+/// @brief Create an args_view from initializer list
 args_view make_args_view(std::initializer_list<arg_view> list);
 
 /// @brief Create an args from initializer list
@@ -674,7 +734,7 @@ args make_args(std::initializer_list<arg> list);
 /// @brief Create an args_view from key-value pairs
 args_view make_args_view_from_pairs(std::initializer_list<std::pair<std::string_view, variant_view>> pairs);
 
-/// @brief Create an args from key-value pairs 
+/// @brief Create an args from key-value pairs
 args make_args_from_pairs(std::initializer_list<std::pair<std::string, variant>> pairs);
 
 // @API [tag: variant, arg, args, utility] [description: Additional utility functions for working with args and args_view]
@@ -715,7 +775,7 @@ std::vector<std::string_view> get_keys(const args_view& argsview_);
 /// @brief Get all keys from args
 std::vector<std::string> get_keys(const args& args_);
 
-/// @brief Get all values from args_view 
+/// @brief Get all values from args_view
 std::vector<variant_view> get_values(const args_view& argsview_);
 
 /// @brief Get all values from args
