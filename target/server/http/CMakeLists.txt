@@ -19,7 +19,7 @@ message( STATUS )
 set( SOURCE_DIRECTORY_ ${CMAKE_SOURCE_DIR}/source )
 set( APPLICATION_DIRECTORY_ ${SOURCE_DIRECTORY_}/application )
 
-file(GLOB TARGET_FILES_ "*.cpp" )
+file(GLOB TARGET_FILES_ "*.cpp" )                                             # all cpp files in root directory
 set( TARGET_SOURCE_FILES_
    ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
    ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
@@ -37,8 +37,8 @@ endfunction()
 
 set( USE_TARGET_ ON ) # ========================================================= ${http}
 if( USE_TARGET_ )
-   file(GLOB HTTP_FILES_ *.cpp )                                               # all cpp files in root directory
-   file(GLOB HTTP_STATE_FILES_  state/*.cpp )                                  # all cpp files in state subdirectory
+   file(GLOB HTTP_FILES_ *.cpp )                                              # all cpp files in root directory
+   file(GLOB HTTP_STATE_FILES_  state/*.cpp )                                 # all cpp files in state subdirectory
    set(TARGET_NAME_ "http")
 
    add_executable(${TARGET_NAME_}

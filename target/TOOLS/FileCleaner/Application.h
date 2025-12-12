@@ -365,16 +365,12 @@ public:
    std::pair<bool, std::string> HISTORY_SaveCommand(const std::string_view& stringFileLocation);
 //@}
 
-/** \name ERROR
-*///@{
+// @API [tag: error] [description: Application are able to collect error information, for example doing a larger operation where some tasks fail bit it isn't fatal, then store error in application for later display]
+
 /// Add error to internal list of errors
    void ERROR_Add( const std::string_view& stringError );
    void ERROR_AddWarning( const std::string_view& stringError );
    std::string ERROR_Report() const;
-
-//@}
-
-
 
 protected:
 /** \name INTERNAL
