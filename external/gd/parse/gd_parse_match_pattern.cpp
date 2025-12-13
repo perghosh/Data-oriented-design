@@ -1,3 +1,5 @@
+// @FILE {tag: find, pattern} [summary: Optimized string pattern matching] [type: source]
+
 #include <algorithm>
 
 #include "gd_parse_match_pattern.h"

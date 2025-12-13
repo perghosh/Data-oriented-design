@@ -51,6 +51,9 @@ if( USE_TARGET_ )
      ${HTTP_STATE_FILES_}                                                     # files from state subdirectory
       "main.cpp"                                                              # main file where method main is located
    )
+   
+   target_compile_features(${TARGET_NAME_} PRIVATE cxx_std_23)
+
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
    target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
