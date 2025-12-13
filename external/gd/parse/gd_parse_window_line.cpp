@@ -1,3 +1,5 @@
+// @FILE [tag: line, parse, window] [summary: Line buffer with look-ahead capabilities] [type: source]
+
 /**
  * @file gd_parse_window_line.cpp
  */

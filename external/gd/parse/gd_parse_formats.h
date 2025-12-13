@@ -20,7 +20,7 @@
 #include <string_view>
 #include <vector>
 
-#include "gd/gd_types.h"
+#include "../gd_types.h"
 
 
 #ifndef _GD_PARSE_BEGIN
@@ -134,6 +134,3 @@ std::pair<bool, const char*> read_value_g( const char* piBegin, const char* piEn
 
 
 _GD_PARSE_END
-
-
-

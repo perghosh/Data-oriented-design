@@ -33,7 +33,7 @@
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_define.h"
 
-//#include "command/Router.h"
+#include "Router.h"
 
 #include "Application.h"
 
@@ -178,6 +178,14 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
 
    std::string_view stringTarget = request_.target();
    if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
+
+   CRouter router_( stringTarget );
+
+   if( router_.IsCommand() == true )
+   {
+
+   }
+
 
    // ## Resolve target
 

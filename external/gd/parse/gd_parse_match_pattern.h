@@ -1,3 +1,5 @@
+// @FILE {tag: find, pattern} [summary: Optimized string pattern matching] [type: header]
+
 /**
  * @file gd_parse_match_pattern.h
  * 
@@ -20,7 +22,7 @@
 #include <string_view>
 #include <vector>
 
-#include "gd/gd_types.h"
+#include "../gd_types.h"
 
 
 #ifndef _GD_PARSE_BEGIN
