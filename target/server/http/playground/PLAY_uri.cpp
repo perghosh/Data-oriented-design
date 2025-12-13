@@ -19,4 +19,5 @@
 
 TEST_CASE("[uri] test uri logic", "[uri]") 
 {
+   std::cout << "test uri logic" << std::endl;
 }

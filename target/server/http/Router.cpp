@@ -1,9 +1,6 @@
 // @FILE [tag: router, http] [summary: Router class for http server] [type: source]
 
 
-#include <boost/url.hpp>
-#include <boost/url/parse.hpp>
-
 #include "Router.h"
 
 /*
@@ -38,7 +35,7 @@ std::pair<bool, std::string> CRouter::Parse()
       m_uFlags &= ~eFlagCommand;
    }
 
-   auto result_ = boost::urls::parse_uri( stringQueryStringView );
+   //auto result_ = boost::urls::parse_uri( stringQueryStringView );
 
 
    return { true, "" };

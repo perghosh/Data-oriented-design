@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <cassert>
+
 #include <print>
 #include <string>
 #include <string_view>

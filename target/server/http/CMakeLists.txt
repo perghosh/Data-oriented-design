@@ -19,7 +19,7 @@ message( STATUS )
 set( SOURCE_DIRECTORY_ ${CMAKE_SOURCE_DIR}/source )
 set( APPLICATION_DIRECTORY_ ${SOURCE_DIRECTORY_}/application )
 
-file(GLOB TARGET_FILES_ "*.cpp" )                                             # all cpp files in root directory
+file(GLOB TARGET_FILES_ "*.cpp" "*.h" )                                       # all cpp files in root directory
 set( TARGET_SOURCE_FILES_
    ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
    ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
@@ -27,8 +27,6 @@ set( TARGET_SOURCE_FILES_
 
 add_subdirectory("playground") # playground http logic
 # add_subdirectory("tests") # tests cleaner logic
-
-
 
 # ============================================================================= set_compiler_options
 # Set global compiler options
