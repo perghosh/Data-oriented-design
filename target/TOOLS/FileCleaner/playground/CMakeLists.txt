@@ -4,8 +4,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-project("playground_DOD")
-
 include(include_external)
 
 message( STATUS )
@@ -46,8 +44,8 @@ endif()
 
 # -- playground source code
 set(SOURCE_PLAYGROUND_ "main.h" "main.cpp")
-set(TARGET_PLAYGROUND_ ${TARGET_FILES_})
-list(FILTER TARGET_PLAYGROUND_ EXCLUDE REGEX ".*main.*")
+set(TARGET_PLAYGROUND_ ${TARGET_FILES_})                                      # TARGET_FILES_ is from ../CMakeLists.txt
+list(FILTER TARGET_PLAYGROUND_ EXCLUDE REGEX ".*main.*")                      # Exclude any file with 'main' in its name
 # message("Filtered list: ${TARGET_PLAYGROUND_}")
 
 set( USE_TEST_ ON )
@@ -114,9 +112,7 @@ if( USE_TEST_ )
       ${TARGET_PLAYGROUND_}   
       ${TARGET_SOURCE_FILES_}
       ${SOURCE_PLAYGROUND_}
-   
-   
-   "main.cpp"  
+      "main.cpp" ${GD_SOURCES_ALL_core} ${external_catch2} ${external_sqlite}
       "${TEST_NAME_}.cpp"
    )
    target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)

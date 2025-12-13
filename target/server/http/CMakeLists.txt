@@ -25,6 +25,10 @@ set( TARGET_SOURCE_FILES_
    ${APPLICATION_DIRECTORY_}/database/Metadata_Statements.cpp
 )
 
+add_subdirectory("playground") # playground http logic
+# add_subdirectory("tests") # tests cleaner logic
+
+
 
 # ============================================================================= set_compiler_options
 # Set global compiler options

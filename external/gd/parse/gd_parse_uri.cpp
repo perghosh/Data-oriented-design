@@ -21,6 +21,7 @@ _GD_PARSE_URI_BEGIN
  * 
  * Parts in html that have names like "www.example.com" are named to uri-* in argumentsUr
  */
+ /*
 std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::arguments& argumentsUri )
 {
    // Clear any existing arguments 
@@ -31,6 +32,7 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::ar
 
    return { true, "" };
 }
+*/
 
 /**
  * \brief Parse a URI string into its components.
@@ -50,7 +52,7 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::ar
  * 
  * Parts in html that have names like "www.example.com" are named to uri-* in argumentsUri
  */
-std::pair<bool, std::string> parse( std::string_view stringUri, std::vector<std::pair<std::string, std::string>>& argumentsUri )
+std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::arguments& argumentsUri )
 {
    const char* piPosition = stringUri.data();                                // current position in URI string
    const char* piBegin = stringUri.data();                                   // start of URI string

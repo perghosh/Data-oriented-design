@@ -24,6 +24,6 @@
 #endif
 
 _GD_PARSE_URI_BEGIN
-std::pair<bool, gd::types::tag_uri> parse( std::string_view stringUri, gd::argument::arguments& argumentsUri );
+std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::arguments& argumentsUri );
 
 _GD_PARSE_URI_END
