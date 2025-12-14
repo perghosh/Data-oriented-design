@@ -16,6 +16,7 @@
 
 #include "../gd_types.h"
 #include "../gd_arguments.h"
+#include "../gd_arguments_shared.h"
 
 
 #ifndef _GD_PARSE_URI_BEGIN
@@ -25,5 +26,6 @@
 
 _GD_PARSE_URI_BEGIN
 std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::arguments& argumentsUri );
+std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::shared::arguments& argumentsUri );
 
 _GD_PARSE_URI_END
