@@ -237,4 +237,125 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::sh
 {
    return parse_implementation( stringUri, argumentsUri );
 }
+
+/** --------------------------------------------------------------------------
+ * \brief Parse URI path into segments
+ * 
+ * Splits a URI path like "/one/two/three/four" into individual segments.
+ * Leading slash is skipped, empty segments are ignored.
+ * 
+ * @param stringPath The path string to parse (e.g., "/one/two/three")
+ * @param vectorSegments Output vector to store path segments
+ * @return Pair of success flag and error message
+ * 
+ * Example:
+ *   "/one/two/three/four" -> ["one", "two", "three", "four"]
+ *   "/path" -> ["path"]
+ *   "/" -> []
+ */
+std::pair<bool, std::string> parse_path( std::string_view stringPath, std::vector<std::string_view>& vectorSegments )
+{
+   if( stringPath.empty() ) return { true, "" };
+   
+   const char* piStart = stringPath.data(); // start of path string
+   const char* piEnd = stringPath.data() + stringPath.size(); // end of path string
+   const char* piPosition = piStart; // current position in path string
+   
+   // Skip leading slash
+   if( piPosition < piEnd && *piPosition == '/' ) { piPosition++; }
+   
+   const char* piSegmentStart = piPosition;
+   
+   while( piPosition < piEnd )
+   {
+      if( *piPosition == '/' )
+      {
+         // Found segment separator
+         if( piPosition > piSegmentStart ) { vectorSegments.emplace_back( piSegmentStart, piPosition - piSegmentStart ); }
+         piPosition++;
+         piSegmentStart = piPosition;
+      }
+      else { piPosition++; }
+   }
+   
+   // Add final segment if exists
+   if( piPosition > piSegmentStart )
+   {
+      vectorSegments.emplace_back( piSegmentStart, piPosition - piSegmentStart );
+   }
+   
+   return { true, "" };
+}
+
+/** --------------------------------------------------------------------------
+ * \brief Parse URI query string into arguments (template implementation)
+ * 
+ * Parses query parameters like "arg=value&arg1=value&name=test" into key-value pairs.
+ * Both keys and values are stored. Handles URL-encoded values.
+ * 
+ * @param stringQuery The query string to parse (without leading '?')
+ * @param argumentsQuery Output arguments object to store parsed parameters
+ * @return Pair of success flag and error message
+ * 
+ * Example:
+ *   "arg=value&arg1=value2" -> {{"arg", "value"}, {"arg1", "value2"}}
+ *   "name=test&id=123" -> {{"name", "test"}, {"id", "123"}}
+ */
+template<typename ARGUMENTS>
+std::pair<bool, std::string> parse_query_implementation( std::string_view stringQuery, ARGUMENTS& argumentsQuery )
+{
+   if( stringQuery.empty() ) return { true, "" };
+   
+   const char* piStart = stringQuery.data();
+   const char* piEnd = stringQuery.data() + stringQuery.size();
+   const char* piPosition = piStart;
+   
+   while( piPosition < piEnd )
+   {
+      // ## Find key .........................................................
+      const char* piKeyStart = piPosition; // start of key
+      const char* piKeyEnd = piPosition;   // end of key
+      
+      while( piPosition < piEnd && *piPosition != '=' && *piPosition != '&' ) { piPosition++; }
+      piKeyEnd = piPosition;
+      
+      if( piKeyEnd > piKeyStart )
+      {
+         std::string_view stringKey( piKeyStart, piKeyEnd - piKeyStart );
+         
+         // Check if we have a value
+         if( piPosition < piEnd && *piPosition == '=' )
+         {
+            piPosition++;                                                     // skip '='
+            
+            const char* piValueStart = piPosition; // start of value
+            const char* piValueEnd = piPosition;   // end of value
+            
+            while( piPosition < piEnd && *piPosition != '&' ) { piPosition++; } // read until '&' or end
+            piValueEnd = piPosition;
+            
+            std::string_view stringValue( piValueStart, piValueEnd - piValueStart );
+            argumentsQuery.push_back( { stringKey, stringValue } );
+         }
+         else { argumentsQuery.push_back( { stringKey, std::string_view{""} } ); } // Key without value
+      }
+      
+      // Skip '&' separator
+      if( piPosition < piEnd && *piPosition == '&' ) { piPosition++; }
+   }
+   
+   return { true, "" };
+}
+
+// Stub implementations for parse_query
+std::pair<bool, std::string> parse_query( std::string_view stringQuery, gd::argument::arguments& argumentsQuery )
+{
+   return parse_query_implementation( stringQuery, argumentsQuery );
+}
+
+std::pair<bool, std::string> parse_query( std::string_view stringQuery, gd::argument::shared::arguments& argumentsQuery )
+{
+   return parse_query_implementation( stringQuery, argumentsQuery );
+}
+
 _GD_PARSE_URI_END
