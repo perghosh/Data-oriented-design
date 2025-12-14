@@ -1318,7 +1318,6 @@ arguments& arguments::append_argument(const variant& variantValue)
    return append(uType, pData, argumentValue.length());
 }
 
-
 /*----------------------------------------------------------------------------- append_argument */ /**
  * Add argument from variant_view, this value isn't named
  * \param variantviewValue argument value added

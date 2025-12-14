@@ -875,7 +875,7 @@ public:
 /** \name OPERATION
 *///@{
 
-   // ## append adds values to stream  0TAG0append.arguments
+   // ## @API [tag: append] [description: append data to arguments]
    //    note: remember that each value has its type and type in stream is just
    //    one byte. That means that the amount of information about the type is
    //    limited. This is the reason why each type only has it's type number.
@@ -954,6 +954,7 @@ public:
    arguments& append_argument(const std::string_view& stringName, argument argumentValue);
 
    arguments& append_argument(const variant& variantValue);
+   arguments& append_argument(const variant_view& variantviewValue, tag_view);
 
    arguments& append_argument(std::string_view stringName, const gd::variant& variantValue) {
       auto argumentValue = get_argument_s(variantValue);
@@ -995,7 +996,12 @@ public:
    template<typename OBJECT>
    arguments& append_object( const OBJECT object ) { return append_object( std::string_view(), object ); }
 
-   // ## set methods  0TAG0set.arguments
+   arguments& push_back( const variant_view& variantviewValue ) { return append_argument(variantviewValue, tag_view{}); }
+   arguments& push_back( std::string_view stringName, const variant_view& variantviewValue ) { return append_argument( stringName, variantviewValue, tag_view{}); }
+   arguments& push_back( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
+
+
+   // ## @API [tag: set] [description: set methods, if value exists it is overwritten, otherwise it is appended]
    //    Set values for selected position in buffer, it could be for a name, index or pointer
    //    If position is not found, new value is appended to buffer
 

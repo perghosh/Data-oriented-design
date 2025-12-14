@@ -52,19 +52,20 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::ar
  * 
  * Parts in html that have names like "www.example.com" are named to uri-* in argumentsUri
  */
-std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::arguments& argumentsUri )
+template<typename ARGUMENTS>
+std::pair<bool, std::string> parse_implementation( std::string_view stringUri, ARGUMENTS& argumentsUri )
 {
    const char* piPosition = stringUri.data();                                // current position in URI string
    const char* piBegin = stringUri.data();                                   // start of URI string
    const char* piEnd = stringUri.data() + stringUri.size();                  // end of URI string
    const char* piPartStart = piPosition;                                     // start of current part being parsed
    
-   // ## Parse scheme (e.g., "http://", "https://", "gd://")
+   // ## Parse scheme (e.g., "http://", "https://", "gd://") .................
    
    const char* piSchemeEnd = nullptr;
    const char* piCheckEnd = piPosition + std::min<std::size_t>(16, piEnd - piPosition); // schemes are typically < 16 chars
    
-   for( const char* pi = piPosition; pi < piCheckEnd - 2; pi++ )             // -2 to ensure we can check "://"
+   for( const char* pi = piPosition; pi < piCheckEnd - 2; pi++ )              // -2 to ensure we can check "://"
    {
       if( pi[0] == ':' )
       {
@@ -92,7 +93,7 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::ar
       piPartStart = piPosition;
    }
    
-   // ## Parse user info (user:password@) if present
+   // ## Parse user info (user:password@) if present .........................
    
    const char* piAtSign = nullptr;
    const char* piHostStart = piPosition;
@@ -129,14 +130,14 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::ar
       piHostStart = piPosition;
    }
    
-   // ## Parse host and port
-   // 
+   // ## Parse host and port .................................................
+    
    const char* piHostEnd = piPosition;
    const char* piPortStart = nullptr;
    
    for( const char* pi = piPosition; pi < piEnd; pi++ )
    {
-      if( *pi == ':' && piPortStart == nullptr )                             // found port separator
+      if( *pi == ':' && piPortStart == nullptr )                              // found port separator
       {
          piHostEnd = pi;
          piPortStart = pi + 1;
@@ -148,7 +149,7 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::ar
          break;
       }
       
-      if( pi + 1 == piEnd )                                                  // reached end of string
+      if( pi + 1 == piEnd )                                                   // reached end of string
       {
          if( piPortStart == nullptr ) piHostEnd = piEnd;
          piPosition = piEnd;
@@ -184,10 +185,11 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::ar
       }
    }
    
-   // ## Parse query parameters
+   // ## Parse query parameters ..............................................
+
    if( piPosition < piEnd && *piPosition == '?' )
    {
-      piPosition++;                                                          // skip '?'
+      piPosition++;                                                           // skip '?'
       piPartStart = piPosition;
       
       while( piPosition < piEnd && *piPosition != '#' )
@@ -198,7 +200,9 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::ar
       std::string stringQuery( piPartStart, piPosition - piPartStart );
       argumentsUri.push_back( { "query", stringQuery } );
       
+
       // ### Parse individual query parameters
+      /*
       std::vector<std::pair<std::string_view, std::string_view>> vectorParams;
       gd::utf8::split_pair( piPartStart, piPosition, '=', '&', vectorParams );
       
@@ -208,12 +212,14 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::ar
          std::string stringValue( pairParam.second );
          argumentsUri.push_back( { stringKey, stringValue } );
       }
+      */
    }
    
-   // ## Parse fragment
+   // ## Parse fragment ......................................................
+
    if( piPosition < piEnd && *piPosition == '#' )
    {
-      piPosition++;                                                          // skip '#'
+      piPosition++;                                                           // skip '#'
       std::string stringFragment( piPosition, piEnd - piPosition );
       argumentsUri.push_back( { "fragment", stringFragment } );
    }
@@ -221,4 +227,14 @@ std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::ar
    return { true, "" };
 }
 
+// Stub implementations that call the template
+std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::arguments& argumentsUri )
+{
+   return parse_implementation( stringUri, argumentsUri );
+}
+
+std::pair<bool, std::string> parse( std::string_view stringUri, gd::argument::shared::arguments& argumentsUri )
+{
+   return parse_implementation( stringUri, argumentsUri );
+}
 _GD_PARSE_URI_END
