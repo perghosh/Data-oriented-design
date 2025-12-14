@@ -75,6 +75,7 @@ TEST_CASE("[uri] test uri logic", "[uri]")
       "file:///home/user/document.txt",
       "https://secure.example.com:443/path/to/resource",
       "http://localhost:8080/test?arg=value#fragment",
+      "http://localhost:8080/one/two/three/four?arg=value&arg=value&arg=value&arg1=value#fragment",
       "ws://websocket.example.com/socket"
    };
 
