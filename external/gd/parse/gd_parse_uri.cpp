@@ -95,8 +95,8 @@ std::pair<bool, std::string> parse_implementation( std::string_view stringUri, A
    
    // ## Parse user info (user:password@) if present .........................
    
-   const char* piAtSign = nullptr;
-   const char* piHostStart = piPosition;
+   const char* piAtSign = nullptr; // position of '@' if user info is present
+   const char* piHostStart = piPosition; // start of host (after user info if present)
    
    for( const char* pi = piPosition; pi < piEnd && *pi != '/' && *pi != '?' && *pi != '#'; pi++ )
    {
@@ -114,15 +114,15 @@ std::pair<bool, std::string> parse_implementation( std::string_view stringUri, A
       
       if( piColon != nullptr )
       {
-         std::string stringUser( piPosition, piColon - piPosition );
+         std::string_view stringUser( piPosition, piColon - piPosition );
          argumentsUri.push_back( { "user", stringUser } );
          
-         std::string stringPassword( piColon + 1, piAtSign - (piColon + 1) );
+         std::string_view stringPassword( piColon + 1, piAtSign - (piColon + 1) );
          argumentsUri.push_back( { "password", stringPassword } );
       }
       else
       {
-         std::string stringUser( piPosition, piAtSign - piPosition );
+         std::string_view stringUser( piPosition, piAtSign - piPosition );
          argumentsUri.push_back( { "user", stringUser } );
       }
       
@@ -158,14 +158,14 @@ std::pair<bool, std::string> parse_implementation( std::string_view stringUri, A
    
    if( piHostEnd > piHostStart )
    {
-      std::string stringHost( piHostStart, piHostEnd - piHostStart );
+      std::string_view stringHost( piHostStart, piHostEnd - piHostStart );
       argumentsUri.push_back( { "host", stringHost } );
    }
    
    if( piPortStart != nullptr )
    {
       const char* piPortEnd = piPosition;
-      std::string stringPort( piPortStart, piPortEnd - piPortStart );
+      std::string_view stringPort( piPortStart, piPortEnd - piPortStart );
       argumentsUri.push_back( { "port", stringPort } );
    }
    
@@ -173,14 +173,11 @@ std::pair<bool, std::string> parse_implementation( std::string_view stringUri, A
    if( piPosition < piEnd && *piPosition == '/' )
    {
       piPartStart = piPosition;
-      while( piPosition < piEnd && *piPosition != '?' && *piPosition != '#' )
-      {
-         piPosition++;
-      }
+      while( piPosition < piEnd && *piPosition != '?' && *piPosition != '#' ) { piPosition++; }
       
       if( piPosition > piPartStart )
       {
-         std::string stringPath( piPartStart, piPosition - piPartStart );
+         std::string_view stringPath( piPartStart, piPosition - piPartStart );
          argumentsUri.push_back( { "path", stringPath } );
       }
    }
@@ -192,12 +189,9 @@ std::pair<bool, std::string> parse_implementation( std::string_view stringUri, A
       piPosition++;                                                           // skip '?'
       piPartStart = piPosition;
       
-      while( piPosition < piEnd && *piPosition != '#' )
-      {
-         piPosition++;
-      }
+      while( piPosition < piEnd && *piPosition != '#' ) { piPosition++; }
       
-      std::string stringQuery( piPartStart, piPosition - piPartStart );
+      std::string_view stringQuery( piPartStart, piPosition - piPartStart );
       argumentsUri.push_back( { "query", stringQuery } );
       
 
