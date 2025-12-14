@@ -169,7 +169,8 @@ std::pair<bool, std::string> parse_implementation( std::string_view stringUri, A
       argumentsUri.push_back( { "port", stringPort } );
    }
    
-   // ## Parse path
+   // ## Parse path ..........................................................
+
    if( piPosition < piEnd && *piPosition == '/' )
    {
       piPartStart = piPosition;
