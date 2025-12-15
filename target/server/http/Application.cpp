@@ -24,6 +24,7 @@
 #include "gd/gd_log_logger_define.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
+#include "gd/gd_database_sqlite.h"
 
 #include "gd/console/gd_console_console.h"
 
@@ -441,6 +442,31 @@ std::pair<bool, std::string> CApplication::Read_s(CApplication* papplication_, g
       int iPort = optionsApplication["port"].as_int();
       if (iPort < 1 || iPort > 65535) { return { false, "Port number must be between 1-65535" }; }
       papplication_->PROPERTY_Add("port", iPort);
+   }
+
+   return { true, "" };
+}
+
+/** --------------------------------------------------------------------------- @API [tag: database, open] [description: Open database connection based on arguments]
+ * @brief Open database connection based on arguments
+ * 
+ * @param argumentsOpen The arguments used to open the database connection.
+ *  
+ */
+std::pair<bool, std::string> CApplication::OpenDatabase_s(const gd::argument::arguments& argumentsOpen, gd::database::database_i*& pdatabase_)
+{
+   std::string stringType = argumentsOpen["type"].as_string();
+   if(stringType == "sqlite")
+   {
+      std::string stringName = argumentsOpen["name"].as_string();
+      gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i("sqlite");  // create database interface for sqlite
+      auto [bOk, stringError] = pdatabase->open(stringName);              // open sqlite database
+      if(bOk == true)
+      {
+         pdatabase_ = pdatabase;
+         pdatabase_->set("dialect", "sqlite");                            // only sqlite is file database, we can set the dialect directly
+      }
+      else return { bOk, stringError };
    }
 
    return { true, "" };
