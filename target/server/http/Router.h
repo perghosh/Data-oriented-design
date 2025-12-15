@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+class CApplication;
+
 
 /** @CLASS [tag: router, http] [description: Router class for http server] [name: CRouter]
  * \brief
@@ -30,7 +32,9 @@ public:
 
 public:
    CRouter() {}
+   CRouter(CApplication* pApplication): m_pApplication(pApplication) {}
    CRouter( const std::string_view& stringQueryString ) : m_stringQueryString( stringQueryString ) {}
+   CRouter( CApplication* pApplication, const std::string_view& stringQueryString ): m_pApplication(pApplication), m_stringQueryString(stringQueryString) {}
    // copy
    CRouter( const CRouter& o ) { common_construct( o ); }
    CRouter( CRouter&& o ) noexcept { common_construct( std::move( o ) ); }
@@ -60,6 +64,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   CApplication* m_pApplication;       ///< application instance
    unsigned m_uFlags{};                ///< router flags
    std::string m_stringQueryString;    ///< query string from url
    std::vector<std::string_view> m_vectorCommand; ///< list of commands parsed from query string
@@ -70,4 +75,4 @@ public:
 
 
 
-}; 
+};

@@ -3,10 +3,11 @@
  */
 
 
+
 #include "Server.h"
 
 
-std::pair<bool, std::string> CServer::Initialize() 
+std::pair<bool, std::string> CServer::Initialize()
 {
    // Implementation of the Initialize method
    // For now, just return a dummy response
@@ -14,12 +15,12 @@ std::pair<bool, std::string> CServer::Initialize()
 }
 
 
-std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringCommand, std::vector<std::pair<std::string, std::string>>& vectorResponse) 
+std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringCommand, std::vector<std::pair<std::string, std::string>>& vectorResponse)
 {                                                                                                     LOG_INFORMATION_RAW("Command: " + std::string(stringCommand));
    using namespace gd::com::server::router;
    // ## Create command object from request
    //gd::com::server::server_i* pserver = m_ppapplication->ROUTER_GetActiveServer();
-   //gd::com::pointer< command > pcommand = gd::com::pointer< gd::com::server::router::command >( new gd::com::server::router::command( pserver ) );   
+   //gd::com::pointer< command > pcommand = gd::com::pointer< gd::com::server::router::command >( new gd::com::server::router::command( pserver ) );
 
    //auto result_ = pcommand->append(stringCommand, gd::types::tag_uri{});
    //if( result_.first == false ) { return { false, "Failed to append command: " + std::string(stringCommand)  + " - " + result_.second }; }
@@ -37,20 +38,20 @@ std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eV
    // pserver->get( vectorCommand, nullptr, pcommand, nullptr);
 
 
-   if(eVerb == boost::beast::http::verb::get) 
+   if(eVerb == boost::beast::http::verb::get)
    {
       //auto result_ = Execute( pcommand );
       // Handle GET request
       vectorResponse.push_back({"Content-Type", "text/plain"});
       return {true, "GET request processed for target: " + std::string(stringCommand)};
-   } 
-   else if(eVerb == boost::beast::http::verb::head) 
+   }
+   else if(eVerb == boost::beast::http::verb::head)
    {
       // Handle HEAD request
       vectorResponse.push_back({"Content-Type", "text/plain"});
       return {true, "HEAD request processed for target: " + std::string(stringCommand)};
-   } 
-   else 
+   }
+   else
    {
       return {false, "Unsupported HTTP verb"};
    }
@@ -178,10 +179,10 @@ std::string path_cat_g( boost::beast::string_view stringBase,  boost::beast::str
 
 /** ---------------------------------------------------------------------------
  * @brief construct listerner that is used to listen for incoming connections
- * @param iocontext_ core input and output logic, acts as a composite class for 
+ * @param iocontext_ core input and output logic, acts as a composite class for
                      specialized boost classes that has logic for computer networking.
- * @param endpoint_ 
- * @param pstringFolderRoot 
+ * @param endpoint_
+ * @param pstringFolderRoot
  */
 listener::listener( boost::asio::io_context& iocontext_, boost::asio::ip::tcp::endpoint endpoint_, std::shared_ptr<std::string const> const& pstringFolderRoot )
    : m_iocontext(iocontext_), m_acceptor(boost::asio::make_strand(iocontext_)), m_pstringFolderRoot(pstringFolderRoot)
@@ -261,7 +262,7 @@ void session::run()
    boost::asio::dispatch(m_tcpstream.get_executor(), boost::beast::bind_front_handler( &session::do_read, shared_from_this()));
 }
 
-/// Read data into 
+/// Read data into
 void session::do_read()
 {
    // Make the request empty before reading,
@@ -314,5 +315,3 @@ void session::do_close()
    m_tcpstream.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_send, errorcode);
                                                                                // At this point the connection is closed gracefully
 }
-
-

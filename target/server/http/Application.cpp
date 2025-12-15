@@ -327,21 +327,24 @@ std::pair< bool, std::string > CApplication::Execute( gd::cli::options& optionsC
  * @brief Start the web server
  * @return true if ok, false and error information on error
  */
-std::pair<bool, std::string> CApplication::SERVER_Start( unsigned uIndex )
-{                                                                                                  assert( uIndex < m_ptableSite->size() && "You need at least one site to start server");
+std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
+{
+   assert(uIndex < m_ptableSite->size() && "You need at least one site to start server");
    unsigned short uPort = 80;
-   std::string stringIp("127.0.0.1");
+   std::string stringDefaultIp("127.0.0.1");
+   std::string stringIp;
    std::string stringRoot;
 
    // ## site
-   uPort = (unsigned short)m_ptableSite->cell_get_variant_view( uIndex, "port" ).as_uint();
+   uPort = (unsigned short)m_ptableSite->cell_get_variant_view(uIndex, "port").as_uint();
    stringIp = m_ptableSite->cell_get_variant_view(uIndex, "ip").as_string();
    stringRoot = m_ptableSite->cell_get_variant_view(uIndex, "root").as_string();
 
 
    // ## Prepare ip address
-   
-   if( PROPERTY_Get("ip").empty() == false ) stringIp = papplication_g->PROPERTY_Get("ip").as_string();
+
+   if (PROPERTY_Get("ip").empty() == false) { stringIp = papplication_g->PROPERTY_Get("ip").as_string(); }
+   if( stringIp.empty() == true) { stringIp = stringDefaultIp; }
 
    // ## Prepare root folder for site on local disk
    std::string stringRootFolder = FOLDER_GetRoot_g( "temp__/" );
@@ -360,7 +363,7 @@ std::pair<bool, std::string> CApplication::SERVER_Start( unsigned uIndex )
    int iVersion = 11;
    boost::asio::io_context iocontext_( uThreadCount );
 
-   
+                                                                                                   assert( stringIp.empty() == false && "IP address can not be empty!" );
 
    const boost::asio::ip::address addressIP = net::ip::make_address(stringIp);
    auto const doc_root = std::make_shared<std::string>(stringRootFolder);
