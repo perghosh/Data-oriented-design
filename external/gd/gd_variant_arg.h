@@ -131,7 +131,7 @@ struct arg_view
       return m_VVValue.compare(o.m_VVValue) == 0;
    }
 
-   bool operator!=(const arg_view& other) const { return !(*this == other); }
+   bool operator!=(const arg_view& o) const { return !(*this == o); }
 
    std::string_view get_key() const { return m_stringKey; }
    const gd::variant_view& get_value() const { return m_VVValue; }
@@ -197,7 +197,7 @@ struct arg
       return m_VValue.compare(o.m_VValue) == 0;
    }
 
-   bool operator!=(const arg& other) const { return !(*this == other); }
+   bool operator!=(const arg& o) const { return !(*this == o); }
 
    const std::string& get_key() const { return m_stringKey; }
    const gd::variant& get_value() const { return m_VValue; }
@@ -341,8 +341,8 @@ struct args_view
    arg_view& operator[](size_t uIndex) { return m_vectorArgs[uIndex]; }
    const arg_view& operator[](size_t uIndex) const { return m_vectorArgs[uIndex]; }
 
-   bool operator==(const args_view& other) const;
-   bool operator!=(const args_view& other) const { return !(*this == other); }
+   bool operator==(const args_view& o) const;
+   bool operator!=(const args_view& o) const { return !(*this == o); }
 
    // ## Capacity
    bool empty() const { return m_vectorArgs.empty(); }
@@ -374,7 +374,7 @@ struct args_view
    iterator erase(const_iterator itFirst, const_iterator itLast) { return m_vectorArgs.erase(itFirst, itLast); }
 
    // ## Operations
-   void swap(args_view& other) noexcept { m_vectorArgs.swap(other.m_vectorArgs); }
+   void swap(args_view& o) noexcept { m_vectorArgs.swap(o.m_vectorArgs); }
 
    // ## Finding
    const_iterator find(std::string_view stringKey) const;
@@ -427,12 +427,12 @@ struct args_view
 };
 
 /// Equality operator for args_view
-inline bool args_view::operator==(const args_view& other) const
+inline bool args_view::operator==(const args_view& o) const
 {
-   if(size() != other.size()) return false;
+   if(size() != o.size()) return false;
    for(size_t i = 0; i < size(); ++i)
    {
-      if(m_vectorArgs[i] != other[i]) return false;
+      if(m_vectorArgs[i] != o[i]) return false;
    }
    return true;
 }
@@ -554,7 +554,7 @@ struct args
    iterator erase(const_iterator itFirst, const_iterator itLast) { return m_vectorArgs.erase(itFirst, itLast); }
 
    // ## Operations
-   void swap(args& other) noexcept { m_vectorArgs.swap(other.m_vectorArgs); }
+   void swap(args& o) noexcept { m_vectorArgs.swap(o.m_vectorArgs); }
 
    // ## Finding
    iterator find(std::string_view stringKey);
@@ -574,8 +574,8 @@ struct args
    }
 
    // ## Comparison operators
-   bool operator==(const args& other) const;
-   bool operator!=(const args& other) const { return !(*this == other); }
+   bool operator==(const args& o) const;
+   bool operator!=(const args& o) const { return !(*this == o); }
 
    // ## Utility methods
    template<typename PREDICATE>
@@ -672,12 +672,12 @@ struct args
 // ## Out-of-class implementations for args
 
 /// Equality operator for args
-inline bool args::operator==(const args& other) const
+inline bool args::operator==(const args& o) const
 {
-   if(size() != other.size()) return false;
+   if(size() != o.size()) return false;
    for(size_t i = 0; i < size(); ++i)
    {
-      if(m_vectorArgs[i] != other[i]) return false;
+      if(m_vectorArgs[i] != o[i]) return false;
    }
    return true;
 }
