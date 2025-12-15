@@ -321,7 +321,7 @@ public:
    void IGNORE_Add( const std::vector<std::string> vectorIgnore );
    void IGNORE_AddFolder(const std::string_view& stringFolder);
 
-   /// Ccheck if paths is to be ignored
+   /// Check if paths is to be ignored
    bool IGNORE_Match( const std::string_view& stringPath, const std::string_view& stringRoot ) const;
    bool IGNORE_Match( const std::string_view& stringPath ) const { return IGNORE_Match( stringPath, std::string_view() ); }
    bool IGNORE_MatchFilename(const std::string_view& stringFileName ) const;

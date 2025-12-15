@@ -3,6 +3,9 @@
 #include "gd/gd_database_sqlite.h"
 #include "gd/gd_file.h"
 
+#include "../Document.h"
+#include "../Application.h"
+
 #include "APIDatabase.h"
 
 
@@ -147,6 +150,9 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 {
    std::string stringType = m_argumentsParameter["type"].as_string();
    std::string stringName = m_argumentsParameter["name"].as_string();
+   std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string();
+
+	if(stringDocument.empty() == true) stringDocument = "default";
 
    if (stringType.empty() == true || stringType == "sqlite")
    {
@@ -156,11 +162,12 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
       auto result_ = gd::file::file_absolute_g(pathFile.string(), stringName);
       if (result_.first == false) { return { false, "failed to get absolute path for database file: " + result_.second }; }
 
-      gd::database::sqlite::database databaseCreate;
-      result_ = databaseCreate.open(stringName, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX);
+      gd::database::sqlite::database databaseOpen;
+      result_ = databaseOpen.open(stringName, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX);
       if(result_.first == false) { return { false, "failed to open sqlite database: " + result_.second }; }
-
    }
+
+	CDocument* pdocument = m_pApplication->DOCUMENT_Get(stringDocument, true);
 
    return { true, "" };
 }

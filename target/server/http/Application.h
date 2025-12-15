@@ -143,6 +143,32 @@ public:
    /// Handle array values
    void CONFIG_HandleArray( std::string_view stringGroup, std::string_view stringName, const gd::argument::shared::arguments& arguments_ );
 
+	// @FILE [tag: document] [description: document management in application]
+
+   // ## Add documents
+   CDocument* DOCUMENT_Add(const std::string_view& stringName);
+   CDocument* DOCUMENT_Add(const gd::argument::shared::arguments& arguments_);
+
+   // ## Get documents
+   const CDocument* DOCUMENT_Get(const std::string_view& stringName) const;
+   CDocument* DOCUMENT_Get(const std::string_view& stringName);
+   CDocument* DOCUMENT_Get(const std::string_view& stringName, bool bCreate);
+
+   // ## Remove documents
+   void DOCUMENT_Remove(const std::string_view& stringName);
+
+   // ## Document statistics and general operations
+   size_t DOCUMENT_Size() const;
+   bool DOCUMENT_Empty() const;
+   void DOCUMENT_Clear();
+
+   // ## iterator methods for documents
+   std::vector<std::unique_ptr<CDocument>>::iterator DOCUMENT_Begin();
+   std::vector<std::unique_ptr<CDocument>>::iterator DOCUMENT_End();
+   std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_Begin() const;
+   std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_End() const;
+
+
 // @API [tag: command] [description: broadcast commands]
 
 
@@ -191,6 +217,8 @@ public:
 
    std::mutex m_mutex;           ///< general mutex for application
 
+   std::shared_mutex m_sharedmutex;                ///< mutex used for application command that may be used by different threads
+
    std::mutex m_mutexDatabase;   ///< Handle database locking
    gd::database::database_i* m_pdatabase{}; ///< active database
    std::vector<gd::database::database_i*> m_vectorDatabase; ///< list of databases (for most situations only one database is used)
@@ -237,6 +265,27 @@ inline gd::database::database_i* CApplication::DATABASE_Get(const std::string_vi
    }
    return nullptr;
 }
+
+/// return iterator to the beginning of the document list
+inline std::vector<std::unique_ptr<CDocument>>::iterator CApplication::DOCUMENT_Begin() {
+   return m_vectorDocument.begin();
+}
+
+/// return iterator to the end of the document list
+inline std::vector<std::unique_ptr<CDocument>>::iterator CApplication::DOCUMENT_End() {
+   return m_vectorDocument.end();
+}
+
+/// return const iterator to the beginning of the document list
+inline std::vector<std::unique_ptr<CDocument>>::const_iterator CApplication::DOCUMENT_Begin() const {
+   return m_vectorDocument.cbegin();
+}
+
+/// return const iterator to the end of the document list
+inline std::vector<std::unique_ptr<CDocument>>::const_iterator CApplication::DOCUMENT_End() const {
+   return m_vectorDocument.cend();
+}
+
 
 
 /// Global pointer to application object
