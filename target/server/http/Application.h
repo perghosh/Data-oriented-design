@@ -241,6 +241,8 @@ public:
    void Prepare_s( gd::cli::options& optionsApplication );
    /// Read parsed options and set properties
    std::pair<bool, std::string> Read_s( CApplication* papplication_, gd::cli::options& optionsApplication );
+	///  Open database and put connection into pointer reference
+	std::pair<bool, std::string> OpenDatabase_s( const gd::argument::arguments& argumentsOpen, gd::database::database_i*& pdatabase_);
 
 
 
