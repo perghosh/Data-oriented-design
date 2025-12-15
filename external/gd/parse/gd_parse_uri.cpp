@@ -352,4 +352,65 @@ std::pair<bool, std::string> parse_query( std::string_view stringQuery, gd::argu
    return parse_query_implementation( stringQuery, argumentsQuery );
 }
 
+
+/** --------------------------------------------------------------------------
+ * \brief Parse path and query string into segments and arguments
+ * 
+ * Parses a combined path and query string like "/one/two?arg=value&name=test"
+ * into path segments and query arguments.
+ * 
+ * @param stringPathAndQuery The path and query string (e.g., "/path/to/resource?arg=value")
+ * @return Pair containing vector of path segments and arguments object with query parameters
+ * 
+ * Example:
+ *   "/one/two?arg=value&name=test" -> {["one", "two"], {{"arg", "value"}, {"name", "test"}}}
+ *   "/path" -> {["path"], {}}
+ *   "?arg=value" -> {[], {{"arg", "value"}}}
+ */
+std::pair<std::vector<std::string_view>, gd::argument::arguments> parse_path_and_query( std::string_view stringPathAndQuery )
+{
+   std::vector<std::string_view> vectorSegments;
+   gd::argument::arguments argumentsQuery;
+   
+   if( stringPathAndQuery.empty() == true ) { return { vectorSegments, argumentsQuery }; }
+   
+   const char* piStart = stringPathAndQuery.data(); // start of path and query string
+   const char* piEnd = stringPathAndQuery.data() + stringPathAndQuery.size(); // end of path and query string
+   const char* piPosition = piStart; // current position in string
+   
+   // ## Find the query separator '?' .......................................
+
+   const char* piQueryStart = nullptr;
+   for( const char* pi = piStart; pi < piEnd; pi++ )
+   {
+      if( *pi == '?' )
+      {
+         piQueryStart = pi;
+         break;
+      }
+   }
+   
+   // ## Parse path section .................................................
+
+   if( piQueryStart != nullptr )
+   {
+      // Path exists before '?'
+      std::string_view stringPath( piStart, piQueryStart - piStart );
+      if( !stringPath.empty() )
+      {
+         parse_path( stringPath, vectorSegments );
+      }
+      
+      // Parse query section after '?'
+      if( piQueryStart + 1 < piEnd )
+      {
+         std::string_view stringQuery( piQueryStart + 1, piEnd - (piQueryStart + 1) );
+         parse_query_implementation( stringQuery, argumentsQuery );
+      }
+   }
+   else { parse_path( stringPathAndQuery, vectorSegments ); }
+   
+   return { vectorSegments, argumentsQuery };
+}
+
 _GD_PARSE_URI_END

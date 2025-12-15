@@ -52,6 +52,7 @@ public:
 // ## methods ------------------------------------------------------------------
 public:
    std::pair<bool, std::string> Parse();
+   std::pair<bool, std::string> Run( const std::vector<std::string_view>& vectorCommand, gd::argument::arguments& argumentsParameter );
    std::pair<bool, std::string> Run();
 
 public:
@@ -61,6 +62,7 @@ public:
 public:
    unsigned m_uFlags{};                ///< router flags
    std::string m_stringQueryString;    ///< query string from url
+   std::vector<std::string_view> m_vectorCommand; ///< list of commands parsed from query string
 
 
 // ## free functions ------------------------------------------------------------
