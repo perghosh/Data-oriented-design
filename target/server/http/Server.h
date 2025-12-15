@@ -180,11 +180,17 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
 
    CRouter router_( stringTarget );
+   auto result_ = router_.Parse();
+   if( result_.first == false ) { return server_error_( result_.second ); }
 
+   result_ = router_.Run();
+   if( result_.first == false ) { return server_error_( result_.second ); }
+   /*
    if( router_.IsCommand() == true )
    {
       router_.Run();
    }
+   */
 
 
    // ## Resolve target

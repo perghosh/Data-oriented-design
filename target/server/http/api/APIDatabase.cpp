@@ -29,6 +29,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
 
    if( stringCommand == "create" )
    {
+      return Execute_Create();
    }
    else if( stringCommand == "delete" )
    {
