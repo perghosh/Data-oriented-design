@@ -86,6 +86,8 @@ public:
 
    std::string_view GetName() const { return m_arguments["name"].as_string_view(); }
    void SetName(const std::string_view& stringName) { m_arguments.set("name", stringName); }
+
+   void SetDatabase(gd::database::database_i* pdatabase_);
 //@}
 
 
@@ -230,7 +232,16 @@ public:
 
 };
 
-/// \brief Prepare cache information structure
+/// @brief Set database connection for document
+inline void CDocument::SetDatabase(gd::database::database_i* pdatabase_)
+{
+   if(m_pdatabase != nullptr) { m_pdatabase->release(); m_pdatabase = nullptr; }
+
+	if(pdatabase_ != nullptr) pdatabase_->add_reference();
+   m_pdatabase = pdatabase_;
+}
+
+/// @brief Prepare cache information structure
 inline void CDocument::CACHE_Prepare( const std::string_view& stringId )
 {
    CACHE_Prepare(stringId, nullptr);

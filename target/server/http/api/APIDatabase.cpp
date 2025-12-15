@@ -148,6 +148,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Create()
  */
 std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 {
+   gd::database::database_i* pdatabaseOpen = nullptr;
    std::string stringType = m_argumentsParameter["type"].as_string();
    std::string stringName = m_argumentsParameter["name"].as_string();
    std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string();
@@ -166,14 +167,14 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 		argumentsOpen.push_back({ "name", stringName });
       argumentsOpen.push_back({ "type", std::string_view("sqlite") });
 
-      gd::database::database_i* pdatabaseOpen = nullptr;
 
 		result_ = CApplication::OpenDatabase_s(argumentsOpen, pdatabaseOpen);
       if(result_.first == false) { return result_; }
 
    }
-
+                                                                                                   assert(pdatabaseOpen != nullptr);
 	CDocument* pdocument = m_pApplication->DOCUMENT_Get(stringDocument, true);
+	pdocument->SetDatabase(pdatabaseOpen);
 
    return { true, "" };
 }
