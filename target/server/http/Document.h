@@ -208,6 +208,8 @@ public:
 
    gd::argument::shared::arguments m_arguments; ///< document information (members)
 
+	gd::database::database_i* m_pdatabase{};     ///< document database connection if any
+
    // ## cache information is stored in dto tables (dto = data transfer object)
    std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document
    std::string m_stringCacheConfiguration;      ///< file name for file with cache configuration information

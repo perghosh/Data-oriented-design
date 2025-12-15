@@ -10,6 +10,8 @@
 
 #include "gd/gd_arguments.h"
 
+class CApplication;
+
 
 /**
  * @brief API Database command class for executing database operations.
@@ -41,6 +43,8 @@ public:
         : m_vectorCommand( vectorCommand ), m_argumentsParameter( argumentsParameter ) {}
     CAPIDatabase( std::vector<std::string_view>&& vectorCommand, gd::argument::arguments&& argumentsParameter )
        : m_vectorCommand( std::move( vectorCommand ) ), m_argumentsParameter( std::move( argumentsParameter ) ) { }
+	 CAPIDatabase(CApplication* pApplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter)
+        : m_pApplication( pApplication ), m_vectorCommand( vectorCommand ), m_argumentsParameter( argumentsParameter ) {}
     // copy
     CAPIDatabase( const CAPIDatabase& o ) { common_construct( o ); }
     CAPIDatabase( CAPIDatabase&& o ) noexcept { common_construct( std::move( o ) ); }
@@ -80,6 +84,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+	CApplication* m_pApplication{};               ///< application pointer, access application that is used as object root for server
    std::vector<std::string_view> m_vectorCommand;   ///< command path segments
    gd::argument::arguments m_argumentsParameter;    ///< parameters for api database command
 
