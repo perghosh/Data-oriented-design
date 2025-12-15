@@ -78,7 +78,9 @@ std::string parent_g( const std::string_view& stringPath, unsigned uLevel );
 std::vector<std::string> list_files_g( const std::string_view& stringFolder );
 std::vector<std::string> list_files_g(const std::string_view& stringFolder, const gd::argument::arguments& argumentsFilter);
 
-// ## `file` operations
+// @API [tag: file] [summary: File operations]
+
+std::pair<bool, std::string> file_absolute_g(const std::string_view& stringPath, std::string& stringNormalizedPath);
 
 // ## `file` path logic
 std::string  normalize_path_for_os_g( const std::string_view& stringPath );

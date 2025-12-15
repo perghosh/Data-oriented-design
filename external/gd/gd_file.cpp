@@ -533,6 +533,26 @@ std::vector<std::string> list_files_g(const std::string_view& stringFolder, cons
    return vectorFile;
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Normalize path, makes it absolute and resolves symbolic links
+ * @param stringPath string that is normalized
+ * @param stringNormalizedPath reference where normalized path is placed
+ * @return std::pair<int, std::string> 0 if ok, -1 and error information if error
+*/
+std::pair<bool, std::string> file_absolute_g(const std::string_view& stringPath, std::string& stringNormalizedPath)
+{                                                                             assert(stringPath.empty() == false);
+   std::error_code errorcode_;
+   std::filesystem::path pathFile(stringPath);
+   if(pathFile.is_absolute() == false)
+   {
+      std::filesystem::path pathAbsolute = std::filesystem::absolute(pathFile);
+      stringNormalizedPath = pathAbsolute.string();
+   }
+
+   return { true, std::string() };
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Normalize path to work for active OS (operating system)
  * @param stringPath string that is normalized
