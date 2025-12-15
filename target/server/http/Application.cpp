@@ -112,7 +112,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    // ## Parse arguments if sent
    if( iArgumentCount > 1 )											           // do we have arguments ? (first is application)
    {
-	   auto result_ = optionsApplication.parse(iArgumentCount, ppbszArgument); // @BOOKMARK [title: options] [description: parse command line arguments] 
+       auto result_ = optionsApplication.parse(iArgumentCount, ppbszArgument); // @BOOKMARK [title: options] [description: parse command line arguments] 
       if( result_.first == false ) { return result_; }
 
       result_ = Read_s(this, optionsApplication);

@@ -183,7 +183,7 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
 
    if( router_.IsCommand() == true )
    {
-
+      router_.Run();
    }
 
 

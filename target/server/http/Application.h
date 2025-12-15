@@ -143,6 +143,11 @@ public:
    /// Handle array values
    void CONFIG_HandleArray( std::string_view stringGroup, std::string_view stringName, const gd::argument::shared::arguments& arguments_ );
 
+// @API [tag: command] [description: broadcast commands]
+
+
+   std::pair<bool, std::string> SERVER_Execute(const std::string_view& stringCommand, const gd::argument::arguments& argumentsVariable, gd::variant* pvariantResult );
+
 
 // @API [tag: message] [description: Application are able to print messages, both normal messages, progress and error messages]
 

@@ -34,7 +34,7 @@ std::pair<bool, std::string> parse_path( std::string_view stringPath, std::vecto
 std::pair<bool, std::string> parse_query( std::string_view stringQuery, gd::argument::arguments& argumentsQuery );
 std::pair<bool, std::string> parse_query( std::string_view stringQuery, gd::argument::shared::arguments& argumentsQuery );
 
-/**
+/** --------------------------------------------------------------------------
  * \brief Helper to parse path from URI arguments
  * 
  * Convenience method that extracts and parses the "path" field from URI arguments.
@@ -57,7 +57,7 @@ std::pair<bool, std::string> parse_path_from_uri( const ARGUMENTS& argumentsUri,
    return { true, "" }; // No path found, not an error
 }
 
-/**
+/** --------------------------------------------------------------------------
  * \brief Helper to parse query from URI arguments
  * 
  * Convenience method that extracts and parses the "query" field from URI arguments.
@@ -79,6 +79,8 @@ std::pair<bool, std::string> parse_query_from_uri( const ARGUMENTS_IN& arguments
    }
    return { true, "" }; // No query found, not an error
 }
+
+std::pair< std::vector<std::string_view>, gd::argument::arguments > parse_path_and_query( std::string_view stringPathAndQuery );
 
 
 _GD_PARSE_URI_END
