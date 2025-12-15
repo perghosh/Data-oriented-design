@@ -12,12 +12,25 @@
 
 
 /**
- * \brief
+ * @brief API Database command class for executing database operations.
  *
+ * This class provides a command interface for performing database operations
+ * through an API. It supports creating and connecting to databases, with
+ * SQLite as the currently supported database type.
  *
+ * The class processes command vectors and parameters to execute specific
+ * database operations.
  *
- \code
- \endcode
+ * Example usage:
+ * @code
+ * // Create a new SQLite database
+ * CAPIDatabase dbCmd({"db", "create"}, {{"type", "sqlite"}, {"name", "mydatabase"}});
+ * auto result = dbCmd.Execute();
+ *
+ * // Connect to an existing database
+ * CAPIDatabase connectCmd({"db", "connect"}, {{"name", "existingdb"}});
+ * auto connectResult = connectCmd.Execute();
+ * @endcode
  */
 class CAPIDatabase
 {
@@ -56,6 +69,9 @@ public:
 
    std::pair<bool, std::string> Execute_Create();
 
+   std::pair<bool, std::string> Execute_Open();
+
+
 
 protected:
 
@@ -64,7 +80,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   std::vector<std::string_view> m_vectorCommand;   ///< command path segments 
+   std::vector<std::string_view> m_vectorCommand;   ///< command path segments
    gd::argument::arguments m_argumentsParameter;    ///< parameters for api database command
 
 

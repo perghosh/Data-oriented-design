@@ -37,7 +37,6 @@
 
 #include "Application.h"
 
-
 // Return a reasonable mime type based on the extension of a file.
 boost::beast::string_view mime_type_g(boost::beast::string_view path);
 
@@ -179,8 +178,8 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    std::string_view stringTarget = request_.target();
    if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
 
-   CRouter router_( stringTarget );
-   auto result_ = router_.Parse();
+	CRouter router_(papplication_g, stringTarget);                             // create router for the target, router is a simple command router to handle commands
+	auto result_ = router_.Parse();                                            // parse the target to get command and parameters
    if( result_.first == false ) { return server_error_( result_.second ); }
 
    result_ = router_.Run();

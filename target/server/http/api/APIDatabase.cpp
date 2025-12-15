@@ -1,22 +1,54 @@
 #include <filesystem>
 
 #include "gd/gd_database_sqlite.h"
+#include "gd/gd_file.h"
 
 #include "APIDatabase.h"
 
 
-void CAPIDatabase::common_construct( const CAPIDatabase& o ) 
-{ 
+void CAPIDatabase::common_construct( const CAPIDatabase& o )
+{
     m_vectorCommand = o.m_vectorCommand;
     m_argumentsParameter = o.m_argumentsParameter;
 }
 
-void CAPIDatabase::common_construct( CAPIDatabase&& o ) noexcept 
-{ 
+void CAPIDatabase::common_construct( CAPIDatabase&& o ) noexcept
+{
     m_vectorCommand = std::move( o.m_vectorCommand );
     m_argumentsParameter = std::move( o.m_argumentsParameter );
 }
 
+/**
+ * @brief Executes the database command based on the command vector and parameters.
+ *
+ * This method processes the database command stored in m_vectorCommand and uses
+ * the parameters in m_argumentsParameter to perform the requested operation.
+ *
+ * The method supports the following commands:
+ * - "db create": Creates a new database (currently only SQLite is supported)
+ *   Requires parameters:
+ *     - "type": Database type (e.g., "sqlite")
+ *     - "name": Database name/path
+ * - "db delete": Deletes a database (not yet implemented)
+ *
+ * @return std::pair<bool, std::string> A pair containing:
+ *         - bool: Success status (true if operation succeeded, false otherwise)
+ *         - std::string: Error message if operation failed, empty string if succeeded
+ *
+ * @note The command vector must not be empty. The method asserts this condition.
+ *
+ * Example usage:
+ * @code
+ * // Create a new SQLite database
+ * CAPIDatabase dbCmd({"db", "create"}, {{"type", "sqlite"}, {"name", "mydatabase"}});
+ * auto result = dbCmd.Execute();
+ * if (result.first) {
+ *     // Database created successfully
+ * } else {
+ *     // Error occurred: result.second contains the error message
+ * }
+ * @endcode
+ */
 std::pair<bool, std::string> CAPIDatabase::Execute()
 {                                                                                                  assert( m_vectorCommand.empty() == false );
    // ## execute database command based on m_vectorCommand and m_argumentsParameter
@@ -31,13 +63,44 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
    {
       return Execute_Create();
    }
+   if( stringCommand == "open" )
+   {
+      return Execute_Open();
+   }
    else if( stringCommand == "delete" )
    {
    }
-    
+
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Creates a new database based on the parameters in m_argumentsParameter.
+ *
+ * This method creates a new SQLite database with the name specified in the
+ * "name" parameter. The database type can be specified with the "type" parameter,
+ * but currently only "sqlite" type is supported.
+ *
+ * If the database name doesn't have an extension, ".sqlite" is automatically added.
+ * If the path is not absolute, it's converted to an absolute path.
+ * The method checks if the database file already exists and returns an error if it does.
+ *
+ * @return std::pair<bool, std::string> A pair containing:
+ *         - bool: Success status (true if database was created successfully, false otherwise)
+ *         - std::string: Error message if creation failed, empty string if succeeded
+ *
+ * Example usage:
+ * @code
+ * // Create a new SQLite database
+ * CAPIDatabase dbCmd({}, {{"type", "sqlite"}, {"name", "mydatabase"}});
+ * auto result = dbCmd.Execute_Create();
+ * if (result.first) {
+ *     // Database created successfully
+ * } else {
+ *     // Error occurred: result.second contains the error message
+ * }
+ * @endcode
+ */
 std::pair<bool, std::string> CAPIDatabase::Execute_Create()
 {
    std::string stringType = m_argumentsParameter["type"].as_string();
@@ -51,17 +114,53 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Create()
       std::filesystem::path pathFile( stringName );
       if( pathFile.has_extension() == false ) { pathFile += ".sqlite"; }
 
-      if( pathFile.is_absolute() == false )
-      {
-         std::filesystem::path pathAbsolute = std::filesystem::absolute( pathFile );
-         if( std::filesystem::exists( pathAbsolute ) == true ) { return { false, "database file already exists: " + pathAbsolute.string() }; }
-         pathFile = pathAbsolute;
-         stringName = pathFile.string();
-      }
+      auto result_ = gd::file::file_absolute_g( pathFile.string(), stringName );
+		if (result_.first == false) { return { false, "failed to get absolute path for database file: " + result_.second }; }
 
-      gd::database::sqlite::database databaseNew;
+      if (std::filesystem::exists(stringName) == true) { return { false, "database file already exists: " + stringName }; }
+
+		// ### Create sqlite database
+
+      gd::database::sqlite::database databaseCreate;
+		result_ = databaseCreate.open(stringName, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX);
+		if (result_.first == false) { return { false, "failed to create sqlite database: " + result_.second }; }
+
+		databaseCreate.close();
    }
 
+   return { true, "" };
+}
+
+/** --------------------------------------------------------------------------
+ * @brief Connects to an existing database.
+ *
+ * This method is intended to establish a connection to an existing database.
+ * Currently, this method is not implemented and always returns a success status.
+ *
+ * @return std::pair<bool, std::string> A pair containing:
+ *         - bool: Success status (currently always returns true)
+ *         - std::string: Error message (currently always empty)
+ *
+ * @note This method is not yet implemented.
+ */
+std::pair<bool, std::string> CAPIDatabase::Execute_Open()
+{
+   std::string stringType = m_argumentsParameter["type"].as_string();
+   std::string stringName = m_argumentsParameter["name"].as_string();
+
+   if (stringType.empty() == true || stringType == "sqlite")
+   {
+      std::filesystem::path pathFile(stringName);
+      if (pathFile.has_extension() == false) { pathFile += ".sqlite"; }
+
+      auto result_ = gd::file::file_absolute_g(pathFile.string(), stringName);
+      if (result_.first == false) { return { false, "failed to get absolute path for database file: " + result_.second }; }
+
+      gd::database::sqlite::database databaseCreate;
+      result_ = databaseCreate.open(stringName, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX);
+      if(result_.first == false) { return { false, "failed to open sqlite database: " + result_.second }; }
+
+   }
 
    return { true, "" };
 }
