@@ -160,11 +160,17 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
       if (pathFile.has_extension() == false) { pathFile += ".sqlite"; }
 
       auto result_ = gd::file::file_absolute_g(pathFile.string(), stringName);
-      if (result_.first == false) { return { false, "failed to get absolute path for database file: " + result_.second }; }
+      if(result_.first == false) { return { false, "failed to get absolute path for database file: " + result_.second }; }
 
-      gd::database::sqlite::database databaseOpen;
-      result_ = databaseOpen.open(stringName, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX);
-      if(result_.first == false) { return { false, "failed to open sqlite database: " + result_.second }; }
+		gd::argument::arguments argumentsOpen;
+		argumentsOpen.push_back({ "name", stringName });
+      argumentsOpen.push_back({ "type", std::string_view("sqlite") });
+
+      gd::database::database_i* pdatabaseOpen = nullptr;
+
+		result_ = CApplication::OpenDatabase_s(argumentsOpen, pdatabaseOpen);
+      if(result_.first == false) { return result_; }
+
    }
 
 	CDocument* pdocument = m_pApplication->DOCUMENT_Get(stringDocument, true);
