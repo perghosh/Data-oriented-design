@@ -11,6 +11,7 @@ _GD_DATABASE_SQLITE_BEGIN
  * @brief Open sqlite database from specified file
  * Opens sqlite database file. If file do not exist then a new database is created
  * @param stringFileName database file to open
+ * @param uFlags flags for open operation, possible values are: eDatabaseStateOwner and eDatabaseStateConnected
  * @return true if ok, false and error information if failed
 */
 std::pair<bool,std::string> database::open(const std::string_view& stringFileName, unsigned uFlags)
