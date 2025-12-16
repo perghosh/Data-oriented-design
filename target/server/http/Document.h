@@ -62,7 +62,7 @@ public: // 0TAG0construct.Document
    CDocument& operator=(const CDocument& o) { common_construct(o); return *this; }
    CDocument& operator=(CDocument&& o) noexcept { common_construct(std::move(o)); return *this; }
 
-   ~CDocument() {}
+   ~CDocument();
 private:
 // common copy
    void common_construct(const CDocument& o);
@@ -88,6 +88,7 @@ public:
    void SetName(const std::string_view& stringName) { m_arguments.set("name", stringName); }
 
    void SetDatabase(gd::database::database_i* pdatabase_);
+   gd::database::database_i* GetDatabase() { return m_pdatabase; }
 //@}
 
 
@@ -227,7 +228,7 @@ public:
 
 
 
-// ## free functions ------------------------------------------------------------
+// ## free functions ---------------------------------------------------------
 public:
 
 };
