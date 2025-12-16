@@ -72,6 +72,7 @@ std::pair<bool, std::string> CRouter::Parse()
    return { true, "" };
 }
 
+// @TODO [tag: router, command] [description: Convert uri encoded text values to normal utf8 strings] [status: open] [assigned: per]
 std::pair<bool, std::string> CRouter::Run()
 {
    if( IsCommand() == true )
@@ -82,7 +83,7 @@ std::pair<bool, std::string> CRouter::Run()
       std::string_view stringCommand = vectorPath[0];
       if( stringCommand == "db" )
       {
-         CAPIDatabase database_( vectorPath, arguments_ );
+         CAPIDatabase database_( m_pApplication, vectorPath, arguments_ );
          return database_.Execute();
       }
       else if( stringCommand == "sql" )

@@ -17,6 +17,21 @@
 
 
 
+CDocument::~CDocument()
+{
+   // ## Clear table cache 
+   {
+      std::unique_lock<std::shared_mutex> lock_( m_sharedmutexTableCache );       // locks `m_vectorTableCache`
+      m_vectorTableCache.clear();
+   }
+
+   if( m_pdatabase != nullptr )
+   {
+      m_pdatabase->release();
+      m_pdatabase = nullptr;
+   }  
+}
+
 void CDocument::common_construct(const CDocument& o)
 {
    m_arguments = o.m_arguments;

@@ -75,6 +75,8 @@ public:
 
    std::pair<bool, std::string> Execute_Open();
 
+   std::pair<bool, std::string> Execute_Query();
+
 
 
 protected:

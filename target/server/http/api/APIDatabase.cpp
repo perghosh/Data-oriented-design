@@ -45,7 +45,7 @@ void CAPIDatabase::common_construct( CAPIDatabase&& o ) noexcept
  * // Create a new SQLite database
  * CAPIDatabase dbCmd({"db", "create"}, {{"type", "sqlite"}, {"name", "mydatabase"}});
  * auto result = dbCmd.Execute();
- * if (result.first) {
+ * if(result.first) {
  *     // Database created successfully
  * } else {
  *     // Error occurred: result.second contains the error message
@@ -53,26 +53,46 @@ void CAPIDatabase::common_construct( CAPIDatabase&& o ) noexcept
  * @endcode
  */
 std::pair<bool, std::string> CAPIDatabase::Execute()
-{                                                                                                  assert( m_vectorCommand.empty() == false );
+{                                                                                                  assert( m_vectorCommand.empty() == false && "No commands");
    // ## execute database command based on m_vectorCommand and m_argumentsParameter
 
-   std::string_view stringCommand = m_vectorCommand[0];
-   if( stringCommand == "db" )
+   if( m_vectorCommand.empty() == true ) return { true, "No commands"};
+
+   std::pair<bool, std::string> result_(true,"");
+
+   for( std::size_t uIndex = 0; uIndex < m_vectorCommand.size(); ++uIndex )
    {
-      stringCommand = m_vectorCommand.size() > 1 ? m_vectorCommand[1] : "";
+      std::string_view stringCommand = m_vectorCommand[uIndex];
+
+      if( stringCommand == "create" )
+      {
+         result_ = Execute_Create();
+      }
+      else if( stringCommand == "open" )
+      {
+         result_ = Execute_Open();
+      }
+      else if( stringCommand == "query" )
+      {
+         result_ = Execute_Query();
+      }
+      else if( stringCommand == "delete" )
+      {
+      }
+      else if( stringCommand == "drop" )
+      {
+      }
+      else if( stringCommand == "db" )
+      {
+      }
+      else
+      {
+         return { false, "unknown database command: " + std::string(stringCommand) };
+      }
+
+      if( result_.first == false ) { return result_; }
    }
 
-   if( stringCommand == "create" )
-   {
-      return Execute_Create();
-   }
-   if( stringCommand == "open" )
-   {
-      return Execute_Open();
-   }
-   else if( stringCommand == "delete" )
-   {
-   }
 
    return { true, "" };
 }
@@ -97,7 +117,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
  * // Create a new SQLite database
  * CAPIDatabase dbCmd({}, {{"type", "sqlite"}, {"name", "mydatabase"}});
  * auto result = dbCmd.Execute_Create();
- * if (result.first) {
+ * if(result.first) {
  *     // Database created successfully
  * } else {
  *     // Error occurred: result.second contains the error message
@@ -118,15 +138,15 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Create()
       if( pathFile.has_extension() == false ) { pathFile += ".sqlite"; }
 
       auto result_ = gd::file::file_absolute_g( pathFile.string(), stringName );
-		if (result_.first == false) { return { false, "failed to get absolute path for database file: " + result_.second }; }
+		if(result_.first == false) { return { false, "failed to get absolute path for database file: " + result_.second }; }
 
-      if (std::filesystem::exists(stringName) == true) { return { false, "database file already exists: " + stringName }; }
+      if(std::filesystem::exists(stringName) == true) { return { false, "database file already exists: " + stringName }; }
 
 		// ### Create sqlite database
 
       gd::database::sqlite::database databaseCreate;
 		result_ = databaseCreate.open(stringName, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX);
-		if (result_.first == false) { return { false, "failed to create sqlite database: " + result_.second }; }
+		if(result_.first == false) { return { false, "failed to create sqlite database: " + result_.second }; }
 
 		databaseCreate.close();
    }
@@ -155,10 +175,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 
 	if(stringDocument.empty() == true) stringDocument = "default";
 
-   if (stringType.empty() == true || stringType == "sqlite")
+   if(stringType.empty() == true || stringType == "sqlite")
    {
       std::filesystem::path pathFile(stringName);
-      if (pathFile.has_extension() == false) { pathFile += ".sqlite"; }
+      if(pathFile.has_extension() == false) { pathFile += ".sqlite"; }
 
       auto result_ = gd::file::file_absolute_g(pathFile.string(), stringName);
       if(result_.first == false) { return { false, "failed to get absolute path for database file: " + result_.second }; }
@@ -175,6 +195,28 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
                                                                                                    assert(pdatabaseOpen != nullptr);
 	CDocument* pdocument = m_pApplication->DOCUMENT_Get(stringDocument, true);
 	pdocument->SetDatabase(pdatabaseOpen);
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CAPIDatabase::Execute_Query()
+{
+   gd::database::database_i* pdatabaseOpen = nullptr;
+   std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string();
+
+	if(stringDocument.empty() == true) stringDocument = "default";
+
+   CDocument* pdocument = m_pApplication->DOCUMENT_Get(stringDocument);
+   if( pdocument == nullptr ) { return { false, "document not found: " + stringDocument }; }
+
+   auto* pdatabase = pdocument->GetDatabase();
+   if( pdatabase == nullptr ) return { false, "document has no database connection: " + stringDocument };
+
+   std::string stringQuery = m_argumentsParameter["query"].as_string();
+   if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
+
+   auto result_ = pdatabase->execute( stringQuery );
+   if( result_.first == false ) { return result_; }
 
    return { true, "" };
 }
