@@ -2413,9 +2413,12 @@ namespace gd {
          std::pair<bool, const uint8_t*> convert_uri_to_uf8( const uint8_t* pubszText, const uint8_t* pubszEnd, uint8_t* pbszTo )
          {
             auto pubszInsert = pbszTo;
-            for( auto pubszPosition = pubszText; pubszPosition != pubszEnd; pubszPosition = uri::next( pubszPosition ) )
+            // for( auto pubszPosition = pubszText; pubszPosition != pubszEnd; pubszPosition = uri::next( pubszPosition ) )
+            for( auto pubszPosition = pubszText; pubszPosition != pubszEnd; )
             {                                                                                      assert( pubszPosition < pubszEnd );
                auto uCharacter = uri::character( &pubszPosition );
+               if( uCharacter == 0xFFFFFFFF ) return { false, pubszPosition }; // error in uri format
+
                pubszInsert += convert( uCharacter, pubszInsert );
             }
 
