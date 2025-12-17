@@ -219,6 +219,9 @@ public:
    /// Execute sql, any sql
    std::pair<bool, std::string> execute(const std::string_view& stringQuery);
 
+   /// Execute sql, any sql
+   std::pair<bool, std::string> execute(const std::string_view& stringQuery, std::function<bool( const gd::argument::arguments* )> callback_ );
+
    /// Ask for single value from database, handy to use without fiddle with cursor
    std::pair<bool, std::string> ask( const std::string_view& stringStatement, gd::variant* pvariantValue );
 
