@@ -791,15 +791,15 @@ public:
 /// set values in row
 ///@{
    void row_set( uint64_t uRow, const std::initializer_list<gd::variant_view>& listValue );
-   void row_set( uint64_t uRow, unsigned uSart, const std::initializer_list<gd::variant_view>& listValue );
+   void row_set( uint64_t uRow, unsigned uStart, const std::initializer_list<gd::variant_view>& listValue );
    void row_set( uint64_t uRow, const std::initializer_list<gd::variant_view>& listValue, tag_convert );
-   void row_set( uint64_t uRow, unsigned uSart, const std::initializer_list<gd::variant_view>& listValue, tag_convert );
-   void row_set( uint64_t uRow, const std::vector<gd::variant_view>& listValue );
-   void row_set( uint64_t uRow, unsigned uOffset, const std::vector<gd::variant_view>& listValue);
-   void row_set( uint64_t uRow, const std::vector<gd::variant_view>& listValue, tag_convert );
-   void row_set( uint64_t uRow, unsigned uSart, const std::vector<gd::variant_view>& listValue, tag_convert );
-   void row_set( uint64_t uRow, const std::vector<gd::variant_view>& listValue, const std::vector<unsigned>& vectorColumn );
-   void row_set( uint64_t uRow, const std::vector<gd::variant_view>& listValue, const std::vector<unsigned>& vectorColumn, tag_convert );
+   void row_set( uint64_t uRow, unsigned uStart, const std::initializer_list<gd::variant_view>& listValue, tag_convert );
+   void row_set( uint64_t uRow, const std::vector<gd::variant_view>& vectorValue );
+   void row_set( uint64_t uRow, unsigned uOffset, const std::vector<gd::variant_view>& vectorValue);
+   void row_set( uint64_t uRow, const std::vector<gd::variant_view>& vectorValue, tag_convert );
+   void row_set( uint64_t uRow, unsigned uStart, const std::vector<gd::variant_view>& vectorValue, tag_convert );
+   void row_set( uint64_t uRow, const std::vector<gd::variant_view>& vectorValue, const std::vector<unsigned>& vectorColumn );
+   void row_set( uint64_t uRow, const std::vector<gd::variant_view>& vectorValue, const std::vector<unsigned>& vectorColumn, tag_convert );
    void row_set( uint64_t uRow, const std::vector< std::pair<unsigned, gd::variant_view> >& vectorValue );
    void row_set( uint64_t uRow, const std::vector< std::pair<unsigned, gd::variant_view> >& vectorValue, tag_convert );
    void row_set( uint64_t uRow, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorValue );
