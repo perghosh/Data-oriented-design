@@ -6,6 +6,8 @@
 # Define variables
 $site = "http://localhost:8001"
 
+curl "${site}/!db/open/query?type=sqlite&name=test" --data-urlencode "query=CREATE TABLE TUser( UserK BLOB PRIMARY KEY DEFAULT (randomblob(16)), FName TEXT NOT NULL, FAlias TEXT NOT NULL);" -G
+
 `curl "${site}/!db/open?type=sqlite&name=test"
 
 --data-urlencode "page=1"
