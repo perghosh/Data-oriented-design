@@ -34,7 +34,7 @@ std::pair<bool,std::string> database::open(const std::string_view& stringFileNam
    return { false, stringError };
 }
 
-std::pair<bool, std::string> execute( const std::string_view& stringQuery, std::function<bool( const gd::argument::arguments* )> callback_ )
+std::pair<bool, std::string> database::execute( const std::string_view& stringQuery, std::function<bool( const gd::argument::arguments* )> callback_ )
 {                                                                                                   assert(m_psqlite3 != nullptr);
 
    // Create context to pass to sqlite3_exec callback
