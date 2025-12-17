@@ -4,6 +4,7 @@
 #include "gd/gd_file.h"
 #include "gd/database/gd_database_io.h"
 
+#include "../Router.h"
 #include "../Document.h"
 #include "../Application.h"
 
@@ -216,6 +217,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Query()
 
    auto* pdatabase = pdocument->GetDatabase();                                // get database from document, this connection has to be opened before
    if( pdatabase == nullptr ) return { false, "no database connection: " + stringDocument };
+
+   CRouter::Encode_s( m_argumentsParameter, { "query" } );
 
    std::string stringQuery = m_argumentsParameter["query"].as_string();       // get query to execute
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
