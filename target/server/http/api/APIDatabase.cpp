@@ -82,6 +82,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       {
          result_ = Execute_Select();
       }
+      else if( stringCommand == "insert" )
+      {
+         result_ = Execute_Insert();
+      }
       else if( stringCommand == "delete" )
       {
       }
@@ -202,6 +206,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 	CDocument* pdocument = m_pApplication->DOCUMENT_Get(stringDocument, true);
 	pdocument->SetDatabase(pdatabaseOpen);
 
+   pdatabaseOpen->release();
+
    return { true, "" };
 }
 
@@ -272,9 +278,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    std::string stringQuery = m_argumentsParameter["query"].as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
 
-   auto result_ = pdatabase->execute( stringQuery );
-   if( result_.first == false ) { return result_; }
-
    gd::com::pointer<gd::database::cursor_i> pcursor;
    pdatabase->get_cursor( &pcursor );
 
@@ -302,25 +305,16 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
+   CRouter::Encode_s( m_argumentsParameter, { "query" } );
+
    std::string stringQuery = m_argumentsParameter["query"].as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
 
    auto result_ = pdatabase->execute( stringQuery );
    if( result_.first == false ) { return result_; }
 
-   gd::com::pointer<gd::database::cursor_i> pcursor;
-   pdatabase->get_cursor( &pcursor );
+   auto variantInsertKey = pdatabase->get_insert_key();
 
-   std::pair< bool, std::string > pairReturn;   
-   pcursor->open( stringQuery );
-
-   // ## create table to hold select result
-
-   if( pairReturn.first == true )
-   {
-      auto ptable_ = std::make_unique<gd::table::dto::table>();
-      gd::database::to_table( pcursor.get(), ptable_.get() );
-   }
 
    return { true, "" };
 }

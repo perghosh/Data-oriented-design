@@ -6,6 +6,7 @@
 # Define variables
 $site = "http://localhost:8001"
 
+**create**
 curl "${site}/!db/open/query?type=sqlite&name=test" --data-urlencode "query=CREATE TABLE TUser( UserK BLOB PRIMARY KEY DEFAULT (randomblob(16)), FName TEXT NOT NULL, FAlias TEXT NOT NULL);" -G
 
 `curl "${site}/!db/open?type=sqlite&name=test"
@@ -19,3 +20,10 @@ curl "${site}/!db/open/query?type=sqlite&name=test" --data-urlencode "query=CREA
 
 
 --data-urlencode "query=CREATE TABLE TUser( UserK BLOB PRIMARY KEY DEFAULT (randomblob(16)), FName TEXT NOT NULL, FAlias TEXT NOT NULL);"
+
+**insert user**
+curl "${site}/!db/open/insert?type=sqlite&name=test" --data-urlencode "query=INSERT INTO TUser (FName, FAlias) VALUES ('John Doe', 'jdoe');" -G
+
+**insert with select**
+"INSERT INTO TUser (FName, FAlias) VALUES ('test1', 'test1') RETURNING UserK;";
+curl "${site}/!db/open/query?type=sqlite&name=test" --data-urlencode "query=INSERT INTO TUser (FName, FAlias) VALUES ('test1', 'test1') RETURNING UserK;" -G

@@ -34,6 +34,62 @@ std::pair<bool,std::string> database::open(const std::string_view& stringFileNam
    return { false, stringError };
 }
 
+std::pair<bool, std::string> execute( const std::string_view& stringQuery, std::function<bool( const gd::argument::arguments* )> callback_ )
+{                                                                                                   assert(m_psqlite3 != nullptr);
+
+   // Create context to pass to sqlite3_exec callback
+   struct callback_context {
+      std::function<bool( const gd::argument::arguments* )>* callback;
+      gd::argument::arguments arguments;
+   };
+   
+   callback_context context;
+   context.callback = &callback_;
+   // SQLite callback that fills arguments and calls user callback
+   auto sqlite_callback = [](void* pContext, int iColumnCount, char** ppValues, char** ppColumnNames) -> int {
+      callback_context* pCallbackContext = static_cast<callback_context*>(pContext);
+      
+      // Clear arguments for new row
+      pCallbackContext->arguments.clear();
+      
+      // Fill arguments with column name-value pairs
+      for( int i = 0; i < iColumnCount; i++ )
+      {
+         const char* pbszColumnName = ppColumnNames[i];
+         const char* pbszValue = ppValues[i];
+         
+         if( pbszValue != nullptr )
+         {
+            // Try to determine type from value
+            // SQLite3_exec returns all values as strings, so we store them as strings
+            pCallbackContext->arguments.append(pbszColumnName, std::string_view(pbszValue));
+         }
+         else
+         {
+            // NULL value
+            pCallbackContext->arguments.append(pbszColumnName, nullptr);
+         }
+      }
+      
+      // Call user callback
+      bool bContinue = (*pCallbackContext->callback)(&pCallbackContext->arguments);
+      
+      // Return 0 to continue, non-zero to abort
+      return bContinue ? 0 : 1;
+   };
+
+   char* pbszError = nullptr;
+   auto iExecuteResult = ::sqlite3_exec(m_psqlite3, stringQuery.data(), nullptr, nullptr, &pbszError );
+   if( iExecuteResult != SQLITE_OK )
+   {
+      std::string stringError = pbszError;
+      ::sqlite3_free( pbszError );                                                                 assert( iExecuteResult != SQLITE_OK );
+      return { false, std::move(stringError) };
+   }
+
+   return { true, "" };
+}
+
 /** ---------------------------------------------------------------------------
  * @brief Ask for single value from sql statement
  * @param stringStatement string to execute that should returan at least one value
