@@ -205,18 +205,31 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Executes a SQL query on the specified database.
+ *
+ * This method retrieves the database connection from the specified document
+ * and executes the SQL query provided in the "query" parameter of m_argumentsParameter.
+ *
+ * @return std::pair<bool, std::string>  A pair where the bool indicates success/failure
+ *
+ * Example usage:
+ * @code
+ * // Execute a SQL query
+ * CAPIDatabase dbCmd({}, {{"document", "mydoc"}, {"query", "SELECT * FROM mytable"}});
+ * auto result = dbCmd.Execute_Query();
+ * if(result.first) { ... }
+ * @endcode
+ */
 std::pair<bool, std::string> CAPIDatabase::Execute_Query()
 {
    gd::database::database_i* pdatabaseOpen = nullptr;
-   std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string(); // find the document that we work with
 
-   if( stringDocument.empty() == true ) stringDocument = "default";           // default document if not specified
-
-   CDocument* pdocument = m_pApplication->DOCUMENT_Get( stringDocument );     // get document from application
-   if( pdocument == nullptr ) { return { false, "document not found: " + stringDocument }; }
+   CDocument* pdocument = GetDocument();
+   if( pdocument == nullptr ) { return { false, GetLastError() }; }
 
    auto* pdatabase = pdocument->GetDatabase();                                // get database from document, this connection has to be opened before
-   if( pdatabase == nullptr ) return { false, "no database connection: " + stringDocument };
+   if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
    CRouter::Encode_s( m_argumentsParameter, { "query" } );
 
@@ -229,18 +242,32 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Query()
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Executes a SELECT SQL query and retrieves the results.
+ *
+ * This method retrieves the database connection from the specified document
+ * and executes the SELECT SQL query provided in the "query" parameter of m_argumentsParameter.
+ * The results of the query are converted into a table format.
+ *
+ * @return std::pair<bool, std::string> A pair where the bool indicates success/failure
+ *
+ * Example usage:
+ * @code
+ * // Execute a SELECT SQL query
+ * CAPIDatabase dbCmd({}, {{"document", "mydoc"}, {"query", "SELECT * FROM mytable"}});
+ * auto result = dbCmd.Execute_Select();
+ * if(result.first) { ... }
+ * @endcode
+ */
 std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 {
    gd::database::database_i* pdatabaseOpen = nullptr;
-   std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string();
 
-	if(stringDocument.empty() == true) stringDocument = "default";
-
-   CDocument* pdocument = m_pApplication->DOCUMENT_Get(stringDocument);
-   if( pdocument == nullptr ) { return { false, "document not found: " + stringDocument }; }
+   CDocument* pdocument = GetDocument();
+   if( pdocument == nullptr ) { return { false, GetLastError() }; }
 
    auto* pdatabase = pdocument->GetDatabase();
-   if( pdatabase == nullptr ) return { false, "no database connection: " + stringDocument };
+   if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
    std::string stringQuery = m_argumentsParameter["query"].as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
@@ -262,7 +289,53 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
       gd::database::to_table( pcursor.get(), ptable_.get() );
    }
 
+   return { true, "" };
+}
 
+std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
+{
+   gd::database::database_i* pdatabaseOpen = nullptr;
+
+   CDocument* pdocument = GetDocument();
+   if( pdocument == nullptr ) { return { false, GetLastError() }; }
+
+   auto* pdatabase = pdocument->GetDatabase();
+   if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
+
+   std::string stringQuery = m_argumentsParameter["query"].as_string();
+   if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
+
+   auto result_ = pdatabase->execute( stringQuery );
+   if( result_.first == false ) { return result_; }
+
+   gd::com::pointer<gd::database::cursor_i> pcursor;
+   pdatabase->get_cursor( &pcursor );
+
+   std::pair< bool, std::string > pairReturn;   
+   pcursor->open( stringQuery );
+
+   // ## create table to hold select result
+
+   if( pairReturn.first == true )
+   {
+      auto ptable_ = std::make_unique<gd::table::dto::table>();
+      gd::database::to_table( pcursor.get(), ptable_.get() );
+   }
 
    return { true, "" };
+}
+
+/// @brief Retrieves the document associated with the current API database instance.
+/// @return Pointer to the CDocument object.
+/// @note Note that document returned need a name for document or it will return the "default" document.
+CDocument* CAPIDatabase::GetDocument()
+{                                                                                                  assert( m_pApplication != nullptr );
+   std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string();
+   if( stringDocument.empty() == true ) stringDocument = "default";
+
+   CDocument* pdocument = m_pApplication->DOCUMENT_Get( stringDocument );
+
+   if( pdocument == nullptr ) { m_stringLastError = "document not found: " + stringDocument; } // generate error if document do not exists
+
+   return pdocument;
 }

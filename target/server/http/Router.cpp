@@ -196,7 +196,12 @@ std::pair<bool, std::string> CRouter::Encode_s( gd::argument::arguments& argumen
    {
       std::string stringValue = arguments_[stringName].as_string();
       std::string stringValueEncoded;
-      gd::utf8::uri::convert_uri_to_uf8( std::string_view( stringValue ), stringValueEncoded );
+
+      // ## replace all + with space
+      for( char& c : stringValue ) { if( c == '+' ) { c = ' '; } }
+
+      auto result_ = gd::utf8::uri::convert_uri_to_uf8( stringValue, stringValueEncoded );
+      if( result_.first == false ) { return { false, "failed to encode uri value for parameter: " + stringName }; }
       arguments_.set( stringName, stringValueEncoded );
    }
    return { true, "" };

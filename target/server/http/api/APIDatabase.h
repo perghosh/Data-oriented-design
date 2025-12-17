@@ -11,6 +11,7 @@
 #include "gd/gd_arguments.h"
 
 class CApplication;
+class CDocument;
 
 
 /**
@@ -79,7 +80,11 @@ public:
 
    std::pair<bool, std::string> Execute_Select();
 
+   std::pair<bool, std::string> Execute_Insert();
 
+   CDocument* GetDocument();
+
+   std::string GetLastError() const { return m_stringLastError; }
 
 protected:
 
@@ -89,8 +94,9 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
 	CApplication* m_pApplication{};               ///< application pointer, access application that is used as object root for server
-   std::vector<std::string_view> m_vectorCommand;   ///< command path segments
-   gd::argument::arguments m_argumentsParameter;    ///< parameters for api database command
+   std::vector<std::string_view> m_vectorCommand;///< command path segments
+   gd::argument::arguments m_argumentsParameter; ///< parameters for api database command
+   std::string m_stringLastError;                ///< last error message 
 
 
 // ## free functions ------------------------------------------------------------
