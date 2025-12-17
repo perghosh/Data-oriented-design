@@ -26,10 +26,10 @@ namespace gd {
       const uint8_t CHARACTER_CARRAGERETURN = 13;
       const uint8_t CHARACTER_SPACE = 32;
 
-      static const uint32_t CHARACTER_1_BYTE_MASK = 0x80;
-      static const uint32_t CHARACTER_2_BYTE_MASK = 0xE0;
-      static const uint32_t CHARACTER_3_BYTE_MASK = 0xF0;
-      static const uint32_t CHARACTER_4_BYTE_MASK = 0xF8;
+      static const uint32_t CHARACTER_1_BYTE_MASK = 0x80;  // 10000000
+      static const uint32_t CHARACTER_2_BYTE_MASK = 0xE0;  // 11100000
+      static const uint32_t CHARACTER_3_BYTE_MASK = 0xF0;  // 11110000
+      static const uint32_t CHARACTER_4_BYTE_MASK = 0xF8;  // 11111000
 
 
       /**
@@ -2141,48 +2141,128 @@ namespace gd {
           * 
           * @example 
           *   - Input: "%20"  -> Output: 32 (Space character)
-          *   - Input: "%C3%A9" -> Output: 233 (é - Latin small letter e with acute)
+          *   - Input: "%C3%A9" -> Output: 233 (Ã© - Latin small letter e with acute)
           *   - Input: "a"    -> Output: 97 ('a' character)          */
-         uint32_t character( const uint8_t* pubszCharacter )
+         
+         uint32_t character( const uint8_t** pubszCharacter )
          {
-            uint32_t uCharacter = 0;
-            if( *pubszCharacter == '%' )
-            {                                                                  // format should be % + hex + hex (sample: %20 = 32 = space)
-               pubszCharacter++;
-               uCharacter = (pHexValue_s[*pubszCharacter] << 4) + pHexValue_s[*(pubszCharacter + 1)];
-               uint32_t uSize = pNeededByteCount_s[uCharacter];                                    assert( uSize != 0 );// should never be 0, then it is something wrong with the uri format
+            const uint8_t* puPosition = *pubszCharacter; // Initialize puPosition to *pubszCharacter
+            uint32_t uCodePoint = 0; // Initialize uCodePoint to 0
 
-               if( uSize == 1 ) { assert( uCharacter < CHARACTER_1_BYTE_MASK ); return (uCharacter & ~CHARACTER_1_BYTE_MASK); }// if only one character then return value without modification
-
-               if( uSize == 2 )
+            if( *puPosition == '%' )
+            {
+               // ## Decode sequences of %XX until we have a complete UTF-8 character
+               uint8_t pu4Byte[4] = {0};
+               uint8_t uByteCount = 0;
+   
+               do
                {
-                  uCharacter &= ~CHARACTER_2_BYTE_MASK;                        // keep valid part
-                  uCharacter <<= 6;
-                  pubszCharacter += sizeof "%00" - 1;                          // go to next character
-                                                                                                   assert( *(pubszCharacter - 1) == '%' );
-                  uCharacter += (pHexValue_s[*pubszCharacter] << 4) + pHexValue_s[*(pubszCharacter + 1)] & 0x3f;
-                                                                                                   // agil utveckling https://www.youtube.com/watch?v=vSnCeJEka_s
-               }
-               else if( uSize == 3 )
-               {
-                  uCharacter &= ~CHARACTER_3_BYTE_MASK;                        // keep valid part
-                  uCharacter <<= 12;
-                  pubszCharacter += sizeof "%00" - 1;                          // go to next character
-                                                                                                   assert( *(pubszCharacter - 1) == '%' );
-                  uCharacter += (((pHexValue_s[*pubszCharacter] << 4) + pHexValue_s[*(pubszCharacter + 1)]) & 0x3f) << 6;
+                  // ### Expect % followed by exactly two hex digits 
 
-                  pubszCharacter += sizeof "%00" - 1;                          // go to next character
-                                                                                                   assert( *(pubszCharacter - 1) == '%' );
-                  uCharacter += ((pHexValue_s[*pubszCharacter] << 4) + pHexValue_s[*(pubszCharacter + 1)]) & 0x3f;
+                  if( puPosition[0] != '%' || uByteCount >= 4 )
+                  {
+                     *pubszCharacter = puPosition;
+                     return 0xFFFFFFFF; /* invalid */
+                  }
+   
+                  ++puPosition;                                                // skip '%
+   
+                  uint8_t uHigh = pHexValue_s[puPosition[0]]; // Get the high hex digit
+                  uint8_t uLow = pHexValue_s[puPosition[1]]; // Get the low hex digit
+                  if( (uHigh == 0 && puPosition[0] != '0') || (uLow == 0 && puPosition[1] != '0') )
+                  {
+                     *pubszCharacter = puPosition;
+                     return 0xFFFFFFFF;                                        // invalid hex 
+                  }
+   
+                  pu4Byte[uByteCount] = (uHigh << 4) | uLow;                   // Store the byte value
+                  uByteCount++;
+                  puPosition += 2;                                             // skip two hex digits
+   
+                  // ### After first byte we can determine expected total length 
+
+                  if( uByteCount == 1 )
+                  {
+                     uint8_t uExpected = pNeededByteCount_s[pu4Byte[0]];
+                     if( uExpected == 0 || uExpected > 4 ) { *pubszCharacter = puPosition; return 0xFFFFFFFF; } // invalid hex
+   
+                     if( uExpected == 1 ) { *pubszCharacter = puPosition; return pu4Byte[0]; } // Simple ASCII percent-encoding
+                  }
+   
+               } while( *puPosition == '%' );                                  // Continue only if next character is also '%' (i.e., more encoded bytes)
+   
+               // ### Now combine the collected UTF-8 bytes 
+               // 
+               if( uByteCount == 2 )
+               {
+                  if( (pu4Byte[1] & 0xC0) != 0x80 ) return 0xFFFFFFFF;         // not continuation
+                  uCodePoint = ((pu4Byte[0] & 0x1F) << 6) | (pu4Byte[1] & 0x3F);
                }
+               else if( uByteCount == 3 )
+               {
+                  if( (pu4Byte[1] & 0xC0) != 0x80 || (pu4Byte[2] & 0xC0) != 0x80 ) return 0xFFFFFFFF;
+                  uCodePoint = ((pu4Byte[0] & 0x0F) << 12) | ((pu4Byte[1] & 0x3F) << 6) | (pu4Byte[2] & 0x3F);
+               }
+               else if( uByteCount == 4 )
+               {
+                  if( (pu4Byte[1] & 0xC0) != 0x80 || (pu4Byte[2] & 0xC0) != 0x80 || (pu4Byte[3] & 0xC0) != 0x80 ) return 0xFFFFFFFF;
+                  uCodePoint = ((pu4Byte[0] & 0x07) << 18) | ((pu4Byte[1] & 0x3F) << 12) | ((pu4Byte[2] & 0x3F) << 6) | (pu4Byte[3] & 0x3F);
+               }
+               else { return 0xFFFFFFFF;  }                                    // invalid length
             }
             else
             {
-               uCharacter = *pubszCharacter;
+               uCodePoint = *puPosition;                                       // Plain character (assumed ASCII / already valid) 
+               ++puPosition;
             }
-
-            return uCharacter;
+   
+            *pubszCharacter = puPosition;
+            return uCodePoint;
          }
+         
+         /*
+        uint32_t character( const uint8_t* pubszCharacter )
+        {
+           uint32_t uCharacter = 0;
+           if( *pubszCharacter == '%' )
+           {                                                                  // format should be % + hex + hex (sample: %20 = 32 = space)
+              pubszCharacter++;
+              uCharacter = (pHexValue_s[*pubszCharacter] << 4) + pHexValue_s[*(pubszCharacter + 1)];
+              uint32_t uSize = pNeededByteCount_s[uCharacter];                                    assert( uSize != 0 );// should never be 0, then it is something wrong with the uri format
+
+              if( uSize == 1 ) { assert( uCharacter < CHARACTER_1_BYTE_MASK ); return uCharacter; }// if only one character then return value without modification
+
+              if( uSize == 2 )
+              {
+                 uCharacter &= ~CHARACTER_2_BYTE_MASK;                        // keep valid part
+                 uCharacter <<= 6;
+                 pubszCharacter += sizeof "%00" - 1;                          // go to next character
+                                                                                                  assert( *(pubszCharacter - 1) == '%' );
+                 uCharacter += (pHexValue_s[*pubszCharacter] << 4) + pHexValue_s[*(pubszCharacter + 1)] & 0x3f;
+                                                                                                  // agil utveckling https://www.youtube.com/watch?v=vSnCeJEka_s
+              }
+              else if( uSize == 3 )
+              {
+                 uCharacter &= ~CHARACTER_3_BYTE_MASK;                        // keep valid part
+                 uCharacter <<= 12;
+                 pubszCharacter += sizeof "%00" - 1;                          // go to next character
+                                                                                                  assert( *(pubszCharacter - 1) == '%' );
+                 uCharacter += (((pHexValue_s[*pubszCharacter] << 4) + pHexValue_s[*(pubszCharacter + 1)]) & 0x3f) << 6;
+
+                 pubszCharacter += sizeof "%00" - 1;                          // go to next character
+                                                                                                  assert( *(pubszCharacter - 1) == '%' );
+                 uCharacter += ((pHexValue_s[*pubszCharacter] << 4) + pHexValue_s[*(pubszCharacter + 1)]) & 0x3f;
+              }
+           }
+           else
+           {
+              uCharacter = *pubszCharacter;
+           }
+
+           return uCharacter;
+        }
+        */
+         
 
          /** ------------------------------------------------------------------
           * @brief Calculate the needed size to store character as utf8
@@ -2335,7 +2415,7 @@ namespace gd {
             auto pubszInsert = pbszTo;
             for( auto pubszPosition = pubszText; pubszPosition != pubszEnd; pubszPosition = uri::next( pubszPosition ) )
             {                                                                                      assert( pubszPosition < pubszEnd );
-               auto uCharacter = uri::character( pubszPosition );
+               auto uCharacter = uri::character( &pubszPosition );
                pubszInsert += convert( uCharacter, pubszInsert );
             }
 
@@ -3369,4 +3449,3 @@ namespace gd {
 
    }
 }
-

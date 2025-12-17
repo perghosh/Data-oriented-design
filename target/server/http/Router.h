@@ -58,7 +58,6 @@ public:
    std::pair<bool, std::string> Parse();
    std::pair<bool, std::string> Run( const std::vector<std::string_view>& vectorCommand, gd::argument::arguments& argumentsParameter );
    std::pair<bool, std::string> Run();
-
 public:
 
 
@@ -72,7 +71,8 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
-
+   /// Encode values in arguments for specified names in vectorName
+   static std::pair<bool, std::string> Encode_s( gd::argument::arguments& arguments_, const std::vector<std::string>& vectorName );
 
 
 };

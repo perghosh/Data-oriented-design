@@ -2,6 +2,7 @@
 
 #include "gd/gd_database_sqlite.h"
 #include "gd/gd_file.h"
+#include "gd/database/gd_database_io.h"
 
 #include "../Document.h"
 #include "../Application.h"
@@ -75,6 +76,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       else if( stringCommand == "query" )
       {
          result_ = Execute_Query();
+      }
+      else if( stringCommand == "select" )
+      {
+         result_ = Execute_Select();
       }
       else if( stringCommand == "delete" )
       {
@@ -202,6 +207,28 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 std::pair<bool, std::string> CAPIDatabase::Execute_Query()
 {
    gd::database::database_i* pdatabaseOpen = nullptr;
+   std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string(); // find the document that we work with
+
+   if( stringDocument.empty() == true ) stringDocument = "default";           // default document if not specified
+
+   CDocument* pdocument = m_pApplication->DOCUMENT_Get( stringDocument );     // get document from application
+   if( pdocument == nullptr ) { return { false, "document not found: " + stringDocument }; }
+
+   auto* pdatabase = pdocument->GetDatabase();                                // get database from document, this connection has to be opened before
+   if( pdatabase == nullptr ) return { false, "no database connection: " + stringDocument };
+
+   std::string stringQuery = m_argumentsParameter["query"].as_string();       // get query to execute
+   if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
+
+   auto result_ = pdatabase->execute( stringQuery );                          // execute query on database
+   if( result_.first == false ) { return result_; }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CAPIDatabase::Execute_Select()
+{
+   gd::database::database_i* pdatabaseOpen = nullptr;
    std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string();
 
 	if(stringDocument.empty() == true) stringDocument = "default";
@@ -210,13 +237,29 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Query()
    if( pdocument == nullptr ) { return { false, "document not found: " + stringDocument }; }
 
    auto* pdatabase = pdocument->GetDatabase();
-   if( pdatabase == nullptr ) return { false, "document has no database connection: " + stringDocument };
+   if( pdatabase == nullptr ) return { false, "no database connection: " + stringDocument };
 
    std::string stringQuery = m_argumentsParameter["query"].as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
 
    auto result_ = pdatabase->execute( stringQuery );
    if( result_.first == false ) { return result_; }
+
+   gd::com::pointer<gd::database::cursor_i> pcursor;
+   pdatabase->get_cursor( &pcursor );
+
+   std::pair< bool, std::string > pairReturn;   
+   pcursor->open( stringQuery );
+
+   // ## create table to hold select result
+
+   if( pairReturn.first == true )
+   {
+      auto ptable_ = std::make_unique<gd::table::dto::table>();
+      gd::database::to_table( pcursor.get(), ptable_.get() );
+   }
+
+
 
    return { true, "" };
 }

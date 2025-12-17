@@ -77,6 +77,8 @@ public:
 
    std::pair<bool, std::string> Execute_Query();
 
+   std::pair<bool, std::string> Execute_Select();
+
 
 
 protected:

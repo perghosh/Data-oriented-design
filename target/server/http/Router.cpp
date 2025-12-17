@@ -1,6 +1,7 @@
 // @FILE [tag: router, http] [summary: Router class for http server] [type: source]
 
 #include "gd/parse/gd_parse_uri.h"
+#include "gd/gd_utf8.h"
 
 #include "api/APIDatabase.h"
 #include "api/APISql.h"
@@ -186,3 +187,17 @@ std::tuple< gd::com::pointer< gd::com::server::router::command >, gd::com::point
    return { pcommand, presponse };
 }
 */
+
+
+std::pair<bool, std::string> CRouter::Encode_s( gd::argument::arguments& arguments_, const std::vector<std::string>& vectorName )
+{
+   // ## encode values in arguments for specified names in vectorName
+   for( const auto& stringName : vectorName )
+   {
+      std::string stringValue = arguments_[stringName].as_string();
+      std::string stringValueEncoded;
+      gd::utf8::uri::convert_uri_to_uf8( std::string_view( stringValue ), stringValueEncoded );
+      arguments_.set( stringName, stringValueEncoded );
+   }
+   return { true, "" };
+}

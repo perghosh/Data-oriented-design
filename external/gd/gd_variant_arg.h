@@ -497,8 +497,6 @@ struct args
    }
    ~args() = default;
 
-   // ## methods -----------------------------------------------------------------
-
    // ## Forward iteration
    iterator begin() { return m_vectorArgs.begin(); }
    iterator end() { return m_vectorArgs.end(); }
@@ -619,39 +617,17 @@ struct args
    }
 
    template<typename PREDICATE>
-   bool any_of(PREDICATE pred) const
-   {
-      return std::any_of(begin(), end(), pred);
-   }
-
+   bool any_of(PREDICATE pred) const { return std::any_of(begin(), end(), pred); }
    template<typename PREDICATE>
-   bool all_of(PREDICATE predicate_) const
-   {
-      return std::all_of(begin(), end(), predicate_);
-   }
-
+   bool all_of(PREDICATE predicate_) const { return std::all_of(begin(), end(), predicate_); }
    template<typename PREDICATE>
-   bool none_of(PREDICATE predicate_) const
-   {
-      return std::none_of(begin(), end(), predicate_);
-   }
+   bool none_of(PREDICATE predicate_) const { return std::none_of(begin(), end(), predicate_); }
 
    // ## Batch operations
    template<typename InputIt>
-   void assign(InputIt first, InputIt last)
-   {
-      m_vectorArgs.assign(first, last);
-   }
-
-   void assign(size_type uCount, const arg& arg_)
-   {
-      m_vectorArgs.assign(uCount, arg_);
-   }
-
-   void assign(std::initializer_list<arg> list)
-   {
-      m_vectorArgs.assign(list);
-   }
+   void assign(InputIt first, InputIt last) { m_vectorArgs.assign(first, last); }
+   void assign(size_type uCount, const arg& arg_) { m_vectorArgs.assign(uCount, arg_); }
+   void assign(std::initializer_list<arg> list) { m_vectorArgs.assign(list); }
 
    size_t count(std::string_view stringKey) const;
    iterator remove(std::string_view stringKey);
