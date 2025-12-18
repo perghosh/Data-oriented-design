@@ -62,11 +62,19 @@ std::pair<bool,std::string> database::open(const std::string_view& stringFileNam
    return { false, stringError };
 }
 
+
+/** ---------------------------------------------------------------------------
+ * @brief Execute sql, any sql
+ * @param stringQuery sql string to execute
+ * @param callback_ callback function that is called for each row returned from query
+ * @return true if ok, false and error information on error
+ */
 std::pair<bool, std::string> database::execute( const std::string_view& stringQuery, std::function<bool( const gd::argument::arguments* )> callback_ )
 {                                                                                                   assert(m_psqlite3 != nullptr);
 
-   // Create context to pass to sqlite3_exec callback
-   struct callback_context {
+   // Context for callback
+   struct callback_context 
+   {
       std::function<bool( const gd::argument::arguments* )>* callback;
       gd::argument::arguments arguments;
    };
@@ -74,40 +82,30 @@ std::pair<bool, std::string> database::execute( const std::string_view& stringQu
    callback_context context;
    context.callback = &callback_;
    // SQLite callback that fills arguments and calls user callback
-   auto sqlite_callback = [](void* pContext, int iColumnCount, char** ppValues, char** ppColumnNames) -> int {
+   auto callback_sqlite = [](void* pContext, int iColumnCount, char** ppValues, char** ppColumnNames) -> int {
       callback_context* pCallbackContext = static_cast<callback_context*>(pContext);
       
-      // Clear arguments for new row
-      pCallbackContext->arguments.clear();
+      gd::argument::arguments* parguments_ = &pCallbackContext->arguments;
+      parguments_->clear();                                                   // Clear arguments for new row
+
+      // ## Fill arguments with column name-value pairs      
       
-      // Fill arguments with column name-value pairs
       for( int i = 0; i < iColumnCount; i++ )
       {
          const char* pbszColumnName = ppColumnNames[i];
          const char* pbszValue = ppValues[i];
          
-         if( pbszValue != nullptr )
-         {
-            // Try to determine type from value
-            // SQLite3_exec returns all values as strings, so we store them as strings
-            pCallbackContext->arguments.append(pbszColumnName, std::string_view(pbszValue));
-         }
-         else
-         {
-            // NULL value
-            pCallbackContext->arguments.append(pbszColumnName, nullptr);
-         }
+         if( pbszValue != nullptr ) { parguments_->append(pbszColumnName, std::string_view(pbszValue)); }
+         else { parguments_->append(pbszColumnName, nullptr); }               // NULL value
       }
       
-      // Call user callback
-      bool bContinue = (*pCallbackContext->callback)(&pCallbackContext->arguments);
+      bool bContinue = (*pCallbackContext->callback)(&pCallbackContext->arguments); // Call user callback
       
-      // Return 0 to continue, non-zero to abort
-      return bContinue ? 0 : 1;
+      return bContinue ? 0 : 1;                                               // Return 0 to continue, non-zero to abort
    };
 
    char* pbszError = nullptr;
-   auto iExecuteResult = ::sqlite3_exec(m_psqlite3, stringQuery.data(), nullptr, nullptr, &pbszError );
+   auto iExecuteResult = ::sqlite3_exec(m_psqlite3, stringQuery.data(), callback_sqlite, &context, &pbszError );
    if( iExecuteResult != SQLITE_OK )
    {
       std::string stringError = pbszError;
