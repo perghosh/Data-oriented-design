@@ -7,6 +7,34 @@
 
 _GD_DATABASE_SQLITE_BEGIN
 
+
+/** -----------------------------------------------------------------------------------------------
+ * @brief Open sqlite database from specified file
+ * Opens sqlite database file. If file do not exist then a new database is created
+ * @param stringFileName database file to open
+ * @param vectorFlags vector of flags for open operation, possible values are: "owner" and "connected"
+ * @return true if ok, false and error information if failed
+ */
+std::pair<bool, std::string> database::open(const std::string_view& stringFileName, const std::vector<std::string_view>& vectorFlags )
+{
+   if( m_psqlite3 != nullptr ) close();
+
+   auto [psqlite3, stringError] = open_s(stringFileName, vectorFlags );
+   if( psqlite3 != nullptr )
+   {
+      m_psqlite3 = psqlite3;
+      if( stringError.empty() == true )
+      {
+         set_flags( eDatabaseStateOwner|eDatabaseStateConnected, 0 );
+         return { true, std::string() };        // no error text then ok
+      }
+
+      return { false, stringError };
+   }
+   
+   return { false, stringError };
+}
+
 /** -----------------------------------------------------------------------------------------------
  * @brief Open sqlite database from specified file
  * Opens sqlite database file. If file do not exist then a new database is created
@@ -205,6 +233,39 @@ gd::variant database::get_change_count() const
    return iCount;
 }
 
+/** -----------------------------------------------------------------------------------------------
+ * @brief Convert string flags to SQLite integer flags
+ * @param flags Vector of flag names (e.g., "read", "write", "create")
+ * @return Combined integer flags
+*/
+constexpr int flags_s(const std::vector<std::string_view>& vectorFlag)
+{
+    int iFlags = 0;
+    
+    for(const auto& stringFlag : vectorFlag)
+    {
+       if(stringFlag == "read" || stringFlag == "readonly") {  iFlags |= SQLITE_OPEN_READONLY; }
+       else if(stringFlag == "write" || stringFlag == "readwrite") { iFlags |= SQLITE_OPEN_READWRITE; }
+       else if(stringFlag == "create") { iFlags |= SQLITE_OPEN_CREATE; }
+       else if(stringFlag == "fullmutex") { iFlags |= SQLITE_OPEN_FULLMUTEX; }
+    }
+    
+    return iFlags;
+}
+
+/** -----------------------------------------------------------------------------------------------
+ * @brief Open SQLite database with string-based flags
+ * @param stringFileName File name representing sqlite database
+ * @param flags Vector of flag names (e.g., {"write", "create"})
+ * @return Pointer to sqlite database or if error then add error information
+*/
+std::pair<sqlite3*, std::string> database::open_s( const std::string_view& stringFileName, const std::vector<std::string_view>& vectorFlags)
+{
+   int iFlags = flags_s(vectorFlags);
+   if (iFlags == 0) iFlags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX;
+    
+   return open_s(stringFileName, iFlags);
+}
 
 /** -----------------------------------------------------------------------------------------------
  * @brief open sql database for file name, if no database is found then create new database

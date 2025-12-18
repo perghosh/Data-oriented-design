@@ -207,6 +207,7 @@ public:
 /** \name OPERATION
 *///@{
    /// Open sqlite database, if no sqlite database at file location one will be created
+   std::pair<bool, std::string> open(const std::string_view& stringFileName, const std::vector<std::string_view>& vectorFlags );
    std::pair<bool, std::string> open(const std::string_view& stringFileName, unsigned uFlags );
    std::pair<bool, std::string> open(const std::string_view& stringFileName) { return open( stringFileName, 0 ); }
 
@@ -267,6 +268,7 @@ public:
 // ## free functions ------------------------------------------------------------
 public:
 
+   static std::pair<sqlite3*, std::string> open_s( const std::string_view& stringFileName, const std::vector<std::string_view>& vectorFlags);
    static std::pair<sqlite3*, std::string> open_s(const std::string_view& stringFileName, int iFlags);
    static std::pair<sqlite3*, std::string> open_s( const std::string_view& stringFileName ) { return open_s( stringFileName, 0 ); }
    static std::pair<bool, std::string> execute_s(sqlite3* psqlite, const std::string_view& stringQuery);
@@ -554,6 +556,10 @@ public:
    const record* get_record() const override { return m_pcursor->get_record(); }
    void close() override;
 
+   // @API [tag: utility] [description: methods used to simplify work with cursor]
+
+   void attach( cursor* pcursor ) { m_pcursor.reset( pcursor ); }
+   cursor* detach() { return m_pcursor.release(); }
 
 //@}
 
