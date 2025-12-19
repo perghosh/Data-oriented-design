@@ -131,3 +131,21 @@ TEST_CASE( "[database] sqlite select to table with callback", "[database]" )
 
    databaseSqlite.close();
 }
+
+TEST_CASE( "[database] sqlite create and select to table", "[database]" )
+{
+    std::string stringDatabaseFile = "test02.sqlite";
+
+    std::string stringRoot = FOLDER_GetRoot_g("test/ignore-files");
+    std::cout << "Root folder: " << stringRoot << std::endl;
+    
+    std::string stringDatabasePath = gd::file::path( stringRoot ).add( stringDatabaseFile ).string();
+    std::cout << "Database: " << stringDatabasePath << std::endl;
+    if( std::filesystem::exists( stringDatabaseFile ) ) { std::filesystem::remove( stringDatabaseFile ); }
+    
+    gd::database::sqlite::database databaseSqlite;
+    auto result_ = databaseSqlite.open(stringDatabasePath, {"create", "write"});                 REQUIRE(result_.first == true);
+    result_ = databaseSqlite.execute("CREATE TABLE TStreet (StreetK INTEGER PRIMARY KEY, FAddress TEXT, FNumber INTEGER);"); REQUIRE(result_.first == true);
+
+    result_ = databaseSqlite.execute( "INSERT INTO TStreet (FAddress, FNumber) VALUES ('Gatan', 2), ('SelmaGatan', 12), ('ZorroGatan', 9), ('LexusGatan', 34) RETURNING StreetK");
+}
