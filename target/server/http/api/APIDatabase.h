@@ -1,4 +1,4 @@
-// @FILE [tag: api, database] [summary: API Database command class] [type: header]
+// @FILE [tag: api, database] [summary: API Database command class] [type: header] [name: APIDatabase.h]
 
 #pragma once
 

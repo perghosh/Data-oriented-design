@@ -1,4 +1,4 @@
-// @FILE [tag: table, args, arguments] [description: Table arguments and metadata management, when you may need extra information for each row] [type: header]
+// @FILE [tag: table, args, arguments] [description: Table arguments and metadata management, when you may need extra information for each row] [type: header] [name: gd_table_arguments.h]
 
 /**
  * \file gd_table_aggregate.h

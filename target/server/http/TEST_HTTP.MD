@@ -27,3 +27,9 @@ curl "${site}/!db/open/insert?type=sqlite&name=test" --data-urlencode "query=INS
 **insert with select**
 "INSERT INTO TUser (FName, FAlias) VALUES ('test1', 'test1') RETURNING UserK;";
 curl "${site}/!db/open/query?type=sqlite&name=test" --data-urlencode "query=INSERT INTO TUser (FName, FAlias) VALUES ('test1', 'test1') RETURNING UserK;" -G
+
+
+SELECT name FROM sqlite_master WHERE type='table'
+
+
+curl "${site}/!db/open/select?type=sqlite&name=test" --data-urlencode "query=SELECT name FROM sqlite_master WHERE type='table';" -G
