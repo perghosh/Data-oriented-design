@@ -10,6 +10,8 @@
 
 #include "gd/gd_table_arguments.h"
 
+#include "../Types.h"
+
 /**
  * \file CDTOResponse.h
  *
@@ -30,14 +32,30 @@
 class CDTOResponse
 {
 public:
-   enum enumType
+   /**
+    * \brief used to transfer result objects, this only holds a pointer to the object
+    *
+    *
+    */
+   struct result
    {
-      eTypeUnknown         = 0,  // unknown type
-      eTypeTextPlain       = 1,  // plain text
-      eTypeTextXml         = 2,  // xml text
-      eTypeTextJson        = 3,
-      eTypeTextCsv         = 4,
-      eTypeTableDto        = 5,  // dto::table object 
+      // ## construction ------------------------------------------------------------
+      result() {}
+      result( Types::enumType eType, void* pobject ) : m_eType( eType ), m_pobject( pobject ) {}
+      // copy
+      result( const result& o ) { common_construct( o ); }
+      // assign
+      result& operator=( const result& o ) { common_construct( o ); return *this; }
+
+      ~result() { Types::Clear_g( m_eType, m_pobject ); }
+      // common copy
+      void common_construct( const result& o ) { m_eType = o.m_eType; m_pobject = o.m_pobject; }
+
+      // ## methods -----------------------------------------------------------------
+      void* detach() { void* pobject = m_pobject; m_pobject = nullptr; return pobject; }
+
+      Types::enumType m_eType = (Types::enumType)0;  ///< type of result
+      void* m_pobject = nullptr;    ///< pointer to data
    };
 
    // @API [tag: construction]

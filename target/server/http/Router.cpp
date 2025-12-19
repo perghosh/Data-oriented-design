@@ -78,6 +78,12 @@ std::pair<bool, std::string> CRouter::Run()
 {
    if( IsCommand() == true )
    {
+      if( !m_pdtoresponse )
+      {
+         m_pdtoresponse = std::make_unique<CDTOResponse>();
+         m_pdtoresponse->Initialize();
+      }
+
       auto [vectorPath, arguments_] = gd::parse::uri::parse_path_and_query( m_stringQueryString );
       if( vectorPath.empty() == true ) { return { false, "No command found in query string: " + m_stringQueryString }; }
 

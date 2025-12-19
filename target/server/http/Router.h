@@ -20,6 +20,8 @@
 
 #include "gd/gd_arguments.h"
 
+#include "dto/DTOResponse.h"
+
 class CApplication;
 
 
@@ -75,13 +77,14 @@ public:
 public:
    CApplication* m_pApplication;       ///< application instance
    unsigned m_uFlags{};                ///< router flags
+   unsigned m_uUserIndex{};            ///< user index for user in session table for users logged in
    std::string m_stringQueryString;    ///< query string from url
    std::vector<std::string_view> m_vectorCommand; ///< list of commands parsed from query string
+   std::unique_ptr<CDTOResponse> m_pdtoresponse;  ///< response dto object
 
 
 // ## free functions ------------------------------------------------------------
 public:
-   //static boost::beast::http::message_generator RouteCommand_s( std::string_view stringTarget );
 
    /// Encode values in arguments for specified names in vectorName
    static std::pair<bool, std::string> Encode_s( gd::argument::arguments& arguments_, const std::vector<std::string>& vectorName );
