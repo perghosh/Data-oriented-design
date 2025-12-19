@@ -121,6 +121,13 @@ TEST_CASE( "[database] sqlite select to table with callback", "[database]" )
       return true;
    }); REQUIRE(result_.first == true);
 
+   result_ = databaseSqlite.execute( "CREATE TABLE TUserNew ( UserK BLOB PRIMARY KEY DEFAULT (randomblob(16)), FName TEXT NOT NULL, FAlias TEXT NOT NULL);" );REQUIRE( result_.first == true );
+   result_ = databaseSqlite.execute( "INSERT INTO TUserNew (FName, FAlias) VALUES ('Alice', '1'), ('Bob', '25'), ('Charlie', '35') RETURNING UserK;", []( const auto* parguments_ ) {
+      std::string string_ = gd::argument::debug::print( *parguments_ );
+      std::cout << "Insert callback arguments: " << string_ << std::endl;
+      return true;
+   }); REQUIRE(result_.first == true);
+
 
    databaseSqlite.close();
 }

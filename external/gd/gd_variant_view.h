@@ -118,6 +118,7 @@ public:
    variant_view( const variant_type::guid& v ): m_uType(variant_type::eTypeGuid), m_uSize(sizeof(variant_type::guid)) { m_V.pb_const = (unsigned char*)&v; }
    variant_view( unsigned int uType, void* v, size_t uLength) : m_uType(uType), m_uSize(uLength) { m_V.p = v; }
    variant_view( unsigned int uType, uint64_t v, size_t uLength) : m_uType(uType), m_uSize(uLength) { m_V.uint64 = v; }
+   variant_view( const gd::types::binary& v ): m_uType(variant_type::eTypeBinary), m_uSize(v.length()) { m_V.pb_const = v.data(); }
 
    variant_view( const char* v, bool) : m_uType(variant_type::eTypeString), m_uSize(strlen(v)) { m_V.pbsz_const = v; }
    variant_view( std::string_view v, bool) : m_uType(variant_type::eTypeString), m_uSize(v.length()) { m_V.pbsz_const = v.data(); }

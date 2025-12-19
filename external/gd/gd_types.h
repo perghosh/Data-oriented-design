@@ -1119,6 +1119,21 @@ struct is_variant<std::variant<Types...>> : std::true_type {};
 // struct is_deque<std::deque<T, Alloc>> : std::true_type {};
 
 
+/*-----------------------------------------*/ /**
+   * \brief wrapper used to set binary value
+   */
+struct binary
+{
+   binary( const uint8_t* pbData, size_t uLength ) : m_pbData(pbData), m_uLength(uLength) {}
+   const binary& operator=( const binary& o ) { m_pbData = o.m_pbData; m_uLength = o.m_uLength; return *this; }
+
+   const uint8_t* data() const { return m_pbData; }
+   size_t length() const { return m_uLength; }
+
+   const uint8_t* m_pbData;
+   size_t m_uLength;
+};
+
 
 
 

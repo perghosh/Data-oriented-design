@@ -227,9 +227,6 @@ namespace variant_type
       unsigned char  Data4[ 8 ];
    };
    #pragma pack(pop)
-
-
-
 }
 
 /// Forward declaration for variant_view class that has the exact same internal
@@ -299,6 +296,7 @@ public:
    variant( unsigned int uType, void* v, size_t uLength, size_t uDataLength = 0 ) : m_uType(uType), m_uSize( uLength ) { if( uDataLength == 0 ) uDataLength = uLength; m_V.pb = (unsigned char*)allocate(uDataLength); memcpy( m_V.pb, v, uDataLength );  }
    variant( const uint8_t* v, size_t uLength ): m_uType(variant_type::eTypeBinary|variant_type::eFlagAllocate), m_uSize(uLength) { m_V.pb = (uint8_t*)allocate(uLength); memcpy( m_V.pb, v, uLength ); }
    variant( const variant_type::guid& v ): m_uType(variant_type::eTypeGuid|variant_type::eFlagAllocate), m_uSize(sizeof(variant_type::guid)) { m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, &v, m_uSize ); }
+   variant( const gd::types::binary& v ): m_uType(variant_type::eTypeBinary|variant_type::eFlagAllocate), m_uSize(v.length()) { m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, &v, m_uSize ); }
 
    variant( const std::string& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(v.length()) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize + 1u); }
    explicit variant( const std::string_view& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(v.length()) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.data(), m_uSize + 1u); m_V.pbsz[m_uSize] = '\0'; }
