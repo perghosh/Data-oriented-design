@@ -378,6 +378,7 @@ public:
    bool operator==( const variant& o ) const { return compare( o ); }
    bool operator!=( const variant& o ) const { return compare( o ) == false; }
 
+   bool operator>( const variant& o ) const { return greater( o ); }
    bool operator<( const variant& o ) const { return less( o ); }
 
 
@@ -587,6 +588,7 @@ public:
 
    bool compare( const variant& v ) const;
    bool less( const variant& v ) const;
+   bool greater( const variant& v ) const;
 
 
    /// return pointer to char buffer

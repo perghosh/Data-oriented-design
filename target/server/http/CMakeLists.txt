@@ -29,6 +29,11 @@ file(GLOB FILES_ "api/*.h" "api/*.cpp" )
 list(APPEND TARGET_FILES_ ${FILES_})
 unset(FILES_)
 
+file(GLOB FILES_ "dto/*.h" "dto/*.cpp" )
+list(APPEND TARGET_FILES_ ${FILES_})
+unset(FILES_)
+
+
 
 add_subdirectory("playground") # playground http logic
 # add_subdirectory("tests") # tests cleaner logic

@@ -588,6 +588,53 @@ bool variant::less( const variant& v ) const
    return false;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief compares if this is greater than passed value
+ * @param v value to check if this is greater than
+ * @return true if this is greater than passed value
+ */
+bool variant::greater( const variant& v ) const
+{
+   if( v.type_number() != type_number() ) return false;
+   switch( type_number() )
+   {
+   case eTypeNumberUnknown: return true;
+   case eTypeNumberBool: return m_V.b > v.m_V.b;
+   case eTypeNumberInt8: return m_V.int8 > v.m_V.int8;
+   case eTypeNumberInt16: return m_V.int16 > v.m_V.int16;
+   case eTypeNumberInt32: return m_V.int32 > v.m_V.int32;
+   case eTypeNumberInt64: return m_V.int64 > v.m_V.int64;
+   case eTypeNumberUInt8: return m_V.uint8 > v.m_V.uint8;
+   case eTypeNumberUInt16: return m_V.uint16 > v.m_V.uint16;
+   case eTypeNumberUInt32: return m_V.uint32 > v.m_V.uint32;
+   case eTypeNumberUInt64: return m_V.uint64 > v.m_V.uint64;
+   case eTypeNumberFloat: return m_V.f > v.m_V.f; 
+   case eTypeNumberDouble: return m_V.d > v.m_V.d; 
+   case eTypeNumberPointer: return m_V.p > v.m_V.p; 
+   case eTypeNumberGuid: 
+      return (memcmp( m_V.pbsz, v.m_V.pbsz, 16 ) > 0);
+   case eTypeNumberString:
+   case eTypeNumberUtf8String: { 
+   #ifndef NDEBUG
+      auto p1_d = m_V.pbsz;
+      auto p2_d = v.m_V.pbsz;
+   #endif // !NDEBUG
+      auto iCompare = memcmp( m_V.pbsz, v.m_V.pbsz, m_uSize );
+      if( iCompare != 0 ) return iCompare > 0;
+      return m_uSize > v.m_uSize;
+   }
+   case eTypeNumberWString: 
+      return memcmp( m_V.pbsz, v.m_V.pbsz, m_uSize * sizeof( wchar_t ) ) > 0;
+   case eTypeNumberUtf32String:
+      return memcmp( m_V.pbsz, v.m_V.pbsz, m_uSize * sizeof( int32_t ) ) > 0;
+   case eTypeNumberBinary:
+      return memcmp( m_V.pbsz, v.m_V.pbsz, m_uSize ) > 0;
+   case eTypeNumberBit: return m_V.int8 > v.m_V.int8;
+   default:                                                                      assert(false);
+   }
+   return false;
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Return index (iterator) for variant value within vector of variants

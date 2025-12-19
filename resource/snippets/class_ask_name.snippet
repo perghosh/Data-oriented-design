@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>class ask name</Title>
+			<Shortcut>classaskname</Shortcut>
+			<Description>class snippet</Description>
+			<Author>Per</Author>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>Class_name</ID>
+					<ToolTip>Ask class name</ToolTip>
+					<Default>noname</Default>
+				</Literal>
+			</Declarations>
+			<Code Language="CPP">
+            <![CDATA[/** @CLASS [name: $Class_name$] [description:  ]
+ * \brief 
+ *
+ *
+ *
+ \code
+ \endcode
+ */
+class $Class_name$ 
+{
+// @API [tag: construction]
+public:
+   $Class_name$() {}
+   // copy
+   $Class_name$( const $Class_name$& o ) { common_construct( o ); }
+   $Class_name$( $Class_name$&& o ) noexcept { common_construct( std::move( o ) ); }
+   // assign
+   $Class_name$& operator=( const $Class_name$& o ) { common_construct( o ); return *this; }
+   $Class_name$& operator=( $Class_name$&& o ) noexcept { common_construct( std::move( o ) ); return *this; }
+   
+    ~$Class_name$() {}
+private:
+   // common copy
+   void common_construct( const $Class_name$& o ) {}
+   void common_construct( $Class_name$&& o ) noexcept {}
+
+// @API [tag: operator]
+public:
+   
+
+// ## methods ------------------------------------------------------------------
+public:
+// @API [tag: get, set]
+
+// @API [tag: operation]
+
+
+protected:
+// @API [tag: internal]
+
+public:
+// @API [tag: debug]
+
+// ## attributes ----------------------------------------------------------------
+public:
+   
+   
+// @API [tag: free-functions]
+public:
+   
+
+
+};]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>

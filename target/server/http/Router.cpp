@@ -187,6 +187,17 @@ std::tuple< gd::com::pointer< gd::com::server::router::command >, gd::com::point
    return { pcommand, presponse };
 }
 */
+/*
+boost::beast::http::message_generator RouteCommand_s( std::string_view stringTarget )
+{
+   // ## create router for command
+	CRouter router_(papplication_g, stringTarget);                             // create router for the target, router is a simple command router to handle commands
+	auto result_ = router_.Parse();                                            // parse the target to get command and parameters
+   if( result_.first == false ) { return server_error_( result_.second ); }
+
+   return router_.RouteCommand();
+}
+*/
 
 
 std::pair<bool, std::string> CRouter::Encode_s( gd::argument::arguments& arguments_, const std::vector<std::string>& vectorName )

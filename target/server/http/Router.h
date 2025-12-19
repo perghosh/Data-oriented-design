@@ -10,6 +10,16 @@
 #include <utility>
 #include <vector>
 
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
+#include <boost/asio/dispatch.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/config.hpp>
+
+
+#include "gd/gd_arguments.h"
+
 class CApplication;
 
 
@@ -71,6 +81,8 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
+   //static boost::beast::http::message_generator RouteCommand_s( std::string_view stringTarget );
+
    /// Encode values in arguments for specified names in vectorName
    static std::pair<bool, std::string> Encode_s( gd::argument::arguments& arguments_, const std::vector<std::string>& vectorName );
 

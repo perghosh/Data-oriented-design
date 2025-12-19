@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<CodeSnippets  xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>struct ask name</Title>
+			<Shortcut>structaskname</Shortcut>
+			<Description>struct snippet</Description>
+			<Author>Per</Author>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>Struct_name</ID>
+					<ToolTip>Ask struct name</ToolTip>
+					<Default>noname</Default>
+				</Literal>
+			</Declarations>
+			<Code Language="CPP">
+            <![CDATA[/**
+ * \brief 
+ *
+ *
+ */
+struct $Struct_name$ 
+{
+// ## construction ------------------------------------------------------------
+   $Struct_name$() {}
+   // copy
+   $Struct_name$( const $Struct_name$& o ) { common_construct( o ); }
+   $Struct_name$( $Struct_name$&& o ) noexcept { common_construct( std::move( o ) ); }
+   // assign
+   $Struct_name$& operator=( const $Struct_name$& o ) { common_construct( o ); return *this; }
+   $Struct_name$& operator=( $Struct_name$&& o ) noexcept { common_construct( std::move( o ) ); return *this; }
+   
+   ~$Struct_name$() {}
+   // common copy
+   void common_construct( const $Struct_name$& o ) {}
+   void common_construct( $Struct_name$&& o ) noexcept {}
+
+// ## methods -----------------------------------------------------------------
+
+/** \name DEBUG
+*///@{
+   
+//@}
+
+// ## attributes --------------------------------------------------------------
+   
+// ## free functions ----------------------------------------------------------
+
+};]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>

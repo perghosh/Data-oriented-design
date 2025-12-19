@@ -2,7 +2,7 @@
  * @file Server.cpp
  */
 
-
+#include "Router.h"
 
 #include "Server.h"
 
@@ -14,6 +14,165 @@ std::pair<bool, std::string> CServer::Initialize()
    return { true, "" };
 }
 
+// Return a response for the given request.
+//
+// The concrete type of the response message (which depends on the
+// request), is type-erased in message_generator.
+boost::beast::http::message_generator handle_request( boost::beast::string_view stringRoot, boost::beast::http::request<boost::beast::http::string_body>&& request_)
+{
+   // Returns a bad request response
+   auto const bad_request_ = [&request_](boost::beast::string_view stringWhy)
+      {
+         boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::bad_request, request_.version()};
+         response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+         response.set(boost::beast::http::field::content_type, "text/html");
+         response.keep_alive(request_.keep_alive());
+         response.body() = std::string(stringWhy);
+         response.prepare_payload();
+         return response;
+      };
+
+   // Returns a not found response
+   auto const not_found_ = [&request_](boost::beast::string_view stringTarget)
+      {
+         boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::not_found, request_.version()};
+         response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+         response.set(boost::beast::http::field::content_type, "text/html");
+         response.keep_alive(request_.keep_alive());
+         response.body() = "The resource '" + std::string(stringTarget) + "' was not found.";
+         response.prepare_payload();
+         return response;
+      };
+
+   // Returns a server error response
+   auto const server_error_ = [&request_](boost::beast::string_view stringWhat)
+      {
+         boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::internal_server_error, request_.version()};
+         response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+         response.set(boost::beast::http::field::content_type, "text/html");
+         response.keep_alive(request_.keep_alive());
+         response.body() = "An error occurred: '" + std::string(stringWhat) + "'";
+         response.prepare_payload();
+         return response;
+      };
+
+
+   boost::beast::http::verb const eVerb = request_.method();
+
+   // ## Make sure we can handle the method
+   if( eVerb != boost::beast::http::verb::get && eVerb != boost::beast::http::verb::head) 
+   { 
+      return bad_request_("Unknown HTTP-method"); 
+   }
+
+   std::string_view stringTarget = request_.target();
+   if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
+
+   if( stringTarget.front() == '!' )
+   {
+      CServer server_( papplication_g );
+      return server_.RouteCommand( stringTarget, std::move( request_ ) );
+   }
+
+   // ## Request path must be absolute and not contain "..".
+   if( request_.target().empty() || request_.target()[0] != '/' || request_.target().find("..") != boost::beast::string_view::npos) 
+   { 
+      return bad_request_("Illegal request-target"); 
+   }
+
+   {
+      // ## Process request by calling core method in application
+      std::vector<std::pair<std::string, std::string>> vectorResponse;
+      auto resulut_ = papplication_g->GetServer()->ProcessRequest( eVerb, stringTarget, vectorResponse );
+      if ( resulut_.first == false ) { return server_error_(resulut_.second); }
+   }
+
+   // ## Build the path to the requested file
+   std::string stringPath = path_cat_g(stringRoot, request_.target());
+   if(request_.target().back() == '/') { stringPath.append("index.html"); }
+   else
+   {                                                                                               LOG_DEBUG_RAW( stringPath );
+   }
+
+   // ## Attempt to open the file
+   boost::beast::error_code errorcode;
+   boost::beast::http::file_body::value_type body_;
+   body_.open(stringPath.c_str(), boost::beast::file_mode::scan, errorcode);
+   if(errorcode == boost::beast::errc::no_such_file_or_directory) { return not_found_(request_.target()); }
+  
+   if(errorcode) { return server_error_(errorcode.message()); }
+
+   
+   auto const uSize = body_.size();
+
+   // ## Respond to HEAD request
+   if(request_.method() == boost::beast::http::verb::head)
+   {
+      boost::beast::http::response<boost::beast::http::empty_body> response_{boost::beast::http::status::ok, request_.version()};
+      response_.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+      response_.set(boost::beast::http::field::content_type, mime_type_g(stringPath));
+      response_.content_length(uSize);
+      response_.keep_alive(request_.keep_alive());
+      return response_;
+   }
+
+   // ## Respond to GET request
+   boost::beast::http::response<boost::beast::http::file_body> response{ std::piecewise_construct, std::make_tuple(std::move(body_)), std::make_tuple(boost::beast::http::status::ok, request_.version())};
+   response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+   response.set(boost::beast::http::field::content_type, mime_type_g(stringPath));
+   response.content_length(uSize);
+   response.keep_alive(request_.keep_alive());
+   return response;
+}
+
+
+boost::beast::http::message_generator CServer::RouteCommand( std::string_view stringTarget, boost::beast::http::request<boost::beast::http::string_body>&& request_ )
+{
+   // Returns a server error response
+   auto const server_error_ = [&request_](boost::beast::string_view stringWhat)
+      {
+         boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::internal_server_error, request_.version()};
+         response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+         response.set(boost::beast::http::field::content_type, "text/html");
+         response.keep_alive(request_.keep_alive());
+         response.body() = "An error occurred: '" + std::string(stringWhat) + "'";
+         response.prepare_payload();
+         return response;
+      };
+
+
+	CRouter router_(papplication_g, stringTarget);                             // create router for the target, router is a simple command router to handle commands
+	auto result_ = router_.Parse();                                            // parse the target to get command and parameters
+   if( result_.first == false ) { return server_error_( result_.second ); }
+
+   result_ = router_.Run();
+   if( result_.first == false ) { return server_error_( result_.second ); }
+
+   std::string stringBody = "Command executed successfully";
+
+   boost::beast::http::file_body::value_type body_;
+
+   // 1. Create a response object using string_body
+   boost::beast::http::response<boost::beast::http::string_body> response{
+       boost::beast::http::status::ok, request_.version()};
+
+   // 2. Set the body of the response
+   response.body() = std::move(stringBody);
+
+   // 3. Set essential headers
+   response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+   response.set(boost::beast::http::field::content_type, "text/plain");
+
+   // 4. Manage the connection state (keep-alive or close)
+   response.keep_alive(request_.keep_alive());
+
+   // 5. Prepare the payload. This is crucial as it finalizes headers,
+   //    for example, it automatically sets the Content-Length header for string_body.
+   response.prepare_payload();
+
+   // 6. Return the response. It will be implicitly converted to message_generator.
+   return response;
+}
 
 std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringCommand, std::vector<std::pair<std::string, std::string>>& vectorResponse)
 {                                                                                                     LOG_INFORMATION_RAW("Command: " + std::string(stringCommand));
