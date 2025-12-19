@@ -2,6 +2,8 @@
  * @file Server.cpp
  */
 
+#include "dto/DTOResponse.h"
+
 #include "Router.h"
 
 #include "Server.h"
@@ -14,10 +16,30 @@ std::pair<bool, std::string> CServer::Initialize()
    return { true, "" };
 }
 
-// Return a response for the given request.
-//
-// The concrete type of the response message (which depends on the
-// request), is type-erased in message_generator.
+/**
+ * @brief Handles an incoming HTTP request and generates an appropriate HTTP response.
+ *
+ * This function processes HTTP GET and HEAD requests for static files and special commands.
+ * It validates the request, routes commands, checks for illegal paths, and serves files from disk.
+ * If the request is invalid or the file is not found, it returns the appropriate HTTP error response.
+ *
+ * @param stringRoot The root directory from which files should be served.
+ * @param request_ The HTTP request to handle (moved in).
+ * @return boost::beast::http::message_generator The generated HTTP response.
+ *
+ * Steps performed:
+ * 1. Validates the HTTP method (only GET and HEAD are allowed).
+ * 2. Normalizes the request target path.
+ * 3. If the target starts with '!', routes the request as a command.
+ * 4. Checks for illegal request targets (must be absolute and not contain "..").
+ * 5. Calls the application core to process the request.
+ * 6. Builds the full filesystem path to the requested file.
+ * 7. Attempts to open the file from disk.
+ *    - If not found, returns a 404 Not Found response.
+ *    - If another error occurs, returns a 500 Server Error response.
+ * 8. If the request is a HEAD, returns headers only.
+ * 9. If the request is a GET, returns the file contents.
+ */
 boost::beast::http::message_generator handle_request( boost::beast::string_view stringRoot, boost::beast::http::request<boost::beast::http::string_body>&& request_)
 {
    // Returns a bad request response
@@ -68,6 +90,8 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    std::string_view stringTarget = request_.target();
    if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
 
+   // ## Route command if target begins with '!' .............................
+
    if( stringTarget.front() == '!' )
    {
       CServer server_( papplication_g );
@@ -80,12 +104,14 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
       return bad_request_("Illegal request-target"); 
    }
 
+   /*
    {
       // ## Process request by calling core method in application
       std::vector<std::pair<std::string, std::string>> vectorResponse;
       auto resulut_ = papplication_g->GetServer()->ProcessRequest( eVerb, stringTarget, vectorResponse );
       if ( resulut_.first == false ) { return server_error_(resulut_.second); }
    }
+   */
 
    // ## Build the path to the requested file
    std::string stringPath = path_cat_g(stringRoot, request_.target());

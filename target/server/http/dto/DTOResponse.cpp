@@ -1,6 +1,6 @@
 // @FILE [tag: dto, http] [description: Data transfer object for HTTP response] [type: source] [name: CDTOResponse.cpp]
 
-#include "CDTOResponse.h"
+#include "DTOResponse.h"
 
 void CDTOResponse::Initialize()
 {
