@@ -156,7 +156,7 @@ _GD_DATABASE_SQLITE_BEGIN
 
 
 /** ===========================================================================
- * \brief
+ * \brief Wrapper class for SQLite database
  *
  *
  *
@@ -204,9 +204,8 @@ public:
    sqlite3* get_sqlite3() const { return m_psqlite3; }
 //@}
 
-/** \name OPERATION
-*///@{
-   /// Open sqlite database, if no sqlite database at file location one will be created
+   // @API [tag: open, connect] [description: conenct to or create database using open]
+
    std::pair<bool, std::string> open(const std::string_view& stringFileName, const std::vector<std::string_view>& vectorFlags );
    std::pair<bool, std::string> open(const std::string_view& stringFileName, unsigned uFlags );
    std::pair<bool, std::string> open(const std::string_view& stringFileName) { return open( stringFileName, 0 ); }
@@ -220,7 +219,9 @@ public:
    /// Execute sql, any sql
    std::pair<bool, std::string> execute(const std::string_view& stringQuery);
 
-   /// Execute sql, any sql
+   // @API [tag: execute] [description: execute statements against database]
+
+   /// Execute sql, any sql and pick upp result values for statements executed
    std::pair<bool, std::string> execute(const std::string_view& stringQuery, std::function<bool( const gd::argument::arguments* )> callback_ );
 
    /// Ask for single value from database, handy to use without fiddle with cursor
@@ -245,23 +246,10 @@ public:
 
 //@}
 
-protected:
-/** \name INTERNAL
-*///@{
-
-//@}
-
-public:
-/** \name DEBUG
-*///@{
-
-//@}
-
 
 // ## attributes ----------------------------------------------------------------
 public:
    unsigned m_uFlags = 0;              ///< flags to mark state for database object
-   //bool m_bOwner;          ///< If pointer to sqlite database connection is owned (then it is deleted when object is destroyed)
    sqlite3* m_psqlite3 = nullptr;      ///< pointer to sqlite database connection
 
 
@@ -493,8 +481,8 @@ _GD_DATABASE_SQLITE_BEGIN
 // ----------------------------------------------------------------------------
 
 
-/**
- * \brief
+/** --------------------------------------------------------------------------
+ * \brief Cursor interface to handle data returned from SQL SELECT queries
  *
  *
  *
@@ -529,13 +517,9 @@ public:
 
 // ## methods ------------------------------------------------------------------
 public:
-/** \name GET/SET
-*///@{
 
-//@}
+   // @API [tag: interface] [description: default interface to work with cursor]
 
-/** \name OPERATION
-*///@{
    int32_t query_interface(const com::guid& guidId, void** ppObject) override;
    unsigned add_reference() override { m_iReference++; return (unsigned)m_iReference; }
    unsigned release() override;
@@ -588,8 +572,8 @@ public:
 // ----------------------------------------------------------------------------
 
 
-/**
- * \brief
+/** --------------------------------------------------------------------------
+ * \brief Database interface to handle database connection
  *
  *
  *
@@ -633,11 +617,11 @@ public:
    void set_dialect( const std::string_view& stringDialect ) { m_stringDialect = stringDialect; }
 //@}
 
-/** \name OPERATION
-*///@{
-  int32_t query_interface(const com::guid& guidId, void** ppObject) override;
-  unsigned add_reference() override { m_iReference++; return (unsigned)m_iReference; }
-  unsigned release() override;
+  // @API [tag: interface] [description: default interface to work with database]
+
+   int32_t query_interface(const com::guid& guidId, void** ppObject) override;
+   unsigned add_reference() override { m_iReference++; return (unsigned)m_iReference; }
+   unsigned release() override;
 
    std::string_view name() const override { return m_stringName; }
    std::string_view dialect() const override { return m_stringDialect; }
@@ -657,7 +641,6 @@ public:
 
    gd::variant get_change_count() override;
    gd::variant get_insert_key() override;
-//@}
 
 protected:
 /** \name INTERNAL

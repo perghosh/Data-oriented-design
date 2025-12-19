@@ -65,10 +65,117 @@ std::pair<bool,std::string> database::open(const std::string_view& stringFileNam
 
 /** ---------------------------------------------------------------------------
  * @brief Execute sql, any sql
+ * 
+ * @code
+ * auto result_ = databaseSqlite.execute( "CREATE TABLE TUserNew ( UserK BLOB PRIMARY KEY DEFAULT (randomblob(16)), FName TEXT NOT NULL, FAlias TEXT NOT NULL);" );
+   result_ = databaseSqlite.execute( "INSERT INTO TUserNew (FName, FAlias) VALUES ('Alice', '1'), ('Bob', '25'), ('Charlie', '35') RETURNING UserK;", []( const auto* parguments_ ) {
+      std::string string_ = gd::argument::debug::print( *parguments_ );
+      std::cout << "Insert callback arguments: " << string_ << std::endl;
+      return true;
+   }); 
+ * @endcode
+ * 
  * @param stringQuery sql string to execute
- * @param callback_ callback function that is called for each row returned from query
+ * @param callback_ callback function that is called for each row returned from query, callbacke returns true to continue, false to stop
  * @return true if ok, false and error information on error
  */
+std::pair<bool, std::string> database::execute( const std::string_view& stringQuery, std::function<bool( const gd::argument::arguments* )> callback_ )
+{
+   assert(m_psqlite3 != nullptr);
+   
+   sqlite3_stmt* pStatement = nullptr;
+   int iPrepare = ::sqlite3_prepare_v2(m_psqlite3, stringQuery.data(), (int)stringQuery.size(), &pStatement, nullptr);
+   
+   if( iPrepare != SQLITE_OK )
+   {
+      std::string stringError = ::sqlite3_errmsg(m_psqlite3);
+      return { false, std::move(stringError) };
+   }
+   
+   gd::argument::arguments arguments;
+   
+   while( true )                                                              // Step through results
+   {
+      int iStep = ::sqlite3_step(pStatement);
+      
+      if( iStep == SQLITE_ROW )
+      {
+         arguments.clear();
+         int iColumnCount = ::sqlite3_column_count(pStatement);
+         
+         for( int i = 0; i < iColumnCount; i++ )
+         {
+            const char* pbszColumnName = ::sqlite3_column_name(pStatement, i);
+            int iColumnType = ::sqlite3_column_type(pStatement, i);
+            
+            switch( iColumnType )
+            {
+               case SQLITE_INTEGER:
+               {
+                  sqlite3_int64 iValue = ::sqlite3_column_int64(pStatement, i);
+                  arguments.append(pbszColumnName, iValue);
+                  break;
+               }
+               case SQLITE_FLOAT:
+               {
+                  double dValue = ::sqlite3_column_double(pStatement, i);
+                  arguments.append(pbszColumnName, dValue);
+                  break;
+               }
+               case SQLITE_TEXT:
+               {
+                  const char* pbszValue = reinterpret_cast<const char*>(::sqlite3_column_text(pStatement, i));
+                  arguments.append(pbszColumnName, std::string_view(pbszValue));
+                  break;
+               }
+               case SQLITE_BLOB:
+               {
+                  const void* pBlob = ::sqlite3_column_blob(pStatement, i);
+                  int iBytes = ::sqlite3_column_bytes(pStatement, i);
+                  
+                  // Store as binary data (you'll need to handle this in your arguments class)
+                  // Option 1: Store as std::vector<uint8_t>
+                  // Option 2: Store as std::string_view with explicit size
+                  if( pBlob != nullptr && iBytes > 0 )
+                  {
+                     //std::string_view blobView(static_cast<const char*>(pBlob), iBytes);
+                     //arguments.append(pbszColumnName, blobView);
+                     arguments.append_argument( pbszColumnName, gd::variant_view( gd::types::binary( static_cast<const uint8_t*>(pBlob), iBytes ) ));
+                  }
+                  else { arguments.append(pbszColumnName, nullptr); }
+                  break;
+               }
+               case SQLITE_NULL:
+               {
+                  arguments.append(pbszColumnName, nullptr);
+                  break;
+               }
+            }
+         }
+         
+         bool bContinue = callback_(&arguments);
+         if( !bContinue )
+         {
+            ::sqlite3_finalize(pStatement);
+            return { true, "" };
+         }
+      }
+      else if( iStep == SQLITE_DONE )
+      {
+         break;
+      }
+      else
+      {
+         std::string stringError = ::sqlite3_errmsg(m_psqlite3);
+         ::sqlite3_finalize(pStatement);
+         return { false, std::move(stringError) };
+      }
+   }
+   
+   ::sqlite3_finalize(pStatement);
+   return { true, "" };
+}
+/*
 std::pair<bool, std::string> database::execute( const std::string_view& stringQuery, std::function<bool( const gd::argument::arguments* )> callback_ )
 {                                                                                                   assert(m_psqlite3 != nullptr);
 
@@ -115,6 +222,7 @@ std::pair<bool, std::string> database::execute( const std::string_view& stringQu
 
    return { true, "" };
 }
+*/
 
 /** ---------------------------------------------------------------------------
  * @brief Ask for single value from sql statement
