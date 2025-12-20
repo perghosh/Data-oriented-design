@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include "../Types.h"
+
 #include "gd/gd_arguments.h"
 
 class CApplication;
@@ -72,19 +74,27 @@ public:
 
    std::pair<bool, std::string> Execute();
 
+   /// Create new database
    std::pair<bool, std::string> Execute_Create();
 
+   /// Open existing database
    std::pair<bool, std::string> Execute_Open();
 
+   /// Rund any database query
    std::pair<bool, std::string> Execute_Query();
 
+   /// Select data from database
    std::pair<bool, std::string> Execute_Select();
 
+   /// Insert data to database
    std::pair<bool, std::string> Execute_Insert();
 
    CDocument* GetDocument();
 
    std::string GetLastError() const { return m_stringLastError; }
+
+
+   Types::Objects* GetObjects() { return &m_objects; }
 
 protected:
 
@@ -96,6 +106,7 @@ public:
 	CApplication* m_pApplication{};               ///< application pointer, access application that is used as object root for server
    std::vector<std::string_view> m_vectorCommand;///< command path segments
    gd::argument::arguments m_argumentsParameter; ///< parameters for api database command
+   Types::Objects m_objects;                     ///< objects used to store result objects
    std::string m_stringLastError;                ///< last error message 
 
 

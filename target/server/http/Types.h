@@ -2,6 +2,12 @@
 
 #pragma once
 
+#include <memory>
+#include <functional>
+#include <vector>
+
+#include "gd/gd_table_column-buffer.h"
+
 namespace Types {
 
 enum enumTypeNumber
@@ -36,6 +42,49 @@ enum enumType
    eTypeArguments       = eTypeArgumentsDto  | eGroupArguments,
 };
 
+/// clear object based on type, in http there are some common objects used to hold data and these are moved around as void pointers, this method will clear the object based on type
 void Clear_g( unsigned uType, void* pobject_ );
+inline void Clear_g( std::pair<unsigned, void*> pair_ ) { Clear_g( pair_.first, pair_.second ); }
+
+
+/**
+ * \brief used to transfer result objects, this only holds a pointer to the object
+ *
+ *
+ */
+struct Object
+{
+   using Delete_ = std::function<void(void*)>;
+
+   // ## construction ------------------------------------------------------------
+   Object() = default;
+   Object( Types::enumType eType, void* pobject ) 
+      : m_eType(eType), m_pobject(pobject, [eType](void* p){ Types::Clear_g(eType, p); }) {}
+
+   // ## methods -----------------------------------------------------------------
+   Types::enumType type() const { return m_eType; }
+   void* get() const { return m_pobject.get(); }
+   void* release() { return m_pobject.release(); } // detach pointer
+
+   Types::enumType m_eType = (Types::enumType)0;  ///< type of result
+   std::unique_ptr<void, Delete_> m_pobject; ///< pointer to data
+};
+
+struct Objects
+{
+   // ## construction ------------------------------------------------------------
+   Objects() = default;
+
+   void Add( gd::table::dto::table* p_ ) { m_vectorObjects.emplace_back( Object{ eTypeDtoTable, p_ } ); }
+
+   size_t Size() const noexcept { return m_vectorObjects.size(); }
+
+   bool Empty() const noexcept { return m_vectorObjects.empty(); }
+
+   // ## attributes --------------------------------------------------------------
+   std::vector< Object > m_vectorObjects;  ///< list of objects
+};
+
+
 
 } // namespace Types

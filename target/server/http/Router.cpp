@@ -76,6 +76,8 @@ std::pair<bool, std::string> CRouter::Parse()
 // @TODO [tag: router, command] [description: Convert uri encoded text values to normal utf8 strings] [status: open] [assigned: per]
 std::pair<bool, std::string> CRouter::Run()
 {
+   std::pair<bool, std::string> result_;
+
    if( IsCommand() == true )
    {
       if( !m_pdtoresponse )
@@ -90,13 +92,24 @@ std::pair<bool, std::string> CRouter::Run()
       std::string_view stringCommand = vectorPath[0];
       if( stringCommand == "db" )
       {
-         CAPIDatabase database_( m_pApplication, vectorPath, arguments_ );
-         return database_.Execute();
+         CAPIDatabase database_( m_pApplication, vectorPath, arguments_ );    // create api database object with command and arguments
+         result_ = database_.Execute();                                       // execute command base on command
+
+         if( result_.first == true )                                          // if success get objects from database api
+         {
+            Types::Objects* pobjectsResult = database_.GetObjects();                               assert( pobjectsResult );
+            if( pobjectsResult != nullptr )
+            { 
+               result_ = m_pdtoresponse->AddTransfer( pobjectsResult );       // add objects to response dto
+            }
+         }
       }
       else if( stringCommand == "sql" )
       {
 
       }
+
+      if( result_.first == false ) { return result_; }
    }
    
 

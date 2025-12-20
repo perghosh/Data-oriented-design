@@ -200,7 +200,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 
 		result_ = CApplication::OpenDatabase_s(argumentsOpen, pdatabaseOpen);
       if(result_.first == false) { return result_; }
-
+                                                                                                   LOG_INFORMATION_RAW( "Opened database: " & stringName );
    }
                                                                                                    assert(pdatabaseOpen != nullptr);
 	CDocument* pdocument = m_pApplication->DOCUMENT_Get(stringDocument, true);
@@ -284,7 +284,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    pdatabase->get_cursor( &pcursor );
 
    std::pair< bool, std::string > pairReturn;   
-   pcursor->open( stringQuery );
+   pairReturn = pcursor->open( stringQuery );
 
    // ## create table to hold select result
 
@@ -292,6 +292,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    {
       auto ptable_ = std::make_unique<gd::table::dto::table>();
       gd::database::to_table( pcursor.get(), ptable_.get() );
+
+      m_objects.Add( ptable_.release() );
    }
 
    return { true, "" };
