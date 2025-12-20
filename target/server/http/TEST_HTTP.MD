@@ -33,3 +33,5 @@ SELECT name FROM sqlite_master WHERE type='table'
 
 
 curl "${site}/!db/open/select?type=sqlite&name=test" --data-urlencode "query=SELECT name FROM sqlite_master WHERE type='table';" -G
+
+curl "${site}/!db/open/select?type=sqlite&name=test" --data-urlencode "query=SELECT * FROM TUser;" -G

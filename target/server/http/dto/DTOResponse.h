@@ -24,40 +24,15 @@
   * 
   * \brief Data transfer object for HTTP response
   *
-  *
+  * Holds response data in a table, there are pointers to objects used to store response
+  * data or text data directly in the table.
+  * Information stored in table will be used to create the actual HTTP response.
   *
   \code
   \endcode
   */
 class CDTOResponse
 {
-public:
-   /**
-    * \brief used to transfer result objects, this only holds a pointer to the object
-    *
-    *
-    */
-   struct result
-   {
-      // ## construction ------------------------------------------------------------
-      result() {}
-      result( Types::enumType eType, void* pobject ) : m_eType( eType ), m_pobject( pobject ) {}
-      // copy
-      result( const result& o ) { common_construct( o ); }
-      // assign
-      result& operator=( const result& o ) { common_construct( o ); return *this; }
-
-      ~result() { Types::Clear_g( m_eType, m_pobject ); }
-      // common copy
-      void common_construct( const result& o ) { m_eType = o.m_eType; m_pobject = o.m_pobject; }
-
-      // ## methods -----------------------------------------------------------------
-      void* detach() { void* pobject = m_pobject; m_pobject = nullptr; return pobject; }
-
-      Types::enumType m_eType = (Types::enumType)0;  ///< type of result
-      void* m_pobject = nullptr;    ///< pointer to data
-   };
-
    // @API [tag: construction]
 public:
    CDTOResponse(): m_tableBody( gd::table::tag_full_meta{} ) {}
@@ -86,6 +61,7 @@ public:
 
 void Initialize();
 
+std::pair<bool, std::string> AddTransfer( Types::Objects* pobjects_ );
 
 protected:
 // @API [tag: internal]
