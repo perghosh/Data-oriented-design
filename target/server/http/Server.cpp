@@ -174,7 +174,17 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    result_ = router_.Run();
    if( result_.first == false ) { return server_error_( result_.second ); }
 
-   std::string stringBody = "Command executed successfully";
+   std::string stringBody;
+
+   if( router_.HasResult() == true )
+   {
+      router_.PrintResponseXml( stringBody, nullptr );
+   }
+
+   if( stringBody.empty() == true )
+   {
+      stringBody = "<response status=\"ok\" />";
+   }
 
    boost::beast::http::file_body::value_type body_;
 

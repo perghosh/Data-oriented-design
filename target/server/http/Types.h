@@ -47,6 +47,30 @@ void Clear_g( unsigned uType, void* pobject_ );
 inline void Clear_g( std::pair<unsigned, void*> pair_ ) { Clear_g( pair_.first, pair_.second ); }
 
 
+/// get type number from string type name
+constexpr Types::enumTypeNumber TypeNumber_g( std::string_view stringTypeName )
+{
+   if(  stringTypeName     == "text/plain" )       return Types::eTypeTextPlain;
+   else if( stringTypeName == "text/xml" )         return Types::eTypeTextXml;
+   else if( stringTypeName == "application/json" ) return Types::eTypeTextJson;
+   else if( stringTypeName == "text/csv" )         return Types::eTypeTextCsv;
+   else if( stringTypeName == "table" )            return Types::eTypeTableDto;
+   else if( stringTypeName == "arguments" )        return Types::eTypeArgumentsDto;
+   else return Types::eTypeUnknown;
+}
+
+/// compare only type number part of enumType
+inline bool operator==(Types::enumTypeNumber eTypeNumber, uint32_t uValue) {
+    return (static_cast<uint32_t>(eTypeNumber) & 0xFF) == (uValue & 0xFF);
+}
+
+/// compare only type number part of enumType
+inline bool operator==(uint32_t uValue, enumTypeNumber eTypeNumber) 
+{
+    return (uValue & 0xFF) == (static_cast<uint32_t>(eTypeNumber) & 0xFF);
+}
+
+
 /**
  * \brief used to transfer result objects, this only holds a pointer to the object
  *

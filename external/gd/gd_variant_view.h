@@ -379,7 +379,7 @@ public:
    bool is_xml() const { return (m_uType & variant_type::enumFilter::eFilterTypeNumber) == variant_type::eTypeNumberXml ? true : false; }
    bool is_void() const { return (((m_uType & variant_type::enumFilter::eFilterTypeNumber) == variant_type::eTypeNumberVoid) || ((m_uType & variant_type::enumFilter::eFilterTypeNumber) == variant_type::eTypeNumberPointer)) ? true : false; }
 
-   bool is_primitive() const { return (type_number() > variant_type::eTypeNumberUnknown && type_number() <= variant_type::eTypeNumberDouble); } ///< primitive = built in types in C++
+   bool is_primitive() const { return (type_number() > variant_type::eTypeNumberUnknown && type_number() <= variant_type::eTypeNumberPointer); } ///< primitive = built in types in C++
 
    bool is_true() const;
 
