@@ -145,7 +145,12 @@ TEST_CASE( "[database] sqlite create and select to table", "[database]" )
     
     gd::database::sqlite::database databaseSqlite;
     auto result_ = databaseSqlite.open(stringDatabasePath, {"create", "write"});                 REQUIRE(result_.first == true);
-    result_ = databaseSqlite.execute("CREATE TABLE TStreet (StreetK INTEGER PRIMARY KEY, FAddress TEXT, FNumber INTEGER);"); REQUIRE(result_.first == true);
+    result_ = databaseSqlite.execute( "CREATE TABLE TStreet (StreetK INTEGER PRIMARY KEY, FAddress TEXT, FNumber INTEGER);" ); REQUIRE(result_.first == true);
 
-    result_ = databaseSqlite.execute( "INSERT INTO TStreet (FAddress, FNumber) VALUES ('Gatan', 2), ('SelmaGatan', 12), ('ZorroGatan', 9), ('LexusGatan', 34) RETURNING StreetK");
+    result_ = databaseSqlite.execute( "INSERT INTO TStreet (FAddress, FNumber) VALUES ('Gatan', 2), ('SelmaGatan', 12), ('ZorroGatan', 9), ('LexusGatan', 34) RETURNING StreetK" );
+    {
+       gd::database::sqlite::cursor cursor_(&databaseSqlite);
+
+       result_ = cursor_.open("SELECT StreetK, FAddress, FNumber FROM TStreet;");
+    }
 }
