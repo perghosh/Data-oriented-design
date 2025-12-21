@@ -3,23 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>HTTP Server Test</title>
+    <style>
+        /* Twitter Bootstrap-like CSS Variables */
+        :root {
+            /* Body Background and Text Colors */
+            --bs-body-bg: #ffffff;
+            --bs-body-color: #212529;
+            /* Border Colors */
+            --bs-border-color: #dee2e6;
+            /* Danger Colors */
+            --bs-danger: #dc3545;
+            --bs-danger-active: #b02a37;
+            --bs-danger-disabled: #f1aeb5;
+            --bs-danger-hover: #bb2d3b;
+            --bs-danger-rgb: 220, 53, 69;
+            /* Dark Colors */
+            --bs-dark: #212529;
+            --bs-dark-active: #1a1d21;
+            --bs-dark-disabled: #495057;
+            --bs-dark-hover: #1c1f23;
+            --bs-dark-rgb: 33, 37, 41;
+            /* Info Colors */
+            --bs-info: #0dcaf0;
+            --bs-info-active: #3dd5f3;
+            --bs-info-disabled: #6edff6;
+            --bs-info-hover: #3dd5f3;
+            --bs-info-rgb: 13, 202, 240;
+            /* Light Colors */
+            --bs-light: #f8f9fa;
+            --bs-light-active: #e9ecef;
+            --bs-light-disabled: #fafafb;
+            --bs-light-hover: #f3f4f5;
+            --bs-light-rgb: 248, 249, 250;
+            /* Primary Colors */
+            --bs-primary: #0d6efd;
+            --bs-primary-active: #0a58ca;
+            --bs-primary-disabled: #6ea8fe;
+            --bs-primary-hover: #0b5ed7;
+            --bs-primary-rgb: 13, 110, 253;
+            /* Secondary Colors */
+            --bs-secondary: #6c757d;
+            --bs-secondary-active: #565e64;
+            --bs-secondary-disabled: #9ca3aa;
+            --bs-secondary-hover: #5c636a;
+            --bs-secondary-rgb: 108, 117, 125;
+            /* Success Colors */
+            --bs-success: #198754;
+            --bs-success-active: #146c43;
+            --bs-success-disabled: #75b798;
+            --bs-success-hover: #157347;
+            --bs-success-rgb: 25, 135, 84;
+            /* Warning Colors */
+            --bs-warning: #ffc107;
+            --bs-warning-active: #ffcd39;
+            --bs-warning-disabled: #ffda6a;
+            --bs-warning-hover: #ffca2c;
+            --bs-warning-rgb: 255, 193, 7;
+        }
+
+        /* Basic Styling Using the Variables */
+        .btn { background-color: var(--bs-primary); border: 1px solid var(--bs-primary); border-radius: 4px; color: #ffffff; cursor: pointer; display: inline-block; font-size: 16px; font-weight: 400; line-height: 1.5; padding: 8px 16px; text-align: center; text-decoration: none; transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; user-select: none; vertical-align: middle; }
+        .btn:active { background-color: var(--bs-primary-active); border-color: var(--bs-primary-active); }
+        .btn:hover { background-color: var(--bs-primary-hover); border-color: var(--bs-primary-hover); }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .control-group { background-color: var(--bs-light); border: 1px solid var(--bs-border-color); border-radius: 5px; margin-bottom: 20px; padding: 15px; }
+        .error { background-color: var(--bs-danger); color: white; }
+        .form-group { margin-bottom: 15px; }
+        input[type="number"] { border: 1px solid var(--bs-border-color); border-radius: 4px; font-size: 16px; padding: 8px 12px; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; width: 100%; }
+        input[type="number"]:focus { border-color: var(--bs-primary); box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25); outline: 0; }
+        label { color: var(--bs-dark); display: block; font-weight: 500; margin-bottom: 5px; }
+        body { background-color: var(--bs-body-bg); color: var(--bs-body-color); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; line-height: 1.5; margin: 0; padding: 20px; }
+        h1 { color: var(--bs-dark); margin-bottom: 20px; }
+        .message-display { background-color: var(--bs-light); border: 1px solid var(--bs-border-color); border-radius: 4px; display: none; margin-top: 20px; padding: 10px; }
+        .success { background-color: var(--bs-success); color: white; }
+    </style>
 </head>
 <body>
-    <button id="message">Sned Message</button>
+    <div class="container">
+        <h1>HTTP Server Test</h1>
+        
+        <div class="control-group">
+            <div class="form-group">
+                <label for="portInput">Server Port:</label>
+                <input type="number" id="portInput" min="1" max="65535" value="8000">
+            </div>
+            <button id="message" class="btn">Send Message</button>
+        </div>
+        
+        <div id="messageDisplay" class="message-display"></div>
+    </div>
 
     <script>
-        document.getElementById("message").addEventListener("click", () => {
-            const stringMessage = "Hello from html";
-            const url = `http://127.0.0.1:8000/`;
+        // Load the port from local storage if available
+        document.addEventListener("DOMContentLoaded", () => {
+            const ePortInput = document.getElementById("portInput");
+            const sSavedPort = localStorage.getItem("serverPort");
             
-            fetch(url, { method: "GET" })
-            .then(response => response.text())
-            .then(data => {
-                console.log("Server response:", data)
-            })
-            .catch(error => {
-                console.error("Error:", error);
+            if(sSavedPort) {
+                ePortInput.value = sSavedPort;
+            }
+            
+            // Save the port to local storage when changed
+            ePortInput.addEventListener("change", () => {
+                localStorage.setItem("serverPort", ePortInput.value);
+            });
+            
+            // Handle the message button click
+            document.getElementById("message").addEventListener("click", () => {
+                const sPort = ePortInput.value;
+                const eMessageDisplay = document.getElementById("messageDisplay");
+                const sUrl = `http://127.0.0.1:${sPort}/`;
+                
+                eMessageDisplay.textContent = `Sending request to ${sUrl}...`;
+                eMessageDisplay.className = "message-display";
+                eMessageDisplay.style.display = "block";
+                
+                fetch(sUrl, { method: "GET" })
+                .then(response => {
+                    if(!response.ok) {
+                        throw new Error(`Server responded with status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(sData => {
+                    eMessageDisplay.textContent = `Server response: ${sData}`;
+                    eMessageDisplay.className = "message-display success";
+                })
+                .catch(error => {
+                    eMessageDisplay.textContent = `Error: ${error.message}`;
+                    eMessageDisplay.className = "message-display error";
+                });
             });
         });
     </script>
