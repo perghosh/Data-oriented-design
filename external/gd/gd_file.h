@@ -1,9 +1,20 @@
-// @FILE [tag: file] [description: Miscellaneous file operations] [type: header]
+// @FILE [tag: file] [description: Miscellaneous file operations that work on any OS] [type: header]
 
 /**
  * \file gd_file.h
  * 
- * \brief Miscellaneous file operations 
+ * \brief Miscellaneous file operations with focus on beeing OS independent
+ * 
+| Area                | Methods (Examples)                                                                                                                      | Description                                                                                                   |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| File Operations     | read_file_g(...), write_file_g(...), delete_file_g(...), file_open_g(...), file_write_g(...), file_close_g(...)                        | Functions for reading, writing, deleting files, and handling file handles in an OS-independent way.           |
+| Path Operations     | fix_path_g(...), extract_file_name_g(...), file_absolute_g(...), normalize_path_for_os_g(...), is_directory_separator_g(...)           | Methods for normalizing, extracting, and analyzing file paths and separators for cross-platform compatibility. |
+| Directory Operations| get_known_folder_path_g(...), get_known_folder_wpath_g(...), parent_g(...), list_files_g(...), directory::add(...), directory::dir(...) | Functions for retrieving known folders, parent directories, listing files, and managing directory objects.     |
+| Path Object         | path(...), operator+=, operator==, operator!=, add(...), add_separator(), concatenate(...), erase(...), remove_filename(), clear()      | The `path` struct for constructing, manipulating, and comparing file system paths in a platform-agnostic way.  |
+| Path Querying       | has_filename(), has_extension(), has_parent_path(), has_relative_path(), has_separator(), has_begin_separator(), empty(), count()       | Methods for querying properties and structure of paths.                                                        |
+| Closest/Traversal   | closest_having_file_g(...), parent_g(...)                                                                                              | Functions for finding files/folders in parent hierarchies and traversing directory trees.                      |
+| Permission/Utility  | read_permission_g(...), length(), string(), string_view(), filename(), extension(), parent_path(), stem()                              | Methods for checking file permissions and utility functions for path/file metadata.                            |
+| Comparison          | operator==, operator!= (with string, string_view, char*, std::filesystem::path)                                                        | Operators for comparing `path` objects with various string and path types.                                     |
  * 
  */
 
@@ -50,7 +61,8 @@ std::pair<bool, std::string> delete_file_g( const std::string_view& stringFileNa
 
 // ## folder operations
 
-/// gets known folder path for folder name
+/// gets known folder path for folder name, system folders that are known
+
 std::pair<bool, std::string> get_known_folder_path_g(const std::string_view& stringFolderId);
 std::pair<bool, std::wstring> get_known_folder_wpath_g(const std::string_view& stringFolderId);
 
@@ -58,7 +70,7 @@ std::pair<bool, std::wstring> get_known_folder_wpath_g(const std::string_view& s
 std::string fix_path_g( const std::string_view& stringPath, unsigned uOffset );
 inline std::string fix_path_g( const std::string_view& stringPath ) { return fix_path_g( stringPath, 0 ); }
 
-
+/// Get the file name from path
 std::string extract_file_name_g( const std::string_view& stringPath );
 
 
@@ -75,7 +87,9 @@ std::string parent_g( const std::string_view& stringPath, unsigned uLevel );
 
 // ## files in folder
 
+/// Read all files in selected folder
 std::vector<std::string> list_files_g( const std::string_view& stringFolder );
+/// list files in folder and filter on wildcard, age as in days, extension
 std::vector<std::string> list_files_g(const std::string_view& stringFolder, const gd::argument::arguments& argumentsFilter);
 
 // @API [tag: file] [summary: File operations]
@@ -92,6 +106,7 @@ std::pair<int, std::string> file_open_g(const std::wstring_view& stringFileName,
 
 std::pair<bool, std::string> file_write_g( int iFileHandle, const std::string_view& stringText );
 
+/// close file handle that is OS independent
 void file_close_g( int iFileHandle );
 
 
@@ -111,7 +126,7 @@ std::pair<bool, std::string> read_permission_g( const std::string_view& stringFi
 
 
 /**
- * \brief simplified path logic, similar to std::filesystem::path object with some minor differenses
+ * \brief simplified path logic, similar to std::filesystem::path object but will try to allways adapt to underlying file system no matter what type of operation used.
  *
  * Handle path values and make sure they are correctly formatted based on operating system.
  * `path` tries to help with adding folder separators and removing double separators when building the path.
@@ -274,62 +289,6 @@ inline bool operator==(const path& p, const std::filesystem::path& p_) { return 
 inline bool operator==(const std::filesystem::path& p_, const path& p) { return path(p_) == p; }
 inline bool operator!=(const path& p, const std::filesystem::path& p_) { return !(p == p_); }
 inline bool operator!=(const std::filesystem::path& p_, const path& p) { return !(p_ == p); }
-
-
-
-/**
- * \brief
- *
- *
- */
-struct directory
-{
-   // ## construction ------------------------------------------------------------
-   directory() {}
-   // copy
-   directory(const directory& o) { common_construct(o); }
-   directory(directory&& o) noexcept { common_construct(std::move(o)); }
-   // assign
-   directory& operator=(const directory& o) { common_construct(o); return *this; }
-   directory& operator=(directory&& o) noexcept { common_construct(std::move(o)); return *this; }
-
-   ~directory() {}
-   // common copy
-   void common_construct(const directory& o) {}
-   void common_construct(directory&& o) noexcept {}
-
-   std::string_view get_name( std::size_t uIndex ) const { assert( uIndex < m_vectorFile.size() ); return m_vectorFile[uIndex]["name"].as_string_view(); }
-
-   
-
-// ## methods -----------------------------------------------------------------
-   directory& add( const std::string_view& stringPath );
-
-   std::pair<bool, std::string> dir();
-   std::pair<bool, std::string> dir(std::string_view stringPath) { m_stringPath = stringPath; return dir(); }
-   std::pair<bool, std::string> dir( gd::types::tag_recursive );
-
-/** \name DEBUG
-*///@{
-
-//@}
-
-// ## attributes --------------------------------------------------------------
-   std::string m_stringPath;
-   std::vector<gd::argument::arguments> m_vectorFile;
-   std::vector<directory> m_vectorDirectory;
-
-// ## free functions ----------------------------------------------------------
-
-};
-
-inline directory& directory::add(const std::string_view& stringPath)
-{
-   gd::argument::arguments arguments_({ {"name", stringPath} }, gd::types::tag_view{});
-   m_vectorFile.push_back(arguments_);
-   return *this;
-}
-
 
 
 _GD_FILE_END

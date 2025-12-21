@@ -1,3 +1,5 @@
+// @FILE {tag: string, utf8] [description: Lots of string methods with focus on utf8 formating] [type: header] [name: gd_utf8.h]
+
 /*
 ## Overview
 | Name | Description |
@@ -16,6 +18,18 @@
 | offset | tries to find parts in string and collects offset positions |
 | indent | indent text with spaces or other patterns |
 | is | is methods checks if text is something or not |
+
+| Area                | Methods (Examples)                                                                                                   | Description                                                                                                   |
+|---------------------|----------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| Character Handling  | character(...), get_character_size(...), next(...), previous(...), advance(...), end(...)                            | Methods for reading, moving, and analyzing UTF-8/Unicode characters in buffers and strings.                   |
+| Counting/Size       | count(...), strlen(...), size(...), get_character_size(...)                                                          | Functions for counting UTF-8 characters and calculating required buffer sizes.                                 |
+| Conversion          | convert(...), convert_ascii(...), convert_utf8_to_ascii(...), convert_unicode(...), convert_json(...), itoa/utoa(...)| Methods for converting between ASCII, UTF-8, Unicode, JSON, and numeric/text representations.                 |
+| Validation          | validate(...), validate_hex(...), is_text(...), is_npos(...), is_found(...)                                          | Functions for validating UTF-8, hex, and text buffers, and checking search results.                           |
+| String Operations   | split(...), split_pair(...), mid(...), offset(...), indent(...), trim(...), trim_left(...), trim_right(...)          | Methods for splitting, trimming, extracting, and indenting strings and buffers.                               |
+| Formatting/Printing | print(...), print_hex(...), quoted(...), quoted_if_text(...), format::replace(...), format::pad_left/right(...)      | Functions for formatting, quoting, and printing UTF-8 strings and buffers.                                    |
+| URI/XML Handling    | uri::character(...), uri::size(...), uri::count(...), uri::convert_uri_to_uf8(...), xml::convert_utf8_to_xml(...)    | Methods for working with URI/URL and XML-escaped text, including conversion and validation.                   |
+| Comparison/Find     | find(...), find_nth(...), find_character(...), ascii::strcmp(...), ascii::stricmp(...), strchr(...)                  | Methods for searching, comparing, and finding characters or sequences in strings and buffers.                 |
+| Utility/Meta        | distance(...), copy_character(...), debug::print(...), is_encoded(...), atou/atou64(...), convert_hex_to_binary(...) | Utility functions for copying, measuring, converting, and debugging UTF-8 and related string data.            |
 
 */
 

@@ -1,3 +1,5 @@
+// @FILE [tag: table, index] [description: Indexing table data for fast searches and lookup. Indexes may be used as helpers in table objects] [type: header] [name: gd_table_index.h]
+
 #pragma once
 
 #include <vector>
