@@ -96,7 +96,7 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
 
    // ## Route command if target begins with '!' .............................
 
-   if( stringTarget.front() == '!' )
+   if( stringTarget.empty() == false && stringTarget.front() == '!' )
    {
       CServer server_( papplication_g );
       return server_.RouteCommand( stringTarget, std::move( request_ ) );
