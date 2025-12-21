@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <button id="message">Sned Message</button>
+
+    <script>
+        document.getElementById("message").addEventListener("click", () => {
+            const stringMessage = "Hello from html";
+            const url = `http://127.0.0.1:8000/`;
+            
+            fetch(url, { method: "GET" })
+            .then(response => response.text())
+            .then(data => {
+                console.log("Server response:", data)
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        });
+    </script>
+</body>
+</html>
