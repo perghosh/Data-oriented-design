@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "gd/gd_arguments.h"
 #include "gd/gd_table_arguments.h"
 
 #include "../Types.h"
@@ -43,7 +44,7 @@ public:
    CDTOResponse& operator=( const CDTOResponse& o ) { common_construct( o ); return *this; }
    CDTOResponse& operator=( CDTOResponse&& o ) noexcept { common_construct( std::move( o ) ); return *this; }
 
-   ~CDTOResponse() {}
+   ~CDTOResponse();
 private:
    // common copy
    void common_construct( const CDTOResponse& o ) {}
@@ -63,6 +64,14 @@ void Initialize();
 
 std::pair<bool, std::string> AddTransfer( Types::Objects* pobjects_ );
 
+std::pair<bool, std::string> PrintXml( std::string& stringXml, const gd::argument::arguments* parguments_ );
+
+/// Check if response body is empty
+bool Empty() const noexcept { return m_tableBody.size() == 0; }
+
+/// Clear response body (table with objects)
+void Clear();
+
 protected:
 // @API [tag: internal]
 
@@ -74,6 +83,8 @@ public:
    gd::table::arguments::table m_tableBody;   ///< response headers
 
    inline static gd::table::detail::columns* m_pcolumnsBody_s = nullptr; ///< static columns for body
+   inline static std::string m_stringResults_s = "results";  ///< default container name for results
+   inline static std::string m_stringResult_s = "result";   ///< default item name for each result
 
 
    // @API [tag: free-functions]

@@ -290,13 +290,15 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 
    if( pairReturn.first == true )
    {
-      auto ptable_ = std::make_unique<gd::table::dto::table>();
-      gd::database::to_table( pcursor.get(), ptable_.get() );
-
-      m_objects.Add( ptable_.release() );
+      auto ptable_ = new gd::table::dto::table( gd::table::tag_full_meta{} );
+      gd::database::to_table( pcursor.get(), ptable_ );
+#ifndef NDEBUG
+      intptr_t iTableAddress_d = (intptr_t)ptable_;
+#endif
+      m_objects.Add( ptable_ );
    }
 
-   return { true, "" };
+   return pairReturn;
 }
 
 std::pair<bool, std::string> CAPIDatabase::Execute_Insert()

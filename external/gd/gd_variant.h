@@ -570,7 +570,7 @@ public:
    bool is_json() const { return (m_uType & variant_type::enumFilter::eFilterTypeGroup) == variant_type::eTypeNumberJson ? true : false; }
    bool is_xml() const { return (m_uType & variant_type::enumFilter::eFilterTypeGroup) == variant_type::eTypeNumberXml ? true : false; }
 
-   bool is_primitive() const { return (type_number() > variant_type::eTypeNumberUnknown && type_number() <= variant_type::eTypeNumberDouble); } ///< primitive = built in types in C++
+   bool is_primitive() const { return (type_number() > variant_type::eTypeNumberUnknown && type_number() <= variant_type::eTypeNumberPointer); } ///< primitive = built in types in C++
 
    bool is_true() const;
 
