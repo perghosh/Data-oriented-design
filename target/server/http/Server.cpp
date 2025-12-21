@@ -82,13 +82,17 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    boost::beast::http::verb const eVerb = request_.method();
 
    // ## Make sure we can handle the method
-   if( eVerb != boost::beast::http::verb::get && eVerb != boost::beast::http::verb::head) 
+   if( eVerb > boost::beast::http::verb::trace  )
    { 
       return bad_request_("Unknown HTTP-method"); 
    }
 
    std::string_view stringTarget = request_.target();
-   if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
+   if( stringTarget.empty() == true )
+   { 
+      return bad_request_("Empty request-target, server version: 0.9.0"); 
+   }
+   else if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
 
    // ## Route command if target begins with '!' .............................
 
