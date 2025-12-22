@@ -80,43 +80,53 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" data-component="http-form">
         <h1>HTTP Server Test</h1>
         
         <div class="control-group">
             <div class="form-group">
                 <label for="portInput">Server Port:</label>
-                <input type="number" id="idPortInput" min="1" max="65535" value="8000">
+                <input type="number" id="idPortInput" data-field="port" min="1" max="65535" value="8000">
                 <label for="idTextInput">Text:</label>
-                <input type="text" id="idTextInput">
+                <input type="text" id="idTextInput" data-field="text">
             </div>
-            <button id="idSendMessage" class="btn">Send Message</button>
+            <button data-action="send-message" id="idSendMessage" class="btn">Send Message</button>
+        </div>
+        
+        <div id="idMessageDisplay" class="message-display" data-type="command"></div>
+    </div>
+
+        <div class="container" data-component="http-form">
+        <h1>HTTP Server Test</h1>
+        
+        <div class="control-group">
+            <div class="form-group">
+                <label for="portInput">Server Port:</label>
+                <input type="number" id="idPortInput" data-field="port" min="1" max="65535" value="8000">
+                <label for="idTextInput">Text:</label>
+                <input type="text" id="idTextInput" data-field="text">
+            </div>
+            <button data-action="send-message" id="idSendMessage" class="btn">Send Message</button>
         </div>
         
         <div id="idMessageDisplay" class="message-display" data-type="command"></div>
     </div>
 
     <script>
-        // Load the port from local storage if available
-        document.addEventListener("DOMContentLoaded", () => {
-            const ePortInput = document.querySelector("#idPortInput");
-            const eTextInput = document.querySelector("#idTextInput");
-            const sSavedPort = localStorage.getItem("serverPort");
-            
-            if(sSavedPort) {
-                ePortInput.value = sSavedPort;
-            }
-            
-            // Save the port to local storage when changed
-            ePortInput.addEventListener("change", () => {
-                localStorage.setItem("serverPort", ePortInput.value);
-            });
-            
-            // Handle the message button click
-            document.querySelector("#idSendMessage").addEventListener("click", () => {
+
+        function Click(aContainer) 
+        {
+            const ePortInput = container.querySelector("[data-field='port']");
+            const eTextInput = container.querySelector("[data-field='text']");
+            const eMessageDisplay = container.querySelector("#idMessageDisplay");
+
+            container.addEventListener("click", (event) => {
+                if(!event.target.matches("[data-action='send-message']")) return;
+                event.
+
                 const sPort = ePortInput.value;
                 const sText = eTextInput.value;
-                const eMessageDisplay = document.querySelector("#idMessageDisplay");
+
                 const sUrl = `http://127.0.0.1:${sPort}/?message=${sText}`;
                 
                 eMessageDisplay.textContent = `Sending request to ${sUrl}...`;
@@ -138,8 +148,37 @@
                     eMessageDisplay.textContent = `Error: ${error.message}`;
                     eMessageDisplay.className = "message-display error";
                 });
-            });
+            });   
+        }
+
+        // Load the port from local storage if available
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll(".container[data-component='http-form']")
+                .forEach(container => {
+
+                    //const ePortInput = document.querySelector("#idPortInput");
+                    //const eTextInput = document.querySelector("#idTextInput");
+                    const ePortInput = container.querySelector("[data-field='port']");
+
+                    const sSavedPort = localStorage.getItem("serverPort");
+                    
+                    if(sSavedPort) {
+                        ePortInput.value = sSavedPort;
+                    }
+                    
+                    // Save the port to local storage when changed
+                    ePortInput.addEventListener("change", () => {
+                        localStorage.setItem("serverPort", ePortInput.value);
+                    });
+
+                    
+                    // Handle the message button click         
+                    Click(container);
+                })
+            
         });
     </script>
 </body>
 </html>
+
+
