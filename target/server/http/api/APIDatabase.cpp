@@ -23,7 +23,28 @@ void CAPIDatabase::common_construct( CAPIDatabase&& o ) noexcept
     m_argumentsParameter = std::move( o.m_argumentsParameter );
 }
 
-/**
+/** --------------------------------------------------------------------------
+ * @brief Returns the number of times a given argument name appears in the command list.
+ * 
+ * Note that it is possible to have multiple occurrences of the same command and in order to match
+ * arguments correctly this method counts how many times the specified argument name appears from
+ * the active command index.
+ * 
+ * @param stringName The name of the argument to search for.
+ * @return The number of occurrences of the specified argument name in the command list.
+ */
+size_t CAPIDatabase::GetArgumentIndex( const std::string_view& stringName ) const 
+{                                                                                                  assert( m_vectorCommand.empty() == false && "No commands");
+   size_t uCount = 0;
+   for( unsigned uIndex = 0; uIndex < m_uCommandIndex; ++uIndex )
+   {
+      std::string_view stringCommand = m_vectorCommand[uIndex];
+      if( stringCommand == stringName ) { ++uCount; }
+   }
+   return uCount;
+}
+
+/** --------------------------------------------------------------------------
  * @brief Executes the database command based on the command vector and parameters.
  *
  * This method processes the database command stored in m_vectorCommand and uses
@@ -66,6 +87,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
 
    for( std::size_t uIndex = 0; uIndex < m_vectorCommand.size(); ++uIndex )
    {
+      m_uCommandIndex = static_cast<unsigned>( uIndex );
       std::string_view stringCommand = m_vectorCommand[uIndex];
 
       if( stringCommand == "db" ) continue;
@@ -274,7 +296,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
-   std::string stringQuery = m_argumentsParameter.get_argument("query", 0u).as_string();
+   auto uIndex = GetArgumentIndex( "select" );
+   std::string stringQuery = ( *this )[{"query", uIndex}].as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
 
    gd::com::pointer<gd::database::cursor_i> pcursor;

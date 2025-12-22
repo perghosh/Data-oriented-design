@@ -801,7 +801,7 @@ public:
    void release() { if( is_null() == false ) { m_pbuffer->release(); m_pbuffer = &m_buffer_s; } }
    bool is_null() const { return m_pbuffer == &m_buffer_s; }
 
-// ## operator -----------------------------------------------------------------
+// ## @API [tag: operator] [description: arguments operators]
 public: //0TAG0operator.arguments
    argument operator[](unsigned uIndex) { return get_argument(uIndex); }
    argument operator[](std::string_view stringName) { return get_argument(stringName); }
@@ -862,15 +862,14 @@ public: //0TAG0operator.arguments
 
    // ## methods ------------------------------------------------------------------
 public:
-/** \name GET/SET
-*///@{
-/// return start position to buffer where values are stored
+   // ## @API [tag: get] [description: get methods]
+
+   /// return start position to buffer where values are stored
    pointer get_buffer_start() { return m_pbuffer->data(); }
    const_pointer get_buffer_start() const { return m_pbuffer->data(); }
    /// return last position for buffer where values are stored
    pointer get_buffer_end() { return m_pbuffer->data() + m_pbuffer->size(); }
    const_pointer get_buffer_end() const { return m_pbuffer->data() + m_pbuffer->size(); }
-//@}
 
 /** \name OPERATION
 *///@{
@@ -1105,13 +1104,19 @@ public:
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch) const;
    /// Find value within section
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch, tag_section ) const;
-
+   [[nodiscard]] const_pointer find( const std::string_view& stringName, unsigned uIndex ) const;
    [[nodiscard]] std::pair<argument,argument> find_pair(const std::string_view& stringName) const;
 
    std::vector<const_pointer> find_all(std::string_view stringName) const;
    /// find param value for name
    [[nodiscard]] argument find_argument(std::string_view stringName) const {
       const_pointer pPosition = find(stringName);
+      if( pPosition ) return get_argument_s(pPosition);
+      return argument();
+   }
+   /// find param value for name and index
+   [[nodiscard]] argument find_argument(std::string_view stringName, unsigned uIndex) const {
+      const_pointer pPosition = find(stringName, uIndex);
       if( pPosition ) return get_argument_s(pPosition);
       return argument();
    }
@@ -1164,6 +1169,8 @@ public:
 
    [[nodiscard]] argument get_argument(unsigned int uIndex) const;
    [[nodiscard]] argument get_argument(std::string_view stringName) const { return find_argument(stringName); }
+   [[nodiscard]] argument get_argument(std::string_view stringName, size_t uIndex ) const { return find_argument(stringName, (unsigned)uIndex ); }
+   [[nodiscard]] argument get_argument( std::tuple<std::string_view, size_t> index_ ) const { return find_argument( std::get<0>(index_), (unsigned)std::get<1>(index_) ); }
    [[nodiscard]] argument get_argument(std::string_view stringName, unsigned uSecondIndex, tag_section ) const;
    template<class DEFAULT>
    [[nodiscard]] DEFAULT get_argument(const std::string_view& stringName, DEFAULT defaultValue) const {

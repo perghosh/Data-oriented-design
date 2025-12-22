@@ -2107,6 +2107,29 @@ arguments::const_pointer arguments::find(const std::pair<std::string_view, gd::v
    return nullptr;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Find nth argument with key name
+ * @param stringName name for value
+ * @param uIndex nth value to return
+ * @return gd::argument::arguments::const_pointer pointer to value
+ */
+arguments::const_pointer arguments::find( const std::string_view& stringName, unsigned uIndex ) const 
+{                                                                                                  assert( uIndex < 0x00A0'0000 ); // realistic ?
+   for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
+   {
+      if( arguments::is_name_s(pPosition) == true )
+      {
+         auto key_ = arguments::get_name_s(pPosition);
+         if( key_ == stringName )
+         {
+            if( uIndex == 0 ) return pPosition;
+            uIndex--;
+         }
+      }
+   }
+
+   return nullptr;
+}
 
 /** ---------------------------------------------------------------------------
  * @brief Tries to find two values with same name and return those two in pair object
