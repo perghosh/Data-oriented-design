@@ -86,20 +86,20 @@
         <div class="control-group">
             <div class="form-group">
                 <label for="portInput">Server Port:</label>
-                <input type="number" id="portInput" min="1" max="65535" value="8000">
+                <input type="number" id="idPortInput" min="1" max="65535" value="8000">
                 <label for="idTextInput">Text:</label>
                 <input type="text" id="idTextInput">
             </div>
             <button id="idSendMessage" class="btn">Send Message</button>
         </div>
         
-        <div id="messageDisplay" class="message-display"></div>
+        <div id="idMessageDisplay" class="message-display" data-type="command"></div>
     </div>
 
     <script>
         // Load the port from local storage if available
         document.addEventListener("DOMContentLoaded", () => {
-            const ePortInput = document.querySelector("#portInput");
+            const ePortInput = document.querySelector("#idPortInput");
             const eTextInput = document.querySelector("#idTextInput");
             const sSavedPort = localStorage.getItem("serverPort");
             
@@ -116,7 +116,7 @@
             document.querySelector("#idSendMessage").addEventListener("click", () => {
                 const sPort = ePortInput.value;
                 const sText = eTextInput.value;
-                const eMessageDisplay = document.querySelector("#messageDisplay");
+                const eMessageDisplay = document.querySelector("#idMessageDisplay");
                 const sUrl = `http://127.0.0.1:${sPort}/?message=${sText}`;
                 
                 eMessageDisplay.textContent = `Sending request to ${sUrl}...`;
