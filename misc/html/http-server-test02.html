@@ -70,7 +70,7 @@
         .control-group { background-color: var(--bs-light); border: 1px solid var(--bs-border-color); border-radius: 5px; margin-bottom: 20px; padding: 15px; }
         .error { background-color: var(--bs-danger); color: white; }
         .form-group { margin-bottom: 15px; }
-        input[type="number"] { border: 1px solid var(--bs-border-color); border-radius: 4px; font-size: 16px; padding: 8px 12px; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; width: 100%; }
+        input[type="number"], input[type="text"] { border: 1px solid var(--bs-border-color); border-radius: 4px; font-size: 16px; padding: 8px 12px; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; width: 100%; }
         input[type="number"]:focus { border-color: var(--bs-primary); box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25); outline: 0; }
         label { color: var(--bs-dark); display: block; font-weight: 500; margin-bottom: 5px; }
         body { background-color: var(--bs-body-bg); color: var(--bs-body-color); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; line-height: 1.5; margin: 0; padding: 20px; }
@@ -87,8 +87,10 @@
             <div class="form-group">
                 <label for="portInput">Server Port:</label>
                 <input type="number" id="portInput" min="1" max="65535" value="8000">
+                <label for="idTextInput">Text:</label>
+                <input type="text" id="idTextInput">
             </div>
-            <button id="message" class="btn">Send Message</button>
+            <button id="idSendMessage" class="btn">Send Message</button>
         </div>
         
         <div id="messageDisplay" class="message-display"></div>
@@ -97,7 +99,8 @@
     <script>
         // Load the port from local storage if available
         document.addEventListener("DOMContentLoaded", () => {
-            const ePortInput = document.getElementById("portInput");
+            const ePortInput = document.querySelector("#portInput");
+            const eTextInput = document.querySelector("#idTextInput");
             const sSavedPort = localStorage.getItem("serverPort");
             
             if(sSavedPort) {
@@ -110,10 +113,11 @@
             });
             
             // Handle the message button click
-            document.getElementById("message").addEventListener("click", () => {
+            document.querySelector("#idSendMessage").addEventListener("click", () => {
                 const sPort = ePortInput.value;
-                const eMessageDisplay = document.getElementById("messageDisplay");
-                const sUrl = `http://127.0.0.1:${sPort}/`;
+                const sText = eTextInput.value;
+                const eMessageDisplay = document.querySelector("#messageDisplay");
+                const sUrl = `http://127.0.0.1:${sPort}/?message=${sText}`;
                 
                 eMessageDisplay.textContent = `Sending request to ${sUrl}...`;
                 eMessageDisplay.className = "message-display";
