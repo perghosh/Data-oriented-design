@@ -63,14 +63,28 @@ private:
 
 // ## operator -----------------------------------------------------------------
 public:
+   /// get argument by name, this method returns first value for the name from read uri parameters
+   gd::variant_view operator[](const char* piName) { return m_argumentsParameter.get_argument(std::string_view(piName)).as_variant_view(); }
+   gd::variant_view operator[]( std::tuple<const char*, size_t> index_) { 
+      return m_argumentsParameter.find_argument( std::string_view( std::get<0>( index_ ) ), (unsigned)std::get<1>( index_ ) ).as_variant_view(); 
+   }
+
 
 
 // ## methods ------------------------------------------------------------------
 public:
-    /** \name GET/SET
-    *///@{
+   // @API [tag: get] [description: Get methods]
 
-    //@}
+   CDocument* GetDocument();
+
+   std::string GetLastError() const { return m_stringLastError; }
+
+   /// Count the keys used based on current command index
+   size_t GetArgumentIndex( const std::string_view& stringName ) const;
+
+   /// Get pointer objects result container
+   Types::Objects* GetObjects() { return &m_objects; }
+
 
    std::pair<bool, std::string> Execute();
 
@@ -89,12 +103,6 @@ public:
    /// Insert data to database
    std::pair<bool, std::string> Execute_Insert();
 
-   CDocument* GetDocument();
-
-   std::string GetLastError() const { return m_stringLastError; }
-
-
-   Types::Objects* GetObjects() { return &m_objects; }
 
 protected:
 
@@ -103,11 +111,12 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-	CApplication* m_pApplication{};               ///< application pointer, access application that is used as object root for server
    std::vector<std::string_view> m_vectorCommand;///< command path segments
+   unsigned m_uCommandIndex{};                   ///< current command index being processed
    gd::argument::arguments m_argumentsParameter; ///< parameters for api database command
    Types::Objects m_objects;                     ///< objects used to store result objects
    std::string m_stringLastError;                ///< last error message 
+	CApplication* m_pApplication{};               ///< application pointer, access application that is used as object root for server
 
 
 // ## free functions ------------------------------------------------------------
