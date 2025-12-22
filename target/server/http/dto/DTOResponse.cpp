@@ -22,12 +22,13 @@ void CDTOResponse::Initialize()
 
    if( m_pcolumnsBody_s == nullptr )
    {
-      m_pcolumnsBody_s = new gd::table::detail::columns{};
+      m_pcolumnsBody_s = new gd::table::detail::columns{};                    /// static columns for body, remember to delete on shutdown (release)
       m_pcolumnsBody_s->add( "uint32", 0, "key" );
       m_pcolumnsBody_s->add( "uint32", 0, "type" );
       m_pcolumnsBody_s->add( "rstring", 0, "text" );
       m_pcolumnsBody_s->add( "pointer", 0, "object" );
       m_pcolumnsBody_s->add( "string", 32, "hint" );
+      m_pcolumnsBody_s->add_reference();
    }
 
    m_tableBody.set_columns( m_pcolumnsBody_s );
@@ -130,4 +131,14 @@ void CDTOResponse::Clear()
 
 
    m_tableBody.clear();
+}
+
+/// Destroy static members
+void CDTOResponse::Destroy_s()
+{
+   if( m_pcolumnsBody_s != nullptr )
+   {                                                                          assert( m_pcolumnsBody_s->get_reference() == 1 );
+      m_pcolumnsBody_s->release();
+      m_pcolumnsBody_s = nullptr;
+   }
 }

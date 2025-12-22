@@ -66,6 +66,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
    {
       std::string_view stringCommand = m_vectorCommand[uIndex];
 
+      if( stringCommand == "db" ) continue;
+
       if( stringCommand == "create" )
       {
          result_ = Execute_Create();
@@ -90,9 +92,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       {
       }
       else if( stringCommand == "drop" )
-      {
-      }
-      else if( stringCommand == "db" )
       {
       }
       else
