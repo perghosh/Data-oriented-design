@@ -62,6 +62,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
 
    std::pair<bool, std::string> result_(true,"");
 
+   CRouter::Encode_s( m_argumentsParameter, { "query" } );
+
    for( std::size_t uIndex = 0; uIndex < m_vectorCommand.size(); ++uIndex )
    {
       std::string_view stringCommand = m_vectorCommand[uIndex];
@@ -236,8 +238,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Query()
    auto* pdatabase = pdocument->GetDatabase();                                // get database from document, this connection has to be opened before
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
-   CRouter::Encode_s( m_argumentsParameter, { "query" } );
-
    std::string stringQuery = m_argumentsParameter["query"].as_string();       // get query to execute
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
 
@@ -274,8 +274,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
-   CRouter::Encode_s( m_argumentsParameter, { "query" } );
-
    std::string stringQuery = m_argumentsParameter["query"].as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
 
@@ -291,9 +289,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    {
       auto ptable_ = new gd::table::dto::table( gd::table::tag_full_meta{} );
       gd::database::to_table( pcursor.get(), ptable_ );
-#ifndef NDEBUG
-      intptr_t iTableAddress_d = (intptr_t)ptable_;
-#endif
       m_objects.Add( ptable_ );
    }
 
@@ -309,8 +304,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
 
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
-
-   CRouter::Encode_s( m_argumentsParameter, { "query" } );
 
    std::string stringQuery = m_argumentsParameter["query"].as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
