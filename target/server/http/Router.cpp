@@ -225,8 +225,6 @@ std::pair<bool, std::string> CRouter::Encode_s( gd::argument::arguments& argumen
    // ## encode values in arguments for specified names in vectorName
    for( const auto& stringName : vectorName )
    {
-      unsigned uNextToReplace = 0;
-
       decltype( arguments_.next() ) positionNext = nullptr;
       
       for(auto* position_ = arguments_.next(); position_ != nullptr; position_ = arguments_.next(position_) ) 
@@ -240,7 +238,6 @@ std::pair<bool, std::string> CRouter::Encode_s( gd::argument::arguments& argumen
          for( char& i_ : stringValueEncoded ) { if( i_ == '+' ) { i_ = ' '; } }
          arguments_.set( position_, stringValueEncoded, &positionNext );
          position_ = positionNext;
-         uNextToReplace++;
       }
       
 

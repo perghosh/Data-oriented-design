@@ -47,7 +47,7 @@ std::pair<bool, std::string> CDTOResponse::AddTransfer( Types::Objects* pobjects
 
       auto* pobject = object_.release(); // detach pointer so we can move it into table
 #ifndef NDEBUG
-      intptr_t iTableAddress_d = (intptr_t)pobject;
+      intptr_t iTableAddress_d = (intptr_t)pobject;                           // @BOOKMARK [tag: debug, memory, response] [description: check memory adress response data]
 #endif
       m_tableBody.cell_set( uRow, "object", ( void* )pobject );
 #ifndef NDEBUG

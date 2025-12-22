@@ -1580,6 +1580,9 @@ arguments& arguments::set(const char* pbszName, uint32_t uNameLength, param_type
 arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBuffer, unsigned int uLength, pointer* ppPosition )
 {                                                                                                  assert( pPosition >= buffer_data() ); assert( pPosition < buffer_data_end() );
    // get current argument
+
+   size_t uOffset = pPosition - buffer_data();                                                     assert( uOffset < buffer_size() );
+
    argument argumentOld = arguments::get_argument_s(pPosition);
    auto pPositionValue = move_to_value_s(pPosition);
    if( arguments::compare_type_s(argumentOld, uType) == true && (uType & (eValueLength | eValueArray)) == 0 )
@@ -1615,7 +1618,7 @@ arguments& arguments::set(pointer pPosition, param_type uType, const_pointer pBu
       }
    }
 
-   if( ppPosition != nullptr ) *ppPosition = pPosition;
+   if( ppPosition != nullptr ) { *ppPosition = buffer_data() + uOffset; }
 
    return *this;
 }
