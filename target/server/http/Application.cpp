@@ -32,6 +32,7 @@
 #   include "windows.h"   
 #endif
 
+#include "dto/DTOResponse.h"
 
 #include "Server.h"
 //#include "HttpServer.h"
@@ -271,6 +272,8 @@ std::pair<bool, std::string> CApplication::Initialize()
 */
 std::pair<bool, std::string> CApplication::Exit()
 {
+   CDTOResponse::Destroy_s();                                                 // Destroy the CDTOResponse static objects
+
    return application::basic::CApplication::Exit();
 }
 
@@ -987,5 +990,3 @@ std::string FOLDER_GetRoot_g( const std::string_view& stringSubfolder )
    stringRootFolder = path_.make_preferred().string();
    return stringRootFolder;
 }
-
-

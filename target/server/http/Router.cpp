@@ -220,9 +220,31 @@ boost::beast::http::message_generator RouteCommand_s( std::string_view stringTar
 
 std::pair<bool, std::string> CRouter::Encode_s( gd::argument::arguments& arguments_, const std::vector<std::string>& vectorName )
 {
+   std::string stringValueEncoded; // encoded value
+
    // ## encode values in arguments for specified names in vectorName
    for( const auto& stringName : vectorName )
    {
+      unsigned uNextToReplace = 0;
+
+      decltype( arguments_.next() ) positionNext = nullptr;
+      
+      for(auto* position_ = arguments_.next(); position_ != nullptr; position_ = arguments_.next(position_) ) 
+      {
+         auto name_ = gd::argument::arguments::get_name_s(position_);
+         if( name_ != stringName ) { continue; }
+
+         auto stringValue = gd::argument::arguments::get_argument_s( position_ ).as_variant_view().as_string_view(); // get string value as string view to avoid alocate
+         stringValueEncoded.clear();
+         auto result_ = gd::utf8::uri::convert_uri_to_uf8( stringValue, stringValueEncoded );
+         for( char& i_ : stringValueEncoded ) { if( i_ == '+' ) { i_ = ' '; } }
+         arguments_.set( position_, stringValueEncoded, &positionNext );
+         position_ = positionNext;
+         uNextToReplace++;
+      }
+      
+
+      /*
       std::string stringValue = arguments_[stringName].as_string();
       std::string stringValueEncoded;
 
@@ -232,6 +254,7 @@ std::pair<bool, std::string> CRouter::Encode_s( gd::argument::arguments& argumen
       auto result_ = gd::utf8::uri::convert_uri_to_uf8( stringValue, stringValueEncoded );
       if( result_.first == false ) { return { false, "failed to encode uri value for parameter: " + stringName }; }
       arguments_.set( stringName, stringValueEncoded );
+      */
    }
    return { true, "" };
 }

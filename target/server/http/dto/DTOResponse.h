@@ -87,8 +87,9 @@ public:
    inline static std::string m_stringResult_s = "result";   ///< default item name for each result
 
 
-   // @API [tag: free-functions]
+// @API [tag: free-functions]
 public:
+   static void Destroy_s();
 
 
 
