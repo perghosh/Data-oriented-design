@@ -1102,6 +1102,8 @@ public:
 
    [[nodiscard]] argument get_argument(unsigned int uIndex) const;
    [[nodiscard]] argument get_argument(std::string_view stringName) const { return find_argument(stringName); }
+   [[nodiscard]] argument get_argument(std::string_view stringName, size_t uIndex ) const { return find_argument(stringName, (unsigned)uIndex ); }
+   [[nodiscard]] argument get_argument( std::tuple<std::string_view, size_t> index_ ) const { return find_argument( std::get<0>(index_), (unsigned)std::get<1>(index_) ); }
    [[nodiscard]] argument get_argument(std::string_view stringName, unsigned uSecondIndex, tag_section ) const;
    template<class DEFAULT>
    [[nodiscard]] DEFAULT get_argument(const std::string_view& stringName, DEFAULT defaultValue) const {
@@ -1141,7 +1143,6 @@ public:
    /// return all values for name, name for value do not need to be unique. if name is not found empty vector is returned
    [[nodiscard]] std::vector<argument> get_argument_all(std::string_view stringName) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName); }
    [[nodiscard]] std::vector<gd::variant_view> get_argument_all(std::string_view stringName, tag_view) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
-   [[nodiscard]] std::vector<std::pair<std::string_view, gd::variant_view>> get_argument_all(tag_view, tag_pair) const { return get_argument_all_s(get_buffer_start(), get_buffer_end(), tag_view{}, tag_pair{} ); }
    [[nodiscard]] std::vector<gd::variant_view> get_argument_section(std::string_view stringName, tag_view) const { return get_argument_section_s(get_buffer_start(), get_buffer_end(), stringName, tag_view{} ); }
 
    /// return all values for name or names as vector of type TYPE

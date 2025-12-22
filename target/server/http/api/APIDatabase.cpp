@@ -274,7 +274,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
-   std::string stringQuery = m_argumentsParameter["query"].as_string();
+   std::string stringQuery = m_argumentsParameter.get_argument("query", 0u).as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
 
    gd::com::pointer<gd::database::cursor_i> pcursor;
