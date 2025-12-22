@@ -1178,6 +1178,12 @@ public:
       if( v.is_null() ) return defaultValue;
       return static_cast<DEFAULT>(v);
    }
+   template<class DEFAULT>
+   [[nodiscard]] DEFAULT get_argument(const std::string_view& stringName, unsigned uIndex, DEFAULT defaultValue) const {
+      argument  v = find(stringName, uIndex);
+      if( v.is_null() ) return defaultValue;
+      return static_cast<DEFAULT>(v);
+   }
    [[nodiscard]] std::string get_argument(const std::string_view& stringName, const std::string& stringDefault) const {
       argument  v = find_argument(stringName);
       if( v.is_null() ) return stringDefault;
