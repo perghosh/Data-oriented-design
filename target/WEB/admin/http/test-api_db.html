@@ -5,11 +5,12 @@
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>sample</title>
    <link id="idCssVariable" rel="stylesheet" href="variables-default.css">
+   <link rel="stylesheet" href="css/elements.css">
    <style>
       .group { display: block }
       .fields { display: block }
 
-      .fields .inline { align-items: center; display: flex;  gap: 0.5rem; }
+      .fields .inline { align-items: center; display: flex;  gap: 0.5rem; white-space: nowrap; }
       .fields .stacked { display: flex; flex-direction: column; gap: 0.25rem; }
 
       .card {}
@@ -48,24 +49,27 @@
       <div class="card-input" data-type="group">
          <!-- ### Values to be sent to test database API -->
          <div class="fields" data-type="fields">
-            <label class="inline value">
-               Ip:
-               <input type="text" data-name="host" data-field="host" value="127.0.0.1">
-            </label>
-            <label class="inline value">
-               Port number:
-               <input type="number" data-name="port" data-field="port" min="1" max="65535" value="8000">
-            </label>
+            <div class="form-group">
+            <div class="form-row">
+               <label class="inline value">
+                  Ip:
+                  <input class="form-input" type="text" data-name="host" data-field="host" value="127.0.0.1" style="width: 100%">
+               </label>
+               <label class="inline value">
+                  Port number:
+                  <input class="form-input" type="number" data-name="port" data-field="port" min="1" max="65535" value="8000">
+               </label>
+            </div>
             <label class="stacked value">
                Query string:
-               <textarea rows="4" cols="50" placeholder="Enter query string to test here..." data-field="endpoint"></textarea>
+               <textarea class="form-textarea" rows="4" placeholder="Enter query string to test here..." data-field="endpoint"></textarea>
             </label>
 
             <label class="stacked value">
                Result:
-               <textarea rows="6" cols="50" placeholder="Result..." readonly></textarea>
+               <textarea class="form-textarea" rows="6"  placeholder="Result..." readonly></textarea>
             </label>
-
+            </div>
             <button class="button btn" data-action="send-command" data-type="command">Send Message</button>
          </div>
 
@@ -97,7 +101,7 @@
    <hr>
    <div class="card-input" data-type="group">
       <select id="idSelectTheme" onchange="ChangeTheme()">
-         <option value="variables-soft-candy.css">Soft candy</option>
+         <option value="variables-candy-light.css">Candy light</option>
          <option value="variables-blue-fog.css">Blue fog</option>
          <option value="variables-purple-soft.css">Purple soft</option>
          <option value="variables-red-black.css">Red black</option>
@@ -130,11 +134,13 @@
        */
       function SendCommand( eContainer ) {
          // ## Generate url from values in container
-         let sUrl = "http://"
-         sUrl += eContainer.querySelector("[data-field='host']").value;
-         sUrl += ":" + eContainer.querySelector("[data-field='port']").value;
-         sUrl += "/!db/";
-         sUrl += ":" + eContainer.querySelector("[data-field='endpoint']").value;
+         const sHost = eContainer.querySelector("[data-field='host']").value;
+         const sPort = eContainer.querySelector("[data-field='port']").value;
+         let sTemp;
+         sTemp = eContainer.querySelector("[data-field='endpoint']").value;
+         const sEncodedEndpoint = encodeURIComponent(sTemp);                   // URI encode the endpoint
+         const sUrl = `http://${sHost}:${sPort}/!db/:${sEncodedEndpoint}`;
+
 
          SetStatusbarMessage(`URL: ${sUrl}`);
 
