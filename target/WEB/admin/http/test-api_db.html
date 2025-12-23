@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>sample</title>
+   <link id="idCssVariable" rel="stylesheet" href="variables-default.css">
+   <style>
+      .group { display: block }
+      .fields { display: block }
+
+      .fields .inline { align-items: center; display: flex;  gap: 0.5rem; }
+      .fields .stacked { display: flex; flex-direction: column; gap: 0.25rem; }
+
+      .card {}
+      .card-input { background-color: var(--background-light); padding: 15px; }
+      .button { background-color: var( --background-primary ); color: var(--color-primary); cursor: pointer; }
+
+      .button.btn { border: 1px solid var(--color-primary); border-radius: 4px;  padding: 8px 16px; text-align: center; text-decoration: none;  user-select: none; vertical-align: middle; }
+
+      body { background-color: var(--background-body); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; line-height: 1.5; margin: 0; padding: 20px; }
+
+      .text-primary { color: var(--color-primary); }
+      .text-secondary { color: var(--color-secondary); }
+      .text-success { color: var(--color-success); }
+      .text-danger { color: var(--color-danger); }
+      .text-warning { color: var(--color-warning); }
+      .text-info { color: var(--color-info); }
+      .text-light { color: var(--color-light); }
+      .text-dark { color: var(--color-dark); }
+      .background-primary { background-color: var(--background-primary); }
+      .background-secondary { background-color: var(--background-secondary); }
+      .background-success { background-color: var(--background-success); }
+      .background-danger { background-color: var(--background-danger); }
+      .background-warning { background-color: var(--background-warning); }
+      .background-info { background-color: var(--background-info); }
+      .background-light { background-color: var(--background-light); }
+      .background-dark { background-color: var(--background-dark); }
+   </style>
+</head>
+<body>
+   <h1>Test API: Database Operations</h1>
+   <hr>
+   <!-- ## Container to hold the test database API -->
+   <div id="idTestDBApi" data-type="container">
+      <h3>Test database API in http webserver</h3>
+
+      <div class="card-input" data-type="group">
+         <!-- ### Values to be sent to test database API -->
+         <div class="fields" data-type="fields">
+            <label class="inline value">
+               Ip:
+               <input type="text" data-name="host" data-field="host" value="127.0.0.1">
+            </label>
+            <label class="inline value">
+               Port number:
+               <input type="number" data-name="port" data-field="port" min="1" max="65535" value="8000">
+            </label>
+            <label class="stacked value">
+               Query string:
+               <textarea rows="4" cols="50" placeholder="Enter query string to test here..." data-field="endpoint"></textarea>
+            </label>
+
+            <label class="stacked value">
+               Result:
+               <textarea rows="6" cols="50" placeholder="Result..." readonly></textarea>
+            </label>
+
+            <button class="button btn" data-action="send-command" data-type="command">Send Message</button>
+         </div>
+
+
+         <hr>
+
+         <!-- ### Values to save command for later use or run again -->
+         <div class="fields" data-type="fields">
+            <label class="inline value">
+               Name for command:
+               <input type="text" data-field="name">
+            </label>
+            <label class="inline value">
+               Last command executed:
+               <input type="text" data-field="command">
+            </label>
+            <label class="stacked value">
+               Description:
+               <textarea rows="2" cols="50" placeholder="Describe..."></textarea>
+            </label>
+            <button class="button btn" data-action="save-command" data-type="command">Save command</button>
+         </div>
+
+      </div>
+
+      <div id="idStatusbar" class="background-info text-info" data-type="information"></div>
+   </div>
+
+   <hr>
+   <div class="card-input" data-type="group">
+      <select id="idSelectTheme" onchange="ChangeTheme()">
+         <option value="variables-soft-candy.css">Soft candy</option>
+         <option value="variables-blue-fog.css">Blue fog</option>
+         <option value="variables-purple-soft.css">Purple soft</option>
+         <option value="variables-red-black.css">Red black</option>
+         <option value="variables-clay-sea.css">Clay sea</option>
+         <option value="variables-compular.css">Compular</option>
+         <option value="variables-grey.css">Grey</option>
+         <option value="variables-soft-candy.css">Soft candy</option>
+         <option value="variables-green-food.css">Green food</option>
+         <option value="variables-test.css">Test</option>
+      </select>
+
+   </div>
+
+
+   <script>
+      // Example: You can add your API test logic here
+      console.log("Test API: Database Operations page loaded.");
+
+      /** ---------------------------------------------------------------------
+       * Change theme in page
+       */
+      function ChangeTheme() {
+         const sTheme = document.getElementById('idSelectTheme').value;
+         if(sTheme) { document.getElementById('idCssVariable').href = "css/" + sTheme; }
+      }
+
+      /** ---------------------------------------------------------------------
+       * Send command to server
+       * @param {HTMLElement} eContainer - The container element containing the command details
+       */
+      function SendCommand( eContainer ) {
+         // ## Generate url from values in container
+         let sUrl = "http://"
+         sUrl += eContainer.querySelector("[data-field='host']").value;
+         sUrl += ":" + eContainer.querySelector("[data-field='port']").value;
+         sUrl += "/!db/";
+         sUrl += ":" + eContainer.querySelector("[data-field='endpoint']").value;
+
+         SetStatusbarMessage(`URL: ${sUrl}`);
+
+         console.log("URL: " + sUrl);
+         fetch(sUrl, { method: "GET" })
+         .then(response_ => {
+             if(!response_.ok) {
+                 throw new Error(`Server responded with status: ${response_.status}`);
+             }
+             return response.text();
+         })
+         .then(sData => {
+            eContainer.querySelector("[data-field='result']").value = sData;
+            SetStatusbarMessage("Command sent successfully");
+         })
+         .catch(error => {
+             SetStatusbarMessage(`Error: ${error.message}`);
+         });
+      }
+
+      /** ---------------------------------------------------------------------
+       * Set status bar message
+       * @param {string} sMessage - The message to display in the status bar
+       */
+      function SetStatusbarMessage(sMessage) {
+          document.getElementById('idStatusbar').textContent = sMessage;
+      }
+
+
+
+      // ## Initialize test API elements
+      const eTestDBApi = document.querySelector("#idTestDBApi");
+      eTestDBApi.addEventListener("click", (oEvent) => {
+         let eTarget = oEvent.target;
+         if( !eTarget.dataset.action ) return;
+
+         let sAction = eTarget.dataset.action;
+         switch(sAction) {
+            case "send-command":
+               SendCommand( eTarget.closest( "[data-type='fields']")  );
+               break;
+            default:
+               console.log("Unknown action");
+         }
+
+         console.log( "Clicked on " + eTarget.tagName );
+         console.log("currentTarget:" + oEvent.currentTarget.tagName);
+      });
+
+   </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+
+/*
+
+## base classes
+
+1. **primary**
+2. **secondary**
+3. **success**
+4. **danger**
+5. **warning**
+6. **info**
+7. **light**
+8. **dark**
+*/
+
+
+:root {
+   /* Background and Text Colors */
+   --color-primary: #000000; /* Black text for primary background */
+   --color-secondary: #000000; /* Black text for secondary background */
+   --color-success: #000000; /* Black text for success background */
+   --color-danger: #000000; /* Black text for danger background */
+   --color-warning: #000000; /* Black text for warning background */
+   --color-info: #000000; /* Black text for info background */
+   --color-light: #ffffff; /* White text for dark background */
+   --color-dark: #000000; /* Black text for light background */
+   /* Background Colors (Custom Variants) */
+   --background-primary: #d6e6ff; /* Primary */
+   --background-secondary: #d7f9f8; /* Secondary */
+   --background-success: #ffffea; /* Success */
+   --background-danger: #fff0d4; /* Danger */
+   --background-warning: #fbe0e0; /* Warning */
+   --background-info: #e5d4ef; /* Info */
+   --background-light: #ffffff; /* Light */
+   --background-dark: #000000; /* Dark */
+   /* Active and disabled, should work with primary and secondary color for text */
+   --background-active: var(--background-primary); /* background for active elements */
+   --background-disabled: var(--background-secondary); /* background for disabled elements */
+   --color-active: var(--color-primary); /* color for active elements */
+   --color-disabled: var(--color-secondary); /* color for disabled elements */
+}
