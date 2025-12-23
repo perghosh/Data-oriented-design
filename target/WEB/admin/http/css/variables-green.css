@@ -15,6 +15,9 @@
 
 
 :root {
+   --color-body: #ffffff; /* White text for body */
+   --background-body: #000000; /* Black background for body */
+
    /* Background and Text Colors */
    --color-primary: #ffffff; /* White text for primary background */
    --color-secondary: #ffffff; /* White text for secondary background */
