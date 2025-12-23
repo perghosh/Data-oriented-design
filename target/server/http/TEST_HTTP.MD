@@ -4,6 +4,7 @@
 
 
 # Define variables
+$site = "http://localhost:8000"
 $site = "http://localhost:8001"
 
 **create**
@@ -42,3 +43,5 @@ curl "${site}/!db/open/select/select?type=sqlite&name=test" --data-urlencode "qu
 curl "${site}/!db/open/select?type=sqlite&name=test" --data-urlencode "query=SELECT * FROM TUserRights;" -G
 
 open/select?type=sqlite&name=test&query=SELECT * FROM TUser
+
+open/select/select?type=sqlite&name=test&query=SELECT * FROM TUser&query=SELECT FName,FAlias FROM TUser
