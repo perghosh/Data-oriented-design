@@ -15,7 +15,7 @@
          --font-size: 16px;
          --padding: 10px;
 
-      }   
+      }
       .body { font-family: Arial;}
 
        .panel { background-color: var(--background-primary); padding: 50px; }
@@ -32,21 +32,28 @@
 
 </head>
 <body class="body">
-   <div class="panel"> 
+   <div class="panel">
       <h1>hej</h1>
       <select id="idSelectTheme" onchange="ChangeTheme()">
          <option value="variables-soft-candy.css">Soft candy</option>
          <option value="variables-blue-fog.css">Blue fog</option>
          <option value="variables-purple-soft.css">Purple soft</option>
+         <option value="variables-red-black.css">Red black</option>
+         <option value="variables-clay-sea.css">Clay sea</option>
+         <option value="variables-compular.css">Compular</option>
+         <option value="variables-grey.css">Grey</option>
+         <option value="variables-soft-candy.css">Soft candy</option>
+         <option value="variables-green-food.css">Green food</option>
+         <option value="variables-test.css">Test</option>
       </select>
 
       <button id="idButtonReset">Reset</button>
-      
+
       <div id="idDiv">
          <br>
          <button id="idButtonCreate">Create Table</button>
       </div>
-   
+
    </div>
 
    <div id="idContainer">
@@ -93,7 +100,7 @@
 
             if (!bCheck) {
                //Table(eContainer, 3, 3);       // how do i remove the table if bCheck == true?
-               
+
                tableSimple = new CTableSimple({
                   parent: eContainer,
                   row: 5,
@@ -102,19 +109,19 @@
 
                tableSimple.Create();
                tableSimple.Hide();
-               
+
 
                bCheck = true
                eButton.textContent = "Remove Table"
             }
             else
             {
-               
+
                const eTable = eContainer.querySelector("table");
                if (eTable)
                {
                   eTable.remove();
-                  
+
                }
                bCheck = false;
                eButton.textContent = "Create Table"
@@ -142,7 +149,7 @@
          });
       }
 
-      function MoveElement(panel) 
+      function MoveElement(panel)
       {
          const ePanel = panel;
 
@@ -206,7 +213,7 @@
       }
 
 
-      function OrderedList(container) 
+      function OrderedList(container)
       {
          const eContainer = container;
          const eOrderedList = document.createElement("ol");
@@ -214,7 +221,7 @@
 
          eList.textContent = "Det här är en lista  ooo";
 
-         for(let i = 0; i < 5; i++) 
+         for(let i = 0; i < 5; i++)
          {
             eOrderedList.appendChild(eList.cloneNode(true));
          }
@@ -239,14 +246,14 @@
          }
 
          const eParent = document.createElement("div");
-         
+
          for(let i = 0; i < 5; i++) {
             const div = new CDiv({ "parent": eParent });
             div.Create();
          }
 
          eContainer.appendChild(eParent);
-         
+
       }
 
       function Initialize() {
@@ -254,7 +261,7 @@
          const eDivContainer = document.getElementById("idContainer");
          const eDivContainer2 = document.getElementById("idDiv");
          const ePanel = document.getElementById("idPanel");
-         
+
          Button(eContainer);
          CreateDiv(eDivContainer);
          MoveElement(ePanel);
