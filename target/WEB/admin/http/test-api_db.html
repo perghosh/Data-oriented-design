@@ -67,7 +67,7 @@
 
             <label class="stacked value">
                Result:
-               <textarea class="form-textarea" rows="6"  placeholder="Result..." readonly></textarea>
+               <textarea class="form-textarea" rows="6"  placeholder="Result..." readonly data-field="result"></textarea>
             </label>
             </div>
             <button class="button btn" data-action="send-command" data-type="command">Send Message</button>
@@ -136,10 +136,44 @@
          // ## Generate url from values in container
          const sHost = eContainer.querySelector("[data-field='host']").value;
          const sPort = eContainer.querySelector("[data-field='port']").value;
-         let sTemp;
-         sTemp = eContainer.querySelector("[data-field='endpoint']").value;
-         const sEncodedEndpoint = encodeURIComponent(sTemp);                   // URI encode the endpoint
-         const sUrl = `http://${sHost}:${sPort}/!db/:${sEncodedEndpoint}`;
+         const sRawEndpoint = eContainer.querySelector("[data-field='endpoint']").value;
+         let sProcessedEndpoint = sRawEndpoint;
+
+         // ## Split, encode and combine if needed
+
+         // 1. Check if there is a query string (contains '?')
+         const iQuestionMarkIndex = sRawEndpoint.indexOf('?');
+         
+         if(iQuestionMarkIndex !== -1) {
+            // Split into Path and Query String
+            const sPath = sRawEndpoint.substring(0, iQuestionMarkIndex);
+            const sQueryString = sRawEndpoint.substring(iQuestionMarkIndex + 1);
+            
+            // Split Query String into individual parameters by '&'
+            const aParams = sQueryString.split('&');
+            
+            // Map through parameters to encode values (and keys)
+            const aEncodedParams = aParams.map(sParam => {
+               // Split each param into key and value by the first '='
+               const nEqualsIndex = sParam.indexOf('=');
+               
+               if (nEqualsIndex === -1) {
+                  // Handle parameter without value (e.g. just "flag")
+                  return encodeURIComponent(sParam);
+               }
+               
+               const sKey = sParam.substring(0, nEqualsIndex);
+               const sValue = sParam.substring(nEqualsIndex + 1);
+               
+               // Return "encodedKey=encodedValue"
+               return `${encodeURIComponent(sKey)}=${encodeURIComponent(sValue)}`;
+            });
+            
+            // Combine the path with the processed query string
+            sProcessedEndpoint = `${sPath}?${aEncodedParams.join('&')}`;
+         }
+
+         const sUrl = `http://${sHost}:${sPort}/!db/${sProcessedEndpoint}`;
 
 
          SetStatusbarMessage(`URL: ${sUrl}`);
@@ -150,7 +184,7 @@
              if(!response_.ok) {
                  throw new Error(`Server responded with status: ${response_.status}`);
              }
-             return response.text();
+             return response_.text();
          })
          .then(sData => {
             eContainer.querySelector("[data-field='result']").value = sData;
