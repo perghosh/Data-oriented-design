@@ -40,3 +40,5 @@ $site = "http://localhost:8001"
 curl "${site}/!db/open/select?type=sqlite&name=test" --data-urlencode "query=SELECT * FROM TUser;" -G
 curl "${site}/!db/open/select/select?type=sqlite&name=test" --data-urlencode "query=SELECT * FROM TUser" --data-urlencode "query=SELECT FName,FAlias FROM TUser" -G
 curl "${site}/!db/open/select?type=sqlite&name=test" --data-urlencode "query=SELECT * FROM TUserRights;" -G
+
+open/select?type=sqlite&name=test&query=SELECT * FROM TUser
