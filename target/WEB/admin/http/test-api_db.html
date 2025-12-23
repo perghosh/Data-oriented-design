@@ -78,28 +78,31 @@
 
          <!-- ### Values to save command for later use or run again -->
          <div class="fields" data-type="fields">
-            <label class="inline value">
-               Name for command:
-               <input type="text" data-field="name">
-            </label>
-            <label class="inline value">
-               Last command executed:
-               <input type="text" data-field="command">
-            </label>
+            <div class="form-group">
+            <div class="form-row">
+               <label class="inline value">
+                  Last command executed:
+                  <input class="form-input" type="text" data-field="command">
+               </label>
+               <label class="inline value">
+                  Name for command:
+                  <input class="form-input" type="text" data-field="name" style="width: 100%">
+               </label>
+            </div>
+
             <label class="stacked value">
                Description:
-               <textarea rows="2" cols="50" placeholder="Describe..."></textarea>
+               <textarea class="form-textarea" rows="2" cols="50" placeholder="Describe..."></textarea>
             </label>
+            </div>
             <button class="button btn" data-action="save-command" data-type="command">Save command</button>
-         </div>
-
       </div>
 
       <div id="idStatusbar" class="background-info text-info" data-type="information"></div>
    </div>
 
    <hr>
-   <div class="card-input" data-type="group">
+   <div class="card-input form-input" data-type="group">
       <select id="idSelectTheme" onchange="ChangeTheme()">
          <option value="variables-candy-light.css">Candy light</option>
          <option value="variables-blue-fog.css">Blue fog</option>
