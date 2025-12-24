@@ -142,6 +142,16 @@ is copied to that block, old block is deleted.
  b_ = table_.cell_get_variant_view(uRow, "path2"). as_string_view() == "C:\\test\\file2.txt"; // check value in newly created column "path2"
  assert(b_);
  @endcode
+
+ @code
+//## Example of how to create using static method
+void CSessions::CreateTable_s( gd::table::arguments::table& tableSession )
+{                                                                                                  assert( tableSession.empty() == true );
+   tableSession.set_flags( gd::table::tag_meta{} );
+   tableSession.column_add( {{ "uuid", 0, "id"}, { "uint64", 0, "time" }, { "uint64", 0, "ip4" }, { "uint64", 0, "ip6" } }, gd::table::tag_type_name{});
+   tableSession.prepare();
+}
+ @endcode
  */
 class table
 {
@@ -352,11 +362,11 @@ public:
 public:
 /** \name GET/SET
 *///@{
-   void set_state [[deprecated]] ( uint32_t uFlags ) noexcept { m_uFlags = uFlags; }
    void set_flags( uint32_t uFlags ) noexcept { m_uFlags = uFlags; }
-   void set_state [[deprecated]] ( tag_full_meta ) noexcept { m_uFlags = eTableFlagRowStatus|eTableFlagNull64|eTableFlagArguments; }
+   /// Turn on full meta data support
    void set_flags( tag_full_meta ) noexcept { m_uFlags = eTableFlagRowStatus|eTableFlagNull64|eTableFlagArguments; }
-   void set_state [[deprecated]] ( uint32_t uSet, uint32_t uClear ) noexcept { m_uFlags |= uSet; m_uFlags &= ~uSet; }
+   /// Turn on null 32 bit support and row status and arguments (almost full)
+   void set_flags( tag_meta ) noexcept { m_uFlags = eTableFlagRowStatus|eTableFlagNull32|eTableFlagArguments; }
    void set_flags( uint32_t uSet, uint32_t uClear ) noexcept { m_uFlags |= uSet; m_uFlags &= ~uSet; }
    unsigned get_column_count() const noexcept { return (unsigned)m_pcolumns->size(); }
    /// Get number of rows with values

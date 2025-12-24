@@ -244,6 +244,8 @@ public:
 	///  Open database and put connection into pointer reference
 	static std::pair<bool, std::string> OpenDatabase_s( const gd::argument::arguments& argumentsOpen, gd::database::database_i*& pdatabase_);
 
+   static std::string FOLDER_GetRoot_s( const std::string_view& stringSubfolder );
+
 
 
 };

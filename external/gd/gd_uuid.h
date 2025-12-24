@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <memory>
 #include <random>
+#include <string>
+#include <string_view>
 
 #include "gd_types.h"
 #include "gd_utf8.h"
@@ -86,6 +88,7 @@ public:
    uuid( const uuid& o );
    uuid( const uint8_t* puUuid ) { memcpy( m_pbData, puUuid, 16 ); }
    uuid( const char* pbsHexBegin, const char* pbsHexEnd ) { assert( (pbsHexEnd - pbsHexBegin) == 32 || (pbsHexEnd - pbsHexBegin) == 36 ); read( (const value_type*)pbsHexBegin, (const value_type*)pbsHexEnd ); }
+
 #ifdef GD_X86
    uuid(__m128i iUuid) { _mm_store_si128((__m128i*)m_pbData, iUuid);  }
 #endif
@@ -127,7 +130,7 @@ public:
    std::string to_string() const;  ///< convert uuid to string in uuid format
 
    /// clear buffer (set to 00000000-0000-0000-0000-000000000000)
-   void clear() const noexcept;
+   void clear() noexcept;
 
    /// create new random uuid
    static uuid new_uuid_s();
@@ -136,7 +139,7 @@ public:
    static void read_s( const value_type* puBegin, const value_type* puEnd, value_type* puSet );
 
 public:
-    alignas(128) uint8_t m_pbData[16]; ///< internal buffer storing the uuid value 
+    alignas(16) uint8_t m_pbData[16]; ///< internal buffer storing the uuid value 
 
     static r64 m_r64_s; ///< static member used to generate random uuid values
 
@@ -246,9 +249,8 @@ inline const uint8_t* load_unaligned_si128(const uint8_t* p) noexcept
 inline uuid::uuid( const uuid& o )
 {
 #ifdef GD_X86
-   auto i = load_unaligned_si128( o );
-   _mm_storeu_si128( reinterpret_cast< __m128i* >(m_pbData), i );
-   memcpy(m_pbData, o, sizeof(m_pbData));
+   __m128i i = load_unaligned_si128( o.m_pbData );
+   _mm_storeu_si128( reinterpret_cast<__m128i*>(m_pbData), i );
 #else
    memcpy(m_pbData, o, sizeof(m_pbData));
 #endif
@@ -296,7 +298,7 @@ inline void uuid::read( const value_type* puBegin, const value_type* puEnd )
 /** ---------------------------------------------------------------------------
  * @brief clear internal buffer storing uuid value
 */
-inline void uuid::clear() const noexcept
+inline void uuid::clear() noexcept
 {
    *(uint64_t*)m_pbData = 0ULL;  
    *(uint64_t*)(m_pbData + sizeof(uint64_t)) = 0ULL;
