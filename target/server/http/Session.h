@@ -30,6 +30,8 @@ class CApplication;
  */
 class CSessions
 {
+public:
+   enum enumColumn { eColumnId, eColumnTime, eColumnIp4, eColumnIp6 };
 // @API [tag: construction]
 public:
    CSessions() {}
@@ -59,6 +61,10 @@ public:
 
    gd::uuid Add();
    std::pair<bool, std::string> Add( const gd::uuid& uuid_ );
+
+   gd::uuid At( size_t uIndex );
+
+   void Update( size_t uIndex );
 
 
 protected:
