@@ -1,0 +1,43 @@
+// @FILE [tag: session] [description: http session] [type: source] [name: Session.cpp]
+
+#include "Application.h"
+
+#include "Session.h"
+
+void CSessions::Initialize( size_t uMaxCount )
+{
+   CreateTable_s( m_tableSession );
+   m_tableSession.row_reserve_add( uMaxCount );
+}
+
+gd::uuid CSessions::Add()
+{
+   // ## create new uuid
+   gd::uuid uuidNew = gd::uuid::new_uuid_s();
+
+   // ## add session to table but remember to lock table during operation
+   {
+      std::scoped_lock lock( m_mutexTable );
+      uint64_t uRow = m_tableSession.row_add_one();
+      m_tableSession.cell_set( uRow, "uuid", gd::types::binary( uuidNew.data(), 16 ) );
+   }
+
+   return uuidNew;
+}
+
+std::pair<bool, std::string> CSessions::Add( const gd::uuid& uuid_ )
+{
+   return { true, "" };
+}
+
+
+/** --------------------------------------------------------------------------
+ * @brief Initializes and prepares a session table with predefined columns and metadata flags.
+ * @param tableSession A reference to a table object that will be configured for session data.
+ */
+void CSessions::CreateTable_s( gd::table::arguments::table& tableSession )
+{                                                                                                  assert( tableSession.empty() == true );
+   tableSession.set_flags( gd::table::tag_meta{} );
+   tableSession.column_add( {{ "uuid", 0, "id"}, { "uint64", 0, "time" }, { "uint64", 0, "ip4" }, { "uint64", 0, "ip6" } }, gd::table::tag_type_name{});
+   tableSession.prepare();
+}

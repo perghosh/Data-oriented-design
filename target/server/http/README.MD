@@ -1,18 +1,13 @@
 
 
 ```
-|   Application.cpp
-|   Application.h
-|   CMakeLists.txt
-|   Document.cpp
-|   Document.h
-|   HttpServer.cpp
-|   HttpServer.h
+|   Application.*
+|   Document.*
+|   HttpServer.*
 |   main.cpp
-|   Router.cpp
-|   Router.h
-|   Server.cpp
-|   Server.h
+|   Router.*
+|   Server.*
+|   Session.*
 |
 +-- api
 |
@@ -31,3 +26,23 @@
 - `Document.cpp` / `Document.h`: Manages the creation and handling data used in HTTP server.
 - `Router.cpp` / `Router.h`: Implements routing logic to direct incoming HTTP requests to the appropriate handlers.
 - `Server.cpp` / `Server.h`: Contains the core server functionality, including request handling and response generation.
+- `Session.cpp` / `Session.h`: Manages individual client sessions, handling request parsing and response sending.
+
+## Application
+Application acts as the hallway to enter the server based on code. There are only one application object and using
+this object you can access almost everything in the server. Compare application with the hallway in a big 
+building, you enter the building using the hallway and then you can go to different rooms (modules) in the building (server).
+Application have some helper functions that are mostly free fucntions or like globals for logic that are dependent on the global state of the server.
+
+## Server
+**Server** is the layer above boost to handle HTTP requests. It listens for incoming connections, processes requests, and sends back responses.
+Server is also used to check the url and initialize the correct handlers. Internal api are identified by the prefix `!` and then routed using `Router`
+to the right handler.
+
+## Router
+**Router** is responsible for routing incoming HTTP requests to the appropriate handlers based on the URL and HTTP method. By reading
+the url Router can identify which module should handle the request.
+
+## Session
+**Session** represents a single client connection to the server. It manages the lifecycle of conected clients. Http server is a **stateful** server, the session
+holds unique keys for each client so the server can identify clients between requests.

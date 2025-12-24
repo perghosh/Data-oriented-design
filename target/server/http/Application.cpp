@@ -56,6 +56,10 @@ using tcp = boost::asio::ip::tcp;               // from <boost/asio/ip/tcp.hpp>
 
 constexpr std::string_view ROOT_MARKER = "__root";
 
+/// Global pointer to application object
+CApplication* papplication_g = nullptr;
+
+
 std::string FOLDER_GetRoot_g( const std::string_view& stringSubfolder );
 
 CApplication::~CApplication() 
@@ -351,7 +355,7 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    if( stringIp.empty() == true) { stringIp = stringDefaultIp; }
 
    // ## Prepare root folder for site on local disk
-   std::string stringRootFolder = FOLDER_GetRoot_g( "temp__/" );
+   std::string stringRootFolder = FOLDER_GetRoot_s( "temp__/" );
    if( PROPERTY_Get("folder-root").empty() == false ) stringRootFolder = papplication_g->PROPERTY_Get("folder-root").as_string();
 
    unsigned uThreadCount = 4;
@@ -979,7 +983,7 @@ std::string CApplication::ERROR_Report() const
 * @param stringSubfolder add this folder to found root folder, if empty then root folder is returned
 * @return std::string root folder name
 */
-std::string FOLDER_GetRoot_g( const std::string_view& stringSubfolder )
+std::string CApplication::FOLDER_GetRoot_s( const std::string_view& stringSubfolder )
 {
    std::filesystem::path pathCurrentDirecotry = std::filesystem::current_path();
    auto [bFound, stringRootFolder] = gd::file::closest_having_file_g( pathCurrentDirecotry.string(), ROOT_MARKER );

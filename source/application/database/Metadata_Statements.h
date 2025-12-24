@@ -89,7 +89,7 @@ public:
 private:
    // common copy
    void common_construct( const CStatement& o ) { m_uuidKey = o.m_uuidKey; m_uType = o.m_uType; m_arguments = o.m_arguments; m_uFlags = o.m_uFlags; }
-   void common_construct( CStatement&& o ) noexcept { m_uuidKey = o.m_uuidKey; m_uType = o.m_uType; m_arguments = std::move( o.m_arguments ); m_uFlags = o.m_uFlags; }
+   void common_construct( CStatement&& o ) noexcept { m_uuidKey = std::move(o.m_uuidKey); m_uType = o.m_uType; m_arguments = std::move( o.m_arguments ); m_uFlags = o.m_uFlags; }
 
 // ## operator -----------------------------------------------------------------
 public:
