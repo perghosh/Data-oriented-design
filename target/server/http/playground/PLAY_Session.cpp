@@ -26,4 +26,9 @@ TEST_CASE("[session] test uri logic", "[session]")
 {
    CSessions sessions;
    sessions.Initialize(20000);
+
+   for(auto u = 0u; u <= 1000; u++)
+   {
+      sessions.Add();
+   }
 }

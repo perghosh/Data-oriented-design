@@ -1,8 +1,19 @@
 // @FILE [tag: session] [description: http session] [type: source] [name: Session.cpp]
 
+#include <chrono>
+
 #include "Application.h"
 
 #include "Session.h"
+
+uint64_t GetTime()
+{
+   uint64_t uMilliSeconds = std::chrono::duration_cast<std::chrono::milliseconds>(
+       std::chrono::system_clock::now().time_since_epoch()
+   ).count();
+
+   return uMilliSeconds;
+}
 
 void CSessions::Initialize( size_t uMaxCount )
 {
@@ -29,6 +40,22 @@ std::pair<bool, std::string> CSessions::Add( const gd::uuid& uuid_ )
 {
    return { true, "" };
 }
+
+gd::uuid CSessions::At( size_t uIndex )
+{                                                                                                  assert( uIndex < m_tableSession.size() );
+   gd::uuid uuid_;
+   const auto* pbValue = m_tableSession.cell_get( 0, uIndex );
+   uuid_ = pbValue;
+   return uuid_;
+}
+
+void CSessions::Update( size_t uIndex )
+{                                                                                                  assert( uIndex < m_tableSession.size() );
+   uint64_t uTime = GetTime();
+   m_tableSession.cell_set( uIndex, CSessions::eColumnTime, uTime );
+}
+
+
 
 
 /** --------------------------------------------------------------------------
