@@ -123,6 +123,10 @@ public:
 public:
    static void CreateTable_s( gd::table::arguments::table& tableSession );    ///< create session table structure
    static uint64_t GetTime_s();                                               ///< get current unix time in milliseconds
+   /// Convert days to milliseconds for session expiration calculations
+   static uint64_t DaysToMs_s( uint64_t uDays );
+   /// Convert hours to milliseconds for session expiration calculations
+   static uint64_t HoursToMs_s( uint64_t uHours );
 
 
 };

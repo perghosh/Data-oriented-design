@@ -47,6 +47,7 @@ std::pair<bool, std::string> CSessions::Add( const gd::uuid& uuid_, uint64_t* pu
    return { false, "CSessions::Add: no free sessions available" };            // no free session found, you shouldn't be here....
 }
 
+/// Get the UUID at the specified index
 gd::uuid CSessions::At( size_t uIndex )
 {                                                                                                  assert( uIndex < m_tableSession.size() );
    gd::uuid uuid_;
@@ -55,10 +56,24 @@ gd::uuid CSessions::At( size_t uIndex )
    return uuid_;
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Updates the timestamp of a session to the current time.
+ * @param uIndex The index of the session to update.
+ * 
+ * This method refreshes the last active time for a session by setting the time
+ * column to the current timestamp. This is typically called when the client
+ * associated with the session makes a new request, keeping the session alive.
+ * 
+ * Note: This method is not thread-safe. If thread safety is required, the caller
+ * should acquire a lock on m_mutexTable before calling this method.
+ * 
+ * @see GetTime_s() for the timestamp format used
+ */
 void CSessions::Update( size_t uIndex )
 {                                                                                                  assert( uIndex < m_tableSession.size() );
-   uint64_t uTime = GetTime_s();
-   m_tableSession.cell_set( uIndex, CSessions::eColumnTime, uTime );
+   uint64_t uTime = GetTime_s();                                               // Get the current time in milliseconds since epoch
+   
+   m_tableSession.cell_set( uIndex, CSessions::eColumnTime, uTime );           // Update the session's timestamp in the time column (eColumnTime = 1)
 }
 
 /** --------------------------------------------------------------------------
@@ -72,21 +87,25 @@ void CSessions::Clear( size_t uIndex )
 }
 
 
+/** ---------------------------------------------------------------------------
+ * @brief Purges expired sessions from the table.
+ * @param uCurrentTimeMs The current time in milliseconds.
+ * @param uExpireLimitMs The maximum age of a session in milliseconds.
+ */
 void CSessions::Purge(uint64_t uCurrentTimeMs, uint64_t uExpireLimitMs)
 {                                                                                                  assert(uExpireLimitMs < (10LL * 365 * 24 * 60 * 60 * 1000) && "realistic? should not be more than 10 years...");
    // Calculate the expiration threshold in milliseconds
    // Sessions older than this timestamp will be purged
    uint64_t uExpireThresholdMs = uCurrentTimeMs - uExpireLimitMs;             // `uExpireThresholdMs` now holds the cutoff timestamp
    
-   // Iterate through all sessions and clear expired ones
+   // ## Iterate through all sessions and clear expired ones
    for(uint64_t uRow = 0; uRow < m_tableSession.size(); ++uRow)
    {
       if( m_tableSession.cell_is_null(uRow, eColumnTime) == false )
       {
          uint64_t uSessionTimeMs = m_tableSession.cell_get<uint64_t>(uRow, eColumnTime);
          
-         // If session timestamp is older than the expire threshold, clear it
-         if(uSessionTimeMs < uExpireThresholdMs)
+         if(uSessionTimeMs < uExpireThresholdMs)                               // If session timestamp is older than the expire threshold, clear it
          {
             Clear(uRow);
          }
@@ -94,6 +113,7 @@ void CSessions::Purge(uint64_t uCurrentTimeMs, uint64_t uExpireLimitMs)
    }
 }
 
+/// Count active sessions
 size_t CSessions::CountActive() const
 {
    size_t uCount = 0;
@@ -110,6 +130,13 @@ size_t CSessions::CountActive() const
    return uCount;
 }
 
+/** ---------------------------------------------------------------------------
+ * Count active sessions within a specified time range.
+ *
+ * @param uCurrentTimeMs The current time in milliseconds.
+ * @param uExpireLimitMs The maximum allowed age of a session in milliseconds.
+ * @return The number of active sessions within the specified time range.
+ */
 size_t CSessions::CountActive(uint64_t uCurrentTimeMs, uint64_t uExpireLimitMs) const
 {                                                                                                  assert(uExpireLimitMs < (10LL * 365 * 24 * 60 * 60 * 1000) && "realistic? should not be more than 10 years...");
    size_t uCount = 0;
@@ -199,4 +226,26 @@ uint64_t CSessions::GetTime_s()
    ).count();
 
    return uMilliSeconds;
+}
+
+/** --------------------------------------------------------------------------
+ * @brief Convert days to milliseconds for session expiration calculations
+ * @param uDays Number of days to convert
+ * @return Equivalent time in milliseconds
+ */
+uint64_t CSessions::DaysToMs_s(uint64_t uDays)
+{
+   // 1 day = 24 hours = 24 * 60 minutes = 24 * 60 * 60 seconds = 24 * 60 * 60 * 1000 milliseconds
+   return uDays * 24ULL * 60ULL * 60ULL * 1000ULL;
+}
+
+/** --------------------------------------------------------------------------
+ * @brief Convert hours to milliseconds for session expiration calculations
+ * @param uHours Number of hours to convert
+ * @return Equivalent time in milliseconds
+ */
+uint64_t CSessions::HoursToMs_s(uint64_t uHours)
+{
+   // 1 hour = 60 minutes = 60 * 60 seconds = 60 * 60 * 1000 milliseconds
+   return uHours * 60ULL * 60ULL * 1000ULL;
 }
