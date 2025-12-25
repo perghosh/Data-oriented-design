@@ -2,8 +2,6 @@
 
 #include <chrono>
 
-#include "Application.h"
-
 #include "Session.h"
 
 void CSessions::Initialize( size_t uMaxCount )
