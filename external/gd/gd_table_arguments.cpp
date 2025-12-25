@@ -2476,6 +2476,20 @@ gd::argument::shared::arguments* table::row_get_arguments_pointer(uint64_t uRow)
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief delete row arguments object for row
+ * @param uRow index to row where arguments object is deleted
+*/
+void table::row_arguments_delete( uint64_t uRow )
+{                                                                                                  assert( row_is_arguments( uRow ) == true );
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   if( *(intptr_t*)pargumentsRow != 0 )
+   {
+      pargumentsRow->~arguments();                                            // call destructor
+      *(intptr_t*)pargumentsRow = 0;                                          // clear pointer at position in row meta data
+   }
+}
+
+/** ---------------------------------------------------------------------------
  * @brief Iterates rows in table, harvest row values and call the callback method with row values
  * @param callback_ callback called for each row in table with cell values in row
  * @return true if rows was processed (depends on callback)
