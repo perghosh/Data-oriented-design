@@ -373,8 +373,6 @@ public:
    uint64_t get_row_count() const noexcept { assert( m_puData != nullptr ); return m_uRowCount; }
    /// Number of rows memory is allocated for
    uint64_t get_reserved_row_count() const noexcept { return m_uReservedRowCount; }
-   /// get allocated size in bytes for table
-   uint64_t get_reserved_size() const noexcept { return m_uReservedRowCount; }
    uint64_t get_row_count( uint32_t uFlags ) const noexcept;
    /// Last valid row index where to insert cell values
    uint64_t get_row_back() const noexcept { assert( m_puData != nullptr ); return m_uRowCount - 1; }
@@ -664,6 +662,11 @@ public:
    gd::argument::shared::arguments* row_get_arguments_pointer( uint64_t uRow ) const noexcept;
    gd::argument::shared::arguments* row_get_arguments_pointer( uint64_t uRow );
 
+   bool row_arguments_exists( uint64_t uRow ) const noexcept { return row_get_arguments_pointer( uRow ) != nullptr; }
+
+   /// delete arguments object for selected row
+   void row_arguments_delete( uint64_t uRow );
+
    bool row_for_each( std::function<bool( std::vector<gd::variant_view>&, uint64_t )> callback_ );
    bool row_for_each( std::function<bool( const std::vector<gd::variant_view>&, uint64_t )> callback_ ) const;
    bool row_for_each( uint64_t uFrom, uint64_t uCount, std::function<bool( std::vector<gd::variant_view>&, uint64_t )> callback_ );
@@ -820,6 +823,7 @@ public:
 
    /// @brief size is same as `get_row_count and returns number of rows
    size_t size() const { return (size_t)get_row_count(); }
+   size_t reserved_size() const { return (size_t)m_uReservedRowCount; }
    /// clears all internal data in table, like a reset (columns are also deleted)
    void clear();
    /// check if table is empty, don't have and data in table rows
