@@ -7,7 +7,7 @@
 #endif
 
 /// Global pointer to application object
-CApplication* papplication_g = nullptr;
+//CApplication* papplication_g = nullptr;
 
 
 int main( int iArgumentCount, char* ppbszArgument[] )
