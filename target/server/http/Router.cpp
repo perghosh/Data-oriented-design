@@ -36,39 +36,11 @@ std::pair<bool, std::string> CRouter::Parse()
       stringQueryStringView.remove_prefix( 1 );
       m_stringQueryString = stringQueryStringView;
       m_uFlags |= eFlagCommand;
-
-
-      /*
-      std::string_view stringPath;
-      std::string_view stringQuery;
-
-      auto uPosition = stringQueryStringView.find( '?' );
-      if( uPosition != std::string::npos ) 
-      { 
-         stringPath = stringQueryStringView.substr( 0, uPosition ); 
-         stringQuery = stringQueryStringView.substr( uPosition + 1 );
-      }
-      else { stringPath = stringQueryStringView; }
-
-      auto result_ = gd::parse::uri::parse_path( stringQueryStringView, m_vectorCommand );
-      if( result_.first == false ) { return result_; }
-
-      if( stringQuery.empty() == false )
-      {
-         // parse query string into arguments
-
-         auto result_ = gd::parse::uri::parse_query( stringQuery, argumentsQuery );
-         if( result_.first == false ) { return result_; }
-      }
-      */
    }
    else
    {
       m_uFlags &= ~eFlagCommand;
    }
-
-   //auto result_ = boost::urls::parse_uri( stringQueryStringView );
-
 
    return { true, "" };
 }

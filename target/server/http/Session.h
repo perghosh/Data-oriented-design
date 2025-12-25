@@ -13,7 +13,6 @@
 #include "gd/gd_log_logger.h"
 #include "gd/gd_table_arguments.h"
 
-class CApplication;
 
 /** @CLASS [name: CSessions] [description:  ]
  * \brief Sessions is a flexible data manager used to connect data for session values

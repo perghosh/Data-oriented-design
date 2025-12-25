@@ -48,6 +48,12 @@ public:
       eFlagCommand            = 0x00000001,
    };
 
+   enum enumResultFormat
+   {
+      eResultFormatXml        = 0x00000000,
+      eResultFormatJson       = 0x00000100,
+   };
+
 public:
    CRouter() {}
    CRouter(CApplication* pApplication): m_pApplication(pApplication) {}
@@ -69,6 +75,9 @@ private:
 // ## operator -----------------------------------------------------------------
 public:
    bool IsCommand() const { return (m_uFlags & eFlagCommand) != 0; }
+
+   bool IsXml() const { return ( m_uFlags & eResultFormatJson ) == 0; }
+   bool IsJson() const { return ( m_uFlags & eResultFormatJson ) == eResultFormatJson; }
 
 
 // ## methods ------------------------------------------------------------------
