@@ -224,6 +224,7 @@ public:
    std::vector<gd::database::database_i*> m_vectorDatabase; ///< list of databases (for most situations only one database is used)
 
    std::mutex m_mutexDocument;   ///< Handle document locking
+   CDocument* m_pdocumentActive{};  ///< active document
    std::vector< std::unique_ptr<CDocument> > m_vectorDocument;///< list of connected documents, if used in multidocument environment
 
    std::unique_ptr<gd::table::arguments::table> m_ptableSite;  ///< table holding site information like ip and root folder, port etc.

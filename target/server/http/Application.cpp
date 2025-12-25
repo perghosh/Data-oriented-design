@@ -241,6 +241,15 @@ std::pair<bool, std::string> CApplication::Initialize()
       }
    }
 
+   // ## create main document, this holds main application data
+   //    Sessions and other data is stored in document
+
+   auto pdocumentMain = std::make_unique<CDocument>( this );
+   m_pdocumentActive = pdocumentMain.get(); 
+   m_vectorDocument.push_back( std::move( pdocumentMain ) );
+
+   // ## create server boost object to handle http requests
+
    m_pserverBoost = new CServer(this);                                        // create server object, used to handle and isolate http requests
 
    // ## Add default servers to router

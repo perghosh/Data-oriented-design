@@ -54,21 +54,22 @@ class CServer
 {
 // ## construction -------------------------------------------------------------
 public:
-   CServer() {}
+   CServer();
    /// Constructor that sets application pointer
-   CServer(CApplication* ppapplication) : m_ppapplication(ppapplication) {}
+   CServer(CApplication* ppapplication);
    // copy
-   CServer(const CServer& o) { common_construct(o); }
-   CServer(CServer&& o) noexcept { common_construct(std::move(o)); }
+   CServer(const CServer& o);
+   CServer(CServer&& o) noexcept;
    // assign
-   CServer& operator=(const CServer& o) { common_construct(o); return *this; }
-   CServer& operator=(CServer&& o) noexcept { common_construct(std::move(o)); return *this; }
+   CServer& operator=(const CServer& o);
+   CServer& operator=(CServer&& o) noexcept;
 
-   ~CServer() {}
+   ~CServer();
+
 private:
    // common copy
-   void common_construct(const CServer& o) {}
-   void common_construct(CServer&& o) noexcept {}
+void common_construct(const CServer& o);
+void common_construct(CServer&& o) noexcept;
 
 // ## operator -----------------------------------------------------------------
 public:
@@ -121,7 +122,8 @@ public:
 
 // ## free functions ------------------------------------------------------------
 public:
-
+   /// Prepares response header for request
+   void PrepareResponseHeader_s( gd::argument::arguments& argumentHeader, boost::beast::http::response<boost::beast::http::string_body>& response );
 
 
 };

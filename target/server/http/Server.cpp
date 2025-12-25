@@ -9,6 +9,24 @@
 #include "Server.h"
 
 
+CServer::CServer() {}
+CServer::CServer(CApplication* ppapplication) : m_ppapplication(ppapplication) {}
+
+CServer::CServer(const CServer& o) { common_construct(o); }
+CServer::CServer(CServer&& o) noexcept { common_construct(std::move(o)); }
+// assign
+CServer& CServer::operator=(const CServer& o) { common_construct(o); return *this; }
+CServer& CServer::operator=(CServer&& o) noexcept { common_construct(std::move(o)); return *this; }
+
+
+CServer::~CServer()
+{
+}
+
+void CServer::common_construct(const CServer& o) {}
+void CServer::common_construct(CServer&& o) noexcept {}
+
+
 std::pair<bool, std::string> CServer::Initialize()
 {
    // Implementation of the Initialize method
@@ -190,15 +208,23 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
       stringBody = "<response status=\"ok\" />";
    }
 
+   std::array<std::byte, 128> array_; // array to hold data for arguments
+   gd::argument::arguments argumentHeader( (gd::argument::arguments::pointer)array_.data(), (unsigned)array_.size() );
+
+   if( router_.IsJson() == true ){ argumentHeader["format"] = "json"; }
+   else { argumentHeader["format"] = "xml"; }
+
    boost::beast::http::file_body::value_type body_;
 
    // 1. Create a response object using string_body
-   boost::beast::http::response<boost::beast::http::string_body> response{
-       boost::beast::http::status::ok, request_.version()};
+   boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::ok, request_.version()};
 
    // 2. Set the body of the response
    response.body() = std::move(stringBody);
 
+   PrepareResponseHeader_s( argumentHeader, response );
+
+   /*
    // 3. Set essential headers
    response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
    response.set(boost::beast::http::field::content_type, "text/plain");
@@ -211,6 +237,7 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    response.prepare_payload();
 
    // 6. Return the response. It will be implicitly converted to message_generator.
+   */
    return response;
 }
 
@@ -290,21 +317,30 @@ std::pair<bool, std::string> CServer::Execute(const std::vector<std::string_view
 
    auto result_ = phttpserver->Execute( vectorCommand, pcommand, &presponse );
 
-
-   //std::string_view stringCommand = vectorCommand[0];
-
-   //gd::com::server::server_i* pserver = m_router.GetServer( stringCommand );
-   // CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
-
-   // auto result_ = phttpserver->Get( vectorCommand, pcommand );
-
-   // if( pserver == nullptr ) { return { false, "No server found for command: " + std::string(stringCommand) }; }
-
-   // pserver->get( vectorCommand, nullptr, pcommand, nullptr);
-
-
-
    return { true, "" };
+}
+
+
+void CServer::PrepareResponseHeader_s( gd::argument::arguments& argumentHeader, boost::beast::http::response<boost::beast::http::string_body>& response )
+{
+   using namespace boost::beast::http;
+   response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+   response.set(field::access_control_allow_origin, "*");   
+   response.set(field::access_control_allow_methods, "GET, POST, HEAD, OPTIONS");
+
+   auto stringFormat = argumentHeader["format"].as_string_view();
+   if( stringFormat.empty() == false )
+   {
+      std::string stringContentType("application/");
+      stringContentType += stringFormat;
+      response.set(field::content_type, stringContentType);
+   }
+   else 
+   {
+      response.set( field::content_type, "text/plain" );
+   }
+
+   response.prepare_payload();
 }
 
 

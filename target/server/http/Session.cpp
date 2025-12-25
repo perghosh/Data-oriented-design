@@ -2,8 +2,6 @@
 
 #include <chrono>
 
-#include "Application.h"
-
 #include "Session.h"
 
 void CSessions::Initialize( size_t uMaxCount )
@@ -215,6 +213,7 @@ std::pair<bool, uint64_t> CSessions::FindFirstFree(uint64_t uOffset)
 void CSessions::CreateTable_s( gd::table::arguments::table& tableSession )
 {                                                                                                  assert( tableSession.empty() == true );
    tableSession.set_flags( gd::table::tag_meta{} );
+   tableSession.column_prepare();
    tableSession.column_add( {{ "uuid", 0, "id"}, { "uint64", 0, "time" }, { "uint64", 0, "ip4" }, { "uint64", 0, "ip6" }, { "uint64", 0, "data" } }, gd::table::tag_type_name{});
    tableSession.prepare();
 }
