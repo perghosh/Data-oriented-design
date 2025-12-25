@@ -190,8 +190,8 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    {
       // ## Process request by calling core method in application
       std::vector<std::pair<std::string, std::string>> vectorResponse;
-      auto resulut_ = papplication_g->GetServer()->ProcessRequest( eVerb, stringTarget, vectorResponse );
-      if ( resulut_.first == false ) { return server_error_(resulut_.second); }
+      auto result_ = papplication_g->GetServer()->ProcessRequest( eVerb, stringTarget, vectorResponse );
+      if ( result_.first == false ) { return server_error_(resulut_.second); }
       // copilot: implement ProcessRequest method in CApplication
 
    }
