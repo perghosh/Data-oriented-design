@@ -3,7 +3,7 @@
 #include "Application.h"
 
 /// Global pointer to application object
-CApplication* papplication_g = nullptr;
+//CApplication* papplication_g = nullptr;
 
 
 /** --------------------------------------------------------------------------- @API [tag: main] [description: start application] [type: method]
