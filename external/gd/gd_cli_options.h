@@ -343,6 +343,7 @@ public:
    option* find( const std::string_view& stringName );
    const option* find( const std::string_view& stringName ) const;
    option* find( char chLetter );
+   const option* find( char chLetter ) const;
 
    // find parsed values
    bool find( const std::string_view& stringName, const gd::variant_view& variantviewValue ) const;
@@ -522,6 +523,7 @@ public:
 
 };
 
+/// find options for selected letter
 inline options::option* options::find( char chLetter ) {
    for( auto it = std::begin( m_vectorOption ), itEnd = std::end( m_vectorOption ); it != itEnd; it++ ) {
       if( it->letter() == chLetter ) return &(*it);
@@ -529,6 +531,16 @@ inline options::option* options::find( char chLetter ) {
 
    return nullptr;
 }
+
+/// find option for selected letter
+inline const options::option* options::find( char chLetter ) const {
+   for( auto it = std::begin( m_vectorOption ), itEnd = std::end( m_vectorOption ); it != itEnd; it++ ) {
+      if( it->letter() == chLetter ) return &(*it);
+   }
+
+   return nullptr;
+}
+
 
 inline options::option* options::find( const std::string_view& stringName ) {
    for( auto it = std::begin( m_vectorOption ), itEnd = std::end( m_vectorOption ); it != itEnd; it++ ) {

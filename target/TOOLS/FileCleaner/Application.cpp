@@ -485,6 +485,35 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       }
 #endif // GD_LOG_SIMPLE
 
+      // ## Check for folder set from command line ........................... @API [tag: option, application, folder] [description: if folder option is set from command line, activate this as the current folder ]
+
+      if( optionsApplication.exists("directory", gd::types::tag_state_active{}) == true )
+      {
+         std::string stringFolderAlias = optionsApplication.get_variant_view( "directory", gd::types::tag_state_active{} ).as_string();
+         auto stringPath = CONFIG_Get("directory", stringFolderAlias );
+         std::filesystem::path pathFolder( stringPath.c_str() );
+         if( stringPath.empty() == true || std::filesystem::exists( pathFolder ) == false )
+         {
+            PrintError( std::format( "Directory alias '{}' not found in configuration or path does not exist.", stringFolderAlias ), gd::argument::arguments() );
+         }
+         else
+         {  
+            // ### Set current folder ........................................
+            if( std::filesystem::is_directory( pathFolder ) == true )
+            {
+               PROPERTY_Set( "folder-current", pathFolder.string() );                              LOG_INFORMATION_RAW("== Set current directory to: " & pathFolder.string() );
+               try { std::filesystem::current_path(pathFolder); } 
+               catch (const std::filesystem::filesystem_error& e) {
+                  std::cerr << "Error: " << e.what() << std::endl;
+               }
+            }
+            else
+            {
+               PrintError( std::format( "Directory alias '{}' does not point to a valid directory.", stringFolderAlias ), gd::argument::arguments() );
+            }
+         }
+      }
+
 
       // ## Configure hardware ................................................
 
@@ -2378,6 +2407,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({ "current-directory", "Specify the current directory for the operation" });
    optionsApplication.add({ "config", "specify configuration file to use configuring cleaner" });
    optionsApplication.add({ "editor", "type of editor, vs or vscode is currently supported" });
+   optionsApplication.add({ "directory", 'd', "set current directory, this use alias in config to set it" });
    optionsApplication.add({ "add-to-history", "Add to history with alias name" });
    optionsApplication.add({ "logging-severity", "Set the logging severity level. Available levels: `verbose`, `debug`, `info`, `warning`, `error`, `fatal`."});
    optionsApplication.add({ "mode", "Specifies the operational mode of the tool, adapting its behavior for different code analysis purposes. Available modes: `review`, `stats`, `search`, `changes`, `audit`, `document`" });
