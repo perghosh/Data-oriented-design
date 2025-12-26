@@ -166,9 +166,13 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
          const char* pbszFindArgument = pbszArgument + 1;                     // move past first dash
          if( *pbszFindArgument == '-' ) pbszFindArgument++;                   // move to argument name
          poptionActive = find( pbszFindArgument );
-		 if(poptionActive == nullptr && poptionsRoot != nullptr && is_parent() == true) // try to find in parent options if parent is enabled and flag set for that
+		   if(poptionActive == nullptr && poptionsRoot != nullptr && is_parent() == true) // try to find in parent options if parent is enabled and flag set for that
          {
             poptionActive = poptionsRoot->find(pbszFindArgument);             // try to find in root options if root is set
+            if( poptionActive == nullptr && strlen( pbszFindArgument ) == 1 ) // try single letter option?
+            {
+               poptionActive = poptionsRoot->find( pbszFindArgument[0] );      // try to find single letter option
+            }
          }
 
          if(poptionActive == nullptr && bMayBeFlag == false )

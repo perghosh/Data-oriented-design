@@ -71,24 +71,6 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 
 */
 
-// ----------------------------------------------------------------------------
-
-/*
-@PROJECT [name: help]
-
-@TASK [summary: add global options to command help] [project:help] [user: per] [status:closed] [created: 251111]
-[description : print help for specific command, then global options should be printed also]
-
-@TASK [summary: print only global options] [project:help] [user: per] [status:closed] [created: 251111]
-[description : add flag for only print global options]
-*/
-
-// ----------------------------------------------------------------------------
-
-/*
-@PROJECT [name: serialize-table] [summary: Serialize and deserialize table data]
-
-*/
 
 // ----------------------------------------------------------------------------
 
@@ -126,6 +108,9 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 @TASK [summary: overload history command arguments] [project:overload] [user: per] [status:open] [created: 251114] [type: code]
 [description: Running history commands reads arguments from saved history string, but to change check what type of arguments that is passed running the history command]
 
+@TASK [summary: test that overload works] [project:overload] [user: per] [status:open] [created: 251114] [type: code]
+[description: Check to see how the overload works, there might be problems there last time I checked]
+
 */
 
 /*
@@ -140,9 +125,6 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 
 @TASK [summary: menu shows aliases with numbers to select] [project:history] [user: per] [status:open] [created: 251126] [type: code]
 [description: menu should list aliases with numbers to be selected, also comment if it exists]
-
-@TASK [summary: list alias values for history items] [project:history] [user: per] [status:open] [created: 251126] [type: code]
-[description: menu should list aliases with numbers to be selected, also comment if it exists]
 */
 
 
@@ -151,5 +133,24 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 
 @TASK [summary: command to find all tags for selected key] [project:command-find-tags] [user: per] [status:open] [created: 251130] [type: code]
 [description: Add command to find all tags for selected key, similar to find keys but only print tags for those keys. This is important to see what tags that are selectable]
+
+*/
+
+/*
+@PROJECT [name: folder-aliases-in-config] [summary: set folder aliases in config to select where to search]
+[description: To simplify on how to configure and where to search in larger projects adding aliases for folders
+and beeing able to use these when searching in different projects might help]
+
+@TASK [project: folder-aliases-in-config] [user: per] [status:open] [created: 251226] [type: howto]
+[description: Try to figure out a simple way to use aliases in with cleaner when searching, lets say
+that you are in root folder and from there it should be easy to just use some alias for folder
+and work in that subfolder. But whats problematic is that if you need to do this all the time.]
+
+
+@TASK [project: folder-aliases-in-config] [user: per] [status:open] [created: 251226] [type: code]
+[description: In configuration file add aliases for folders to be able to select where to search]
+
+@TASK [project: folder-aliases-in-config] [user: per] [status:open] [created: 251226] [type: code]
+[description: Have a file with latest settings or active]
 
 */
