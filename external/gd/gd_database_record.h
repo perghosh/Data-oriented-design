@@ -1,4 +1,4 @@
-// @FILE [tag: database, record] [description: Database record management. Logic used to store information from database select queries where one row is represented as a record] [type: header]  
+// @FILE [tag: database, record] [description: Database record management. Logic used to store information from database select queries where one row is represented as a record] [type: header] [name: gd_database_record.h]
 
 #include <cassert>
 #include <cstring>

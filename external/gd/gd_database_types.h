@@ -1,4 +1,4 @@
-// @FILE [tag: database] [description: types used in work with database] [type: header]
+// @FILE [tag: database] [description: types used in work with database] [type: header] [name: gd_database_types.h]
 
 /**
  * \file gd_database_types.h
@@ -630,4 +630,3 @@ static_assert( gd::types::enumTypeNumber::eTypeNumberDecimal == static_cast<gd::
 #elif defined(_MSC_VER)
    #pragma warning(pop)
 #endif
-

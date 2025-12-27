@@ -1,3 +1,5 @@
+// @FILE [tag: table, aggregate] [description: Calculate aggregate values for tables] [type: header] [name: gd_table_aggregate.h]
+
 /**
  * \file gd_table_aggregate.h
  * 

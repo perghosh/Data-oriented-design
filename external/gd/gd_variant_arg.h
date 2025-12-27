@@ -1,4 +1,4 @@
-// @FILE [tag: variant, arg] [description: Argument objects for variant key-value pairs] [type: header]
+// @FILE [tag: variant, arg] [description: Argument objects for variant key-value pairs] [type: header] [name: gd_variant_arg.h]
 //
 /*
 

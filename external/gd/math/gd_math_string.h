@@ -1,3 +1,4 @@
+// @FILE [tag: math, string] [description: string related methods that might be used in math logic] [type: header] [name: gd_math_string.h]
 /**
  * @file gd_math_string.h
  */

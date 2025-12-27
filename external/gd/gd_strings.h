@@ -1,3 +1,5 @@
+// @FILE [tag: strings] [description: strings classes, container object that manages multiple strings] [type: header] [name: gd_strings.h]
+
 /**
  * @file gd_strings.h
  *

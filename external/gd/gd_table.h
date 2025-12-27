@@ -1,3 +1,5 @@
+// @FILE [tag: table, core] [description: Core functionality for tables] [type: header] [name: gd_table.h]
+
 /**
  * @file gd_table.h
  *

@@ -1,4 +1,4 @@
-// @FILE {tag: uri, read} [summary: URI parsing and manipulation utilities] [type: header]
+// @FILE {tag: parse, uri, read} [summary: URI parsing and manipulation utilities] [type: header] [name: gd_parse_uri.h]
 
 #pragma once
 

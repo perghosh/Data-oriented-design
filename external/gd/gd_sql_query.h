@@ -1,4 +1,4 @@
-// @FILE [tag: sql] [description: Core logic for SQL queries] [type: header]
+// @FILE [tag: sql, query] [description: Core logic for SQL queries] [type: header] [name: gd_sql_query.h]
 
 /*
 ## class query

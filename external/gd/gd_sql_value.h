@@ -1,3 +1,4 @@
+// @FILE [tag: sql, format] [description: Format SQL values for SQL statements] [type: header] [name: gd_sql_value.h]
 /**
  * \file gd_sql_value.h
  * 

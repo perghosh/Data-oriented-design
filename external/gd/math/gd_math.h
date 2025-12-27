@@ -1,3 +1,5 @@
+// @FILE [tag: math] [description: Math utilities] [type: header] [name: gd_math.h]
+
 /**
  * \file gd_math.h
  * 

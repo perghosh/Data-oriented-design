@@ -1,4 +1,4 @@
-// @FILE [tag: parse] [description: Core parse logic for common patterns] [type: header]
+// @FILE [tag: parse] [description: Core parse logic for common patterns] [type: header] [name: gd_parse.h]
 
 /**
  * \file gd_parse.h
