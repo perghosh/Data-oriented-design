@@ -10,26 +10,14 @@
 #include <fstream>
 
 
-/*
- *** SAMPLE TODO 
-
-@TODO #user.per [id: T1234]
-[name: help]
-[description: "The current help output is hard to read.
-It needs line wrapping, consistent indentation,
-and a configurable line width for better readability in terminals.
-  "]
-[idea: """ ## Tasklist
- - Implement a text wrapping utility function.
- - Add a callback mechanism for custom formatting of output blocks.
- - Allow configuration via a `cli_options.json` file.
-  """ ]
-[priority: high] [state: open] [owner: per]
-*/
-
-
-
-int main(int iArgumentCount, char** ppbszArgument)                             // @CODE [tag: main] [description: Main entry point for the FileCleaner command line application]
+/** ---------------------------------------------------------------------------
+ * Main entry point for the FileCleaner command line application.
+ *
+ * @param iArgumentCount The number of command line arguments.
+ * @param ppbszArgument An array of command line arguments.
+ * @return The exit code of the application.
+ */
+int main(int iArgumentCount, char** ppbszArgument)
 {
    using namespace gd::console;
 
@@ -84,6 +72,3 @@ int main(int iArgumentCount, char** ppbszArgument)                             /
 
    return 0;
 }
-
-// @TODO #user.per [name: output] [description: make sure that the color for error output matches background] [idea: add color methods to produce better color] [priority: medium] [status: open]
-// @TODO #user.per [name: bug] [description: unable to find pattern on last line in file] [priority: high] [status: open]

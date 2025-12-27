@@ -507,7 +507,11 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
                PROPERTY_Set( "folder-history", stringFolderHistory );         // set history folder property
 
                PROPERTY_Set( "folder-current", pathFolder.string() );                              LOG_INFORMATION_RAW("== Set current directory to: " & pathFolder.string() );
-               try { std::filesystem::current_path(pathFolder); } 
+               try 
+               { 
+                  std::filesystem::current_path(pathFolder); 
+                  PrintMessage( std::format( "## Changed current directory to '{}'.", pathFolder.string() ), {{"color", "info"}});
+               } 
                catch (const std::filesystem::filesystem_error& e) {
                   std::cerr << "Error: " << e.what() << std::endl;
                }
@@ -665,7 +669,6 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
 
    if( poptionsActive->exists("help") == true )
    {
-      // @TODO #user.per [name: options] [description: improve format for help information, wrap lines, set indentation and site line width] [idea: add callback to format output ] [state: open]
       std::string stringDocumentation;
 
       HELP_PrintDocumentation( poptionsActive, stringDocumentation );
