@@ -88,7 +88,7 @@ private:
    };
 
 
-// ## @API [tag: construct] [description: construction methods for creating variant instances]
+// ## clean [tag: construct] [description: construction methods for creating variant instances]
 public:
    variant_view()               : m_uType(variant_type::eTypeUnknown)    {}
    variant_view( bool b )       : m_uType(variant_type::eTypeBool)       { m_V.b = b; }

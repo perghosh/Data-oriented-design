@@ -39,10 +39,5 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
 /// \brief Get explain for selected count result
 std::string CountGetExplain_g( const std::string_view& stringType );
 
-/*
-inline std::string CountGetExplain_g( const gd::cli::options* poptionsCount ) {                       assert( poptionsCount != nullptr );
-   return CountGetExplain_g( ( *poptionsCount )["information"].as_string() );
-}
-*/
 
 NAMESPACE_CLI_END

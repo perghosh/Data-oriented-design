@@ -248,6 +248,7 @@ static std::string_view GetDefaultConfigData_s()
 {
    std::string_view stringConfig = R"({
 "version": "1.0",
+// color settings for different operations printed to the console
 "cleaner.color": {
    "background": null,
    "body": "#F5DEB3",
@@ -266,20 +267,26 @@ static std::string_view GetDefaultConfigData_s()
    "warning": "#DC143C"
 },
 "cleaner.format": {
-   "kv": "[]:",
+   "kv": "[]:", // set how cleaner will find key-value separator formating
    "header-line": "0xDAC4BF", // ascii in hex format for header line
    "footer-line": "0xC0C4D9", // ascii in hex format for footer line
-   "brief": ">>> "
+   "brief": ">>> " // ascii brief prefix
 },
+// default result settings
 "cleaner.result": {
    "max-lines": 500
 },
+// logging settings
 "cleaner.logging": {
    "severity": null
 },
+// ignore patterns for folders and files, place folders and files in arrays
 "cleaner.ignore": {
    "folder": null,
    "file": null
+},
+// shortcuts for directories - format: "name":"path"
+"cleaner.directory": {
 }
 
 })";

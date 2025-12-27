@@ -2,9 +2,9 @@
 
 /**
 * \file gd_variant_common.h
-* 
+*
 * \brief general code used for variant and variant_view objects
-* 
+*
 */
 
 #pragma once
@@ -34,8 +34,8 @@ concept IsVariant = std::is_same_v<VARIANT, gd::variant> || std::is_same_v<VARIA
 
 /// `std::get` like function for `variant` and `variant_view`
 template <typename RETURN_TYPE, typename VARIANT>
-requires IsVariant<VARIANT>
-RETURN_TYPE get(const VARIANT& v_)
+   requires IsVariant<VARIANT>
+RETURN_TYPE get( const VARIANT& v_ )
 {
    if constexpr( std::is_same_v<RETURN_TYPE, bool> )
       return v_.as_bool();
@@ -55,6 +55,52 @@ RETURN_TYPE get(const VARIANT& v_)
       return (RETURN_TYPE)v_;
 }
 
+
+
+// Check if variant is empty
+template <typename VARIANT>
+   requires IsVariant<VARIANT>
+bool is_empty( const VARIANT& v )
+{
+   return v.empty();
+}
+
+// Get human-readable type information
+template <typename VARIANT>
+   requires IsVariant<VARIANT>
+std::string get_type_description( const VARIANT& v_ )
+{
+   if( v_.is_bool() ) return "boolean";
+   if( v_.is_int() || v.is_integer() ) return "integer";
+   if( v_.is_decimal() ) return "decimal";
+   if( v_.is_string() ) return "string";
+   if( v_.is_binary() ) return "binary";
+   if( v_.is_json() ) return "json";
+   if( v_.is_xml() ) return "xml";
+   if( v_.is_void() ) return "void";
+   return "unknown";
+}
+
+// Convert any variant to string safely
+template <typename VARIANT>
+   requires IsVariant<VARIANT>
+std::string to_string( const VARIANT& v_ )
+{
+   if( v_.is_string() ) { return v_.as_string(); }
+   else if( v_.is_numeric() == true ) 
+   {
+      return std::to_string( v_.as_double() ); // Simplified
+   }
+   else if( v_.is_bool() == true ) 
+   {
+      return v_.is_true() ? "true" : "false";
+   }
+   // Handle other types...
+   return "";
+}
+
+
+
 #endif // GD_COMPILER_HAS_CPP20_SUPPORT
 
 _GD_END
@@ -69,14 +115,14 @@ concept Arithmetic = std::is_arithmetic_v<T> && std::is_arithmetic_v<U>;
 
 template <typename T, typename U>
 requires Arithmetic<T, U>
-auto add(const T& a, const U& b) -> decltype(a + b) { 
-  return a + b; 
+auto add(const T& a, const U& b) -> decltype(a + b) {
+  return a + b;
 }
 
 template <typename T, typename U>
 requires (!Arithmetic<T, U>)
-std::string add(const T& a, const U& b) { 
-  return "Cannot add these types."; 
+std::string add(const T& a, const U& b) {
+  return "Cannot add these types.";
 }
 
 int main() {
@@ -85,7 +131,7 @@ int main() {
   std::string s = "hello";
 
   std::cout << add(x, y) << std::endl;   // Calls add(int, double)
-  std::cout << add(x, s) << std::endl;   // Calls add(int, std::string) 
+  std::cout << add(x, s) << std::endl;   // Calls add(int, std::string)
   // std::cout << add(s, x) << std::endl; // Won't compile
 
   return 0;
@@ -143,8 +189,8 @@ int main() {
   uint32_t u = 42;
   int32_t i = -123;
 
-  print_integer32(u); 
-  print_integer32(i); 
+  print_integer32(u);
+  print_integer32(i);
 
   // print_integer32(1.5); // Compilation error: 1.5 is not uint32_t or int32_t
 
