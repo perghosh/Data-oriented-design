@@ -490,27 +490,29 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       if( optionsApplication.exists("directory", gd::types::tag_state_active{}) == true )
       {
          std::string stringFolderAlias = optionsApplication.get_variant_view( "directory", gd::types::tag_state_active{} ).as_string();
-         auto stringPath = CONFIG_Get("directory", stringFolderAlias );
+         auto stringPath = CONFIG_Get("directory", stringFolderAlias ).as_string();
+         if( stringPath.empty() == true ) { stringPath = stringFolderAlias; }
          std::filesystem::path pathFolder( stringPath.c_str() );
          if( stringPath.empty() == true || std::filesystem::exists( pathFolder ) == false )
          {
-            PrintError( std::format( "Directory alias '{}' not found in configuration or path does not exist.", stringFolderAlias ), gd::argument::arguments() );
+            return { false, std::format( "Directory alias '{}' not found in configuration or path does not exist.", stringFolderAlias ) };
          }
          else
          {  
             // ### Set current folder ........................................
             if( std::filesystem::is_directory( pathFolder ) == true )
             {
+               // ### Prepare for history folder, this is used to find history file later and should not use the new current folder
+               std::string stringFolderHistory = std::filesystem::current_path().string(); // get current path before changing it
+               PROPERTY_Set( "folder-history", stringFolderHistory );         // set history folder property
+
                PROPERTY_Set( "folder-current", pathFolder.string() );                              LOG_INFORMATION_RAW("== Set current directory to: " & pathFolder.string() );
                try { std::filesystem::current_path(pathFolder); } 
                catch (const std::filesystem::filesystem_error& e) {
                   std::cerr << "Error: " << e.what() << std::endl;
                }
             }
-            else
-            {
-               PrintError( std::format( "Directory alias '{}' does not point to a valid directory.", stringFolderAlias ), gd::argument::arguments() );
-            }
+            else { return { false, std::format( "Directory alias '{}' does not point to a valid directory.", stringFolderAlias ) }; }
          }
       }
 
@@ -3682,8 +3684,13 @@ std::pair<bool, std::string> CApplication::HistoryFindLocal_s(std::filesystem::p
 {
    uint64_t uHistoryLevels = papplication_g->PROPERTY_Get("history-levels");
 
+   // ## Prepare to find local history file from current directory and up to n parent directories
+
    const std::string stringHistoryName =  ".cleaner-history.xml";
-   std::filesystem::path pathHistoryCurrent = std::filesystem::current_path(); // Default history location in current directory
+   std::string stringFolderHistory = papplication_g->PROPERTY_Get("folder-history").as_string();
+   if( stringFolderHistory.empty() == true ) { stringFolderHistory = std::filesystem::current_path().string(); }
+
+   std::filesystem::path pathHistoryCurrent = std::filesystem::path( stringFolderHistory ); // Default history location in current directory
 
    for( uint64_t u = 0; u <= uHistoryLevels; ++u )
    {

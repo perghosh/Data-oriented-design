@@ -1,4 +1,6 @@
-/**                                                                            @TAG #ui.cli #command.config [description:declaration for methods used for config command]
+// @FILE [tag: cli, config] [description:declaration for methods used for terminal command configuration] [type: header] [name: CLIConfig.h] 
+
+/** 
 * @file CLIConfig.h
 * @brief Implementation file for CLI configuration operations.
 *

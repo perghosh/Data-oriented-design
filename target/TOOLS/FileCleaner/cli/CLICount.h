@@ -1,3 +1,4 @@
+// @FILE [tag: cli, count] [description:declaration for methods used for terminal count find] [type: header] [name: CLICount.h]
 /**
 * @file CLICount.h
 *  

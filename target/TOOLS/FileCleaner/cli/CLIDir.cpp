@@ -1,3 +1,4 @@
+// @FILE [tag: cli, dir] [description: Handle logic for dir command] [type: source] [name: CLIDir.cpp]
 /**
 * @file CLIHistory.cpp
 */

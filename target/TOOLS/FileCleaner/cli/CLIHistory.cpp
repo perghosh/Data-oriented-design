@@ -139,7 +139,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
    std::pair<bool, std::string> result_;
    const gd::cli::options& options_ = *poptionsHistory;
 
-   if( options_.exists("print") == true )                                 // Print history entries from history file
+   if( options_.exists("print") == true )                                     // Print history entries from history file
    {
       gd::argument::arguments argumentsPrint;
       argumentsPrint.append( options_.get_arguments(), { "print", "local", "home", "width" } );
@@ -148,7 +148,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
 
       // ## History table need to be cleared because other command may follow that have different behavior, they need to have clean state
       auto ptable = pdocument->CACHE_Get("history", false);
-      if( ptable != nullptr ) { ptable->row_clear(); }                    // only clear rows, keep structure
+      if( ptable != nullptr ) { ptable->row_clear(); }                       // only clear rows, keep structure
    }
 
    if( options_.exists("create") == true )
@@ -175,7 +175,7 @@ std::pair<bool, std::string> History_g(const gd::cli::options* poptionsHistory, 
          if( std::filesystem::exists(stringHistoryFile) == true )
          {
             const auto* ptable_ = pdocument->CACHE_Get("history", false );                         assert( ptable_ != nullptr );
-            result_ = XML_Write_s(stringHistoryFile, *ptable_, "");               // Write an empty history table to the file
+            result_ = XML_Write_s(stringHistoryFile, *ptable_, "");           // Write an empty history table to the file
          }
       }
    }
@@ -779,7 +779,7 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
 
       std::vector<std::string> vectorCommand;
       const auto* piBegin = stringLine.c_str();
-      const auto* piEnd = stringLine.c_str() + stringLine.length();
+      const auto* piEnd = stringLine.c_str() + stringLine.length();                                LOG_DEBUG_RAW( "==> Line: " + stringLine );
 
       // ## Split command line into multiple commands if ';' is found outside quotes
       const auto* piPosition = gd::parse::strchr(piBegin, piEnd, ';', gd::parse::csv());
@@ -810,7 +810,7 @@ std::pair<bool, std::string> HistoryRun_g(const gd::argument::arguments& argumen
          stringCommand = stringName + " " + stringCommand_;                   // Construct the full command line
 
          if( stringCommand.empty() == false )
-         {                                                                                               LOG_DEBUG_RAW( "==> Running history command: " + stringCommand );
+         {                                                                                         LOG_DEBUG_RAW( "==> Running history command: " + stringCommand );
 
             gd::cli::options optionsRun;
             CApplication::Prepare_s(optionsRun);                              // prepare command-line options
