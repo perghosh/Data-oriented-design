@@ -1,7 +1,9 @@
-/**                                                                            @CODE [tag: cli, command] [description: declaration for dir methods]
-* @file CLIDir.h
-*  
-*/
+// @FILE [tag: cli, dir] [description: Handle logic for dir command] [type: header] [name: CLIDir.h]
+
+/**
+ * @file CLIDir.h
+ *  
+ */
 
 #pragma once
 

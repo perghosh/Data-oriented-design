@@ -1,4 +1,5 @@
-/**                                                                            @FILE [tag: cli, find] [description: definition for methods used for find]
+// @FILE [tag: cli, find] [description:declaration for methods used for terminal command find] [type: source] [name: CLIFind.cpp]
+/** 
  * @file CLIFind.cpp
  * @brief This file contains the definitions methods used for the cli find command
  * 

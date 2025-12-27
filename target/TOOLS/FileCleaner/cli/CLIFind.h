@@ -1,4 +1,4 @@
-/**                                                                            @FILE [tag: cli, find] [description:declaration for methods used for find]
+/**                                                                            @FILE [tag: cli, find] [description:declaration for methods used for terminal command find] [type: header] [name: CLIFind.h]
 * @file CLIFind.h
 *  
 * @brief Header file for CLI find operations.

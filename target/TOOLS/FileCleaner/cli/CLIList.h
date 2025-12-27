@@ -1,4 +1,4 @@
-/**                                                                            @FILE [tag: cli, command, list] [description: Processes the 'list' command, line based search in selected files] [type: header]
+/**                                                                            @FILE [tag: cli, command, list] [description: Processes the 'list' command, line based search in selected files] [type: header] [name: CLIList.h]
  * @file CLIList.h
  *  
  * @brief Header file for CLI list operations. "list" command passes arguments to these methods.

@@ -1,4 +1,6 @@
-/**                                                                            @TAG #ui.cli #command.copy [description: declaration for dir methods]
+// @FILE [tag: cli, copy] [description:declaration for methods used for terminal command copy] [type: header] [name: CLICopy.h] 
+
+/** 
  * @file CLICopy.h
  *  
  */
