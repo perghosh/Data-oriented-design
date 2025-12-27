@@ -95,7 +95,7 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 */
 
 /*
-@PROJECT [name: folder operations] [summary: Perform operations on folders]
+@PROJECT [name: folder operations] [summary: Perform operations on folders] [priority: high]
 
 @TASK [summary: sum count based on folder] [project:folder operations] [user: per] [status:open] [created: 251112] [type: code]
 [description: count information in files is normally presented for each file, summing up the total count for the folder is also needed]
@@ -121,9 +121,9 @@ cleaner find -filter "*.h;*.cpp" -R --pattern "@TASK" --segment comment --keys "
 */
 
 /*
-@PROJECT [name: history] [summary: add menu and list to history]
+@PROJECT [name: history] [summary: add menu and list to history] [priority: high]
 
-@TASK [summary: menu shows aliases with numbers to select] [project:history] [user: per] [status:open] [created: 251126] [type: code]
+@TASK [summary: menu shows aliases with numbers to select] [project:history] [user: per] [status:closed] [created: 251126] [type: code]
 [description: menu should list aliases with numbers to be selected, also comment if it exists]
 */
 
