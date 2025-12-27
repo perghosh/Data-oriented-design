@@ -287,10 +287,9 @@ public:
 //@}
 
    std::pair<bool, std::string> STATEMENTS_Load(const std::string_view& stringFileName);
+   
+   // ## @API [tag: document] [description: Manage documents]
 
-/** \name DOCUMENT operations
-* Documents are used to store information for each file that is beeing processed
-*///@{
    // ## Add documents
    CDocument* DOCUMENT_Add(const std::string_view& stringName);
    CDocument* DOCUMENT_Add(const gd::argument::shared::arguments& arguments_);
@@ -314,7 +313,7 @@ public:
    std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_Begin() const;
    std::vector<std::unique_ptr<CDocument>>::const_iterator DOCUMENT_End() const;
 
-   // ## Add ignore pattern to list of ignored folders
+   // ## @API [tag: ignore] [description: Manage folders in the ignore list]
 
    void IGNORE_Add( unsigned uType, const std::string_view& stringIgnore ) { m_vectorIgnore.push_back( { uType, std::string( stringIgnore ) } ); }
    void IGNORE_Add( const std::vector<ignore>& vectorIgnore ) { m_vectorIgnore.insert( m_vectorIgnore.end(), vectorIgnore.begin(), vectorIgnore.end() ); }
@@ -333,7 +332,6 @@ public:
    /// Clear ignore list
    void IGNORE_Clear() { m_vectorIgnore.clear(); }
 
-//@}
 
 
 // ## @API [tag: configuration] [description: Configuration management in application]
