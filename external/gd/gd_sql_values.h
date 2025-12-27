@@ -1,3 +1,5 @@
+// @FILE [tag: sql, format] [description: Container for SQL values] [type: header] [name: gd_sql_values.h]
+
 #pragma once
 
 #include <cassert>

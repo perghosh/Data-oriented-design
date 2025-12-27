@@ -1,4 +1,4 @@
-// @FILE [tag: file] [description: Miscellaneous file operations that work on any OS] [type: header]
+// @FILE [tag: file] [description: Miscellaneous file operations that work on any OS] [type: header] [name: gd_file.h]
 
 /**
  * \file gd_file.h
@@ -292,4 +292,3 @@ inline bool operator!=(const std::filesystem::path& p_, const path& p) { return 
 
 
 _GD_FILE_END
-

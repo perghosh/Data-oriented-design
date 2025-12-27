@@ -1,3 +1,5 @@
+// @FILE [tag: gd, types, constants] [description: Core constants for gd type system] [type: header] [name: gd_types.h]
+
 /**
  * \file gd_types.h
  * 

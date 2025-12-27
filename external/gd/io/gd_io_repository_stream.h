@@ -1,3 +1,5 @@
+// @FILE [tag: file, repository, storage] [description: Defines the repository class for managing file-based repositories.] [type: header] [name: gd_io_repository_stream.h]
+
 /**
 * @file gd_io_repository_stream.h
 * @brief Defines the repository class for managing file-based repositories.

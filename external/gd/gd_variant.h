@@ -1,4 +1,4 @@
-// @FILE [tag: variant] [description: General variant item that owns its data, manages all primitive types and some common] [type: header]
+// @FILE [tag: variant] [description: General variant item that owns its data, manages all primitive types and some common] [type: header] [name: gd_variant.h]
 
 /**
  * \file gd_variant.h

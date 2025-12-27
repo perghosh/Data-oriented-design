@@ -1,3 +1,5 @@
+// @FILE [tag: log, constants] [description: Constants used for logging] [type: header] [name: gd_log_logger_define.h]
+
 /**
  * \file gd_log_logger_define.h
  * 

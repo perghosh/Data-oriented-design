@@ -1,4 +1,4 @@
-// @FILE [tag: database, odbc] [description: wrapper class for ODBC database] [type: header]
+// @FILE [tag: database, odbc] [description: wrapper class for ODBC database] [type: header] [name: gd_database_odbc.h]
 
 #pragma once
 

@@ -1,4 +1,4 @@
-// @FILE [tag: debug] [description: Debugging utilities] [type: header]
+// @FILE [tag: debug] [description: Debugging utilities] [type: header] [name: gd_debug.h]
 
 /**
  * @file gd_debug.h

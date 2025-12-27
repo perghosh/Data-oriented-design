@@ -1,3 +1,5 @@
+// @FILE [tag: log, printer] [description: Default printers for logging] [type: header] [name: gd_log_logger_printer.h]
+
 #pragma once
 
 #include <array>

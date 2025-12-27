@@ -1,4 +1,4 @@
-// @FILE [tag: math, type] [description: Type checking functions] [type: header]
+// @FILE [tag: math, type] [description: Type checking functions] [type: header] [name: gd_math_type.h]
 
 /**
  * @file gd_math_type.h

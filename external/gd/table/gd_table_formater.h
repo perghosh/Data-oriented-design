@@ -1,3 +1,5 @@
+// @FILE [tag: table, format, string] [description: Formats a table for different styles, like card style with box drawing.] [type: header] [name: gd_table_formater.h]
+
 /**
  * @file gd_table_formater.h
  *

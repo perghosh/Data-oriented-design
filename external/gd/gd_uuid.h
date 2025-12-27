@@ -1,3 +1,5 @@
+// @FILE [tag: uuid] [description: uuid (Universally unique identifier) value management] [type: header] [name: gd_uuid.h]
+
 #pragma once
 
 #include <cassert>
