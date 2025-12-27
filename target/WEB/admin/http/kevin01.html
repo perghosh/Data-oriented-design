@@ -8,24 +8,67 @@
 </head>
 <body>
     <div class="container">
-        <div class="form-textarea" id="idTextarea">
-            <textarea></textarea>
+        <div class="form-textarea">
+            <textarea id="idTextarea"></textarea>
         </div>
-        <div id="idLabel">
-            <label></label>
+        <div >
+            <label id="idLabel"></label>
         </div>
         <button>Click</button>
     </div>
+
+    <hr>
+    
+    <div class="container">
+        <div class="form-textarea">
+            <textarea id="idTextarea"></textarea>
+        </div>
+        <div >
+            <label id="idLabel"></label>
+        </div>
+        <button id="idAdd">Add</button>
+        <button id="idSave">Click</button>
+    </div>
+
+    <hr>
+
+    <label id="idText"></label>
+
 </body>
 <script>
-    const eContainer = document.querySelector(".container");
+    function SetText(eText, sKey)
+    {
+        const sValue = localStorage.getItem(sKey);
+
+        eText.value = sValue;
+    }
+
+    function SaveText(eText, sKey)
+    {
+        let sValue = eText.value;
+
+        localStorage.setItem(sKey, sValue);
+    }
+
+    function AddData(eParent, aData)
+    {
+        const eTextarea = eParent.querySelector("#idTextarea");
+
+        aData.push(eTextarea.value);
+        eTextarea.value = "";
+
+    }
+
 
     function ChangeLabel(eParent)
     {
         if(!eParent) return;
-
+        
+        const eTextarea = eParent.querySelector("#idTextarea");
+        SaveText(eTextarea, "text");
         alert("Clicked");
     }
+
 
     function GlobalEventListener(sAction, eSelector, callback_, eParent)
     {
@@ -39,7 +82,24 @@
         });
     }
 
-    GlobalEventListener("click", "button", () => ChangeLabel(eContainer), eContainer);
+    document.addEventListener("DOMContentLoaded", (e_) => {
+        const aContainers = document.querySelectorAll(".container");
+        const eTextarea = document.querySelector("#idTextarea");
+        const eLabel = document.querySelector("#idText");
+        const aStorage = [];
+        const aStoredData = localStorage.getItem("data");
 
+        eLabel.innerHTML = aStoredData;
+
+        SetText(eTextarea, "text");
+
+        aContainers.forEach((eContainer) => {
+            //GlobalEventListener("click", "button", () => ChangeLabel(eContainer), eContainer);
+            GlobalEventListener("click", "#idAdd", () => AddData(eContainer, aStorage), eContainer);
+            GlobalEventListener("click", "#idSave", () => {localStorage.setItem("data", JSON.stringify(aStorage))}, eContainer);
+        });
+    });
+
+    
 </script>
 </html>
