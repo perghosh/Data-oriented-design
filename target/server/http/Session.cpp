@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+
 #include "Session.h"
 
 void CSessions::Initialize( size_t uMaxCount )
@@ -43,6 +44,23 @@ std::pair<bool, std::string> CSessions::Add( const gd::uuid& uuid_, uint64_t* pu
    }
    
    return { false, "CSessions::Add: no free sessions available" };            // no free session found, you shouldn't be here....
+}
+
+std::pair<bool, std::string> CSessions::Add( std::string_view stringUuid, uint64_t* puIndex )
+{
+   gd::uuid uuid_;
+
+   try
+   {
+      uuid_ = gd::uuid( stringUuid.data(), stringUuid.data() + stringUuid.length() );
+      return Add( uuid_, puIndex );
+   }
+   catch( const std::exception& e )
+   {
+      return { false, std::string( "CSessions::Add: invalid uuid format: " ) + e.what() };
+   }
+
+   return { false, "CSessions::Add: unknown error" };
 }
 
 /// Get the UUID at the specified index

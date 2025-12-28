@@ -92,6 +92,9 @@ public:
    gd::database::database_i* GetDatabase() { return m_pdatabase; }
 //@}
 
+   void Initialize();
+   void Initialize( CApplication* papplication, const std::string_view& stringName );
+
 
 /** \name RESULT
  * Document are able to generate result data based on what the document is storing
@@ -186,6 +189,9 @@ public:
    void MESSAGE_Progress( const std::string_view& stringMessage, const gd::argument::arguments& arguments_ );
 
 //@}
+
+// ## @API [tag: sessions] [description: Session management for document]
+   void SESSION_Add( std::string_view stringUuid );
 
 
 /** \name ERROR

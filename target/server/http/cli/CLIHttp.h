@@ -32,7 +32,7 @@ NAMESPACE_CLI_BEGIN
 
 // ## Http operations
 
-std::pair<bool, std::string> Http_g(const gd::cli::options* poptionsCopy, CDocument* pdocument);
+std::pair<bool, std::string> Http_g(const gd::cli::options* poptionsHttp, CDocument* pdocument);
 
 
 NAMESPACE_CLI_END
