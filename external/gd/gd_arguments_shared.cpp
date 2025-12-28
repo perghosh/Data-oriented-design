@@ -735,7 +735,7 @@ std::string arguments::argument::get_string() const
       if( s.empty() == true ) s = pbsz;
    }
 
-   return std::move(s);
+   return s;
 }
 
 /** ---------------------------------------------------------------------------
@@ -817,7 +817,7 @@ std::string arguments::argument::get_utf8() const
       case arguments::eTypeNumberBinary:
       {
          get_binary_as_hex(s);
-         return std::move(s);
+         return s;
       }
       case arguments::eTypeNumberGuid:
       {
@@ -833,7 +833,7 @@ std::string arguments::argument::get_utf8() const
       if( s.empty() == true ) s = pbsz;
    }
 
-   return std::move(s);
+   return s;
 }
 
 
@@ -1238,6 +1238,8 @@ arguments::pointer arguments::insert(pointer pPosition, argument_type uType, con
 
    auto pdata_ = buffer_data() + uOffset;
 
+   // @TODO [tag:  arguments] [description: implement insert properly]
+   assert(false);
    return nullptr;
 }
 
@@ -1425,7 +1427,6 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
    {
       if( uType > ARGUMENTS_NO_LENGTH )
       {
-         unsigned uZeroEnd = 0;
          if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
 
          uLength = variantValue.length();
@@ -1442,7 +1443,6 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
 
    if( uType > ARGUMENTS_NO_LENGTH )
    {
-      unsigned uZeroEnd = 0;
       if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
 
       uLength = variantValue.length();

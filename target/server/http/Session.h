@@ -14,7 +14,7 @@
 #include "gd/gd_table_arguments.h"
 
 
-/** @CLASS [name: CSessions] [description:  ]
+/** @CLASS [name: CSessions] [description: Manage session information, sessions are unique uuids for connected users]
  * \brief Sessions is a flexible data manager used to connect data for session values
  *
  * In web server session is used to connect data to clients and clients are identified by session id

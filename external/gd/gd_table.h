@@ -1010,7 +1010,7 @@ struct references
    references() {}
    references( const references& o );
    references( references&& o ) noexcept {
-      m_vectorReference = std::move( m_vectorReference );
+      m_vectorReference = std::move( o.m_vectorReference );
    }
    references& operator=( const references& o );
    references& operator=( references&& o ) noexcept {

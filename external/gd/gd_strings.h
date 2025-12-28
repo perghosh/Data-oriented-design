@@ -645,7 +645,7 @@ namespace pointer {
       // Constructor from std::vector
       strings() {}
       strings( gd::types::tag_owner ): m_bOwner(true) {}
-      strings(const std::vector<const char*>& vectorText) : m_bOwner(false), m_vectorText(vectorText) {}
+      strings(const std::vector<const char*>& vectorText) : m_vectorText(vectorText), m_bOwner(false) {}
       strings(const std::vector<const char*>& vectorText, gd::types::tag_owner) :m_bOwner{true} { clone_s(vectorText, m_vectorText); }
 
       strings(const char** ppiList, size_t uCount) : m_bOwner(false) {

@@ -5,6 +5,13 @@ cmake_minimum_required (VERSION 3.10)
 
 project("HTTP" LANGUAGES CXX C)
 
+# Set default build type if not specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "Setting build type to 'Debug' as none was specified.")
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
 include(include_external)
 
 # add_subdirectory("playground") # use this to test code for later use in web server
@@ -66,20 +73,87 @@ if( USE_TARGET_ )
       "main.cpp"                                                              # main file where method main is located
    )
    
-   target_compile_features(${TARGET_NAME_} PRIVATE cxx_std_23)
+   set_target_properties(${TARGET_NAME_} PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF )
 
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
    target_include_directories(${TARGET_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
-   target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS)
-   target_compile_definitions(${TARGET_NAME_} PRIVATE GD_LOG_SIMPLE)
-   target_compile_definitions(${TARGET_NAME_} PRIVATE GD_DATABASE_SQLITE_USE GD_DATABASE_ODBC_USE)
+   target_compile_definitions(${TARGET_NAME_} PRIVATE _CRT_SECURE_NO_WARNINGS GD_LOG_SIMPLE GD_DATABASE_SQLITE_USE GD_DATABASE_ODBC_USE)
    set_compiler_options()
-   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      target_link_libraries(${TARGET_NAME_} ${CMAKE_DL_LIBS})
-      target_link_libraries(${TARGET_NAME_} ${CMAKE_SOURCE_DIR}/external/mariadb/libmaodbc.so)
-   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-   else()
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_WIN32_WINNT=0x0601 ") # GCC needs this to compile boost
-      target_link_libraries(${TARGET_NAME_} PRIVATE odbc32.lib)
+
+
+#   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+#      target_link_libraries(${TARGET_NAME_} ${CMAKE_DL_LIBS})
+#      target_link_libraries(${TARGET_NAME_} ${CMAKE_SOURCE_DIR}/external/mariadb/libmaodbc.so)
+#   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+#   else()
+#      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_WIN32_WINNT=0x0601 ") # GCC needs this to compile boost
+#      target_link_libraries(${TARGET_NAME_} PRIVATE odbc32.lib)
+#   endif()
+
+# Platform-specific linking
+   if(WIN32)
+      # Windows linking (both MSVC and clang-cl)
+      target_link_libraries(${TARGET_NAME_} PRIVATE  odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib )
+      
+   elseif(APPLE)
+      # macOS linking
+      find_library(FOUNDATION_LIBRARY Foundation)
+      find_library(COCOA_LIBRARY Cocoa)
+      find_library(IOKIT_LIBRARY IOKit)
+      find_library(CORESERVICES_LIBRARY CoreServices)
+      
+      target_link_libraries(${TARGET_NAME_} PRIVATE
+         ${FOUNDATION_LIBRARY}
+         ${COCOA_LIBRARY}
+         ${IOKIT_LIBRARY}
+         ${CORESERVICES_LIBRARY}
+      )
+      
+      # macOS ODBC (if installed via Homebrew)
+      if(GD_DATABASE_ODBC_USE)
+         find_package(ODBC QUIET)
+         if(ODBC_FOUND)
+            target_link_libraries(${TARGET_NAME_} PRIVATE ${ODBC_LIBRARIES})
+         else()
+            # Try common ODBC library names on macOS
+            find_library(ODBC_LIB iodbc)
+            find_library(ODBCINST_LIB odbcinst)
+            if(ODBC_LIB AND ODBCINST_LIB)
+               target_link_libraries(${TARGET_NAME_} PRIVATE ${ODBC_LIB} ${ODBCINST_LIB})
+            else()
+               message(WARNING "ODBC libraries not found on macOS. Install via: brew install unixodbc")
+            endif()
+         endif()
+      endif()
+      
+   elseif(UNIX AND NOT APPLE)
+      # Linux linking
+      target_link_libraries(${TARGET_NAME_} PRIVATE ${CMAKE_DL_LIBS} pthread rt )
+      
+      # Linux ODBC
+      if(GD_DATABASE_ODBC_USE)
+         # Try to find ODBC
+         find_package(ODBC QUIET)
+         if(ODBC_FOUND)
+            target_link_libraries(${TARGET_NAME_} PRIVATE ${ODBC_LIBRARIES})
+         else()
+            # Try common ODBC library names on Linux
+            find_library(ODBC_LIB odbc)
+            find_library(ODBCINST_LIB odbcinst)
+            if(ODBC_LIB AND ODBCINST_LIB)
+               target_link_libraries(${TARGET_NAME_} PRIVATE ${ODBC_LIB} ${ODBCINST_LIB})
+            else()
+               # Try MariaDB ODBC
+               find_library(MARIADB_ODBC_LIB libmaodbc.so PATHS ${CMAKE_SOURCE_DIR}/external/mariadb)
+               if(MARIADB_ODBC_LIB)
+                  target_link_libraries(${TARGET_NAME_} PRIVATE ${MARIADB_ODBC_LIB})
+               else()
+                  message(WARNING "ODBC libraries not found on Linux. Install via: sudo apt-get install unixodbc-dev")
+               endif()
+            endif()
+         endif()
+      endif()
    endif()
+
+
 endif()

@@ -609,7 +609,7 @@ public:
 
 
       template<typename ARGUMENT_TYPE>
-      argument_edit(arguments* parguments, arguments::const_pointer pPosition, ARGUMENT_TYPE AG): m_pArguments(parguments), m_pPosition(pPosition), argument( AG ) {
+      argument_edit(arguments* parguments, arguments::const_pointer pPosition, ARGUMENT_TYPE AG): argument( AG ), m_pArguments(parguments), m_pPosition(pPosition) {
          m_pValue = move_to_value_s( (pointer)pPosition );
       }
 
@@ -1281,7 +1281,7 @@ public:
    /// Remove param starting at position, remember that if you are string positions in buffer they are invalidated with this method
    void remove( const std::string_view& stringName );
    void remove(const_pointer pPosition);
-   void remove(const_iterator it) { remove(it); }
+   void remove(const_iterator it) { remove(it.buffer_offset()); }
    void remove_all( const std::string_view& stringName );
    /// make sure internal buffer can hold specified number of bytes, no copying just reserving data
 

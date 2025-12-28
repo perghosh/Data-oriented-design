@@ -8,6 +8,16 @@
 
 #include "gd/gd_table_column-buffer.h"
 
+#if defined( __clang__ )
+   #pragma clang diagnostic push
+   #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#elif defined( __GNUC__ )
+   #pragma GCC diagnostic push
+   #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#elif defined( _MSC_VER )
+   #pragma warning(push)
+#endif
+
 namespace Types {
 
 enum enumTypeNumber
@@ -112,3 +122,11 @@ struct Objects
 
 
 } // namespace Types
+
+#if defined(__clang__)
+   #pragma clang diagnostic pop
+#elif defined(__GNUC__)
+   #pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+   #pragma warning(pop)
+#endif
