@@ -45,6 +45,21 @@ void CDocument::common_construct(CDocument&& o) noexcept
    m_vectorError = std::move(o.m_vectorError);
 }
 
+void CDocument::Initialize()
+{
+
+}
+
+void CDocument::Initialize( CApplication* papplication, const std::string_view& stringName )
+{
+   if( papplication == nullptr ) { m_papplication = papplication; }
+   
+   if( stringName.empty() == false ) { m_arguments.append( "name", stringName ); }
+
+   // ## create session object
+   m_psessions = std::make_unique<CSessions>();
+}
+
 
 /** --------------------------------------------------------------------------- @API [tag: cache, table ] [description: Generate tables for selected cache identifiers]
  * @brief Prepares a cache table for the specified identifier.  
@@ -390,6 +405,14 @@ void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd
 {
    m_papplication->PrintProgress(stringMessage, argumentsMessage );           // display progress message in application
 }
+
+
+
+void CDocument::SESSION_Add( std::string_view stringUuid )
+{
+   m_psessions->Add( stringUuid );
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Add error to internal list of errors

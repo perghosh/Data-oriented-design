@@ -37,6 +37,8 @@
 #include "Server.h"
 //#include "HttpServer.h"
 
+#include "cli/CLIHttp.h"
+
 #include "Application.h"
 
 // https://medium.com/@AlexanderObregon/building-restful-apis-with-c-4c8ac63fe8a7
@@ -303,9 +305,14 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
 {
    std::string stringCommand = optionsActive.name();                                               assert( stringCommand.empty() == false );
 
+   if( stringCommand == "http" )
+   {
+      auto result_ = CLI::Http_g( &optionsActive, m_pdocumentActive );
+   }
 
 
-   return std::pair<bool, std::string>();
+
+   return { true, "" };
 }
 
 std::pair< bool, std::string > CApplication::Execute( gd::cli::options& optionsCommand )
@@ -382,7 +389,6 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
    LOG_INFORMATION_RAW( stringTable );
 #endif
 
-   int iVersion = 11;
    boost::asio::io_context iocontext_( uThreadCount );
 
                                                                                                    assert( stringIp.empty() == false && "IP address can not be empty!" );

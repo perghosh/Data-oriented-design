@@ -77,6 +77,8 @@ public:
    gd::uuid Add( uint64_t* puIndex = nullptr ); // thread safe
    /// thread safe add session value. It might fail and if so false is returned with error message
    std::pair<bool, std::string> Add( const gd::uuid& uuid_, uint64_t* puIndex ); // thread safe
+   std::pair<bool, std::string> Add( std::string_view stringUuid ); // thread safe
+   std::pair<bool, std::string> Add( std::string_view stringUuid, uint64_t* puIndex ); // thread safe
    /// Find session by id, if not found return null uuid
    gd::uuid At( size_t uIndex );
 
@@ -139,6 +141,12 @@ inline gd::argument::shared::arguments& CSessions::arguments( size_t uIndex )
 {                                                                                                  assert( uIndex < m_tableSession.size() );
    gd::argument::shared::arguments* parguments_ = m_tableSession.row_get_arguments_pointer( uIndex );
    return *parguments_;
+}
+
+/// @brief Add new session with specified uuid, thread safe
+inline std::pair<bool, std::string> CSessions::Add( std::string_view stringUuid )
+{
+   return Add( stringUuid, nullptr );
 }
 
 
