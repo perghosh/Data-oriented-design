@@ -563,7 +563,7 @@ public:
 
 
       template<typename ARGUMENT_TYPE>
-      argument_edit(arguments* parguments, arguments::pointer pPosition, ARGUMENT_TYPE AG): m_pArguments(parguments), m_pPosition(pPosition), argument( AG ) {
+      argument_edit(arguments* parguments, arguments::pointer pPosition, ARGUMENT_TYPE AG): argument( AG ), m_pArguments(parguments), m_pPosition(pPosition) {
          m_pValue = move_to_value_s( (pointer)pPosition );
       }
 

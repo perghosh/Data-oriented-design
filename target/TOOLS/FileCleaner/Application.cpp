@@ -638,20 +638,21 @@ std::pair<bool, std::string> CApplication::Exit()
 
 // 0TAG0Initialize.Application
 
-/** --------------------------------------------------------------------------- @API [tag: application, option, help] [description: Initialize application from command line, go here if you want to check whats going to be executed, some general logic is also placed here]
+/** --------------------------------------------------------------------------- @API [tag: application, option, initialize] [description: Initialize application from command line, go here if you want to check whats going to be executed, some general logic is also placed here]
  * @brief Initializes the application based on the provided command-line options.
  *
  * This method processes the command-line options and performs initialization tasks
- * based on the active subcommand. It supports various commands such as `count`, `db`,
- * `history`, `list`, `help`, and `version`.
+ * based on the active subcommand. It supports various commands such as `count`, 
+ * `history`, `list`, `find`, `help`, and `version`.
  *
  * ### Steps:
  * 1. Retrieve the active subcommand from the provided options.
  * 2. Perform initialization tasks based on the subcommand:
+ *    - **config**: Configure the application settings.
  *    - **count**: Harvest files, apply filters, count rows, and optionally save or print results.
- *    - **db**: Open or create a database and update its schema.
  *    - **history**: Print the command history.
- *    - **list**: Harvest files, apply patterns, and list matching rows.
+ *    - **list**: Harvest files, apply patterns, and list matching rows. Line based searches.
+ *    - **find**: Harvest files, apply patterns, and find matching rows. Works like list but works on multiline searches. Find "clean" files before searching.
  *    - **help**: Display help information for the application.
  *    - **version**: Display the application version.
  * 3. Handle errors and return appropriate success or failure messages.

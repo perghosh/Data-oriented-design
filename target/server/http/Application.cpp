@@ -128,6 +128,8 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       auto poptionsActive = optionsApplication.sub_find_active();
       if( poptionsActive != nullptr )
       {
+         result_ = Configure( optionsApplication );                                                if( result_.first == false ) { return result_; }
+
          result_ = Execute( *poptionsActive);
          if( result_.first == false ) { return result_; }
       }
@@ -241,8 +243,8 @@ std::pair<bool, std::string> CApplication::Initialize()
       }
    }
 
-   // ## create main document, this holds main application data
-   //    Sessions and other data is stored in document
+   // ## create main document .................................................
+   //    this holds main application data
 
    auto pdocumentMain = std::make_unique<CDocument>( this );
    m_pdocumentActive = pdocumentMain.get(); 
@@ -252,6 +254,7 @@ std::pair<bool, std::string> CApplication::Initialize()
 
    m_pserverBoost = new CServer(this);                                        // create server object, used to handle and isolate http requests
 
+   /*
    // ## Add default servers to router
    CHttpServer* phttpserver = new CHttpServer;
    
@@ -263,6 +266,7 @@ std::pair<bool, std::string> CApplication::Initialize()
    }
 
    m_phttpserver = phttpserver;                                               // set http server
+   */
 
    { // ## add main site if values are set ....................................
       std::string stringIp = papplication_g->PROPERTY_Get("ip").as_string(); // get ip address
@@ -295,8 +299,9 @@ std::pair<bool, std::string> CApplication::Exit()
  * @param optionsApplication The command-line options to configure.
  * @return A pair consisting of a boolean indicating success or failure, and a string containing an error message if applicable.
  */
-std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& optionsApplication)
+std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& optionsActive)
 {
+   std::string stringCommand = optionsActive.name();                                               assert( stringCommand.empty() == false );
 
 
 
@@ -431,6 +436,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "ip", "IP address to bind the server to" });
       optionsCommand.add( { "port", "Port number to bind the server to" } );
       optionsCommand.add( { "site", "Folder on disk where to find files"});
+      optionsCommand.add( { "add-session", "Adds session values at start, usefull for testing"});
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }

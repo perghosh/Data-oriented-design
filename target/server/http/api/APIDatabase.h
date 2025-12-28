@@ -47,7 +47,7 @@ public:
     CAPIDatabase( std::vector<std::string_view>&& vectorCommand, gd::argument::arguments&& argumentsParameter )
        : m_vectorCommand( std::move( vectorCommand ) ), m_argumentsParameter( std::move( argumentsParameter ) ) { }
 	 CAPIDatabase(CApplication* pApplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter)
-        : m_pApplication( pApplication ), m_vectorCommand( vectorCommand ), m_argumentsParameter( argumentsParameter ) {}
+        : m_vectorCommand( vectorCommand ), m_argumentsParameter( argumentsParameter ), m_pApplication( pApplication ) {}
     // copy
     CAPIDatabase( const CAPIDatabase& o ) { common_construct( o ); }
     CAPIDatabase( CAPIDatabase&& o ) noexcept { common_construct( std::move( o ) ); }
