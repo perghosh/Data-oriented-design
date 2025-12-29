@@ -9,6 +9,7 @@ void CSessions::Initialize( size_t uMaxCount )
 {
    CreateTable_s( m_tableSession );
    m_tableSession.row_reserve_add( uMaxCount );
+   m_tableSession.row_add( uMaxCount, gd::table::tag_null{});
 }
 
 gd::uuid CSessions::Add( uint64_t* puIndex )
@@ -22,6 +23,7 @@ gd::uuid CSessions::Add( uint64_t* puIndex )
    return uuidNew;
 }
 
+
 std::pair<bool, std::string> CSessions::Add( const gd::uuid& uuid_, uint64_t* puIndex )
 {
    {
@@ -34,7 +36,7 @@ std::pair<bool, std::string> CSessions::Add( const gd::uuid& uuid_, uint64_t* pu
          {
             // Claim it
             uint64_t uNow = GetTime_s();
-            m_tableSession.cell_set( uRow, eColumnId, gd::types::binary( uuid_.data(), 16 ) );
+            m_tableSession.cell_set( uRow, eColumnId, gd::types::uuid( uuid_.data() ) );
             m_tableSession.cell_set( uRow, eColumnTime, uNow );
             
             if( puIndex ) *puIndex = uRow;

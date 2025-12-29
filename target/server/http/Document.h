@@ -192,6 +192,13 @@ public:
 
 // ## @API [tag: sessions] [description: Session management for document]
    void SESSION_Add( std::string_view stringUuid );
+   void SESSION_Add( const std::vector<std::string>& vectorUuid );
+
+   bool SESSION_Empty() const { return m_psessions != nullptr && m_psessions->Empty() == false; }
+   
+   std::pair<bool, std::string> SESSION_Initialize( size_t uMaxCount);
+
+
 
 
 /** \name ERROR
@@ -262,4 +269,3 @@ inline void CDocument::CACHE_Clear()
    std::unique_lock lock( m_mutexCache );
    m_vectorTableCache.clear();
 }
-

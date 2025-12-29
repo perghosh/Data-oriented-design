@@ -86,6 +86,8 @@ public:
    void Update( size_t uIndex );
    /// Clear session at index, make it free to use
    void Clear( size_t uIndex );
+   /// Returns if session table is empty
+   bool Empty() const { return m_tableSession.empty(); }
 
 // @API [summary: methods that work on all sessions]
 

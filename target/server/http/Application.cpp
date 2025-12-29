@@ -130,7 +130,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
       auto poptionsActive = optionsApplication.sub_find_active();
       if( poptionsActive != nullptr )
       {
-         result_ = Configure( optionsApplication );                                                if( result_.first == false ) { return result_; }
+         result_ = Configure( *poptionsActive );                                                   if( result_.first == false ) { return result_; }
 
          result_ = Execute( *poptionsActive);
          if( result_.first == false ) { return result_; }
@@ -308,6 +308,7 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
    if( stringCommand == "http" )
    {
       auto result_ = CLI::Http_g( &optionsActive, m_pdocumentActive );
+      if( result_.first == false ) { return result_; }
    }
 
 

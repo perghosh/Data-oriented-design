@@ -58,6 +58,7 @@ void CDocument::Initialize( CApplication* papplication, const std::string_view& 
 
    // ## create session object
    m_psessions = std::make_unique<CSessions>();
+   m_psessions->Initialize(1024);                                             // @TODO [description: remove this and set from applicaton config]
 }
 
 
@@ -407,10 +408,31 @@ void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd
 }
 
 
-
+/// Add session to internal list of sessions
 void CDocument::SESSION_Add( std::string_view stringUuid )
 {
    m_psessions->Add( stringUuid );
+}
+
+/// Add sessions to internal list of sessions
+void CDocument::SESSION_Add( const std::vector<std::string>& vectorUuid )
+{
+   for (const auto& stringUuid : vectorUuid)
+   {
+      SESSION_Add(stringUuid);
+   }
+}
+
+std::pair<bool, std::string> CDocument::SESSION_Initialize( size_t uMaxCount)
+{
+   if( m_psessions == nullptr )
+   {
+      m_psessions = std::make_unique<CSessions>();
+      m_psessions->Initialize(uMaxCount);
+      return {true, ""};
+   }
+
+   return {false, "Session already initialized"};
 }
 
 
@@ -452,5 +474,3 @@ void CDocument::ERROR_Print( bool bClear )
    if (bClear == true) m_vectorError.clear();                                 // clear error list
 
 }
-
-
