@@ -18,7 +18,18 @@ static std::pair<bool, std::string> HttpValidateAndExpand_s( std::vector<std::st
 
 std::pair<bool, std::string> Http_g(const gd::cli::options* poptionsHttp, CDocument* pdocument)
 {                                                                                                  assert( poptionsHttp != nullptr ); assert( pdocument != nullptr );
-   // ## set http server properties based on options .........................
+   // ## set http server properties based on options ..........................
+
+
+   // ### Prepare session values ..............................................
+
+   if( pdocument->SESSION_Empty() == false )
+   {
+      pdocument->SESSION_Initialize( 1024 );
+   }
+
+
+   // ### Add session values ..................................................
 
    std::vector<gd::variant_view> vectorSession_ = poptionsHttp->get_all( "add-session" ); // ensure value is parsed
    std::vector<std::string> vectorSessionNoSplit;
@@ -36,8 +47,11 @@ std::pair<bool, std::string> Http_g(const gd::cli::options* poptionsHttp, CDocum
    }
 
    auto result_ = HttpValidateAndExpand_s( vectorSession );                   // validate and expand uuids
+   if( result_.first == false ) { return result_; }
 
    // ## Add session values to document ......................................
+   pdocument->SESSION_Add( vectorSession );
+
 
    return { true, "" };
 }

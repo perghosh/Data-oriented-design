@@ -1120,10 +1120,24 @@ struct is_variant<std::variant<Types...>> : std::true_type {};
 // template <typename T, typename Alloc>
 // struct is_deque<std::deque<T, Alloc>> : std::true_type {};
 
+/*-----------------------------------------*/ /**
+   * \brief wrapper used to uuid value
+   */
+struct uuid
+{
+   uuid() { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = 0; } }
+   uuid( const uint8_t* pbData ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = pbData[i]; } }
+
+   const uint8_t* data() const { return (const uint8_t*)m_puData; }
+   size_t length() const { return 16; }
+
+   uint8_t m_puData[16];
+};
+
 
 /*-----------------------------------------*/ /**
-   * \brief wrapper used to set binary value
-   */
+ * \brief wrapper used to set binary value
+ */
 struct binary
 {
    binary( const uint8_t* pbData, size_t uLength ) : m_pbData(pbData), m_uLength(uLength) {}
