@@ -52,6 +52,7 @@
         </div>
         <button id="idAdd">Add</button>
         <button id="idSave">Save</button>
+        <button id="idRemove">Remove</button>
         <button id="idClear">Clear</button>
     </div>
 
@@ -112,6 +113,33 @@
         });
     }
 
+    function GetValue(eParent)
+    {
+        if(!eParent) return;
+
+        const sValue = eParent.value;
+        return sValue;
+    }
+
+    function RemoveValue(aData, value_)
+    {
+        for(let i = 0; i < aData.length; i++)
+        {
+            if(aData[i] === value_)
+            {
+                aData.splice(i, 1);
+                return;
+            }
+        }   
+    }
+
+    function SetText(eParent, sValue)
+    {
+        if(!eParent) return;
+
+        eParent.value = sValue;
+    }
+
     function GlobalEventListener(sAction, eSelector, callback_, eParent)
     {
         if(!eParent) return;
@@ -119,7 +147,7 @@
         eParent.addEventListener(sAction, (e_) => {
             if(e_.target.matches(eSelector))
             {
-                callback_();
+                callback_(e_);
             }       
         });
     }
@@ -146,7 +174,17 @@
             }, eContainer);
 
             GlobalEventListener("click", "#idClear", () => {localStorage.clear()}, eContainer);
-            GlobalEventListener("change", "#idSelect", () => {}, eContainer);
+            GlobalEventListener("change", "#idSelect", (e_) => {
+                const sValue = GetValue(e_.target);
+                SetText(eContainer.querySelector("#idName"), sValue);
+            }, eContainer);
+
+            GlobalEventListener("click", "#idRemove", () => {
+                const sValue = GetValue(eContainer.querySelector("#idName"));
+                RemoveValue(aData, sValue);
+                localStorage.setItem("data", JSON.stringify(aData));
+                UpdateSelect(eContainer.querySelector("#idSelect"), "data", aData);
+            }, eContainer)
         });
     });
 
