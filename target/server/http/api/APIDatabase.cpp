@@ -11,38 +11,9 @@
 #include "APIDatabase.h"
 
 
-void CAPIDatabase::common_construct( const CAPIDatabase& o )
-{
-    m_vectorCommand = o.m_vectorCommand;
-    m_argumentsParameter = o.m_argumentsParameter;
-}
+// common_construct methods are now implemented in CAPI_Base
 
-void CAPIDatabase::common_construct( CAPIDatabase&& o ) noexcept
-{
-    m_vectorCommand = std::move( o.m_vectorCommand );
-    m_argumentsParameter = std::move( o.m_argumentsParameter );
-}
-
-/** --------------------------------------------------------------------------
- * @brief Returns the number of times a given argument name appears in the command list.
- * 
- * Note that it is possible to have multiple occurrences of the same command and in order to match
- * arguments correctly this method counts how many times the specified argument name appears from
- * the active command index.
- * 
- * @param stringName The name of the argument to search for.
- * @return The number of occurrences of the specified argument name in the command list.
- */
-size_t CAPIDatabase::GetArgumentIndex( const std::string_view& stringName ) const 
-{                                                                                                  assert( m_vectorCommand.empty() == false && "No commands");
-   size_t uCount = 0;
-   for( unsigned uIndex = 0; uIndex < m_uCommandIndex; ++uIndex )
-   {
-      std::string_view stringCommand = m_vectorCommand[uIndex];
-      if( stringCommand == stringName ) { ++uCount; }
-   }
-   return uCount;
-}
+// GetArgumentIndex is now implemented in CAPI_Base
 
 /** --------------------------------------------------------------------------
  * @brief Executes the database command based on the command vector and parameters.
@@ -226,7 +197,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
                                                                                                    LOG_INFORMATION_RAW( "Opened database: " & stringName );
    }
                                                                                                    assert(pdatabaseOpen != nullptr);
-	CDocument* pdocument = m_pApplication->DOCUMENT_Get(stringDocument, true);
+	CDocument* pdocument = m_papplication->DOCUMENT_Get(stringDocument, true);
 	pdocument->SetDatabase(pdatabaseOpen);
 
    pdatabaseOpen->release();
@@ -340,17 +311,4 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    return { true, "" };
 }
 
-/// @brief Retrieves the document associated with the current API database instance.
-/// @return Pointer to the CDocument object.
-/// @note Note that document returned need a name for document or it will return the "default" document.
-CDocument* CAPIDatabase::GetDocument()
-{                                                                                                  assert( m_pApplication != nullptr );
-   std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string();
-   if( stringDocument.empty() == true ) stringDocument = "default";
-
-   CDocument* pdocument = m_pApplication->DOCUMENT_Get( stringDocument );
-
-   if( pdocument == nullptr ) { m_stringLastError = "document not found: " + stringDocument; } // generate error if document do not exists
-
-   return pdocument;
-}
+// GetDocument is now implemented in CAPI_Base

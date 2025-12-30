@@ -175,6 +175,8 @@ struct tag_force {};          /// force is used in some form, like force a value
 struct tag_default {};        ///< default is used in some form, like a default value or state
 struct tag_custom {};         ///< custom is used in some form, like a user-defined value or state
 struct tag_special {};        ///< special is used in some form, like a special value or state
+struct tag_safe {};           ///< safe is used in some form, like safe operation or value
+struct tag_unsafe {};         ///< unsafe is used in some form, like unsafe operation or value
 
 // ----------------------------------------------------------------------------
 // ## stl tag dispatchers, used to glue with stl
@@ -1127,6 +1129,11 @@ struct uuid
 {
    uuid() { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = 0; } }
    uuid( const uint8_t* pbData ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = pbData[i]; } }
+   
+   bool operator==( const uuid& o ) const { return memcmp( m_puData, o.m_puData, 16 ) == 0; }
+   
+   operator uint8_t*() { return m_puData; }
+   operator const uint8_t*() const { return m_puData; }
 
    const uint8_t* data() const { return (const uint8_t*)m_puData; }
    size_t length() const { return 16; }
@@ -1140,13 +1147,17 @@ struct uuid
  */
 struct binary
 {
-   binary( const uint8_t* pbData, size_t uLength ) : m_pbData(pbData), m_uLength(uLength) {}
-   const binary& operator=( const binary& o ) { m_pbData = o.m_pbData; m_uLength = o.m_uLength; return *this; }
+   binary( const uint8_t* pbData, size_t uLength ) : m_puData(pbData), m_uLength(uLength) {}
+   const binary& operator=( const binary& o ) { m_puData = o.m_puData; m_uLength = o.m_uLength; return *this; }
+   
+   bool operator==( const binary& o ) const { return length() == o.length() && memcmp( m_puData, o.m_puData, m_uLength ) == 0; }
+   
+   operator const uint8_t*() const { return m_puData; }
 
-   const uint8_t* data() const { return m_pbData; }
+   const uint8_t* data() const { return m_puData; }
    size_t length() const { return m_uLength; }
 
-   const uint8_t* m_pbData;
+   const uint8_t* m_puData;
    size_t m_uLength;
 };
 

@@ -64,37 +64,33 @@ std::pair<bool, std::string> Http_g(const gd::cli::options* poptionsHttp, CDocum
  */
 std::pair<bool, std::string> HttpValidateAndExpand_s( std::vector<std::string>& vectorUuid )
 {
+   // ## Remove any whitespace from the UUID
+
    for( auto& stringUuid : vectorUuid )
    {
-      // Remove any whitespace from the UUID
-      stringUuid.erase(std::remove_if(stringUuid.begin(), stringUuid.end(), ::isspace), stringUuid.end());
+      stringUuid.erase(std::remove_if(stringUuid.begin(), stringUuid.end(), ::isspace), stringUuid.end()); // Remove any whitespace from the UUID
       
-      // ## Check if UUID is empty after removing whitespace
+      // ### Check if UUID is empty after removing whitespace
       if(stringUuid.empty() == true ) { return { false, "Empty UUID provided" }; }
       
-      // ## Check if the UUID needs padding (UUIDs are typically 32 characters without hyphens)
+      // ### Check if the UUID needs padding (UUIDs are typically 32 characters without hyphens)
       if(stringUuid.length() < 32) 
       {
-         // Pad with leading zeros
-         stringUuid = std::string(32 - stringUuid.length(), '0') + stringUuid;
+         stringUuid = std::string(32 - stringUuid.length(), '0') + stringUuid;// Pad with leading zeros
       }
-      else if(stringUuid.length() > 32 && stringUuid.find('-') == std::string::npos) 
-      {
-         return { false, "Invalid UUID format: too long without hyphens" };
-      }
+      else if(stringUuid.length() > 32 && stringUuid.find('-') == std::string::npos) { return { false, "Invalid UUID format: too long without hyphens" }; }
       
       
-      // If UUID contains hyphens, remove them for consistent processing
+      // ### If UUID contains hyphens, remove them for consistent processing
       if(stringUuid.find('-') != std::string::npos) 
       {
          std::string::iterator end_pos = std::remove(stringUuid.begin(), stringUuid.end(), '-');
          stringUuid.erase(end_pos, stringUuid.end());
          
-         // Check if it has the correct length after removing hyphens
-         if(stringUuid.length() != 32) { return { false, "Invalid UUID format: incorrect length" }; }
+         if(stringUuid.length() != 32) { return { false, "Invalid UUID format: incorrect length" }; } // Check if it has the correct length after removing hyphens
       }
       
-      // Validate that all characters are hexadecimal
+      // ### Validate that all characters are hexadecimal
       for (char c : stringUuid) 
       {
          if(!std::isxdigit(c)) { return { false, "Invalid UUID format: contains non-hexadecimal characters" }; }

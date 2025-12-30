@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "gd/gd_uuid.h"
+#include "gd/gd_types.h"
 #include "gd/gd_log_logger.h"
 #include "gd/gd_table_arguments.h"
 
@@ -75,6 +76,8 @@ public:
 
    /// Add new session, return uuid of session, it generates new uuid for session
    gd::uuid Add( uint64_t* puIndex = nullptr ); // thread safe
+   int64_t Add( const gd::types::uuid& uuid_ );
+   int64_t AddLast( const gd::types::uuid& uuid_ );
    /// thread safe add session value. It might fail and if so false is returned with error message
    std::pair<bool, std::string> Add( const gd::uuid& uuid_, uint64_t* puIndex ); // thread safe
    std::pair<bool, std::string> Add( std::string_view stringUuid ); // thread safe
@@ -86,6 +89,11 @@ public:
    void Update( size_t uIndex );
    /// Clear session at index, make it free to use
    void Clear( size_t uIndex );
+   
+   /// Delete session by id, if not found return false
+   bool Delete( const gd::types::uuid& uuidSession );
+   void Delete( size_t uIndex );
+   
    /// Returns if session table is empty
    bool Empty() const { return m_tableSession.empty(); }
 
@@ -103,10 +111,11 @@ public:
    size_t CountExpired( uint64_t uCurrentTime, uint64_t uExpireLimitMs ) const;
    /// Count number of sessions in table that have expired based on expire time, use current time to check
    size_t CountExpired( uint64_t uExpireLimitMs ) const;
+
+   /// Find session by id, if not found return -1
+   int64_t Find( const gd::types::uuid& uuid_ );
    /// Find first unused session index, return false if no free session found
    std::pair<bool, uint64_t> FindFirstFree( uint64_t uOffset = 0 );
-
-
 
 protected:
 // @API [tag: internal]
