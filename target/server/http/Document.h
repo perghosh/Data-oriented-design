@@ -191,8 +191,11 @@ public:
 //@}
 
 // ## @API [tag: sessions] [description: Session management for document]
-   void SESSION_Add( std::string_view stringUuid );
+   void SESSION_Add( const gd::types::uuid& uuidSession );
+   void SESSION_Add( const gd::types::uuid& uuidSession, gd::types::tag_unsafe );
    void SESSION_Add( const std::vector<std::string>& vectorUuid );
+   void SESSION_Delete( const gd::types::uuid& uuidSession );
+   uint64_t SESSION_Count() const;
 
    bool SESSION_Empty() const { return m_psessions != nullptr && m_psessions->Empty() == false; }
    

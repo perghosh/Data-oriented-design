@@ -45,3 +45,7 @@ curl "${site}/!db/open/select?type=sqlite&name=test" --data-urlencode "query=SEL
 open/select?type=sqlite&name=test&query=SELECT * FROM TUser
 
 open/select/select?type=sqlite&name=test&query=SELECT * FROM TUser&query=SELECT FName,FAlias FROM TUser
+
+
+curl "${site}/!sys/session/delete?session=00000000000000000000000000000001"
+curl "${site}/!sys/session/delete?session=00000000-0000-0000-0000-000000000001" 

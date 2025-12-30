@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+#include "gd/gd_binary.h"
 
 #include "Session.h"
 
@@ -21,6 +22,48 @@ gd::uuid CSessions::Add( uint64_t* puIndex )
    if( result_.first == false ) { throw std::runtime_error( result_.second ); }
 
    return uuidNew;
+}
+
+int64_t CSessions::Add( const gd::types::uuid& uuid_ )
+{
+   std::scoped_lock lock_( m_mutexTable );
+   
+   auto row_ = FindFirstFree();
+   if( row_.first == true )
+   {
+      uint64_t uRow = (uint64_t)row_.second;
+      uint64_t uNow = GetTime_s();
+      m_tableSession.cell_set( uRow, eColumnId, uuid_ );
+      m_tableSession.cell_set( uRow, eColumnTime, uNow );
+      return (int64_t)uRow;
+   }
+   
+   return -1;
+}
+
+int64_t CSessions::AddLast( const gd::types::uuid& uuid_ )
+{
+   std::scoped_lock lock_( m_mutexTable );
+
+   int64_t iRow = m_tableSession.size() - 1;
+
+   // ## Find first free row from the end
+   while( iRow >= 0 )
+   {
+      if( m_tableSession.cell_is_null( (uint64_t)iRow, eColumnTime ) == true )
+      {
+         break;
+      }
+      --iRow;
+   }
+
+   if( iRow < 0 ) { return -1; } // no free row found
+
+   uint64_t uNow = GetTime_s();
+   m_tableSession.cell_set( (uint64_t)iRow, eColumnId, uuid_ );
+   m_tableSession.cell_set( (uint64_t)iRow, eColumnTime, uNow );
+
+   return iRow;
 }
 
 
@@ -100,9 +143,25 @@ void CSessions::Update( size_t uIndex )
  */
 void CSessions::Clear( size_t uIndex )
 {                                                                                                  assert( uIndex < m_tableSession.size() );
-   m_tableSession.row_arguments_delete( (uint64_t)uIndex );                   // clear arguments for row if set
+   if( m_tableSession.row_is_arguments( (uint64_t)uIndex ) == true )
+   {
+      m_tableSession.row_arguments_delete( (uint64_t)uIndex );                // clear arguments for row if set
+   }
    m_tableSession.row_set_null( (uint64_t)uIndex );                           // set row to null
 }
+
+bool CSessions::Delete( const gd::types::uuid& uuid_ )
+{
+   int64_t iRow = Find(uuid_);
+   if(iRow != -1)
+   {
+      Clear(iRow);
+      return true;
+   }
+   
+   return false;
+}
+
 
 
 /** ---------------------------------------------------------------------------
@@ -208,6 +267,23 @@ size_t CSessions::CountExpired(uint64_t uExpireLimitMs) const
    return CountExpired(uTime, uExpireLimitMs);
 }
 
+/// Find the row index of a session with the given UUID and return its row index, if not found return -1
+int64_t CSessions::Find( const gd::types::uuid& uuid_ )
+{
+   for(uint64_t uRow = 0; uRow < m_tableSession.size(); ++uRow)
+   {
+      if(m_tableSession.cell_is_null(uRow, eColumnId) == false)
+      {
+         gd::types::uuid uuid = m_tableSession.cell_get<gd::types::uuid>(uRow, eColumnId);
+         
+         if(uuid == uuid_) { return uRow; }
+      }
+   }
+   
+   return -1;
+}
+
+/// Find first
 std::pair<bool, uint64_t> CSessions::FindFirstFree(uint64_t uOffset)
 {
    std::scoped_lock lock_(m_mutexTable);

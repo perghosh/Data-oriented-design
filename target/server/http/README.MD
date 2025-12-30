@@ -10,12 +10,21 @@
 |   Session.*
 |
 +-- api
+|   |   APIDatabase.*
+|   |   APISql.*
+|   |   APISystem.*
+|
++-- cli
+|   |   CLIHttp.*
+|
++-- dto
+|   |   DTOResponse.*
 |
 +-- playground
 |
 +-- state
-    |   Session.cpp
-    |    Session.h
+|   |   Session.cpp
+|   |   Session.h
 
 ```
 

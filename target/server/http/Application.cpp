@@ -83,7 +83,7 @@ CApplication::~CApplication()
 }
 
 
-/** --------------------------------------------------------------------------- @CODE [tag: main] [description: main entry point for application]
+/** --------------------------------------------------------------------------- @API [tag: main] [description: main entry point for application]
  * @brief Entry point for the application, handling initialization, argument parsing, and main execution logic.
  * @param iArgumentCount The number of command-line arguments.
  * @param ppbszArgument Array of pointers to the command-line argument strings.
@@ -120,15 +120,15 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    // ## Parse arguments if sent
    if( iArgumentCount > 1 )											           // do we have arguments ? (first is application)
    {
-       auto result_ = optionsApplication.parse(iArgumentCount, ppbszArgument); // @BOOKMARK [title: options] [description: parse command line arguments] 
+       auto result_ = optionsApplication.parse(iArgumentCount, ppbszArgument);// @CORE [title: options] [description: parse command line arguments] 
       if( result_.first == false ) { return result_; }
 
-      result_ = Read_s(this, optionsApplication);
+      result_ = Read_s( this, optionsApplication );                           // @CRITICAL [title: read global options] [description: read global arguments from options, settings for complete application]
       if( result_.first == false ) { return result_; }
 
       // ## Check active command and execute
       auto poptionsActive = optionsApplication.sub_find_active();
-      if( poptionsActive != nullptr )
+      if( poptionsActive != nullptr )                                        
       {
          result_ = Configure( *poptionsActive );                                                   if( result_.first == false ) { return result_; }
 
@@ -141,7 +141,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
 }
 
 
-/** --------------------------------------------------------------------------- @CODE [tag: initialize] [description: Initialize application]
+/** --------------------------------------------------------------------------- @API [tag: initialize] [description: Initialize application]
  * @brief Initializes the application by setting up base data, reading configuration files, and configuring logging settings.
  * @return A pair consisting of a boolean indicating success or failure, and a string containing an error message if applicable.
  */

@@ -5,6 +5,7 @@
 
 #include "api/APIDatabase.h"
 #include "api/APISql.h"
+#include "api/APISystem.h"
 
 
 #include "Router.h"
@@ -62,7 +63,7 @@ std::pair<bool, std::string> CRouter::Run()
       if( vectorPath.empty() == true ) { return { false, "No command found in query string: " + m_stringQueryString }; }
 
       std::string_view stringCommand = vectorPath[0];
-      if( stringCommand == "db" )
+      if( stringCommand == "db" )                                             // database related commands, select, create, delete, open, close database
       {
          CAPIDatabase database_( m_pApplication, vectorPath, arguments_ );    // create api database object with command and arguments
          result_ = database_.Execute();                                       // execute command base on command
@@ -76,9 +77,14 @@ std::pair<bool, std::string> CRouter::Run()
             }
          }
       }
-      else if( stringCommand == "sql" )
+      else if( stringCommand == "sql" )                                       // sql commands are logic related to sql queries, adding, remove or edit sql queries
       {
 
+      }
+      else if( stringCommand == "sys" )                                       // system related commands, thing that affects the complete system
+      {
+         CAPISystem system( m_pApplication, vectorPath, arguments_ );         
+         result_ = system.Execute();
       }
 
       if( result_.first == false ) { return result_; }

@@ -1,5 +1,6 @@
 
 
+#include "gd/gd_binary.h"
 #include "gd/gd_file.h"
 #include "gd/gd_table.h"
 #include "gd/gd_table_io.h"
@@ -409,9 +410,14 @@ void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd
 
 
 /// Add session to internal list of sessions
-void CDocument::SESSION_Add( std::string_view stringUuid )
+void CDocument::SESSION_Add( const gd::types::uuid& uuidSession )
 {
-   m_psessions->Add( stringUuid );
+   m_psessions->Add( uuidSession );
+}
+
+void CDocument::SESSION_Add( const gd::types::uuid& uuidSession, gd::types::tag_unsafe )
+{
+   m_psessions->AddLast( uuidSession );
 }
 
 /// Add sessions to internal list of sessions
@@ -419,8 +425,23 @@ void CDocument::SESSION_Add( const std::vector<std::string>& vectorUuid )
 {
    for (const auto& stringUuid : vectorUuid)
    {
-      SESSION_Add(stringUuid);
+      gd::types::uuid uuid;
+      gd::binary_copy_hex_g( uuid, stringUuid );
+      
+      SESSION_Add(uuid, gd::types::tag_unsafe{});
    }
+}
+
+
+/// Delete session from internal list of sessions
+void CDocument::SESSION_Delete( const gd::types::uuid& uuidSession )
+{
+   m_psessions->Delete( uuidSession );
+}
+
+uint64_t CDocument::SESSION_Count() const
+{
+   return m_psessions->CountActive();
 }
 
 std::pair<bool, std::string> CDocument::SESSION_Initialize( size_t uMaxCount)

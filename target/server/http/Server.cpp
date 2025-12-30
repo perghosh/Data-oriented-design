@@ -112,7 +112,7 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    }
    else if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
 
-   // ## Route command if target begins with '!' .............................
+   // ## Route command if target begins with '!' ............................. @CRITICAL [tag: server, uri, route-command] [summary: Investigate and route command requests]
 
    if( stringTarget.empty() == false && stringTarget.front() == '!' )
    {
