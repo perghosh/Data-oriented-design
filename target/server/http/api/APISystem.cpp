@@ -1,5 +1,6 @@
 // @FILE [tag: api, system] [summary: API System command class] [type: source] [name: APISystem.cpp]
 
+#include "gd/gd_arguments.h"
 #include "gd/gd_binary.h"
 
 #include "../Router.h"
@@ -101,7 +102,10 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
    
    CDocument* pdocument = GetDocument();
    
-   pdocument->SESSION_Add(uuid);
+   uint64_t uIndex = pdocument->SESSION_Add(uuid);
+
+   gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "index", uIndex } } );
+   m_objects.Add( parguments_ );
    
    return { true, "" };
 }
@@ -127,11 +131,18 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionDelete()
    return { true, "" };
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Count number of active sessions
+ * @return pair <bool, std::string>  A pair where the bool indicates success/failure
+ */
 std::pair<bool, std::string> CAPISystem::Execute_SessionCount()
 {
    CDocument* pdocument = GetDocument();
    
-   auto uCount = pdocument->SESSION_Count();
+   uint64_t uCount = pdocument->SESSION_Count();
+
+   gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "count", uCount } } );
+   m_objects.Add( parguments_ );
    
    return { true, "" };
 }

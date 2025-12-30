@@ -7,6 +7,7 @@
 #include "jsoncons/json.hpp"
 #include "jsoncons_ext/jsonpath/jsonpath.hpp"
 
+#include "gd/gd_arguments_io.h"
 #include "gd/gd_table_io.h"
 
 #include "DTOResponse.h"
@@ -92,6 +93,17 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
 
             // #### add json as xml node as cdata
             xmlnodeResult.append_child(node_cdata).set_value(stringJson);
+         }
+         else if( Types::TypeNumber_g("arguments") == uType )
+         {
+            gd::argument::arguments* parguments = (gd::argument::arguments*)pobject;  //  cast to arguments object
+            gd::argument::to_string( *parguments, stringJson, gd::argument::tag_io_json{});
+            // #### add json as xml node as cdata
+            xmlnodeResult.append_child(node_cdata).set_value(stringJson);
+         }
+         else
+         {
+            return { false, "unsupported type for xml serialization" };
          }
       }
    }

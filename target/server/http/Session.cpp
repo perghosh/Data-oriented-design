@@ -286,12 +286,10 @@ int64_t CSessions::Find( const gd::types::uuid& uuid_ )
 /// Find first
 std::pair<bool, uint64_t> CSessions::FindFirstFree(uint64_t uOffset)
 {
-   std::scoped_lock lock_(m_mutexTable);
-   
    // Find first free row (time == 0/null) starting from uOffset
    for(uint64_t uRow = uOffset; uRow < m_tableSession.size(); ++uRow)
    {
-      if(m_tableSession.cell_is_null(uRow, eColumnTime))
+      if(m_tableSession.cell_is_null(uRow, eColumnTime) == true)
       {
          return {true, uRow};
       }

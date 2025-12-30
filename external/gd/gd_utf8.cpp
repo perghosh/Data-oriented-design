@@ -1764,6 +1764,8 @@ namespace gd {
          }
       } // move
 
+      // @API [tag: json, utf8, encode, decode] [description: methods to convert json formatted text to utf8 and back]
+
       /** ---------------------------------------------------------------------
        * @brief methods used to convert text from browser that is formatted to be 
        * converted into utf8

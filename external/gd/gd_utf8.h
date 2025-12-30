@@ -526,7 +526,7 @@ namespace gd {
          std::string_view find_nth(const std::string_view& stringText, size_t uNth, uint32_t uCharacter);
       }
 
-      /** @API [tag: utf8, json] [description: operations used to work with json formated text]
+      /** @API [tag: utf8, json, encode, decode] [description: operations used to work with json formated text] 
        *
        */
       namespace json {
