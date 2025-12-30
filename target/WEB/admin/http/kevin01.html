@@ -7,7 +7,7 @@
     <title>Document</title>
 </head>
 <body>
-    <div class="container">
+    <!--<div class="container">
         <div class="form-textarea">
             <textarea id="idTextarea"></textarea>
         </div>
@@ -34,9 +34,36 @@
 
     <label id="idText"></label>
 
+    <hr>-->
+
+    <div class="container">
+        <div>
+            Name:
+            <textarea id="idName"></textarea>
+        </div>
+        <div>
+            Value:
+            <textarea id="idValue"></textarea>
+        </div>
+        <div>
+            <select id="idSelect">
+
+            </select>
+        </div>
+        <button id="idAdd">Add</button>
+        <button id="idSave">Save</button>
+        <button id="idClear">Clear</button>
+    </div>
+
+
+
+    <hr>
+
+    <label id="idSelectText"></label>
+
 </body>
 <script>
-    function SetText(eText, sKey)
+    /*function SetText(eText, sKey)
     {
         const sValue = localStorage.getItem(sKey);
 
@@ -50,16 +77,6 @@
         localStorage.setItem(sKey, sValue);
     }
 
-    function AddData(eParent, aData)
-    {
-        const eTextarea = eParent.querySelector("#idTextarea");
-
-        aData.push(eTextarea.value);
-        eTextarea.value = "";
-
-    }
-
-
     function ChangeLabel(eParent)
     {
         if(!eParent) return;
@@ -67,8 +84,33 @@
         const eTextarea = eParent.querySelector("#idTextarea");
         SaveText(eTextarea, "text");
         alert("Clicked");
+    }*/
+
+    function AddData(eParent, aData)
+    {
+        if(!eParent) return;
+
+        aData.push(eParent.value);
+        eParent.value = "";
     }
 
+    function UpdateSelect(eParent, sKey, aData)
+    {
+        if(!eParent) return;
+        
+        const aStorageData = JSON.parse(localStorage.getItem(sKey)) || [];
+        aData.length = 0;
+        aData.push(...aStorageData);
+
+        eParent.innerHTML = "";
+
+        aData.forEach(sValue => {
+            const eOption = document.createElement("option");
+            eOption.value = sValue;
+            eOption.text = sValue;
+            eParent.appendChild(eOption);
+        });
+    }
 
     function GlobalEventListener(sAction, eSelector, callback_, eParent)
     {
@@ -84,19 +126,27 @@
 
     document.addEventListener("DOMContentLoaded", (e_) => {
         const aContainers = document.querySelectorAll(".container");
-        const eTextarea = document.querySelector("#idTextarea");
-        const eLabel = document.querySelector("#idText");
-        const aStorage = [];
-        const aStoredData = localStorage.getItem("data");
+        //const eTextarea = document.querySelector("#idTextarea");
+        //const eLabel = document.querySelector("#idText");
+        var aData = [];
 
-        eLabel.innerHTML = aStoredData;
+        //eLabel.innerHTML = aStoredData;
 
-        SetText(eTextarea, "text");
+        //SetText(eTextarea, "text");
+
+        UpdateSelect(document.querySelector("#idSelect"), "data", aData);
 
         aContainers.forEach((eContainer) => {
             //GlobalEventListener("click", "button", () => ChangeLabel(eContainer), eContainer);
-            GlobalEventListener("click", "#idAdd", () => AddData(eContainer, aStorage), eContainer);
-            GlobalEventListener("click", "#idSave", () => {localStorage.setItem("data", JSON.stringify(aStorage))}, eContainer);
+            GlobalEventListener("click", "#idAdd", () => AddData(eContainer.querySelector("#idName"), aData), eContainer);
+
+            GlobalEventListener("click", "#idSave", () => {
+                localStorage.setItem("data", JSON.stringify(aData));
+                UpdateSelect(eContainer.querySelector("#idSelect"), "data", aData);
+            }, eContainer);
+
+            GlobalEventListener("click", "#idClear", () => {localStorage.clear()}, eContainer);
+            GlobalEventListener("change", "#idSelect", () => {}, eContainer);
         });
     });
 
