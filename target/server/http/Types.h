@@ -6,6 +6,7 @@
 #include <functional>
 #include <vector>
 
+#include "gd/gd_arguments.h"
 #include "gd/gd_table_column-buffer.h"
 
 #if defined( __clang__ )
@@ -110,6 +111,7 @@ struct Objects
    Objects() = default;
 
    void Add( gd::table::dto::table* p_ ) { m_vectorObjects.emplace_back( Object{ eTypeDtoTable, p_ } ); }
+   void Add( gd::argument::arguments* p_ ) { m_vectorObjects.emplace_back( Object{ eTypeArguments, p_ } ); }
 
    size_t Size() const noexcept { return m_vectorObjects.size(); }
 

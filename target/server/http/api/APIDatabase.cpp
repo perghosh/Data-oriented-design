@@ -65,25 +65,25 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
 
       if( stringCommand == "create" )
       {
-         result_ = Execute_Create();
+         result_ = Execute_Create();                                          // endpoint db/create
       }
       else if( stringCommand == "open" )
       {
-         result_ = Execute_Open();
+         result_ = Execute_Open();                                            // endpoint db/open
       }
-      else if( stringCommand == "query" )
+      else if( stringCommand == "query" )                                     
       {
-         result_ = Execute_Query();
+         result_ = Execute_Query();                                           // endpoint db/query
       }
       else if( stringCommand == "select" )
       {
-         result_ = Execute_Select();
+         result_ = Execute_Select();                                          // endpoint db/select
       }
       else if( stringCommand == "insert" )
       {
-         result_ = Execute_Insert();
+         result_ = Execute_Insert();                                          // endpoint db/insert
       }
-      else if( stringCommand == "delete" )
+      else if( stringCommand == "delete" ) 
       {
       }
       else if( stringCommand == "drop" )

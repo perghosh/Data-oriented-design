@@ -20,6 +20,9 @@
 +-- dto
 |   |   DTOResponse.*
 |
++-- meta
+|   |   DTOResponse.*
+|
 +-- playground
 |
 +-- state
@@ -28,7 +31,12 @@
 
 ```
 
-
+## Folder Structure
+- **api**: Contains modules that handle specific API endpoints for database, SQL, and system operations.
+- **cli**: Contains modules for command-line interface HTTP handling.
+- **dto**: Contains data transfer objects used for structuring HTTP responses.
+- **meta**: Contains metadata-related modules, data used in webserver.
+- **playground**: A space for experimental code and testing new features.
 
 ## Description of objects and files
 - `Application.cpp` / `Application.h`: Defines the main application class that initializes and runs the HTTP server.

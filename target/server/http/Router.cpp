@@ -83,8 +83,16 @@ std::pair<bool, std::string> CRouter::Run()
       }
       else if( stringCommand == "sys" )                                       // system related commands, thing that affects the complete system
       {
-         CAPISystem system( m_pApplication, vectorPath, arguments_ );         
-         result_ = system.Execute();
+         CAPISystem system_( m_pApplication, vectorPath, arguments_ );         
+         result_ = system_.Execute();
+         if( result_.first == true )                                          // if success get objects from database api
+         {
+            Types::Objects* pobjectsResult = system_.GetObjects();                                 assert( pobjectsResult );
+            if( pobjectsResult != nullptr )
+            { 
+               result_ = m_pdtoresponse->AddTransfer( pobjectsResult );       // add objects to response dto
+            }
+         }
       }
 
       if( result_.first == false ) { return result_; }

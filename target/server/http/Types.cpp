@@ -27,7 +27,7 @@ void Clear_g( unsigned uType, void* pobject_ )
          delete ptable;
       }
       break;
-   case eTypeArguments:
+   case eTypeArgumentsDto:
       {
          auto parguments = static_cast<gd::argument::arguments*>( pobject_ );
          delete parguments;

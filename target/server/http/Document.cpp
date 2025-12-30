@@ -410,14 +410,14 @@ void CDocument::MESSAGE_Progress(const std::string_view& stringMessage, const gd
 
 
 /// Add session to internal list of sessions
-void CDocument::SESSION_Add( const gd::types::uuid& uuidSession )
+uint64_t CDocument::SESSION_Add( const gd::types::uuid& uuidSession )
 {
-   m_psessions->Add( uuidSession );
+   return (uint64_t)m_psessions->Add( uuidSession );
 }
 
-void CDocument::SESSION_Add( const gd::types::uuid& uuidSession, gd::types::tag_unsafe )
+uint64_t CDocument::SESSION_Add( const gd::types::uuid& uuidSession, gd::types::tag_unsafe )
 {
-   m_psessions->AddLast( uuidSession );
+   return (uint64_t)m_psessions->AddLast( uuidSession );
 }
 
 /// Add sessions to internal list of sessions

@@ -1,3 +1,5 @@
+// @FILE [tag: table, print, output] [description: Generate output from tables in different formats] [type: source] [name: gd_table_io.cpp]
+
 #include <numeric>
 
 #include "gd_parse.h"
