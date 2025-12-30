@@ -25,6 +25,8 @@
 #include "gd/gd_table_arguments.h"
 #include "gd/gd_table_column-buffer.h"
 
+#include "meta/METAQueries.h"
+
 #include "Session.h"
 
 class CApplication;
@@ -201,8 +203,13 @@ public:
    
    std::pair<bool, std::string> SESSION_Initialize( size_t uMaxCount);
 
+// ## @API [tag: queries] [description:  ]
 
-
+   META::CQueries* QUERIES_Get() { return m_pqueries.get(); }
+   const META::CQueries* QUERIES_Get() const { return m_pqueries.get(); }
+   bool QUERIES_Empty() const { return m_pqueries != nullptr && m_pqueries->Empty() == false; }
+   std::pair<bool, std::string> QUERIES_Initialize( const gd::argument::arguments& arguments_ );
+   std::pair<bool, std::string> QUERIES_Initialize() { return QUERIES_Initialize( gd::argument::arguments() ); }
 
 /** \name ERROR
 * ## @API [tag: error]
@@ -231,6 +238,8 @@ public:
 	gd::database::database_i* m_pdatabase{};     ///< document database connection if any
 
    std::unique_ptr<CSessions> m_psessions;      ///< session manager for document if any
+
+   std::unique_ptr<META::CQueries> m_pqueries;  ///< pointer to query information if any
 
    // ## cache information is stored in dto tables (dto = data transfer object)
    std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document

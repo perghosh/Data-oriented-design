@@ -49,3 +49,5 @@ open/select/select?type=sqlite&name=test&query=SELECT * FROM TUser&query=SELECT 
 
 curl "${site}/!sys/session/delete?session=00000000000000000000000000000001"
 curl "${site}/!sys/session/delete?session=00000000-0000-0000-0000-000000000001" 
+
+curl "${site}/!sql/add?type=sqlite&name=test" --data-urlencode "query=SELECT * FROM TUser" -G

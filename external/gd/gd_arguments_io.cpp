@@ -58,6 +58,10 @@ void to_string( const arguments& arguments_, std::string& stringOut, tag_io_json
       {
          stringResult += "\"" + std::string(stringName) + "\":" + ( (bool)value_ == true ? "true" : "false" );
       }
+      else if( value_.is_binary() == true )
+      {
+         stringResult += "\"" + std::string(stringName) + "\": \"" + value_.as_string() + "\"";
+      }
       else if( value_.is_null() == true )
       {
          stringResult += "\"" + std::string(stringName) + "\":null";

@@ -28,6 +28,12 @@ std::pair<bool, std::string> Http_g(const gd::cli::options* poptionsHttp, CDocum
       pdocument->SESSION_Initialize( 1024 );
    }
 
+   if( pdocument->QUERIES_Empty() == false )
+   {
+      pdocument->QUERIES_Initialize();
+   }
+
+
 
    // ### Add session values ..................................................
 
