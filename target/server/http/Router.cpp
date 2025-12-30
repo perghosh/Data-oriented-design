@@ -79,7 +79,17 @@ std::pair<bool, std::string> CRouter::Run()
       }
       else if( stringCommand == "sql" )                                       // sql commands are logic related to sql queries, adding, remove or edit sql queries
       {
+         CAPISql sql_( m_pApplication, vectorPath, arguments_ );    // create api database object with command and arguments
+         result_ = sql_.Execute();                                       // execute command base on command
 
+         if( result_.first == true )                                          // if success get objects from database api
+         {
+            Types::Objects* pobjectsResult = sql_.GetObjects();                                    assert( pobjectsResult );
+            if( pobjectsResult != nullptr )
+            { 
+               result_ = m_pdtoresponse->AddTransfer( pobjectsResult );       // add objects to response dto
+            }
+         }
       }
       else if( stringCommand == "sys" )                                       // system related commands, thing that affects the complete system
       {

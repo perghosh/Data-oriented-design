@@ -20,7 +20,7 @@
 
 #ifndef NAMESPACE_META_BEGIN
 
-#  define NAMESPACE_META_BEGIN namespace CLI {
+#  define NAMESPACE_META_BEGIN namespace META {
 #  define NAMESPACE_META_END  }
 
 #endif
@@ -37,6 +37,9 @@ NAMESPACE_META_BEGIN
  */
 class CQueries
 {
+public:
+   enum enumFormat { eFormatText, eFormatJinja, eFormatXml, eFormatJson };
+   enum enumColumn { eColumnId, eColumnTime, eColumnIp4, eColumnIp6 };
    // @API [tag: construction]
 public:
    CQueries() {}
@@ -59,7 +62,11 @@ public:
    // @API [tag: get, set]
 
    // @API [tag: operation]
+   std::pair<bool, std::string> Initialize( const gd::argument::arguments& arguments_ );           ///< initialize query manager
 
+   std::pair<bool, std::string> Add( std::string_view stringQuery, enumFormat eFormat = eFormatText, const gd::argument::arguments* parguments_ = nullptr );  ///< add new query
+
+   bool Empty() const { return m_tableQuery.empty(); }                                            ///< check if there are any active queries
 
 protected:
    // @API [tag: internal]

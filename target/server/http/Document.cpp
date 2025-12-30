@@ -456,6 +456,17 @@ std::pair<bool, std::string> CDocument::SESSION_Initialize( size_t uMaxCount)
    return {false, "Session already initialized"};
 }
 
+std::pair<bool, std::string> CDocument::QUERIES_Initialize( const gd::argument::arguments& arguments_ )
+{
+   if( m_pqueries == nullptr )
+   {
+      m_pqueries = std::make_unique<META::CQueries>();
+      return m_pqueries->Initialize( arguments_ );
+   }
+ 
+   return {false, "Queries already initialized"};
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Add error to internal list of errors
