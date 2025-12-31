@@ -5,55 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/elements.css">
     <title>Document</title>
+    <style>
+    /* Add your CSS styles here */
+    .container-form { container-type: inline-size; margin: 20px; }
+
+    .container-form input,
+    .container-form textarea,
+    .container-form select {border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: inherit; padding: 8px 12px;}
+
+    .container-form .row { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; }
+    .container-form .row:last-child { margin-bottom: 0; } /* to align last item to bottom */
+
+    .container-form .fill {flex: 1;} /* makes select fill available width */
+    .container-form .half { flex: 1; max-width: 50%; }
+
+    .container-form .right { justify-content: flex-end; }
+
+    </style>
 </head>
 <body>
-    <!--<div class="container">
-        <div class="form-textarea">
-            <textarea id="idTextarea"></textarea>
-        </div>
-        <div >
-            <label id="idLabel"></label>
-        </div>
-        <button>Click</button>
-    </div>
 
-    <hr>
-    
-    <div class="container">
-        <div class="form-textarea">
-            <textarea id="idTextarea"></textarea>
-        </div>
-        <div >
-            <label id="idLabel"></label>
-        </div>
-        <button id="idAdd">Add</button>
-        <button id="idSave">Click</button>
-    </div>
-
-    <hr>
-
-    <label id="idText"></label>
-
-    <hr>-->
-
-    <div class="container">
-        <div>
+    <div class="container container-form" style="max-width: 800px;">
+        <div class="row">
             Name:
-            <textarea id="idName"></textarea>
+            <textarea class="fill" id="idName"></textarea>
         </div>
-        <div>
+        <div class="row">
             Value:
-            <textarea id="idValue"></textarea>
+            <textarea class="fill" id="idValue"></textarea>
         </div>
-        <div>
-            <select id="idSelect">
+        <div class="row right">
+            <select class="half" id="idSelect">
 
             </select>
         </div>
-        <button id="idAdd">Add</button>
-        <button id="idSave">Save</button>
-        <button id="idRemove">Remove</button>
-        <button id="idClear">Clear</button>
+        <div class="row right">
+         <button id="idAdd">Add</button>
+         <button id="idSave">Save</button>
+         <button id="idRemove">Remove</button>
+         <button id="idClear">Clear</button>
+        </div>
     </div>
 
 
@@ -81,7 +72,7 @@
     function ChangeLabel(eParent)
     {
         if(!eParent) return;
-        
+
         const eTextarea = eParent.querySelector("#idTextarea");
         SaveText(eTextarea, "text");
         alert("Clicked");
@@ -98,7 +89,7 @@
     function UpdateSelect(eParent, sKey, aData)
     {
         if(!eParent) return;
-        
+
         const aStorageData = JSON.parse(localStorage.getItem(sKey)) || [];
         aData.length = 0;
         aData.push(...aStorageData);
@@ -130,7 +121,7 @@
                 aData.splice(i, 1);
                 return;
             }
-        }   
+        }
     }
 
     function SetText(eParent, sValue)
@@ -148,7 +139,7 @@
             if(e_.target.matches(eSelector))
             {
                 callback_(e_);
-            }       
+            }
         });
     }
 
@@ -188,6 +179,6 @@
         });
     });
 
-    
+
 </script>
 </html>
