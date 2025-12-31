@@ -86,9 +86,9 @@ public:
 *///@{
    std::pair<bool, std::string> Initialize();
 
-   boost::beast::http::message_generator RouteCommand( std::string_view stringTarget, boost::beast::http::request<boost::beast::http::string_body>&& request_ );
+   /// Route command
+   boost::beast::http::message_generator RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_ );
 
-   std::pair<bool, std::string> ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringTarget, std::vector<std::pair<std::string, std::string>>& vectorResponse);
    std::pair<bool, std::string> Execute( gd::com::server::command_i* pcommand );
    std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand );
 
@@ -180,4 +180,3 @@ public:
    boost::asio::ip::tcp::acceptor m_acceptor; ///< Handle new socket connections
    std::shared_ptr<std::string const> m_pstringFolderRoot;///< root folder on disk where to find files
 };
-

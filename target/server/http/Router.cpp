@@ -46,7 +46,12 @@ std::pair<bool, std::string> CRouter::Parse()
    return { true, "" };
 }
 
-// @TODO [tag: router, command] [description: Convert uri encoded text values to normal utf8 strings] [status: open] [assigned: per]
+
+/** @CRITICAL [tag: router, command] [description: Execute command from parsed query string]
+ * 
+ * @brief 
+ * @return 
+ */
 std::pair<bool, std::string> CRouter::Run()
 {
    std::pair<bool, std::string> result_;
@@ -115,25 +120,6 @@ std::pair<bool, std::string> CRouter::Run()
 std::pair<bool, std::string> CRouter::Run( const std::vector<std::string_view>& vectorCommand, gd::argument::arguments& argumentsParameter )
 {
    // ## run commands from vectorCommand with argumentsParameter
-
-   std::string_view stringArea = vectorCommand[0];
-
-   if( stringArea == "db" )
-   {
-      // database commands
-      std::string_view stringAction = vectorCommand[1];
-      if( stringAction == "create" )
-      {
-         std::string stringDbName = argumentsParameter["name"].as_string();
-         // create database with name
-      }
-      else if( stringAction == "delete" )
-      {
-         std::string stringDbName = argumentsParameter["name"].as_string();
-         // delete database with name
-      }
-   }
-
 
    return { true, "" };
 }
