@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Movable Windows Demo</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: #1e1e1e;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    .window {
+      position: absolute;
+      width: 300px;
+      height: 200px;
+      background: #2b2b2b;
+      border: 1px solid #555;
+      border-radius: 6px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      color: white;
+    }
+
+    .title-bar {
+      height: 32px;
+      background: #3a3a3a;
+      border-bottom: 1px solid #555;
+      cursor: move;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      user-select: none;
+    }
+
+    .title-bar span {
+      flex-grow: 1;
+      font-size: 14px;
+    }
+
+    .content {
+      padding: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="window" style="top: 50px; left: 50px;">
+    <div class="title-bar">
+      <span>Window 1</span>
+    </div>
+    <div class="content">
+      This window can be dragged around.
+    </div>
+  </div>
+
+  <div class="window" style="top: 120px; left: 200px;">
+    <div class="title-bar">
+      <span>Window 2</span>
+    </div>
+    <div class="content">
+      Click and drag the title bar!
+    </div>
+  </div>
+
+  <script>
+    let highestZ = 1;
+    let activeWindow = null;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    document.querySelectorAll('.window').forEach(win => {
+      const titleBar = win.querySelector('.title-bar');
+
+      titleBar.addEventListener('mousedown', (e) => {
+        activeWindow = win;
+        highestZ++;
+        win.style.zIndex = highestZ;
+
+        const rect = win.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+      });
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!activeWindow) return;
+
+      activeWindow.style.left = (e.clientX - offsetX) + 'px';
+      activeWindow.style.top = (e.clientY - offsetY) + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      activeWindow = null;
+    });
+  </script>
+
+</body>
+</html>
