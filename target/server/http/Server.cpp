@@ -34,7 +34,7 @@ std::pair<bool, std::string> CServer::Initialize()
    return { true, "" };
 }
 
-/**
+/** @CRITICAL [tag: server, http, request] [summary: Handle incoming HTTP requests and generate responses]
  * @brief Handles an incoming HTTP request and generates an appropriate HTTP response.
  *
  * This function processes HTTP GET and HEAD requests for static files and special commands.
@@ -112,12 +112,14 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    }
    else if( stringTarget.size() > 0 && stringTarget[0] == '/' ) { stringTarget.remove_prefix(1); }
 
-   // ## Route command if target begins with '!' ............................. @CRITICAL [tag: server, uri, route-command] [summary: Investigate and route command requests]
+   std::string_view stringBody = request_.body();
+
+   // ## Route command if target begins with '!' ............................. @API [tag: server, uri, route-command] [summary: Investigate and route command requests]
 
    if( stringTarget.empty() == false && stringTarget.front() == '!' )
    {
       CServer server_( papplication_g );
-      return server_.RouteCommand( stringTarget, std::move( request_ ) );
+      return server_.RouteCommand( stringTarget, stringBody, std::move( request_ ) );
    }
 
    // ## Request path must be absolute and not contain "..".
@@ -126,14 +128,6 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
       return bad_request_("Illegal request-target"); 
    }
 
-   /*
-   {
-      // ## Process request by calling core method in application
-      std::vector<std::pair<std::string, std::string>> vectorResponse;
-      auto resulut_ = papplication_g->GetServer()->ProcessRequest( eVerb, stringTarget, vectorResponse );
-      if ( resulut_.first == false ) { return server_error_(resulut_.second); }
-   }
-   */
 
    // ## Build the path to the requested file
    std::string stringPath = path_cat_g(stringRoot, request_.target());
@@ -174,7 +168,28 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
 }
 
 
-boost::beast::http::message_generator CServer::RouteCommand( std::string_view stringTarget, boost::beast::http::request<boost::beast::http::string_body>&& request_ )
+/** @CRITICAL [tag: router, uri] [description: Routes and processes HTTP commands based on the target path]
+ * @brief Routes and processes HTTP commands based on the target path
+ * 
+ * This method handles the routing of HTTP requests to appropriate command handlers.
+ * It parses the target path to identify commands and parameters, executes the command,
+ * and generates an appropriate HTTP response.
+ * 
+ * @param stringTarget The target path from the HTTP request (e.g., "/api/command")
+ * @param stringBody The body of the HTTP request
+ * @param request_ The HTTP request object (moved into the method)
+ * @return boost::beast::http::message_generator A message generator that will produce the HTTP response
+ * 
+ * The method follows these steps:
+ * 1. Creates a router object for the target path
+ * 2. Parses the target to extract command and parameters
+ * 3. Executes the command via the router
+ * 4. Generates an XML or JSON response based on the router's output
+ * 5. Prepares and returns an HTTP response with appropriate headers
+ * 
+ * If any step fails, it returns an internal server error response with the error message.
+ */
+boost::beast::http::message_generator CServer::RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_ )
 {
    // Returns a server error response
    auto const server_error_ = [&request_](boost::beast::string_view stringWhat)
@@ -196,17 +211,14 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    result_ = router_.Run();
    if( result_.first == false ) { return server_error_( result_.second ); }
 
-   std::string stringBody;
+   std::string stringResponse;
 
    if( router_.HasResult() == true )
    {
-      router_.PrintResponseXml( stringBody, nullptr );
+      router_.PrintResponseXml( stringResponse, nullptr );
    }
 
-   if( stringBody.empty() == true )
-   {
-      stringBody = "<response status=\"ok\" />";
-   }
+   if( stringResponse.empty() == true ) { stringResponse = "<response status=\"ok\" />"; }
 
    std::array<std::byte, 128> array_; // array to hold data for arguments
    gd::argument::arguments argumentHeader( (gd::argument::arguments::pointer)array_.data(), (unsigned)array_.size() );
@@ -220,69 +232,16 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::ok, request_.version()};
 
    // 2. Set the body of the response
-   response.body() = std::move(stringBody);
+   response.body() = std::move( stringResponse );                             // set response body, body is pased to client
 
-   PrepareResponseHeader_s( argumentHeader, response );
+   // 3. Set other response parameters
+   PrepareResponseHeader_s( argumentHeader, response );                       // prepare response header
 
-   /*
-   // 3. Set essential headers
-   response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
-   response.set(boost::beast::http::field::content_type, "text/plain");
-
-   // 4. Manage the connection state (keep-alive or close)
-   response.keep_alive(request_.keep_alive());
-
-   // 5. Prepare the payload. This is crucial as it finalizes headers,
-   //    for example, it automatically sets the Content-Length header for string_body.
-   response.prepare_payload();
-
-   // 6. Return the response. It will be implicitly converted to message_generator.
-   */
    return response;
 }
 
-std::pair<bool, std::string> CServer::ProcessRequest(boost::beast::http::verb eVerb, std::string_view stringCommand, std::vector<std::pair<std::string, std::string>>& vectorResponse)
-{                                                                                                     LOG_INFORMATION_RAW("Command: " + std::string(stringCommand));
-   using namespace gd::com::server::router;
-   // ## Create command object from request
-   //gd::com::server::server_i* pserver = m_ppapplication->ROUTER_GetActiveServer();
-   //gd::com::pointer< command > pcommand = gd::com::pointer< gd::com::server::router::command >( new gd::com::server::router::command( pserver ) );
 
-   //auto result_ = pcommand->append(stringCommand, gd::types::tag_uri{});
-   //if( result_.first == false ) { return { false, "Failed to append command: " + std::string(stringCommand)  + " - " + result_.second }; }
-
-
-   //std::vector< std::string_view > vectorCommand = static_cast<gd::com::server::router::command*>( pcommand )->add_querystring( stringCommand );
-
-   /*
-   vectorCommand.erase(std::remove_if(vectorCommand.begin(), vectorCommand.end(), [](const auto& string_) {
-      return string_.empty();
-   }), vectorCommand.end());
-   */
-
-   //pserver->get( pcommand, nullptr );
-   // pserver->get( vectorCommand, nullptr, pcommand, nullptr);
-
-
-   if(eVerb == boost::beast::http::verb::get)
-   {
-      //auto result_ = Execute( pcommand );
-      // Handle GET request
-      vectorResponse.push_back({"Content-Type", "text/plain"});
-      return {true, "GET request processed for target: " + std::string(stringCommand)};
-   }
-   else if(eVerb == boost::beast::http::verb::head)
-   {
-      // Handle HEAD request
-      vectorResponse.push_back({"Content-Type", "text/plain"});
-      return {true, "HEAD request processed for target: " + std::string(stringCommand)};
-   }
-   else
-   {
-      return {false, "Unsupported HTTP verb"};
-   }
-}
-
+// @DEPRICATED
 std::pair<bool, std::string> CServer::Execute(gd::com::server::command_i* pcommand)
 {
    CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
@@ -308,7 +267,7 @@ std::pair<bool, std::string> CServer::Execute(gd::com::server::command_i* pcomma
    return { true, "" };
 }
 
-
+// @DEPRICATED
 std::pair<bool, std::string> CServer::Execute(const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand)
 {                                                                                                  assert( vectorCommand.empty() == false );
    CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
@@ -321,6 +280,13 @@ std::pair<bool, std::string> CServer::Execute(const std::vector<std::string_view
 }
 
 
+/** --------------------------------------------------------------------------
+ * @brief Prepares response header for request
+ * 
+ * @param argumentHeader additional argument header information
+ * @param argumentHeader.format format of response
+ * @param response 
+ */
 void CServer::PrepareResponseHeader_s( gd::argument::arguments& argumentHeader, boost::beast::http::response<boost::beast::http::string_body>& response )
 {
    using namespace boost::beast::http;
