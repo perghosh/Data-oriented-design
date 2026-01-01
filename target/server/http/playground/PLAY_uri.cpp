@@ -20,27 +20,35 @@
 #include "catch2/catch_amalgamated.hpp"
 
 TEST_CASE( "[uri] binary", "[uri]" ) {
-   std::array<uint8_t, 100> binaryData;
-   gd::binary::write_le binaryWriter( binaryData.data(), binaryData.size() );
+   {
+      std::array<uint8_t, 100> binaryData;
+      gd::binary::write_le binaryWriter( binaryData );
+      //gd::binary::write_le binaryWriter( binaryData.data(), binaryData.size() );
+      //gd::binary::write_le binaryWriter( binaryData );
 
-   int iValue = 42;
+      int iValue = 42;
 
-   binaryWriter << iValue << 100 << 1000;
+      binaryWriter << iValue << 100 << 1000;
 
-   gd::binary::read_le binaryReader( binaryData.data(), binaryData.size() );
+      gd::binary::read_le binaryReader( binaryData.data(), binaryData.size() );
 
-   binaryReader >> iValue;
-   binaryReader >> iValue;
-   binaryReader >> iValue;
+      binaryReader >> iValue;
+      binaryReader >> iValue;
+      binaryReader >> iValue;
 
-   gd::uuid uuid(gd::uuid::tag_null{});
+      gd::uuid uuid(gd::uuid::tag_null{});
 
-   binaryWriter.write_bytes( uuid, 16 );
+      binaryWriter.write_bytes( uuid, 16 );
 
-   gd::uuid uuidRead;
-   binaryReader.read_bytes( uuidRead.data(), 16);
+      gd::uuid uuidRead;
+      binaryReader.read_bytes( uuidRead.data(), 16);
 
-   assert( uuid.compare( uuidRead ) );
+      assert( uuid.compare( uuidRead ) );
+   }
+
+   {
+      std::string stringhex20 = "00000001445566778899AABBCCDDEEFF00112233";
+   }
 
 }
 
