@@ -1,6 +1,53 @@
 // @FILE [tag: binary] [description: Handle binary data] [type: source] [name: gd_binary.cpp]
 
+#include <cstring>
+
 #include "gd_binary.h"
+
+#if defined(__GNUC__) || defined(__clang__)
+// GCC/Clang builtins (work on x86, x86-64, ARM, AArch64, etc.)
+#define SWAP16(x) __builtin_bswap16(x)
+#define SWAP32(x) __builtin_bswap32(x)
+#define SWAP64(x) __builtin_bswap64(x)
+
+#elif defined(_MSC_VER)
+// MSVC intrinsics
+#include <intrin.h>
+#pragma intrinsic(_byteswap_ushort, _byteswap_ulong, _byteswap_uint64)
+#define SWAP16(x) _byteswap_ushort(x)
+#define SWAP32(x) _byteswap_ulong(x)
+#define SWAP64(x) _byteswap_uint64(x)
+
+#else
+// Fully portable fallbacks (work everywhere, no undefined behavior)
+#define SWAP16(x) ((uint16_t)(( (uint16_t)(x) << 8) | ( (uint16_t)(x) >> 8)))
+#define SWAP32(x) ((uint32_t)( \
+    (((uint32_t)(x) & 0x000000FFu) << 24) | \
+    (((uint32_t)(x) & 0x0000FF00u) << 8)  | \
+    (((uint32_t)(x) & 0x00FF0000u) >> 8)  | \
+    (((uint32_t)(x) & 0xFF000000u) >> 24) ))
+#define SWAP64(x) ((uint64_t)( \
+    (((uint64_t)(x) & 0x00000000000000FFull) << 56) | \
+    (((uint64_t)(x) & 0x000000000000FF00ull) << 40) | \
+    (((uint64_t)(x) & 0x0000000000FF0000ull) << 24) | \
+    (((uint64_t)(x) & 0x00000000FF000000ull) << 8)  | \
+    (((uint64_t)(x) & 0x000000FF00000000ull) >> 8)  | \
+    (((uint64_t)(x) & 0x0000FF0000000000ull) >> 24) | \
+    (((uint64_t)(x) & 0x00FF000000000000ull) >> 40) | \
+    (((uint64_t)(x) & 0xFF00000000000000ull) >> 56) ))
+#endif
+
+// Detect host system endianness at compile time
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+   #define GD_HOST_BIG_ENDIAN 1
+#elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+   #define GD_HOST_BIG_ENDIAN 0
+#elif defined(_WIN32) || defined(__i386__) || defined(__x86_64__) || defined(__arm__) || defined(__aarch64__)
+    // Windows, x86, x64, ARM, and AArch64 are little-endian
+   #define GD_HOST_BIG_ENDIAN 0
+#else
+   #error "Cannot determine system endianness"
+#endif
 
 _GD_BEGIN
 
@@ -79,7 +126,7 @@ std::pair<bool, std::string> binary_validate_uuid_g( std::string_view stringUuid
    {
       if( uIndex == 8 || uIndex == 13 || uIndex == 18 || uIndex == 23 ) continue; // Skip hyphen positions (already validated)
 
-      if( puHexValue_s[(uint8_t)stringUuid[uIndex]] == 0 ) return { false, std::string( "Invalid UUID hex character at position " ) + std::to_string( uIndex ) + ": '" + stringUuid[uIndex] + "'" };
+      if( puHexValue_s[(uint8_t)stringUuid[uIndex]] == 0 && stringUuid[uIndex] != '0' ) return {false, std::string("Invalid UUID hex character at position ") + std::to_string(uIndex) + ": '" + stringUuid[uIndex] + "'"};
    }
 
    return { true, "" };
@@ -197,20 +244,20 @@ std::string binary_to_hex_g( const uint8_t* puBuffer, size_t uBufferSize, bool b
  * @param uBufferSize Size of the buffer
  * @param puPattern Pattern to search for
  * @param uPatternSize Size of the pattern
- * @param uStartIndex Starting position for search (default: 0)
+ * @param uOffset Starting position for search (default: 0)
  * @return int64_t Position of first occurrence or -1 if not found
  */
-int64_t buffer_find_g( const uint8_t* puBuffer, size_t uBufferSize, const uint8_t* puPattern, size_t uPatternSize, size_t uStartIndex )
+int64_t buffer_find_g( const uint8_t* puBuffer, size_t uBufferSize, const uint8_t* puPattern, size_t uPatternSize, size_t uOffset )
 {
    // Edge cases
-   if( uPatternSize == 0 ) return uStartIndex;                               // Empty pattern matches at start index
+   if( uPatternSize == 0 ) return uOffset;                                    // Empty pattern matches at start index
 
-   if( uPatternSize > uBufferSize || uStartIndex >= uBufferSize ) return -1; // Pattern larger than buffer or start index out of bounds
+   if( uPatternSize > uBufferSize || uOffset >= uBufferSize ) return -1;      // Pattern larger than buffer or start index out of bounds
 
-   if( uStartIndex + uPatternSize > uBufferSize ) return -1;                 // Ensure we don't start beyond the point where pattern could fit
+   if( uOffset + uPatternSize > uBufferSize ) return -1;                      // Ensure we don't start beyond the point where pattern could fit
 
    const uint8_t* puSearchEnd = puBuffer + uBufferSize - uPatternSize; // Last possible position for pattern to fit
-   const uint8_t* puCurrent = puBuffer + uStartIndex; // Current position
+   const uint8_t* puCurrent = puBuffer + uOffset; // Current position
 
    // ## Use Boyer-Moore-like approach for efficiency
    while( puCurrent <= puSearchEnd )
@@ -247,5 +294,295 @@ int64_t buffer_find_last_g( const uint8_t* puBuffer, size_t uBufferSize, const u
    
    return -1;
 }
+
+// Your SWAP16, SWAP32, SWAP64 macros/intrinsics here
+// (as previously defined with GCC/Clang/MSVC support)
+
+// ## Big-endian global readers
+
+/// @brief Read big-endian 16 values from binary data ------------------------
+const uint8_t* binary_read_be_g(const uint8_t* p_, uint16_t& v_)
+{
+    std::memcpy(&v_, p_, sizeof(v_));
+#if !GD_HOST_BIG_ENDIAN
+    v_ = SWAP16(v_);
+#endif
+    return p_ + sizeof(v_);
+}
+
+/// @brief Read big-endian 32 values from binary data ------------------------
+const uint8_t* binary_read_be_g(const uint8_t* p_, uint32_t& v_)
+{
+    std::memcpy(&v_, p_, sizeof(v_));
+#if !GD_HOST_BIG_ENDIAN
+    v_ = SWAP32(v_);
+#endif
+    return p_ + sizeof(v_);
+}
+
+/// @brief Read big-endian 64 values from binary data ------------------------
+const uint8_t* binary_read_be_g(const uint8_t* p_, uint64_t& v_)
+{
+    std::memcpy(&v_, p_, sizeof(v_));
+#if !GD_HOST_BIG_ENDIAN
+    v_ = SWAP64(v_);
+#endif
+    return p_ + sizeof(v_);
+}
+
+const uint8_t* binary_read_be_g(const uint8_t* p_, int16_t& v_)
+{
+    uint16_t uValue;
+    p_ = binary_read_be_g(p_, uValue);
+    v_ = static_cast<int16_t>(uValue);
+    return p_;
+}
+
+const uint8_t* binary_read_be_g(const uint8_t* p_, int32_t& v_)
+{
+    uint32_t uValue;
+    p_ = binary_read_be_g(p_, uValue);
+    v_ = static_cast<int32_t>(uValue);
+    return p_;
+}
+
+const uint8_t* binary_read_be_g(const uint8_t* p_, int64_t& v_)
+{
+    uint64_t uValue;
+    p_ = binary_read_be_g(p_, uValue);
+    v_ = static_cast<int64_t>(uValue);
+    return p_;
+}
+
+const uint8_t* binary_read_be_g(const uint8_t* p_, float& v_)
+{
+    uint32_t uValue;
+    p_ = binary_read_be_g(p_, uValue);
+    v_ = static_cast<float>(uValue);
+    return p_;
+}
+
+const uint8_t* binary_read_be_g(const uint8_t* p_, double& v_)
+{
+    uint64_t uValue;
+    p_ = binary_read_be_g(p_, uValue);
+    v_ = static_cast<double>(uValue);
+    return p_;
+}
+
+// ## Little-endian global readers
+
+/// @brief Read little-endian 16 values from binary data ---------------------
+const uint8_t* binary_read_le_g(const uint8_t* p_, uint16_t& v_)
+{
+    std::memcpy(&v_, p_, sizeof(v_));
+#if GD_HOST_BIG_ENDIAN
+    v_ = SWAP16(v_);
+#endif
+    return p_ + sizeof(v_);
+}
+
+/// @brief Read little-endian 32 values from binary data
+const uint8_t* binary_read_le_g(const uint8_t* p_, uint32_t& v_)
+{
+    std::memcpy(&v_, p_, sizeof(v_));
+#if GD_HOST_BIG_ENDIAN
+    v_ = SWAP32(v_);
+#endif
+    return p_ + sizeof(v_);
+}
+
+/// @brief Read little-endian 64 values from binary data
+const uint8_t* binary_read_le_g(const uint8_t* p_, uint64_t& v_)
+{
+    std::memcpy(&v_, p_, sizeof(v_));
+#if GD_HOST_BIG_ENDIAN
+    v_ = SWAP64(v_);
+#endif
+    return p_ + sizeof(v_);
+}
+
+const uint8_t* binary_read_le_g(const uint8_t* p_, int16_t& v_)
+{
+    uint16_t uValue;
+    p_ = binary_read_le_g(p_, uValue);
+    v_ = static_cast<int16_t>(uValue);
+    return p_;
+}
+
+const uint8_t* binary_read_le_g(const uint8_t* p_, int32_t& v_)
+{
+    uint32_t uValue;
+    p_ = binary_read_le_g(p_, uValue);
+    v_ = static_cast<int32_t>(uValue);
+    return p_;
+}
+
+const uint8_t* binary_read_le_g(const uint8_t* p_, int64_t& v_)
+{
+    uint64_t uValue;
+    p_ = binary_read_le_g(p_, uValue);
+    v_ = static_cast<int64_t>(uValue);
+    return p_;
+}
+
+const uint8_t* binary_read_le_g(const uint8_t* p_, float& v_)
+{
+    uint32_t uValue;
+    p_ = binary_read_le_g(p_, uValue);
+    v_ = static_cast<float>(uValue);
+    return p_;
+}
+
+const uint8_t* binary_read_le_g(const uint8_t* p_, double& v_)
+{
+    uint64_t uValue;
+    p_ = binary_read_le_g(p_, uValue);
+    v_ = static_cast<double>(uValue);
+    return p_;
+}
+
+const uint8_t* binary_read_g(const uint8_t* p_, uint8_t& v_)
+{
+    v_ = static_cast<uint8_t>(*p_);
+    return p_ + 1;
+}
+
+
+const uint8_t* binary_read_g(const uint8_t* p_, int8_t& v_)
+{
+    v_ = static_cast<int8_t>(*p_);
+    return p_ + 1;
+}
+
+
+// ## Big-endian global writers
+
+/// @brief Write big-endian 16-bit value to binary data
+uint8_t* binary_write_be_g(uint8_t* p_, uint16_t v_)
+{
+#if !GD_HOST_BIG_ENDIAN
+    v_ = SWAP16(v_);
+#endif
+    std::memcpy(p_, &v_, sizeof(v_));
+    return p_ + sizeof(v_);
+}
+
+/// @brief Write big-endian 32-bit value to binary data
+uint8_t* binary_write_be_g(uint8_t* p_, uint32_t v_)
+{
+#if !GD_HOST_BIG_ENDIAN
+    v_ = SWAP32(v_);
+#endif
+    std::memcpy(p_, &v_, sizeof(v_));
+    return p_ + sizeof(v_);
+}
+
+/// @brief Write big-endian 64-bit value to binary data
+uint8_t* binary_write_be_g(uint8_t* p_, uint64_t v_)
+{
+#if !GD_HOST_BIG_ENDIAN
+    v_ = SWAP64(v_);
+#endif
+    std::memcpy(p_, &v_, sizeof(v_));
+    return p_ + sizeof(v_);
+}
+
+uint8_t* binary_write_be_g(uint8_t* p_, int16_t v_)
+{
+    return binary_write_be_g(p_, static_cast<uint16_t>(v_));
+}
+
+uint8_t* binary_write_be_g(uint8_t* p_, int32_t v_)
+{
+    return binary_write_be_g(p_, static_cast<uint32_t>(v_));
+}
+
+uint8_t* binary_write_be_g(uint8_t* p_, int64_t v_)
+{
+    return binary_write_be_g(p_, static_cast<uint64_t>(v_));
+}
+
+uint8_t* binary_write_be_g(uint8_t* p_, float v_)
+{
+    return binary_write_be_g(p_, *reinterpret_cast<uint32_t*>(&v_));
+}
+
+uint8_t* binary_write_be_g(uint8_t* p_, double v_)
+{
+    return binary_write_be_g(p_, *reinterpret_cast<uint64_t*>(&v_));
+}
+
+// ## Little-endian global writers
+
+/// @brief Write little-endian 16-bit value to binary data
+uint8_t* binary_write_le_g(uint8_t* p_, uint16_t v_)
+{
+#if GD_HOST_BIG_ENDIAN
+    v_ = SWAP16(v_);
+#endif
+    std::memcpy(p_, &v_, sizeof(v_));
+    return p_ + sizeof(v_);
+}
+
+/// @brief Write little-endian 32-bit value to binary data
+uint8_t* binary_write_le_g(uint8_t* p_, uint32_t v_)
+{
+#if GD_HOST_BIG_ENDIAN
+    v_ = SWAP32(v_);
+#endif
+    std::memcpy(p_, &v_, sizeof(v_));
+    return p_ + sizeof(v_);
+}
+
+/// @brief Write little-endian 64-bit value to binary data
+uint8_t* binary_write_le_g(uint8_t* p_, uint64_t v_)
+{
+#if GD_HOST_BIG_ENDIAN
+    v_ = SWAP64(v_);
+#endif
+    std::memcpy(p_, &v_, sizeof(v_));
+    return p_ + sizeof(v_);
+}
+
+uint8_t* binary_write_le_g(uint8_t* p_, int16_t v_)
+{
+    return binary_write_le_g(p_, static_cast<uint16_t>(v_));
+}
+
+uint8_t* binary_write_le_g(uint8_t* p_, int32_t v_)
+{
+    return binary_write_le_g(p_, static_cast<uint32_t>(v_));
+}
+
+uint8_t* binary_write_le_g(uint8_t* p_, int64_t v_)
+{
+    return binary_write_le_g(p_, static_cast<uint64_t>(v_));
+}
+
+uint8_t* binary_write_le_g(uint8_t* p_, float v_)
+{
+    return binary_write_le_g(p_, *reinterpret_cast<uint32_t*>(&v_));
+}
+
+uint8_t* binary_write_le_g(uint8_t* p_, double v_)
+{
+    return binary_write_le_g(p_, *reinterpret_cast<uint64_t*>(&v_));
+}
+
+// ## 8-bit global writers (endianness irrelevant)
+
+uint8_t* binary_write_g(uint8_t* p_, uint8_t v_)
+{
+    *p_ = v_;
+    return p_ + 1;
+}
+
+uint8_t* binary_write_g(uint8_t* p_, int8_t v_)
+{
+    *p_ = static_cast<uint8_t>(v_);
+    return p_ + 1;
+}
+
 
 _GD_END
