@@ -144,11 +144,8 @@ std::pair<bool, std::string> binary_validate_uuid_g( std::string_view stringUuid
  * @param stringHex String view containing the hex string to convert
  */
 void binary_copy_hex_g( uint8_t* puBuffer, std::string_view stringHex )
-{
-   assert(puBuffer != nullptr);
-   
+{                                                                                                  assert(puBuffer != nullptr); assert(stringHex.length() % 2 == 0);
    size_t uHexLength = stringHex.length(); // Get the length of the hex string
-   assert(uHexLength % 2 == 0);  // Hex string should have even length
 
    // Process hex string two characters at a time using lookup table
    for( size_t uIndex = 0; uIndex < uHexLength; uIndex += 2 )
