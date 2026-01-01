@@ -145,6 +145,39 @@
         });
     }
 
+    function InitButtons(eContainer, aData)
+    {
+        if(!eContainer) return;
+
+        const oButtonActions = {
+            "#idAdd": () => {
+                AddData(eContainer.querySelector("#idName"), aData);
+            },
+
+            "#idSave": () => {
+                localStorage.setItem("data", JSON.stringify(aData));
+                UpdateSelect(eContainer.querySelector("#idSelect"), "data", aData)
+            },
+
+            "#idRemove": () => {
+                const sValue = GetValue(eContainer.querySelector("#idName"));
+                RemoveValue(aData, sValue);
+                localStorage.setItem("data", JSON.stringify(aData));
+                UpdateSelect(eContainer.querySelector("#idSelect"), "data", aData);
+            },
+
+            "#idClear": () => {
+                localStorage.clear();
+                aData.length = 0;
+                UpdateSelect(eContainer.querySelector("#idSelect"), "data", aData);
+            }
+        }
+
+        Object.keys(oButtonActions).forEach((sSelector) => {
+            GlobalEventListener("click", sSelector, oButtonActions[sSelector], eContainer);
+        });
+    }
+
     document.addEventListener("DOMContentLoaded", (e_) => {
         const aContainers = document.querySelectorAll(".container");
         //const eTextarea = document.querySelector("#idTextarea");
@@ -159,17 +192,11 @@
 
         aContainers.forEach((eContainer) => {
             //GlobalEventListener("click", "button", () => ChangeLabel(eContainer), eContainer);
-            GlobalEventListener("click", "#idAdd", () => AddData(eContainer.querySelector("#idName"), aData), eContainer);
+            /*GlobalEventListener("click", "#idAdd", () => AddData(eContainer.querySelector("#idName"), aData), eContainer);
 
             GlobalEventListener("click", "#idSave", () => {
                 localStorage.setItem("data", JSON.stringify(aData));
                 UpdateSelect(eContainer.querySelector("#idSelect"), "data", aData);
-            }, eContainer);
-
-            GlobalEventListener("click", "#idClear", () => {localStorage.clear()}, eContainer);
-            GlobalEventListener("change", "#idSelect", (e_) => {
-                const sValue = GetValue(e_.target);
-                SetText(eContainer.querySelector("#idName"), sValue);
             }, eContainer);
 
             GlobalEventListener("click", "#idRemove", () => {
@@ -178,6 +205,17 @@
                 localStorage.setItem("data", JSON.stringify(aData));
                 UpdateSelect(eContainer.querySelector("#idSelect"), "data", aData);
             }, eContainer)
+
+            GlobalEventListener("click", "#idClear", () => {localStorage.clear()}, eContainer);*/
+
+            InitButtons(eContainer, aData);
+
+            GlobalEventListener("change", "#idSelect", (e_) => {
+                const sValue = GetValue(e_.target);
+                SetText(eContainer.querySelector("#idName"), sValue);
+            }, eContainer);
+
+
         });
     });
 
