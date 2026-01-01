@@ -17,6 +17,30 @@
  * consistent behavior and avoid code duplication.
  */
 
+ /*
+@code
+{
+   // ## Example usage of gd::binary functions that reads integer and uuid from hex string
+
+   using namespace gd;
+   std::string stringHex20 = "00000001445566778899AABBCCDDEEFF00112233";
+   auto result_ = binary_validate_hex_g( stringHex20 ); REQUIRE( result_.first == true );
+
+   std::vector<uint8_t> vectorBuffer;
+   vectorBuffer.resize( stringHex20.length() / 2 );  // set vector size to hold 20 bytes
+
+   binary_copy_hex_g( vectorBuffer.data(), stringHex20); REQUIRE(vectorBuffer.size() == 20);
+
+   gd::binary::read_be binaryReader( vectorBuffer );
+
+   uint32_t uValue1 = binaryReader.read<uint32_t>(); REQUIRE( uValue1 == 0x00000001 );
+   gd::uuid uuidRead;
+   binaryReader.read_bytes( uuidRead.data(), 16 );
+   gd::uuid uuidExpected( (const uint8_t*)"\x44\x55\x66\x77\x88\x99\xAA\xBB\xCC\xDD\xEE\xFF\x00\x11\x22\x33" );   REQUIRE( uuidRead.compare( uuidExpected ) );
+}
+@encode
+  */
+
 #pragma once
 
 #include <array>
