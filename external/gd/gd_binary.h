@@ -1,34 +1,76 @@
 // @FILE [tag: binary] [description: Handle binary data] [type: header] [name: gd_binary.h]
 
+/*
+ * GD Binary Library
+ *
+ * This library provides functionality for handling binary data, including:
+ * - Hexadecimal string validation and conversion
+ * - UUID string validation and conversion
+ * - Binary pattern searching
+ * - Endianness-aware reading and writing of binary data
+ *
+ * The library provides two complementary APIs:
+ * 1. Global functions (binary_*_g) for simple operations
+ * 2. Template classes (reader<E> and writer<E>) for streaming operations
+ *
+ * The template classes use the global functions internally to ensure
+ * consistent behavior and avoid code duplication.
+ */
+
+ /*
+@code
+{
+   // ## Example usage of gd::binary functions that reads integer and uuid from hex string
+
+   using namespace gd;
+   std::string stringHex20 = "00000001445566778899AABBCCDDEEFF00112233";
+   auto result_ = binary_validate_hex_g( stringHex20 ); REQUIRE( result_.first == true );
+
+   std::vector<uint8_t> vectorBuffer;
+   vectorBuffer.resize( stringHex20.length() / 2 );  // set vector size to hold 20 bytes
+
+   binary_copy_hex_g( vectorBuffer.data(), stringHex20); REQUIRE(vectorBuffer.size() == 20);
+
+   gd::binary::read_be binaryReader( vectorBuffer );
+
+   uint32_t uValue1 = binaryReader.read<uint32_t>(); REQUIRE( uValue1 == 0x00000001 );
+   gd::uuid uuidRead;
+   binaryReader.read_bytes( uuidRead.data(), 16 );
+   gd::uuid uuidExpected( (const uint8_t*)"\x44\x55\x66\x77\x88\x99\xAA\xBB\xCC\xDD\xEE\xFF\x00\x11\x22\x33" );   REQUIRE( uuidRead.compare( uuidExpected ) );
+}
+@encode
+  */
+
 #pragma once
 
+#include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <string>
-#include <string_view>
 #include <vector>
 #include <type_traits>
+#include <cstring>
 
 #include "gd_types.h"
 #include "gd_debug.h"
 
 
 #if defined( __clang__ )
-   #pragma clang diagnostic push
-   #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
-   #pragma clang diagnostic ignored "-Wunused-value"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#pragma clang diagnostic ignored "-Wunused-value"
 #elif defined( __GNUC__ )
-   #pragma GCC diagnostic push
-   #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
-   #pragma GCC diagnostic ignored "-Wunused-value"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#pragma GCC diagnostic ignored "-Wunused-value"
 #elif defined( _MSC_VER )
-   #pragma warning(push)
-   #pragma warning( disable : 4267 26495 26812 )
+#pragma warning(push)
+#pragma warning( disable : 4267 26495 26812 )
 #endif
 
-// @AI [tag: gd, variant_view] [llm: core]
+ // @AI [tag: gd, variant_view] [llm: core]
 
 #ifndef _GD_BEGIN
 #define _GD_BEGIN namespace gd {
@@ -63,249 +105,273 @@ int64_t buffer_find_g( const uint8_t* puBuffer, size_t uBufferSize, const uint8_
 int64_t buffer_find_last_g( const uint8_t* puBuffer, size_t uBufferSize, const uint8_t* puPattern, size_t uPatternSize );
 
 // @API [tag: binary, read, write] [description: read and write information from binary data]
+// Note: The template classes below (reader and writer) use these global functions internally
+// to provide consistent behavior and avoid code duplication.
 
-const uint8_t* binary_read_be_g(const uint8_t* p_, uint16_t& v_);
-const uint8_t* binary_read_be_g(const uint8_t* p_, uint32_t& v_);
-const uint8_t* binary_read_be_g(const uint8_t* p_, uint64_t& v_);
-const uint8_t* binary_read_be_g(const uint8_t* p_, int16_t& v_);
-const uint8_t* binary_read_be_g(const uint8_t* p_, int32_t& v_);
-const uint8_t* binary_read_be_g(const uint8_t* p_, int64_t& v_);
-const uint8_t* binary_read_be_g(const uint8_t* p_, float& v_);
-const uint8_t* binary_read_be_g(const uint8_t* p_, double& v_);
+const uint8_t* binary_read_be_g( const uint8_t* p_, uint16_t& v_ );
+const uint8_t* binary_read_be_g( const uint8_t* p_, uint32_t& v_ );
+const uint8_t* binary_read_be_g( const uint8_t* p_, uint64_t& v_ );
+const uint8_t* binary_read_be_g( const uint8_t* p_, int16_t& v_ );
+const uint8_t* binary_read_be_g( const uint8_t* p_, int32_t& v_ );
+const uint8_t* binary_read_be_g( const uint8_t* p_, int64_t& v_ );
+const uint8_t* binary_read_be_g( const uint8_t* p_, float& v_ );
+const uint8_t* binary_read_be_g( const uint8_t* p_, double& v_ );
 
-const uint8_t* binary_read_le_g(const uint8_t* p_, uint16_t& v_);
-const uint8_t* binary_read_le_g(const uint8_t* p_, uint32_t& v_);
-const uint8_t* binary_read_le_g(const uint8_t* p_, uint64_t& v_);
-const uint8_t* binary_read_le_g(const uint8_t* p_, int16_t& v_);
-const uint8_t* binary_read_le_g(const uint8_t* p_, int32_t& v_);
-const uint8_t* binary_read_le_g(const uint8_t* p_, int64_t& v_);
-const uint8_t* binary_read_le_g(const uint8_t* p_, float& v_);
-const uint8_t* binary_read_le_g(const uint8_t* p_, double& v_);
+const uint8_t* binary_read_le_g( const uint8_t* p_, uint16_t& v_ );
+const uint8_t* binary_read_le_g( const uint8_t* p_, uint32_t& v_ );
+const uint8_t* binary_read_le_g( const uint8_t* p_, uint64_t& v_ );
+const uint8_t* binary_read_le_g( const uint8_t* p_, int16_t& v_ );
+const uint8_t* binary_read_le_g( const uint8_t* p_, int32_t& v_ );
+const uint8_t* binary_read_le_g( const uint8_t* p_, int64_t& v_ );
+const uint8_t* binary_read_le_g( const uint8_t* p_, float& v_ );
+const uint8_t* binary_read_le_g( const uint8_t* p_, double& v_ );
 
 
-const uint8_t* binary_read_g(const uint8_t* p_, uint8_t& v_);
-const uint8_t* binary_read_g(const uint8_t* p_, int8_t& v_);
+const uint8_t* binary_read_g( const uint8_t* p_, uint8_t& v_ );
+const uint8_t* binary_read_g( const uint8_t* p_, int8_t& v_ );
 
 
 // Write function declarations
-uint8_t* binary_write_be_g(uint8_t* p_, uint16_t v_);
-uint8_t* binary_write_be_g(uint8_t* p_, uint32_t v_);
-uint8_t* binary_write_be_g(uint8_t* p_, uint64_t v_);
-uint8_t* binary_write_be_g(uint8_t* p_, int16_t v_);
-uint8_t* binary_write_be_g(uint8_t* p_, int32_t v_);
-uint8_t* binary_write_be_g(uint8_t* p_, int64_t v_);
-uint8_t* binary_write_be_g(uint8_t* p_, float v_);
-uint8_t* binary_write_be_g(uint8_t* p_, double v_);
+uint8_t* binary_write_be_g( uint8_t* p_, uint16_t v_ );
+uint8_t* binary_write_be_g( uint8_t* p_, uint32_t v_ );
+uint8_t* binary_write_be_g( uint8_t* p_, uint64_t v_ );
+uint8_t* binary_write_be_g( uint8_t* p_, int16_t v_ );
+uint8_t* binary_write_be_g( uint8_t* p_, int32_t v_ );
+uint8_t* binary_write_be_g( uint8_t* p_, int64_t v_ );
+uint8_t* binary_write_be_g( uint8_t* p_, float v_ );
+uint8_t* binary_write_be_g( uint8_t* p_, double v_ );
 
-uint8_t* binary_write_le_g(uint8_t* p_, uint16_t v_);
-uint8_t* binary_write_le_g(uint8_t* p_, uint32_t v_);
-uint8_t* binary_write_le_g(uint8_t* p_, uint64_t v_);
-uint8_t* binary_write_le_g(uint8_t* p_, int16_t v_);
-uint8_t* binary_write_le_g(uint8_t* p_, int32_t v_);
-uint8_t* binary_write_le_g(uint8_t* p_, int64_t v_);
-uint8_t* binary_write_le_g(uint8_t* p_, float v_);
-uint8_t* binary_write_le_g(uint8_t* p_, double v_);
+uint8_t* binary_write_le_g( uint8_t* p_, uint16_t v_ );
+uint8_t* binary_write_le_g( uint8_t* p_, uint32_t v_ );
+uint8_t* binary_write_le_g( uint8_t* p_, uint64_t v_ );
+uint8_t* binary_write_le_g( uint8_t* p_, int16_t v_ );
+uint8_t* binary_write_le_g( uint8_t* p_, int32_t v_ );
+uint8_t* binary_write_le_g( uint8_t* p_, int64_t v_ );
+uint8_t* binary_write_le_g( uint8_t* p_, float v_ );
+uint8_t* binary_write_le_g( uint8_t* p_, double v_ );
 
-uint8_t* binary_write_g(uint8_t* p_, uint8_t v_);
-uint8_t* binary_write_g(uint8_t* p_, int8_t v_);
+uint8_t* binary_write_g( uint8_t* p_, uint8_t v_ );
+uint8_t* binary_write_g( uint8_t* p_, int8_t v_ );
 
 
 namespace binary {
-   /**
-    * @brief Read big-endian byte order items from buffer.
-    */
-   struct read_be {
-      const uint8_t* m_puPosition;
-      const uint8_t* m_puBegin;
-      const uint8_t* m_puEnd;
-      
-      read_be(const uint8_t* puBegin, const uint8_t* puEnd) 
-         : m_puPosition(puBegin), m_puBegin(puBegin), m_puEnd(puEnd) {}
-      
-      read_be(const uint8_t* puBegin, size_t uSize) 
-         : m_puPosition(puBegin), m_puBegin(puBegin), m_puEnd(puBegin + uSize) {}
-   };
-   
-   /**
-    * @brief Read little-endian byte order items from buffer.
-    */
-   struct read_le {
-      const uint8_t* m_puPosition;
-      const uint8_t* m_puBegin;
-      const uint8_t* m_puEnd;
-      
-      read_le(const uint8_t* puBegin, const uint8_t* puEnd) 
-         : m_puPosition(puBegin), m_puBegin(puBegin), m_puEnd(puEnd) {}
-      
-      read_le(const uint8_t* puBegin, size_t uSize) 
-         : m_puPosition(puBegin), m_puBegin(puBegin), m_puEnd(puBegin + uSize) {}
-   };
-   
-   /**
-    * @brief Write big-endian byte order items to buffer.
-    */
-   struct write_be {
-      uint8_t* m_puPosition;
-      uint8_t* m_puBegin;
-      uint8_t* m_puEnd;
-      
-      write_be(uint8_t* puBegin, uint8_t* puEnd) 
-         : m_puPosition(puBegin), m_puBegin(puBegin), m_puEnd(puEnd) {}
-      
-      write_be(uint8_t* puBegin, size_t uSize) 
-         : m_puPosition(puBegin), m_puBegin(puBegin), m_puEnd(puBegin + uSize) {}
-   };
-   
-   /**
-    * @brief Write little-endian byte order items to buffer.
-    */
-   struct write_le {
-      uint8_t* m_puPosition;
-      uint8_t* m_puBegin;
-      uint8_t* m_puEnd;
-      
-      write_le(uint8_t* puBegin, uint8_t* puEnd) 
-         : m_puPosition(puBegin), m_puBegin(puBegin), m_puEnd(puEnd) {}
-      
-      write_le(uint8_t* puBegin, size_t uSize) 
-         : m_puPosition(puBegin), m_puBegin(puBegin), m_puEnd(puBegin + uSize) {}
-   };
-   
-   // Stream operators for read_be
-   inline read_be& operator>>(read_be& stream, uint16_t& v_) {
-      stream.m_puPosition = binary_read_be_g(stream.m_puPosition, v_);
-      return stream;
+
+/// Endian enumeration for specifying byte order
+enum class enumEndian { eEndianBig, eEndianLittle, eEndianNative };
+
+/// Template class for reading binary data with specified endianness
+/// This class uses the global binary_read_* functions internally to ensure
+/// consistent behavior and avoid code duplication.
+template <enumEndian E>
+struct reader {
+   /// Create a reader with begin and end pointers
+   reader( const uint8_t* puBegin, const uint8_t* puEnd ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puEnd ) {}
+
+   /// Create a reader with begin pointer and size
+   reader( const uint8_t* puBegin, size_t uSize ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puBegin + uSize ) {}
+
+   /// Generic constructor for contiguous containers (std::array, std::vector, std::string)
+   template <typename CONTAINER>
+   reader( CONTAINER& container_ ): reader( reinterpret_cast<uint8_t*>(container_.data()), container_.size() * sizeof(typename CONTAINER::value_type) ) {
+      // Ensure we aren't trying to write to complex types (like std::string inside a vector)
+      // We only want raw data buffers.
+      static_assert( std::is_trivially_copyable<typename CONTAINER::value_type>::value, "Container value_type must be trivially copyable (POD)" );
    }
-   inline read_be& operator>>(read_be& stream, uint32_t& v_) {
-      stream.m_puPosition = binary_read_be_g(stream.m_puPosition, v_);
-      return stream;
+
+   /// Check if at or past end of buffer
+   bool eof() const { return m_puPosition >= m_puEnd; }
+
+   /// Check if previous operation had an error (overflow)
+   bool error() const { return m_puPosition > m_puEnd; }
+
+   /// Read a value and return it
+   template <typename T>
+   T read() {
+      T value;
+      *this >> value;
+      return value;
    }
-   inline read_be& operator>>(read_be& stream, uint64_t& v_) {
-      stream.m_puPosition = binary_read_be_g(stream.m_puPosition, v_);
-      return stream;
+
+   /// Get current position from beginning
+   size_t position() const { return m_puPosition - m_puBegin; }
+
+   // Returns a marker that can be used to restore position
+   size_t mark() const { return m_puPosition - m_puBegin; }
+
+   /// Reset position to previously obtained mark
+   void reset( size_t uMark ) { if( uMark <= size() ) { m_puPosition = m_puBegin + uMark; } }
+
+   /// Get remaining bytes
+   size_t remaining() const { return m_puEnd - m_puPosition; }
+
+   /// Get total size
+   size_t size() const { return m_puEnd - m_puBegin; }
+
+   /// Seek to specific position
+   void seek( size_t uPosition ) {
+      if( uPosition <= size() ) { m_puPosition = m_puBegin + uPosition; }
    }
-   inline read_be& operator>>(read_be& stream, int16_t& v_) {
-      stream.m_puPosition = binary_read_be_g(stream.m_puPosition, v_);
-      return stream;
+
+   /// Skip ahead by specified number of bytes
+   void skip( size_t uCountbytes ) {
+      if( uCountbytes <= remaining() ) { m_puPosition += uCountbytes; }
+      else { m_puPosition = m_puEnd; }                                   // Skip to end if would overflow
    }
-   inline read_be& operator>>(read_be& stream, int32_t& v_) {
-      stream.m_puPosition = binary_read_be_g(stream.m_puPosition, v_);
-      return stream;
+
+   /// Peek at next byte without advancing position
+   uint8_t peek() const {
+      return m_puPosition < m_puEnd ? *m_puPosition : 0;
    }
-   inline read_be& operator>>(read_be& stream, int64_t& v_) {
-      stream.m_puPosition = binary_read_be_g(stream.m_puPosition, v_);
-      return stream;
+
+   /// Read raw bytes to buffer (not that this has not runtime checks)
+   void read_bytes( uint8_t* puData, size_t uSize ) {                         assert( m_puPosition + uSize <= m_puEnd );
+         std::memcpy( puData, m_puPosition, uSize );
+         m_puPosition += uSize;
    }
-   inline read_be& operator>>(read_be& stream, uint8_t& v_) {
-      stream.m_puPosition = binary_read_g(stream.m_puPosition, v_);
-      return stream;
+   void read_bytes( void* pData, size_t uSize ) { read_bytes( static_cast<uint8_t*>( pData ), uSize ); }
+
+
+   const uint8_t* m_puPosition;  ///< Current position in buffer
+   const uint8_t* m_puBegin;     ///< Start of buffer
+   const uint8_t* m_puEnd;       ///< End of buffer
+};
+
+/// Template class for writing binary data with specified endianness
+/// This class uses the global binary_write_* functions internally to ensure
+/// consistent behavior and avoid code duplication.
+template <enumEndian E>
+struct writer {
+   /// Create a writer with begin and end pointers
+   writer( uint8_t* puBegin, uint8_t* puEnd ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puEnd ) {}
+
+   /// Create a writer with begin pointer and size
+   writer( uint8_t* puBegin, size_t uSize ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puBegin + uSize ) {}
+   writer( void* puBegin, size_t uSize ): m_puPosition( static_cast<uint8_t*>(puBegin) ), m_puBegin( static_cast<uint8_t*>(puBegin) ), m_puEnd( puBegin + uSize ) {}
+
+   /// Generic constructor for contiguous containers (std::array, std::vector, std::string)
+   template <typename CONTAINER>
+   writer( CONTAINER& container_ ): writer( reinterpret_cast<uint8_t*>(container_.data()), container_.size() * sizeof(typename CONTAINER::value_type) ) {
+      // Ensure we aren't trying to write to complex types (like std::string inside a vector)
+      // We only want raw data buffers.
+      static_assert( std::is_trivially_copyable<typename CONTAINER::value_type>::value, "Container value_type must be trivially copyable (POD)" );
    }
-   inline read_be& operator>>(read_be& stream, int8_t& v_) {
-      stream.m_puPosition = binary_read_g(stream.m_puPosition, v_);
-      return stream;
+
+   /// Check if at or past end of buffer
+   bool eof() const { return m_puPosition >= m_puEnd; }
+
+   /// Check if previous operation had an error (overflow)
+   bool error() const { return m_puPosition > m_puEnd; }
+
+   /// Get current position from beginning
+   size_t position() const { return m_puPosition - m_puBegin; }
+
+   /// Get remaining bytes
+   size_t remaining() const { return m_puEnd - m_puPosition; }
+
+   /// Get total size
+   size_t size() const { return m_puEnd - m_puBegin; }
+
+   /// Seek to specific position
+   void seek( size_t uPosition ) {
+      if( uPosition <= size() ) { m_puPosition = m_puBegin + uPosition; }
    }
-   
-   // Stream operators for read_le
-   inline read_le& operator>>(read_le& stream, uint16_t& v_) {
-      stream.m_puPosition = binary_read_le_g(stream.m_puPosition, v_);
-      return stream;
+
+   /// Skip ahead by specified number of bytes
+   void skip( size_t uCountbytes ) {
+      if( uCountbytes <= remaining() ) { m_puPosition += uCountbytes; }
+      else { m_puPosition = m_puEnd; }                                   // Skip to end if would overflow
    }
-   inline read_le& operator>>(read_le& stream, uint32_t& v_) {
-      stream.m_puPosition = binary_read_le_g(stream.m_puPosition, v_);
-      return stream;
+
+   /// Write raw bytes to buffer (not that this has not runtime checks)
+   void write_bytes( const uint8_t* puData, size_t uSize ) {                  assert( m_puPosition + uSize <= m_puEnd );
+         std::memcpy( m_puPosition, puData, uSize );
+         m_puPosition += uSize;
    }
-   inline read_le& operator>>(read_le& stream, uint64_t& v_) {
-      stream.m_puPosition = binary_read_le_g(stream.m_puPosition, v_);
-      return stream;
+   void write_bytes( const void* pData, size_t uSize ) { write_bytes( static_cast<const uint8_t*>( pData ), uSize ); }
+
+   uint8_t* m_puPosition;  ///< Current position in buffer
+   uint8_t* m_puBegin;     ///< Start of buffer
+   uint8_t* m_puEnd;       ///< End of buffer
+};
+
+// Helper to get unsigned type for size
+template <typename T>
+using make_uint_t = typename std::make_unsigned<T>::type;
+
+// Generic Read Implementation
+// Helper function to call appropriate global read function based on endianness
+template <enumEndian E, typename T>
+const uint8_t* call_global_read( const uint8_t* p_, T& v_ ) {
+   if constexpr( E == enumEndian::eEndianBig ) {
+      return binary_read_be_g( p_, v_ );
    }
-   inline read_le& operator>>(read_le& stream, int16_t& v_) {
-      stream.m_puPosition = binary_read_le_g(stream.m_puPosition, v_);
-      return stream;
+   else if constexpr( E == enumEndian::eEndianLittle ) {
+      return binary_read_le_g( p_, v_ );
    }
-   inline read_le& operator>>(read_le& stream, int32_t& v_) {
-      stream.m_puPosition = binary_read_le_g(stream.m_puPosition, v_);
-      return stream;
+   else { // eEndianNative
+      return binary_read_g( p_, v_ );
    }
-   inline read_le& operator>>(read_le& stream, int64_t& v_) {
-      stream.m_puPosition = binary_read_le_g(stream.m_puPosition, v_);
-      return stream;
+}
+
+// Helper function to call appropriate global write function based on endianness
+template <enumEndian E, typename T>
+uint8_t* call_global_write( uint8_t* p_, T v_ ) {
+   if constexpr( E == enumEndian::eEndianBig ) {
+      return binary_write_be_g( p_, v_ );
    }
-   inline read_le& operator>>(read_le& stream, uint8_t& v_) {
-      stream.m_puPosition = binary_read_g(stream.m_puPosition, v_);
-      return stream;
+   else if constexpr( E == enumEndian::eEndianLittle ) {
+      return binary_write_le_g( p_, v_ );
    }
-   inline read_le& operator>>(read_le& stream, int8_t& v_) {
-      stream.m_puPosition = binary_read_g(stream.m_puPosition, v_);
-      return stream;
+   else { // eEndianNative
+      return binary_write_g( p_, v_ );
    }
-   
-   // Stream operators for write_be
-   inline write_be& operator<<(write_be& stream, uint16_t v_) {
-      stream.m_puPosition = binary_write_be_g(stream.m_puPosition, v_);
-      return stream;
+}
+
+/// Generic Read Operator using global functions
+/// This operator allows reading arithmetic types from a binary stream
+/// with proper bounds checking and endianness handling.
+template <enumEndian E, typename T>
+binary::reader<E>& operator>>( binary::reader<E>& reader_, T& v_ ) {
+   // Only allow arithmetic types (int, float, etc) to prevent buffer overflows on structs
+   static_assert( std::is_arithmetic<T>::value, "Type must be arithmetic" );
+
+   // Bounds check with proper error handling
+   if( reader_.m_puPosition + sizeof( T ) > reader_.m_puEnd ) {
+      // Set stream position to end to indicate error
+      reader_.m_puPosition = reader_.m_puEnd;
+      v_ = T{}; // Initialize with default value
+      return reader_;
    }
-   inline write_be& operator<<(write_be& stream, uint32_t v_) {
-      stream.m_puPosition = binary_write_be_g(stream.m_puPosition, v_);
-      return stream;
+
+   reader_.m_puPosition = call_global_read<E>( reader_.m_puPosition, v_ );
+   return reader_;
+}
+
+/// Generic Write Operator using global functions
+/// This operator allows writing arithmetic types to a binary stream
+/// with proper bounds checking and endianness handling.
+template <enumEndian E, typename TYPE>
+binary::writer<E>& operator<<( binary::writer<E>& writer_, TYPE v_ ) {
+   static_assert( std::is_arithmetic<TYPE>::value, "Type must be arithmetic" );
+
+   // Bounds check with proper error handling
+   if( writer_.m_puPosition + sizeof( TYPE ) > writer_.m_puEnd ) {
+      // Set stream position to end to indicate error
+      writer_.m_puPosition = writer_.m_puEnd;
+      return writer_;
    }
-   inline write_be& operator<<(write_be& stream, uint64_t v_) {
-      stream.m_puPosition = binary_write_be_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_be& operator<<(write_be& stream, int16_t v_) {
-      stream.m_puPosition = binary_write_be_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_be& operator<<(write_be& stream, int32_t v_) {
-      stream.m_puPosition = binary_write_be_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_be& operator<<(write_be& stream, int64_t v_) {
-      stream.m_puPosition = binary_write_be_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_be& operator<<(write_be& stream, uint8_t v_) {
-      stream.m_puPosition = binary_write_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_be& operator<<(write_be& stream, int8_t v_) {
-      stream.m_puPosition = binary_write_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   
-   // Stream operators for write_le
-   inline write_le& operator<<(write_le& stream, uint16_t v_) {
-      stream.m_puPosition = binary_write_le_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_le& operator<<(write_le& stream, uint32_t v_) {
-      stream.m_puPosition = binary_write_le_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_le& operator<<(write_le& stream, uint64_t v_) {
-      stream.m_puPosition = binary_write_le_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_le& operator<<(write_le& stream, int16_t v_) {
-      stream.m_puPosition = binary_write_le_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_le& operator<<(write_le& stream, int32_t v_) {
-      stream.m_puPosition = binary_write_le_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_le& operator<<(write_le& stream, int64_t v_) {
-      stream.m_puPosition = binary_write_le_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_le& operator<<(write_le& stream, uint8_t v_) {
-      stream.m_puPosition = binary_write_g(stream.m_puPosition, v_);
-      return stream;
-   }
-   inline write_le& operator<<(write_le& stream, int8_t v_) {
-      stream.m_puPosition = binary_write_g(stream.m_puPosition, v_);
-      return stream;
-   }
+
+   writer_.m_puPosition = call_global_write<E>( writer_.m_puPosition, v_ );
+   return writer_;
+}
+
+// Type aliases for your convenience
+using read_be = reader<enumEndian::eEndianBig>;
+using read_le = reader<enumEndian::eEndianLittle>;
+using write_be = writer<enumEndian::eEndianBig>;
+using write_le = writer<enumEndian::eEndianLittle>;
+
+
 } // namespace binary
 
 

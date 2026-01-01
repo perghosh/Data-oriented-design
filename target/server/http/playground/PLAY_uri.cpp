@@ -1,8 +1,9 @@
 // @FILE [tag: strstr, playground] [description: Key value and finding things in string] [type: playground]
 
+#include <array>
 #include <filesystem>
 
-#include "gd/gd_file.h"
+#include "gd/gd_binary.h"
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
@@ -10,6 +11,7 @@
 #include "gd/gd_table_io.h"
 #include "gd/gd_sql_value.h"
 #include "gd/gd_parse.h"
+#include "gd/gd_uuid.h"
 
 #include "gd/parse/gd_parse_uri.h"
 
@@ -17,42 +19,50 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-TEST_CASE( "[uri] kevin lek", "[uri]" )
-{
-    gd::argument::arguments argumentsUri;
+TEST_CASE( "[uri] binary", "[uri]" ) {
+   {
+      std::array<uint8_t, 100> binaryData;
+      gd::binary::write_le binaryWriter( binaryData );
+      //gd::binary::write_le binaryWriter( binaryData.data(), binaryData.size() );
+      //gd::binary::write_le binaryWriter( binaryData );
 
-    std::string stringUri = "http://localhost:8080/one/two/three/four/five?arg=15.5&key=value&arg1=10#fragment";
-    std::string stringUri2 = "http://localhost:8080/one/two/three/four/five?arg=15.5&key=value&arg1=10#fragment";
-    std::cout << "\n\n## " << stringUri << "\n" << std::endl;
+      int iValue = 42;
 
-    auto [succes, error] = gd::parse::uri::parse( stringUri, argumentsUri );                       REQUIRE( succes == true );
-    std::string stringUriResult = gd::argument::debug::print(argumentsUri);
-    std::cout << stringUriResult << std::endl;
+      binaryWriter << iValue << 100 << 1000;
 
-    std::string stringPath = argumentsUri["path"].as_string();
-    std::string stringQuery = argumentsUri["query"].as_string();
+      gd::binary::read_le binaryReader( binaryData.data(), binaryData.size() );
 
-    std::cout << stringPath << " " << stringQuery << "\n";
+      binaryReader >> iValue;
+      binaryReader >> iValue;
+      binaryReader >> iValue;
 
-    gd::argument::arguments argumentsQuery;
-    gd::parse::uri::parse_query(stringQuery, argumentsQuery);
+      gd::uuid uuid(gd::uuid::tag_null{});
 
-    std::string stringQueryResult = gd::argument::debug::print(argumentsQuery);
-    std::cout << stringQueryResult << std::endl;
+      binaryWriter.write_bytes( uuid, 16 );
 
-    double dNumber = argumentsQuery[ "arg" ].as_double();
-    std::string stringKey = argumentsQuery[ "key" ].as_string();
-    int iNumber = argumentsQuery[ "arg1" ].as_int();
+      gd::uuid uuidRead;
+      binaryReader.read_bytes( uuidRead.data(), 16);
 
-    std::cout << dNumber << " " << stringKey << " " << iNumber << std::endl;
+      assert( uuid.compare( uuidRead ) );
+   }
 
-    for( auto it = argumentsQuery.named_begin(); it != argumentsQuery.named_end(); it++)
-    {
-       std::string stringKey( it->first );
-       std::string stringValue = it->second.as_string();
+   {
+      using namespace gd;
+      std::string stringHex20 = "00000001445566778899AABBCCDDEEFF00112233";
+      auto result_ = binary_validate_hex_g( stringHex20 ); REQUIRE( result_.first == true );
+      std::vector<uint8_t> vectorBuffer;
+      // set vector size to hold 20 bytes
+      vectorBuffer.resize( stringHex20.length() / 2 );
+      binary_copy_hex_g( vectorBuffer.data(), stringHex20); REQUIRE(vectorBuffer.size() == 20);
 
-       std::cout << "Key = " << stringKey << " Value = " << stringValue << std::endl;
-    }
+      gd::binary::read_be binaryReader( vectorBuffer );
+      uint32_t uValue1 = binaryReader.read<uint32_t>(); REQUIRE( uValue1 == 0x00000001 );
+      gd::uuid uuidRead;
+      binaryReader.read_bytes( uuidRead.data(), 16 );
+      gd::uuid uuidExpected( (const uint8_t*)"\x44\x55\x66\x77\x88\x99\xAA\xBB\xCC\xDD\xEE\xFF\x00\x11\x22\x33" );
+      REQUIRE( uuidRead.compare( uuidExpected ) );
+   }
+
 }
 
 TEST_CASE("[uri] test uri logic", "[uri]") 
