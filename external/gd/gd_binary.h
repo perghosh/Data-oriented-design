@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -140,13 +141,17 @@ enum class enumEndian { eEndianBig, eEndianLittle, eEndianNative };
 template <enumEndian E>
 struct reader {
    /// Create a reader with begin and end pointers
-   reader( const uint8_t* puBegin, const uint8_t* puEnd )
-      : m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puEnd ) {
-   }
+   reader( const uint8_t* puBegin, const uint8_t* puEnd ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puEnd ) {}
 
    /// Create a reader with begin pointer and size
-   reader( const uint8_t* puBegin, size_t uSize )
-      : m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puBegin + uSize ) {
+   reader( const uint8_t* puBegin, size_t uSize ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puBegin + uSize ) {}
+
+   /// Generic constructor for contiguous containers (std::array, std::vector, std::string)
+   template <typename CONTAINER>
+   reader( CONTAINER& container_ ): reader( reinterpret_cast<uint8_t*>(container_.data()), container_.size() * sizeof(typename CONTAINER::value_type) ) {
+      // Ensure we aren't trying to write to complex types (like std::string inside a vector)
+      // We only want raw data buffers.
+      static_assert( std::is_trivially_copyable<typename CONTAINER::value_type>::value, "Container value_type must be trivially copyable (POD)" );
    }
 
    /// Check if at or past end of buffer
@@ -165,6 +170,12 @@ struct reader {
 
    /// Get current position from beginning
    size_t position() const { return m_puPosition - m_puBegin; }
+
+   // Returns a marker that can be used to restore position
+   size_t mark() const { return m_puPosition - m_puBegin; }
+
+   /// Reset position to previously obtained mark
+   void reset( size_t uMark ) { if( uMark <= size() ) { m_puPosition = m_puBegin + uMark; } }
 
    /// Get remaining bytes
    size_t remaining() const { return m_puEnd - m_puPosition; }
@@ -209,10 +220,17 @@ struct writer {
    /// Create a writer with begin and end pointers
    writer( uint8_t* puBegin, uint8_t* puEnd ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puEnd ) {}
 
-
    /// Create a writer with begin pointer and size
    writer( uint8_t* puBegin, size_t uSize ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puBegin + uSize ) {}
    writer( void* puBegin, size_t uSize ): m_puPosition( static_cast<uint8_t*>(puBegin) ), m_puBegin( static_cast<uint8_t*>(puBegin) ), m_puEnd( puBegin + uSize ) {}
+
+   /// Generic constructor for contiguous containers (std::array, std::vector, std::string)
+   template <typename CONTAINER>
+   writer( CONTAINER& container_ ): writer( reinterpret_cast<uint8_t*>(container_.data()), container_.size() * sizeof(typename CONTAINER::value_type) ) {
+      // Ensure we aren't trying to write to complex types (like std::string inside a vector)
+      // We only want raw data buffers.
+      static_assert( std::is_trivially_copyable<typename CONTAINER::value_type>::value, "Container value_type must be trivially copyable (POD)" );
+   }
 
    /// Check if at or past end of buffer
    bool eof() const { return m_puPosition >= m_puEnd; }
