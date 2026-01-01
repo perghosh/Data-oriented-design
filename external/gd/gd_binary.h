@@ -188,6 +188,14 @@ struct reader {
       return m_puPosition < m_puEnd ? *m_puPosition : 0;
    }
 
+   /// Read raw bytes to buffer (not that this has not runtime checks)
+   void read_bytes( uint8_t* puData, size_t uSize ) {                         assert( m_puPosition + uSize <= m_puEnd );
+         std::memcpy( puData, m_puPosition, uSize );
+         m_puPosition += uSize;
+   }
+   void read_bytes( void* pData, size_t uSize ) { read_bytes( static_cast<uint8_t*>( pData ), uSize ); }
+
+
    const uint8_t* m_puPosition;  ///< Current position in buffer
    const uint8_t* m_puBegin;     ///< Start of buffer
    const uint8_t* m_puEnd;       ///< End of buffer
@@ -199,14 +207,12 @@ struct reader {
 template <enumEndian E>
 struct writer {
    /// Create a writer with begin and end pointers
-   writer( uint8_t* puBegin, uint8_t* puEnd )
-      : m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puEnd ) {
-   }
+   writer( uint8_t* puBegin, uint8_t* puEnd ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puEnd ) {}
+
 
    /// Create a writer with begin pointer and size
-   writer( uint8_t* puBegin, size_t uSize )
-      : m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puBegin + uSize ) {
-   }
+   writer( uint8_t* puBegin, size_t uSize ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puBegin + uSize ) {}
+   writer( void* puBegin, size_t uSize ): m_puPosition( static_cast<uint8_t*>(puBegin) ), m_puBegin( static_cast<uint8_t*>(puBegin) ), m_puEnd( puBegin + uSize ) {}
 
    /// Check if at or past end of buffer
    bool eof() const { return m_puPosition >= m_puEnd; }
@@ -234,6 +240,13 @@ struct writer {
       else { m_puPosition = m_puEnd; }                                   // Skip to end if would overflow
    }
 
+   /// Write raw bytes to buffer (not that this has not runtime checks)
+   void write_bytes( const uint8_t* puData, size_t uSize ) {                  assert( m_puPosition + uSize <= m_puEnd );
+         std::memcpy( m_puPosition, puData, uSize );
+         m_puPosition += uSize;
+   }
+   void write_bytes( const void* pData, size_t uSize ) { write_bytes( static_cast<const uint8_t*>( pData ), uSize ); }
+
    uint8_t* m_puPosition;  ///< Current position in buffer
    uint8_t* m_puBegin;     ///< Start of buffer
    uint8_t* m_puEnd;       ///< End of buffer
@@ -247,10 +260,10 @@ using make_uint_t = typename std::make_unsigned<T>::type;
 // Helper function to call appropriate global read function based on endianness
 template <enumEndian E, typename T>
 const uint8_t* call_global_read( const uint8_t* p_, T& v_ ) {
-   if( E == enumEndian::eEndianBig ) {
+   if constexpr( E == enumEndian::eEndianBig ) {
       return binary_read_be_g( p_, v_ );
    }
-   else if( E == enumEndian::eEndianLittle ) {
+   else if constexpr( E == enumEndian::eEndianLittle ) {
       return binary_read_le_g( p_, v_ );
    }
    else { // eEndianNative
@@ -261,10 +274,10 @@ const uint8_t* call_global_read( const uint8_t* p_, T& v_ ) {
 // Helper function to call appropriate global write function based on endianness
 template <enumEndian E, typename T>
 uint8_t* call_global_write( uint8_t* p_, T v_ ) {
-   if( E == enumEndian::eEndianBig ) {
+   if constexpr( E == enumEndian::eEndianBig ) {
       return binary_write_be_g( p_, v_ );
    }
-   else if( E == enumEndian::eEndianLittle ) {
+   else if constexpr( E == enumEndian::eEndianLittle ) {
       return binary_write_le_g( p_, v_ );
    }
    else { // eEndianNative
