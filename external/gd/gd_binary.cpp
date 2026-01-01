@@ -4,6 +4,8 @@
 
 #include "gd_binary.h"
 
+
+
 #if defined(__GNUC__) || defined(__clang__)
 // GCC/Clang builtins (work on x86, x86-64, ARM, AArch64, etc.)
 #define SWAP16(x) __builtin_bswap16(x)
@@ -143,7 +145,10 @@ std::pair<bool, std::string> binary_validate_uuid_g( std::string_view stringUuid
  */
 void binary_copy_hex_g( uint8_t* puBuffer, std::string_view stringHex )
 {
+   assert(puBuffer != nullptr);
+   
    size_t uHexLength = stringHex.length(); // Get the length of the hex string
+   assert(uHexLength % 2 == 0);  // Hex string should have even length
 
    // Process hex string two characters at a time using lookup table
    for( size_t uIndex = 0; uIndex < uHexLength; uIndex += 2 )
@@ -217,6 +222,9 @@ void binary_to_hex_g( const uint8_t* puBuffer, size_t uBufferSize, std::string& 
    static const char* piHexLower = "0123456789abcdef";
    static const char* piHexUpper = "0123456789ABCDEF";
    const char* piHex = bUppercase ? piHexUpper : piHexLower;
+   
+   stringHex.clear();
+   stringHex.reserve(uBufferSize * 2);  // Pre-allocate memory for better performance
    
    for( size_t u = 0; u < uBufferSize; ++u )
    {
@@ -505,12 +513,16 @@ uint8_t* binary_write_be_g(uint8_t* p_, int64_t v_)
 
 uint8_t* binary_write_be_g(uint8_t* p_, float v_)
 {
-    return binary_write_be_g(p_, *reinterpret_cast<uint32_t*>(&v_));
+    uint32_t uValue;
+    std::memcpy(&uValue, &v_, sizeof(v_));
+    return binary_write_be_g(p_, uValue);
 }
 
 uint8_t* binary_write_be_g(uint8_t* p_, double v_)
 {
-    return binary_write_be_g(p_, *reinterpret_cast<uint64_t*>(&v_));
+    uint64_t uValue;
+    std::memcpy(&uValue, &v_, sizeof(v_));
+    return binary_write_be_g(p_, uValue);
 }
 
 // ## Little-endian global writers
@@ -562,12 +574,16 @@ uint8_t* binary_write_le_g(uint8_t* p_, int64_t v_)
 
 uint8_t* binary_write_le_g(uint8_t* p_, float v_)
 {
-    return binary_write_le_g(p_, *reinterpret_cast<uint32_t*>(&v_));
+    uint32_t uValue;
+    std::memcpy(&uValue, &v_, sizeof(v_));
+    return binary_write_le_g(p_, uValue);
 }
 
 uint8_t* binary_write_le_g(uint8_t* p_, double v_)
 {
-    return binary_write_le_g(p_, *reinterpret_cast<uint64_t*>(&v_));
+    uint64_t uValue;
+    std::memcpy(&uValue, &v_, sizeof(v_));
+    return binary_write_le_g(p_, uValue);
 }
 
 // ## 8-bit global writers (endianness irrelevant)
