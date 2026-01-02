@@ -65,6 +65,9 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   CDocument* GetDocument() { return m_pdocumentActive; }
+   const CDocument* GetDocument() const { return m_pdocumentActive; }
+   /// Get server pointer
    CServer* GetServer() const { return m_pserverBoost; }
    CHttpServer* GetHttpServer() { return m_phttpserver; }
    const CHttpServer* GetHttpServer() const { return m_phttpserver; }
