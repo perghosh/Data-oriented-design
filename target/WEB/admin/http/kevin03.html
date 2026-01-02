@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/elements.css">
+    <title>Document</title>
+    <script>
+        class TextElement 
+        {
+            constructor(element, text)
+            {
+                this.element = document.querySelector(element);
+                this.text = text
+            }
+
+            Render()
+            {
+                this.element.textContent = this.text;
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="idBox"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", (e_) =>
+        {
+            const eBox = new TextElement("#idBox", "Hello");
+            eBox.Render();
+        });
+    </script>
+</body>
+</html>
