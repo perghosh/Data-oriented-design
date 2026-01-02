@@ -21,6 +21,14 @@
 
 namespace Types {
 
+enum enumRequestItem
+{
+   eRequestItemIp           = 0x0001,                ///< Use IP address information
+   eRequestItemUserAgent    = 0x0002,                ///< Use User-Agent information
+   eRequestItemSession      = 0x0004,                ///< Use Session information
+};
+
+
 enum enumTypeNumber
 {
    eTypeUnknown         = 0,  // unknown type

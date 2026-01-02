@@ -25,6 +25,8 @@
 #include "gd/gd_table_arguments.h"
 #include "gd/gd_table_column-buffer.h"
 
+#include "Types.h"
+
 #include "meta/METAQueries.h"
 
 #include "Session.h"
@@ -43,14 +45,8 @@ class CApplication;
 class CDocument // @AI [tag: document, data] [llm: core]
 {
 public:
-   enum enumFlag
-   {
-      eFlagIp           = 0x0001,                ///< Use IP address information
-      eFlagUserAgent    = 0x0002,                ///< Use User-Agent information
-      eFlagSession      = 0x0004,                ///< Use Session information
-   };
 
-   constexpr static uint64_t uDefaultFlags_c = eFlagIp | eFlagUserAgent | eFlagSession;
+   constexpr static uint64_t uDefaultReqiuestFlags_c = Types::eRequestItemIp | Types::eRequestItemUserAgent | Types::eRequestItemSession;
 
 public:
    /// tag dispatcher used to state dependet operations
@@ -89,6 +85,7 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   uint64_t GetRequestFlags() const { return m_uRequestFlags;  }
    CApplication* GetApplication() { return m_papplication; }
    const CApplication* GetApplication() const { return m_papplication; }
    gd::variant_view Get(const std::string_view& stringName) const { return m_arguments[stringName].as_variant_view(); }
@@ -241,7 +238,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   uint64_t m_uFlagsDocument = uDefaultFlags_c; ///< document flags
+   uint64_t m_uRequestFlags = uDefaultReqiuestFlags_c; ///< document flags
    CApplication* m_papplication = nullptr;      ///< pointer to application object
 
    gd::argument::shared::arguments m_arguments; ///< document information (members)
