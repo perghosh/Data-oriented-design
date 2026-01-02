@@ -39,6 +39,24 @@
    gd::uuid uuidExpected( (const uint8_t*)"\x44\x55\x66\x77\x88\x99\xAA\xBB\xCC\xDD\xEE\xFF\x00\x11\x22\x33" );   REQUIRE( uuidRead.compare( uuidExpected ) );
 }
 @encode
+
+@code
+{
+   // ## Example usage of gd::binary to write and read a string
+
+   using namespace gd;
+   std::array<uint8_t, 100> buffer_;
+
+   binary::write_be write_( buffer_ );
+   std::string string_("0123456789"); // original string
+   write_.write_container( string_ );
+
+   binary::read_be read_( buffer_ );
+   std::string stringRead;
+   read_.read_container( stringRead );
+   REQUIRE( stringRead == string_ );
+}
+@encode
   */
 
 #pragma once
@@ -156,6 +174,29 @@ uint8_t* binary_write_g( uint8_t* p_, int8_t v_ );
 
 namespace binary {
 
+// ## Concepts for containers
+
+// Concept: Container that can be resized and has contiguous data
+template <typename TYPE>
+concept concept_resizable_container = requires(TYPE container, size_t n) {
+   { container.data() } -> std::convertible_to<typename TYPE::value_type*>;
+   { container.size() } -> std::convertible_to<size_t>;
+   { container.resize(n) } -> std::same_as<void>;
+   typename TYPE::value_type;
+};
+
+// Concept: Container with contiguous data (for writing, no resize needed)
+template <typename TYPE>
+concept concept_contiguous_container = requires(TYPE container) {
+   { container.data() } -> std::convertible_to<const typename TYPE::value_type*>;
+   { container.size() } -> std::convertible_to<size_t>;
+   typename TYPE::value_type;
+};
+
+// Concept: Value type must be trivially copyable or char
+template <typename TYPE>
+concept concept_serializable_type = std::is_trivially_copyable_v<TYPE> || std::is_same_v<TYPE, char>;
+
 /// Endian enumeration for specifying byte order
 enum class enumEndian { eEndianBig, eEndianLittle, eEndianNative };
 
@@ -230,6 +271,23 @@ struct reader {
    }
    void read_bytes( void* pData, size_t uSize ) { read_bytes( static_cast<uint8_t*>( pData ), uSize ); }
 
+   /// Read container with length prefix into existing container
+   template <concept_resizable_container CONTAINER, typename LENGTH_TYPE = uint32_t> requires concept_serializable_type<typename CONTAINER::value_type>
+   void read_container(CONTAINER& container_) {
+      using value_type = typename CONTAINER::value_type;
+   
+      LENGTH_TYPE uLength; *this >> uLength;                                  // length in items
+   
+      size_t uTotalBytes = static_cast<size_t>(uLength) * sizeof(value_type);
+      if( error() || uTotalBytes > remaining() ) {                            // check for overflow
+         m_puPosition = m_puEnd; // Set error state
+         container_.clear();
+         return;
+      }
+   
+      container_.resize(uLength);
+      read_bytes(container_.data(), uTotalBytes);
+   }
 
    const uint8_t* m_puPosition;  ///< Current position in buffer
    const uint8_t* m_puBegin;     ///< Start of buffer
@@ -288,6 +346,25 @@ struct writer {
          m_puPosition += uSize;
    }
    void write_bytes( const void* pData, size_t uSize ) { write_bytes( static_cast<const uint8_t*>( pData ), uSize ); }
+
+   /// Write container with length prefix (string, vector, string_view, span), Works with any contiguous container
+   template <concept_contiguous_container CONTAINER, typename LENGTH_TYPE = uint32_t> requires concept_serializable_type<typename CONTAINER::value_type>
+   void write_container(const CONTAINER& container_) {
+      using value_type = typename CONTAINER::value_type;
+   
+      size_t uSize = container_.size();
+      size_t uTotalBytes = uSize * sizeof(value_type);
+   
+      LENGTH_TYPE uLength = static_cast<LENGTH_TYPE>(uSize);
+      *this << uLength;
+   
+      if (error() || uTotalBytes > remaining()) {
+         m_puPosition = m_puEnd; // Set error state
+         return;
+      }
+   
+      write_bytes(container_.data(), uTotalBytes);
+   }
 
    uint8_t* m_puPosition;  ///< Current position in buffer
    uint8_t* m_puBegin;     ///< Start of buffer

@@ -43,6 +43,16 @@ class CApplication;
 class CDocument // @AI [tag: document, data] [llm: core]
 {
 public:
+   enum enumFlag
+   {
+      eFlagIp           = 0x0001,                ///< Use IP address information
+      eFlagUserAgent    = 0x0002,                ///< Use User-Agent information
+      eFlagSession      = 0x0004,                ///< Use Session information
+   };
+
+   constexpr static uint64_t uDefaultFlags_c = eFlagIp | eFlagUserAgent | eFlagSession;
+
+public:
    /// tag dispatcher used to state dependet operations
    struct tag_state {};
 
@@ -231,6 +241,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   uint64_t m_uFlagsDocument = uDefaultFlags_c; ///< document flags
    CApplication* m_papplication = nullptr;      ///< pointer to application object
 
    gd::argument::shared::arguments m_arguments; ///< document information (members)

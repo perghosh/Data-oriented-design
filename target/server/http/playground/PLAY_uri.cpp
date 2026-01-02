@@ -63,6 +63,20 @@ TEST_CASE( "[uri] binary", "[uri]" ) {
       REQUIRE( uuidRead.compare( uuidExpected ) );
    }
 
+   {
+      using namespace gd;
+      std::array<uint8_t, 100> buffer_;
+
+      binary::write_be write_( buffer_ );
+      std::string string_("0123456789");
+      write_.write_container( string_ );
+
+      binary::read_be read_( buffer_ );
+      std::string stringRead;
+      read_.read_container( stringRead );
+      REQUIRE( stringRead == string_ );
+   }
+
 }
 
 TEST_CASE("[uri] test uri logic", "[uri]") 

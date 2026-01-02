@@ -58,7 +58,8 @@ std::pair<bool, std::string> CServer::Initialize()
  * 8. If the request is a HEAD, returns headers only.
  * 9. If the request is a GET, returns the file contents.
  */
-boost::beast::http::message_generator handle_request( boost::beast::string_view stringRoot, boost::beast::http::request<boost::beast::http::string_body>&& request_)
+boost::beast::http::message_generator handle_request( boost::beast::string_view stringRoot, 
+                                                      boost::beast::http::request<boost::beast::http::string_body>&& request_)
 {
    // Returns a bad request response
    auto const bad_request_ = [&request_](boost::beast::string_view stringWhy)
@@ -243,12 +244,14 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
 
 // @DEPRICATED
 std::pair<bool, std::string> CServer::Execute(gd::com::server::command_i* pcommand)
-{
+{  assert( false );
+/*
    CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
 
    gd::com::server::response_i* presponse = nullptr;
 
    auto result_ = phttpserver->Execute( pcommand, &presponse );
+   */
 
 
    //std::string_view stringCommand = vectorCommand[0];
@@ -270,11 +273,12 @@ std::pair<bool, std::string> CServer::Execute(gd::com::server::command_i* pcomma
 // @DEPRICATED
 std::pair<bool, std::string> CServer::Execute(const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand)
 {                                                                                                  assert( vectorCommand.empty() == false );
-   CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
+assert( false );
+//   CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
 
-   gd::com::server::response_i* presponse = nullptr;
+//   gd::com::server::response_i* presponse = nullptr;
 
-   auto result_ = phttpserver->Execute( vectorCommand, pcommand, &presponse );
+   // auto result_ = phttpserver->Execute( vectorCommand, pcommand, &presponse );
 
    return { true, "" };
 }
@@ -437,6 +441,14 @@ void listener::on_accept(boost::beast::error_code errorcode, boost::asio::ip::tc
    {
       // ## Create the session and run it
       auto psession = std::make_shared<session>( std::move(socket), m_pstringFolderRoot);
+
+      // ## Check for what type of information that is read from all incoming connections
+      const auto* pdocument = papplication_g->GetDocument();
+      if( pdocument != nullptr )
+      {
+      }
+
+
       psession->run();
    }
 
@@ -452,6 +464,7 @@ session::session( boost::asio::ip::tcp::socket&& socket, std::shared_ptr<std::st
    : m_tcpstream(std::move(socket))
    , m_pstringFolderRoot(pstringFolderRoot)
 {
+   
 }
 
 void session::run()
