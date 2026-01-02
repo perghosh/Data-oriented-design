@@ -446,6 +446,7 @@ void listener::on_accept(boost::beast::error_code errorcode, boost::asio::ip::tc
       const auto* pdocument = papplication_g->GetDocument();
       if( pdocument != nullptr )
       {
+         psession->read( pdocument->GetRequestFlags() );
       }
 
 
@@ -465,6 +466,24 @@ session::session( boost::asio::ip::tcp::socket&& socket, std::shared_ptr<std::st
    , m_pstringFolderRoot(pstringFolderRoot)
 {
    
+}
+
+void session::read( uint64_t uRequestItems )
+{
+   // ## Read IP address ?
+   if( (uRequestItems & Types::eRequestItemIp) == Types::eRequestItemIp )
+   {
+      try
+      {
+         auto endpoint_ = m_tcpstream.socket().remote_endpoint();
+         auto stringIp = endpoint_.address().to_string();
+         m_argument.append( "ip", stringIp );
+      }
+      catch( const std::exception& )
+      {
+         // @TODO: manage error
+      }
+   }
 }
 
 void session::run()

@@ -30,6 +30,7 @@
 #include "gd/gd_com.h"
 #include "gd/com/gd_com_server.h"
 
+#include "gd/gd_arguments_shared.h"
 #include "gd/gd_log_logger.h"
 #include "gd/gd_log_logger_define.h"
 
@@ -141,6 +142,9 @@ public:
    session( boost::asio::ip::tcp::socket&& socket, std::shared_ptr<std::string const> const& pstringFolderRoot);
 
 // ## methods -----------------------------------------------------------------
+ 
+   void read( uint64_t uRequestItems );
+ 
    // Start the asynchronous request
    void run();
 
@@ -156,6 +160,7 @@ public:
    boost::beast::flat_buffer m_flatbuffer;      ///< Buffer to store data used in request
    std::shared_ptr<std::string const> m_pstringFolderRoot;///< root folder on disk where to find files
    boost::beast::http::request<boost::beast::http::string_body> m_request;///< Handle parts in http message
+   gd::argument::shared::arguments m_argument; ///< shared arguments for all sessions
 };
 
 //------------------------------------------------------------------------------
