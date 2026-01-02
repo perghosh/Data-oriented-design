@@ -27,17 +27,20 @@
             this.element = element;
             this.oOptions = Object.assign({  bUseTransform: true, handleSelector: null }, options);
 
-            this.bIsDragging = false;
-            this.iInitialX = 0;
-            this.iInitialY = 0;
-            this.iCurrentX = 0;
-            this.iCurrentY = 0;
-            this.iXOffset = 0;
-            this.iYOffset = 0;
+            this.bIsDragging = false;  // Initialize dragging state
+            this.iInitialX = 0;        // Initialize initial X position
+            this.iInitialY = 0;        // Initialize initial Y position
+            this.iCurrentX = 0;        // Initialize current X position
+            this.iCurrentY = 0;        // Initialize current Y position
+            this.iXOffset = 0;         // Initialize X offset
+            this.iYOffset = 0;         // Initialize Y offset
 
             this.dragHandle = this.oOptions.handleSelector
                ? element.querySelector(this.oOptions.handleSelector)
                : element;
+
+            // Prevent scrolling on touch devices
+            this.dragHandle.style.touchAction = 'none';
 
             this.oBoundHandlers = {
                 mouse_down: this.OnMouseDown.bind(this),
@@ -60,25 +63,28 @@
             document.addEventListener('mouseup', this.oBoundHandlers.mouse_up);
 
             // Touch events for mobile support
-            this.dragHandle.addEventListener('touchstart', this.oBoundHandlers.touch_start);
-            document.addEventListener('touchmove', this.oBoundHandlers.touch_move);
+            this.dragHandle.addEventListener('touchstart', this.oBoundHandlers.touch_start, { passive: false });
+            document.addEventListener('touchmove', this.oBoundHandlers.touch_move, { passive: false });
             document.addEventListener('touchend', this.oBoundHandlers.touch_end);
          }
 
          /** ------------------------------------------------------------------
           * Get initial position and set dragging state
-          * @param {MouseEvent} e - Mouse event
+          * @param {MouseEvent} e_ - Mouse event
           */
          OnMouseDown(e_) {
             this.iInitialX = e_.clientX - this.iXOffset;
             this.iInitialY = e_.clientY - this.iYOffset;
 
-            if(e_.target === this.dragHandle || this.dragHandle.contains(e_.target)) { this.bIsDragging = true; }
+            if(e_.target === this.dragHandle || this.dragHandle.contains(e_.target)) {
+               this.bIsDragging = true;
+               this.element.classList.add('dragging');
+            }
          }
 
          /** ------------------------------------------------------------------
           * Handle mouse move event
-          * @param {MouseEvent} e - Mouse event
+          * @param {MouseEvent} e_ - Mouse event
           */
          OnMouseMove(e_) {
             if(this.bIsDragging) {
@@ -86,8 +92,8 @@
                this.iCurrentX = e_.clientX - this.iInitialX;
                this.iCurrentY = e_.clientY - this.iInitialY;
 
-               this.iXOffset = this.iCurrentX;
-               this.iYOffset = this.iCurrentY;
+               this.iXOffset = this.iCurrentX; // Update horizontal offset
+               this.iYOffset = this.iCurrentY; // Update vertical offset
 
                this.SetPosition(this.iCurrentX, this.iCurrentY);
             }
@@ -100,19 +106,21 @@
             this.iInitialX = this.iCurrentX;
             this.iInitialY = this.iCurrentY;
             this.bIsDragging = false;
+            this.element.classList.remove('dragging');
          }
 
          /**
           * Handle touch start event
-          * @param {TouchEvent} e - Touch event
+          * @param {TouchEvent} e_ - Touch event
           */
          OnTouchStart(e_) {
+            e_.preventDefault(); // Prevent scrolling
             const oTouch = e_.touches[0];
-            const oMouseEvent = new MouseEvent('mousedown', {
+            this.OnMouseDown({
                clientX: oTouch.clientX,
-               clientY: oTouch.clientY
+               clientY: oTouch.clientY,
+               target: e_.target
             });
-            this.dragHandle.dispatchEvent(oMouseEvent);
          }
 
          /** ------------------------------------------------------------------
@@ -120,21 +128,21 @@
           * @param {TouchEvent} e_ - Touch event
           */
          OnTouchMove(e_) {
+            if (!this.bIsDragging) return;
+            e_.preventDefault();
             const oTouch = e_.touches[0];
-            const oMouseEvent = new MouseEvent('mousemove', {
+            this.OnMouseMove({
                clientX: oTouch.clientX,
-               clientY: oTouch.clientY
+               clientY: oTouch.clientY,
+               preventDefault: () => {}
             });
-            document.dispatchEvent(oMouseEvent);
          }
 
          /** ------------------------------------------------------------------
           * Handle touch end event
-          * @param {TouchEvent} e_ - Touch event
           */
-         OnTouchEnd(e_) {
-            const oMouseEvent = new MouseEvent('mouseup', {});
-            document.dispatchEvent(oMouseEvent);
+         OnTouchEnd() {
+            this.OnMouseUp();
          }
 
          /** ------------------------------------------------------------------
@@ -144,7 +152,7 @@
           */
          SetPosition(iX, iY) {
             const oStyle = this.element.style;
-            if(this.oOptions.bUseTransform) {  oStyle.transform = `translate3d(${iX}px, ${iY}px, 0)`; }
+            if(this.oOptions.bUseTransform) { oStyle.transform = `translate3d(${iX}px, ${iY}px, 0)`; }
             else {
                oStyle.position = 'absolute';
                oStyle.left = `${iX}px`;
@@ -179,9 +187,9 @@
    </script>
 </head>
 <body>
-   <h1>HTTP Sess</script>ion Test Page</h1>
+   <h1>HTTP Session Test Page</h1>
    <p>This page is used to test HTTP session management in the web server.</p>
-   <div class="container" style="max-width: 800px;">
+   <div class="container" style="max-width: 800px; position: relative;">
       <div id="movableObject" class="movable">movable object</div>
    </div>
    <script>
@@ -189,13 +197,9 @@
          const movableElement = document.getElementById('movableObject');
          const draggable = new DraggableElement(movableElement);
 
-         // Add visual feedback when dragging
+         // Keep your original visual feedback style
          movableElement.addEventListener('mousedown', function() {
             this.classList.add('dragging');
-         });
-
-         movableElement.addEventListener('mouseup', function() {
-            this.classList.remove('dragging');
          });
       });
    </script>
