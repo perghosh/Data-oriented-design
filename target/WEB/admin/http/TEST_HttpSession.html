@@ -3,216 +3,351 @@
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="variables-default.css">
    <link rel="stylesheet" href="css/elements.css">
    <title>Test session logic in http web server</title>
    <style>
-      .movable { background-color: #f0f0f0; border: 2px solid #ccc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: move; opacity: 1; padding: 20px; position: absolute; transition: box-shadow 0.3s ease; user-select: none; width: 200px; z-index: 10; }
+      body { background-color: var(--bs-body-bg); color: var(--bs-body-color); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; line-height: 1.5; margin: 0; padding: 20px; }
 
-      .movable.dragging { box-shadow: 0 8px 16px rgba(0,0,0,0.2); opacity: 0.8; }
+      button { font-size: 14px; }
 
-      .movable:hover { box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+      .box { container-type: inline-size; margin: 20px; }
+      .box-movable { background-color: #f0f0f0; border: 2px solid #ccc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: move; opacity: 1; padding: 20px; position: absolute; transition: box-shadow 0.3s ease; user-select: none; width: 200px; z-index: 10; }
+      .box-movable.dragging { box-shadow: 0 8px 16px rgba(0,0,0,0.2); opacity: 0.8; }
+      .box-movable:hover { box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+
+      .button-normal {
+        background-color: var(--background-primary);
+        border-radius: 4px;
+        color: var(--color-primary);
+        cursor: pointer;
+        padding: 8px 16px;
+        transition: background-color 0.3s ease;
+      }
+
+      /* Add your CSS styles here */
+      .container-form { container-type: inline-size; margin: 20px; }
+
+      .container-form input,
+      .container-form textarea,
+      .container-form select {border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: inherit; padding: 8px 12px;}
+
+      .container-form .row { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; }
+      .container-form .row:last-child { margin-bottom: 0; } /* to align last item to bottom */
+
+      .container-form .fill {flex: 1;} /* makes select fill available width */
+      .container-form .half { flex: 1; max-width: 50%; }
+      .container-form .third { flex: 1; max-width: 33.33%; }
+      .container-form .quarter { flex: 1; max-width: 25%; }
+
+      .container-form .right { justify-content: flex-end; }
+
    </style>
    <script>
-      /**
-       * Class to make HTML elements draggable
-       */
-      class ElementDraggable {
-         /**
-          * @param {HTMLElement} element - The element to make draggable
-          * @param {Object} options - Configuration options
-          * @param {boolean} options.bUseTransform - Use transform property instead of position
-          * @param {string} options.handleSelector - CSS selector for drag handle (optional)
-          */
-         constructor(element, options = {}) {
-            this.element = element;
-            this.oOptions = Object.assign({  bUseTransform: true, handleSelector: null }, options);
-
-            this.bIsDragging = false;  // Initialize dragging state
-            this.iInitialX = 0;        // Initialize initial X position
-            this.iInitialY = 0;        // Initialize initial Y position
-            this.iCurrentX = 0;        // Initialize current X position
-            this.iCurrentY = 0;        // Initialize current Y position
-            this.iXOffset = 0;         // Initialize X offset
-            this.iYOffset = 0;         // Initialize Y offset
-
-            this.dragHandle = this.oOptions.handleSelector
-               ? element.querySelector(this.oOptions.handleSelector)
-               : element;
-
-            // Prevent scrolling on touch devices
-            this.dragHandle.style.touchAction = 'none';
-
-            this.oBoundHandlers = {
-                mouse_down: this.OnMouseDown.bind(this),
-                mouse_move: this.OnMouseMove.bind(this),
-                mouse_up: this.OnMouseUp.bind(this),
-                touch_start: this.OnTouchStart.bind(this),
-                touch_move: this.OnTouchMove.bind(this),
-                touch_end: this.OnTouchEnd.bind(this)
-            };
-
-            this.#initialize();
-         }
-
-         /** ------------------------------------------------------------------
-          * Initialize event listeners
-          */
-         #initialize() {
-            this.dragHandle.addEventListener('mousedown', this.oBoundHandlers.mouse_down);
-            document.addEventListener('mousemove', this.oBoundHandlers.mouse_move);
-            document.addEventListener('mouseup', this.oBoundHandlers.mouse_up);
-
-            // Touch events for mobile support
-            this.dragHandle.addEventListener('touchstart', this.oBoundHandlers.touch_start, { passive: false });
-            document.addEventListener('touchmove', this.oBoundHandlers.touch_move, { passive: false });
-            document.addEventListener('touchend', this.oBoundHandlers.touch_end);
-         }
-
-         /** ------------------------------------------------------------------
-          * Get initial position and set dragging state
-          * @param {MouseEvent} e_ - Mouse event
-          */
-         OnMouseDown(e_) {
-            this.iInitialX = e_.clientX - this.iXOffset;
-            this.iInitialY = e_.clientY - this.iYOffset;
-
-            if(e_.target === this.dragHandle || this.dragHandle.contains(e_.target)) {
-               this.bIsDragging = true;
-               this.element.classList.add('dragging');
-            }
-         }
-
-         /** ------------------------------------------------------------------
-          * Handle mouse move event
-          * @param {MouseEvent} e_ - Mouse event
-          */
-         OnMouseMove(e_) {
-            if(this.bIsDragging) {
-               e_.preventDefault();
-               this.iCurrentX = e_.clientX - this.iInitialX;
-               this.iCurrentY = e_.clientY - this.iInitialY;
-
-               this.iXOffset = this.iCurrentX; // Update horizontal offset
-               this.iYOffset = this.iCurrentY; // Update vertical offset
-
-               this.SetPosition(this.iCurrentX, this.iCurrentY);
-            }
-         }
-
-         /** ------------------------------------------------------------------
-          * Reset dragging state on mouse up
-          */
-         OnMouseUp() {
-            this.iInitialX = this.iCurrentX;
-            this.iInitialY = this.iCurrentY;
-            this.bIsDragging = false;
-            this.element.classList.remove('dragging');
-         }
-
-         /**
-          * Handle touch start event
-          * @param {TouchEvent} e_ - Touch event
-          */
-         OnTouchStart(e_) {
-            e_.preventDefault(); // Prevent scrolling
-            const oTouch = e_.touches[0];
-            this.OnMouseDown({
-               clientX: oTouch.clientX,
-               clientY: oTouch.clientY,
-               target: e_.target
-            });
-         }
-
-         /** ------------------------------------------------------------------
-          * Handle touch move event
-          * @param {TouchEvent} e_ - Touch event
-          */
-         OnTouchMove(e_) {
-            if (!this.bIsDragging) return;
-            e_.preventDefault();
-            const oTouch = e_.touches[0];
-            this.OnMouseMove({
-               clientX: oTouch.clientX,
-               clientY: oTouch.clientY,
-               preventDefault: () => {}
-            });
-         }
-
-         /** ------------------------------------------------------------------
-          * Handle touch end event
-          */
-         OnTouchEnd() {
-            this.OnMouseUp();
-         }
-
-         /** ------------------------------------------------------------------
-          * Set the element position
-          * @param {number} iX - X position
-          * @param {number} iY - Y position
-          */
-         SetPosition(iX, iY) {
-            const oStyle = this.element.style;
-            if(this.oOptions.bUseTransform) { oStyle.transform = `translate3d(${iX}px, ${iY}px, 0)`; }
-            else {
-               oStyle.position = 'absolute';
-               oStyle.left = `${iX}px`;
-               oStyle.top = `${iY}px`;
-            }
-         }
-
-         /** ------------------------------------------------------------------
-          * Reset the element position to 0,0
-          */
-         ResetPosition() {
-            this.iCurrentX = 0;
-            this.iCurrentY = 0;
-            this.iXOffset = 0;
-            this.iYOffset = 0;
-            this.SetPosition(0, 0);
-         }
-
-         /** ------------------------------------------------------------------
-          * Destroy the draggable instance and remove event listeners
-          */
-         Destroy() {
-            this.dragHandle.removeEventListener('mousedown', this.oBoundHandlers.mouse_down);
-            document.removeEventListener('mousemove', this.oBoundHandlers.mouse_move);
-            document.removeEventListener('mouseup', this.oBoundHandlers.mouse_up);
-
-            this.dragHandle.removeEventListener('touchstart', this.oBoundHandlers.touch_start);
-            document.removeEventListener('touchmove', this.oBoundHandlers.touch_move);
-            document.removeEventListener('touchend', this.oBoundHandlers.touch_end);
-         }
-      }
    </script>
 </head>
 <body>
    <h1>HTTP Session Test Page</h1>
    <p>This page is used to test HTTP session management in the web server.</p>
    <div class="container" style="max-width: 800px; position: relative;">
-      <div class="movable" data-draggable="true" style="position: absolute; top: 0px; left: 0px;">movable object 1</div>
-      <div class="movable" data-draggable="true" style="position: absolute; top: 50px; left: 50px;">movable object 2</div>
-      <div class="movable" data-draggable="true" style="position: absolute; top: 100px; left: 100px;">movable object 3</div>
+      <div class="box-movable" data-draggable="true" style="position: absolute; top: 0px; left: 0px;">movable object 1</div>
+      <div class="box-movable" data-draggable="true" style="position: absolute; top: 50px; left: 50px;">movable object 2</div>
+      <div class="box-movable" data-draggable="true" style="position: absolute; top: 100px; left: 100px;">movable object 3</div>
+
+      <!-- input form to test session values in webserver -->
+      <div class="container-form box-movable" data-draggable="true" style="position: absolute; top: 150px; left: 150px; min-width: 500px;">
+         <form data-element="container">
+            <div class="row">
+               <label class="quarter">Session name:</label>
+               <input class="fill" type="text" data-field="name">
+            </div>
+            <div class="row">
+               <label class="quarter">Session Value:</label>
+               <input class="fill" type="text" data-field="session">
+            </div>
+            <div class="row right">
+               <button class="button-normal" data-action="add-session" >Add Session</button>
+            </div>
+         </form>
+      </div>
    </div>
    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-         // Find all elements with data-draggable="true"
-         const aMovableElements = document.querySelectorAll('[data-draggable]');
+   /**
+    * Class to make HTML elements draggable
+    */
+   class ElementDraggable {
+      /**
+       * @param {HTMLElement|string} element_ - The element to make draggable
+       * @param {Object} options - Configuration options
+       * @param {boolean} options.bUseTransform - Use transform property instead of position
+       * @param {string} options.handleSelector - CSS selector for drag handle (optional)
+       */
+      constructor(element_, options = {}) {
+         let oElement;
+         if( typeof element_ === "string" ) {
+            oElement = document.querySelector(element_);
+            if( !oElement ) document.getElementById(element_);
+         } else {
+            oElement = element_;
+         }
 
-         // Create a new ElementDraggable instance for each
-         aMovableElements.forEach(function(eElement) {
-            const oDraggable = new ElementDraggable(eElement);
+         this.eElement = oElement;
+         this.oOptions = Object.assign({  bUseTransform: true, handleSelector: null }, options);
 
-            // Add visual feedback when dragging
-            eElement.addEventListener('mousedown', function() {
-               this.classList.add('dragging');
-            });
+         this.bIsDragging = false;  // Initialize dragging state
+         this.iInitialX = 0;        // Initialize initial X position
+         this.iInitialY = 0;        // Initialize initial Y position
+         this.iCurrentX = 0;        // Initialize current X position
+         this.iCurrentY = 0;        // Initialize current Y position
+         this.iXOffset = 0;         // Initialize X offset
+         this.iYOffset = 0;         // Initialize Y offset
 
-            eElement.addEventListener('mouseup', function() {
-               this.classList.remove('dragging');
-            });
+         // Initialize drag handle
+         this.eDragHandle = this.oOptions.handleSelector ? oElement.querySelector(this.oOptions.handleSelector) : oElement;
+
+         // Prevent scrolling on touch devices
+         this.eDragHandle.style.touchAction = 'none';
+
+         this.oBoundHandlers = {
+             mouse_down: this.OnMouseDown.bind(this),
+             mouse_move: this.OnMouseMove.bind(this),
+             mouse_up: this.OnMouseUp.bind(this),
+             touch_start: this.OnTouchStart.bind(this),
+             touch_move: this.OnTouchMove.bind(this),
+             touch_end: this.OnTouchEnd.bind(this)
+         };
+
+         this.#initialize();
+      }
+
+      /** ------------------------------------------------------------------
+       * Initialize event listeners
+       */
+      #initialize() {
+         this.eDragHandle.addEventListener('mousedown', this.oBoundHandlers.mouse_down);
+         document.addEventListener('mousemove', this.oBoundHandlers.mouse_move);
+         document.addEventListener('mouseup', this.oBoundHandlers.mouse_up);
+
+         // Touch events for mobile support
+         this.eDragHandle.addEventListener('touchstart', this.oBoundHandlers.touch_start, { passive: false });
+         document.addEventListener('touchmove', this.oBoundHandlers.touch_move, { passive: false });
+         document.addEventListener('touchend', this.oBoundHandlers.touch_end);
+      }
+
+      /** ------------------------------------------------------------------
+       * Get initial position and set dragging state
+       * @param {MouseEvent} e_ - Mouse event
+       */
+      OnMouseDown(e_) {
+         this.iInitialX = e_.clientX - this.iXOffset;
+         this.iInitialY = e_.clientY - this.iYOffset;
+
+         if(e_.target === this.eDragHandle || this.eDragHandle.contains(e_.target)) {
+            this.bIsDragging = true;
+            this.eElement.classList.add('dragging');
+         }
+      }
+
+      /** ------------------------------------------------------------------
+       * Handle mouse move event
+       * @param {MouseEvent} e_ - Mouse event
+       */
+      OnMouseMove(e_) {
+         if(this.bIsDragging) {
+            e_.preventDefault();
+            this.iCurrentX = e_.clientX - this.iInitialX;
+            this.iCurrentY = e_.clientY - this.iInitialY;
+
+            this.iXOffset = this.iCurrentX; // Update horizontal offset
+            this.iYOffset = this.iCurrentY; // Update vertical offset
+
+            this.SetPosition(this.iCurrentX, this.iCurrentY);
+         }
+      }
+
+      /** ------------------------------------------------------------------
+       * Reset dragging state on mouse up
+       */
+      OnMouseUp() {
+         this.iInitialX = this.iCurrentX;
+         this.iInitialY = this.iCurrentY;
+         this.bIsDragging = false;
+         this.eElement.classList.remove('dragging');
+      }
+
+      /**
+       * Handle touch start event
+       * @param {TouchEvent} e_ - Touch event
+       */
+      OnTouchStart(e_) {
+         e_.preventDefault(); // Prevent scrolling
+         const oTouch = e_.touches[0];
+         this.OnMouseDown({
+            clientX: oTouch.clientX,
+            clientY: oTouch.clientY,
+            target: e_.target
+         });
+      }
+
+      /** ------------------------------------------------------------------
+       * Handle touch move event
+       * @param {TouchEvent} e_ - Touch event
+       */
+      OnTouchMove(e_) {
+         if (!this.bIsDragging) return;
+         e_.preventDefault();
+         const oTouch = e_.touches[0];
+         this.OnMouseMove({
+            clientX: oTouch.clientX,
+            clientY: oTouch.clientY,
+            preventDefault: () => {}
+         });
+      }
+
+      /** ------------------------------------------------------------------
+       * Handle touch end event
+       */
+      OnTouchEnd() {
+         this.OnMouseUp();
+      }
+
+      /** ------------------------------------------------------------------
+       * Set the element position
+       * @param {number} iX - X position
+       * @param {number} iY - Y position
+       */
+      SetPosition(iX, iY) {
+         const oStyle = this.eElement.style;
+         if(this.oOptions.bUseTransform) { oStyle.transform = `translate3d(${iX}px, ${iY}px, 0)`; }
+         else {
+            oStyle.position = 'absolute';
+            oStyle.left = `${iX}px`;
+            oStyle.top = `${iY}px`;
+         }
+      }
+
+      /** ------------------------------------------------------------------
+       * Reset the element position to 0,0
+       */
+      ResetPosition() {
+         this.iCurrentX = 0;
+         this.iCurrentY = 0;
+         this.iXOffset = 0;
+         this.iYOffset = 0;
+         this.SetPosition(0, 0);
+      }
+
+      /** ------------------------------------------------------------------
+       * Destroy the draggable instance and remove event listeners
+       */
+      Destroy() {
+         this.eDragHandle.removeEventListener('mousedown', this.oBoundHandlers.mouse_down);
+         document.removeEventListener('mousemove', this.oBoundHandlers.mouse_move);
+         document.removeEventListener('mouseup', this.oBoundHandlers.mouse_up);
+
+         this.eDragHandle.removeEventListener('touchstart', this.oBoundHandlers.touch_start);
+         document.removeEventListener('touchmove', this.oBoundHandlers.touch_move);
+         document.removeEventListener('touchend', this.oBoundHandlers.touch_end);
+      }
+   }
+
+   function SendUrlRequest(sCommand, values_)
+   {
+      let sUrl = "http://localhost:8001/" + sCommand;
+
+      if( typeof values_ === 'string') { sUrl += "?" + values_; }
+      else if( Array.isArray(values_) ) {
+         let sParams = "";
+         for(let i = 0; i < values_.length; i++) {
+            sParams += `${values_[i][0]}=${encodeURIComponent(values_[i][1])}&`;
+         }
+         sParams = sParams.slice(0, -1);
+         sUrl += "?" + sParams;
+      }
+
+      // Send request to server
+      fetch(sUrl, {
+         method: 'GET'
+         /*
+         headers: {
+            'Content-Type': 'application/json'
+         },
+         */
+      })
+      .then(response => response.json())
+      .then(data => {
+         console.log(data);
+      })
+      .catch(error => {
+         console.error(error);
+      });
+   }
+
+   function UIInitialize()
+   {
+      // Find all elements with data-draggable="true"
+      const aMovableElements = document.querySelectorAll('[data-draggable]');
+
+      // Create a new ElementDraggable instance for each
+      aMovableElements.forEach(function(eElement) {
+         const oDraggable = new ElementDraggable(eElement);
+
+         // Add visual feedback when dragging
+         eElement.addEventListener('mousedown', function() {
+            this.classList.add('dragging');
+         });
+
+         eElement.addEventListener('mouseup', function() {
+            this.classList.remove('dragging');
          });
       });
+
+   }
+
+   function Initialize()
+   {
+      // Set up event listeners for click events for actions
+      document.addEventListener("click", function(e_) {
+         if(!e_.target.matches("[data-action]")) return;                      // Prevent default behavior for non-action elements
+
+         const eContainer = e_.target.closest('[data-element="container"]');  // get container element
+         const sAction = e_.target.dataset.action;
+
+         console.assert(eContainer, 'Container element not found');
+         console.assert(sAction, 'Action not found');
+
+         // Query field values
+         const aField = eContainer.querySelectorAll('[data-field]');
+         // Loop fields and store values as key value in array
+         let aValues = [];
+         for(let i = 0; i < aField.length; i++) {
+            let sName = aField[i].dataset.field;
+            aValues.push([sName, aField[i].value]);
+         }
+
+         let sCommand = "!sys/"
+         let sParams = "";
+
+         for(let i = 0; i < aValues.length; i++) {
+            sParams += `${aValues[i][0]}=${encodeURIComponent(aValues[i][1])}&`;
+         }
+         sParams = sParams.slice(0, -1);
+
+         if( sAction == 'add-session') {
+            sCommand += "session/add?"
+            SendUrlRequest( sCommand, sParams );
+         }
+
+         e_.stopPropagation();
+      });
+   }
+
+
+   document.addEventListener('DOMContentLoaded', function() {
+
+      Initialize();
+      UIInitialize();
+   });
    </script>
 </body>
 </html>

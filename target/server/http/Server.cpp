@@ -168,8 +168,8 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    return response;
 }
 
-
-/** @CRITICAL [tag: router, uri] [description: Routes and processes HTTP commands based on the target path]
+// @CRITICAL [tag: router, uri] [description: Routes and processes HTTP commands based on the target path]
+/** --------------------------------------------------------------------------
  * @brief Routes and processes HTTP commands based on the target path
  * 
  * This method handles the routing of HTTP requests to appropriate command handlers.
