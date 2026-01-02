@@ -6,7 +6,7 @@
    <link rel="stylesheet" href="css/elements.css">
    <title>Test session logic in http web server</title>
    <style>
-      .movable { background-color: #f0f0f0; border: 2px solid #ccc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: move; opacity: 1; padding: 20px; transition: box-shadow 0.3s ease; user-select: none; width: 200px; }
+      .movable { background-color: #f0f0f0; border: 2px solid #ccc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: move; opacity: 1; padding: 20px; position: absolute; transition: box-shadow 0.3s ease; user-select: none; width: 200px; z-index: 10; }
 
       .movable.dragging { box-shadow: 0 8px 16px rgba(0,0,0,0.2); opacity: 0.8; }
 
@@ -16,7 +16,7 @@
       /**
        * Class to make HTML elements draggable
        */
-      class DraggableElement {
+      class ElementDraggable {
          /**
           * @param {HTMLElement} element - The element to make draggable
           * @param {Object} options - Configuration options
@@ -190,16 +190,27 @@
    <h1>HTTP Session Test Page</h1>
    <p>This page is used to test HTTP session management in the web server.</p>
    <div class="container" style="max-width: 800px; position: relative;">
-      <div id="movableObject" class="movable">movable object</div>
+      <div class="movable" data-draggable="true" style="position: absolute; top: 0px; left: 0px;">movable object 1</div>
+      <div class="movable" data-draggable="true" style="position: absolute; top: 50px; left: 50px;">movable object 2</div>
+      <div class="movable" data-draggable="true" style="position: absolute; top: 100px; left: 100px;">movable object 3</div>
    </div>
    <script>
       document.addEventListener('DOMContentLoaded', function() {
-         const movableElement = document.getElementById('movableObject');
-         const draggable = new DraggableElement(movableElement);
+         // Find all elements with data-draggable="true"
+         const aMovableElements = document.querySelectorAll('[data-draggable]');
 
-         // Keep your original visual feedback style
-         movableElement.addEventListener('mousedown', function() {
-            this.classList.add('dragging');
+         // Create a new ElementDraggable instance for each
+         aMovableElements.forEach(function(eElement) {
+            const oDraggable = new ElementDraggable(eElement);
+
+            // Add visual feedback when dragging
+            eElement.addEventListener('mousedown', function() {
+               this.classList.add('dragging');
+            });
+
+            eElement.addEventListener('mouseup', function() {
+               this.classList.remove('dragging');
+            });
          });
       });
    </script>
