@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="css/elements.css">
+   <title>Test session logic in http web server</title>
+   <style>
+      .movable { background-color: #f0f0f0; border: 2px solid #ccc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: move; opacity: 1; padding: 20px; transition: box-shadow 0.3s ease; user-select: none; width: 200px; }
+      
+      .movable.dragging { box-shadow: 0 8px 16px rgba(0,0,0,0.2); opacity: 0.8; }
+      
+      .movable:hover { box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+   </style>
+   <script>
+      /**
+       * Class to make HTML elements draggable
+       */
+      class DraggableElement {
+         /**
+          * @param {HTMLElement} element - The element to make draggable
+          * @param {Object} options - Configuration options
+          * @param {boolean} options.useTransform - Use transform property instead of position
+          * @param {string} options.handleSelector - CSS selector for drag handle (optional)
+          */
+         constructor(element, options = {}) {
+            this.element = element;
+            this.options = Object.assign({
+               useTransform: true,
+               handleSelector: null
+            }, options);
+            
+            this.bIsDragging = false;
+            this.iInitialX = 0;
+            this.iInitialY = 0;
+            this.iCurrentX = 0;
+            this.iCurrentY = 0;
+            this.iXOffset = 0;
+            this.iYOffset = 0;
+            
+            this.dragHandle = this.options.handleSelector 
+               ? element.querySelector(this.options.handleSelector)
+               : element;
+               
+            this.init();
+         }
+         
+         /**
+          * Initialize event listeners
+          */
+         init() {
+            this.dragHandle.addEventListener('mousedown', this.handleMouseDown.bind(this));
+            document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+            document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+            
+            // Touch events for mobile support
+            this.dragHandle.addEventListener('touchstart', this.handleTouchStart.bind(this));
+            document.addEventListener('touchmove', this.handleTouchMove.bind(this));
+            document.addEventListener('touchend', this.handleTouchEnd.bind(this));
+         }
+         
+         /**
+          * Get initial position and set dragging state
+          * @param {MouseEvent} e - Mouse event
+          */
+         handleMouseDown(e) {
+            this.iInitialX = e.clientX - this.iXOffset;
+            this.iInitialY = e.clientY - this.iYOffset;
+            
+            if (e.target === this.dragHandle || this.dragHandle.contains(e.target)) {
+               this.bIsDragging = true;
+            }
+         }
+         
+         /**
+          * Handle mouse move event
+          * @param {MouseEvent} e - Mouse event
+          */
+         handleMouseMove(e) {
+            if (this.bIsDragging) {
+               e.preventDefault();
+               this.iCurrentX = e.clientX - this.iInitialX;
+               this.iCurrentY = e.clientY - this.iInitialY;
+               
+               this.iXOffset = this.iCurrentX;
+               this.iYOffset = this.iCurrentY;
+               
+               this.setPosition(this.iCurrentX, this.iCurrentY);
+            }
+         }
+         
+         /**
+          * Reset dragging state on mouse up
+          */
+         handleMouseUp() {
+            this.iInitialX = this.iCurrentX;
+            this.iInitialY = this.iCurrentY;
+            this.bIsDragging = false;
+         }
+         
+         /**
+          * Handle touch start event
+          * @param {TouchEvent} e - Touch event
+          */
+         handleTouchStart(e) {
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousedown', {
+               clientX: touch.clientX,
+               clientY: touch.clientY
+            });
+            this.dragHandle.dispatchEvent(mouseEvent);
+         }
+         
+         /**
+          * Handle touch move event
+          * @param {TouchEvent} e - Touch event
+          */
+         handleTouchMove(e) {
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent('mousemove', {
+               clientX: touch.clientX,
+               clientY: touch.clientY
+            });
+            document.dispatchEvent(mouseEvent);
+         }
+         
+         /**
+          * Handle touch end event
+          * @param {TouchEvent} e - Touch event
+          */
+         handleTouchEnd(e) {
+            const mouseEvent = new MouseEvent('mouseup', {});
+            document.dispatchEvent(mouseEvent);
+         }
+         
+         /**
+          * Set the element position
+          * @param {number} x - X position
+          * @param {number} y - Y position
+          */
+         setPosition(x, y) {
+            if (this.options.useTransform) {
+               this.element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            } else {
+               this.element.style.position = 'absolute';
+               this.element.style.left = `${x}px`;
+               this.element.style.top = `${y}px`;
+            }
+         }
+         
+         /**
+          * Reset the element position to 0,0
+          */
+         resetPosition() {
+            this.iCurrentX = 0;
+            this.iCurrentY = 0;
+            this.iXOffset = 0;
+            this.iYOffset = 0;
+            this.setPosition(0, 0);
+         }
+         
+         /**
+          * Destroy the draggable instance and remove event listeners
+          */
+         destroy() {
+            this.dragHandle.removeEventListener('mousedown', this.handleMouseDown);
+            document.removeEventListener('mousemove', this.handleMouseMove);
+            document.removeEventListener('mouseup', this.handleMouseUp);
+            
+            this.dragHandle.removeEventListener('touchstart', this.handleTouchStart);
+            document.removeEventListener('touchmove', this.handleTouchMove);
+            document.removeEventListener('touchend', this.handleTouchEnd);
+         }
+      }
+   </script>
+</head>
+<body>
+   <h1>HTTP Session Test Page</h1>
+   <p>This page is used to test HTTP session management in the web server.</p>
+   <div class="container" style="max-width: 800px;">
+      <div id="movableObject" class="movable">movable object</div>
+   </div>
+   <script>
+      document.addEventListener('DOMContentLoaded', function() {
+         const movableElement = document.getElementById('movableObject');
+         const draggable = new DraggableElement(movableElement);
+
+         // Add visual feedback when dragging
+         movableElement.addEventListener('mousedown', function() {
+            this.classList.add('dragging');
+         });
+
+         movableElement.addEventListener('mouseup', function() {
+            this.classList.remove('dragging');
+         });
+      });
+   </script>
+</body>
+</html>
