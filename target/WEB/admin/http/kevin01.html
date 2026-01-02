@@ -84,8 +84,12 @@
     {
         if(!eParent) return;
 
-        aData.push(eParent.value);
-        eParent.value = "";
+        let eKey = eParent.querySelector("#idName");
+        let eValue = eParent.querySelector("#idValue");
+
+        aData.push({key: eKey.value, value: eValue.value});
+        eKey.value = "";
+        eValue.value = "";
     }
 
     function UpdateSelect(eParent, sKey, aData)
@@ -98,10 +102,10 @@
 
         eParent.innerHTML = "";
 
-        aData.forEach(sValue => {
+        aData.forEach(item_ => {
             const eOption = document.createElement("option");
-            eOption.value = sValue;
-            eOption.text = sValue;
+            eOption.value = item_.key;
+            eOption.text = item_.key;
             eParent.appendChild(eOption);
         });
     }
@@ -114,11 +118,11 @@
         return sValue;
     }
 
-    function RemoveValue(aData, value_)
+    function RemoveValue(aData, key_)
     {
         for(let i = 0; i < aData.length; i++)
         {
-            if(aData[i] === value_)
+            if(aData[i].key === key_)
             {
                 aData.splice(i, 1);
                 return;
@@ -126,11 +130,21 @@
         }
     }
 
-    function SetText(eParent, sValue)
+    function SetText(eParent, sKey, aData)
     {
         if(!eParent) return;
 
-        eParent.value = sValue;
+        let eKey = eParent.querySelector("#idName");
+        let eValue = eParent.querySelector("#idValue");
+
+        const foundItem_ = aData.find(item_ => item_.key === sKey); // Error here
+
+        if(foundItem_)
+        {
+            eKey.value = foundItem_.key;
+            eValue.value = foundItem_.value;
+        }
+
     }
 
     function GlobalEventListener(sAction, eSelector, callback_, eParent)
@@ -151,7 +165,7 @@
 
         const oButtonActions = {
             "#idAdd": () => {
-                AddData(eContainer.querySelector("#idName"), aData);
+                AddData(eContainer, aData);
             },
 
             "#idSave": () => {
@@ -212,7 +226,7 @@
 
             GlobalEventListener("change", "#idSelect", (e_) => {
                 const sValue = GetValue(e_.target);
-                SetText(eContainer.querySelector("#idName"), sValue);
+                SetText(eContainer, sValue, aData);
             }, eContainer);
 
 
