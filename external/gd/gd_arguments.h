@@ -312,7 +312,7 @@ public:
 
    static const unsigned ARGUMENTS_NO_LENGTH = eTypeNumberGuid;
 
-   /**
+   /** =======================================================================
     * \brief member type for complete value in arguments list
     *
     */
@@ -547,6 +547,122 @@ public:
       } m_unionValue;
    };
 
+   // @API [tag: helper] [description: Helper base class that forwards all const methods to derived type's get_argument()]
+   template<typename DERIVED>
+   struct argument_forwarder
+   {
+      const DERIVED& derived() const { return static_cast<const DERIVED&>(*this); }
+   
+      // Forward all const methods that don't modify state
+      bool is_null() const { return derived().get_argument().is_null(); }
+      bool is_bool() const { return derived().get_argument().is_bool(); }
+      bool is_int32() const { return derived().get_argument().is_int32(); }
+      bool is_uint32() const { return derived().get_argument().is_uint32(); }
+      bool is_int64() const { return derived().get_argument().is_int64(); }
+      bool is_uint64() const { return derived().get_argument().is_uint64(); }
+      bool is_double() const { return derived().get_argument().is_double(); }
+      bool is_string() const { return derived().get_argument().is_string(); }
+      bool is_utf8() const { return derived().get_argument().is_utf8(); }
+      bool is_wstring() const { return derived().get_argument().is_wstring(); }
+      bool is_true() const { return derived().get_argument().is_true(); }
+      bool is_primitive() const { return derived().get_argument().is_primitive(); }
+      bool is_text() const { return derived().get_argument().is_text(); }
+      bool is_binary() const { return derived().get_argument().is_binary(); }
+      bool is_number() const { return derived().get_argument().is_number(); }
+      bool is_decimal() const { return derived().get_argument().is_decimal(); }
+      bool is_integer() const { return derived().get_argument().is_integer(); }
+      bool empty() const { return derived().get_argument().empty(); }
+   
+      bool as_bool() const { return derived().get_argument().as_bool(); }
+      unsigned int as_uint() const { return derived().get_argument().as_uint(); }
+      int as_int() const { return derived().get_argument().as_int(); }
+      int64_t as_int64() const { return derived().get_argument().as_int64(); }
+      uint64_t as_uint64() const { return derived().get_argument().as_uint64(); }
+      double as_double() const { return derived().get_argument().as_double(); }
+      std::string as_string() const { return derived().get_argument().as_string(); }
+      std::string as_utf8() const { return derived().get_argument().as_utf8(); }
+      gd::variant as_variant() const { return derived().get_argument().as_variant(); }
+      gd::variant_view as_variant_view() const { return derived().get_argument().as_variant_view(); }
+      std::string_view as_string_view() const { return derived().get_argument().as_string_view(); }
+   
+      bool get_bool() const { return derived().get_argument().get_bool(); }
+      int get_int() const { return derived().get_argument().get_int(); }
+      unsigned int get_uint() const { return derived().get_argument().get_uint(); }
+      int64_t get_int64() const { return derived().get_argument().get_int64(); }
+      uint64_t get_uint64() const { return derived().get_argument().get_uint64(); }
+      double get_double() const { return derived().get_argument().get_double(); }
+      std::string get_string() const { return derived().get_argument().get_string(); }
+      std::string get_utf8() const { return derived().get_argument().get_utf8(); }
+      gd::variant get_variant() const { return derived().get_argument().get_variant(); }
+      gd::variant_view get_variant_view() const { return derived().get_argument().get_variant_view(); }
+      std::string_view get_string_view() const { return derived().get_argument().get_string_view(); }
+   
+      std::string to_string() const { return derived().get_argument().to_string(); }
+      std::string to_utf8() const { return derived().get_argument().to_ut8(); }
+   
+      unsigned int length() const { return derived().get_argument().length(); }
+      arguments::enumType type() const { return derived().get_argument().type(); }
+      arguments::enumCType type_number() const { return derived().get_argument().type_number(); }
+      unsigned int ctype() const { return derived().get_argument().ctype(); }
+   
+      template<typename TYPE>
+      TYPE get() const { return derived().get_argument().template get<TYPE>(); }
+   
+      // Comparison operators
+      bool operator==(const argument& o) const { return derived().get_argument() == o; }
+      bool operator==(const gd::variant_view& v) const { return derived().get_argument() == v; }
+      template<typename TYPE>
+      bool operator==(TYPE v) const { return derived().get_argument() == v; }
+      bool operator!=(const argument& o) const { return derived().get_argument() != o; }
+      bool operator!=(const gd::variant_view& v) const { return derived().get_argument() != v; }
+   };
+
+   /** =======================================================================
+    * @brief proxy for argument access, simplifying read and write access
+    * 
+    * A proxy object for accessing and modifying an argument within an arguments 
+    * collection, supporting implicit conversion, assignment, and type-safe retrieval.
+    */
+   struct argument_proxy : public argument_forwarder<argument_proxy>
+   {
+      // Constructor is inline and cheap
+      argument_proxy(arguments* parguments, arguments::pointer position_, std::string_view stringName = "")
+         : m_parguments(parguments), m_pPosition(position_), m_stringName(stringName) {}
+   
+      // Implicit conversion to argument for reading (zero allocation)
+      operator argument() const {
+         if(m_pPosition) { return arguments::get_argument_s(m_pPosition); }
+         return argument();  // null argument
+      }
+   
+      // Assignment operator - only pays cost when actually assigning
+      template<typename T>
+      argument_proxy& operator=(T&& value_) {
+         if(m_pPosition) { m_parguments->set(m_pPosition, argument(std::forward<T>(value_))); } // Update existing - find is already done
+         else if( m_stringName.empty() == false) { m_parguments->append(m_stringName, std::forward<T>(value_)); } // Append new - only happens on first assignment
+         return *this;
+      }
+
+      /// key method the forwarder calls
+      argument get_argument() const {
+         if(m_pPosition) { return arguments::get_argument_s(m_pPosition); }
+         return argument();
+      }
+   
+      // Forward common operations
+      bool is_null() const { return !m_pPosition || argument(*this).is_null(); }
+   
+      template<typename TYPE>
+      TYPE get() const { return argument(*this).template get<TYPE>(); }
+
+      bool empty() const { return m_pPosition == nullptr || argument( *this ).empty(); }
+   
+      arguments* m_parguments; ///< pointer to owning arguments object
+      arguments::pointer m_pPosition; ///< Position for value 
+      std::string_view m_stringName;  ///< Only used if pPosition is null
+   };
+
+
    struct argument_edit : public argument
    {
       argument_edit() : argument(), m_pArguments(nullptr) {}
@@ -719,12 +835,14 @@ public: //0TAG0construct.arguments
    arguments( const std::array<std::byte, SIZE>& buffer, std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ) :
       arguments( (pointer)buffer.data(), (unsigned int)buffer.size(), listPair, tag_view{} ) { static_assert(SIZE >= 8, "why less than 8?"); }
 
+   // construct from container with POD types, this enables easy construction from vector<int>, array<...> etc.
    template <typename CONTAINER>
    requires requires(const CONTAINER& c_) {
       { c_.data() } -> std::convertible_to<const typename CONTAINER::value_type*>;
       { c_.size() } -> std::convertible_to<std::size_t>;
       std::is_trivially_copyable_v<typename CONTAINER::value_type>;
    }
+   && ( !std::is_same_v<std::remove_cv_t<CONTAINER>, std::string> && !std::is_same_v<std::remove_cv_t<CONTAINER>, std::wstring> ) // exclude string types
    arguments( const CONTAINER& container_ ): m_bOwner(false), m_pBuffer((pointer)container_.data()), m_uLength(0), m_uBufferLength(container_.size() * sizeof(typename CONTAINER::value_type)) {
       static_assert( std::is_trivially_copyable<typename CONTAINER::value_type>::value, "Container value_type must be trivially copyable (POD)" );
    }
@@ -740,7 +858,6 @@ public: //0TAG0construct.arguments
    arguments& operator=(const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair);
    arguments& operator=(const std::initializer_list<std::pair<std::string_view, gd::variant>>& listPair);
    arguments& operator=(const std::vector<std::pair<std::string_view, gd::variant_view>>& vectorPair);
-
 
    ~arguments() { buffer_delete(); }
 protected:
@@ -766,12 +883,16 @@ protected:
    void zero() { buffer_set(); };
 
    // ## @API [tag: operator] [description: overloaded operators]
-public: //0TAG0operator.arguments
-   argument operator[](unsigned uIndex) { return get_argument(uIndex); }
-   argument operator[](std::string_view stringName) { return get_argument(stringName); }
+public: 
+   // Non-const versions return proxy for read/write access 
+   argument_proxy operator[](unsigned uIndex) { pointer pPosition = find(uIndex); return argument_proxy(this, pPosition); }
+   argument_proxy operator[](std::string_view stringName) {  pointer pPosition = find(stringName); return argument_proxy(this, pPosition, stringName); }
+
+   // Const versions return argument directly (read-only, no proxy needed)
+   const argument operator[](unsigned uIndex) const {  return get_argument(uIndex); }
+   const argument operator[](std::string_view stringName) const {  return get_argument(stringName); }
+
    argument operator[](arguments::const_pointer p) { return get_argument(p); }
-   const argument operator[](unsigned uIndex) const { return get_argument(uIndex); }
-   const argument operator[](std::string_view stringName) const { return get_argument(stringName); }
    const argument operator[](arguments::const_pointer p) const { return get_argument(p); }
    /// returns first found element of those in list
    const argument operator[](std::initializer_list<std::string_view> list_) const { return get_argument( list_ ); }

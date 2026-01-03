@@ -301,7 +301,7 @@ std::pair<bool, std::string> options::parse( int iArgumentCount, const char* con
                bool bFound = alias_find( pbszArgument, argumentsAlias );
                if( bFound == true )
                {
-                  std::string stringCommand = argumentsAlias["command"].to_string(); 
+                  std::string stringCommand = argumentsAlias["command"].as_string(); 
                   options* poptions = sub_find( stringCommand );
                   if( poptions == nullptr ) { return { false, std::string("Unknown sub command : ") + pbszArgument }; }
 
