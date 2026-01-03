@@ -19,6 +19,33 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE( "[uri] arguments", "[uri]" ) {
+   {
+      std::vector<std::byte> vector_; // vector to hold data for arguments
+      vector_.resize( 256 );
+      gd::argument::arguments arguments_( vector_ );
+   }
+   {
+      std::array<std::byte, 128> array_; // array to hold data for arguments
+      gd::argument::arguments arguments_( array_ );
+      arguments_["name"] = "value";
+      arguments_["number"] = 42;
+      std::string stringDebug = gd::argument::debug::print( arguments_ );
+      std::cout << "Arguments:\n" << stringDebug << std::endl;
+      REQUIRE( arguments_["name"].as_string() == "value" );
+      REQUIRE( arguments_["number"].as_int() == 42 );
+   }
+   {
+      gd::argument::shared::arguments arguments_;
+      arguments_["path"] = "/some/path/to/resource";
+      arguments_["enabled"] = true;
+      std::string stringDebug = gd::argument::shared::debug::print( arguments_ );
+      std::cout << "Shared Arguments:\n" << stringDebug << std::endl;
+      REQUIRE( arguments_["path"].as_string() == "/some/path/to/resource" );
+      REQUIRE( arguments_["enabled"].as_bool() == true );
+   }
+}
+
 TEST_CASE( "[uri] binary", "[uri]" ) {
    {
       std::array<uint8_t, 100> binaryData;

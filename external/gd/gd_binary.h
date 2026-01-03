@@ -200,9 +200,15 @@ concept concept_serializable_type = std::is_trivially_copyable_v<TYPE> || std::i
 /// Endian enumeration for specifying byte order
 enum class enumEndian { eEndianBig, eEndianLittle, eEndianNative };
 
-/// Template class for reading binary data with specified endianness
-/// This class uses the global binary_read_* functions internally to ensure
-/// consistent behavior and avoid code duplication.
+/** ==========================================================================
+ * @brief Template class for reading binary data with specified endianness
+ * 
+ * A generic binary buffer reader that supports reading data with specified endianness 
+ * from raw memory or contiguous containers. Provides methods for reading values, managing position, 
+ * and handling errors.
+ * 
+ * @tparam E The endianness to use for reading data (enumEndian).
+ */
 template <enumEndian E>
 struct reader {
    /// Create a reader with begin and end pointers
@@ -226,12 +232,8 @@ struct reader {
    bool error() const { return m_puPosition > m_puEnd; }
 
    /// Read a value and return it
-   template <typename T>
-   T read() {
-      T value;
-      *this >> value;
-      return value;
-   }
+   template <typename TYPE>
+   TYPE read() {TYPE value_; *this >> value_; return value_; }
 
    /// Get current position from beginning
    size_t position() const { return m_puPosition - m_puBegin; }

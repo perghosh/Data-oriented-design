@@ -719,6 +719,16 @@ public: //0TAG0construct.arguments
    arguments( const std::array<std::byte, SIZE>& buffer, std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ) :
       arguments( (pointer)buffer.data(), (unsigned int)buffer.size(), listPair, tag_view{} ) { static_assert(SIZE >= 8, "why less than 8?"); }
 
+   template <typename CONTAINER>
+   requires requires(const CONTAINER& c_) {
+      { c_.data() } -> std::convertible_to<const typename CONTAINER::value_type*>;
+      { c_.size() } -> std::convertible_to<std::size_t>;
+      std::is_trivially_copyable_v<typename CONTAINER::value_type>;
+   }
+   arguments( const CONTAINER& container_ ): m_bOwner(false), m_pBuffer((pointer)container_.data()), m_uLength(0), m_uBufferLength(container_.size() * sizeof(typename CONTAINER::value_type)) {
+      static_assert( std::is_trivially_copyable<typename CONTAINER::value_type>::value, "Container value_type must be trivially copyable (POD)" );
+   }
+
    // copy
    arguments(const arguments& o) { buffer_set(); common_construct(o); }
    arguments(arguments&& o) noexcept { common_construct((arguments&&)o); }
