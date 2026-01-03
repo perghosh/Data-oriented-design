@@ -124,7 +124,7 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    }
 
    // ## Request path must be absolute and not contain "..".
-   if( request_.target().empty() || request_.target()[0] != '/' || request_.target().find("..") != boost::beast::string_view::npos) 
+   if( stringTarget.empty() || stringTarget[0] != '/' || stringTarget.find("..") != boost::beast::string_view::npos) 
    { 
       return bad_request_("Illegal request-target"); 
    }

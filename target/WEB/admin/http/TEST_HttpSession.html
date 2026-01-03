@@ -52,7 +52,6 @@
    <div class="container" style="max-width: 800px; position: relative;">
       <div class="box-movable" data-draggable="true" style="position: absolute; top: 0px; left: 0px;">movable object 1</div>
       <div class="box-movable" data-draggable="true" style="position: absolute; top: 50px; left: 50px;">movable object 2</div>
-      <div class="box-movable" data-draggable="true" style="position: absolute; top: 100px; left: 100px;">movable object 3</div>
 
       <!-- input form to test session values in webserver -->
       <div class="container-form box-movable" data-draggable="true" style="position: absolute; top: 150px; left: 150px; min-width: 500px;">
@@ -70,6 +69,18 @@
             </div>
          </form>
       </div>
+
+      <div class="container-form box-movable" data-draggable="true" style="position: absolute; top: 600px; left: 350px; min-width: 550px;">
+         <form data-element="container">
+            <div class="row">
+               <label>result:</label>
+            </div>
+            <div class="row">
+               <textarea id="idResult" class="fill" rows="5" data-field="result"></textarea>
+            </div>
+         </form>
+      </div>
+
    </div>
    <script>
    /**
@@ -255,14 +266,27 @@
    {
       let sUrl = "http://localhost:8001/" + sCommand;
 
-      if( typeof values_ === 'string') { sUrl += "?" + values_; }
+      if( typeof values_ === 'string') {
+         // Check if command already has a query string
+         if (sCommand.includes('?')) {
+            sUrl += "&" + values_;
+         } else {
+            sUrl += "?" + values_;
+         }
+      }
       else if( Array.isArray(values_) ) {
          let sParams = "";
          for(let i = 0; i < values_.length; i++) {
             sParams += `${values_[i][0]}=${encodeURIComponent(values_[i][1])}&`;
          }
          sParams = sParams.slice(0, -1);
-         sUrl += "?" + sParams;
+
+         // Check if command already has a query string
+         if (sCommand.includes('?')) {
+            sUrl += "&" + sParams;
+         } else {
+            sUrl += "?" + sParams;
+         }
       }
 
       // Send request to server
@@ -274,12 +298,47 @@
          },
          */
       })
-      .then(response => response.json())
-      .then(data => {
-         console.log(data);
+      .then(response => {
+         // Check if response is OK
+         if (!response.ok) {
+            //throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
+            document.getElementById('idResult').value = `HTTP error! status: ${response.status} ${response.statusText}`;
+            return Promise.reject(`HTTP error! status: ${response.status} ${response.statusText}`);
+         }
+
+         // Check content type to determine how to parse response
+         const contentType = response.headers.get('content-type');
+
+         if (contentType && contentType.includes('application/json')) {
+            return response.json().then(data => ({ type: 'json', data }));
+         }
+         else if (contentType && contentType.includes('text/xml') || contentType && contentType.includes('application/xml')) {
+            return response.text().then(text => ({ type: 'xml', data: text }));
+         }
+         else {
+            // Default to text for plain text responses
+            return response.text().then(text => ({ type: 'text', data: text }));
+         }
+      })
+      .then(result => {
+         let sOutput;
+
+         if (result.type === 'json') {
+            sOutput = JSON.stringify(result.data, null, 2);
+         }
+         else if (result.type === 'xml') {
+            // Format XML for display
+            sOutput = formatXml(result.data);
+         }
+         else {
+            sOutput = result.data;
+         }
+
+         document.getElementById('idResult').value = sOutput;
       })
       .catch(error => {
          console.error(error);
+         document.getElementById('idResult').value = 'Error: ' + error.message;
       });
    }
 
@@ -334,9 +393,9 @@
          sParams = sParams.slice(0, -1);
 
          if( sAction == 'add-session') {
-            sCommand += "session/add?"
-            SendUrlRequest( sCommand, sParams );
-         }
+           sCommand += "session/add"
+           SendUrlRequest( sCommand, sParams );
+        }
 
          e_.stopPropagation();
       });
