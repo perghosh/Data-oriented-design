@@ -47,13 +47,11 @@
         </div>
     </div>
 
-
-
     <hr>
 
     <label id="idSelectText"></label>
     
-    
+    <table id="idTable"></table>
 
 </body>
 <script>
@@ -79,6 +77,27 @@
         SaveText(eTextarea, "text");
         alert("Clicked");
     }*/
+
+    class Table
+    {
+        constructor(element_)
+        {
+            this.eElement = document.querySelector(element_);
+        }
+
+        AddRow(aData) 
+        {
+            const eRow = document.createElement("tr");
+
+            this.eElement.appendChild(eRow);
+
+            aData.forEach(data_ => {
+                let eCell = document.createElement("td");
+                eCell.textContent = data_;
+                eRow.appendChild(eCell);
+            });
+        }
+    }
 
     function AddData(eParent, aData)
     {
@@ -203,6 +222,12 @@
         //SetText(eTextarea, "text");
 
         UpdateSelect(document.querySelector("#idSelect"), "data", aData);
+
+        const table = new Table("#idTable");
+        const aTableData = ["Cell1", "Cell2", "Cell3", "Cell4"];
+
+
+        table.AddRow(aTableData);
 
         aContainers.forEach((eContainer) => {
             //GlobalEventListener("click", "button", () => ChangeLabel(eContainer), eContainer);
