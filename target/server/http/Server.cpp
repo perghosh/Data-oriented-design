@@ -287,9 +287,19 @@ assert( false );
 /** --------------------------------------------------------------------------
  * @brief Prepares response header for request
  * 
+ * This method sets up the HTTP response headers based on the provided argument header information.
+ * 
  * @param argumentHeader additional argument header information
  * @param argumentHeader.format format of response
- * @param response 
+ * @param response The HTTP response object to prepare, its the boost beast response object
+ * 
+ * @code
+   std::array<std::byte, 128> array_; // array to hold data for arguments
+   gd::argument::arguments argumentHeader( (gd::argument::arguments::pointer)array_.data(), (unsigned)array_.size() );
+   argumentHeader["format"] = "xml";
+   boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::ok, request_.version()};
+   CServer::PrepareResponseHeader_s( argumentHeader, response );
+ * @endcode
  */
 void CServer::PrepareResponseHeader_s( gd::argument::arguments& argumentHeader, boost::beast::http::response<boost::beast::http::string_body>& response )
 {
