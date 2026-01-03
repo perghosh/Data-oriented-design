@@ -899,26 +899,6 @@ bool arguments::argument::is_true() const
    return bTrue;
 }
 
-void arguments::argument_edit::set(const argument& argumentSet)
-{
-   
-   m_pArguments->set(m_pValue, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
-   /*
-   auto eType = argumentSet.type_number();
-   if( is_type_fixed_size_s(eType) == true && eType == type_number() )
-   {
-      auto pValueData = m_pValue + 1;                                            // move past type to data
-      unsigned uSize = ctype_size[eType];
-      memcpy(pValueData, argumentSet.get_value_buffer(), uSize);
-   }
-   else
-   {
-      m_pArguments->set((pointer)m_pPosition, argumentSet.type(), (const_pointer)argumentSet.get_value_buffer(), argumentSet.length());
-   }
-
-   */
-}
-
 /** ---------------------------------------------------------------------------
  * @brief Set value at position in arguments buffer
  * @param pposition pointer to valid position within arguments buffer 
@@ -1060,64 +1040,7 @@ arguments& arguments::operator=( const std::vector<std::pair<std::string_view, g
 }
 
 
-
-
-/** ---------------------------------------------------------------------------
- * @brief index operator where editable argument is returned.
- * @code
-TEST_CASE( "[gd] arguments using index", "[gd]" ) {
-   gd::argument::arguments arguments_;
-   arguments_.append("1", 1);
-   arguments_.append("2", "2");
-   arguments_.append("3", 3);
-   arguments_.append("4", 4);
-   arguments_.append("5", 5);
-   arguments_.append_many( 100, 200, 300, 400, 500 );
-
-   using namespace gd::argument;
-   std::string_view stringName01 = "1";
-   gd::argument::index index( stringName01 );
-   auto edit_ = arguments_[index];
-   auto edit1_ = arguments_["1"_index];
-   assert( (int)edit_ == (int)edit1_ );
-   arguments_[index] = 100;
-   int iNumber1 = arguments_["1"];
-   iNumber1 *= 2;
-   arguments_[index] = iNumber1;
-   int iNumber7a = arguments_[7];
-   int iNumber7b = arguments_[7_index];
-   assert( iNumber7a == iNumber7b );
-}
- * @endcode
- * @param index_edit_ `index_edit` object used to get part within arguments
- * @return argument_edit for index value or empty argument_edit object if not found
- */
-arguments::argument_edit arguments::operator[](const index_edit& index_edit_) 
-{
-   pointer pPosition = nullptr;
-
-   if( index_edit_.is_string() == true )
-   {
-      pPosition = find( index_edit_.get_string() );
-      if( index_edit_.is_second_index() == true )
-      {
-         pPosition = next_s( pPosition, index_edit_.get_second_index(), get_buffer_end());
-      }
-   }
-   else if( index_edit_.is_index() == true )
-   {
-      pPosition = find( (unsigned)index_edit_.get_index() );
-   }
-
-   if( pPosition != nullptr )
-   {
-      return arguments::get_edit_param_s(this, pPosition);
-   }
-
-   return argument_edit();
-}
-
-// 0TAG0append.arguments
+// @API [tag: append] [description: Methods to append values to arguments object]
 
 /// append argument value to arguments
 /// tagged with tag_arguments to avoid conflicting with other append methods
@@ -3224,12 +3147,6 @@ arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition
       assert(false);
    }
    return arguments::argument();
-}
-
-arguments::argument_edit arguments::get_edit_param_s(arguments* parguments, arguments::const_pointer pPosition)
-{
-   arguments::argument argumentValue = arguments::get_argument_s( pPosition );
-   return arguments::argument_edit( parguments, pPosition, argumentValue );
 }
 
 /*----------------------------------------------------------------------------- get_total_param_length_s */ /**
