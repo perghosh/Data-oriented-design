@@ -489,7 +489,7 @@ std::pair<bool, std::string> CApplication::OpenDatabase_s(const gd::argument::ar
    {
       std::string stringName = argumentsOpen["name"].as_string();
       gd::database::sqlite::database_i* pdatabase = new gd::database::sqlite::database_i("sqlite");  // create database interface for sqlite
-      auto [bOk, stringError] = pdatabase->open(stringName);              // open sqlite database
+      auto [bOk, stringError] = pdatabase->open(std::string_view( stringName )); // open sqlite database
       if(bOk == true)
       {
          pdatabase_ = pdatabase;

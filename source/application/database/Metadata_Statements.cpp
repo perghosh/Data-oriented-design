@@ -189,7 +189,7 @@ void CStatement::TABLE_Add( const std::string_view& stringTable )
    }
    else
    {
-      std::string string_ = argument_;
+      std::string string_ = argument_.as_string();
       string_ += ',';
       string_ += stringTable;
       m_arguments.set("table", string_.c_str());
