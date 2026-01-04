@@ -310,12 +310,13 @@ void CSessions::Copy( gd::table::dto::table& table_ )
    }
 
    // ## Copy all session rows with active sessions to target table
+   auto uColumCount = m_tableSession.get_column_count();
    for( uint64_t uRow = 0; uRow < m_tableSession.size(); ++uRow )
    {
       if( m_tableSession.cell_is_null( uRow, eColumnTime ) == false )
       {
          uint64_t uNewRow = table_.row_add_one();
-         for( unsigned uColumn = 0; uColumn < m_tableSession.get_columns().size(); ++uColumn )
+         for( unsigned uColumn = 0; uColumn < uColumCount; ++uColumn )
          {
             const auto* pbValue = m_tableSession.cell_get( uRow, uColumn );
             table_.cell_set( uNewRow, uColumn, pbValue );

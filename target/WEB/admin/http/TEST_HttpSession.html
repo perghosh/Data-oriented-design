@@ -60,12 +60,10 @@
    <h1>HTTP Session Test Page</h1>
    <p>This page is used to test HTTP session management in the web server.</p>
    <div class="container" style="max-width: 800px; position: relative;">
-      <div class="box-movable box-movable-handle" data-draggable="true" style="position: absolute; top: 0px; left: 0px;">movable object 1</div>
-      <div class="box-movable box-movable-handle" data-draggable="true" style="position: absolute; top: 50px; left: 50px;">movable object 2</div>
 
       <!-- input form to test session values in webserver -->
-      <div class="container-form box-movable box-movable-handle" data-draggable="true" style="position: absolute; top: 150px; left: 150px; min-width: 500px;">
-         <form data-element="container handle">
+      <div class="container-form box-movable box-movable-handle" data-draggable="1" style="position: absolute; top: 150px; left: 150px; min-width: 500px;" data-description="call-endpoints">
+         <form data-element="container">
             <div class="row">
                <label class="quarter">Session name:</label>
                <input class="fill" type="text" data-field="name">
@@ -80,7 +78,8 @@
          </form>
       </div>
 
-      <div class="container-form box-movable box-movable-handle" data-draggable="true" style="position: absolute; top: 600px; left: 20px; min-width: 550px;">
+      <!-- container for results -->
+      <div class="container-form box-movable box-movable-handle" data-draggable="1" style="position: absolute; top: 600px; left: 20px; min-width: 550px;" data-description="results">
          <form data-element="container">
             <div class="row">
                <label>result:</label>
@@ -91,9 +90,9 @@
          </form>
       </div>
 
-      <div class="container-form box-movable" data-draggable="true" style="position: absolute; top: 400px; left: 350px; min-width: 550px;">
-         <!-- Add caption here -->
-         <div class="caption row handle" data-draggable-handle="true">Caption</div>
+      <!-- container for errors -->
+      <div class="container-form box-movable" data-draggable="1" style="position: absolute; top: 400px; left: 350px; min-width: 550px;" data-description="errors">
+         <div class="caption row handle" data-draggable-handle="1">Errors</div>
          <form data-element="container">
             <div class="row">
                <textarea id="idResult" class="fill" rows="5" data-field="result" placeholder="error list"></textarea>
@@ -405,7 +404,7 @@
          let aValues = [];
          for(let i = 0; i < aField.length; i++) {
             let sName = aField[i].dataset.field;
-            aValues.push([sName, aField[i].value]);
+            aValues.push([sName, aField[i].value]);                           // add name and value (pair)
          }
 
          let sCommand = "!sys/"
@@ -417,8 +416,10 @@
          sParams = sParams.slice(0, -1);
 
          if( sAction == 'add-session') {
-           sCommand += "session/add"
-           SendUrlRequest( sCommand, sParams );
+            sCommand += "session/add";
+            const aSession = aValues.find(([name]) => name === 'session');      // find "session" value in aValues
+            if(!aSession[1]) { sParams += "&new=1"; }                            // No session name provided, create new session
+            SendUrlRequest( sCommand, sParams );
         }
 
          e_.stopPropagation();
