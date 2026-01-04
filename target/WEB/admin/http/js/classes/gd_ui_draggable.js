@@ -65,8 +65,15 @@ class UIDraggable {
             this.eElement;
       }
 
-      // Prevent scrolling on touch devices
+      // Prevent scrolling on touch devices and set grab cursor inline
       this.eDragHandle.style.touchAction = 'none';
+      this.eDragHandle.style.cursor = 'grab';
+
+      // Store original styles to restore on destroy
+      this.oOriginalHandleStyle = {
+         touchAction: this.eDragHandle.style.touchAction,
+         cursor: this.eDragHandle.style.cursor
+      };
 
       // Initialize state
       this.bIsDragging = false;
@@ -77,8 +84,23 @@ class UIDraggable {
       this.iXOffset = 0;
       this.iYOffset = 0;
 
-      // Create inline styles for dragging state (self-contained, no external CSS)
-      this._create_drag_styles();
+      // Store dragging styles for inline application
+      this.oDraggingStyles = {
+         cursor: 'grabbing',
+         opacity: '0.8',
+         position: 'relative',
+         transition: 'none',
+         zIndex: '9999'
+      };
+
+      // Store original element styles for potential restoration
+      this.oOriginalElementStyle = {
+         cursor: this.eElement.style.cursor || '',
+         opacity: this.eElement.style.opacity || '',
+         position: this.eElement.style.position || '',
+         transition: this.eElement.style.transition || '',
+         zIndex: this.eElement.style.zIndex || ''
+      };
 
       // Store bound handlers for proper removal
       this.oBoundHandlers = {
@@ -93,25 +115,6 @@ class UIDraggable {
    // Getter/setter for id
    get id() { return this.sId; }
    set id(sId_) { this.sId = sId_; }
-
-   /** -----------------------------------------------------------------------
-    * Create inline styles for dragging state (no external CSS dependency)
-    */
-   _create_drag_styles() {
-      // Create a style element if it doesn't exist
-      if( !document.getElementById('gd-draggable-styles') ) {
-         const eStyle = document.createElement('style');
-         eStyle.id = 'gd-draggable-styles';
-         eStyle.textContent = `
-            .gd-draggable-dragging { cursor: grabbing !important; opacity: 0.8 !important; position: relative !important; transition: none !important;  z-index: 9999 !important; }
-            .gd-draggable-handle { cursor: grab !important; }
-         `;
-         document.head.appendChild(eStyle);
-      }
-
-      // Add handle class to drag handle
-      this.eDragHandle.classList.add('gd-draggable-handle');
-   }
 
    /** -----------------------------------------------------------------------
     * Initialize event listeners
@@ -151,8 +154,9 @@ class UIDraggable {
       this.iInitialY = iClientY - this.iYOffset;
       this.bIsDragging = true;
 
-      // Add visual feedback
-      this.eElement.classList.add('gd-draggable-dragging');
+      // Apply dragging styles inline
+      Object.assign(this.eElement.style, this.oDraggingStyles);
+      this.eDragHandle.style.cursor = 'grabbing';
 
       // ## Trigger callback if provided
       if( this.oOptions.fnOnDragStart ) {
@@ -205,7 +209,7 @@ class UIDraggable {
       this.iXOffset = iNewX;
       this.iYOffset = iNewY;
 
-      _set_position(iNewX, iNewY);
+      this._set_position(iNewX, iNewY);
 
       // Trigger callback if provided
       if( this.oOptions.fnOnDragMove ) {
@@ -227,8 +231,9 @@ class UIDraggable {
       this.iInitialX = this.iCurrentX;
       this.iInitialY = this.iCurrentY;
 
-      // Remove visual feedback
-      this.eElement.classList.remove('gd-draggable-dragging');
+      // Restore original element styles
+      Object.assign(this.eElement.style, this.oOriginalElementStyle);
+      this.eDragHandle.style.cursor = 'grab';
 
       // Trigger callback if provided
       if( this.oOptions.fnOnDragEnd ) {
@@ -317,7 +322,7 @@ class UIDraggable {
       this.iCurrentY = iY;
       this.iXOffset = iX;
       this.iYOffset = iY;
-      this._set_position(iNewX, iNewY);
+      this._set_position(iX, iY);
    }
 
    /**
@@ -337,6 +342,7 @@ class UIDraggable {
    Enable() {
       if( !this.eDragHandle ) return;
       this.eDragHandle.style.pointerEvents = 'auto';
+      this.eDragHandle.style.cursor = 'grab';
    }
 
    /** -----------------------------------------------------------------------
@@ -345,6 +351,7 @@ class UIDraggable {
    Disable() {
       if( !this.eDragHandle ) return;
       this.eDragHandle.style.pointerEvents = 'none';
+      this.eDragHandle.style.cursor = 'default';
    }
 
    /** -----------------------------------------------------------------------
@@ -356,8 +363,10 @@ class UIDraggable {
 
       // Update drag handle if selector or element changed
       if( oNewOptions.sHandleSelector || oNewOptions.eHandle ) {
-         this.eDragHandle.style.touchAction = '';
-         this.eDragHandle.classList.remove('gd-draggable-handle');
+         // Restore previous handle style
+         this.eDragHandle.style.touchAction = this.oOriginalHandleStyle.touchAction || '';
+         this.eDragHandle.style.cursor = this.oOriginalHandleStyle.cursor || '';
+
          this.eDragHandle.removeEventListener('mousedown', this.oBoundHandlers.down);
          this.eDragHandle.removeEventListener('touchstart', this.oBoundHandlers.down);
 
@@ -370,8 +379,16 @@ class UIDraggable {
                this.eElement;
          }
 
+         // Apply new handle styles
          this.eDragHandle.style.touchAction = 'none';
-         this.eDragHandle.classList.add('gd-draggable-handle');
+         this.eDragHandle.style.cursor = 'grab';
+
+         // Update stored original styles
+         this.oOriginalHandleStyle = {
+            touchAction: this.eDragHandle.style.touchAction,
+            cursor: this.eDragHandle.style.cursor
+         };
+
          this.eDragHandle.addEventListener('mousedown', this.oBoundHandlers.down);
          this.eDragHandle.addEventListener('touchstart', this.oBoundHandlers.down, { passive: false });
       }
@@ -381,15 +398,16 @@ class UIDraggable {
     * Destroy the draggable instance and remove all event listeners
     */
    Destroy() {
-      // Remove visual feedback
-      this.eElement.classList.remove('gd-draggable-dragging');
-      this.eDragHandle.classList.remove('gd-draggable-handle');
+      // Restore original styles
+      Object.assign(this.eElement.style, this.oOriginalElementStyle);
+      if( this.eDragHandle ) {
+         Object.assign(this.eDragHandle.style, this.oOriginalHandleStyle);
+      }
 
       // Remove event listeners
       if( this.eDragHandle ) {
          this.eDragHandle.removeEventListener('mousedown', this.oBoundHandlers.down);
          this.eDragHandle.removeEventListener('touchstart', this.oBoundHandlers.down);
-         this.eDragHandle.style.touchAction = '';
       }
 
       document.removeEventListener('mousemove', this.oBoundHandlers.move);

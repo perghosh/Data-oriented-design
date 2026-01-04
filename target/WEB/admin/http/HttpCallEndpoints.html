@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="variables-default.css">
+   <link rel="stylesheet" href="css/elements.css">
+   <script src="js/classes/gd_ui_draggable.js"></script>
+   <title>Test session logic in http web server</title>
+   <style>
+      body { background-color: var(--bs-body-bg); color: var(--bs-body-color); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; line-height: 1.5; margin: 0; padding: 20px; }
+      </style>
+      <script>
+      </script>
+   </head>
+   <body>
+      <h1>HTTP Session Test Page</h1>
+      <div id="draggable" class="draggable">
+         <p>This is a draggable element.</p>
+      </div>
+      <script>
+         document.addEventListener('DOMContentLoaded', function() {
+            new UIDraggable(document.getElementById('draggable'));
+         });
+      </script>
+   </body>
+   </html>
