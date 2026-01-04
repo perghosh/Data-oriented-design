@@ -104,6 +104,8 @@
    <script>
    /**
     * Class to make HTML elements draggable
+    *
+    * Construct ElementDraggable(element_, options) where element is the element to make draggable
     */
    class ElementDraggable {
       /**
@@ -111,6 +113,7 @@
        * @param {Object} options - Configuration options
        * @param {boolean} options.bUseTransform - Use transform property instead of position
        * @param {string} options.handleSelector - CSS selector for drag handle (optional)
+       * @param {HTMLElement} options.eHandle - CSS class for drag handle (optional)
        */
       constructor(element_, options = {}) {
          let oElement;
