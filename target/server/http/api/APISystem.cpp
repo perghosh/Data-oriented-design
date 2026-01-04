@@ -65,18 +65,10 @@ std::pair<bool, std::string> CAPISystem::Execute()
          if( uIndex >= m_vectorCommand.size() ) return { false, "Missing session command" };
          stringCommand = m_vectorCommand[uIndex];
          
-         if( stringCommand == "add" )
-         {
-            result_ = Execute_SessionAdd();
-         }
-         else if( stringCommand == "delete" )
-         {
-            result_ = Execute_SessionDelete();
-         }
-         else if( stringCommand == "count" )
-         {
-            result_ = Execute_SessionCount();
-         }
+         if( stringCommand == "add" )           { result_ = Execute_SessionAdd(); }
+         else if( stringCommand == "count" )    { result_ = Execute_SessionCount(); }
+         else if( stringCommand == "delete" )   { result_ = Execute_SessionDelete(); }
+         else if( stringCommand == "list" )     { result_ = Execute_SessionList(); }
          else { return { false, "unknown session command: " + std::string(stringCommand) }; }
       }
       else
@@ -93,16 +85,23 @@ std::pair<bool, std::string> CAPISystem::Execute()
 std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
 {
    std::string stringSession = m_argumentsParameter["session"].as_string();    // get session to add
+
+   if( stringSession.size() < 32 ) { stringSession.append( 32 - stringSession.size(), '0' ); }
    
    auto result_ = ValidateSession_s(stringSession);
    if( result_.first == false ) { return result_; }
    
+   // ## copy session
+
    gd::types::uuid uuid;
-   gd::binary_copy_hex_g( uuid,  stringSession);
+   if( stringSession.length() == 32 ) gd::binary_copy_hex_g( uuid,  stringSession);
+   else if( stringSession.length() == 36 ) gd::binary_copy_uuid_g( uuid, stringSession );
    
    CDocument* pdocument = GetDocument();
    
    uint64_t uIndex = pdocument->SESSION_Add(uuid);
+
+   // ## return response with index for session added
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "index", uIndex } } );
    m_objects.Add( parguments_ );
@@ -143,6 +142,15 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionCount()
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "count", uCount } } );
    m_objects.Add( parguments_ );
+   
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CAPISystem::Execute_SessionList()
+{
+   CDocument* pdocument = GetDocument();
+
+   // ## get list of sessions and place in in table object
    
    return { true, "" };
 }

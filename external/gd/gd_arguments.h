@@ -649,14 +649,6 @@ public:
          return argument();
       }
    
-      // Forward common operations
-      bool is_null() const { return !m_pPosition || argument(*this).is_null(); }
-   
-      template<typename TYPE>
-      TYPE get() const { return argument(*this).template get<TYPE>(); }
-
-      bool empty() const { return m_pPosition == nullptr || argument( *this ).empty(); }
-   
       arguments* m_parguments; ///< pointer to owning arguments object
       arguments::pointer m_pPosition; ///< Position for value 
       std::string_view m_stringName;  ///< Only used if pPosition is null

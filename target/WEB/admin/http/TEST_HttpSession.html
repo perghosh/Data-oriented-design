@@ -12,9 +12,11 @@
       button { font-size: 14px; }
 
       .box { container-type: inline-size; margin: 20px; }
-      .box-movable { background-color: #f0f0f0; border: 2px solid #ccc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: move; opacity: 1; padding: 20px; position: absolute; transition: box-shadow 0.3s ease; user-select: none; width: 200px; z-index: 10; }
+      .box-movable { background-color: #f0f0f0; border: 2px solid #ccc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); opacity: 1; padding: 20px; position: absolute; transition: box-shadow 0.3s ease; user-select: none; width: 200px; z-index: 10; }
       .box-movable.dragging { box-shadow: 0 8px 16px rgba(0,0,0,0.2); opacity: 0.8; }
       .box-movable:hover { box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+      .box-movable .handle { cursor: move; }
+      .box-movable-handle { cursor: move; }
 
       .button-normal {
         background-color: var(--background-primary);
@@ -23,6 +25,14 @@
         cursor: pointer;
         padding: 8px 16px;
         transition: background-color 0.3s ease;
+      }
+
+      .caption {
+        background-color: var(--background-secondary);
+        border-radius: 4px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        padding: 8px 16px;
       }
 
       /* Add your CSS styles here */
@@ -50,12 +60,12 @@
    <h1>HTTP Session Test Page</h1>
    <p>This page is used to test HTTP session management in the web server.</p>
    <div class="container" style="max-width: 800px; position: relative;">
-      <div class="box-movable" data-draggable="true" style="position: absolute; top: 0px; left: 0px;">movable object 1</div>
-      <div class="box-movable" data-draggable="true" style="position: absolute; top: 50px; left: 50px;">movable object 2</div>
+      <div class="box-movable box-movable-handle" data-draggable="true" style="position: absolute; top: 0px; left: 0px;">movable object 1</div>
+      <div class="box-movable box-movable-handle" data-draggable="true" style="position: absolute; top: 50px; left: 50px;">movable object 2</div>
 
       <!-- input form to test session values in webserver -->
-      <div class="container-form box-movable" data-draggable="true" style="position: absolute; top: 150px; left: 150px; min-width: 500px;">
-         <form data-element="container">
+      <div class="container-form box-movable box-movable-handle" data-draggable="true" style="position: absolute; top: 150px; left: 150px; min-width: 500px;">
+         <form data-element="container handle">
             <div class="row">
                <label class="quarter">Session name:</label>
                <input class="fill" type="text" data-field="name">
@@ -70,13 +80,23 @@
          </form>
       </div>
 
-      <div class="container-form box-movable" data-draggable="true" style="position: absolute; top: 600px; left: 350px; min-width: 550px;">
+      <div class="container-form box-movable box-movable-handle" data-draggable="true" style="position: absolute; top: 600px; left: 20px; min-width: 550px;">
          <form data-element="container">
             <div class="row">
                <label>result:</label>
             </div>
             <div class="row">
                <textarea id="idResult" class="fill" rows="5" data-field="result"></textarea>
+            </div>
+         </form>
+      </div>
+
+      <div class="container-form box-movable" data-draggable="true" style="position: absolute; top: 400px; left: 350px; min-width: 550px;">
+         <!-- Add caption here -->
+         <div class="caption row handle" data-draggable-handle="true">Caption</div>
+         <form data-element="container">
+            <div class="row">
+               <textarea id="idResult" class="fill" rows="5" data-field="result" placeholder="error list"></textarea>
             </div>
          </form>
       </div>
@@ -114,7 +134,8 @@
          this.iYOffset = 0;         // Initialize Y offset
 
          // Initialize drag handle
-         this.eDragHandle = this.oOptions.handleSelector ? oElement.querySelector(this.oOptions.handleSelector) : oElement;
+         if( this.oOptions.eHandle ) { this.eDragHandle = this.oOptions.eHandle; }
+         else { this.eDragHandle = this.oOptions.handleSelector ? oElement.querySelector(this.oOptions.handleSelector) : oElement; }
 
          // Prevent scrolling on touch devices
          this.eDragHandle.style.touchAction = 'none';
@@ -324,11 +345,11 @@
          let sOutput;
 
          if (result.type === 'json') {
-            sOutput = JSON.stringify(result.data, null, 2);
+            sOutput = result.data;
          }
          else if (result.type === 'xml') {
             // Format XML for display
-            sOutput = formatXml(result.data);
+            sOutput = result.data;
          }
          else {
             sOutput = result.data;
@@ -349,7 +370,9 @@
 
       // Create a new ElementDraggable instance for each
       aMovableElements.forEach(function(eElement) {
-         const oDraggable = new ElementDraggable(eElement);
+         const eHandle = eElement.querySelector("[data-draggable-handle]");
+
+         const oDraggable = new ElementDraggable(eElement, {eHandle: eHandle});
 
          // Add visual feedback when dragging
          eElement.addEventListener('mousedown', function() {
@@ -368,6 +391,7 @@
       // Set up event listeners for click events for actions
       document.addEventListener("click", function(e_) {
          if(!e_.target.matches("[data-action]")) return;                      // Prevent default behavior for non-action elements
+         e_.preventDefault();
 
          const eContainer = e_.target.closest('[data-element="container"]');  // get container element
          const sAction = e_.target.dataset.action;
