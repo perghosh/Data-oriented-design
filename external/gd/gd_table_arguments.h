@@ -198,8 +198,9 @@ public:
       eTableFlagNull32        = 0x0001,                                        ///< reserve 32 bit for each row to mark null for column if no value
       eTableFlagNull64        = 0x0002,                                        ///< reserve 64 bit for each row to mark null for column if no value
       eTableFlagRowStatus     = 0x0004,                                        ///< enable row status (if row is valid, modified, deleted)
-      eTableFlagArguments     = 0x0008,                                        ///< reserve size for arguments object
-      eTableStateMAX          = 0x0010,                                        ///< max state value
+      eTableFlagDuplicateStrings = 0x0008,                                     ///< enable duplicate strings, reference string are not checked for duplicates
+      eTableFlagArguments     = 0x0010,                                        ///< reserve size for arguments object
+      eTableStateMAX          = 0x0020,                                        ///< max state value
       eTableFlagAll           = eTableFlagNull64|eTableFlagRowStatus|eTableFlagArguments,
 
       // ## size information used to calculate space needed by table
@@ -362,6 +363,7 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   uint32_t get_flags() const noexcept { return m_uFlags; }
    void set_flags( uint32_t uFlags ) noexcept { m_uFlags = uFlags; }
    /// Turn on full meta data support
    void set_flags( tag_full_meta ) noexcept { m_uFlags = eTableFlagRowStatus|eTableFlagNull64|eTableFlagArguments; }

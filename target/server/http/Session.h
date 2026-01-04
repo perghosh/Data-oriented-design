@@ -117,6 +117,11 @@ public:
    /// Find first unused session index, return false if no free session found
    std::pair<bool, uint64_t> FindFirstFree( uint64_t uOffset = 0 );
 
+// @API [tag: reports] [summary: return information about current session]
+
+   /// Copy active session table to dto table object
+   void Copy( gd::table::dto::table& table_ );
+
 protected:
 // @API [tag: internal]
 

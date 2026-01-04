@@ -244,7 +244,8 @@ public:
       eTableFlagNull64        = 0x0002,                                        ///< reserve 64 bit for each row to mark null for column if no value
       eTableFlagRowStatus     = 0x0004,                                        ///< enable row status (if row is valid, modified, deleted)
       eTableFlagDuplicateStrings = 0x0008,                                     ///< enable duplicate strings, reference string are not checked for duplicates
-      eTableStateMAX          = 0x0010,                                        ///< max state value
+      eTableFlagMAX           = 0x000f,                                        ///< max flag value
+      eTableFlagMASK          = 0x000f,                                        ///< mask for table state values
 
       // ## size information used to calculate space needed by table
       eSpaceNull32Columns     = sizeof( uint32_t ),                            ///< space marking null columns
@@ -459,12 +460,12 @@ public:
    ///@{
    table_column_buffer(): m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(0), m_uRowGrowBy(0) {}
    table_column_buffer( unsigned uRowCount ): m_uFlags(0), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount), m_uRowGrowBy(0) {}
-   table_column_buffer( unsigned uRowCount, unsigned uFlags ): m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount), m_uRowGrowBy(0) { assert( m_uFlags < eTableStateMAX );  }
-   table_column_buffer( unsigned uRowCount, unsigned uFlags, unsigned uGrowBy ): m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount), m_uRowGrowBy(uGrowBy) { assert( m_uFlags < eTableStateMAX );  }
-   table_column_buffer( tag_null ): m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(0) { assert( m_uFlags < eTableStateMAX );  }
-   table_column_buffer( tag_full_meta ): m_uFlags(eTableFlagNull64|eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(0) { assert( m_uFlags < eTableStateMAX );  }
-   table_column_buffer( unsigned uRowCount, tag_null ): m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount) { assert( m_uFlags < eTableStateMAX );  }
-   table_column_buffer( unsigned uRowCount, tag_full_meta ): m_uFlags(eTableFlagNull64|eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount) { assert( m_uFlags < eTableStateMAX );  }
+   table_column_buffer( unsigned uRowCount, unsigned uFlags ): m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount), m_uRowGrowBy(0) { assert( m_uFlags < eTableFlagMAX );  }
+   table_column_buffer( unsigned uRowCount, unsigned uFlags, unsigned uGrowBy ): m_uFlags(uFlags), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount), m_uRowGrowBy(uGrowBy) { assert( m_uFlags < eTableFlagMAX );  }
+   table_column_buffer( tag_null ): m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(0) { assert( m_uFlags < eTableFlagMAX );  }
+   table_column_buffer( tag_full_meta ): m_uFlags(eTableFlagNull64|eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(0) { assert( m_uFlags < eTableFlagMAX );  }
+   table_column_buffer( unsigned uRowCount, tag_null ): m_uFlags(eTableFlagNull64), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount) { assert( m_uFlags < eTableFlagMAX );  }
+   table_column_buffer( unsigned uRowCount, tag_full_meta ): m_uFlags(eTableFlagNull64|eTableFlagRowStatus), m_uRowSize(0), m_uRowCount(0), m_uReservedRowCount(uRowCount) { assert( m_uFlags < eTableFlagMAX );  }
 
    table_column_buffer( unsigned uFlags, const std::vector< std::tuple< std::string_view, unsigned, std::string_view > >& vectorValue );
 
