@@ -1131,6 +1131,9 @@ struct uuid
    uuid( const uint8_t* pbData ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = pbData[i]; } }
    
    bool operator==( const uuid& o ) const { return memcmp( m_puData, o.m_puData, 16 ) == 0; }
+
+   uuid& operator=( const uuid& o ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = o.m_puData[i]; } return *this; }
+   uuid& operator=( const uint8_t* pbData ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = pbData[i]; } return *this; }
    
    operator uint8_t*() { return m_puData; }
    operator const uint8_t*() const { return m_puData; }

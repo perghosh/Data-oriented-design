@@ -2,6 +2,7 @@
 
 #include "gd/gd_arguments.h"
 #include "gd/gd_binary.h"
+#include "gd/gd_uuid.h"
 
 #include "../Router.h"
 #include "../Document.h"
@@ -82,20 +83,36 @@ std::pair<bool, std::string> CAPISystem::Execute()
    return { true, "" };
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Adds a session key
+ * 
+ * Add either by using a provided session string or by generating a new session, 
+ * and returns the result of the operation.
+ * 
+ * @return A pair consisting of a boolean indicating success  or failure, and a string containing an error message if applicable.
+ */
 std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
 {
-   std::string stringSession = m_argumentsParameter["session"].as_string();    // get session to add
-
-   if( stringSession.size() < 32 ) { stringSession.append( 32 - stringSession.size(), '0' ); }
-   
-   auto result_ = ValidateSession_s(stringSession);
-   if( result_.first == false ) { return result_; }
-   
-   // ## copy session
-
    gd::types::uuid uuid;
-   if( stringSession.length() == 32 ) gd::binary_copy_hex_g( uuid,  stringSession);
-   else if( stringSession.length() == 36 ) gd::binary_copy_uuid_g( uuid, stringSession );
+   std::string stringSession;
+
+   if( m_argumentsParameter.exists("new") == false )
+   {
+      stringSession = m_argumentsParameter["session"].as_string();    // get session to add
+
+      if( stringSession.size() < 32 ) { stringSession.append( 32 - stringSession.size(), '0' ); }
+   
+      auto result_ = ValidateSession_s(stringSession);
+      if( result_.first == false ) { return result_; }
+
+      if( stringSession.length() == 32 ) gd::binary_copy_hex_g( uuid,  stringSession);
+      else if( stringSession.length() == 36 ) gd::binary_copy_uuid_g( uuid, stringSession );
+   }
+   else
+   { 
+      uuid = gd::uuid( gd::types::tag_command_random{} );
+      stringSession = gd::binary_to_hex_g( uuid.data(), 16, false );
+   }
    
    CDocument* pdocument = GetDocument();
    
@@ -104,6 +121,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
    // ## return response with index for session added
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "index", uIndex } } );
+   if( m_argumentsParameter.exists("new") == true ) { parguments_->append("session", stringSession); }
    m_objects.Add( parguments_ );
    
    return { true, "" };
@@ -149,6 +167,11 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionCount()
 std::pair<bool, std::string> CAPISystem::Execute_SessionList()
 {
    CDocument* pdocument = GetDocument();
+   auto* psessions = pdocument->SESSION_Get();
+
+   gd::table::dto::table* ptable_ = new gd::table::dto::table();
+   psessions->Copy( *ptable_ );
+   m_objects.Add( ptable_ );
 
    // ## get list of sessions and place in in table object
    
