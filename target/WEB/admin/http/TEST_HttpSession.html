@@ -112,7 +112,7 @@
        * @param {HTMLElement|string} element_ - The element to make draggable
        * @param {Object} options - Configuration options
        * @param {boolean} options.bUseTransform - Use transform property instead of position
-       * @param {string} options.handleSelector - CSS selector for drag handle (optional)
+       * @param {string} options.sHandleSelector - CSS selector for drag handle (optional)
        * @param {HTMLElement} options.eHandle - CSS class for drag handle (optional)
        */
       constructor(element_, options = {}) {
@@ -124,8 +124,15 @@
             oElement = element_;
          }
 
+         // Generate unique ID for element
+         const sId = `element-${Math.random().toString(36).substr(2, 9)}`;
+         this.sId = sId;
+
          this.eElement = oElement;
-         this.oOptions = Object.assign({  bUseTransform: true, handleSelector: null }, options);
+         this.oOptions = Object.assign({  bUseTransform: true, sHandleSelector: null }, options);
+
+         const sDragging = this.oOptions.sClassDragging || 'dragging';
+         this.oOptions.oClass = Object.assign({  dragging: sDragging });
 
          this.bIsDragging = false;  // Initialize dragging state
          this.iInitialX = 0;        // Initialize initial X position
@@ -137,7 +144,7 @@
 
          // Initialize drag handle
          if( this.oOptions.eHandle ) { this.eDragHandle = this.oOptions.eHandle; }
-         else { this.eDragHandle = this.oOptions.handleSelector ? oElement.querySelector(this.oOptions.handleSelector) : oElement; }
+         else { this.eDragHandle = this.oOptions.sHandleSelector ? oElement.querySelector(this.oOptions.sHandleSelector) : oElement; }
 
          // Prevent scrolling on touch devices
          this.eDragHandle.style.touchAction = 'none';
@@ -153,6 +160,10 @@
 
          this.#initialize();
       }
+
+      // getter/setter for id
+      get id() { return this.sId; }
+      set id(id_) { this.sId = id_; }
 
       /** ------------------------------------------------------------------
        * Initialize event listeners
@@ -178,7 +189,8 @@
 
          if(e_.target === this.eDragHandle || this.eDragHandle.contains(e_.target)) {
             this.bIsDragging = true;
-            this.eElement.classList.add('dragging');
+            const sDragging = this.oOptions.oClass.dragging;
+            this.eElement.classList.add(sDragging);
          }
       }
 
@@ -206,7 +218,8 @@
          this.iInitialX = this.iCurrentX;
          this.iInitialY = this.iCurrentY;
          this.bIsDragging = false;
-         this.eElement.classList.remove('dragging');
+         const sDragging = this.oOptions.oClass.dragging;
+         this.eElement.classList.remove(sDragging);
       }
 
       /**
@@ -238,12 +251,8 @@
          });
       }
 
-      /** ------------------------------------------------------------------
-       * Handle touch end event
-       */
-      OnTouchEnd() {
-         this.OnMouseUp();
-      }
+      // Handle touch end event --------------------------------------------
+      OnTouchEnd() { this.OnMouseUp(); }
 
       /** ------------------------------------------------------------------
        * Set the element position
@@ -260,15 +269,18 @@
          }
       }
 
-      /** ------------------------------------------------------------------
-       * Reset the element position to 0,0
-       */
+      // Reset the element position to 0,0 ---------------------------------
       ResetPosition() {
          this.iCurrentX = 0;
          this.iCurrentY = 0;
          this.iXOffset = 0;
          this.iYOffset = 0;
          this.SetPosition(0, 0);
+      }
+
+      // Get the current position of the element ---------------------------
+      GetPosition() {
+         return { x: this.iCurrentX, y: this.iCurrentY };
       }
 
       /** ------------------------------------------------------------------
