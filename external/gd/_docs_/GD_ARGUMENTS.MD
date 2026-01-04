@@ -65,6 +65,7 @@ int main() {
     // 4. Modify existing (or add if missing)
     args["age"] = 31;                     // overwrites if exists
     args.set("level", 10);                // same as append if not found
+    args["old"] = 80;                     // overwrites if exists, adds if not found
 
     // 5. Iteration (C++17 structured binding!)
     for (auto [key, value] : args.named()) {

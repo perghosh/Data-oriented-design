@@ -4,7 +4,7 @@ This is a table of contents for all the documentation files in this repository.
 
 ## Core Documentation
 
-- [GD Arguments](GD_ARGUMENTS.MD)
+- [Arguments](GD_ARGUMENTS.MD)
 - [Shared Arguments](GD_ARGUMENTS_SHARED.MD)
 - [CLI Options](GD_CLI_OPTIONS.MD)
 - [GD Compiler](GD_COMPILER.MD)
@@ -16,7 +16,13 @@ This is a table of contents for all the documentation files in this repository.
 
 ## File Operations
 
-- [GD File](GD_FILE.MD)
+- [File](GD_FILE.MD)
+
+## Logger and log Operations
+
+- [Logger](GD_LOG_LOGGER.MD)
+- [Log](GD_LOG_LOGGER_DEFINE.MD)
+
 
 ## Table Documentation
 
