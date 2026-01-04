@@ -4,10 +4,14 @@ This is a table of contents for all the documentation files in this repository.
 
 ## Core Documentation
 
+- [gd Type System](GD_TYPES.MD)
 - [Arguments](GD_ARGUMENTS.MD)
 - [Shared Arguments](GD_ARGUMENTS_SHARED.MD)
+- [Compiler](GD_COMPILER.MD)
+
+## Command Line Documentation
+
 - [CLI Options](GD_CLI_OPTIONS.MD)
-- [GD Compiler](GD_COMPILER.MD)
 
 ## Database Documentation
 
@@ -23,7 +27,6 @@ This is a table of contents for all the documentation files in this repository.
 - [Logger](GD_LOG_LOGGER.MD)
 - [Log](GD_LOG_LOGGER_DEFINE.MD)
 
-
 ## Table Documentation
 
 - [Table Arguments](GD_TABLE_ARGUMENTS.MD)
@@ -38,7 +41,7 @@ This is a table of contents for all the documentation files in this repository.
 
 ## Variant Documentation
 
-- [GD Variant](GD_VARIANT.MD)
+- [Variant](GD_VARIANT.MD)
 - [Variant Arguments](GD_VARIANT_ARG.MD)
 - [Variant View](GD_VARIANT_VIEW.MD)
 
