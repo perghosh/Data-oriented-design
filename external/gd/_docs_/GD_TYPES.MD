@@ -135,63 +135,6 @@ constexpr enumType typenumber_to_type_g(unsigned uTypeNumber);
 std::vector<unsigned> types_g(unsigned uGroupFilter);
 ```
 
-## Special Utility Types
-
-### Character Name Type
-
-```cpp
-struct cname {
-   std::string_view m_stringCName;
-   // ... constructors and operators
-};
-
-// Literal operator for creating character names
-cname operator ""_ctype(const char* psz, size_t uLength);
-```
-
-### UUID Wrapper
-
-```cpp
-struct uuid {
-   uint8_t m_puData[16];
-   // ... methods for comparison and access
-};
-```
-
-### Binary Data Wrapper
-
-```cpp
-struct binary {
-   const uint8_t* m_puData;
-   size_t m_uLength;
-   // ... methods for comparison and access
-};
-```
-
-## Type Traits
-
-The header also provides type traits for STL containers:
-
-```cpp
-template<typename T>
-struct is_list : std::false_type {};
-
-template<typename T, typename Alloc>
-struct is_list<std::list<T, Alloc>> : std::true_type {};
-
-template<typename T>
-struct is_vector : std::false_type {};
-
-template<typename T, typename Alloc>
-struct is_vector<std::vector<T, Alloc>> : std::true_type {};
-
-template<typename T>
-struct is_variant : std::false_type {};
-
-template<typename... Types>
-struct is_variant<std::variant<Types...>> : std::true_type {};
-```
-
 ## Usage Examples
 
 ### Basic Type Operations
@@ -221,47 +164,6 @@ unsigned uTypeGroup = gd::types::detect_ctypegroup_g(stringText);
 if (uTypeGroup & gd::types::eTypeGroupNumber) {
    // Text represents a number
 }
-```
-
-### Tag-Based Method Overloading
-
-```cpp
-// Using tag dispatchers for compile-time method selection
-template<typename T>
-void process_value(const T& value, gd::types::tag_type_integer) {
-   // Integer-specific processing
-}
-
-template<typename T>
-void process_value(const T& value, gd::types::tag_type_decimal) {
-   // Decimal-specific processing
-}
-
-template<typename T>
-void process_value(const T& value) {
-   if constexpr (gd::types::is_integer(gd::types::type_g<T>())) {
-      process_value(value, gd::types::tag_type_integer{});
-   } else if constexpr (gd::types::is_decimal(gd::types::type_g<T>())) {
-      process_value(value, gd::types::tag_type_decimal{});
-   }
-   // ... handle other types
-}
-```
-
-## Alignment Support
-
-The system also provides alignment helpers:
-
-```cpp
-enum enumAlign {
-   enumAlignLeft = 0x0001,
-   enumAlignRight = 0x0002,
-   enumAlignCenter = 0x0004,
-   // ... other alignment options
-};
-
-// Get default alignment for a type
-unsigned align_g(unsigned uType);
 ```
 
 ## Summary
