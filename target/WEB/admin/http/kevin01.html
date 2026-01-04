@@ -122,7 +122,7 @@
                 aTable = [table_];
             }   
 
-            table_.forEach(aRow => {
+            aTable.forEach(aRow => {
                 const eRow = document.createElement("tr");
                 this.eParent.appendChild(eRow);
 
@@ -132,6 +132,43 @@
                     eRow.appendChild(eCell);
                 });
             });
+        }
+
+        /**
+         * Deletes one or more rows from the parent table.
+         *
+         * @param {number} iStart - Index of the first row to delete
+         * @param {number} [iEnd] - Index of the last row to delete
+         *                         (rows are removed from iStart up to iEnd)
+         */
+        Delete(iStart, iEnd)
+        {
+            let eTable = this.eParent;
+
+            if(!iEnd || iEnd < iStart)
+            {
+                if(iStart >= 0 && iStart < eTable.rows.length)
+                {
+                    eTable.rows[iStart].remove();    
+                }  
+            }
+            else if(iStart >= 0 && iEnd < eTable.rows.length)
+            {
+                for(let i = iEnd; i >= iStart; i--)
+                {
+                    eTable.rows[i].remove(); 
+                }
+            }
+        }
+
+        Insert(iPosition, table_, sSeperator)
+        {
+            let eTable = this.eParent;
+
+            for(let i = eTable.rows.length; i > iPosition; i--)
+            {
+                
+            } 
         }
     }
 
@@ -262,15 +299,16 @@
         const table = new Table("#idTable");
         const aTableData = [
             ["Cell1", "Cell2", "Cell3", "Cell4"],
-            ["Cell1", "Cell2", "Cell3", "Cell4"],
-            ["Cell1", "Cell2", "Cell3", "Cell4"]
+            ["Test1", "Test2", "Test3", "Test4"],
+            ["Apple1", "Apple2", "Apple3", "Apple4"]
         ];
 
-        const aTableData2 = ["Cell1", "Cell2", "Cell3", "Cell4"];
+        const aTableData2 = ["Banana1", "Banana2", "Banana3", "Banana4"];
 
 
         table.Add(aTableData);
         table.Add(aTableData2);
+        table.Delete(2)
 
 
         aContainers.forEach((eContainer) => {
