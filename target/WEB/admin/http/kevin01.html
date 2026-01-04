@@ -80,21 +80,57 @@
 
     class Table
     {
-        constructor(element_)
+        constructor(parent_)
         {
-            this.eElement = document.querySelector(element_);
+            let oParent;
+            if( typeof parent_ === "string" )
+            {
+                oParent = document.querySelector(parent_);
+                if(!oParent) document.getElementById(parent_);
+            }
+            else
+            {
+                oParent = parent_; 
+            }
+            this.eParent = oParent;
         }
-
-        AddRow(aData) 
+    
+        /** -------------------------------------------------------------------
+         * Adds data to the table.
+         *
+         * Accepts input in multiple formats:
+         * - String → split into cells using a separator and added as a single row
+         * - 1D array → treated as a single row
+         * - 2D array → treated as multiple rows
+         *
+         * @param {string | Array} table_
+         *   - String: "a,b,c"
+         *   - 1D array: ["a", "b", "c"]
+         *   - 2D array: [["a", "b"], ["c", "d"]]
+         * @param {string} [sSeperator=","] Character used to split string input
+         */
+        Add(table_, sSeperator) 
         {
-            const eRow = document.createElement("tr");
+            let aTable = table_;
+            if(typeof table_ === "string")
+            {
+                if(!sSeperator) {sSeperator = ","}
+                aTable = [table_.split(sSeperator)];
+            }
+            else if(Array.isArray(table_) && table_.every(Array.isArray) == false)
+            {
+                aTable = [table_];
+            }   
 
-            this.eElement.appendChild(eRow);
+            table_.forEach(aRow => {
+                const eRow = document.createElement("tr");
+                this.eParent.appendChild(eRow);
 
-            aData.forEach(data_ => {
-                let eCell = document.createElement("td");
-                eCell.textContent = data_;
-                eRow.appendChild(eCell);
+                aRow.forEach(cell_ => {
+                    let eCell = document.createElement("td");
+                    eCell.textContent = cell_;
+                    eRow.appendChild(eCell);
+                });
             });
         }
     }
@@ -224,10 +260,18 @@
         UpdateSelect(document.querySelector("#idSelect"), "data", aData);
 
         const table = new Table("#idTable");
-        const aTableData = ["Cell1", "Cell2", "Cell3", "Cell4"];
+        const aTableData = [
+            ["Cell1", "Cell2", "Cell3", "Cell4"],
+            ["Cell1", "Cell2", "Cell3", "Cell4"],
+            ["Cell1", "Cell2", "Cell3", "Cell4"]
+        ];
+
+        const aTableData2 = ["Cell1", "Cell2", "Cell3", "Cell4"];
 
 
-        table.AddRow(aTableData);
+        table.Add(aTableData);
+        table.Add(aTableData2);
+
 
         aContainers.forEach((eContainer) => {
             //GlobalEventListener("click", "button", () => ChangeLabel(eContainer), eContainer);
