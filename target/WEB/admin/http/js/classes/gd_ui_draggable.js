@@ -39,15 +39,15 @@ class UIDraggable {
 
       // Apply options with defaults
       this.oOptions = Object.assign({
-         bUseTransform: true,
-         sHandleSelector: null,
-         eHandle: null,
-         oBounds: null,
-         bSnapToGrid: false,
-         iGridSize: 10,
-         fnOnDragStart: null,
-         fnOnDragMove: null,
-         fnOnDragEnd: null
+         bUseTransform: true,  // Use CSS transforms for positioning
+         sHandleSelector: null,// Use element itself as handle
+         eHandle: null,        // If set this element is used as drag handle
+         oBounds: null,        // If set this element is used as bounds
+         bSnapToGrid: false,   // Snap to grid
+         iGridSize: 10,        // Grid size for snapping
+         fnOnDragStart: null,  // Callback when drag starts
+         fnOnDragMove: null,   // Callback when drag moves
+         fnOnDragEnd: null     // Callback when drag ends
       }, oOptions_);
 
       // ## Initialize bounds padding if not provided
@@ -75,14 +75,22 @@ class UIDraggable {
          cursor: this.eDragHandle.style.cursor
       };
 
-      // Initialize state
+
+      // ## We read the computed style to see if 'top' or 'left' are already set.
+      const oComputed = window.getComputedStyle(this.eElement);
+      const iInitialTop = parseFloat(oComputed.top) || 0;
+      const iInitialLeft = parseFloat(oComputed.left) || 0;
+
       this.bIsDragging = false;
       this.iInitialX = 0;
       this.iInitialY = 0;
-      this.iCurrentX = 0;
-      this.iCurrentY = 0;
-      this.iXOffset = 0;
-      this.iYOffset = 0;
+
+      // We set the current position to the CSS values so the first drag
+      // starts from where the element actually is.
+      this.iCurrentX = iInitialLeft;
+      this.iCurrentY = iInitialTop;
+      this.iXOffset = iInitialLeft;
+      this.iYOffset = iInitialTop;
 
       // Store dragging styles for inline application
       this.oDraggingStyles = {
@@ -97,9 +105,11 @@ class UIDraggable {
       this.oOriginalElementStyle = {
          cursor: this.eElement.style.cursor || '',
          opacity: this.eElement.style.opacity || '',
-         position: this.eElement.style.position || '',
+         position: this.eElement.style.position || oComputed.position,
          transition: this.eElement.style.transition || '',
-         zIndex: this.eElement.style.zIndex || ''
+         zIndex: this.eElement.style.zIndex || '',
+         top: this.eElement.style.top || '',
+         left: this.eElement.style.left || ''
       };
 
       // Store bound handlers for proper removal
@@ -110,6 +120,9 @@ class UIDraggable {
       };
 
       this._initialize();
+
+      // This prevents the element from "jumping" back to 0,0 if transforms are enabled
+      if(this.oOptions.bUseTransform === true) { this._set_position(this.iCurrentX, this.iCurrentY); }
    }
 
    // Getter/setter for id
@@ -227,11 +240,22 @@ class UIDraggable {
     * Handle pointer up (mouse/touch end)
     */
    _on_pointer_up() {
-      if( !this.bIsDragging ) return;
+      if( !this.bIsDragging ) return;                                         // Return early if not dragging
 
       this.bIsDragging = false;
-      this.iInitialX = this.iCurrentX;
-      this.iInitialY = this.iCurrentY;
+      this.iInitialX = this.iCurrentX;                                        // Initialize initial position
+      this.iInitialY = this.iCurrentY;                                        // Initialize initial position
+
+      // ## before we apply them back. This prevents the "snap back". It should stay at the current position
+      if(this.oOptions.bUseTransform) {
+         this.oOriginalElementStyle.top = '0px';
+         this.oOriginalElementStyle.left = '0px';
+         this.oOriginalElementStyle.transform = `translate3d(${this.iCurrentX}px, ${this.iCurrentY}px, 0)`;
+      }
+      else {
+         this.oOriginalElementStyle.top = `${this.iCurrentY}px`;
+         this.oOriginalElementStyle.left = `${this.iCurrentX}px`;
+      }
 
       // Restore original element styles
       Object.assign(this.eElement.style, this.oOriginalElementStyle);
@@ -300,10 +324,14 @@ class UIDraggable {
    _set_position(iX, iY) {
       const oStyle = this.eElement.style;
       if( this.oOptions.bUseTransform ) {
+         // If we use transform, we should ideally set top/left to 0 so they don't
+         // stack with the transform, OR we calculate the transform as a delta.
+         // To keep it simple and clean, we set the actual styles to 0.
+         oStyle.left = '0px';
+         oStyle.top = '0px';
          oStyle.transform = `translate3d(${iX}px, ${iY}px, 0)`;
       }
       else {
-         oStyle.position = 'absolute';
          oStyle.left = `${iX}px`;
          oStyle.top = `${iY}px`;
       }
