@@ -3,7 +3,7 @@
 GD (general development) are code that are used to work with primitive and common derived values.
 Only dependencies are C++20 and the standard library.
 
-## Core Documentation
+## Core dependency for gd code
 
 Core constants for gd type system, enables components to "talk" to each other.
 
@@ -22,7 +22,7 @@ Variants are a powerful data type that can hold any value, including other varia
 
 Pack primitive and common derived values into a byte buffer for efficient storage and access with focus on memory size. Like key-value pairs in one single buffer.
 
-- [Arguments](GD_ARGUMENTS.MD) - *Ultra-compact, stack-friendly key-value buffer with minimal overhead*
+- [Arguments](GD_ARGUMENTS.MD) - *Compact, stack-friendly key-value buffer with minimal overhead*
 - [Shared Arguments](GD_ARGUMENTS_SHARED.MD) - *Reference-counted argument buffer with copy-on-write semantics*
 
 ## Table Documentation
