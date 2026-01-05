@@ -8,7 +8,7 @@
  */
 class UIDraggable {
    /**
-    * @param {HTMLElement|string} eElement_ - The element to make draggable
+    * @param {HTMLElement|string} element_ - The element to make draggable
     * @param {Object} oOptions_ - Configuration options
     * @param {boolean} [oOptions_.bUseTransform=true] - Use transform property instead of position
     * @param {string} [oOptions_.sHandleSelector=null] - CSS selector for drag handle
@@ -22,13 +22,13 @@ class UIDraggable {
     * @param {Function} [oOptions_.fnOnDragMove] - Callback during dragging
     * @param {Function} [oOptions_.fnOnDragEnd] - Callback when dragging ends
     */
-   constructor(eElement_, oOptions_ = {}) {
+   constructor(element_, oOptions_ = {}) {
       let eElement;
-      if( typeof eElement_ === "string" ) {
-         eElement = document.querySelector(eElement_);
-         if( !eElement ) eElement = document.getElementById(eElement_);
+      if( typeof element_ === "string" ) {
+         eElement = document.querySelector(element_);
+         if( !eElement ) eElement = document.getElementById(element_);
       } else {
-         eElement = eElement_;
+         eElement = element_;
       }
 
       if( !eElement ) { throw new Error('UIDraggable: Element not found'); }
@@ -50,12 +50,12 @@ class UIDraggable {
          fnOnDragEnd: null
       }, oOptions_);
 
-      // Initialize bounds padding if not provided
+      // ## Initialize bounds padding if not provided
       if( this.oOptions.oBounds && !this.oOptions.oBounds.oPadding ) {
          this.oOptions.oBounds.oPadding = { top: 0, right: 0, bottom: 0, left: 0 };
       }
 
-      // Initialize drag handle
+      // ## Initialize drag handle
       if( this.oOptions.eHandle ) {
          this.eDragHandle = this.oOptions.eHandle;
       }
@@ -134,6 +134,8 @@ class UIDraggable {
    /** -----------------------------------------------------------------------
     * Handle pointer down (mouse/touch start)
     * @param {MouseEvent|TouchEvent} eEvent_ - The event object
+    *
+    * @TODO: Handle filtering based on what is pressed to not trigger the move operation
     */
    _on_pointer_down(eEvent_) {
       // Only handle if target is drag handle or a child of it
@@ -262,10 +264,13 @@ class UIDraggable {
          const oBoundsRect = oBounds.eElement.getBoundingClientRect();
          const oElementRect = this.eElement.getBoundingClientRect();
 
+         const iWidth = oElementRect.width;
+         const iHeight = oElementRect.height;
+
          const iMinX = oBoundsRect.left + oPadding.left;
-         const iMaxX = oBoundsRect.right - oElementRect.width - oPadding.right;
+         const iMaxX = oBoundsRect.right - iWidth - oPadding.right;
          const iMinY = oBoundsRect.top + oPadding.top;
-         const iMaxY = oBoundsRect.bottom - oElementRect.height - oPadding.bottom;
+         const iMaxY = oBoundsRect.bottom - iHeight - oPadding.bottom;
 
          // Convert to relative coordinates
          const oParentRect = this.eElement.parentElement.getBoundingClientRect();

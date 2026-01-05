@@ -8,20 +8,112 @@
    <script src="js/classes/gd_ui_draggable.js"></script>
    <title>Test session logic in http web server</title>
    <style>
-      body { background-color: var(--bs-body-bg); color: var(--bs-body-color); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; line-height: 1.5; margin: 0; padding: 20px; }
+      html { height: 100%; margin: 0; overflow: hidden; padding: 0; }
+      body { background-color: var(--bs-body-bg); box-sizing: border-box; color: var(--bs-body-color); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; line-height: 1.5; margin: 0; min-height: 100%; overflow: hidden; padding: 0px; }
+
+      /* ## page classes to style the complete page */
+      .page-800 { display: block; margin: 0 auto; width: 800px; }
+      .page-1000 { display: block; height: 100%; margin: 0 auto; width: 1000px; }
+
+      .button-normal { background-color: var(--background-primary); border-radius: 4px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; }
+      .caption { background-color: var(--background-secondary); border-radius: 4px; font-weight: bold; margin-bottom: 10px; padding: 8px 16px;      }
+
+      #idPage { display: grid; grid-template-rows: auto 1fr;  height: 100vh; margin: 0 auto; overflow: hidden; width: 1400px; }
+
+      /* Add your CSS styles here */
+      .container-form { container-type: inline-size; }
+
+      .container-form input,
+      .container-form textarea,
+      .container-form select {border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: inherit; padding: 8px 12px;}
+
+      .container-form .row { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; }
+      .container-form .row:last-child { margin-bottom: 0; } /* to align last item to bottom */
+
+      .container-form .fill {flex: 1;} /* makes select fill available width */
+      .container-form .half { flex: 1; max-width: 50%; }
+      .container-form .third { flex: 1; max-width: 33.33%; }
+      .container-form .quarter { flex: 1; max-width: 25%; }
+
+      .container-form .right { justify-content: flex-end; }
+
       </style>
-      <script>
-      </script>
    </head>
    <body>
-      <h1>HTTP Session Test Page</h1>
-      <div id="draggable" style="display: inline-block;" >
-         <p>This is a draggable element.</p>
+      <div id="idPage">
+         <div>
+            <h1>HTTP Session Test Page</h1>
+         </div>
+
+         <div id="idWorkArea" style="border: 1px solid black; position: relative;">
+
+            <div class="container-form" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 0px; left: 0px; padding: 5px; width: 800px;" >
+               <div class="caption row handle" data-draggable-handle="1">Command: Endpoint information</div>
+               <form data-element="container">
+                  <div class="row">
+                     <input type="text" class="fill" data-field="alias" placeholder="Alias name for command" />
+                  </div>
+                  <div class="row">
+                     <textarea class="fill" rows="3" data-field="endpoint" placeholder="Endpoint URL"></textarea>
+                  </div>
+                  <div class="row">
+                     <textarea class="fill" rows="2" data-field="description" placeholder="Endpoint description"></textarea>
+                  </div>
+                  <div class="row right">
+                     <span class="button-normal" data-action="send" >Send</span>
+                     <span class="button-normal" data-action="save" >Save</span>
+                  </div>
+               </form>
+            </div>
+
+         </div>
       </div>
+
       <script>
-         document.addEventListener('DOMContentLoaded', function() {
-            new UIDraggable(document.getElementById('draggable'));
+      // Make oDocument a global variable
+      let oDocument_g;
+
+
+      class CDocument {
+         constructor() {
+            this.aObject = [];
+         }
+
+         add( sType, oObject) {
+            this.aObject.push({ type: sType, object: oObject });
+         }
+
+         /// Returns all objects for type in array
+         get_all( sType) {
+            return this.aObject.filter(o => o.type === sType);
+         }
+      }
+
+      function InitializePage() {
+         const eWorkArea = document.getElementById('idWorkArea');
+
+         const oOptions = {
+            oBounds: {
+               eElement: eWorkArea,
+               oPadding: { top: 20, right: 20, bottom: 20, left: 20 }
+            }
+         };
+
+         const aDraggable = document.querySelectorAll('[data-draggable]');
+         aDraggable.forEach(function(eElement) {
+            let eHandle = eElement.querySelector("[data-draggable-handle]");
+            oOptions.eHandle = eHandle;
+            const oDraggable = new UIDraggable(eElement, oOptions);
+            oDocument_g.add('draggable', oDraggable);
          });
+      }
+
+      // Initialize draggable element
+      document.addEventListener('DOMContentLoaded', function() {
+         oDocument_g = new CDocument();
+         InitializePage();
+      });
+
       </script>
    </body>
    </html>
