@@ -43,6 +43,12 @@
       <div id="idPage">
          <div>
             <h1>HTTP Session Test Page</h1>
+            <div id="idServer" class="container-form">
+               <div class="row">
+                  <input class="fill" data-field="address" placeholder="Address to server" />
+                  <input class="quarter" data-field="port" placeholder="port number" />
+               </div>
+            </div>
          </div>
 
          <div id="idWorkArea" style="border: 1px solid black; position: relative;">
@@ -79,17 +85,51 @@
             this.aObject = [];
          }
 
-         add( sType, oObject) {
+         /// Add object to document
+         Add( sType, oObject) {
             this.aObject.push({ type: sType, object: oObject });
          }
 
+         //// Get first object by type
+         Get( sType ) {
+            return this.aObject.find(o => o.type === sType);
+         }
+
          /// Returns all objects for type in array
-         get_all( sType) {
+         GetAll( sType) {
             return this.aObject.filter(o => o.type === sType);
          }
       }
 
-      function InitializePage() {
+      /** ---------------------------------------------------------------------
+       * Update fields in container with values from object
+       */
+      function PAGE_UpdateFields( container_, oValue  ) {
+         let eContainer = container_;
+         if( typeof container_ === 'string') { eContainer = document.getElementById(container_); }
+         if( typeof oValue === 'object') {
+            for( let sKey in oValue) {
+               let eElement = eContainer.querySelector(`[data-field="${sKey}"]`);
+               if( eElement) {
+                  eElement.value = oValue[sKey];
+               }
+            }
+         }
+      }
+
+      function PAGE_Update(source_) {
+         // check if source_ is instance of CDocument
+         if ((source_ instanceof CDocument) === true) {
+            // ## Update html elements from document
+
+            // address and port
+            const oServer = source_.Get('server');
+            PAGE_UpdateFields('idAddress', oServer);
+         }
+      }
+
+
+      function PAGE_Initialize() {
          const eWorkArea = document.getElementById('idWorkArea');
 
          const oOptions = {
@@ -111,7 +151,8 @@
       // Initialize draggable element
       document.addEventListener('DOMContentLoaded', function() {
          oDocument_g = new CDocument();
-         InitializePage();
+         oDocument_g.Add("server", {address: "http://localhost", port: "8001"} )
+         PAGE_Initialize();
       });
 
       </script>
