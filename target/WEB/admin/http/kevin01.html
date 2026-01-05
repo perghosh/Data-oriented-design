@@ -164,11 +164,22 @@
         Insert(iPosition, table_, sSeperator)
         {
             let eTable = this.eParent;
+            let aTable = [];
 
-            for(let i = eTable.rows.length; i > iPosition; i--)
+            for(let i = iPosition; i < eTable.rows.length; i++)
             {
-                
+                let aRow = eTable.rows[i];
+                let aRowData = [];
+                for(let i2 = 0; i2 < aRow.cells.length; i2++)
+                {
+                    aRowData.push(aRow.cells[i2].innerText);
+                }
+                aTable.push(aRowData);
             } 
+
+            this.Delete(iPosition, eTable.rows.length - 1);
+            this.Add(table_, sSeperator);
+            this.Add(aTable);
         }
     }
 
@@ -307,8 +318,8 @@
 
 
         table.Add(aTableData);
-        table.Add(aTableData2);
-        table.Delete(2)
+        table.Insert(0, aTableData2);
+        //table.Delete(2)
 
 
         aContainers.forEach((eContainer) => {
