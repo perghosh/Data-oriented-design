@@ -39,7 +39,7 @@ enum enumTransaction
  \endcode
  */
 
-struct cursor_i : public unknown_i
+struct cursor_i : public com::unknown_i
 {
 
 /** \name OVERLOAD
@@ -83,7 +83,7 @@ constexpr COMPONENT_GUID COMPONENT_CURSOR = { 0x98e01e5f, 0x8e7, 0x47d3, { 0xb0,
  \code
  \endcode
  */
-struct database_i : public unknown_i
+struct database_i : public com::unknown_i
 {
 
 /** \name OVERLOAD

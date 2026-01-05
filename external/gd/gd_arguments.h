@@ -511,6 +511,8 @@ public:
 
       void*        get_raw_pointer() const { return m_unionValue.p; }            ///< return raw pointer to value
       void*        get_value_buffer() const { return (void*)&m_unionValue; }     ///< return address pointer to value
+      template<typename TYPE>
+      TYPE* get_pointer() const { assert( type_number() == arguments::eTypeNumberPointer ); return static_cast<TYPE*>( m_unionValue.p ); } ///< get pointer to specified type
 
       /// get value as specified type, this is used to get value from argument
       template<typename TYPE> TYPE get() const;
@@ -552,8 +554,41 @@ public:
    struct argument_forwarder
    {
       const DERIVED& derived() const { return static_cast<const DERIVED&>(*this); }
+
+      // ## Forward all methods found in argument class
    
-      // Forward all const methods that don't modify state
+      operator bool() const { return derived().get_argument().operator bool(); }
+      operator int8_t() const { return derived().get_argument().operator int8_t(); }
+      operator uint8_t() const { return derived().get_argument().operator uint8_t(); }
+      operator int16_t() const { return derived().get_argument().operator int16_t(); }
+      operator uint16_t() const { return derived().get_argument().operator uint16_t(); }
+      operator int32_t() const { return derived().get_argument().operator int32_t(); }
+      operator uint32_t() const { return derived().get_argument().operator uint32_t(); }
+      operator int64_t() const { return derived().get_argument().operator int64_t(); }
+      operator uint64_t() const { return derived().get_argument().operator uint64_t(); }
+      operator double() const { return derived().get_argument().operator double(); }
+      operator const char*() const { return derived().get_argument().operator const char*(); }
+      operator const uint8_t*() const { return derived().get_argument().operator const uint8_t*(); }
+      operator const wchar_t*() const { return derived().get_argument().operator const wchar_t*(); }
+      operator std::string() const { return derived().get_argument().operator std::string(); }
+      operator std::wstring() const { return derived().get_argument().operator std::wstring(); }
+      operator void*() const { return derived().get_argument().operator void*(); }
+   
+      operator variant() const { return derived().get_argument().operator variant(); }
+      operator variant_view() const { return derived().get_argument().operator variant_view(); }
+   
+      // Stream operators
+      const argument_forwarder& operator>>(bool& v) const { derived().get_argument() >> v; return *this; }
+      const argument_forwarder& operator>>(int32_t& v) const { derived().get_argument() >> v; return *this; }
+      const argument_forwarder& operator>>(int64_t& v) const { derived().get_argument() >> v; return *this; }
+      const argument_forwarder& operator>>(uint32_t& v) const { derived().get_argument() >> v; return *this; }
+      const argument_forwarder& operator>>(uint64_t& v) const { derived().get_argument() >> v; return *this; }
+      const argument_forwarder& operator>>(std::string& v) const { derived().get_argument() >> v; return *this; }
+   
+      // Negation operator
+      bool operator!() const { return derived().get_argument().operator!(); }   
+      
+
       bool is_null() const { return derived().get_argument().is_null(); }
       bool is_bool() const { return derived().get_argument().is_bool(); }
       bool is_int32() const { return derived().get_argument().is_int32(); }
@@ -596,6 +631,9 @@ public:
       gd::variant get_variant() const { return derived().get_argument().get_variant(); }
       gd::variant_view get_variant_view() const { return derived().get_argument().get_variant_view(); }
       std::string_view get_string_view() const { return derived().get_argument().get_string_view(); }
+
+      template<typename TYPE>
+      TYPE* get_pointer() const { return derived().get_argument().template get_pointer<TYPE>(); }
    
       std::string to_string() const { return derived().get_argument().to_string(); }
       std::string to_utf8() const { return derived().get_argument().to_ut8(); }
@@ -998,6 +1036,8 @@ public:
    arguments& append(const std::string_view& stringName, const char8_t* v) { return append( stringName, (eTypeNumberUtf8String | eValueLength), (const_pointer)v, (unsigned int)strlen( (const char*)v ) + 1); }
    arguments& append(const std::string_view& stringName, const char8_t* v, unsigned uLength) { return append( stringName, (eTypeNumberUtf8String | eValueLength), (const_pointer)v, uLength + 1); }
 #endif
+   arguments& append(const std::string_view& stringName, void* v) { return append(stringName, (eTypeNumberPointer), (const_pointer)&v, sizeof(void*)); }
+
    arguments& append(const std::string_view& stringName, param_type uType, const_pointer pBuffer, unsigned int uLength) { return append(stringName.data(), (uint32_t)stringName.length(), uType, pBuffer, uLength); }
    arguments& append(const char* pbszName, uint32_t uNameLength, param_type uType, const_pointer pBuffer, unsigned int uLength);
    template<typename POINTER>

@@ -104,6 +104,16 @@ arguments args4 = {
     {"debug", variant_view(true)}
 };
 ```
+#### Accessing Pointer Types
+
+```cpp
+   std::string* pstring1 = new std::string( "sample on how to use pointers");
+   gd::argument::arguments args;
+   args["string"] = pstring1;
+   std::string* pstring2 = args["string"].get_pointer<std::string>();
+   assert( *pstring2 == "sample on how to use pointers" );
+   delete pstring2;
+```
 
 #### When to Use `arguments`
 

@@ -6,13 +6,11 @@
 #include "gd_uuid.h"
 
 #ifndef _GD_BEGIN
-#define _GD_BEGIN namespace gd { 
-#define _GD_END } 
-_GD_BEGIN
-#else
-_GD_BEGIN
+#define _GD_BEGIN namespace gd {
+#define _GD_END }
 #endif
 
+_GD_BEGIN
 
 namespace com {
    struct guid { uint32_t u1; uint16_t u2; uint16_t u3; uint8_t  pu4[8]; };
@@ -223,11 +221,11 @@ namespace com {
       return new pointer_impl<TYPE>(pPointer, pQueryFunc, pDeleteFunc);
    }
 
- };
- 
- using COMPONENT_GUID = guid;
-
-
 } // namespace com
+ 
+ using COMPONENT_GUID = com::guid;
+
+
+
 
 _GD_END
