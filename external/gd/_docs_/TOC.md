@@ -3,6 +3,9 @@
 GD (general development) are code that are used to work with primitive and common derived values.
 Only dependencies are C++20 and the standard library.
 
+Why GD code?
+GD code is designed to provide **runtime** support for efficient and flexible data handling and make code safer. Code checks it's correctness at runtime, ensuring that data is handled correctly and safely.
+
 ## Core dependency for gd code
 
 Core constants for gd type system, enables components to "talk" to each other.
