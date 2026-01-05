@@ -21,6 +21,25 @@
 
 TEST_CASE( "[uri] arguments", "[uri]" ) {
    {
+      std::string* pstring1 = new std::string( "sample on how to use pointers");
+      gd::argument::arguments arguments_;
+      arguments_["string"] = pstring1;
+      std::string* pstring2 = arguments_["string"].get_pointer<std::string>();
+      REQUIRE( *pstring2 == "sample on how to use pointers" );
+      delete pstring2;
+   }
+
+   {
+      std::string* pstring1 = new std::string( "sample on how to use pointers");
+      gd::argument::shared::arguments arguments_;
+      arguments_["string"] = pstring1;
+      std::string* pstring2 = arguments_["string"].get_pointer<std::string>();
+      REQUIRE( *pstring2 == "sample on how to use pointers" );
+      delete pstring2;
+   }
+
+
+   {
       std::vector<std::byte> vector_; // vector to hold data for arguments
       vector_.resize( 256 );
       gd::argument::arguments arguments_( vector_ );
