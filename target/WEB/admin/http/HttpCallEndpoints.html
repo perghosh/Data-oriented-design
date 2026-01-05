@@ -53,7 +53,8 @@
 
          <div id="idWorkArea" style="border: 1px solid black; position: relative;">
 
-            <div class="container-form" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 0px; left: 0px; padding: 5px; width: 800px;" >
+            <!-- Section used to display endpoint information and commands to save and send -->
+            <div id="idCommands" class="container-form" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 20px; left: 20px; padding: 5px; width: 800px;" >
                <div class="caption row handle" data-draggable-handle="1">Command: Endpoint information</div>
                <form data-element="container">
                   <div class="row">
@@ -68,6 +69,26 @@
                   <div class="row right">
                      <span class="button-normal" data-action="send" >Send</span>
                      <span class="button-normal" data-action="save" >Save</span>
+                  </div>
+               </form>
+            </div>
+
+            <!-- Section used to display server response -->
+            <div id="idResult"  class="container-form" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 500px; left: 100px; padding: 5px; width: 800px;" >
+               <div class="caption row handle" data-draggable-handle="1">Command: Server response</div>
+               <form data-element="container">
+                  <div class="row">
+                     <textarea class="fill" rows="3" data-field="response" placeholder="Server response"></textarea>
+                  </div>
+               </form>
+            </div>
+
+            <!-- Section used to display history of saved command/endpoints -->
+            <div id="idHistory"  class="container-form" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; width: 800px;" >
+               <div class="caption row handle" data-draggable-handle="1">Command: History</div>
+               <form data-element="container">
+                  <div class="row">
+                     <textarea class="fill" rows="3" data-field="history" placeholder="History"></textarea>
                   </div>
                </form>
             </div>
@@ -95,7 +116,7 @@
             return this.aObject.find(o => o.type === sType);
          }
 
-         /// Return object item from entry -----------------------------------        
+         /// Return object item from entry -----------------------------------
          GetObject( sType ) {
             const oEntry = this.Get( sType );
             return oEntry.object;
@@ -105,7 +126,7 @@
          GetAll( sType) {
             return this.aObject.filter(o => o.type === sType);
          }
-         
+
          /// Save the entire aObject array to localStorage -------------------
          Save() {
             try {
@@ -129,32 +150,28 @@
             return false;                                                     // no data or failed
          }
       }
-      
+
       /**
        * Send arguments to server,
        * @param {string} sEndpoint´- endpoint with arguments added after generated domain name
        * @param {string} [sBody] - optional body sent to server
        */
        function SERVER_Send( sEndpoint, sBody ) {
-         // Get the server information container
-         const eServerContainer = document.getElementById('idServer');
-         
-         // Extract address and port from data-fields
-         const eAddress = eServerContainer.querySelector('[data-field="address"]');
-         const ePort = eServerContainer.querySelector('[data-field="port"]');
-         
-         if (!eAddress || !ePort) { console.error('Server address or port field not found'); return; }
-         
-         // Get values
+         const eServerContainer = document.getElementById('idServer');         // Get the server information container
+
+         const eAddress = eServerContainer.querySelector('[data-field="address"]'); // address (domain)
+         const ePort = eServerContainer.querySelector('[data-field="port"]'); // port
+
+         if (!eAddress) { console.error('Server address field not found'); return; }
+
          const sAddress = eAddress.value.trim();
          const sPort = ePort.value.trim();
-         
-         // Validate that we have the required values
-         if (!sAddress) { console.error('Server address is required'); return; }
-         
+
+         if (!sAddress) { console.error('Server address is required'); return; } // Validate that we have the required values
+
          // Build the base URL
          let sBaseUrl = sAddress;
-         
+
          // Add port if provided (and not already included in address)
          if(sPort) {
            // Check if address already has a port (contains : followed by numbers)
@@ -165,18 +182,18 @@
              sBaseUrl += ':' + sPort;
            }
          }
-         
+
          // Ensure base URL ends with slash for proper endpoint concatenation
          if (!sBaseUrl.endsWith('/')) { sBaseUrl += '/'; }
-         
+
          // Remove leading slash from endpoint if present (to avoid double slashes)
          const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint;
-         
+
          // Build the complete URL
          const sFullUrl = sBaseUrl + sCleanEndpoint;
-         
+
          console.log('Sending request to:', sFullUrl);
-         
+
          // Prepare fetch options
          const oOptions = {
            method: 'GET', // Default method
@@ -184,13 +201,13 @@
              'Content-Type': 'application/xml',
            }
          };
-         
+
          // If body is provided, use POST method and add body
          if (sBody !== undefined) {
            oOptions.method = 'POST';
            oOptions.body = JSON.stringify(sBody);
          }
-         
+
          // Send the request
          fetch(sFullUrl, oOptions)
            .then(response => {
@@ -201,12 +218,12 @@
              console.log('Response received:', data);
              return data;
            })
-           .catch(error => { 
+           .catch(error => {
              console.error('Error sending request:', error);
              // You could add error handling UI here
            });
        }
-       
+
       /** ---------------------------------------------------------------------
        * Update fields in container with values from object
        */
