@@ -85,27 +85,128 @@
             this.aObject = [];
          }
 
-         /// Add object to document
+         /// Add object to document ------------------------------------------
          Add( sType, oObject) {
             this.aObject.push({ type: sType, object: oObject });
          }
 
-         //// Get first object by type
+         /// Get first object by type ----------------------------------------
          Get( sType ) {
             return this.aObject.find(o => o.type === sType);
          }
-         
+
+         /// Return object item from entry -----------------------------------        
          GetObject( sType ) {
             const oEntry = this.Get( sType );
             return oEntry.object;
          }
 
-         /// Returns all objects for type in array
+         /// Returns all objects for type in array ---------------------------
          GetAll( sType) {
             return this.aObject.filter(o => o.type === sType);
          }
-      }
+         
+         /// Save the entire aObject array to localStorage -------------------
+         Save() {
+            try {
+               const sObjectData = JSON.stringify(this.aObject);
+               localStorage.setItem('document', sObjectData);
+            } catch (e) { console.error('Failed to save to localStorage:', e); }
+         }
 
+         /// Load the aObject array from localStorage (if exists) ------------
+         Load() {
+            try {
+               const sObjectData = localStorage.getItem('document');
+               if(sObjectData) {
+                  const aObject = JSON.parse(sObjectData);
+                  if( Array.isArray(aLoaded) ) {
+                     this.aObject = aObject;
+                     return true;                                             // success
+                  }
+               }
+            } catch (e) { console.error('Failed to load from localStorage:', e); }
+            return false;                                                     // no data or failed
+         }
+      }
+      
+      /**
+       * Send arguments to server,
+       * @param {string} sEndpoint´- endpoint with arguments added after generated domain name
+       * @param {string} [sBody] - optional body sent to server
+       */
+       function SERVER_Send( sEndpoint, sBody ) {
+         // Get the server information container
+         const eServerContainer = document.getElementById('idServer');
+         
+         // Extract address and port from data-fields
+         const eAddress = eServerContainer.querySelector('[data-field="address"]');
+         const ePort = eServerContainer.querySelector('[data-field="port"]');
+         
+         if (!eAddress || !ePort) { console.error('Server address or port field not found'); return; }
+         
+         // Get values
+         const sAddress = eAddress.value.trim();
+         const sPort = ePort.value.trim();
+         
+         // Validate that we have the required values
+         if (!sAddress) { console.error('Server address is required'); return; }
+         
+         // Build the base URL
+         let sBaseUrl = sAddress;
+         
+         // Add port if provided (and not already included in address)
+         if(sPort) {
+           // Check if address already has a port (contains : followed by numbers)
+           const hasPort = /:\d+/.test(sAddress);
+           if (!hasPort) {
+             // Remove trailing slash if present before adding port
+             sBaseUrl = sBaseUrl.replace(/\/$/, '');
+             sBaseUrl += ':' + sPort;
+           }
+         }
+         
+         // Ensure base URL ends with slash for proper endpoint concatenation
+         if (!sBaseUrl.endsWith('/')) { sBaseUrl += '/'; }
+         
+         // Remove leading slash from endpoint if present (to avoid double slashes)
+         const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint;
+         
+         // Build the complete URL
+         const sFullUrl = sBaseUrl + sCleanEndpoint;
+         
+         console.log('Sending request to:', sFullUrl);
+         
+         // Prepare fetch options
+         const oOptions = {
+           method: 'GET', // Default method
+           headers: {
+             'Content-Type': 'application/xml',
+           }
+         };
+         
+         // If body is provided, use POST method and add body
+         if (sBody !== undefined) {
+           oOptions.method = 'POST';
+           oOptions.body = JSON.stringify(sBody);
+         }
+         
+         // Send the request
+         fetch(sFullUrl, oOptions)
+           .then(response => {
+             if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+             return response.json();
+           })
+           .then(data => {
+             console.log('Response received:', data);
+             return data;
+           })
+           .catch(error => { 
+             console.error('Error sending request:', error);
+             // You could add error handling UI here
+           });
+       }
+       
       /** ---------------------------------------------------------------------
        * Update fields in container with values from object
        */
@@ -115,20 +216,19 @@
          if( typeof oValue === 'object') {
             for( let sKey in oValue) {
                let eElement = eContainer.querySelector(`[data-field="${sKey}"]`);
-               if( eElement) {
-                  eElement.value = oValue[sKey];
-               }
+               if( eElement) { eElement.value = oValue[sKey]; }
             }
          }
       }
 
+      /**
+       * Update page from source data
+       */
       function PAGE_Update(source_) {
-         // check if source_ is instance of CDocument
+         // ## check if source_ is instance of CDocument
          if ((source_ instanceof CDocument) === true) {
-            // ## Update html elements from document
-
-            // address and port
-            const oServer = source_.GetObject('server');
+            // ### Update html elements from document
+            const oServer = source_.GetObject('server');                      // address and port
             PAGE_UpdateFields('idServer', oServer);
          }
       }
