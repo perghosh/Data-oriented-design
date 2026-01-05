@@ -9,13 +9,49 @@
 <body>
     
 <script>
-    class RenderTable
+    class Table
     {
-        constructor()
+        /* 
+        * Constructor
+        * @param {Array} aTable - The initial table data (array of rows)
+        */
+        constructor(aTable)
         {
-            
+            this.aTable = aTable;
+        }
+
+        /*
+        * Add rows to the table
+        * @param {Array | string} table_ - Data to add (string, row array, or array of rows)
+        * @param {string} sSeperator - Optional separator for string input (default: ",")
+        */
+        Add(table_, sSeperator)
+        {
+            let aTable = table_;
+            if(typeof table_ === "string")
+            {
+                if(!sSeperator) {sSeperator = ","}
+                aTable = [table_.split(sSeperator)];   
+            }
+            else if(Array.isArray(table_) && table_.every(Array.isArray) == false)
+            {
+                aTable = [table_];
+            }
+
+            for(let i = 0; i < aTable.length; i++)
+            {
+                this.aTable.push(aTable[i]);
+            }
+            console.log(this.aTable);
         }
     }
+
+    const aTable1 = [["Selma", "Selma"], ["Zorro", "Zorro"]];
+    const aTable2 = ["Lexus", "Lexus"];
+
+    const table = new Table(aTable1);
+    table.Add(aTable2);
+
 </script>
 </body>
 </html>
