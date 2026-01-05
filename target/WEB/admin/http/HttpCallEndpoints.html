@@ -94,6 +94,11 @@
          Get( sType ) {
             return this.aObject.find(o => o.type === sType);
          }
+         
+         GetObject( sType ) {
+            const oEntry = this.Get( sType );
+            return oEntry.object;
+         }
 
          /// Returns all objects for type in array
          GetAll( sType) {
@@ -123,8 +128,8 @@
             // ## Update html elements from document
 
             // address and port
-            const oServer = source_.Get('server');
-            PAGE_UpdateFields('idAddress', oServer);
+            const oServer = source_.GetObject('server');
+            PAGE_UpdateFields('idServer', oServer);
          }
       }
 
@@ -144,7 +149,7 @@
             let eHandle = eElement.querySelector("[data-draggable-handle]");
             oOptions.eHandle = eHandle;
             const oDraggable = new UIDraggable(eElement, oOptions);
-            oDocument_g.add('draggable', oDraggable);
+            oDocument_g.Add('draggable', oDraggable);
          });
       }
 
@@ -153,6 +158,7 @@
          oDocument_g = new CDocument();
          oDocument_g.Add("server", {address: "http://localhost", port: "8001"} )
          PAGE_Initialize();
+         PAGE_Update( oDocument_g );
       });
 
       </script>
