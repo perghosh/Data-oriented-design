@@ -7,6 +7,8 @@
  * or configurations.
  */
 class UIDraggable {
+   static iZIndex_s = 10; // Default z-index for draggable elements and used to stack elements
+
    /**
     * @param {HTMLElement|string} element_ - The element to make draggable
     * @param {Object} oOptions_ - Configuration options
@@ -81,7 +83,7 @@ class UIDraggable {
       const iInitialTop = parseFloat(oComputed.top) || 0;
       const iInitialLeft = parseFloat(oComputed.left) || 0;
 
-      this.bIsDragging = false;
+      this.bDragging = false;
       this.iInitialX = 0;
       this.iInitialY = 0;
 
@@ -97,8 +99,8 @@ class UIDraggable {
          cursor: 'grabbing',
          opacity: '0.8',
          position: 'relative',
-         transition: 'none',
-         zIndex: '9999'
+         transition: 'none'
+         //zIndex: '9999'
       };
 
       // Store original element styles for potential restoration
@@ -107,7 +109,7 @@ class UIDraggable {
          opacity: this.eElement.style.opacity || '',
          position: this.eElement.style.position || oComputed.position,
          transition: this.eElement.style.transition || '',
-         zIndex: this.eElement.style.zIndex || '',
+         //zIndex: this.eElement.style.zIndex || '',
          top: this.eElement.style.top || '',
          left: this.eElement.style.left || ''
       };
@@ -125,9 +127,18 @@ class UIDraggable {
       if(this.oOptions.bUseTransform === true) { this._set_position(this.iCurrentX, this.iCurrentY); }
    }
 
-   // Getter/setter for id
+   // ## Getter/Setter
+
    get id() { return this.sId; }
    set id(sId_) { this.sId = sId_; }
+   get dragging() { return this.bDragging; }
+   set dragging(bDragging) {
+      this.bDragging = bDragging;
+      if(bDragging === true) {                                                // if true then increase z-index and set it
+         UIDraggable.iZIndex_s++;
+         this.eElement.style.zIndex = UIDraggable.iZIndex_s;
+      }
+   }
 
    /** -----------------------------------------------------------------------
     * Initialize event listeners
@@ -167,7 +178,7 @@ class UIDraggable {
       // ## Store initial position
       this.iInitialX = iClientX - this.iXOffset;
       this.iInitialY = iClientY - this.iYOffset;
-      this.bIsDragging = true;
+      this.dragging = true;
 
       // Apply dragging styles inline
       Object.assign(this.eElement.style, this.oDraggingStyles);
@@ -190,7 +201,7 @@ class UIDraggable {
     * @param {MouseEvent|TouchEvent} eEvent_ - The event object
     */
    _on_pointer_move(eEvent_) {
-      if( !this.bIsDragging ) return;
+      if( !this.dragging ) return;
 
       // Prevent default to avoid scrolling
       if( eEvent_.cancelable ) {
@@ -240,9 +251,9 @@ class UIDraggable {
     * Handle pointer up (mouse/touch end)
     */
    _on_pointer_up() {
-      if( !this.bIsDragging ) return;                                         // Return early if not dragging
+      if( !this.dragging ) return;                                         // Return early if not dragging
 
-      this.bIsDragging = false;
+      this.dragging = false;
       this.iInitialX = this.iCurrentX;                                        // Initialize initial position
       this.iInitialY = this.iCurrentY;                                        // Initialize initial position
 

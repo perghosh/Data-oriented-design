@@ -550,6 +550,8 @@ public:
    };
 
    // @API [tag: helper] [description: Helper base class that forwards all const methods to derived type's get_argument()]
+
+   /// CRTP (Curiously Recurring Template Pattern) to simplfy use of argument_proxy
    template<typename DERIVED>
    struct argument_forwarder
    {
@@ -653,6 +655,10 @@ public:
       bool operator==(TYPE v) const { return derived().get_argument() == v; }
       bool operator!=(const argument& o) const { return derived().get_argument() != o; }
       bool operator!=(const gd::variant_view& v) const { return derived().get_argument() != v; }
+
+   private:
+      argument_forwarder() = default;
+      friend DERIVED; ///< allow only derived classes to construct
    };
 
    /** =======================================================================

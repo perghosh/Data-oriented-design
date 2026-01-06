@@ -37,16 +37,24 @@
 
       .container-form .right { justify-content: flex-end; }
 
+      .plate { background-color: var(--background-body); }
+
+
       </style>
    </head>
    <body>
       <div id="idPage">
          <div>
             <h1>HTTP Session Test Page</h1>
-            <div id="idServer" class="container-form">
+            <div id="idServer" class="container container-form">
                <div class="row">
                   <input class="fill" data-field="address" placeholder="Address to server" />
                   <input class="quarter" data-field="port" placeholder="port number" />
+               </div>
+            </div>
+            <div id="idUrl" class="container container-form">
+               <div class="row">
+                  <input class="fill" data-field="url" placeholder="Url" />
                </div>
             </div>
          </div>
@@ -54,7 +62,7 @@
          <div id="idWorkArea" style="border: 1px solid black; position: relative;">
 
             <!-- Section used to display endpoint information and commands to save and send -->
-            <div id="idCommands" class="container-form" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 20px; left: 20px; padding: 5px; width: 800px;" >
+            <div id="idCommands" class="container container-form plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 20px; left: 20px; padding: 5px; width: 800px;" >
                <div class="caption row handle" data-draggable-handle="1">Command: Endpoint information</div>
                <form data-element="container">
                   <div class="row">
@@ -74,7 +82,7 @@
             </div>
 
             <!-- Section used to display server response -->
-            <div id="idResult"  class="container-form" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 500px; left: 100px; padding: 5px; width: 800px;" >
+            <div id="idResult"  class="container container-form plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 500px; left: 100px; padding: 5px; width: 800px;" >
                <div class="caption row handle" data-draggable-handle="1">Command: Server response</div>
                <form data-element="container">
                   <div class="row">
@@ -84,7 +92,7 @@
             </div>
 
             <!-- Section used to display history of saved command/endpoints -->
-            <div id="idHistory"  class="container-form" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; width: 800px;" >
+            <div id="idHistory"  class="container container-form plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; width: 800px;" >
                <div class="caption row handle" data-draggable-handle="1">Command: History</div>
                <form data-element="container">
                   <div class="row">
@@ -189,10 +197,14 @@
          // Remove leading slash from endpoint if present (to avoid double slashes)
          const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint;
 
-         // Build the complete URL
-         const sFullUrl = sBaseUrl + sCleanEndpoint;
+         const sFullUrl = sBaseUrl + sCleanEndpoint;                          // Build the complete URL
+
+         // ## Set url to top element showing active url
+         document.getElementById('idUrl').querySelector("[data-field='url']").value = sFullUrl;
 
          console.log('Sending request to:', sFullUrl);
+
+         return;
 
          // Prepare fetch options
          const oOptions = {
@@ -270,12 +282,35 @@
          });
       }
 
+      /** ---------------------------------------------------------------------
+       * Configure page listeners, handle page specific events
+       */
+      function PAGE_SetListeners() {
+         const eWorkArea = document.getElementById('idWorkArea');
+         eWorkArea.addEventListener('click', function( e_ ) {
+            const eTarget = e_.target;
+            if( !eTarget.dataset.action ) return;                             // If no action is defined, return
+            e_.stopPropagation();
+            const eContainer = eTarget.closest('.container');
+            const sAction = eTarget.dataset.action;
+            switch( sAction ) {
+               case 'send': {
+                  const sEndpoint = eContainer.querySelector('[data-field="endpoint"]').value;
+                  SERVER_Send(sEndpoint);
+               } break;
+               default:
+                  console.error('Unknown action:', sAction);
+            }
+         });
+      }
+
       // Initialize draggable element
       document.addEventListener('DOMContentLoaded', function() {
          oDocument_g = new CDocument();
          oDocument_g.Add("server", {address: "http://localhost", port: "8001"} )
          PAGE_Initialize();
          PAGE_Update( oDocument_g );
+         PAGE_SetListeners();
       });
 
       </script>
