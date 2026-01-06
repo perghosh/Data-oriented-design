@@ -15,9 +15,13 @@
     const aTable1 = [["Selma", "Selma"], ["Zorro", "Zorro"]];
     const aTable2 = [["Lexus", "Lexus"], ["Lexus2", "Lexus2"]];
 
-    const table = new Table(aTable1);
+    const table = new Table({aColumn: [["Col1", "Col2"]], aTable: aTable1});
     table.Add(aTable2);
     table.Delete(2, 0)
+
+    let aTemp = table.GetData({bColumn: false})
+
+    console.log(aTemp);
 
 </script>
 </body>
