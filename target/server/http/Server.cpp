@@ -106,6 +106,19 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
       return bad_request_("Unknown HTTP-method"); 
    }
 
+   if( eVerb == boost::beast::http::verb::options )
+   {
+      boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::ok, request_.version()};
+      response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+      response.set(boost::beast::http::field::content_type, "text/html");
+      response.set(boost::beast::http::field::access_control_allow_origin, "*");   
+      response.set(boost::beast::http::field::access_control_allow_methods, "GET, POST, HEAD, OPTIONS");
+      response.set(boost::beast::http::field::access_control_allow_headers, "content-type, authorization, x-requested-with, accept, origin");
+      response.keep_alive(request_.keep_alive());
+      response.prepare_payload();
+      return response;
+   }
+
    std::string_view stringTarget = request_.target();
    if( stringTarget.empty() == true )
    { 
@@ -238,6 +251,8 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    // 3. Set other response parameters
    PrepareResponseHeader_s( argumentHeader, response );                       // prepare response header
 
+   //auto u_ = std::distance( response.begin(), response.end() ); // suppress unused warning
+
    return response;
 }
 
@@ -307,6 +322,10 @@ void CServer::PrepareResponseHeader_s( gd::argument::arguments& argumentHeader, 
    response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
    response.set(field::access_control_allow_origin, "*");   
    response.set(field::access_control_allow_methods, "GET, POST, HEAD, OPTIONS");
+   response.set(field::access_control_allow_headers, "content-type, authorization, x-requested-with, accept, origin");
+   response.set(field::access_control_max_age, "86400");
+
+   auto u_ = std::distance( response.begin(), response.end() ); // suppress unused warning
 
    auto stringFormat = argumentHeader["format"].as_string_view();
    if( stringFormat.empty() == false )
@@ -526,7 +545,9 @@ void session::on_read( boost::beast::error_code errorcode, std::size_t uBytesTra
    if(errorcode) { return fail_g(errorcode, "read"); }
 
    // Send the response
-   send_response( handle_request(*m_pstringFolderRoot, std::move(m_request)));
+   auto message_ = handle_request(*m_pstringFolderRoot, std::move(m_request));
+   //auto u_ = std::distance( response.begin(), response.end() ); // suppress unused warning
+   send_response( std::move( message_ ) );
 }
 
 void session::send_response(boost::beast::http::message_generator&& messagegenerator)

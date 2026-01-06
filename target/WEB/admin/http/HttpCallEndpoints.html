@@ -170,12 +170,12 @@
          const eAddress = eServerContainer.querySelector('[data-field="address"]'); // address (domain)
          const ePort = eServerContainer.querySelector('[data-field="port"]'); // port
 
-         if (!eAddress) { console.error('Server address field not found'); return; }
+         if(!eAddress) { console.error('Server address field not found'); return; }
 
          const sAddress = eAddress.value.trim();
          const sPort = ePort.value.trim();
 
-         if (!sAddress) { console.error('Server address is required'); return; } // Validate that we have the required values
+         if(!sAddress) { console.error('Server address is required'); return; } // Validate that we have the required values
 
          // Build the base URL
          let sBaseUrl = sAddress;
@@ -184,7 +184,7 @@
          if(sPort) {
            // Check if address already has a port (contains : followed by numbers)
            const hasPort = /:\d+/.test(sAddress);
-           if (!hasPort) {
+           if(!hasPort) {
              // Remove trailing slash if present before adding port
              sBaseUrl = sBaseUrl.replace(/\/$/, '');
              sBaseUrl += ':' + sPort;
@@ -192,7 +192,7 @@
          }
 
          // Ensure base URL ends with slash for proper endpoint concatenation
-         if (!sBaseUrl.endsWith('/')) { sBaseUrl += '/'; }
+         if(!sBaseUrl.endsWith('/')) { sBaseUrl += '/'; }
 
          // Remove leading slash from endpoint if present (to avoid double slashes)
          const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint;
@@ -204,18 +204,14 @@
 
          console.log('Sending request to:', sFullUrl);
 
-         return;
-
-         // Prepare fetch options
+         // ## Prepare fetch options
          const oOptions = {
            method: 'GET', // Default method
-           headers: {
-             'Content-Type': 'application/xml',
-           }
+           headers: { 'Content-Type': 'application/xml' }
          };
 
          // If body is provided, use POST method and add body
-         if (sBody !== undefined) {
+         if(sBody !== undefined) {
            oOptions.method = 'POST';
            oOptions.body = JSON.stringify(sBody);
          }
@@ -223,7 +219,7 @@
          // Send the request
          fetch(sFullUrl, oOptions)
            .then(response => {
-             if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+             if(!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
              return response.json();
            })
            .then(data => {
@@ -255,7 +251,7 @@
        */
       function PAGE_Update(source_) {
          // ## check if source_ is instance of CDocument
-         if ((source_ instanceof CDocument) === true) {
+         if((source_ instanceof CDocument) === true) {
             // ### Update html elements from document
             const oServer = source_.GetObject('server');                      // address and port
             PAGE_UpdateFields('idServer', oServer);
