@@ -8,103 +8,101 @@
    <script src="js/classes/gd_ui_draggable.js"></script>
    <title>Test session logic in http web server</title>
    <style>
-      html { height: 100%; margin: 0; overflow: hidden; padding: 0; }
-      body { background-color: var(--bs-body-bg); box-sizing: border-box; color: var(--bs-body-color); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; line-height: 1.5; margin: 0; min-height: 100%; overflow: hidden; padding: 0px; }
+   html { height: 100%; margin: 0; overflow: hidden; padding: 0; }
+   body { background-color: var(--bs-body-bg); box-sizing: border-box; color: var(--bs-body-color); font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif; line-height: 1.5; margin: 0; min-height: 100%; overflow: hidden; padding: 0px; }
 
-      /* ## page classes to style the complete page */
-      .page-800 { display: block; margin: 0 auto; width: 800px; }
-      .page-1000 { display: block; height: 100%; margin: 0 auto; width: 1000px; }
+   /* ## page classes to style the complete page */
+   .page-800 { display: block; margin: 0 auto; width: 800px; }
+   .page-1000 { display: block; height: 100%; margin: 0 auto; width: 1000px; }
 
-      .button-normal { background-color: var(--background-primary); border-radius: 4px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; }
-      .caption { background-color: var(--background-secondary); border-radius: 4px; font-weight: bold; margin-bottom: 10px; padding: 8px 16px;      }
+   .button-normal { background-color: var(--background-primary); border-radius: 4px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; }
+   .caption { background-color: var(--background-secondary); border-radius: 4px; font-weight: bold; margin-bottom: 10px; padding: 8px 16px;      }
 
-      #idPage { display: grid; grid-template-rows: auto 1fr;  height: 100vh; margin: 0 auto; overflow: hidden; width: 1400px; }
+   #idPage { display: grid; grid-template-rows: auto 1fr;  height: 100vh; margin: 0 auto; overflow: hidden; width: 1400px; }
 
-      /* Add your CSS styles here */
-      .container-form { container-type: inline-size; }
+   /* Add your CSS styles here */
+   .container-form { container-type: inline-size; }
 
-      .container-form input,
-      .container-form textarea,
-      .container-form select {border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: inherit; padding: 8px 12px;}
+   .container-form input,
+   .container-form textarea,
+   .container-form select {border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: inherit; padding: 8px 12px;}
 
-      .container-form .row { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; }
-      .container-form .row:last-child { margin-bottom: 0; } /* to align last item to bottom */
+   .container-form .row { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; }
+   .container-form .row:last-child { margin-bottom: 0; } /* to align last item to bottom */
 
-      .container-form .fill {flex: 1;} /* makes select fill available width */
-      .container-form .half { flex: 1; max-width: 50%; }
-      .container-form .third { flex: 1; max-width: 33.33%; }
-      .container-form .quarter { flex: 1; max-width: 25%; }
+   .container-form .fill {flex: 1;} /* makes select fill available width */
+   .container-form .half { flex: 1; max-width: 50%; }
+   .container-form .third { flex: 1; max-width: 33.33%; }
+   .container-form .quarter { flex: 1; max-width: 25%; }
 
-      .container-form .right { justify-content: flex-end; }
+   .container-form .right { justify-content: flex-end; }
 
-      .plate { background-color: var(--background-body); }
-
-
-      </style>
-   </head>
-   <body>
-      <div id="idPage">
-         <div>
-            <h1>HTTP Session Test Page</h1>
-            <div id="idServer" class="container container-form">
-               <div class="row">
-                  <input class="fill" data-field="address" placeholder="Address to server" />
-                  <input class="quarter" data-field="port" placeholder="port number" />
-               </div>
-            </div>
-            <div id="idUrl" class="container container-form">
-               <div class="row">
-                  <input class="fill" data-field="url" placeholder="Url" />
-               </div>
+   .page-plate { background-color: var(--background-body); }
+   </style>
+</head>
+<body>
+   <div id="idPage">
+      <div>
+         <h1>HTTP Session Test Page</h1>
+         <div id="idServer" class="container container-form">
+            <div class="row">
+               <input class="fill" data-field="address" placeholder="Address to server" />
+               <input class="quarter" data-field="port" placeholder="port number" />
             </div>
          </div>
-
-         <div id="idWorkArea" style="border: 1px solid black; position: relative;">
-
-            <!-- Section used to display endpoint information and commands to save and send -->
-            <div id="idCommands" class="container container-form plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 20px; left: 20px; padding: 5px; width: 800px;" >
-               <div class="caption row handle" data-draggable-handle="1">Command: Endpoint information</div>
-               <form data-element="container">
-                  <div class="row">
-                     <input type="text" class="fill" data-field="alias" placeholder="Alias name for command" />
-                  </div>
-                  <div class="row">
-                     <textarea class="fill" rows="3" data-field="endpoint" placeholder="Endpoint URL"></textarea>
-                  </div>
-                  <div class="row">
-                     <textarea class="fill" rows="2" data-field="description" placeholder="Endpoint description"></textarea>
-                  </div>
-                  <div class="row right">
-                     <span class="button-normal" data-action="send" >Send</span>
-                     <span class="button-normal" data-action="save" >Save</span>
-                  </div>
-               </form>
+         <div id="idUrl" class="container container-form">
+            <div class="row">
+               <input class="fill" data-field="url" placeholder="Url" />
             </div>
-
-            <!-- Section used to display server response -->
-            <div id="idResult"  class="container container-form plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 500px; left: 100px; padding: 5px; width: 800px;" >
-               <div class="caption row handle" data-draggable-handle="1">Command: Server response</div>
-               <form data-element="container">
-                  <div class="row">
-                     <textarea class="fill" rows="3" data-field="response" placeholder="Server response"></textarea>
-                  </div>
-               </form>
-            </div>
-
-            <!-- Section used to display history of saved command/endpoints -->
-            <div id="idHistory"  class="container container-form plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; width: 800px;" >
-               <div class="caption row handle" data-draggable-handle="1">Command: History</div>
-               <form data-element="container">
-                  <div class="row">
-                     <textarea class="fill" rows="3" data-field="history" placeholder="History"></textarea>
-                  </div>
-               </form>
-            </div>
-
          </div>
       </div>
 
-      <script>
+      <div id="idWorkArea" style="border: 1px solid black; position: relative;">
+
+         <!-- Section used to display endpoint information and commands to save and send -->
+         <div id="idCommands" class="container container-form page-plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 20px; left: 20px; padding: 5px; width: 800px;">
+            <div class="caption row handle" data-draggable-handle="1">Command: Endpoint information</div>
+            <form data-element="container">
+               <div class="row">
+                  <input type="text" class="fill" data-field="alias" placeholder="Alias name for command" />
+               </div>
+               <div class="row">
+                  <textarea class="fill" rows="3" data-field="endpoint" placeholder="Endpoint URL"></textarea>
+               </div>
+               <div class="row">
+                  <textarea class="fill" rows="2" data-field="description" placeholder="Endpoint description"></textarea>
+               </div>
+               <div class="row right">
+                  <span class="button-normal" data-action="send">Send</span>
+                  <span class="button-normal" data-action="save">Save</span>
+               </div>
+            </form>
+         </div>
+
+         <!-- Section used to display server response -->
+         <div id="idResult" class="container container-form page-plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 500px; left: 100px; padding: 5px; width: 800px;">
+            <div class="caption row handle" data-draggable-handle="1">Command: Server response</div>
+            <form data-element="container">
+               <div class="row">
+                  <textarea class="fill" rows="3" data-field="response" placeholder="Server response"></textarea>
+               </div>
+            </form>
+         </div>
+
+         <!-- Section used to display history of saved command/endpoints -->
+         <div id="idHistory" class="container container-form page-plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; width: 800px;">
+            <div class="caption row handle" data-draggable-handle="1">Command: History</div>
+            <form data-element="container">
+               <div class="row">
+                  <textarea class="fill" rows="3" data-field="history" placeholder="History"></textarea>
+               </div>
+            </form>
+         </div>
+
+      </div>
+   </div>
+
+   <script>
       // Make oDocument a global variable
       let oDocument_g;
 
@@ -115,23 +113,23 @@
          }
 
          /// Add object to document ------------------------------------------
-         Add( sType, oObject) {
+         Add(sType, oObject) {
             this.aObject.push({ type: sType, object: oObject });
          }
 
          /// Get first object by type ----------------------------------------
-         Get( sType ) {
+         Get(sType) {
             return this.aObject.find(o => o.type === sType);
          }
 
          /// Return object item from entry -----------------------------------
-         GetObject( sType ) {
-            const oEntry = this.Get( sType );
+         GetObject(sType) {
+            const oEntry = this.Get(sType);
             return oEntry.object;
          }
 
          /// Returns all objects for type in array ---------------------------
-         GetAll( sType) {
+         GetAll(sType) {
             return this.aObject.filter(o => o.type === sType);
          }
 
@@ -140,7 +138,7 @@
             try {
                const sObjectData = JSON.stringify(this.aObject);
                localStorage.setItem('document', sObjectData);
-            } catch (e) { console.error('Failed to save to localStorage:', e); }
+            } catch(e) { console.error('Failed to save to localStorage:', e); }
          }
 
          /// Load the aObject array from localStorage (if exists) ------------
@@ -149,22 +147,24 @@
                const sObjectData = localStorage.getItem('document');
                if(sObjectData) {
                   const aObject = JSON.parse(sObjectData);
-                  if( Array.isArray(aLoaded) ) {
+                  if(Array.isArray(aLoaded)) {
                      this.aObject = aObject;
                      return true;                                             // success
                   }
                }
-            } catch (e) { console.error('Failed to load from localStorage:', e); }
+            } catch(e) { console.error('Failed to load from localStorage:', e); }
             return false;                                                     // no data or failed
          }
       }
 
-      /**
+      /** ---------------------------------------------------------------------
        * Send arguments to server,
        * @param {string} sEndpoint´- endpoint with arguments added after generated domain name
        * @param {string} [sBody] - optional body sent to server
        */
-       function SERVER_Send( sEndpoint, sBody ) {
+      function SERVER_Send(sEndpoint, sBody) {
+         // ## Prepare variables  .............................................
+
          const eServerContainer = document.getElementById('idServer');         // Get the server information container
 
          const eAddress = eServerContainer.querySelector('[data-field="address"]'); // address (domain)
@@ -177,26 +177,22 @@
 
          if(!sAddress) { console.error('Server address is required'); return; } // Validate that we have the required values
 
-         // Build the base URL
+         // ## Build the base URL .............................................
+
          let sBaseUrl = sAddress;
 
-         // Add port if provided (and not already included in address)
-         if(sPort) {
-           // Check if address already has a port (contains : followed by numbers)
-           const hasPort = /:\d+/.test(sAddress);
-           if(!hasPort) {
-             // Remove trailing slash if present before adding port
-             sBaseUrl = sBaseUrl.replace(/\/$/, '');
-             sBaseUrl += ':' + sPort;
-           }
+         if(sPort) {                                                           // Add port if provided (and not already included in address)
+            // Check if address already has a port (contains : followed by numbers)
+            const bHasPort = /:\d+/.test(sAddress);
+            if(bHasPort === false) {
+               // ### Remove trailing slash if present before adding port
+               sBaseUrl = sBaseUrl.replace(/\/$/, '');
+               sBaseUrl += ':' + sPort;
+            }
          }
 
-         // Ensure base URL ends with slash for proper endpoint concatenation
-         if(!sBaseUrl.endsWith('/')) { sBaseUrl += '/'; }
-
-         // Remove leading slash from endpoint if present (to avoid double slashes)
-         const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint;
-
+         if(!sBaseUrl.endsWith('/')) { sBaseUrl += '/'; }                     // Ensure base URL ends with slash for proper endpoint concatenation
+         const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint; // Remove leading slash from endpoint if present (to avoid double slashes)
          const sFullUrl = sBaseUrl + sCleanEndpoint;                          // Build the complete URL
 
          // ## Set url to top element showing active url
@@ -204,44 +200,71 @@
 
          console.log('Sending request to:', sFullUrl);
 
-         // ## Prepare fetch options
+         // ## Prepare fetch options ..........................................
+
          const oOptions = {
-           method: 'GET', // Default method
-           headers: { 'Content-Type': 'application/xml' }
+            method: 'GET', // Default method
+            headers: { 'Content-Type': 'application/xml' }
          };
 
          // If body is provided, use POST method and add body
          if(sBody !== undefined) {
-           oOptions.method = 'POST';
-           oOptions.body = JSON.stringify(sBody);
+            oOptions.method = 'POST';
+            oOptions.body = JSON.stringify(sBody);
          }
 
-         // Send the request
+         // ## Send the request and pick up the response as { type: <format>, data: <data> }
+
          fetch(sFullUrl, oOptions)
-           .then(response => {
-             if(!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
-             return response.json();
-           })
-           .then(data => {
-             console.log('Response received:', data);
-             return data;
-           })
-           .catch(error => {
-             console.error('Error sending request:', error);
-             // You could add error handling UI here
-           });
-       }
+         .then(response => {
+            // ### Handle response data .......................................
+
+            if(!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+
+            // Check the content type to determine how to parse the response
+            const sContentType = response.headers.get('content-type');
+
+            if(sContentType && sContentType.includes('application/json')) {
+                return response.json().then(data => ({ type: 'json', data }));
+            }
+            else if(sContentType && (sContentType.includes('application/xml') || sContentType.includes('text/xml'))) {
+               return response.text().then(text => {
+                  const oDOMParser = new DOMParser();
+                  const xml_ = oDOMParser.parseFromString(text, "text/xml");
+                  return { type: 'xml', data: xml_ };
+               });
+            }
+            else {
+               return response.text().then(data => ({ type: 'text', data }));
+            }
+         })
+         .then(data => {
+            // ### Handle parsed data .........................................
+
+            //console.log('Response received:', data);
+
+            // If needed, you can add XML parsing here
+            // const parser = new DOMParser();
+            // const xmlDoc = parser.parseFromString(data, "text/xml");
+
+            return data;                                                       // Return the parsed data
+         })
+         .catch(error => {
+            console.error('Error sending request:', error);
+            // You could add error handling UI here
+         });
+      }
 
       /** ---------------------------------------------------------------------
        * Update fields in container with values from object
        */
-      function PAGE_UpdateFields( container_, oValue  ) {
+      function PAGE_UpdateFields(container_, oValue) {
          let eContainer = container_;
-         if( typeof container_ === 'string') { eContainer = document.getElementById(container_); }
-         if( typeof oValue === 'object') {
-            for( let sKey in oValue) {
+         if(typeof container_ === 'string') { eContainer = document.getElementById(container_); }
+         if(typeof oValue === 'object') {
+            for(let sKey in oValue) {
                let eElement = eContainer.querySelector(`[data-field="${sKey}"]`);
-               if( eElement) { eElement.value = oValue[sKey]; }
+               if(eElement) { eElement.value = oValue[sKey]; }
             }
          }
       }
@@ -259,6 +282,9 @@
       }
 
 
+      /** ---------------------------------------------------------------------
+       * Main initialization function that initializes the page
+       */
       function PAGE_Initialize() {
          const eWorkArea = document.getElementById('idWorkArea');
 
@@ -276,6 +302,9 @@
             const oDraggable = new UIDraggable(eElement, oOptions);
             oDocument_g.Add('draggable', oDraggable);
          });
+
+         PAGE_Update(oDocument_g);
+         PAGE_SetListeners();
       }
 
       /** ---------------------------------------------------------------------
@@ -283,16 +312,16 @@
        */
       function PAGE_SetListeners() {
          const eWorkArea = document.getElementById('idWorkArea');
-         eWorkArea.addEventListener('click', function( e_ ) {
+         eWorkArea.addEventListener('click', function(e_) {
             const eTarget = e_.target;
-            if( !eTarget.dataset.action ) return;                             // If no action is defined, return
+            if(!eTarget.dataset.action) return;                             // If no action is defined, return
             e_.stopPropagation();
             const eContainer = eTarget.closest('.container');
             const sAction = eTarget.dataset.action;
-            switch( sAction ) {
+            switch(sAction) {
                case 'send': {
                   const sEndpoint = eContainer.querySelector('[data-field="endpoint"]').value;
-                  SERVER_Send(sEndpoint);
+                  SERVER_Send(sEndpoint).then( function(oResponse) {  console.log('Response:', oResponse); });
                } break;
                default:
                   console.error('Unknown action:', sAction);
@@ -303,12 +332,10 @@
       // Initialize draggable element
       document.addEventListener('DOMContentLoaded', function() {
          oDocument_g = new CDocument();
-         oDocument_g.Add("server", {address: "http://localhost", port: "8001"} )
-         PAGE_Initialize();
-         PAGE_Update( oDocument_g );
-         PAGE_SetListeners();
+         oDocument_g.Add("server", { address: "http://localhost", port: "8001" })
+         PAGE_Initialize();                                                    // Initialize page
       });
 
-      </script>
-   </body>
-   </html>
+   </script>
+</body>
+</html>
