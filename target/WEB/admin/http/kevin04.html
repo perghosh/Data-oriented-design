@@ -38,19 +38,38 @@
                 aTable = [table_];
             }
 
-            for(let i = 0; i < aTable.length; i++)
+            for(let i = 0; i < aTable.length; i++) // undefined
             {
                 this.aTable.push(aTable[i]);
             }
             console.log(this.aTable);
         }
+        
+        /*
+        * Deletes one or more rows from the table.
+        *
+        * @param {number} iPosition - The starting index from which rows will be deleted
+        * @param {number} iLength   - Number of rows to delete (defaults to 1)
+        */
+        Delete(iPosition, iLength)
+        {
+            const iRows = this.aTable.length;
+            const iMaxLength = iRows - iPosition;
+
+            if( !iLength || iLength === 0 ) { iLength = 1; }  
+
+            iLength = Math.min(iLength, iMaxLength);
+
+            this.aTable.splice(iPosition, iLength);
+        }
     }
 
     const aTable1 = [["Selma", "Selma"], ["Zorro", "Zorro"]];
-    const aTable2 = ["Lexus", "Lexus"];
+    const aTable2 = [["Lexus", "Lexus"], ["Lexus2", "Lexus2"]];
 
     const table = new Table(aTable1);
     table.Add(aTable2);
+    table.Delete(2, 0)
 
 </script>
 </body>
