@@ -215,7 +215,7 @@
 
          // ## Send the request and pick up the response as { type: <format>, data: <data> }
 
-         fetch(sFullUrl, oOptions)
+         return fetch(sFullUrl, oOptions)
          .then(response => {
             // ### Handle response data .......................................
 
@@ -252,7 +252,47 @@
          .catch(error => {
             console.error('Error sending request:', error);
             // You could add error handling UI here
+            throw error;
          });
+      }
+
+      /** ---------------------------------------------------------------------
+       * Handle response data and display it in the container
+       *
+       * Response data format is { type: <format>, data: <data> } and type can be any of
+       * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
+       *
+       * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
+       */
+      function PAGE_ProcessResponse(oData) {
+
+         // ## Print data to element that shows current response ..............
+         // Container = "idResult" and element = data-field="response"
+
+         let sResult;
+
+         // extract the data and convert it to text and place it in sResult
+         switch(oData.type) {
+            case 'json':
+               sResult = JSON.stringify(oData.data, null, 2);
+               break;
+            case 'xml':
+               // If oData.data is an XML Document object, serialize it to string
+               if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+                  sResult = (new XMLSerializer()).serializeToString(oData.data);
+               } else {
+                  // If it's already a string, use it directly
+                  sResult = oData.data;
+               }
+               break;
+            case 'text':
+               sResult = oData.data;
+               break;
+            default:
+               sResult = 'Unknown format';
+         }
+
+         document.getElementById('idResult').querySelector('[data-field="response"]').textContent = sResult;
       }
 
       /** ---------------------------------------------------------------------
@@ -321,7 +361,7 @@
             switch(sAction) {
                case 'send': {
                   const sEndpoint = eContainer.querySelector('[data-field="endpoint"]').value;
-                  SERVER_Send(sEndpoint).then( function(oResponse) {  console.log('Response:', oResponse); });
+                  SERVER_Send(sEndpoint).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
                } break;
                default:
                   console.error('Unknown action:', sAction);
