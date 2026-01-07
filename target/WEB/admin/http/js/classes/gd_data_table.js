@@ -106,7 +106,7 @@ class Table {
       else if( oOptions.bIndex === true ) {                                   // Add index to row
          for(let i = 0; i < this.aTable.length; i++) {
             let aRow = [i];
-            aRow.concat(this.GetRow(i))
+            aRow = aRow.concat(this.GetRow(i))
             aData.push( aRow );
          }
       }
@@ -228,7 +228,6 @@ class Table {
       {
          this.aTable.push(aTable[i]);
       }
-      console.log(this.aTable);
    }
 
    /** -----------------------------------------------------------------------
