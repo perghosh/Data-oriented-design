@@ -12,14 +12,26 @@
 <script>
     
 
-    const aTable1 = [["Selma", "Selma"], ["Zorro", "Zorro"]];
-    const aTable2 = [["Lexus", "Lexus"], ["Lexus2", "Lexus2"]];
+    const aTable1 = [["Selma1", "Selma2"], ["Zorro1", "Zorro2"]];
+    const aTable2 = [["LexusA", "LexusB"], ["Lexus1", "Lexus2"]];
 
-    const table = new Table({aColumn: [["Col1", "Col2"]], aTable: aTable1});
+    const table = new Table([["Col1", "Col2"]], { aTable: aTable1 });
     table.Add(aTable2);
     table.Delete(2, 0)
 
-    let aTemp = table.GetData({bColumn: false})
+    let aTemp = table.GetData({bColumn: true})
+
+    console.log("Empty: ", table.Empty());
+    console.log("Size: ", table.Size());
+    console.log("ColumnIndex: ", table.GetColumnIndex("Col2"));
+
+    console.log("Header:", table.GetHeaderRow());
+    console.log("Cell Value:", table.GetCellValue(0, 0));
+
+    table.SetCellValue(0, 0, "Bil");
+
+    console.log("Cell Value:", table.GetCellValue(0, 0));
+    console.log("Row: ", table.GetRow(2));
 
     console.log(aTemp);
 
