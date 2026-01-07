@@ -91,7 +91,7 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
       <div id="idWorkArea" style="border: 1px solid black; position: relative;">
 
          <!-- Section used to display endpoint information and commands to save and send -->
-         <div id="idCommands" class="container container-form page-plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 20px; left: 20px; padding: 5px; width: 800px;">
+         <div id="idCommands" class="container container-form page-plate" data-name="command" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 20px; left: 20px; padding: 5px; width: 800px;">
             <div class="caption row handle" data-draggable-handle="1">Command: Endpoint information</div>
             <form data-element="container">
                <div class="row">
@@ -111,7 +111,7 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          </div>
 
          <!-- Section used to display server response -->
-         <div id="idResult" class="container container-form page-plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 500px; left: 100px; padding: 5px; width: 800px;">
+         <div id="idResult" class="container container-form page-plate" data-name="result" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 500px; left: 100px; padding: 5px; width: 800px;">
             <div class="caption row handle" data-draggable-handle="1">Command: Server response</div>
             <form data-element="container">
                <div class="row">
@@ -121,7 +121,7 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          </div>
 
          <!-- Section used to display history of saved command/endpoints -->
-         <div id="idHistory" class="container container-form page-plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; height: 300px; width: 800px;">
+         <div id="idHistory" class="container container-form page-plate" data-name="history" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; height: 300px; width: 800px;">
             <div class="caption row handle" data-draggable-handle="1">Command: History</div>
             <div class="row" data-section="commands">
 
@@ -139,6 +139,7 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
       class CDocument {
          constructor( oOptions = {} ) {
             this.aObject = [];
+            this.aCache = {};
             this.aCallback = oOptions.callbacks || [];
             this.fnCallback = oOptions.callback || null;
          }
@@ -147,6 +148,11 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          Add(sType, oObject) {
             const sId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
             this.aObject.push({ id: sId, type: sType, object: oObject });
+         }
+
+         /// Add object to cache ---------------------------------------------
+         AddCacheItem(sKey, oObject) {
+            this.aCache[sKey] = oObject;
          }
 
          /// Get first object by type ----------------------------------------
@@ -168,6 +174,10 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
             return this.aObject.filter(o => o.type === sType);
          }
 
+         /// Return cache item from entry -----------------------------------
+         GetCacheItem(sKey) {
+            return this.aCache[sKey];
+         }
 
          /// Remove object from array ----------------------------------------
          Remove(sId) {
@@ -403,7 +413,7 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          }
       }
 
-      /**
+      /** --------------------------------------------------------------------- @API [tag: update, page]
        * Update page from source data
        */
       function PAGE_Update(source_ = oDocument_g) {
@@ -413,8 +423,8 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
             const oServer = source_.GetObject('server');                      // address and port
             PAGE_UpdateFields('idServer', oServer);
 
-            const aCommand = source_.GetAll('command');
-            const eHistory = document.getElementById('idHistory');
+            const aCommand = oDocument_g.GetAll('command');
+            const eHistory = document.getElementById("idHistory");
             const eCommands = document.querySelector('[data-section="commands"]');
 
             // ### Delete container and generate new div elements, one for each command
@@ -423,10 +433,10 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
             for(let oCommand of aCommand) {
                const o = oCommand.object;
 
-               const eRow = document.createElement('div');
-               eRow.classList.add('page-row');
+               const eRow = document.createElement("div");
+               eRow.classList.add("page-row");
 
-               const eElement = document.createElement('div');
+               const eElement = document.createElement("div");
                let sName = o.alias;
                sName += " - ";
                sName += o.endpoint.length > 60 ? o.endpoint.substr(0, 57) + '...' : o.endpoint;
@@ -435,12 +445,12 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
                eElement.dataset.action = "activate-command";
                eElement.dataset.data = JSON.stringify( o );
                eElement.dataset.id = oCommand.id;
-               eElement.classList.add('page-row-content');
+               eElement.classList.add("page-row-content");
 
                // Create delete button (X)
                const eDelete = document.createElement('span');
-               eDelete.classList.add('page-delete-button');
-               eDelete.textContent = 'X';
+               eDelete.classList.add("page-delete-button");
+               eDelete.textContent = "X";
                eDelete.dataset.action = "delete-command";
                eDelete.dataset.id = oCommand.id;
                eDelete.title = "Delete this command";
@@ -449,6 +459,15 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
                eRow.appendChild(eDelete);
 
                eCommands.appendChild(eRow);
+            }
+         }
+         // ## if source_ is element
+         else if( source_ === "draggable" ) {
+            const eContainer = document.getElementById('idWorkArea');
+            if( eContainer.id === "idWorkArea" ) {
+               // ### Place the containers to saved positions
+               const aPosition = oDocument_g.GetAll("draggable");
+
             }
          }
       }
@@ -472,11 +491,19 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
             let eHandle = eElement.querySelector("[data-draggable-handle]");
             oOptions.eHandle = eHandle;
             const oDraggable = new UIDraggable(eElement, oOptions);
-            oDocument_g.Add('draggable', oDraggable);
+            const sName = eElement.getAttribute('data-name');
+            const oPosition = oDraggable.GetPosition();
+            oDocument_g.Add("draggable", { name: sName, position: oDraggable.GetPosition() });
+            oDocument_g.AddCacheItem(["draggable-" + sName, oDraggable);
          });
 
          PAGE_Update(oDocument_g);
          PAGE_SetListeners();
+         oDocument_g.Load();
+
+         if( oDocument_g.exists("draggable")) {
+            const aDraggable = oDocument_g.GetAll("draggable");
+         }
       }
 
       /** --------------------------------------------------------------------- @API [tag: event, command]

@@ -68,6 +68,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
          
          if( stringCommand == "add" )           { result_ = Execute_SessionAdd(); }
          else if( stringCommand == "count" )    { result_ = Execute_SessionCount(); }
+         else if( stringCommand == "exists" )   { result_ = Execute_SessionExists(); }
          else if( stringCommand == "delete" )   { result_ = Execute_SessionDelete(); }
          else if( stringCommand == "list" )     { result_ = Execute_SessionList(); }
          else { return { false, "unknown session command: " + std::string(stringCommand) }; }
@@ -139,7 +140,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionDelete()
    if( result_.first == false ) { return result_; }
    
    gd::types::uuid uuid;
-   gd::binary_copy_hex_g( uuid,  stringSession);
+   gd::binary_copy_hex_g( uuid, stringSession);
    
    CDocument* pdocument = GetDocument();
    
@@ -161,6 +162,31 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionCount()
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "count", uCount } } );
    m_objects.Add( parguments_ );
    
+   return { true, "" };
+}
+
+/// @brief Check if session is found
+std::pair<bool, std::string> CAPISystem::Execute_SessionExists()
+{
+   CDocument* pdocument = GetDocument();
+   auto* psessions = pdocument->SESSION_Get();
+
+   std::string stringSession = m_argumentsParameter["session"].as_string();   // session to check for
+
+   // ## Pad session if less than 32 bytes
+   if( stringSession.size() < 32 ) { stringSession.append(32 - stringSession.size(), '0'); }
+
+   auto result_ = ValidateSession_s(stringSession);
+   if( result_.first == false ) { return result_; }
+
+   gd::types::uuid uuid;
+   gd::binary_copy_hex_g( uuid, stringSession);
+
+   int64_t iPosition = psessions->Find( uuid );
+
+   gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "index", iPosition } } );
+   m_objects.Add( parguments_ );
+
    return { true, "" };
 }
 

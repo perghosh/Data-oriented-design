@@ -131,6 +131,8 @@ class UIDraggable {
 
    get id() { return this.sId; }
    set id(sId_) { this.sId = sId_; }
+   get name() { return this.oOptions.sName; }
+   set name(sName) { this.oOptions.sName = sName; }
    get dragging() { return this.bDragging; }
    set dragging(bDragging) {
       this.bDragging = bDragging;
