@@ -1,3 +1,16 @@
+<!--
+PAGE_ Method Documentation:
+=========================
+
+PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with any provided arguments
+PAGE_Initialize() - Main initialization function that sets up the page, creates draggable elements and configures listeners
+PAGE_ProcessResponse(oData) - Handles server response data and displays it in the response container based on data type
+PAGE_SetListeners() - Configures event listeners for page interactions, handling actions like send and save
+PAGE_Update(source_) - Updates page elements with data from a source object, typically a CDocument instance
+PAGE_UpdateFields(container_, oValue) - Populates form fields in a container with values from an object
+
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,14 +48,32 @@
    .container-form .third { flex: 1; max-width: 33.33%; }
    .container-form .quarter { flex: 1; max-width: 25%; }
 
+   .container-form .padding-5 { padding: 5px; }
+
    .container-form .right { justify-content: flex-end; }
 
+   /* page classes */
+
    .page-plate { background-color: var(--background-body); }
+   .page-command { cursor: pointer;  }
+   .page-row { background-color: var(--background-body); display: flex; padding: 4px 6px; border-radius: 4px; border: 1px solid #ddd; width: 100%; }
+
+   .page-row-content { cursor: pointer; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+   .page-delete-button { background-color: var(--background-danger); border: none; border-radius: 50%; color: var(--color-danger); cursor: pointer; height: 20px; line-height: 18px; opacity: 0; transition: opacity 0.2s, background-color 0.2s; width: 20px; z-index: 10; text-align: center; }
+   .page-row:hover .page-delete-button { opacity: 1;  }
+   .page-delete-button:hover { background-color: var(--background-danger); opacity: 1; }
+
    </style>
 </head>
 <body>
    <div id="idPage">
       <div>
+         <div id="idMenu" class="container container-form">
+            <div class="row padding-5">
+               <span class="button-normal" data-action="load-page">Load page</span>
+               <span class="button-normal" data-action="save-page">Save page</span>
+            </div>
+         </div>
          <h1>HTTP Session Test Page</h1>
          <div id="idServer" class="container container-form">
             <div class="row">
@@ -90,13 +121,11 @@
          </div>
 
          <!-- Section used to display history of saved command/endpoints -->
-         <div id="idHistory" class="container container-form page-plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; width: 800px;">
+         <div id="idHistory" class="container container-form page-plate" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; height: 300px; width: 800px;">
             <div class="caption row handle" data-draggable-handle="1">Command: History</div>
-            <form data-element="container">
-               <div class="row">
-                  <textarea class="fill" rows="3" data-field="history" placeholder="History"></textarea>
-               </div>
-            </form>
+            <div class="row" data-section="commands">
+
+            </div>
          </div>
 
       </div>
@@ -108,18 +137,24 @@
 
 
       class CDocument {
-         constructor() {
+         constructor( oOptions = {} ) {
             this.aObject = [];
+            this.aCallback = oOptions.callbacks || [];
+            this.fnCallback = oOptions.callback || null;
          }
 
          /// Add object to document ------------------------------------------
          Add(sType, oObject) {
-            this.aObject.push({ type: sType, object: oObject });
+            const sId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+            this.aObject.push({ id: sId, type: sType, object: oObject });
          }
 
          /// Get first object by type ----------------------------------------
-         Get(sType) {
-            return this.aObject.find(o => o.type === sType);
+         Get(type_) {
+            if( typeof type_ === "string") {
+               return this.aObject.find(o => o.type === type_);
+            }
+            return this.aObject.find(o => o.id === type_.id);                 // if not string then type_ is { id: <id> }
          }
 
          /// Return object item from entry -----------------------------------
@@ -131,6 +166,15 @@
          /// Returns all objects for type in array ---------------------------
          GetAll(sType) {
             return this.aObject.filter(o => o.type === sType);
+         }
+
+
+         /// Remove object from array ----------------------------------------
+         Remove(sId) {
+            const iIndex = this.aObject.findIndex(o => o.id === sId);
+            if(iIndex !== -1) {
+               this.aObject.splice(iIndex, 1);
+            }
          }
 
          /// Save the entire aObject array to localStorage -------------------
@@ -147,13 +191,52 @@
                const sObjectData = localStorage.getItem('document');
                if(sObjectData) {
                   const aObject = JSON.parse(sObjectData);
-                  if(Array.isArray(aLoaded)) {
+                  if(Array.isArray(aObject)) {
                      this.aObject = aObject;
                      return true;                                             // success
                   }
                }
-            } catch(e) { console.error('Failed to load from localStorage:', e); }
+            } catch(e) {
+               console.error('Failed to load from localStorage:', e);
+               this.aObject = [];
+            }
             return false;                                                     // no data or failed
+         }
+
+         /// Register a callback with a name ----------------------------------
+         AddCallback(sName, fnCallback) {                                                          console.assert( typeof fnCallback === 'function' );
+            this.aCallback.push({ name: sName, callback: fnCallback });
+            return true;
+         }
+
+         /// Get a callback by name -------------------------------------------
+         GetCallback(sName) {
+            const oCallback = this.aCallbacks.find(o => o.name === sName);
+            return oCallback ? oCallback.callback : null;
+         }
+
+         /// Call a callback by name with any arguments ------------------------
+         CallCallback(sName, ...args) {
+            const fnCallback = this.GetCallback(sName);
+            if(fnCallback) {
+               try {
+                  fnCallback(...args);
+                  return true;
+               } catch(e) {
+                  console.error('Error executing callback "' + sName + '":', e);
+                  return false;
+               }
+            }
+            else if(this.fnCallback) {
+               try {
+                  this.fnCallback(sName, ...args);
+                  return true;
+               } catch(e) {
+                  console.error('Error executing default callback:', e);
+                  return false;
+               }
+            }
+            return false;
          }
       }
 
@@ -309,20 +392,69 @@
          }
       }
 
+      function PAGE_UpdateCommands(container_, aCommands) {
+         let eContainer = container_;
+         if(typeof container_ === 'string') { eContainer = document.getElementById(container_); }
+         if(Array.isArray(aCommands)) {
+            for(let oCommand of aCommands) {
+               //let eElement = eContainer.querySelector(`[data-command="${oCommand.id}"]`);
+               //if(eElement) { eElement.value = oCommand.name; }
+            }
+         }
+      }
+
       /**
        * Update page from source data
        */
-      function PAGE_Update(source_) {
+      function PAGE_Update(source_ = oDocument_g) {
          // ## check if source_ is instance of CDocument
          if((source_ instanceof CDocument) === true) {
             // ### Update html elements from document
             const oServer = source_.GetObject('server');                      // address and port
             PAGE_UpdateFields('idServer', oServer);
+
+            const aCommand = source_.GetAll('command');
+            const eHistory = document.getElementById('idHistory');
+            const eCommands = document.querySelector('[data-section="commands"]');
+
+            // ### Delete container and generate new div elements, one for each command
+            //
+            eCommands.innerHTML = '';
+            for(let oCommand of aCommand) {
+               const o = oCommand.object;
+
+               const eRow = document.createElement('div');
+               eRow.classList.add('page-row');
+
+               const eElement = document.createElement('div');
+               let sName = o.alias;
+               sName += " - ";
+               sName += o.endpoint.length > 60 ? o.endpoint.substr(0, 57) + '...' : o.endpoint;
+               eElement.textContent = sName;
+
+               eElement.dataset.action = "activate-command";
+               eElement.dataset.data = JSON.stringify( o );
+               eElement.dataset.id = oCommand.id;
+               eElement.classList.add('page-row-content');
+
+               // Create delete button (X)
+               const eDelete = document.createElement('span');
+               eDelete.classList.add('page-delete-button');
+               eDelete.textContent = 'X';
+               eDelete.dataset.action = "delete-command";
+               eDelete.dataset.id = oCommand.id;
+               eDelete.title = "Delete this command";
+
+               eRow.appendChild(eElement);
+               eRow.appendChild(eDelete);
+
+               eCommands.appendChild(eRow);
+            }
          }
       }
 
 
-      /** ---------------------------------------------------------------------
+      /** --------------------------------------------------------------------- @API [tag: initialize]
        * Main initialization function that initializes the page
        */
       function PAGE_Initialize() {
@@ -347,10 +479,35 @@
          PAGE_SetListeners();
       }
 
-      /** ---------------------------------------------------------------------
+      /** --------------------------------------------------------------------- @API [tag: event, command]
        * Configure page listeners, handle page specific events
        */
       function PAGE_SetListeners() {
+
+         // ## Initialize page menu listener ..................................
+
+         const eMenu = document.getElementById('idMenu');
+         eMenu.addEventListener('click', function(e_) {
+            const eTarget = e_.target;
+            if(!eTarget.dataset.action) return;                             // If no action is defined, return
+            e_.stopPropagation();
+            const sAction = eTarget.dataset.action;
+            switch(sAction) {
+               case 'load-page':
+                  oDocument_g.Load();
+                  PAGE_Update();
+                  break;
+               case 'save-page':
+                  oDocument_g.Save();
+                  break;
+               default:
+                  console.error('Unknown action:', sAction);
+            }
+
+         });
+
+         // ## Initialize page work area listener .............................
+
          const eWorkArea = document.getElementById('idWorkArea');
          eWorkArea.addEventListener('click', function(e_) {
             const eTarget = e_.target;
@@ -359,9 +516,39 @@
             const eContainer = eTarget.closest('.container');
             const sAction = eTarget.dataset.action;
             switch(sAction) {
-               case 'send': {
+               case 'send': {                                                 // send command to wed server
                   const sEndpoint = eContainer.querySelector('[data-field="endpoint"]').value;
                   SERVER_Send(sEndpoint).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
+               } break;
+               case 'save': {                                                  // save command
+                  const eCommands = document.getElementById('idCommands');
+                  const aFields = eCommands.querySelectorAll('[data-field]');
+                  const oCommand = {};
+
+                  aFields.forEach(eField => {
+                     const sField = eField.dataset.field;
+                     oCommand[sField] = eField.value;
+                  });
+
+                  oDocument_g.Add("command", oCommand);
+                  oDocument_g.Save();
+               } break;
+               case 'activate-command': {                                      // activate command
+                  const sId = eTarget.dataset.id;
+                  const oCommand = JSON.parse(eTarget.dataset.data);
+                  const eCommands = document.getElementById('idCommands');
+                  if(eCommands) {
+                     const aFields = eCommands.querySelectorAll('[data-field]');
+                     aFields.forEach(eField => {
+                        const sField = eField.dataset.field;
+                        eField.value = oCommand[sField];
+                     });
+                  }
+               } break;
+               case 'delete-command': {                                        // remove command
+                  const sId = eTarget.dataset.id;
+                  oDocument_g.Remove(sId);
+                  PAGE_Update();
                } break;
                default:
                   console.error('Unknown action:', sAction);
@@ -369,9 +556,23 @@
          });
       }
 
+      function PAGE_Callback(sName, ...args) {
+         const fnCallback = oDocument_g.GetCallback(sName);
+         if(fnCallback) {
+            try {
+               fnCallback(...args);
+               return true;
+            } catch(e) {
+               console.error('Error executing callback "' + sName + '":', e);
+               return false;
+            }
+         }
+         return false;
+      }
+
       // Initialize draggable element
       document.addEventListener('DOMContentLoaded', function() {
-         oDocument_g = new CDocument();
+         oDocument_g = new CDocument( {callback: PAGE_Callback} );
          oDocument_g.Add("server", { address: "http://localhost", port: "8001" })
          PAGE_Initialize();                                                    // Initialize page
       });
