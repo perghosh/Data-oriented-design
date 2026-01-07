@@ -56,12 +56,12 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
 
    .page-plate { background-color: var(--background-body); }
    .page-command { cursor: pointer;  }
-   .page-row { background-color: var(--background-body); display: flex; padding: 4px 6px; border-radius: 4px; border: 1px solid #ddd; width: 100%; }
+   .page-row { background-color: var(--background-body); display: flex; border-radius: 4px; border: 1px solid #ddd; width: 100%; }
 
    .page-row-content { cursor: pointer; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-   .page-delete-button { background-color: var(--background-danger); border: none; border-radius: 50%; color: var(--color-danger); cursor: pointer; height: 20px; line-height: 18px; opacity: 0; transition: opacity 0.2s, background-color 0.2s; width: 20px; z-index: 10; text-align: center; }
+   .page-delete-button { background-color: var(--background-danger); border: none; border-radius: 50%; color: var(--color-danger); cursor: pointer; height: 20px; width: 20px; line-height: 18px; flex-shrink: 0; opacity: 0; transition: opacity 0.2s, background-color 0.2s;  z-index: 10; text-align: center; font-size: 16px; }
    .page-row:hover .page-delete-button { opacity: 1;  }
-   .page-delete-button:hover { background-color: var(--background-danger); opacity: 1; }
+   .page-delete-button:hover { background-color: var(--background-danger); opacity: 1;  transform: scale(1.1); }
 
    </style>
 </head>
@@ -123,7 +123,7 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          <!-- Section used to display history of saved command/endpoints -->
          <div id="idHistory" class="container container-form page-plate" data-name="history" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; height: 300px; width: 800px;">
             <div class="caption row handle" data-draggable-handle="1">Command: History</div>
-            <div class="row" data-section="commands">
+            <div class="row" data-section="commands" style="flex-direction: column; align-items: stretch; gap: 8px;">
 
             </div>
          </div>
@@ -448,9 +448,9 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
                eElement.classList.add("page-row-content");
 
                // Create delete button (X)
-               const eDelete = document.createElement('span');
+               const eDelete = document.createElement('button');
                eDelete.classList.add("page-delete-button");
-               eDelete.textContent = "X";
+               eDelete.textContent = "x";
                eDelete.dataset.action = "delete-command";
                eDelete.dataset.id = oCommand.id;
                eDelete.title = "Delete this command";
@@ -494,16 +494,18 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
             const sName = eElement.getAttribute('data-name');
             const oPosition = oDraggable.GetPosition();
             oDocument_g.Add("draggable", { name: sName, position: oDraggable.GetPosition() });
-            oDocument_g.AddCacheItem(["draggable-" + sName, oDraggable);
+            oDocument_g.AddCacheItem(["draggable-" + sName, oDraggable]);      // Add draggable object to cache
          });
 
          PAGE_Update(oDocument_g);
          PAGE_SetListeners();
          oDocument_g.Load();
 
+         /*
          if( oDocument_g.exists("draggable")) {
             const aDraggable = oDocument_g.GetAll("draggable");
          }
+         */
       }
 
       /** --------------------------------------------------------------------- @API [tag: event, command]
