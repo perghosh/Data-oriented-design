@@ -95,21 +95,31 @@ class Table {
     */
    GetData(options_) {
       const oOptions = Object.assign({
-         bHeader: true,
-         iSort: 0
+         bHeader: true, iSort: 0, bIndex: false
       }, options_);
 
       let aData = [];
 
-      for(let i = 0; i < this.aTable.length; i++) { aData.push(this.GetRow(i)); }
+      if( oOptions.bIndex === false ) {                                       // No index, be aware about how to access row data
+         for(let i = 0; i < this.aTable.length; i++) { aData.push(this.GetRow(i)); }
+      }
+      else if( oOptions.bIndex === true ) {                                   // Add index to row
+         for(let i = 0; i < this.aTable.length; i++) {
+            let aRow = [i];
+            aRow.concat(this.GetRow(i))
+            aData.push( aRow );
+         }
+      }
+
+      const iFirstColumn = oOptions.bIndex === true ? 1 : 0;                  // If index then first column is at 1
 
       if(oOptions.iSort > 0) {
-         const iSort = oOptions.iSort - 1;
+         const iSort = oOptions.iSort - iFirstColumn;
          aData.sort((a, b) => a[iSort] - b[iSort]);
       }
 
       if(oOptions.iSort < 0) {
-         const iSort = Math.abs(oOptions.iSort) - 1;
+         const iSort = Math.abs(oOptions.iSort) - iFirstColumn;
          aData.sort((a, b) => b[iSort] - a[iSort]);
       }
 
@@ -133,12 +143,46 @@ class Table {
       return this._GetCellValue(iRow, iColumn);
    }
 
+   /** -----------------------------------------------------------------------
+    * Get cell value
+    * Internal method to get cell value, no checks for valid column or row
+    * @param {number} iRow index for row
+    * @param {number} iColumn index for column
+    */
    _GetCellValue(iRow, iColumn) {
       let value_ = this.aTable[iRow][iColumn];
 
       if(Array.isArray(value_)) { value_ = value_[0];  }                      // if column is array, return first element
 
       return value_;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Set cell value
+    * @param {number} iRow
+    * @param {number|string} column_ index or name for column values is set to
+    * @param {any} value_ value set to cell
+    * @returns
+    */
+   SetCellValue(iRow, column_, value_) {
+      let iColumn = column_;
+      if( typeof column_ === "string") { iColumn = this.GetColumnIndex(column_); }
+      if(iRow < 0 || iRow >= this.aTable.length || iColumn < 0 || iColumn >= this.aColumn.length) {
+         return false;
+      }
+
+      this._SetCellValue(iRow, iColumn, value_);
+      return true;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Internal method to set cell value, no checks for valid column or row
+    * @param {number} iRow index for row
+    * @param {number} iColumn index for column
+    * @param {any} value_ value set to cell
+    */
+   _SetCellValue(iRow, iColumn, value_) {
+      this.aTable[iRow][iColumn] = value_;
    }
 
    /** -----------------------------------------------------------------------
