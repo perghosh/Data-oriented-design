@@ -88,17 +88,45 @@ class Table {
 
 
    /** -----------------------------------------------------------------------
-    * Get table data
-    * @param {Object} options_
-    * @param {boolean} bColumn
-    * @param {number} iSort that is one based column index, not zero based
+    * Returns array with table data
+    * @param {Object|string} options_ Configuration options or a string shorthand
+    * @param {boolean} [options_.bHeader=true] Include header row at the beginning
+    * @param {boolean} [options_.bIndex=false] Include row index as first column
+    * @param {number} [options_.iSort=0] Column index to sort by (positive for ascending,
+    *                                    negative for descending, 0 for no sorting).
+    *                                    Index adjusts based on bIndex option.
+    * @returns {Array<Array>} 2D array of table data
+    * @example
+    * // Get all data with header (default)
+    * const data = table.GetData();
+    *
+    * @example
+    * // String shorthand: include index column
+    * const data = table.GetData('index');
+    *
+    * @example
+    * // String shorthand: include both index and header
+    * const data = table.GetData('index header');
+    *
+    * @example
+    * // Object options: sort by column 2 descending, no header
+    * const data = table.GetData({
+    *   bHeader: false,
+    *   bIndex: true,
+    *   iSort: -2  // Sorts by second column descending
+    * });
     */
    GetData(options_) {
-      const oOptions = Object.assign({
-         bHeader: true, iSort: 0, bIndex: false
-      }, options_);
+      if( typeof options_ === 'string' ) {
+         let o = {};
+         const s_ = options_;
+         if( s_.indexOf('index') !== -1 ) { o.bIndex = true; }
+         if( s_.indexOf('header') !== -1 ) { o.bHeader = true; }
+         options_ = o;
+      }
 
-      let aData = [];
+      const oOptions = Object.assign({ bHeader: true, iSort: 0, bIndex: false }, options_); // retrieval configuration
+      let aData = []; // Generated data that is returned
 
       if( oOptions.bIndex === false ) {                                       // No index, be aware about how to access row data
          for(let i = 0; i < this.aTable.length; i++) { aData.push(this.GetRow(i)); }
@@ -127,6 +155,9 @@ class Table {
 
       return aData;
    }
+
+   // Get internal table data array ------------------------------------------
+   Data() { return this.aTable; }
 
    /** -----------------------------------------------------------------------
     * Get cell value
