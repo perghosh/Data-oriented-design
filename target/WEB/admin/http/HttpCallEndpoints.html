@@ -603,6 +603,24 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
       // Initialize draggable element
       document.addEventListener('DOMContentLoaded', function() {
          let oTable = new Table(["one", "two"]);
+         const aTable1 = [["Selma1", "Selma2"], ["Zorro1", "Zorro2"]];
+         const aTable2 = [["LexusA", "LexusB"], ["Lexus1", "Lexus2"]];
+         oTable.Add(aTable1);
+         oTable.Add(aTable2);
+
+         let iSize = oTable.Size();
+         let data_ = oTable.GetData();
+
+         let value1_ = oTable.GetCellValue(0, 1);
+         let value2_ = oTable.GetCellValue(0, "two");
+
+         oTable.SetCellValue(0, "two", "Selma new");
+
+         value1_ = oTable.GetCellValue(0, 1);
+         value2_ = oTable.GetCellValue(0, "two");
+
+         data_ = oTable.GetData( {bHeader: false} );
+
 
          oDocument_g = new CDocument( {callback: PAGE_Callback} );
          oDocument_g.Add("server", { address: "http://localhost", port: "8001" })
