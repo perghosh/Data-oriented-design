@@ -18,6 +18,7 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <link rel="stylesheet" href="variables-default.css">
    <link rel="stylesheet" href="css/elements.css">
+   <script src="js/classes/gd_data_table.js"></script>
    <script src="js/classes/gd_ui_draggable.js"></script>
    <title>Test session logic in http web server</title>
    <style>
@@ -601,6 +602,8 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
 
       // Initialize draggable element
       document.addEventListener('DOMContentLoaded', function() {
+         let oTable = new Table(["one", "two"]);
+
          oDocument_g = new CDocument( {callback: PAGE_Callback} );
          oDocument_g.Add("server", { address: "http://localhost", port: "8001" })
          PAGE_Initialize();                                                    // Initialize page
