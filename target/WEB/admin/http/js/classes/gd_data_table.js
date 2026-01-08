@@ -93,6 +93,9 @@ class Table {
       return column_;
    }
 
+   // Return column count ----------------------------------------------------
+   GetColumnCount() { return this.aColumn.length; }
+
    // Return type for column -------------------------------------------------
    GetColumnType(iColumn) {
       if(iColumn < 0 || iColumn >= this.aColumn.length) { return null; }
@@ -293,7 +296,7 @@ class Table {
 
    /** -----------------------------------------------------------------------
     * Add rows to the table
-    * @param {Array | string} table_ - Data to add (string, row array, or array of rows)
+    * @param {Object |Array | string} table_ - Data to add (string, row array, or array of rows)
     * @param {string} sSeperator - Optional separator for string input (default: ",")
     */
    Add(table_, sSeperator) {
@@ -303,6 +306,18 @@ class Table {
          aTable = [table_.split(sSeperator)];
       }
       else if(Array.isArray(table_) && table_.every(Array.isArray) == false) { aTable = [table_]; } // check for single [] to add
+      else if( Object.prototype.toString.call(table_) === "[object Object]") {
+         // ## generate array with the amount of columns table has
+         const iColumnCount = this.GetColumnCount();
+         aTable = Array(iColumnCount);
+         // ## Iterate object, find matching column and set value in array
+         for(const [key_, value_] of Object.entries(table_)) {
+            const iColumn = this.GetColumnIndex(key_);
+            if(iColumn !== -1) {
+               aTable[iColumn] = value_;
+            }
+         }
+      }
 
       for(let i = 0; i < aTable.length; i++) // undefined
       {
@@ -376,14 +391,14 @@ class Table {
       const aColumns = [];
 
       for(let i = 0; i < aHeader.length; i++) {
-         const sName = String(aHeader[i]);
+         const sName = String(aHeader[i]); // This should be the name of the column if you call this method
 
          // Peek at next row to guess type
          let sType = "string";
          if(this.aTable.length > 1) {
-            const vSample = this._GetCellValue(1, i);
-            if(typeof vSample === "number") sType = "number";
-            else if(vSample instanceof Date) sType = "date";
+            const v_ = this._GetCellValue(1, i);
+            if(typeof v_ === "number") sType = "number";
+            else if(v_ instanceof Date) sType = "date";
          }
 
          aColumns.push(new Table.column({ sName: sName, sType: sType }));
