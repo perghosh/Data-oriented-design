@@ -608,6 +608,8 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          oTable.Add(aTable1);
          oTable.Add(aTable2);
 
+         oTable.ParseRowTypesToColumns( 2 );
+
          let iSize = oTable.Size();
          let data_ = oTable.GetData();
 
@@ -620,6 +622,7 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          value2_ = oTable.GetCellValue(0, "two");
 
          data_ = oTable.GetData( {bHeader: false} );
+         data_ = oTable.GetData( {bIndex: true} );
 
 
          oDocument_g = new CDocument( {callback: PAGE_Callback} );
