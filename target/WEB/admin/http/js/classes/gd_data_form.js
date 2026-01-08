@@ -142,7 +142,7 @@ class Form {
       const oOptions = Object.assign({ oValues: {} }, options_);
 
       // ## Initialize fields with metadata
-      this.aField = aFields_.map(field_ => new Form.field(field_));
+      this.aField = aField.map(field_ => new Form.field(field_));
 
       // ## Initialize values object
       this.oValue = {};
