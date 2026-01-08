@@ -357,8 +357,10 @@ class Table {
                aTable[iColumn] = value_;
             }
          }
+         aTable = [aTable];                                                   // Wrap the array in another array to match the expected format
       }
 
+      // ## Add rows to internal table .......................................
       for(let i = 0; i < aTable.length; i++) // undefined
       {
          this.aTable.push(aTable[i]);
@@ -399,19 +401,16 @@ class Table {
       if(!aRow) return;
 
       for(let i = 0; i < aRow.length; i++) {
-         const v_ = aRow[i];
+         const v_ = aRow[i]; // Get the value at the current index (i = column)
 
-         // Ignore empty or null values as they don't help determine type
-         if(v_ === null || v_ === undefined || v_ === "") { continue; }
+         if(v_ === null || v_ === undefined || v_ === "") { continue; }       // Ignore empty or null values as they don't help determine type
 
-         // Only proceed if the column type is currently unknown
-         if(this.aColumn[i] && (this.aColumn[i].sType === "unknown" || !this.aColumn[i].sType)) {
+         if(this.aColumn[i] && (this.aColumn[i].sType === "unknown" || !this.aColumn[i].sType)) { // Only proceed if the column type is currently unknown
 
             // ## Determine Type ..............................................
             let sDetectedType = typeof v_;
 
-            // If the value is a string, check if it represents a number
-            if(sDetectedType === "string") {
+            if(sDetectedType === "string") {                                  // If the value is a string, check if it represents a number
                const n_ = Number(v_);
                if(!isNaN(n_)) { sDetectedType = "number"; }
             }
