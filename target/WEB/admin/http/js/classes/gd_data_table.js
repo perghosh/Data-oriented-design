@@ -29,6 +29,11 @@ class Table {
 
    /** -----------------------------------------------------------------------
     * Constructor
+    *
+    * Arguments passed to constructor is made as flexible as possible.
+    * If you pass first value in with the format [[]] it is table data.
+    * If you pass first value in with the format [] it is column data.
+    *
     * @param {Object} options_
     * @param {Array<Array>} [options_.aTable=[]]
     * @param {Array<string>} [options_.aColumn=[]]
@@ -39,10 +44,19 @@ class Table {
       }
       if( !Array.isArray(columns_) ) { throw new Error("Invalid argument"); }
 
-      const aColumn = Array.isArray( columns_ ) ? columns_.map(column => new Table.column(column)) : [];
+      // Check if the first element is an array to identify a 2D table structure
+      const bIsTableData = columns_.length > 0 && Array.isArray(columns_[0]);
 
-      this.aTable = options_.aTable || [];
-      this.aColumn = options_.aColumn || aColumn;
+      if( bIsTableData ) {
+         this.aTable = columns_;
+         this.aColumn = [];
+      }
+      else {
+         // ## If not table data, assume it's column data
+         const aColumn = Array.isArray( columns_ ) ? columns_.map(column => new Table.column(column)) : [];
+         this.aTable = options_.aTable || [];
+         this.aColumn = options_.aColumn || aColumn;
+      }
    }
 
    /** -----------------------------------------------------------------------
@@ -77,6 +91,12 @@ class Table {
       }
 
       return column_;
+   }
+
+   // Return type for column -------------------------------------------------
+   GetColumnType(iColumn) {
+      if(iColumn < 0 || iColumn >= this.aColumn.length) { return null; }
+      return this.aColumn[iColumn].sType;
    }
 
    /** -----------------------------------------------------------------------
@@ -141,17 +161,46 @@ class Table {
 
       const iFirstColumn = oOptions.bIndex === true ? 1 : 0;                  // If index then first column is at 1
 
+      // Check if column type is string
+      const bIsString = this.GetColumnType(iFirstColumn) === 'string';
+
       if(oOptions.iSort > 0) {
          const iSort = oOptions.iSort - iFirstColumn;
-         aData.sort((a, b) => a[iSort] - b[iSort]);
+         aData.sort((a, b) => {
+            if(bIsString) {
+               const a_ = a[iSort];
+               const b_ = b[iSort];
+
+               // Handle null/undefined values for strings
+               if (a_ == null && bVal == null) return 0;
+               if (a_ == null) return -1; // null/undefined comes before strings
+               if (b_ == null) return 1;  // null/undefined comes before strings
+
+               return String(a_).localeCompare(String(b_));
+            }
+            return a[iSort] - b[iSort];
+         });
       }
 
       if(oOptions.iSort < 0) {
          const iSort = Math.abs(oOptions.iSort) - iFirstColumn;
-         aData.sort((a, b) => b[iSort] - a[iSort]);
+         aData.sort((a, b) => {
+            if(bIsString) {
+               const a_ = a[iSort];
+               const b_ = b[iSort];
+
+               // Handle null/undefined values for strings (descending order)
+               if (a_ == null && b_ == null) return 0;
+               if (a_ == null) return 1; // null/undefined comes after strings in descending
+               if (b_ == null) return -1; // null/undefined comes after strings in descending
+
+               return String(b_).localeCompare(String(a_));
+            }
+            return b[iSort] - a[iSort];
+         });
       }
 
-      if( oOptions.bHeader) { aData.unshift(this.GetHeaderRow()); }
+      if( oOptions.bHeader) { aData.unshift(this.GetHeaderRow()); }           // add header row
 
       return aData;
    }
@@ -277,4 +326,71 @@ class Table {
 
       this.aTable.splice(iPosition, iLength);
    }
+
+   // ## Helper methods, like utilities for table
+
+   /** -----------------------------------------------------------------------
+    * Parses the types of the data in the table for a specific row and sets the
+    * column type if it is not already set. Does not modify the cell values.
+    *
+    * @param {Array|number} row_ - The row array or the row index to parse types for
+    */
+   ParseRowTypesToColumns( row_ ) {
+      let aRow = row_;
+      if( row_ === undefined || row_ === null ) { row_ = 1; } // Default to the secornd row because first may be header
+      if( typeof row_ === "number" && this.Size() === 1) { row_ = 0; }
+
+      if( typeof row_ === "number" ) { aRow = this._GetRow(row_); }
+      if(!aRow) return;
+
+      for(let i = 0; i < aRow.length; i++) {
+         const v_ = aRow[i];
+
+         // Ignore empty or null values as they don't help determine type
+         if(v_ === null || v_ === undefined || v_ === "") { continue; }
+
+         // Only proceed if the column type is currently unknown
+         if(this.aColumn[i] && (this.aColumn[i].sType === "unknown" || !this.aColumn[i].sType)) {
+
+            // ## Determine Type ..............................................
+            let sDetectedType = typeof v_;
+
+            // If the value is a string, check if it represents a number
+            if(sDetectedType === "string") {
+               const n_ = Number(v_);
+               if(!isNaN(n_)) { sDetectedType = "number"; }
+            }
+
+            // ## Apply to Metadata ...........................................
+            this.aColumn[i].sType = sDetectedType;
+         }// if(
+      }// for(
+   }
+
+   /** -----------------------------------------------------------------------
+    * Prepares column definitions from the first row of data.
+    * Typically called if aTable was passed in without aColumn metadata.
+    */
+   PrepareColumns() { console.assert(this.aTable.length > 0, "Table is empty");
+      const aHeader = this.aTable[0];
+      const aColumns = [];
+
+      for(let i = 0; i < aHeader.length; i++) {
+         const sName = String(aHeader[i]);
+
+         // Peek at next row to guess type
+         let sType = "string";
+         if(this.aTable.length > 1) {
+            const vSample = this._GetCellValue(1, i);
+            if(typeof vSample === "number") sType = "number";
+            else if(vSample instanceof Date) sType = "date";
+         }
+
+         aColumns.push(new Table.column({ sName: sName, sType: sType }));
+      }
+
+      this.aColumn = aColumns;
+      return this.aColumn;
+   }
+
 }

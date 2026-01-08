@@ -48,6 +48,7 @@ Command line logic for terminal applications.
 
 Database operations and management. Work with any RDBMS that is compatible with the ODBC API or Sqlite
 
+- [Format SQL](GD_SQL_VALUE.MD) - *Safe SQL Value Formatting and Templating*
 - [Database ODBC](GD_DATABASE_ODBC.MD) - *Modern ODBC wrapper for universal database connectivity*
 - [Database SQLite](GD_DATABASE_SQLITE.MD) - *Simple and safe SQLite wrapper with modern C++ interface*
 
