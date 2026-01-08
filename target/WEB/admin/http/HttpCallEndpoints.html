@@ -192,6 +192,11 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
             return null;
          }
 
+         DeleteTableCache(sCacheName, iIndex) {
+            const oTable = this.GetTableCacheItem( sCacheName );
+            if(oTable) { oTable.Delete(iIndex); }
+         }
+
          /// Remove object from array ----------------------------------------
          Remove(sId) {
             const iIndex = this.aObject.findIndex(o => o.id === sId);
@@ -453,24 +458,34 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
       function PAGE_Update(source_ = oDocument_g) {
          // ## check if source_ is instance of CDocument
          if((source_ instanceof CDocument) === true) {
-            // ### Update html elements from document
-            const oServer = source_.GetObject('server');                      // address and port
-            PAGE_UpdateFields('idServer', oServer);
+            const oDocument = source_;
 
-            const aCommand = oDocument_g.GetAll('command');
-            const eHistory = document.getElementById("idHistory");
-            const eCommands = document.querySelector('[data-section="commands"]');
+            // ## Update Url .................................................
+            const eServer = document.getElementById("idServer");
+            const oServer = oDocument.Get("server");
+            if( oServer ) {
+               const o = oServer.object;
+               eServer.querySelector( '[data-field="address"]' ).value = o.address;
+               eServer.querySelector( '[data-field="port"]' ).value = o.port;
 
-            // ### Delete container and generate new div elements, one for each command
-            //
+               const eUrl = document.getElementById("idUrl");
+               const sUrl = `${o.address}:${o.port}`;
+               eUrl.querySelector( '[data-field="url"]' ).value = sUrl;
+            }
+
+            // ## Update history from endpoints ...............................
+
+            const sCacheName = "endpoint";
+            const oTable = oDocument.GetTableCacheItem( sCacheName );
+
+            const eHistory = document.getElementById("idHistory"); // history element
+            const eCommands = document.querySelector('[data-section="commands"]'); // commands element used as container
             eCommands.innerHTML = '';
-            for(let oCommand of aCommand) {
-               const o = oCommand.object;
 
-               const eRow = document.createElement("div");
-               eRow.classList.add("page-row");
-
+            const iRowCount = oTable.Size();
+            for( let iRow = 0; iRow < iRowCount; iRow++ ) {
                const eElement = document.createElement("div");
+               const o = oTable.AsObject(iRow);
                let sName = o.alias;
                sName += " - ";
                sName += o.endpoint.length > 60 ? o.endpoint.substr(0, 57) + '...' : o.endpoint;
@@ -478,7 +493,8 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
 
                eElement.dataset.action = "activate-command";
                eElement.dataset.data = JSON.stringify( o );
-               eElement.dataset.id = oCommand.id;
+               eElement.dataset.index = iRow;
+               eElement.dataset.cache = sCacheName;
                eElement.classList.add("page-row-content");
 
                // Create delete button (X)
@@ -486,8 +502,12 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
                eDelete.classList.add("page-delete-button");
                eDelete.textContent = "x";
                eDelete.dataset.action = "delete-command";
-               eDelete.dataset.id = oCommand.id;
+               eDelete.dataset.index = iRow;
+               eDelete.dataset.cache = sCacheName;
                eDelete.title = "Delete this command";
+
+               const eRow = document.createElement("div");
+               eRow.classList.add("page-row");
 
                eRow.appendChild(eElement);
                eRow.appendChild(eDelete);
@@ -536,7 +556,6 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          let oTable = new Table(["alias", "endpoint","body", "description"]);  // table storing endpoints
          oDocument_g.AddTableCacheItem("endpoint", oTable);                   // Add table object to cache
 
-         PAGE_Update(oDocument_g);
          PAGE_SetListeners();
          oDocument_g.Load();
 
@@ -605,8 +624,10 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
                   oDocument_g.Save();
                } break;
                case 'activate-command': {                                      // activate command
-                  const sId = eTarget.dataset.id;
-                  const oCommand = JSON.parse(eTarget.dataset.data);
+                  const sCacheName = eTarget.dataset.cache;
+                  const oTable = oDocument_g.GetTableCacheItem(sCacheName);
+                  const iIndex = eTarget.dataset.index;
+                  const oCommand = oTable.AsObject( iIndex );
                   const eCommands = document.getElementById('idCommands');
                   if(eCommands) {
                      const aFields = eCommands.querySelectorAll('[data-field]');
@@ -616,9 +637,10 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
                      });
                   }
                } break;
-               case 'delete-command': {                                        // remove command
-                  const sId = eTarget.dataset.id;
-                  oDocument_g.Remove(sId);
+               case 'delete-command': {                                        // delete command
+                  const sCacheName = eTarget.dataset.cache;
+                  const iIndex = eTarget.dataset.index;
+                  oDocument_g.DeleteTableCache(sCacheName, iIndex);
                   PAGE_Update();
                } break;
                default:
@@ -643,33 +665,10 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
 
       // Initialize draggable element
       document.addEventListener('DOMContentLoaded', function() {
-         let oTable = new Table(["one", "two"]);
-         const aTable1 = [["Selma1", "Selma2"], ["Zorro1", "Zorro2"]];
-         const aTable2 = [["LexusA", "LexusB"], ["Lexus1", "Lexus2"]];
-         oTable.Add(aTable1);
-         oTable.Add(aTable2);
-
-         oTable.ParseRowTypesToColumns( 2 );
-
-         let iSize = oTable.Size();
-         let data_ = oTable.GetData();
-
-         let value1_ = oTable.GetCellValue(0, 1);
-         let value2_ = oTable.GetCellValue(0, "two");
-
-         oTable.SetCellValue(0, "two", "Selma new");
-
-         value1_ = oTable.GetCellValue(0, 1);
-         value2_ = oTable.GetCellValue(0, "two");
-
-         data_ = oTable.GetData( {bHeader: false} );
-         data_ = oTable.GetData( {bIndex: true} );
-         data_ = oTable.GetData( {iSort: 1} );
-
-
          oDocument_g = new CDocument( {callback: PAGE_Callback} );
          oDocument_g.Add("server", { address: "http://localhost", port: "8001" })
          PAGE_Initialize();                                                    // Initialize page
+         PAGE_Update(oDocument_g);
       });
 
    </script>

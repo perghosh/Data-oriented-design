@@ -57,6 +57,10 @@ class Table {
       is_number() { return this.sType === "number"; }
       is_aligned_middle() { return (this.iState & 4) === 4; }
       is_aligned_right() { return (this.iState & 8) === 8; }
+
+      get name() { return this.sName; }
+      get alias() { return this.sAlias; }
+      get type() { return this.sType; }
    }
 
 
@@ -243,6 +247,14 @@ class Table {
       if( oOptions.bHeader) { aData.unshift(this.GetHeaderRow()); }           // add header row
 
       return aData;
+   }
+
+   AsObject(iRow) {
+      const o = {};
+      for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
+         o[this.aColumn[iColumn].name] = this._GetCellValue(iRow, iColumn);
+      }
+      return o;
    }
 
    // Get internal table data array ------------------------------------------
