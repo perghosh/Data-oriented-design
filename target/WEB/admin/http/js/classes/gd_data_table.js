@@ -1,5 +1,35 @@
+/**
+ * Table - A simple data table class for managing tabular data with typed columns.
+ *
+ * **Quick Start:**
+ * ```javascript
+ * // Create table with column definitions
+ * const table = new Table(["Name", "Age", "Email"]);
+ *
+ * // Add data rows
+ * table.Add(["John", 30, "john@example.com"]);
+ * table.Add(["Jane", 25, "jane@example.com"]);
+ *
+ * // Get all data with headers
+ * const data = table.GetData();
+ *
+ * // Or create from 2D array
+ * const table2 = new Table([["Name", "Age"], ["John", 30]]);
+ * table2.PrepareColumns(); // Auto-generate columns from first row
+ * ```
+ *
+ * **Key Concepts:**
+ * - **Columns:** Define structure (name, type, alias, alignment). Access via name or index.
+ * - **Rows:** Array of cell values matching column order.
+ * - **Cell Access:** Use `GetCellValue(row, column)` or `SetCellValue(row, column, value)`.
+ *
+ * **Common Methods:**
+ * - `GetData(options)` - Retrieve data with optional sorting, headers, or index column
+ * - `Add(row)` - Add single row or multiple rows
+ * - `Delete(position, length)` - Remove rows
+ * - `GetColumnIndex(name)` - Find column by name or alias
+ */
 class Table {
-
 
    static column = class {
       /**
@@ -19,13 +49,18 @@ class Table {
          this.sName = oOptions.sName || "";
          this.sAlias = oOptions.sAlias || this.sName;
          this.sType = oOptions.sType || "unknown";
-         this.iState = oOptions.iState || 0; // e.g., 0: none, 1: sorted asc, 2: sorted desc
+         this.iState = oOptions.iState || 0; // e.g., 0: none, 1: sorted asc, 2: sorted desc, 4: aligned middle, 8: aligned right
          this.iSpecificType = oOptions.iSpecificType || 0;
       }
 
       is_string() { return this.sType === "string"; }
       is_number() { return this.sType === "number"; }
+      is_aligned_middle() { return (this.iState & 4) === 4; }
+      is_aligned_right() { return (this.iState & 8) === 8; }
    }
+
+
+   // @API [tag: table, construction] [summary: create table]
 
    /** -----------------------------------------------------------------------
     * Constructor
@@ -60,7 +95,10 @@ class Table {
    }
 
    /** -----------------------------------------------------------------------
-    * Get column index by name or alias
+    * Get column index for name or alias
+    *
+    * Returns index to column or -1 if not found based on name or alias.
+    *
     * @param {string|Object} column_ if string then match name or alias, if object then pick type and match
     * @returns {number} index to column or -1 if not found
     */
@@ -151,6 +189,7 @@ class Table {
       const oOptions = Object.assign({ bHeader: true, iSort: 0, bIndex: false }, options_); // retrieval configuration
       let aData = []; // Generated data that is returned
 
+      // ## Build table data to return  .......................................
       if( oOptions.bIndex === false ) {                                       // No index, be aware about how to access row data
          for(let i = 0; i < this.aTable.length; i++) { aData.push(this.GetRow(i)); }
       }
@@ -162,11 +201,9 @@ class Table {
          }
       }
 
+      // ## Sorting ...........................................................
       const iFirstColumn = oOptions.bIndex === true ? 1 : 0;                  // If index then first column is at 1
-
-      // Check if column type is string
-      const bIsString = this.GetColumnType(iFirstColumn) === 'string';
-
+      const bIsString = this.GetColumnType(iFirstColumn) === 'string';        // Check if column type is string
       if(oOptions.iSort > 0) {
          const iSort = oOptions.iSort - iFirstColumn;
          aData.sort((a, b) => {
@@ -245,7 +282,6 @@ class Table {
     * @param {number} iRow
     * @param {number|string} column_ index or name for column values is set to
     * @param {any} value_ value set to cell
-    * @returns
     */
    SetCellValue(iRow, column_, value_) {
       let iColumn = column_;
@@ -264,13 +300,12 @@ class Table {
     * @param {number} iColumn index for column
     * @param {any} value_ value set to cell
     */
-   _SetCellValue(iRow, iColumn, value_) {
-      this.aTable[iRow][iColumn] = value_;
-   }
+   _SetCellValue(iRow, iColumn, value_) { this.aTable[iRow][iColumn] = value_; }
 
    /** -----------------------------------------------------------------------
     * Get row data
     * @param {number} iRow index for row
+    * @returns {Array<any>} Array of cell values for the row
     */
     GetRow(iRow) {
       if(iRow < 0 || iRow >= this.aTable.length) { return null; }
@@ -278,6 +313,11 @@ class Table {
       return this._GetRow(iRow);
    }
 
+   /** -----------------------------------------------------------------------
+    * Internal method to get row data, no checks for valid row
+    * @param {number} iRow index for row
+    * @returns {Array<any>} Array of cell values for the row
+    */
    _GetRow(iRow) {
      const row_ = [];
      for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
@@ -342,7 +382,7 @@ class Table {
       this.aTable.splice(iPosition, iLength);
    }
 
-   // ## Helper methods, like utilities for table
+   // @API [tag: table, utilities] [description: Helper methods, like utilities for table]
 
    /** -----------------------------------------------------------------------
     * Parses the types of the data in the table for a specific row and sets the
