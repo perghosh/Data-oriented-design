@@ -157,6 +157,9 @@ class Form {
       this.oOriginalValue = { ...this.oValue };
    }
 
+   // Get number of fields ---------------------------------------------------
+   Size() { return this.aField.length; }
+
    /** -----------------------------------------------------------------------
     * Get field index by id
     *

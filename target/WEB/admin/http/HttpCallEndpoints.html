@@ -2,12 +2,12 @@
 PAGE_ Method Documentation:
 =========================
 
-PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with any provided arguments
-PAGE_Initialize() - Main initialization function that sets up the page, creates draggable elements and configures listeners
 PAGE_ProcessResponse(oData) - Handles server response data and displays it in the response container based on data type
 PAGE_SetListeners() - Configures event listeners for page interactions, handling actions like send and save
 PAGE_Update(source_) - Updates page elements with data from a source object, typically a CDocument instance
-PAGE_UpdateFields(container_, oValue) - Populates form fields in a container with values from an object
+PAGE_OnIdle
+PAGE_Initialize() - Main initialization function that sets up the page, creates draggable elements and configures listeners
+PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with any provided arguments
 
 -->
 
@@ -136,9 +136,11 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
       // Make oDocument a global variable
       let oDocument_g;
 
-
       class CDocument {
+         static iIdleTimerId_s = null; // Global timer ID for idle callback
+
          constructor( oOptions = {} ) {
+            this.bModified = false; // Initialize modified flag to false
             this.aObject = [];
             this.aCache = [];
             this.aTableCache = []; // Hold table data like [{id: <string>, table: <table object>}, ...]
@@ -146,19 +148,25 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
             this.fnCallback = oOptions.callback || null;
          }
 
+         // Check if document has been modified ------------------------------
+         IsModified() { return this.bModified; }
+
          /// Add object to document ------------------------------------------
          Add(sType, oObject) {
             const sId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
             this.aObject.push({ id: sId, type: sType, object: oObject });
+            this.bModified = true;
          }
 
          /// Add object to cache ---------------------------------------------
          AddCacheItem(sKey, oObject) {
             this.aCache[sKey] = oObject;
+            this.bModified = true;
          }
 
          AddTableCacheItem(sId, oTable) {
             this.aTableCache.push({ id: sId, table: oTable });
+            this.bModified = true;
          }
 
          /// Get first object by type ----------------------------------------
@@ -220,6 +228,7 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
                }
                localStorage.setItem('table-cache', JSON.stringify(oTableCache));
 
+               this.bModified = false;                                        // Reset modified flag after saving
             } catch(e) { console.error('Failed to save to localStorage:', e); }
          }
 
@@ -427,20 +436,6 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          document.getElementById('idResult').querySelector('[data-field="response"]').textContent = sResult;
       }
 
-      /** ---------------------------------------------------------------------
-       * Update fields in container with values from object
-       */
-      function PAGE_UpdateFields(container_, oValue) {
-         let eContainer = container_;
-         if(typeof container_ === 'string') { eContainer = document.getElementById(container_); }
-         if(typeof oValue === 'object') {
-            for(let sKey in oValue) {
-               let eElement = eContainer.querySelector(`[data-field="${sKey}"]`);
-               if(eElement) { eElement.value = oValue[sKey]; }
-            }
-         }
-      }
-
       function PAGE_UpdateCommands(container_, aCommands) {
          let eContainer = container_;
          if(typeof container_ === 'string') { eContainer = document.getElementById(container_); }
@@ -526,6 +521,15 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          }
       }
 
+      /**
+       *
+       */
+      function PAGE_OnIdle() {
+         if( oDocument_g.IsModified() ) {
+            let eSave = document.getElementById("idSave").querySelector('[data-action="save-page"]');
+         }
+      }
+
 
       /** --------------------------------------------------------------------- @API [tag: initialize]
        * Main initialization function that initializes the page
@@ -558,6 +562,9 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
 
          PAGE_SetListeners();
          oDocument_g.Load();
+
+         // ## Start idle timer - call PAGE_OnIdle() once per second
+         CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
 
          /*
          if( oDocument_g.exists("draggable")) {

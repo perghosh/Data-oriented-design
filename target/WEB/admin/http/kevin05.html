@@ -11,23 +11,50 @@
 
     </div>
 <script>
-    const form = new Form([
+    const oForm = new Form([
         { sId: "name", sLabel: "Full Name", sType: "string", bRequired: true, iMinLength: 2 },
         { sId: "age", sLabel: "Age", sType: "number", nMin: 18, nMax: 100 },
         { sId: "email", sLabel: "Email", sType: "string", pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
     ]);
 
-    const data = form.GetField(0);
-    console.log(data);
+    //const data = form.GetField(0);
+    //console.log(data);
 
-    function CreateForm(parent_)
-    {
-        let eParent = document.querySelector(parent_);
-        if(!eParent) {eParent = document.getElementById(parent_)}
+   function CreateForm(parent_)
+   {
+      if(!parent_) {parent_ = "#idContainer"}
 
-        let eForm = document.createElement(form);
-        
-    }
+      if( parent_ === "#idContainer")
+      {
+         let eParent = document.querySelector(parent_);
+         if(!eParent) {eParent = document.getElementById(parent_)}
+
+         let eForm = document.createElement("form");
+
+         const iFieldCount = oForm.Size();
+         for(let i = 0; i < iFieldCount; i++)
+         {
+            const oField = oForm.GetField(i);
+            const eField = document.createElement("input");
+/*
+            eField.type = oField.sType;
+            eField.id = oField.sId;
+            eField.placeholder = oField.sLabel;
+            eField.required = oField.bRequired;
+            */
+            eForm.appendChild(eField);
+         }
+
+         eParent.appendChild(eForm);
+
+      }
+
+
+   }
+
+   document.addEventListener('DOMContentLoaded', function() {
+      CreateForm("#idContainer");
+   });
 
 </script>
 </body>
