@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="js/classes/gd_data_form.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div id="idContainer">
+
+    </div>
+<script>
+    const form = new Form([
+        { sId: "name", sLabel: "Full Name", sType: "string", bRequired: true, iMinLength: 2 },
+        { sId: "age", sLabel: "Age", sType: "number", nMin: 18, nMax: 100 },
+        { sId: "email", sLabel: "Email", sType: "string", pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+    ]);
+
+    const data = form.GetField(0);
+    console.log(data);
+
+    function CreateForm(parent_)
+    {
+        let eParent = document.querySelector(parent_);
+        if(!eParent) {eParent = document.getElementById(parent_)}
+
+        let eForm = document.createElement(form);
+        
+    }
+
+</script>
+</body>
+</html>
