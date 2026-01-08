@@ -203,8 +203,18 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
          /// Save the entire aObject array to localStorage -------------------
          Save() {
             try {
+               // ## Save object data ..........................................
                const sObjectData = JSON.stringify(this.aObject);
                localStorage.setItem('document', sObjectData);
+
+               let oTableCache = {};
+
+               // ## Save table cache .........................................
+               for(let o of this.aTableCache) {
+                  oTableCache[o.id] = o.table.Data();                         // Save table data as an array
+               }
+               localStorage.setItem('table-cache', JSON.stringify(oTableCache));
+
             } catch(e) { console.error('Failed to save to localStorage:', e); }
          }
 
@@ -216,9 +226,20 @@ PAGE_UpdateFields(container_, oValue) - Populates form fields in a container wit
                   const aObject = JSON.parse(sObjectData);
                   if(Array.isArray(aObject)) {
                      this.aObject = aObject;
-                     return true;                                             // success
                   }
                }
+
+               // ## Load table cache .........................................
+               const sTableCache = localStorage.getItem('table-cache');
+               if(sTableCache) {
+                  const oTableCache = JSON.parse(sTableCache);
+                  for(let sId in oTableCache) {
+                     let oTable = this.GetTableCacheItem( sId );
+                     const aRow = oTableCache[sId];
+                     if(oTable) oTable.Add(aRow);
+                  }
+               }
+               return true;                                                   // success
             } catch(e) {
                console.error('Failed to load from localStorage:', e);
                this.aObject = [];
