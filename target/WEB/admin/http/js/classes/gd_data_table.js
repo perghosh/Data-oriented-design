@@ -208,17 +208,17 @@ class Table {
       // ## Sorting ...........................................................
       const iFirstColumn = oOptions.bIndex === true ? 1 : 0;                  // If index then first column is at 1
       const bIsString = this.GetColumnType(iFirstColumn) === 'string';        // Check if column type is string
-      if(oOptions.iSort > 0) {
+      if(oOptions.iSort > 0) {                                                // ascending order
          const iSort = oOptions.iSort - iFirstColumn;
          aData.sort((a, b) => {
             if(bIsString) {
                const a_ = a[iSort];
                const b_ = b[iSort];
 
-               // Handle null/undefined values for strings
+               // ## Handle null/undefined values for strings .................
                if (a_ == null && bVal == null) return 0;
-               if (a_ == null) return -1; // null/undefined comes before strings
-               if (b_ == null) return 1;  // null/undefined comes before strings
+               if (a_ == null) return -1;                                     // null/undefined comes before strings
+               if (b_ == null) return 1;                                      // null/undefined comes before strings
 
                return String(a_).localeCompare(String(b_));
             }
@@ -226,17 +226,17 @@ class Table {
          });
       }
 
-      if(oOptions.iSort < 0) {
+      if(oOptions.iSort < 0) {                                                // descending order
          const iSort = Math.abs(oOptions.iSort) - iFirstColumn;
          aData.sort((a, b) => {
             if(bIsString) {
                const a_ = a[iSort];
                const b_ = b[iSort];
 
-               // Handle null/undefined values for strings (descending order)
+               // ## Handle null/undefined values for strings (descending order)
                if (a_ == null && b_ == null) return 0;
-               if (a_ == null) return 1; // null/undefined comes after strings in descending
-               if (b_ == null) return -1; // null/undefined comes after strings in descending
+               if (a_ == null) return 1;                                      // null/undefined comes after strings in descending
+               if (b_ == null) return -1;                                     // null/undefined comes after strings in descending
 
                return String(b_).localeCompare(String(a_));
             }
@@ -249,12 +249,23 @@ class Table {
       return aData;
    }
 
+   // Convert row data to an object ------------------------------------------
    AsObject(iRow) {
       const o = {};
       for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
          o[this.aColumn[iColumn].name] = this._GetCellValue(iRow, iColumn);
       }
       return o;
+   }
+
+   // Convert row data to a string -------------------------------------------
+   AsString(iRow, sSeparator = "\t") {
+      let s = "";
+      const iColumnCount = this.aColumn.length;
+      for(let iColumn = 0; iColumn < iColumnCount; iColumn++) {
+         s += this._GetCellValue(iRow, iColumn) + sSeparator;
+      }
+      return s.trim();
    }
 
    // Get internal table data array ------------------------------------------
@@ -282,8 +293,7 @@ class Table {
     * @param {number} iColumn index for column
     */
    _GetCellValue(iRow, iColumn) {
-      let value_ = this.aTable[iRow][iColumn];
-
+      let value_ = this.aTable[iRow][iColumn]; // Get raw cell value from cell position
       if(Array.isArray(value_)) { value_ = value_[0];  }                      // if column is array, return first element
 
       return value_;
@@ -298,9 +308,7 @@ class Table {
    SetCellValue(iRow, column_, value_) {
       let iColumn = column_;
       if( typeof column_ === "string") { iColumn = this.GetColumnIndex(column_); }
-      if(iRow < 0 || iRow >= this.aTable.length || iColumn < 0 || iColumn >= this.aColumn.length) {
-         return false;
-      }
+      if(iRow < 0 || iRow >= this.aTable.length || iColumn < 0 || iColumn >= this.aColumn.length) { return false; }
 
       this._SetCellValue(iRow, iColumn, value_);
       return true;
@@ -332,9 +340,7 @@ class Table {
     */
    _GetRow(iRow) {
      const row_ = [];
-     for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
-        row_.push(this._GetCellValue(iRow, iColumn));
-     }
+     for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {  row_.push(this._GetCellValue(iRow, iColumn)); }
 
      return row_;
   }
@@ -348,6 +354,10 @@ class Table {
 
    /** -----------------------------------------------------------------------
     * Add rows to the table
+    *
+    * Adding rows as string needs a splitter, default is ","
+    * If object is passed the key is matched to the column name
+    *
     * @param {Object |Array | string} table_ - Data to add (string, row array, or array of rows)
     * @param {string} sSeperator - Optional separator for string input (default: ",")
     */
@@ -434,8 +444,17 @@ class Table {
    }
 
    /** -----------------------------------------------------------------------
-    * Prepares column definitions from the first row of data.
+    * Prepares column definitions from the internal row data.
     * Typically called if aTable was passed in without aColumn metadata.
+    *
+    * @example
+    * const table = new Table();
+    * table.AddRows([
+    *    ["Name", "Age", "City"],
+    *    ["Alice", "30", "New York"],
+    *    ["Bob", "25", "Los Angeles"]
+    * ]);
+    * table.PrepareColumns();
     */
    PrepareColumns() { console.assert(this.aTable.length > 0, "Table is empty");
       const aHeader = this.aTable[0];

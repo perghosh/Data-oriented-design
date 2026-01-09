@@ -164,29 +164,24 @@ class UIDraggable {
     * @TODO: Handle filtering based on what is pressed to not trigger the move operation
     */
    _on_pointer_down(eEvent_) {
-      // Only handle if target is drag handle or a child of it
-      const eTarget = eEvent_.target || eEvent_.touches?.[0]?.target;
-      if( !this.eDragHandle.contains(eTarget) && this.eDragHandle !== eTarget ) {
-         return;
-      }
+      const eTarget = eEvent_.target || eEvent_.touches?.[0]?.target;         // Only handle if target is drag handle or a child of it
+      if( !this.eDragHandle.contains(eTarget) && this.eDragHandle !== eTarget ) { return; }
 
-      // Prevent default for touch events to avoid scrolling
-      if( eEvent_.cancelable ) {  eEvent_.preventDefault(); }
+      if( eEvent_.cancelable ) {  eEvent_.preventDefault(); }                  // Prevent default for touch events to avoid scrolling
 
-      // Get coordinates from mouse or touch
+      // ## Get coordinates from mouse or touch ..............................
       const iClientX = eEvent_.clientX || eEvent_.touches?.[0]?.clientX;
       const iClientY = eEvent_.clientY || eEvent_.touches?.[0]?.clientY;
 
-      // ## Store initial position
+      // ## Store initial position ...........................................
       this.iInitialX = iClientX - this.iXOffset;
       this.iInitialY = iClientY - this.iYOffset;
       this.dragging = true;
 
-      // Apply dragging styles inline
       Object.assign(this.eElement.style, this.oDraggingStyles);
-      this.eDragHandle.style.cursor = 'grabbing';
+      this.eDragHandle.style.cursor = 'grabbing';                             // Apply dragging styles inline
 
-      // ## Trigger callback if provided
+      // ## Trigger callback if provided ......................................
       if( this.oOptions.fnOnDragStart ) {
          this.oOptions.fnOnDragStart({
             eElement: this.eElement,
