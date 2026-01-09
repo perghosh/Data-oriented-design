@@ -83,8 +83,8 @@ public:
 
 // ## methods ------------------------------------------------------------------
 public:
-/** \name GET/SET
-*///@{
+   // @API [tag: get-set]
+
    uint64_t GetRequestFlags() const { return m_uRequestFlags;  }
    CApplication* GetApplication() { return m_papplication; }
    const CApplication* GetApplication() const { return m_papplication; }
@@ -99,7 +99,11 @@ public:
 
    void SetDatabase(gd::database::database_i* pdatabase_);
    gd::database::database_i* GetDatabase() { return m_pdatabase; }
-//@}
+
+   // @API [tag: is]
+   bool IsDatabaseOpen() const;
+
+   // @API [tag: operation]
 
    void Initialize();
    void Initialize( CApplication* papplication, const std::string_view& stringName );

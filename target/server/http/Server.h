@@ -125,6 +125,7 @@ public:
 public:
    /// Prepares response header for request
    void PrepareResponseHeader_s( gd::argument::arguments& argumentHeader, boost::beast::http::response<boost::beast::http::string_body>& response );
+   boost::beast::http::response<boost::beast::http::string_body> PrepareResponse_s( const boost::beast::http::request<boost::beast::http::string_body>& request_, int iType, std::string_view stringContentType, std::string& stringBody );
 
 
 };

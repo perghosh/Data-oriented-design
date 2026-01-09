@@ -46,8 +46,15 @@ void CDocument::common_construct(CDocument&& o) noexcept
    m_vectorError = std::move(o.m_vectorError);
 }
 
+/// Check if database is open @TODO: [tag: odbc] [description: Check if database is open should also have logic to check odbc database connections]
+bool CDocument::IsDatabaseOpen() const
+{ 
+   return ( m_pdatabase != nullptr );
+}
+
 void CDocument::Initialize()
 {
+   
 
 }
 

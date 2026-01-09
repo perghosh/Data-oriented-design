@@ -223,7 +223,11 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    if( result_.first == false ) { return server_error_( result_.second ); }
 
    result_ = router_.Run();
-   if( result_.first == false ) { return server_error_( result_.second ); }
+   if( result_.first == false ) 
+   { 
+      auto response_ = PrepareResponse_s( request_, int(boost::beast::http::status::bad_request), "text/plain", result_.second );
+      return response_;
+   }
 
    std::string stringResponse;
 
@@ -340,6 +344,18 @@ void CServer::PrepareResponseHeader_s( gd::argument::arguments& argumentHeader, 
    }
 
    response.prepare_payload();
+}
+
+boost::beast::http::response<boost::beast::http::string_body> CServer::PrepareResponse_s( const boost::beast::http::request<boost::beast::http::string_body>& request_, int iType, std::string_view stringContentType, std::string& stringBody )
+{
+   boost::beast::http::response<boost::beast::http::string_body> response_{boost::beast::http::status(iType), request_.version()};
+   response_.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+   response_.set(boost::beast::http::field::content_type, stringContentType);
+   response_.keep_alive(request_.keep_alive());
+   if( stringBody.empty() == false ) { response_.body() = std::move( stringBody ); }
+   response_.prepare_payload();
+
+   return response_;
 }
 
 
