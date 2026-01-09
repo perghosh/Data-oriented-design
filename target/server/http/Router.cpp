@@ -76,7 +76,7 @@ std::pair<bool, std::string> CRouter::Run()
          if( result_.first == true )                                          // if success get objects from database api
          {
             Types::Objects* pobjectsResult = database_.GetObjects();                               assert( pobjectsResult );
-            if( pobjectsResult != nullptr )
+            if( pobjectsResult != nullptr && m_pdtoresponse->Empty() == false )
             { 
                result_ = m_pdtoresponse->AddTransfer( pobjectsResult );       // add objects to response dto
             }
@@ -90,7 +90,7 @@ std::pair<bool, std::string> CRouter::Run()
          if( result_.first == true )                                          // if success get objects from database api
          {
             Types::Objects* pobjectsResult = sql_.GetObjects();                                    assert( pobjectsResult );
-            if( pobjectsResult != nullptr )
+            if( pobjectsResult != nullptr && m_pdtoresponse->Empty() == false )
             { 
                result_ = m_pdtoresponse->AddTransfer( pobjectsResult );       // add objects to response dto
             }
