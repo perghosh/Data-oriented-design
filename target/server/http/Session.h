@@ -92,10 +92,12 @@ public:
    
    /// Delete session by id, if not found return false
    bool Delete( const gd::types::uuid& uuidSession );
-   void Delete( size_t uIndex );
+   bool Delete( size_t uIndex );
    
    /// Returns if session table is empty
    bool Empty() const { return m_tableSession.empty(); }
+   /// Return max number of sessions that can be held in table
+   uint64_t SizeMax() const { return m_tableSession.size(); } 
 
 // @API [summary: methods that work on all sessions]
 

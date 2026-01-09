@@ -204,6 +204,7 @@ public:
    uint64_t SESSION_Add( const gd::types::uuid& uuidSession, gd::types::tag_unsafe );
    void SESSION_Add( const std::vector<std::string>& vectorUuid );
    void SESSION_Delete( const gd::types::uuid& uuidSession );
+   void SESSION_Delete( uint64_t uIndex );
    uint64_t SESSION_Count() const;
    bool SESSION_Empty() const { return m_psessions != nullptr && m_psessions->Empty() == false; }
    CSessions* SESSION_Get() { return m_psessions.get(); }

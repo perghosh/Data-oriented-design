@@ -70,6 +70,9 @@ public:
    /// Count the keys used based on current command index
    size_t GetArgumentIndex( const std::string_view& stringName ) const;
    size_t GetArgumentIndex( const std::string_view& stringFirst, const std::string_view& stringSecond ) const;
+   
+   /// Check argument name exists
+   bool Exists(const std::string_view& stringName) const;
 
    /// Get pointer objects result container
    Types::Objects* GetObjects() { return &m_objects; }
