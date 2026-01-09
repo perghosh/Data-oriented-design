@@ -371,22 +371,18 @@ class Table {
       else if( Object.prototype.toString.call(table_) === "[object Object]") {
          // ## generate array with the amount of columns table has
          const iColumnCount = this.GetColumnCount();
-         aTable = Array(iColumnCount);
-         // ## Iterate object, find matching column and set value in array
+         aTable = Array(iColumnCount); // Initialize array with undefined values
+
+         // ## Iterate object, find matching column and set value in array ...
          for(const [key_, value_] of Object.entries(table_)) {
-            const iColumn = this.GetColumnIndex(key_);
-            if(iColumn !== -1) {
-               aTable[iColumn] = value_;
-            }
+            const iColumn = this.GetColumnIndex(key_); // column index for key name
+            if(iColumn !== -1) { aTable[iColumn] = value_; }
          }
          aTable = [aTable];                                                   // Wrap the array in another array to match the expected format
       }
 
       // ## Add rows to internal table .......................................
-      for(let i = 0; i < aTable.length; i++) // undefined
-      {
-         this.aTable.push(aTable[i]);
-      }
+      for(let i = 0; i < aTable.length; i++) { this.aTable.push(aTable[i]); }
    }
 
    /** -----------------------------------------------------------------------
@@ -405,6 +401,9 @@ class Table {
 
       this.aTable.splice(iPosition, iLength);
    }
+
+   // Clears all rows from the table. ----------------------------------------
+   Clear() { this.aTable = []; }
 
    // @API [tag: table, utilities] [description: Helper methods, like utilities for table]
 

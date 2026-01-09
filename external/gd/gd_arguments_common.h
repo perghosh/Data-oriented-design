@@ -32,6 +32,22 @@ struct tag_parse_type{};                                                       /
 struct tag_align {};                                                           ///< align related methods
 struct tag_section {};                                                         ///< section related methods, section in arguments is a named value with multiple non named values after
 
+/** ==========================================================================
+ * @brief Range adapter for named iteration over arguments
+ * 
+ * Provides a convenient range-based for loop interface for iterating
+ * over name-value pairs in an arguments object.
+ */
+template<typename ARGUMENTS>
+struct argument_named_range {
+   const ARGUMENTS* m_parguments_;
+   
+   argument_named_range(const ARGUMENTS* parguments) : m_parguments_(parguments) {}
+   
+   auto begin() const { return m_parguments_->named_begin(); }
+   auto end() const { return m_parguments_->named_end(); }
+};
+
 
 /**
  * \brief Index object used to edit or access items in arguments that are editable

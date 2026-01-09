@@ -253,6 +253,7 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
                   const oTableCache = JSON.parse(sTableCache);
                   for(let sId in oTableCache) {
                      let oTable = this.GetTableCacheItem( sId );
+                     oTable.Clear();
                      const aRow = oTableCache[sId];
                      if(oTable) oTable.Add(aRow);
                   }

@@ -1230,6 +1230,10 @@ public:
    const_named_iterator named_end() const;
    const_named_iterator named_cbegin() const;
    const_named_iterator named_cend() const;
+   /// Helper method to get named range for arguments named iterator
+   argument_named_range<arguments> named() { return argument_named_range<arguments>(this); }
+   argument_named_range<const arguments> named() const { return argument_named_range<const arguments>(this); } ///< const version
+
 
    // ## @API [tag: count] [description: count related methods, things that information about number of items in arguments, e.g. size, empty, capacity]
 

@@ -10,57 +10,16 @@
 /**
  * Form elements styles
  */
-.form-group {
-   margin-bottom: 20px;
-}
+.form-group { margin-bottom: 20px; }
 
-.form-label {
-   display: block;
-   font-size: 14px;
-   font-weight: 500;
-   color: var(--color-body);
-   margin-bottom: 8px;
-}
-
-.form-input,
-.form-select {
-   width: 100%;
-   padding: 10px 14px;
-   border: 2px solid var(--border);
-   border-radius: var(--radius-sm);
-   transition: all 0.2s;
-   background: var(--background-body);
-   color: var(--color-body);
-}
-
-.form-textarea {
-   padding: 10px 14px;
-   border: 2px solid var(--border);
-   border-radius: var(--radius-sm);
-   transition: all 0.2s;
-   background: var(--background-body);
-   color: var(--color-body);
-}
-
-
-.form-input:focus,
-.form-textarea:focus,
-.form-select:focus {
-   outline: none;
-   border-color: var(--primary);
-   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.form-textarea { font-family: 'Courier New', monospace; resize: vertical; }
-.form-row {display: grid; gap: 16px; grid-template-columns: 2fr 1fr; }
+.form-label { color: var(--color-body); display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+.form-input, .form-select { background: var(--background-body); border: 2px solid var(--border); border-radius: var(--radius-sm); color: var(--color-body); padding: 10px 14px; transition: all 0.2s; width: 100%; }
+.form-textarea { background: var(--background-body); border: 2px solid var(--border); border-radius: var(--radius-sm); color: var(--color-body); font-family: 'Courier New', monospace; padding: 10px 14px; resize: vertical; transition: all 0.2s; }
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); outline: none; }
+.form-row { display: grid; gap: 16px; grid-template-columns: 2fr 1fr; }
 
 
 @media (max-width: 768px) {
-   .form-row {
-      grid-template-columns: 1fr;
-   }
-
-   body {
-      padding: 12px;
-   }
+   .form-row { grid-template-columns: 1fr; }
+   body { padding: 12px; }
 }
