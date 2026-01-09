@@ -21,6 +21,16 @@
 
 TEST_CASE( "[uri] arguments", "[uri]" ) {
    {
+      std::array<std::byte, 256> buffer;
+      gd::argument::arguments args(buffer);  // uses external buffer      
+      args["age"] = 31;                     // overwrites if exists
+      args.set("level", 10);                // same as append if not found
+      args["old"] = 80;  
+      for (auto [key, value] : args.named()) {
+          std::cout << key << ": " << value.as_string() << "\n";
+      }      
+   }
+   {
       std::string* pstring1 = new std::string( "sample on how to use pointers");
       gd::argument::arguments arguments_;
       arguments_["string"] = pstring1;

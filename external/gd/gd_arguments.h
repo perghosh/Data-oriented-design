@@ -680,10 +680,10 @@ public:
       }
    
       // Assignment operator - only pays cost when actually assigning
-      template<typename T>
-      argument_proxy& operator=(T&& value_) {
-         if(m_pPosition) { m_parguments->set(m_pPosition, argument(std::forward<T>(value_))); } // Update existing - find is already done
-         else if( m_stringName.empty() == false) { m_parguments->append(m_stringName, std::forward<T>(value_)); } // Append new - only happens on first assignment
+      template<typename TYPE>
+      argument_proxy& operator=(TYPE&& value_) {
+         if(m_pPosition) { m_parguments->set(m_pPosition, argument(std::forward<TYPE>(value_))); } // Update existing - find is already done
+         else if( m_stringName.empty() == false) { m_parguments->append(m_stringName, std::forward<TYPE>(value_)); } // Append new - only happens on first assignment
          return *this;
       }
 
@@ -1187,6 +1187,9 @@ public:
    const_named_iterator named_end() const;
    const_named_iterator named_cbegin() const;
    const_named_iterator named_cend() const;
+   /// Helper method to get named range for arguments named iterator
+   argument_named_range<arguments> named() { return argument_named_range<arguments>(this); }
+   argument_named_range<const arguments> named() const { return argument_named_range<const arguments>(this); } ///< const version
 
    // ## @API [tag: count] [description: count related methods, things that information about number of items in arguments, e.g. size, empty, capacity]
 
