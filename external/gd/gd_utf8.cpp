@@ -2032,7 +2032,7 @@ namespace gd {
                while( pubszPosition < pubszEnd )
                {
                   uint32_t uCharacterSize = gd::utf8::get_character_size( pubszPosition );            assert( uCharacterSize != 0 ); assert( uCharacterSize == 1 ? *pubszPosition < 0x80 : true );
-                  if( uCharacterSize == 1 && pEncodeXml_s[*pubszPosition] == 0 )
+                  if( uCharacterSize == 1 && pIsJsonEscape_s[*pubszPosition] == 0 )
                   {
                      *pubszInsert = *pubszPosition;
                      pubszInsert++;
@@ -2064,12 +2064,12 @@ namespace gd {
          }
 
          /** ------------------------------------------------------------------
-         * @brief Convert utf8 formated text to json formated and place it in string
-         * @param pubszText pointer to start of utf8 text to convert
-         * @param pubszEnd end of utf8 text
-         * @param stringTo string where escaped text is written to
-         * @return true if text is properly converted
-         */
+          * @brief Convert utf8 formated text to json formated and place it in string
+          * @param pubszText pointer to start of utf8 text to convert
+          * @param pubszEnd end of utf8 text
+          * @param stringTo string where escaped text is written to
+          * @return true if text is properly converted
+          */
          bool convert_utf8_to_json(const uint8_t* pubszText, const uint8_t* pubszEnd, std::string& stringTo )
          {
             if( pubszText < pubszEnd )
@@ -2078,7 +2078,7 @@ namespace gd {
                while( pubszPosition < pubszEnd )
                {
                   uint32_t uCharacterSize = gd::utf8::get_character_size( pubszPosition );            assert( uCharacterSize != 0 ); assert( uCharacterSize == 1 ? *pubszPosition < 0x80 : true );
-                  if( uCharacterSize == 1 && pEncodeXml_s[*pubszPosition] == 0 )
+                  if( uCharacterSize == 1 && pIsJsonEscape_s[*pubszPosition] == 0 )
                   {
                      stringTo += (char)*pubszPosition;
                      pubszPosition++;
@@ -2105,8 +2105,6 @@ namespace gd {
 
             return true;
          }
-
-
       }
 
 
