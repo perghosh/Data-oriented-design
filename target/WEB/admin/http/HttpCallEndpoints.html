@@ -5,7 +5,7 @@ PAGE_ Method Documentation:
 PAGE_ProcessResponse(oData) - Handles server response data and displays it in the response container based on data type
 PAGE_SetListeners() - Configures event listeners for page interactions, handling actions like send and save
 PAGE_Update(source_) - Updates page elements with data from a source object, typically a CDocument instance
-PAGE_OnIdle
+PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 PAGE_Initialize() - Main initialization function that sets up the page, creates draggable elements and configures listeners
 PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with any provided arguments
 
@@ -64,6 +64,8 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
    .page-row:hover .page-delete-button { opacity: 1;  }
    .page-delete-button:hover { background-color: var(--background-danger); opacity: 1;  transform: scale(1.1); }
 
+   .page-button-focus { background-color: var(--background-active); color: var(--color-primary); }
+
    </style>
 </head>
 <body>
@@ -106,7 +108,7 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
                </div>
                <div class="row right">
                   <span class="button-normal" data-action="send">Send</span>
-                  <span class="button-normal" data-action="save">Save</span>
+                  <span class="button-normal" data-action="save">Keep</span>
                </div>
             </form>
          </div>
@@ -150,6 +152,8 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
 
          // Check if document has been modified ------------------------------
          IsModified() { return this.bModified; }
+         // Set modified flag to true or false -------------------------------
+         SetModified(bModified) { this.bModified = bModified; }
 
          /// Add object to document ------------------------------------------
          Add(sType, oObject) {
@@ -202,7 +206,7 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
 
          DeleteTableCache(sCacheName, iIndex) {
             const oTable = this.GetTableCacheItem( sCacheName );
-            if(oTable) { oTable.Delete(iIndex); }
+            if(oTable) { oTable.Delete(iIndex); this.bModified = true; }
          }
 
          /// Remove object from array ----------------------------------------
@@ -521,14 +525,29 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
          }
       }
 
+
       /**
-       *
+       * Handles idle state by updating UI elements and checking for changes
        */
-      function PAGE_OnIdle() {
-         if( oDocument_g.IsModified() ) {
-            let eSave = document.getElementById("idSave").querySelector('[data-action="save-page"]');
+      const PAGE_OnIdle = (function() {
+         var bLastModified = false;
+
+         return function() {
+            const bModified = oDocument_g.IsModified();
+
+            if( bModified !== bLastModified ) {
+               let eSave = document.getElementById("idMenu").querySelector('[data-action="save-page"]');
+
+               if( bModified === true ) {
+                  eSave.classList.add("page-button-focus");
+               }
+               else {
+                  eSave.classList.remove("page-button-focus");
+               }
+               bLastModified = bModified;
+            }
          }
-      }
+      })();
 
 
       /** --------------------------------------------------------------------- @API [tag: initialize]
@@ -562,15 +581,10 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
 
          PAGE_SetListeners();
          oDocument_g.Load();
+         oDocument_g.SetModified(false);
 
          // ## Start idle timer - call PAGE_OnIdle() once per second
          CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
-
-         /*
-         if( oDocument_g.exists("draggable")) {
-            const aDraggable = oDocument_g.GetAll("draggable");
-         }
-         */
       }
 
       /** --------------------------------------------------------------------- @API [tag: event, command]

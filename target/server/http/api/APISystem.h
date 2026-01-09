@@ -29,11 +29,14 @@ public:
 
    std::pair<bool, std::string> Execute() override;
 
+   std::pair<bool, std::string> Execute_FileDelete();
+   std::pair<bool, std::string> Execute_FileDirectory();
+   std::pair<bool, std::string> Execute_FileExists();
+
    std::pair<bool, std::string> Execute_SessionAdd();
    std::pair<bool, std::string> Execute_SessionDelete();
    std::pair<bool, std::string> Execute_SessionCount();
    std::pair<bool, std::string> Execute_SessionExists();
    std::pair<bool, std::string> Execute_SessionList();
-      
        
 };

@@ -35,7 +35,7 @@ void to_string( const arguments& arguments_, std::string& stringOut, tag_io_json
          if( value_.is_char_string() == true )
          {
             stringValue = value_.as_string_view();
-            if( gd::utf8::json::find_character_to_escape( stringValue ) != nullptr )
+            if( stringValue.empty() == false && gd::utf8::json::find_character_to_escape( stringValue ) != nullptr )
             {
                stringEscaped = gd::utf8::json::convert_utf8_to_json( stringValue );
                stringValue = stringEscaped;

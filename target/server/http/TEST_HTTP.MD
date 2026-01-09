@@ -51,3 +51,16 @@ curl "${site}/!sys/session/add?session=00000000000000000000000000010001"
 curl "${site}/!sys/session/delete?session=00000000-0000-0000-0000-000000000001" 
 
 curl "${site}/!sql/add?type=sqlite&name=test" --data-urlencode "query=SELECT * FROM TUser" -G
+
+
+directory-get
+!sys/file/directory?action=get&type=root****
+What directory for directory type, the web server are using some specific directorires for various operations
+
+sqlite-exists
+!sys/file/exists?path=D:/db/sqlite/test.sqlite
+Check if sqlite file is found in folder
+
+sqlite-create
+!db/create?path=D:/db/sqlite/test.sqlite
+Check if sqlite file is found in folder
