@@ -1,5 +1,7 @@
 // @FILE [tag: api, system] [summary: API System command class] [type: source] [name: APISystem.cpp]
 
+#include <filesystem>
+
 #include "gd/gd_arguments.h"
 #include "gd/gd_binary.h"
 #include "gd/gd_uuid.h"
@@ -12,37 +14,6 @@
 
 std::pair<bool, std::string> ValidateSession_s(const std::string& stringSession);
 
-/** --------------------------------------------------------------------------
- * @brief Executes the database command based on the command vector and parameters.
- *
- * This method processes the database command stored in m_vectorCommand and uses
- * the parameters in m_argumentsParameter to perform the requested operation.
- *
- * The method supports the following commands:
- * - "db create": Creates a new database (currently only SQLite is supported)
- *   Requires parameters:
- *     - "type": Database type (e.g., "sqlite")
- *     - "name": Database name/path
- * - "db delete": Deletes a database (not yet implemented)
- *
- * @return std::pair<bool, std::string> A pair containing:
- *         - bool: Success status (true if operation succeeded, false otherwise)
- *         - std::string: Error message if operation failed, empty string if succeeded
- *
- * @note The command vector must not be empty. The method asserts this condition.
- *
- * Example usage:
- * @code
- * // Create a new SQLite database
- * CAPIDatabase dbCmd({"db", "create"}, {{"type", "sqlite"}, {"name", "mydatabase"}});
- * auto result = dbCmd.Execute();
- * if(result.first) {
- *     // Database created successfully
- * } else {
- *     // Error occurred: result.second contains the error message
- * }
- * @endcode
- */
 std::pair<bool, std::string> CAPISystem::Execute()
 {                                                                                                  assert( m_vectorCommand.empty() == false && "No commands");
    // ## execute database command based on m_vectorCommand and m_argumentsParameter
@@ -60,7 +31,17 @@ std::pair<bool, std::string> CAPISystem::Execute()
 
       if( stringCommand == "sys" ) continue;
 
-      if( stringCommand == "session" )
+      if( stringCommand == "file" )
+      {
+         uIndex++;
+         if( uIndex >= m_vectorCommand.size() ) return { false, "Missing session command" };
+         stringCommand = m_vectorCommand[uIndex];
+
+         if( stringCommand == "delete" )        { result_ = Execute_FileDelete(); }
+         else if( stringCommand == "directory" ){ result_ = Execute_FileDirectory(); }
+         else if( stringCommand == "exists" )   { result_ = Execute_FileExists(); }
+      }
+      else if( stringCommand == "session" )
       {
          uIndex++;
          if( uIndex >= m_vectorCommand.size() ) return { false, "Missing session command" };
@@ -85,12 +66,103 @@ std::pair<bool, std::string> CAPISystem::Execute()
 }
 
 /** --------------------------------------------------------------------------
+ * Deletes a file
+ */
+std::pair<bool, std::string> CAPISystem::Execute_FileDelete()
+{
+   std::string stringPathFound;
+   std::string stringPath = m_argumentsParameter["path"].as_string();
+   if(stringPath.empty() == false)
+   {
+      if( std::filesystem::exists(stringPath) && std::filesystem::is_regular_file(stringPath) )
+      {
+         stringPathFound = stringPath;
+      }
+   }
+   
+   if( stringPathFound.empty() == false )
+   {
+      std::filesystem::remove(stringPathFound);
+      gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "path", stringPathFound }, { "deleted", true } } ); // result data
+      m_objects.Add( parguments_ );
+   }
+   
+   return { true, "" };
+}
+
+
+/** --------------------------------------------------------------------------
+ * Execute File Directory Command
+ * 
+ * The sys/file/directory command is used to perform actions on file directories.
+ * 
+ * @param stringAction The action to perform on the file directory
+ */
+std::pair<bool, std::string> CAPISystem::Execute_FileDirectory()
+{
+   std::string stringAction;
+
+   if( m_argumentsParameter.exists( "action" ) == true ) { stringAction = m_argumentsParameter["action"].as_string(); }
+
+   if( stringAction == "get" )
+   {
+      std::string stringType = m_argumentsParameter["type"].as_string();      // type of folder, "root", "application" etc
+      std::string stringFolderType("folder-");
+      stringFolderType += stringType;
+
+      std::string stringDirectory = papplication_g->PROPERTY_Get( stringFolderType ).as_string();
+
+      gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "directory", stringDirectory } } ); // result data
+      m_objects.Add( parguments_ );
+   }
+   else if( stringAction == "set" )
+   {
+      std::string stringType = m_argumentsParameter["type"].as_string();
+      std::string stringFolderType("folder-");
+      stringFolderType += stringType;
+      
+      std::string stringValue = m_argumentsParameter.get_argument({"name", "value"}).as_string();
+      papplication_g->PROPERTY_Set( stringFolderType, stringValue );          // Note that setting folder is not thread safe and should only be done in development mode or local on prem solutions
+   }
+   else
+   {
+      return { false, "invalid action: " + stringAction };
+   }
+
+   return { true, "" };
+}
+
+/**
+ * Checks if a file exists
+ */
+std::pair<bool, std::string> CAPISystem::Execute_FileExists()
+{
+   std::string stringPathFound;
+   std::string stringPath = m_argumentsParameter["path"].as_string();
+   if(stringPath.empty() == false)
+   {
+      if( std::filesystem::exists(stringPath) )
+      {
+         stringPathFound = stringPath;
+      }
+   }
+   
+   if( stringPathFound.empty() == false )
+   {
+      gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "path", stringPathFound }, { "exists", true } } ); // result data
+      m_objects.Add( parguments_ );
+   }
+   
+   return { true, "" };
+}
+
+/** --------------------------------------------------------------------------
  * @brief Adds a session key
  * 
  * Add either by using a provided session string or by generating a new session, 
  * and returns the result of the operation.
  * 
- * @return A pair consisting of a boolean indicating success  or failure, and a string containing an error message if applicable.
+ * @return A pair consisting of a boolean indicating success  or failure
  */
 std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
 {
