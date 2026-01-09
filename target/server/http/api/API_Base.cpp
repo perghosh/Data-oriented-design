@@ -106,3 +106,9 @@ size_t CAPI_Base::GetArgumentIndex( const std::string_view& stringFirst, const s
    }
    return uCount;
 }
+
+/// @brief Check argument name exists
+bool CAPI_Base::Exists(const std::string_view& stringName) const
+{
+   return m_argumentsParameter.exists(stringName);
+}

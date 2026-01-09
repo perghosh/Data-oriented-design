@@ -150,6 +150,7 @@ void CSessions::Clear( size_t uIndex )
    m_tableSession.row_set_null( (uint64_t)uIndex );                           // set row to null
 }
 
+/// Delete session if found for uuid
 bool CSessions::Delete( const gd::types::uuid& uuid_ )
 {
    int64_t iRow = Find(uuid_);
@@ -162,6 +163,17 @@ bool CSessions::Delete( const gd::types::uuid& uuid_ )
    return false;
 }
 
+/// Delete session at index
+bool CSessions::Delete( uint64_t uRow )
+{
+   if( uRow < SizeMax() )
+   {
+      Clear(uRow);
+      return true;
+   }
+   
+   return false;
+}
 
 
 /** ---------------------------------------------------------------------------

@@ -200,23 +200,34 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
    return { true, "" };
 }
 
-
+/// @brief remove session by value or by index
 std::pair<bool, std::string> CAPISystem::Execute_SessionDelete()
 {
-   std::string stringSession = m_argumentsParameter["session"].as_string();    // get session to add
-
-   // ## Pad session if less than 32 bytes
-   if( stringSession.size() < 32 ) { stringSession.append(32 - stringSession.size(), '0'); }
-   
-   auto result_ = ValidateSession_s(stringSession);
-   if( result_.first == false ) { return result_; }
-   
-   gd::types::uuid uuid;
-   gd::binary_copy_hex_g( uuid, stringSession);
-   
-   CDocument* pdocument = GetDocument();
-   
-   pdocument->SESSION_Delete( uuid );
+   if( Exists("session") == true )
+   {
+      std::string stringSession = m_argumentsParameter["session"].as_string(); // get session to delete
+      
+      // ## Pad session if less than 32 bytes and validate ...................
+      if( stringSession.size() < 32 ) { stringSession.append(32 - stringSession.size(), '0'); }
+      auto result_ = ValidateSession_s(stringSession);
+      if( result_.first == false ) { return result_; }
+      
+      gd::types::uuid uuid;
+      gd::binary_copy_hex_g( uuid, stringSession);
+      
+      CDocument* pdocument = GetDocument();
+      
+      pdocument->SESSION_Delete( uuid );
+   }
+   else if( Exists("index") == true )
+   {
+      uint64_t uIndex = m_argumentsParameter["index"].as_uint64();
+      
+      CDocument* pdocument = GetDocument();
+      
+      pdocument->SESSION_Delete( uIndex );
+   }
+   else { return { false, "Missing parameter 'session' or 'index'" }; }
    
    return { true, "" };
 }
@@ -262,6 +273,7 @@ std::pair<bool, std::string> CAPISystem::Execute_SessionExists()
    return { true, "" };
 }
 
+/// @brief List all active sessions
 std::pair<bool, std::string> CAPISystem::Execute_SessionList()
 {
    CDocument* pdocument = GetDocument();

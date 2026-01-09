@@ -434,10 +434,9 @@ void CDocument::SESSION_Add( const std::vector<std::string>& vectorUuid )
 
 
 /// Delete session from internal list of sessions
-void CDocument::SESSION_Delete( const gd::types::uuid& uuidSession )
-{
-   m_psessions->Delete( uuidSession );
-}
+void CDocument::SESSION_Delete( const gd::types::uuid& uuidSession ) { m_psessions->Delete( uuidSession ); }
+/// Delete session from internal list of sessions based on index
+void CDocument::SESSION_Delete( uint64_t uIndex ) { m_psessions->Delete( uIndex ); }
 
 uint64_t CDocument::SESSION_Count() const
 {
