@@ -49,10 +49,24 @@ _GD_ARGUMENT_BEGIN
 /// tag dispatcher used for json formatting
 struct tag_io_json {};
 
+/// tag dispatcher used for uri formatting
+struct tag_io_uri {};
+
+/// tag dispatcher used for yaml formatting
+struct tag_io_yaml {};
+
 // ## JSON IO -----------------------------------------------------------------
 
 void to_string( const arguments& arguments_, std::string& stringOut, tag_io_json );
 
+// ## URI IO ------------------------------------------------------------------
+
+void to_string( const arguments& arguments_, std::string& stringOut, tag_io_uri );
+
+// ## YAML IO -----------------------------------------------------------------
+
+/// Generate yaml formated string from arguments object
+void to_string( const arguments& arguments_, std::string& stringOut, tag_io_yaml );
 
 _GD_ARGUMENT_END
 
