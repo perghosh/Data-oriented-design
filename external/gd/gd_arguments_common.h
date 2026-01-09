@@ -40,12 +40,11 @@ struct tag_section {};                                                         /
  */
 template<typename ARGUMENTS>
 struct argument_named_range {
-   const ARGUMENTS* m_parguments_;
-   
    argument_named_range(const ARGUMENTS* parguments) : m_parguments_(parguments) {}
    
    auto begin() const { return m_parguments_->named_begin(); }
    auto end() const { return m_parguments_->named_end(); }
+   const ARGUMENTS* m_parguments_; ///< Pointer to arguments object
 };
 
 

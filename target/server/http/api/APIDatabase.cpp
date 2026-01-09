@@ -179,6 +179,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
 
 	if(stringDocument.empty() == true) stringDocument = "default";
 
+   // ## Check if document already is connected to database
+   CDocument* pdocument = m_papplication->DOCUMENT_Get(stringDocument, true);
+   if( pdocument->IsDatabaseOpen() == true ) { return { false, "document already connected to database" }; }
+
    if(stringType.empty() == true || stringType == "sqlite")
    {
       std::filesystem::path pathFile(stringName);
@@ -197,7 +201,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
                                                                                                    LOG_INFORMATION_RAW( "Opened database: " & stringName );
    }
                                                                                                    assert(pdatabaseOpen != nullptr);
-	CDocument* pdocument = m_papplication->DOCUMENT_Get(stringDocument, true);
 	pdocument->SetDatabase(pdatabaseOpen);
 
    pdatabaseOpen->release();

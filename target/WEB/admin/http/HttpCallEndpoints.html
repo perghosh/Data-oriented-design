@@ -7,6 +7,7 @@ PAGE_SetListeners() - Configures event listeners for page interactions, handling
 PAGE_Update(source_) - Updates page elements with data from a source object, typically a CDocument instance
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
 PAGE_Initialize() - Main initialization function that sets up the page, creates draggable elements and configures listeners
+PAGE_PrintResponse(oData) - Prints the response data in the response container based on data type
 PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with any provided arguments
 
 -->
@@ -126,7 +127,7 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
          <!-- Section used to display history of saved command/endpoints -->
          <div id="idHistory" class="container container-form page-plate" data-name="history" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; height: 300px; width: 800px;">
             <div class="caption row handle" data-draggable-handle="1">Command: History</div>
-            <div class="row" data-section="commands" style="flex-direction: column; align-items: stretch; gap: 8px;">
+            <div class="row" data-section="commands" style="flex-direction: column; align-items: stretch; gap: 8px; overflow-y: auto; overflow-x: hidden;">
 
             </div>
          </div>
@@ -362,10 +363,14 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
          // ## Send the request and pick up the response as { type: <format>, data: <data> }
 
          return fetch(sFullUrl, oOptions)
-         .then(response => {
+         .then(async  response => {
             // ### Handle response data .......................................
 
-            if(!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+            const oResponseClone = response.clone();
+            if(!response.ok) {
+               const sErrorMessage = await oResponseClone.text();
+               throw new Error(`HTTP error! status: ${response.status}, message: ${sErrorMessage}`);
+            }
 
             // Check the content type to determine how to parse the response
             const sContentType = response.headers.get('content-type');
@@ -396,8 +401,10 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
             return data;                                                       // Return the parsed data
          })
          .catch(error => {
-            console.error('Error sending request:', error);
+            const sError = "Error sending request:" + error.message;
+            console.error(sError);
             // You could add error handling UI here
+            document.getElementById('idResult').querySelector('[data-field="response"]').textContent = sError;
             throw error;
          });
       }
@@ -602,11 +609,11 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
             e_.stopPropagation();
             const sAction = eTarget.dataset.action;
             switch(sAction) {
-               case 'load-page':
+               case "load-page":
                   oDocument_g.Load();
                   PAGE_Update();
                   break;
-               case 'save-page':
+               case "save-page":
                   oDocument_g.Save();
                   break;
                default:
@@ -625,11 +632,11 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
             const eContainer = eTarget.closest('.container');
             const sAction = eTarget.dataset.action;
             switch(sAction) {
-               case 'send': {                                                 // send command to wed server
+               case "send": {                                                 // send command to wed server
                   const sEndpoint = eContainer.querySelector('[data-field="endpoint"]').value;
                   SERVER_Send(sEndpoint).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
                } break;
-               case 'save': {                                                  // save command
+               case "save": {                                                  // save command
                   const eCommands = document.getElementById('idCommands');
                   const aFields = eCommands.querySelectorAll('[data-field]');
                   const oCommand = {};
@@ -641,11 +648,10 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
 
                   let oTable = oDocument_g.GetTableCacheItem("endpoint");
                   oTable.Add(oCommand);
+                  oDocument_g.SetModified(true);
 
-                  oDocument_g.Add("command", oCommand);
-                  oDocument_g.Save();
                } break;
-               case 'activate-command': {                                      // activate command
+               case "activate-command": {                                      // activate command
                   const sCacheName = eTarget.dataset.cache;
                   const oTable = oDocument_g.GetTableCacheItem(sCacheName);
                   const iIndex = eTarget.dataset.index;
@@ -659,16 +665,27 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
                      });
                   }
                } break;
-               case 'delete-command': {                                        // delete command
+               case "delete-command": {                                        // delete command
                   const sCacheName = eTarget.dataset.cache;
                   const iIndex = eTarget.dataset.index;
                   oDocument_g.DeleteTableCache(sCacheName, iIndex);
                   PAGE_Update();
                } break;
                default:
-                  console.error('Unknown action:', sAction);
+                  console.error("Unknown action:", sAction);
             }
          });
+      }
+
+      function PAGE_PrintResponse(oData) {
+         const eResponse = document.getElementById("idResult").querySelector('[data-field="response"]');
+         if(eResponse) {
+            if(oData instanceof Error) {
+               eResponse.textContent = "Error: " + oData.message;
+            } else {
+               eResponse.textContent = JSON.stringify(oData, null, 2);
+            }
+         }
       }
 
       function PAGE_Callback(sName, ...args) {
