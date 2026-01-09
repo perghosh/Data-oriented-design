@@ -1,13 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="js/classes/gd_data_form.js"></script>
-    <title>Document</title>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <script src="js/classes/gd_data_form.js"></script>
+   <title>Document</title>
+   <style>
+      body { font-family: Arial, Helvetica, sans-serif;}
+
+      
+      
+
+      .container-form {}
+
+      .container-form .form {
+         border-style: none;
+         border-radius: 10px;
+         background-color: whitesmoke;
+
+         margin: auto;
+         margin-top: 50px;
+
+         padding: 25px;
+         width: 25%;
+      }
+
+      .container-form label {display: block; padding: 10px 0px 5px 0px;}  
+
+      .container-form input { 
+         border-style: none;
+         border-radius: 10px;
+
+         padding: 5px;
+         width: 95%;
+      }
+
+      .container-form input[type=number] {width: 10%;}
+   </style>
 </head>
 <body>
-    <div id="idContainer">
+    <div id="idContainer" class="container-form">
 
     </div>
 <script>
@@ -30,18 +62,24 @@
          if(!eParent) {eParent = document.getElementById(parent_)}
 
          let eForm = document.createElement("form");
+         eForm.classList.add("form");
 
          const iFieldCount = oForm.Size();
          for(let i = 0; i < iFieldCount; i++)
          {
             const oField = oForm.GetField(i);
             const eField = document.createElement("input");
-/*
+         
+            const eLabel = document.createElement("label");
+
             eField.type = oField.sType;
             eField.id = oField.sId;
             eField.placeholder = oField.sLabel;
             eField.required = oField.bRequired;
-            */
+         
+            eLabel.textContent = oField.sLabel;
+
+            eForm.appendChild(eLabel);
             eForm.appendChild(eField);
          }
 
