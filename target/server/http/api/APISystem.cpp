@@ -41,6 +41,27 @@ std::pair<bool, std::string> CAPISystem::Execute()
          else if( stringCommand == "directory" ){ result_ = Execute_FileDirectory(); }
          else if( stringCommand == "exists" )   { result_ = Execute_FileExists(); }
       }
+      else if( stringCommand == "meta" )
+      {
+         uIndex++;
+         if( uIndex >= m_vectorCommand.size() ) return { false, "Missing session command" };
+         stringCommand = m_vectorCommand[uIndex];
+         if(stringCommand == "query" || stringCommand == "sql")
+         {
+            uIndex++;
+            if( uIndex >= m_vectorCommand.size() ) return { false, "Missing session command" };
+            stringCommand = m_vectorCommand[uIndex];
+
+            if( stringCommand == "add" )        { result_ = Execute_MetadataQueryAdd(); }
+            else if( stringCommand == "delete" ){ result_ = Execute_MetadataQueryDelete(); }
+         }
+         else if(stringCommand == "db")
+         {
+            uIndex++;
+            if( uIndex >= m_vectorCommand.size() ) return { false, "Missing session command" };
+            stringCommand = m_vectorCommand[uIndex];
+         }
+      }
       else if( stringCommand == "session" )
       {
          uIndex++;
@@ -173,6 +194,19 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryAdd()
    auto result_ = pqueries->Add( stringId, stringType, stringFormat, stringQuery );
 
    return result_;
+}
+
+std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryDelete()
+{
+   std::string stringId = Get("id").as_string();
+   std::string stringKey = Get("key").as_string();
+
+   CDocument* pdocument = GetDocument();
+   auto* pqueries = pdocument->QUERIES_Get();                                                      assert( pqueries );
+
+   auto result_ = pqueries->Delete( {stringId, stringKey} );
+   return result_;
+
 }
 
 /** --------------------------------------------------------------------------
