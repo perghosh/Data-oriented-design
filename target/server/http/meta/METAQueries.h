@@ -38,8 +38,13 @@ NAMESPACE_META_BEGIN
 class CQueries
 {
 public:
-   enum enumFormat { eFormatText, eFormatJinja, eFormatXml, eFormatJson };
-   enum enumColumn { eColumnId, eColumnTime, eColumnIp4, eColumnIp6 };
+
+   /// The type of query
+   enum enumType { eTypeUnknown = 0, eTypeSelect = 1, eTypeInsert = 2, eTypeUpdate = 3, eTypeDelete = 4, eTypeAsk = 5, eTypeBatch = 6 };
+   /// The format of how query is store before it is generated
+   enum enumFormat { eFormatUnknown = 0, eFormatText = 1, eFormatJinja = 2, eFormatXml = 3, eFormatJson = 4 };
+   /// Column indexes for fixed columns
+   enum enumColumn { eColumnId, eColumnFlags, eColumnType, eColumnName, eColumnQuery, eColumnMeta };
    // @API [tag: construction]
 public:
    CQueries() {}
@@ -65,6 +70,7 @@ public:
    std::pair<bool, std::string> Initialize( const gd::argument::arguments& arguments_ );           ///< initialize query manager
 
    std::pair<bool, std::string> Add( std::string_view stringQuery, enumFormat eFormat = eFormatText, const gd::argument::arguments* parguments_ = nullptr );  ///< add new query
+   std::pair<bool, std::string> Add( std::string_view stringId, std::string_view stringType, std::string_view stringFormat, std::string_view stringQuery );  ///< add new query
 
    bool Empty() const { return m_tableQuery.empty(); }                                            ///< check if there are any active queries
 
@@ -84,6 +90,9 @@ public:
    // @API [tag: free-functions]
 public:
    static void CreateTable_s( gd::table::arguments::table& tableQuery );    ///< create session table structure
+   
+   static uint16_t ToType_s( std::string_view stringType );
+   static uint16_t ToFormat_s( std::string_view stringFormat );
 
 
 

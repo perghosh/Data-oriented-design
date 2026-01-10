@@ -33,6 +33,8 @@ public:
    std::pair<bool, std::string> Execute_FileDirectory();
    std::pair<bool, std::string> Execute_FileExists();
 
+   std::pair<bool, std::string> Execute_MetadataQueryAdd();
+
    std::pair<bool, std::string> Execute_SessionAdd();
    std::pair<bool, std::string> Execute_SessionDelete();
    std::pair<bool, std::string> Execute_SessionCount();

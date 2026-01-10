@@ -65,6 +65,9 @@ public:
    const CDocument* GetDocument() const { return m_pdocument; }
    CDocument* GetDocument();
 
+   /// Helper to simplify getting arguments from arguments object
+   gd::variant_view Get( std::string_view stringName ) const { return m_argumentsParameter.get_argument(stringName); }
+
    std::string GetLastError() const { return m_stringLastError; }
 
    /// Count the keys used based on current command index
