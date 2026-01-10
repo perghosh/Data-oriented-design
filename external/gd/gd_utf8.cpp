@@ -2208,11 +2208,16 @@ namespace gd {
                   if( (pu4Byte[1] & 0xC0) != 0x80 || (pu4Byte[2] & 0xC0) != 0x80 || (pu4Byte[3] & 0xC0) != 0x80 ) return 0xFFFFFFFF;
                   uCodePoint = ((pu4Byte[0] & 0x07) << 18) | ((pu4Byte[1] & 0x3F) << 12) | ((pu4Byte[2] & 0x3F) << 6) | (pu4Byte[3] & 0x3F);
                }
-               else { return 0xFFFFFFFF;  }                                    // invalid length
+               else { return 0xFFFFFFFF;  }                                   // invalid length
+            }
+            else if( *puPosition == '+' )
+            {
+               uCodePoint = ' ';                                              // plus is space
+               puPosition++;
             }
             else
             {
-               uCodePoint = *puPosition;                                       // Plain character (assumed ASCII / already valid) 
+               uCodePoint = *puPosition;                                      // Plain character (assumed ASCII / already valid) 
                ++puPosition;
             }
    
@@ -2375,7 +2380,7 @@ namespace gd {
          inline const uint8_t* next( const uint8_t* pubszPosition )
          {                                                                                         assert( *pubszPosition != '\0' );
 
-            if( *pubszPosition != '%' )                                        // if normal ascii character
+            if( *pubszPosition != '%' && *pubszPosition != '+' )               // if normal ascii character
             {
                pubszPosition++;
             }
@@ -2398,7 +2403,7 @@ namespace gd {
          {
             for( auto it = pubszPosition; it != pubszEnd; it++ )
             {
-               if( *it == '%' ) return it;
+               if( *it == '%' || *it == '+' ) return it;
             }
             return nullptr;
          }
@@ -2446,6 +2451,15 @@ namespace gd {
             }
    
             return result_;
+         }
+
+         /// @brief Helper function to convert uri formated text to utf8 formated text
+         std::string convert_uri_to_uf8(const std::string_view& stringUri)
+         {
+            std::string stringUtf8; // generated string
+            auto result_ = convert_uri_to_uf8(stringUri, stringUtf8);
+            if(result_.first == true) { return stringUtf8; }
+            return {};
          }
 
          /** ------------------------------------------------------------------

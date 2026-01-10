@@ -646,6 +646,7 @@ namespace gd {
             return convert_uri_to_uf8( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), pbszTo);
          };
          std::pair<bool, const uint8_t*> convert_uri_to_uf8( const std::string_view& stringUri, std::string& stringUtf8 );
+         std::string convert_uri_to_uf8(const std::string_view& stringUri);
 
          // ## convert utf8 text to uri escaped text
          std::pair<bool, const uint8_t*> convert_utf8_to_uri( const uint8_t* pubszText, const uint8_t* pubszEnd, uint8_t* pbszTo );

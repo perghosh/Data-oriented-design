@@ -175,6 +175,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Open()
    gd::database::database_i* pdatabaseOpen = nullptr;
    std::string stringType = m_argumentsParameter["type"].as_string();
    std::string stringName = m_argumentsParameter["name"].as_string();
+
    std::string stringDocument = m_argumentsParameter[{ {"document"}, {"doc"} }].as_string();
 
 	if(stringDocument.empty() == true) stringDocument = "default";
@@ -255,7 +256,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Query()
  * Example usage:
  * @code
  * // Execute a SELECT SQL query
- * CAPIDatabase dbCmd({}, {{"document", "mydoc"}, {"query", "SELECT * FROM mytable"}});
+ * CAPIDatabase dbCmd({}, {{"document", "mydoc"}, {"select", "SELECT * FROM mytable"}});
  * auto result = dbCmd.Execute_Select();
  * if(result.first) { ... }
  * @endcode
@@ -271,7 +272,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
    auto uIndex = GetArgumentIndex( "select" );
-   std::string stringQuery = ( *this )[{"query", uIndex}].as_string();
+   std::string stringQuery = ( *this )[{"select", uIndex}].as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
 
    gd::com::pointer<gd::database::cursor_i> pcursor;
