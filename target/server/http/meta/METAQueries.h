@@ -72,6 +72,8 @@ public:
    std::pair<bool, std::string> Add( std::string_view stringQuery, enumFormat eFormat = eFormatText, const gd::argument::arguments* parguments_ = nullptr );  ///< add new query
    std::pair<bool, std::string> Add( std::string_view stringId, std::string_view stringType, std::string_view stringFormat, std::string_view stringQuery );  ///< add new query
 
+   std::pair<bool, std::string> Delete( const std::pair<std::string_view,std::string_view>& pair_ );
+
    bool Empty() const { return m_tableQuery.empty(); }                                            ///< check if there are any active queries
 
 protected:
