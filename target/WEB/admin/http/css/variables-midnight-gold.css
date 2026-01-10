@@ -1,0 +1,82 @@
+/*
+## base classes
+
+1. **primary**
+2. **secondary**
+3. **success**
+4. **danger**
+5. **warning**
+6. **info**
+7. **light**
+8. **dark**
+*/
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #1f2937; /* Dark grey text */
+   --background-body: #f8fafc; /* Very light cool grey background */
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Deep Navy/Slate */
+   --color-primary: #f1f5f9;
+   --background-primary: #0f172a;
+   --background-primary-hover: #1e293b;
+
+   /* Secondary: Muted Bronze/Gray */
+   --color-secondary: #f1f5f9;
+   --background-secondary: #475569;
+   --background-secondary-hover: #334155;
+
+   /* Success: Forest Green */
+   --color-success: #ffffff;
+   --background-success: #166534;
+   --background-success-hover: #14532d;
+
+   /* Danger: Brick Red */
+   --color-danger: #ffffff;
+   --background-danger: #991b1b;
+   --background-danger-hover: #7f1d1d;
+
+   /* Warning: Metallic Gold */
+   --color-warning: #000000;
+   --background-warning: #d4af37; /* Metallic Gold */
+   --background-warning-hover: #b59325;
+
+   /* Info: Steel Blue */
+   --color-info: #ffffff;
+   --background-info: #1e40af;
+   --background-info-hover: #1e3a8a;
+
+   /* Light */
+   --color-light: #0f172a;
+   --background-light: #e2e8f0;
+   --background-light-hover: #cbd5e1;
+
+   /* Dark */
+   --color-dark: #f1f5f9;
+   --background-dark: #020617;
+   --background-dark-hover: #000000;
+
+   /* Borders: Slate */
+   --color-border: #cbd5e1;
+   --color-border-dark: #475569;
+
+   /* Muted Text */
+   --color-muted: #64748b;
+
+   /* Inputs */
+   --background-input: #ffffff;
+   --color-input: #334155;
+
+   /* Links: Matching Gold (Accent) */
+   --color-link: #b45309; /* Darker Gold for readability on white */
+   --color-link-hover: #92400e;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #0f172a;
+   --color-active: #f1f5f9;
+
+   --background-disabled: #e2e8f0;
+   --color-disabled: #94a3b8;
+}

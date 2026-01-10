@@ -1,0 +1,83 @@
+/*
+## base classes
+
+1. **primary**
+2. **secondary**
+3. **success**
+4. **danger**
+5. **warning**
+6. **info**
+7. **light**
+8. **dark**
+*/
+
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #374151; /* Softer dark gray */
+   --background-body: #f9fafb; /* Slightly off-white page background */
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Emerald Green */
+   --color-primary: #ffffff;
+   --background-primary: #059669;
+   --background-primary-hover: #047857;
+
+   /* Secondary: Dark Teal */
+   --color-secondary: #ffffff;
+   --background-secondary: #0f766e;
+   --background-secondary-hover: #0d5f58;
+
+   /* Success: Bright Green */
+   --color-success: #ffffff;
+   --background-success: #10b981;
+   --background-success-hover: #059669;
+
+   /* Danger: Soft Red */
+   --color-danger: #ffffff;
+   --background-danger: #ef4444;
+   --background-danger-hover: #dc2626;
+
+   /* Warning: Amber */
+   --color-warning: #333333;
+   --background-warning: #f59e0b;
+   --background-warning-hover: #d97706;
+
+   /* Info: Sky Blue */
+   --color-info: #ffffff;
+   --background-info: #3b82f6;
+   --background-info-hover: #2563eb;
+
+   /* Light */
+   --color-light: #1f2937;
+   --background-light: #f3f4f6;
+   --background-light-hover: #e5e7eb;
+
+   /* Dark */
+   --color-dark: #f9fafb;
+   --background-dark: #111827;
+   --background-dark-hover: #000000;
+
+   /* Borders: Subtle gray */
+   --color-border: #e5e7eb;
+   --color-border-dark: #374151;
+
+   /* Muted Text */
+   --color-muted: #6b7280;
+
+   /* Inputs */
+   --background-input: #ffffff;
+   --color-input: #1f2937;
+
+   /* Links: Matching Emerald */
+   --color-link: #059669;
+   --color-link-hover: #047857;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #059669;
+   --color-active: #ffffff;
+
+   --background-disabled: #f3f4f6;
+   --color-disabled: #9ca3af;
+}

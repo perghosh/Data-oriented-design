@@ -1,6 +1,5 @@
 
 /*
-
 ## base classes
 
 1. **primary**
@@ -15,30 +14,72 @@
 
 
 :root {
-   --color-body: #000000; /* Black text for body */
-   --background-body: #ffffff; /* White background for body */
+   /* --- BASE BODY --- */
+   --color-body: #333333; /* Dark gray is softer than pure black for reading */
+   --background-body: #ffffff; /* White background */
 
-   /* Text Colors */
-   --color-primary: #ffffff; /* White text for primary background */
-   --color-secondary: #f8f8f8; /* Very light gray for secondary background */
-   --color-success: #ffffff; /* White text for success background */
-   --color-danger: #ffffff; /* White text for danger background */
-   --color-warning: #333333; /* Dark gray text for warning background */
-   --color-info: #333333; /* Dark gray text for info background */
-   --color-light: #ffffff; /* Dark gray text for light background */
-   --color-dark: #333333; /* White text for dark background */
-   /* Background Colors */
-   --background-primary: #1a1a1a; /* Dark gray, almost black */
-   --background-secondary: #590000; /* Deeper, less intense red */
-   --background-success: #8b0000; /* Slightly darker success red */
-   --background-danger: #b22222; /* Slightly darker danger red */
-   --background-warning: #d9534f; /* Muted, less intense warning red */
-   --background-info: #f0ad4e; /* Gold/Amber for info (better contrast) */
-   --background-light: #eeeeee; /* Light gray */
-   --background-dark: #000000; /* Black */
-   /* Active and disabled, should work with primary and secondary color for text */
-   --background-active: #590000; /* background for active elements */
-   --background-disabled: #d9534f; /* background for disabled elements */
-   --color-active: #ffffff; /* color for active elements */
-   --color-disabled: #ffffff; /* color for disabled elements */
+   /* --- THEME COLORS (Your Red/Black/Gold Vibe) --- */
+
+   /* Primary: Dark Gray (Main Action) */
+   --color-primary: #ffffff;
+   --background-primary: #1a1a1a;
+   --background-primary-hover: #333333; /* Added Hover */
+
+   /* Secondary: Deep Red (Secondary Action) */
+   --color-secondary: #ffffff;
+   --background-secondary: #590000;
+   --background-secondary-hover: #7a0000; /* Added Hover */
+
+   /* Success: Green (Standard for success messages) */
+   --color-success: #ffffff;
+   --background-success: #28a745;
+   --background-success-hover: #218838;
+
+   /* Danger: Red (Standard for errors/delete) */
+   --color-danger: #ffffff;
+   --background-danger: #b22222;
+   --background-danger-hover: #8b1a1a;
+
+   /* Warning: Gold/Amber (Standard for warnings) */
+   --color-warning: #333333;
+   --background-warning: #f0ad4e;
+   --background-warning-hover: #ec971f;
+
+   /* Info: Blue (Standard for info) */
+   --color-info: #ffffff;
+   --background-info: #0275d8;
+   --background-info-hover: #025aa5;
+
+   /* Light: Used for subtle backgrounds or disabled buttons */
+   --color-light: #333333; /* Changed from White to Dark Gray for contrast */
+   --background-light: #eeeeee;
+   --background-light-hover: #e0e0e0;
+
+   /* Dark: Used for heavy emphasis or footers */
+   --color-dark: #ffffff; /* Changed from Dark Gray to White for contrast */
+   --background-dark: #000000;
+   --background-dark-hover: #222222;
+
+  /* Borders: For inputs, cards, dividers */
+   --color-border: #dddddd;
+   --color-border-dark: #444444; /* Darker border for dark themes */
+
+   /* Muted Text: For subtitles, dates, placeholder text */
+   --color-muted: #6c757d;
+
+   /* Inputs: Background for text boxes */
+   --background-input: #ffffff;
+   --color-input: #333333;
+
+   /* Link Color: Standard clickable links */
+   --color-link: #590000; /* Using your secondary red as the link color */
+   --color-link-hover: #330000;
+
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #590000;
+   --color-active: #ffffff;
+
+   --background-disabled: #e9ecef;
+   --color-disabled: #6c757d;
 }
