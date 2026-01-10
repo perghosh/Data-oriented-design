@@ -6,10 +6,8 @@
    <script src="js/classes/gd_data_form.js"></script>
    <title>Document</title>
    <style>
+      
       body { font-family: Arial, Helvetica, sans-serif;}
-
-      
-      
 
       .container-form {}
 
@@ -36,10 +34,48 @@
       }
 
       .container-form input[type=number] {width: 10%;}
+
+      /*---------------------------------------------------------------------*/
+
+      .container-form2 {}
+
+            
+      .container-form2 .form {
+         border-style: none;
+         border-radius: 10px;
+         background-color: whitesmoke;
+
+         display: flex;
+         flex-wrap: wrap;
+         row-gap: 15px;
+
+         margin: auto;
+         margin-top: 50px;
+
+         padding: 25px;
+         width: 25%;
+      }
+
+      .container-form2 label {flex: 0 0 30%; padding: 10px 0px 5px 0px;}  
+
+      .container-form2 input { 
+         border-style: none;
+         border-radius: 10px;
+         box-sizing: border-box;
+         flex: 0 0 70%;
+
+         padding: 5px;
+         /*width: 80%;*/
+      }
+
+      .container-form2 input[type=number] {flex: 0 0 70%; }
+
+
+
    </style>
 </head>
 <body>
-    <div id="idContainer" class="container-form">
+    <div id="idContainer" class="container-form2">
 
     </div>
 <script>
