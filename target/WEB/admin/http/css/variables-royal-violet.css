@@ -1,0 +1,82 @@
+/*
+## base classes
+
+1. **primary**
+2. **secondary**
+3. **success**
+4. **danger**
+5. **warning**
+6. **info**
+7. **light**
+8. **dark**
+*/
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #1f2937;
+   --background-body: #ffffff;
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Electric Indigo */
+   --color-primary: #ffffff;
+   --background-primary: #6366f1;
+   --background-primary-hover: #4f46e5;
+
+   /* Secondary: Deep Purple */
+   --color-secondary: #ffffff;
+   --background-secondary: #4338ca;
+   --background-secondary-hover: #3730a3;
+
+   /* Success: Teal (Greens can clash with purple, Teal fits better) */
+   --color-success: #ffffff;
+   --background-success: #14b8a6;
+   --background-success-hover: #0d9488;
+
+   /* Danger: Rose Red */
+   --color-danger: #ffffff;
+   --background-danger: #f43f5e;
+   --background-danger-hover: #e11d48;
+
+   /* Warning: Orange */
+   --color-warning: #ffffff;
+   --background-warning: #f97316;
+   --background-warning-hover: #ea580c;
+
+   /* Info: Light Blue */
+   --color-info: #ffffff;
+   --background-info: #0ea5e9;
+   --background-info-hover: #0284c7;
+
+   /* Light */
+   --color-light: #1f2937;
+   --background-light: #f3f4f6;
+   --background-light-hover: #e5e7eb;
+
+   /* Dark */
+   --color-dark: #ffffff;
+   --background-dark: #312e81;
+   --background-dark-hover: #1e1b4b;
+
+   /* Borders: Light Indigo */
+   --color-border: #e0e7ff;
+   --color-border-dark: #4338ca;
+
+   /* Muted Text */
+   --color-muted: #6b7280;
+
+   /* Inputs */
+   --background-input: #ffffff;
+   --color-input: #1f2937;
+
+   /* Links: Matching Indigo */
+   --color-link: #6366f1;
+   --color-link-hover: #4f46e5;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #6366f1;
+   --color-active: #ffffff;
+
+   --background-disabled: #f3f4f6;
+   --color-disabled: #9ca3af;
+}

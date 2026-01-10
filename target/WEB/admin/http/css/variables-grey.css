@@ -15,30 +15,73 @@
 
 
 :root {
-   --color-body: #000000; /* Black text for body */
-   --background-body: #ffffff; /* White background for body */
+   /* --- BASE BODY --- */
+   --color-body: #334155; /* Slate grey text (softer than black) */
+   --background-body: #ffffff; /* White background */
 
-   /* Background and Text Colors */
-   --color-primary: #ffffff; /* White text for primary background */
-   --color-secondary: #ffffff; /* White text for secondary background */
-   --color-success: #ffffff; /* White text for success background */
-   --color-danger: #ffffff; /* White text for danger background */
-   --color-warning: #000000; /* Black text for warning background */
-   --color-info: #000000; /* Black text for info background */
-   --color-light: #ffffff; /* Black text for light background */
-   --color-dark: #000000; /* White text for dark background */
-   /* Background Colors (Grey Scales) */
-   --background-primary: #343a40; /* Primary (Dark Grey) */
-   --background-secondary: #6c757d; /* Secondary (Grey) */
-   --background-success: #adb5bd; /* Success (Light Grey) */
-   --background-danger: #495057; /* Danger (Darker Grey) */
-   --background-warning: #ced4da; /* Warning (Light Grey) */
-   --background-info: #e9ecef; /* Info (Very Light Grey) */
-   --background-light: #f8f9fa; /* Light (Almost White) */
-   --background-dark: #212529; /* Dark (Black) */
-   /* Active and disabled, should work with primary and secondary color for text */
-   --background-active: var(--background-secondary); /* background for active elements */
-   --background-disabled: var(--background-warning); /* background for disabled elements */
-   --color-active: var(--color-secondary); /* color for active elements */
-   --color-disabled: var(--color-warning); /* color for disabled elements */
+   /* --- THEME COLORS (Slate & Muted Earth Tones) --- */
+
+   /* Primary: Dark Slate (Main Action) */
+   --color-primary: #ffffff;
+   --background-primary: #334155;
+   --background-primary-hover: #1e293b;
+
+   /* Secondary: Medium Slate (Secondary Action) */
+   --color-secondary: #ffffff;
+   --background-secondary: #64748b;
+   --background-secondary-hover: #475569;
+
+   /* Success: Muted Forest Green (Fits grey theme, but distinct) */
+   --color-success: #ffffff;
+   --background-success: #475569; /* Using a dark slate green/grey */
+   --background-success-hover: #334155;
+
+   /* Danger: Muted Brick Red (Serious, but not neon) */
+   --color-danger: #ffffff;
+   --background-danger: #7f1d1d;
+   --background-danger-hover: #450a0a;
+
+   /* Warning: Muted Ochre/Bronze (Subtle alert) */
+   --color-warning: #ffffff; /* Changed to white for better contrast */
+   --background-warning: #92400e;
+   --background-warning-hover: #78350f;
+
+   /* Info: Steel Blue-Grey (Technical look) */
+   --color-info: #ffffff;
+   --background-info: #0f172a;
+   --background-info-hover: #020617;
+
+   /* Light: Used for subtle backgrounds */
+   --color-light: #334155; /* Dark text on light background */
+   --background-light: #f1f5f9;
+   --background-light-hover: #e2e8f0;
+
+   /* Dark: Used for heavy emphasis/footers */
+   --color-dark: #f8fafc;
+   --background-dark: #020617;
+   --background-dark-hover: #000000;
+
+   /* --- MISSING: LAYOUT COLORS --- */
+
+   /* Borders: Matching the slate theme */
+   --color-border: #cbd5e1;
+   --color-border-dark: #475569;
+
+   /* Muted Text: For subtitles */
+   --color-muted: #94a3b8;
+
+   /* Inputs: Clean */
+   --background-input: #ffffff;
+   --color-input: #334155;
+
+   /* Links: Matching Primary Slate */
+   --color-link: #334155;
+   --color-link-hover: #0f172a;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #64748b;
+   --color-active: #ffffff;
+
+   --background-disabled: #e2e8f0;
+   --color-disabled: #cbd5e1;
 }

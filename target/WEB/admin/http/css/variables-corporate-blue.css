@@ -1,0 +1,83 @@
+/*
+## base classes
+
+1. **primary**
+2. **secondary**
+3. **success**
+4. **danger**
+5. **warning**
+6. **info**
+7. **light**
+8. **dark**
+*/
+
+
+:root {
+   /* --- BASE BODY --- */
+   --color-body: #333333;
+   --background-body: #ffffff;
+
+   /* --- THEME COLORS --- */
+
+   /* Primary: Classic Blue */
+   --color-primary: #ffffff;
+   --background-primary: #0056b3;
+   --background-primary-hover: #004494;
+
+   /* Secondary: Steel Gray */
+   --color-secondary: #ffffff;
+   --background-secondary: #6c757d;
+   --background-secondary-hover: #5a6268;
+
+   /* Success: Standard Green */
+   --color-success: #ffffff;
+   --background-success: #28a745;
+   --background-success-hover: #218838;
+
+   /* Danger: Standard Red */
+   --color-danger: #ffffff;
+   --background-danger: #dc3545;
+   --background-danger-hover: #c82333;
+
+   /* Warning: Standard Yellow/Orange */
+   --color-warning: #333333;
+   --background-warning: #ffc107;
+   --background-warning-hover: #e0a800;
+
+   /* Info: Cyan/Sky Blue */
+   --color-info: #ffffff;
+   --background-info: #17a2b8;
+   --background-info-hover: #138496;
+
+   /* Light */
+   --color-light: #333333;
+   --background-light: #f8f9fa;
+   --background-light-hover: #e2e6ea;
+
+   /* Dark */
+   --color-dark: #ffffff;
+   --background-dark: #343a40;
+   --background-dark-hover: #23272b;
+
+   /* Borders: Matching the gray theme */
+   --color-border: #dee2e6;
+   --color-border-dark: #adb5bd;
+
+   /* Muted Text */
+   --color-muted: #6c757d;
+
+   /* Inputs */
+   --background-input: #ffffff;
+   --color-input: #495057;
+
+   /* Links: Matching Primary Blue */
+   --color-link: #0056b3;
+   --color-link-hover: #004085;
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #0056b3;
+   --color-active: #ffffff;
+
+   --background-disabled: #e9ecef;
+   --color-disabled: #6c757d;
+}
