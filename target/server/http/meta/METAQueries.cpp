@@ -41,6 +41,31 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringQuery, enumFo
    return { true, stringId };
 }
 
+std::pair<bool, std::string> CQueries::Add( std::string_view stringId, std::string_view stringType, std::string_view stringFormat, std::string_view stringQuery )
+{
+   if( stringId.empty() || stringType.empty() || stringQuery.empty() ) { return { false, "Invalid input" }; }
+
+   auto uType = ToType_s( stringFormat );
+   auto uFormat = ToFormat_s( stringFormat );
+
+   if( uType == eTypeUnknown ) { return { false, "Invalid type" }; }
+   
+   auto uRow = m_tableQuery.row_add_one();
+   
+   gd::uuid uuid_( gd::types::tag_command_random{} );
+   gd::types::uuid uuidQuery( uuidQuery.data() );
+   
+
+   m_tableQuery.cell_set( uRow, "id", uuidQuery );
+   m_tableQuery.cell_set( uRow, "type", uType );
+   m_tableQuery.cell_set( uRow, "format", uFormat );
+   m_tableQuery.cell_set( uRow, "query", stringQuery );
+
+   std::string stringUuid = gd::binary_to_hex_g( uuidQuery.data(), 16, false );
+
+   return { true, stringUuid };
+}
+
 
 /** --------------------------------------------------------------------------
  * @brief Initializes and prepares a query table with predefined columns and metadata flags.
@@ -57,5 +82,26 @@ void CQueries::CreateTable_s( gd::table::arguments::table& tableQuery )
    tableQuery.column_add( {{ "uuid", 0, "id"}, { "uint16", 0, "flags" }, { "uint16", 0, "type" }, { "rstring", 0, "name" }, { "rstring", 0, "query" }, { "rstring", 0, "meta" } }, gd::table::tag_type_name{});
    tableQuery.prepare();
 }
+
+uint16_t CQueries::ToType_s( std::string_view stringType )
+{
+   if( stringType == "select" ) return eTypeSelect;
+   if( stringType == "insert" ) return eTypeInsert;
+   if( stringType == "update" ) return eTypeUpdate;
+   if( stringType == "delete" ) return eTypeDelete;
+   if( stringType == "ask" ) return eTypeAsk;
+   if( stringType == "batch" ) return eTypeBatch;
+   return eTypeUnknown;
+}
+
+uint16_t CQueries::ToFormat_s( std::string_view stringFormat )
+{
+   if( stringFormat == "text" ) return eFormatText;
+   if( stringFormat == "jinja" ) return eFormatJinja;
+   if( stringFormat == "json" ) return eFormatJson;
+   if( stringFormat == "xml" ) return eFormatXml;
+   return eFormatText;
+}
+
 
 NAMESPACE_META_END

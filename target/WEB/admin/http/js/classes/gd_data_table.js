@@ -268,6 +268,99 @@ class Table {
       return s.trim();
    }
 
+   /** -----------------------------------------------------------------------
+    * Escape XML special characters in a value
+    * @param {any} value_ the value to escape
+    * @returns {string} the escaped value
+    */
+   _EscapeXmlValue(value_) {
+      if( value_ === null || value_ === undefined ) { return ""; }
+      let sValue = String(value_);
+      // Replace XML special characters with their entity references
+      sValue = sValue.replace(/&/g, "&amp;");
+      sValue = sValue.replace(/</g, "&lt;");
+      sValue = sValue.replace(/>/g, "&gt;");
+      sValue = sValue.replace(/"/g, "&quot;");
+      sValue = sValue.replace(/'/g, "&apos;");
+      return sValue;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Convert a row's data to an XML string
+    *
+    * Generates XML in one of two formats depending on the options provided.
+    * Columns with null or undefined values are automatically skipped.
+    * XML special characters in values are automatically escaped.
+    *
+    * @param {number} iRow - The row index to convert to XML
+    * @param {Object} oOptions - Configuration options for XML generation
+    * @param {string} [oOptions.sRow="row"] - The name for the row element
+    * @param {string} [oOptions.sColumn="column"] - The name for column elements (used when bAttribute=false)
+    * @param {boolean} [oOptions.bAttribute=false] - If false, values are in elements; if true, values are in attributes
+    * @returns {string} The XML string representation of the row data
+    *
+    * @example
+    * // Elements mode (default): <row><column name="name">John</column><column name="age">30</column></row>
+    * const xml1 = table.AsXml(0);
+    *
+    * @example
+    * // Attributes mode: <row name="John" age="30" />
+    * const xml2 = table.AsXml(0, { bAttribute: true });
+    *
+    * @example
+    * // Custom element names
+    * const xml3 = table.AsXml(0, { sRow: "person", sColumn: "field" });
+    * // Result: <person><field name="name">John</field><field name="age">30</field></person>
+    */
+   AsXml(iRow, oOptions = {}) {
+      let sResult = "";
+      const sRow = oOptions.sRow || "row";
+      const sColumn = oOptions.sColumn || "column";
+      const bAttribute = oOptions.bAttribute || false;
+
+      if( bAttribute == false ) {
+         // ## Generate XML with values in elements, structure is <sRow><sColumn name="name">value</sColumn></sRow>
+         sResult += `<${sRow}>`;
+         const iColumnCount = this.GetColumnCount();
+         for(let iColumn = 0; iColumn < iColumnCount; iColumn++) {
+            const v_ = this._GetCellValue(iRow, iColumn);
+            if( v_ !== null && v_ !== undefined ) {
+               sResult += `<${sColumn} name="${this._EscapeXmlValue(this.aColumn[iColumn].name)}">${this._EscapeXmlValue(v_)}</${sColumn}>`;
+            }
+         }
+         sResult += `</${sRow}>`;
+      }
+      else if( bAttribute == true ) {
+         // ## Generate XML with values in attributes, structure is <sRow sColumn1="value1" sColumn2="value2" />
+         sResult += `<${sRow}`;
+         const iColumnCount = this.GetColumnCount();
+         for(let iColumn = 0; iColumn < iColumnCount; iColumn++) {
+            const v_ = this._GetCellValue(iRow, iColumn);
+            if( v_ !== null && v_ !== undefined ) {
+               sResult += ` ${this._EscapeXmlValue(this.aColumn[iColumn].name)}="${this._EscapeXmlValue(v_)}"`;
+            }
+         }
+         sResult += ` />`;
+      }
+
+      return sResult;
+   }
+
+   AsJson(iRow, oOptions = {}) {
+      const o = {};
+      const bIncludeNull = oOptions.bIncludeNull || false;
+      const iIndent = oOptions.iIndent || 0;
+
+      for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
+         const v_ = this._GetCellValue(iRow, iColumn);
+         if( bIncludeNull || (v_ !== null && v_ !== undefined) ) {
+            o[this.aColumn[iColumn].name] = v_;
+         }
+      }
+
+      return JSON.stringify(o, null, iIndent);
+   }
+
    // Get internal table data array ------------------------------------------
    Data() { return this.aTable; }
 

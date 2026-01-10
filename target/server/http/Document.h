@@ -252,7 +252,7 @@ public:
 
    std::unique_ptr<CSessions> m_psessions;      ///< session manager for document if any
 
-   std::unique_ptr<META::CQueries> m_pqueries;  ///< pointer to query information if any
+   std::unique_ptr<META::CQueries> m_pqueries;  ///< pointer to query information if any, note that this is not thread safe and needs to be static, prepare it before actual work
 
    // ## cache information is stored in dto tables (dto = data transfer object)
    std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document

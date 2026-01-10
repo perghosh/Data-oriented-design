@@ -18,7 +18,12 @@ For development purposes, you can use these endpoints to test and debug your app
 - `sys/session/delete (session|index)` - Delete session by uuid or index
 - `sys/session/list ()` - List all active sessions
 
+### System - Metadata
+
+- `sys/meta/add (query, id)` - Add session by value or generate new session
+
 ## Database
+
 
 ## Sql
 

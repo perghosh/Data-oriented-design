@@ -157,6 +157,25 @@ std::pair<bool, std::string> CAPISystem::Execute_FileExists()
 }
 
 /** --------------------------------------------------------------------------
+ * @brief Add
+ * @return 
+ */
+std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryAdd()
+{
+   std::string stringId = Get("id").as_string();
+   std::string stringType = Get("type").as_string();
+   std::string stringFormat = Get("format").as_string();
+   std::string stringQuery = Get("query").as_string();
+
+   CDocument* pdocument = GetDocument();
+   auto* pqueries = pdocument->QUERIES_Get();                                                      assert( pqueries );
+
+   auto result_ = pqueries->Add( stringId, stringType, stringFormat, stringQuery );
+
+   return result_;
+}
+
+/** --------------------------------------------------------------------------
  * @brief Adds a session key
  * 
  * Add either by using a provided session string or by generating a new session, 
