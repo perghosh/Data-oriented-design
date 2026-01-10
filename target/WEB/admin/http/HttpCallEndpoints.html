@@ -19,6 +19,7 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <link rel="stylesheet" href="variables-default.css">
    <link rel="stylesheet" href="css/elements.css">
+   <script src="js/gd_browser.js"></script>
    <script src="js/classes/gd_data_table.js"></script>
    <script src="js/classes/gd_ui_draggable.js"></script>
    <title>Test session logic in http web server</title>
@@ -340,7 +341,9 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
 
          if(!sBaseUrl.endsWith('/')) { sBaseUrl += '/'; }                     // Ensure base URL ends with slash for proper endpoint concatenation
          const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint; // Remove leading slash from endpoint if present (to avoid double slashes)
-         const sFullUrl = sBaseUrl + sCleanEndpoint;                          // Build the complete URL
+         let sFullUrl = sBaseUrl + sCleanEndpoint;                            // Build the complete URL
+
+         sFullUrl = gd.EncodeUrlParams(sFullUrl);
 
          // ## Set url to top element showing active url
          document.getElementById('idUrl').querySelector("[data-field='url']").value = sFullUrl;

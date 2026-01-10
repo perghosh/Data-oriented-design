@@ -329,8 +329,14 @@ std::pair<bool, std::string> parse_query_implementation( std::string_view string
             while( piPosition < piEnd && *piPosition != '&' ) { piPosition++; } // read until '&' or end
             piValueEnd = piPosition;
             
+            // ## Check value for uri encoded characters ....................
             std::string_view stringValue( piValueStart, piValueEnd - piValueStart );
-            argumentsQuery.push_back( { stringKey, stringValue } );
+            if( gd::utf8::uri::next_sequence( stringValue ) == nullptr ) argumentsQuery.push_back( { stringKey, stringValue } );
+            else
+            {
+               std::string stringDecodedValue = gd::utf8::uri::convert_uri_to_uf8( stringValue );
+               argumentsQuery.push_back( { stringKey, stringDecodedValue } );
+            }
          }
          else { argumentsQuery.push_back( { stringKey, std::string_view{""} } ); } // Key without value
       }
