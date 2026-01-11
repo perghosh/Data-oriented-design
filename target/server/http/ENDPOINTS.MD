@@ -24,7 +24,9 @@ For development purposes, you can use these endpoints to test and debug your app
 
 ## Database
 
-- `db/create (query, id)` - Add session by value or generate new session
+- `db/create (type, name)` - Create a new database with specified type and name, the format of name depends on type of database
+- `db/open (type, name)` - Delete database with specified type and name
+- `db/list ()` - List all databases
 
 ## Sql
 
@@ -34,3 +36,16 @@ Endpoints for LUA integration and scripting.
 
 ## Python
 Endpoints for Python integration and scripting.
+
+
+```
+{
+  //"args": [ "--configuration", "C:\\dev\\home\\DOD\\resource\\.http-configuration.xml" ],
+  "args": [ "http", "--site", "D:\\temp\\www", "--port", "8001", "--ip", "\"127.0.0.1\"", "--add-session", "00,01,02,03,04,05" ],
+  "type": "default",
+  "project": "CMakeLists.txt",
+  "projectTarget": "http.exe (target\\server\\http\\http.exe)",
+  "name": "http.exe (target\\server\\http\\http.exe)",
+  "currentDir": "D:\\temp\\www"
+}
+```
