@@ -3,7 +3,8 @@
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <script src="js/classes/gd_data_form.js"></script>
+   <link id="idCssVariable" rel="stylesheet" href="variables-default.css">
+   <script src="js/classes/gd_data_form.js" src="js/classes/gd_data_table.js"></script>
    <title>Document</title>
    <style>
       
@@ -14,7 +15,7 @@
       .container-form .form {
          border-style: none;
          border-radius: 10px;
-         background-color: whitesmoke;
+         background-color: var(--background-primary);
 
          margin: auto;
          margin-top: 50px;
@@ -28,6 +29,7 @@
       .container-form input { 
          border-style: none;
          border-radius: 10px;
+         background-color: var(--background-secondary);
 
          padding: 5px;
          width: 95%;
@@ -43,7 +45,7 @@
       .container-form2 .form {
          border-style: none;
          border-radius: 10px;
-         background-color: whitesmoke;
+         background-color: var(--background-primary);
 
          display: flex;
          flex-wrap: wrap;
@@ -54,6 +56,8 @@
 
          padding: 25px;
          width: 25%;
+
+         transition: background-color 0.3s ease;
       }
 
       .container-form2 label {flex: 0 0 30%; padding: 10px 0px 5px 0px;}  
@@ -62,28 +66,107 @@
          border-style: none;
          border-radius: 10px;
          box-sizing: border-box;
+         background-color: var(--background-secondary);
+
          flex: 0 0 70%;
 
          padding: 5px;
          /*width: 80%;*/
+
+         transition: background-color 0.3s ease;
       }
 
       .container-form2 input[type=number] {flex: 0 0 70%; }
 
+      /*---------------------------------------------------------------------*/
 
+      .container-label {
+         border-style: none;
+         border-radius: 10px;
+         background-color: var(--background-primary);
+
+         margin: auto;
+         margin-top: 25px;
+
+         padding: 25px;
+         width: 25%;
+
+         transition: background-color 0.3s ease;
+      }
+
+      .container-button {
+         border-style: none;
+         border-radius: 10px;
+         background-color: var(--background-primary);
+
+         margin: auto;
+         margin-top: 15px;
+
+         padding: 25px;
+         width: 25%;
+
+         transition: background-color 0.3s ease;
+      }
+
+      .container-button button {
+         border-style: none;
+         border-radius: 10px;
+         background-color: var(--background-secondary);
+
+         padding: 10px 25px 10px 25px;
+
+         transition: background-color 0.3s ease;
+      }
+
+      .container-button button:hover {
+         background-color: var(--background-success);
+      }
 
    </style>
 </head>
 <body>
-    <div id="idContainer" class="container-form2">
+   <div id="idContainer" class="container-form2">
 
-    </div>
+   </div>
+
+   <div class="container-button"><button>Submit</button></div>
+
+   <div class="container-label" data-type="group">
+      <select id="idSelectTheme" onchange="ChangeTheme()">
+         <option value="variables-candy-light.css">Candy light</option>
+         <option value="variables-blue-fog.css">Blue fog</option>
+         <option value="variables-purple-soft.css">Purple soft</option>
+         <option value="variables-red-black.css">Red black</option>
+         <option value="variables-clay-sea.css">Clay sea</option>
+         <option value="variables-compular.css">Compular</option>
+         <option value="variables-grey.css">Grey</option>
+         <option value="variables-soft-candy.css">Soft candy</option>
+         <option value="variables-green-food.css">Green food</option>
+      </select>
+   </div>
 <script>
-    const oForm = new Form([
+   const oForm = new Form([
         { sId: "name", sLabel: "Full Name", sType: "string", bRequired: true, iMinLength: 2 },
         { sId: "age", sLabel: "Age", sType: "number", nMin: 18, nMax: 100 },
         { sId: "email", sLabel: "Email", sType: "string", pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
     ]);
+
+   function GlobalEventListener(sAction, eSelector, callback_, eParent)
+   {
+      if(!eParent) return;
+
+      eParent.addEventListener(sAction, (e_) => {
+         if(e_.target.matches(eSelector))
+         {
+               callback_(e_);
+         }
+      });
+   }
+
+   function ChangeTheme() {
+      const sTheme = document.getElementById('idSelectTheme').value;
+      if(sTheme) { document.getElementById('idCssVariable').href = "css/" + sTheme; }
+   }
 
     //const data = form.GetField(0);
     //console.log(data);
