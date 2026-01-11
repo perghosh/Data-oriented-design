@@ -1,5 +1,7 @@
 // @FILE [tag: query] [description: http session] [type: source] [name: METAQueries.cpp]
 
+#include <format>
+
 #include "gd/gd_binary.h"
 #include "gd/gd_uuid.h"
 
@@ -53,7 +55,7 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringId, std::stri
    auto uRow = m_tableQuery.row_add_one();
    
    gd::uuid uuid_( gd::types::tag_command_random{} );
-   gd::types::uuid uuidQuery( uuidQuery.data() );
+   gd::types::uuid uuidQuery( uuid_.data() );
    
 
    m_tableQuery.cell_set( uRow, "id", uuidQuery );
@@ -64,6 +66,23 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringId, std::stri
    std::string stringUuid = gd::binary_to_hex_g( uuidQuery.data(), 16, false );
 
    return { true, stringUuid };
+}
+
+std::pair<bool, std::string> CQueries::Delete( const std::pair<std::string_view, std::string_view>& pair_ )
+{
+   std::string_view stringName = pair_.first;
+   std::string_view stringUuid = pair_.second;
+   int64_t iRow = -1;
+   if( stringName.empty() == false) { iRow = m_tableQuery.find( eColumnName, stringName ); }
+   if(iRow == -1)
+   {
+      gd::types::uuid uuid_( stringUuid );
+      iRow = m_tableQuery.find( eColumnId, uuid );
+   }
+
+   if( iRow == -1 ) return { false, std::format( "No row for {} or {}", stringName, stringUuid)};
+
+   return { true, "" };
 }
 
 
