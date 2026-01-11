@@ -24,6 +24,7 @@ For development purposes, you can use these endpoints to test and debug your app
 
 ## Database
 
+- `db/create (query, id)` - Add session by value or generate new session
 
 ## Sql
 
