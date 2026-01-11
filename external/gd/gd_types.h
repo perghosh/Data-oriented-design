@@ -479,41 +479,38 @@ namespace detail {
    /// helper method used to convert first four characters into 32 bit unsigned integer value
    constexpr uint32_t hash_type( std::string_view stringType )
    {
-      uint32_t uHashValue = (uint32_t)stringType[0];
-      uHashValue += (uint32_t)stringType[1] << 8;
-      uHashValue += (uint32_t)stringType[2] << 16;
-      uHashValue += (uint32_t)stringType[3] << 24;
-
-      return uHashValue;
+      return static_cast<uint32_t>(stringType[0]) 
+         | (static_cast<uint32_t>(stringType[1]) << 8)
+         | (static_cast<uint32_t>(stringType[2]) << 16)
+         | (static_cast<uint32_t>(stringType[3]) << 24);
    }
 
    /// helper method used to convert first four characters into 32 bit unsigned integer value
    constexpr uint32_t hash_type24( std::string_view stringType )
    {
-      uint32_t uHashValue = (uint32_t)stringType[0];
-      uHashValue += (uint32_t)stringType[1] << 8;
-      uHashValue += (uint32_t)stringType[2] << 16;
-
-      return uHashValue;
+      return static_cast<uint32_t>(stringType[0]) 
+         | (static_cast<uint32_t>(stringType[1]) << 8)
+         | (static_cast<uint32_t>(stringType[2]) << 16);
    }
 
 
    /// helper method used to convert first four characters into 64 bit value
    constexpr uint64_t hash_type64( std::string_view stringType )
-   {
-      uint64_t uHashValue = (uint32_t)stringType[0];
-      uHashValue += (uint64_t)stringType[1] << 8;
-      if( stringType[2] != 0 ) { uHashValue += (uint64_t)stringType[2] << 16; }
+   {                                                                                               assert( stringType.empty() == false );
+      uint64_t uHashValue = static_cast<uint64_t>(static_cast<unsigned char>(stringType[0]));
+      if( stringType.length() > 1 ) { uHashValue |= static_cast<uint64_t>(static_cast<unsigned char>(stringType[1])) << 8; }
       else return uHashValue;
-      if( stringType[3] != 0 ) { uHashValue += (uint64_t)stringType[3] << 24; }
+      if( stringType.length() > 2 ) { uHashValue |= static_cast<uint64_t>(static_cast<unsigned char>(stringType[2])) << 16; }
       else return uHashValue;
-      if( stringType[4] != 0 ) { uHashValue += (uint64_t)stringType[4] << 32; }
+      if( stringType.length() > 3 ) { uHashValue |= static_cast<uint64_t>(static_cast<unsigned char>(stringType[3])) << 24; }
       else return uHashValue;
-      if( stringType[5] != 0 ) { uHashValue += (uint64_t)stringType[5] << 40; }
+      if( stringType.length() > 4 ) { uHashValue |= static_cast<uint64_t>(static_cast<unsigned char>(stringType[4])) << 32; }
       else return uHashValue;
-      if( stringType[6] != 0 ) { uHashValue += (uint64_t)stringType[6] << 48; }
+      if( stringType.length() > 5 ) { uHashValue |= static_cast<uint64_t>(static_cast<unsigned char>(stringType[5])) << 40; }
       else return uHashValue;
-      if( stringType[7] != 0 ) { uHashValue += (uint64_t)stringType[7] << 56; }
+      if( stringType.length() > 6 ) { uHashValue |= static_cast<uint64_t>(static_cast<unsigned char>(stringType[6])) << 48; }
+      else return uHashValue;
+      if( stringType.length() > 7 ) { uHashValue |= static_cast<uint64_t>(static_cast<unsigned char>(stringType[7])) << 56; }
       else return uHashValue;
 
       return uHashValue;
