@@ -43,20 +43,29 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringQuery, enumFo
    return { true, stringId };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Adds a new query to the table with the specified ID, type, format, and query.
+ *
+ * @param stringId The ID of the query.
+ * @param stringType The type of the query.
+ * @param stringFormat The format of the query.
+ * @param stringQuery The query itself.
+ * @return std::pair<bool, std::string> A pair containing a boolean indicating success and the ID of the added query.
+ */
 std::pair<bool, std::string> CQueries::Add( std::string_view stringId, std::string_view stringType, std::string_view stringFormat, std::string_view stringQuery )
 {
    if( stringId.empty() || stringType.empty() || stringQuery.empty() ) { return { false, "Invalid input" }; }
 
-   auto uType = ToType_s( stringFormat );
+   auto uType = ToType_s( stringType );
    auto uFormat = ToFormat_s( stringFormat );
 
    if( uType == eTypeUnknown ) { return { false, "Invalid type" }; }
-   
+
    auto uRow = m_tableQuery.row_add_one();
-   
+
    gd::uuid uuid_( gd::types::tag_command_random{} );
    gd::types::uuid uuidQuery( uuid_.data() );
-   
+
 
    m_tableQuery.cell_set( uRow, "id", uuidQuery );
    m_tableQuery.cell_set( uRow, "type", uType );
@@ -76,8 +85,9 @@ std::pair<bool, std::string> CQueries::Delete( const std::pair<std::string_view,
    if( stringName.empty() == false) { iRow = m_tableQuery.find( eColumnName, stringName ); }
    if(iRow == -1)
    {
-      gd::types::uuid uuid_( stringUuid );
-      iRow = m_tableQuery.find( eColumnId, uuid );
+      gd::uuid uuid_( stringUuid );
+      gd::types::uuid uuidFind( uuid_.data() );
+      iRow = m_tableQuery.find( eColumnId, uuidFind );
    }
 
    if( iRow == -1 ) return { false, std::format( "No row for {} or {}", stringName, stringUuid)};
@@ -88,10 +98,10 @@ std::pair<bool, std::string> CQueries::Delete( const std::pair<std::string_view,
 
 /** --------------------------------------------------------------------------
  * @brief Initializes and prepares a query table with predefined columns and metadata flags.
- * 
+ *
  * Queries can be stored in raw text format with jinja templates to prepare query.
  * json and xml format is also supported. There queries are stored with each column in elements or similar in json.
- * 
+ *
  * @param tableQuery A reference to a table object that will be configured for query data.
  */
 void CQueries::CreateTable_s( gd::table::arguments::table& tableQuery )

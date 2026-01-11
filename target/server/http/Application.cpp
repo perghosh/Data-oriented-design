@@ -253,7 +253,7 @@ std::pair<bool, std::string> CApplication::Initialize()
    m_vectorDocument.push_back( std::move( pdocumentMain ) );
 
    // ## First document initialize data to be able to store whats possible in document
-   pdocumentMain->QUERIES_Initialize();
+   m_pdocumentActive->QUERIES_Initialize();
 
    // ## create server boost object to handle http requests
 
