@@ -1178,6 +1178,10 @@ public:
    const_iterator end() const { return const_iterator( this, m_uLength ); }
    const_iterator cbegin() const { return const_iterator( this ); }
    const_iterator cend() const { return const_iterator( this, m_uLength ); }
+   /// Helper method to get range for arguments value iterator
+   argument_value_range<arguments> values() { return argument_value_range<arguments>(this); }
+   argument_value_range<const arguments> values() const { return argument_value_range<const arguments>(this); } ///< const version
+   
 
    // ### named based iterators, slower but with better support for stl iterator logic
 
