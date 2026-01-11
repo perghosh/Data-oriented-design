@@ -775,7 +775,7 @@ constexpr enumType type_g( const std::string_view& stringType )
  */
 constexpr bool validate_type_g(std::string_view stringType)
 {
-   return type_g(name) != eTypeUnknown;
+   return type_g(stringType) != eTypeUnknown;
 }
 
 /** ---------------------------------------------------------------------------
