@@ -90,6 +90,7 @@ public:
    uuid( const uuid& o );
    uuid( const uint8_t* puUuid ) { memcpy( m_pbData, puUuid, 16 ); }
    uuid( const char* pbsHexBegin, const char* pbsHexEnd ) { assert( (pbsHexEnd - pbsHexBegin) == 32 || (pbsHexEnd - pbsHexBegin) == 36 ); read( (const value_type*)pbsHexBegin, (const value_type*)pbsHexEnd ); }
+   uuid( std::string_view stringUuid ) { assert( stringUuid.length() == 32 || stringUuid.length() == 36 ); read( (const value_type*)stringUuid.data(), (const value_type*)(stringUuid.data() + stringUuid.length()) ); }
 
 #ifdef GD_X86
    uuid(__m128i iUuid) { _mm_store_si128((__m128i*)m_pbData, iUuid);  }
