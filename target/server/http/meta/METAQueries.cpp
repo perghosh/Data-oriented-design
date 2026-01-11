@@ -77,7 +77,7 @@ std::pair<bool, std::string> CQueries::Delete( const std::pair<std::string_view,
    if(iRow == -1)
    {
       gd::types::uuid uuid_( stringUuid );
-      iRow = m_tableQuery.find( eColumnId, uuid );
+      iRow = m_tableQuery.find( eColumnId, uuid_ );
    }
 
    if( iRow == -1 ) return { false, std::format( "No row for {} or {}", stringName, stringUuid)};
