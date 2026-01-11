@@ -2,13 +2,13 @@
 PAGE_ Method Documentation:
 =========================
 
-PAGE_ProcessResponse(oData) - Handles server response data and displays it in the response container based on data type
-PAGE_SetListeners() - Configures event listeners for page interactions, handling actions like send and save
-PAGE_Update(source_) - Updates page elements with data from a source object, typically a CDocument instance
+PAGE_ProcessResponse - Handles server response data and displays it in the response container based on data type
+PAGE_SetListeners - Configures event listeners for page interactions, handling actions like send and save
+PAGE_Update - Updates page elements with data from a source object, typically a CDocument instance
 PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
-PAGE_Initialize() - Main initialization function that sets up the page, creates draggable elements and configures listeners
-PAGE_PrintResponse(oData) - Prints the response data in the response container based on data type
-PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with any provided arguments
+PAGE_Initialize - Main initialization function that sets up the page, creates draggable elements and configures listeners
+PAGE_PrintResponse - Prints the response data in the response container based on data type
+PAGE_Callback - Retrieves and executes a callback by name with any provided arguments
 
 -->
 
@@ -82,8 +82,8 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
          <h1>HTTP Session Test Page</h1>
          <div id="idServer" class="container container-form">
             <div class="row">
-               <input class="fill" data-field="address" placeholder="Address to server" />
-               <input class="quarter" data-field="port" placeholder="port number" />
+               <input class="fill" data-field="address" data-action="field" data-object="server" placeholder="Address to server" />
+               <input class="quarter" data-field="port" data-action="field" data-object="server" placeholder="port number" />
             </div>
          </div>
          <div id="idUrl" class="container container-form">
@@ -96,21 +96,22 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
       <div id="idWorkArea" style="border: 1px solid black; position: relative;">
 
          <!-- Section used to display endpoint information and commands to save and send -->
-         <div id="idCommands" class="container container-form page-plate" data-name="command" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 20px; left: 20px; padding: 5px; width: 800px;">
+         <div id="idCommands" class="container container-form page-plate" data-name="command" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 20px; left: 20px; padding: 5px; width: 900px;">
             <div class="caption row handle" data-draggable-handle="1">Command: Endpoint information</div>
             <form data-element="container">
                <div class="row">
-                  <input type="text" class="fill" data-field="alias" placeholder="Alias name for command" />
+                  <input class="third" type="text" class="fill" data-field="alias" placeholder="Alias name for command" />
+                  <input class="fill" type="text" class="fill" data-field="description" placeholder="Command description" />
                </div>
                <div class="row">
-                  <textarea class="fill" rows="3" data-field="endpoint" placeholder="Endpoint URL"></textarea>
+                  <textarea class="fill" rows="2" data-field="endpoint" placeholder="Endpoint URL"></textarea>
                </div>
                <div class="row">
-                  <textarea class="fill" rows="2" data-field="description" placeholder="Endpoint description"></textarea>
+                  <textarea class="fill" rows="3" data-field="body" placeholder="Endpoint body content if any"></textarea>
                </div>
                <div class="row right">
                   <span class="button-normal" data-action="send">Send</span>
-                  <span class="button-normal" data-action="save">Keep</span>
+                  <span class="button-normal" data-action="keep">Keep</span>
                </div>
             </form>
          </div>
@@ -162,6 +163,15 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
             const sId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
             this.aObject.push({ id: sId, type: sType, object: oObject });
             this.bModified = true;
+         }
+
+         /// Set value of field in object ------------------------------------
+         SetValue(sObject, sField, sValue) {
+            const oObject = this.aObject.find(o => o.type === sObject);
+            if(oObject) {
+               oObject.object[sField] = sValue;
+               this.bModified = true;
+            }
          }
 
          /// Add object to cache ---------------------------------------------
@@ -587,7 +597,10 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
          });
 
          // ## Initialize table cache items
-         let oTable = new Table(["alias", "endpoint","body", "description"]);  // table storing endpoints
+
+         // Table storing endpoints, contains alias, endpoint, body, description columns and these
+         // column names should match the field attributes used in form to make them work
+         let oTable = new Table(["alias", "endpoint", "body", "description"]);
          oDocument_g.AddTableCacheItem("endpoint", oTable);                   // Add table object to cache
 
          PAGE_SetListeners();
@@ -605,10 +618,10 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
 
          // ## Initialize page menu listener ..................................
 
-         const eMenu = document.getElementById('idMenu');
-         eMenu.addEventListener('click', function(e_) {
+         const eMenu = document.getElementById("idMenu");
+         eMenu.addEventListener('click', function(e_) {                       // click listener for menu buttons
             const eTarget = e_.target;
-            if(!eTarget.dataset.action) return;                             // If no action is defined, return
+            if(!eTarget.dataset.action) return;                               // If no action is defined, return
             e_.stopPropagation();
             const sAction = eTarget.dataset.action;
             switch(sAction) {
@@ -622,8 +635,20 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
                default:
                   console.error('Unknown action:', sAction);
             }
-
          });
+
+         // listener when values are changed in inputs
+         const eInputs = document.querySelectorAll('input, textarea, select');
+         eInputs.forEach(eInput => {
+            eInput.addEventListener('input', function(e_) {
+               const eTarget = e_.target;
+               const sObject = eTarget.dataset.object;
+               if( typeof sObject === "undefined" ) return;
+               const sField = eTarget.dataset.field;
+               oDocument_g.SetValue(sObject, sField, eTarget.value);
+            });
+         });
+
 
          // ## Initialize page work area listener .............................
 
@@ -639,7 +664,7 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
                   const sEndpoint = eContainer.querySelector('[data-field="endpoint"]').value;
                   SERVER_Send(sEndpoint).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
                } break;
-               case "save": {                                                  // save command
+               case "keep": {                                                  // save command
                   const eCommands = document.getElementById('idCommands');
                   const aFields = eCommands.querySelectorAll('[data-field]');
                   const oCommand = {};
@@ -652,7 +677,7 @@ PAGE_Callback(sName, ...args) - Retrieves and executes a callback by name with a
                   let oTable = oDocument_g.GetTableCacheItem("endpoint");
                   oTable.Add(oCommand);
                   oDocument_g.SetModified(true);
-
+                  PAGE_Update();
                } break;
                case "activate-command": {                                      // activate command
                   const sCacheName = eTarget.dataset.cache;
