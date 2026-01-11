@@ -487,6 +487,17 @@ namespace detail {
       return uHashValue;
    }
 
+   /// helper method used to convert first four characters into 32 bit unsigned integer value
+   constexpr uint32_t hash_type24( std::string_view stringType )
+   {
+      uint32_t uHashValue = (uint32_t)stringType[0];
+      uHashValue += (uint32_t)stringType[1] << 8;
+      uHashValue += (uint32_t)stringType[2] << 16;
+
+      return uHashValue;
+   }
+
+
    /// helper method used to convert first four characters into 64 bit value
    constexpr uint64_t hash_type64( std::string_view stringType )
    {
@@ -536,7 +547,7 @@ constexpr bool is_binary_g(unsigned uType) { return detail::is_binary(uType); }
 */
 constexpr bool is_primitive_g( enumTypeNumber eTypeNumber )
 {
-   return static_cast<unsigned>( eTypeNumber ) > static_cast<unsigned>( eTypeUnknown ) && static_cast<unsigned>( eTypeNumber ) <= static_cast<unsigned>( eTypeNumberDouble );
+   return static_cast<unsigned>( eTypeNumber ) > static_cast<unsigned>( eTypeUnknown ) && static_cast<unsigned>( eTypeNumber ) <= static_cast<unsigned>( eTypeNumberPointer );
 }
 
 /// wrapper, cast to `enumTypeNumber`
@@ -670,44 +681,77 @@ eType = type_g("int8");             assert( eType == eTypeInt8 );
  * @return {enumType} type constant
 */
 constexpr enumType type_g( const std::string_view& stringType )
-{                                                                                                  assert( stringType.length() >= 3 );
+{                                                                                                  assert( stringType.length() >= 2 );
    using namespace detail;
 
    enumType eType = eTypeUnknown;
 
+   // ## Handle 2-character Rust types first (u8, i8)
+   if( stringType.length() == 2 )
+   {
+      uint32_t uTypeName = hash_type16( stringType );
+      switch( uTypeName )
+      {
+      case hash_type16("u8"): eType = eTypeUInt8;  break;
+      case hash_type16("i8"): eType = eTypeInt8;  break;
+      default: break;
+      }
+      if( eType != eTypeUnknown ) return eType;
+   }
+
+   // ## Handle 3-character Rust types (u16, i16, u32, i32, u64, i64, f32, f64)
+   if( stringType.length() == 3 )
+   {
+      uint32_t uTypeName = hash_type24( stringType );
+      switch( uTypeName )
+      {
+      case hash_type24("u16"): eType = eTypeUInt16;  break;                   // unsigned 16-bit integer
+      case hash_type24("i16"): eType = eTypeInt16;  break;                    // signed 16-bit integer
+      case hash_type24("u32"): eType = eTypeUInt32;  break;                   // unsigned 32-bit integer
+      case hash_type24("i32"): eType = eTypeInt32;  break;                    // signed 32-bit integer
+      case hash_type24("u64"): eType = eTypeUInt64;  break;                   // unsigned 64-bit integer
+      case hash_type24("i64"): eType = eTypeInt64;  break;                    // signed 64-bit integer
+      case hash_type24("f32"): eType = eTypeCFloat;  break;                   // 32-bit floating-point number
+      case hash_type24("f64"): eType = eTypeCDouble;  break;                  // 64-bit floating-point number
+      default: break;
+      }
+      if( eType != eTypeUnknown ) return eType;
+   }   
+
    uint32_t uTypeName = hash_type( stringType ); 
 
+   // ## Handle C++ types
    switch( uTypeName )
    {
-   case hash_type("unkn"): eType = eTypeUnknown;  break;                       // unknown (0)
-   case hash_type("null"): eType = eTypeUnknown;  break;                       // null, like unknown (0)
+   case hash_type("unkn"): eType = eTypeUnknown;  break;                      // unknown (0)
+   case hash_type("null"): eType = eTypeUnknown;  break;                      // null, like unknown (0)
 
-   case hash_type("bina"): eType = eTypeBinary;  break;                        // binary
-   case hash_type("bool"): eType = eTypeBool;  break;                          // bool
-   case hash_type("doub"): eType = eTypeCDouble;  break;                       // double
-   case hash_type("floa"): eType = eTypeCFloat;  break;                        // float
+   case hash_type("bina"): eType = eTypeBinary;  break;                       // binary
+   case hash_type("bool"): eType = eTypeBool;  break;                         // bool
+   case hash_type("doub"): eType = eTypeCDouble;  break;                      // double
+   case hash_type("floa"): eType = eTypeCFloat;  break;                       // float
 
-   case hash_type("i128"): eType = eTypeInt128;  break;                        // int128
-   case hash_type("i256"): eType = eTypeInt256;  break;                        // int254
-   case hash_type("i512"): eType = eTypeInt512;  break;                        // int512
+   case hash_type("i128"): eType = eTypeInt128;  break;                       // int128
+   case hash_type("i256"): eType = eTypeInt256;  break;                       // int254
+   case hash_type("i512"): eType = eTypeInt512;  break;                       // int512
 
-   case hash_type("int8"): eType = eTypeInt8;  break;                          // int8
-   case hash_type("int1"): eType = eTypeInt16;  break;                         // int16
-   case hash_type("int3"): eType = eTypeInt32;  break;                         // int32
-   case hash_type("int6"): eType = eTypeInt64;  break;                         // int64
-   case hash_type("poin"): eType = eTypePointer;  break;                       // pointer
+   case hash_type("int8"): eType = eTypeInt8;  break;                         // int8
+   case hash_type("int1"): eType = eTypeInt16;  break;                        // int16
+   case hash_type("int3"): eType = eTypeInt32;  break;                        // int32
+   case hash_type("int6"): eType = eTypeInt64;  break;                        // int64
+   case hash_type("poin"): eType = eTypePointer;  break;                      // pointer
 
-   case hash_type("rbin"): eType = eTypeRBinary;  break;                       // rbinary (binary reference)
-   case hash_type("rstr"): eType = eTypeRString;  break;                       // rstring (string reference)
-   case hash_type("rutf"): eType = eTypeRUtf8String;  break;                   // rutf8 (utf8 reference)
+   case hash_type("rbin"): eType = eTypeRBinary;  break;                      // rbinary (binary reference)
+   case hash_type("rstr"): eType = eTypeRString;  break;                      // rstring (string reference)
+   case hash_type("rutf"): eType = eTypeRUtf8String;  break;                  // rutf8 (utf8 reference)
 
    case hash_type("stri"): eType = eTypeString;  break;
 
-   case hash_type("u128"): eType = eTypeUInt128;  break;                       // uint128
-   case hash_type("u256"): eType = eTypeUInt256;  break;                       // uint256
-   case hash_type("u512"): eType = eTypeUInt512;  break;                       // uint512
+   case hash_type("u128"): eType = eTypeUInt128;  break;                      // uint128
+   case hash_type("u256"): eType = eTypeUInt256;  break;                      // uint256
+   case hash_type("u512"): eType = eTypeUInt512;  break;                      // uint512
 
-   case hash_type("uint"):                                                     // uint8, uint16, uint32, uint64
+   case hash_type("uint"):                                                    // uint8, uint16, uint32, uint64
       {
          if( stringType[4] == '8' ) eType = eTypeUInt8;
          else if( stringType[4] == '1' ) eType = eTypeUInt16;
@@ -716,16 +760,33 @@ constexpr enumType type_g( const std::string_view& stringType )
          else { static_assert("invalid type name"); assert( false ); }
       }
       break;
-   case hash_type("uuid"): eType = eTypeGuid;  break;                          // uuid
-   case hash_type("utf8"): eType = eTypeUtf8String;  break;                    // utf8
-   case hash_type("wstr"): eType = eTypeWString;  break;                       // wstring
-   case hash_type("utf3"): eType = eTypeUtf32String;  break;                   // uft32
+   case hash_type("uuid"): eType = eTypeGuid;  break;                         // uuid
+   case hash_type("utf8"): eType = eTypeUtf8String;  break;                   // utf8
+   case hash_type("wstr"): eType = eTypeWString;  break;                      // wstring
+   case hash_type("utf3"): eType = eTypeUtf32String;  break;                  // uft32
    default: assert(false);
    }
 
    return eType;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Validate a type string.
+ *
+ * @param stringType The type string to validate.
+ * @return constexpr bool True if the type string is valid, false otherwise.
+ */
+constexpr bool validate_type_g(std::string_view stringType)
+{
+   return type_g(name) != eTypeUnknown;
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Get the enumType for a given type.
+ *
+ * @tparam TYPE The type to get the enumType for.
+ * @return constexpr enumType The enumType for the given type.
+ */
 template<typename TYPE>
 constexpr enumType type_g( TYPE, tag_ask_compiler )
 {
