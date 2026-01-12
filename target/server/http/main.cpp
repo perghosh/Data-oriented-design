@@ -17,7 +17,12 @@ int main( int iArgumentCount, char* ppbszArgument[] )
 
    //std::cout << "we have a message";
 
-   papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
+   auto result_ =  papplication_->Main( iArgumentCount, ppbszArgument, nullptr );
+
+   if( result_.first == false )
+   {
+      std::cout << "## Server exit with error: "  << result_.second << std::endl;
+   }
    
    //result_ = papplication_->SERVER_Start();
 

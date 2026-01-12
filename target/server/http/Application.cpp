@@ -79,6 +79,11 @@ CApplication::~CApplication()
       m_phttpserver = nullptr;
    }
 
+   for( auto it : m_vectorDatabase )
+   {
+      it->release();
+   }
+
    if( m_pserverBoost ) delete m_pserverBoost;
 }
 
@@ -120,7 +125,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    // ## Parse arguments if sent
    if( iArgumentCount > 1 )											           // do we have arguments ? (first is application)
    {
-       auto result_ = optionsApplication.parse(iArgumentCount, ppbszArgument);// @CORE [title: options] [description: parse command line arguments] 
+      auto result_ = optionsApplication.parse(iArgumentCount, ppbszArgument); // @CORE [title: options] [description: parse command line arguments] 
       if( result_.first == false ) { return result_; }
 
       result_ = Read_s( this, optionsApplication );                           // @CRITICAL [title: read global options] [description: read global arguments from options, settings for complete application]
@@ -321,9 +326,16 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
       }
       else
       {
-
+         argumentsOpen["type"] = "sqlite";                                    // if file then sqlite
+         argumentsOpen["name"] = stringOpen;                                  // probably a file name
       }
 
+      gd::database::database_i* pdatabaseOpen = nullptr;
+      auto result_ = OpenDatabase_s( argumentsOpen, pdatabaseOpen );                              assert( m_pdocumentActive != nullptr );
+      if( result_.first == false ) return result_;
+      m_pdocumentActive->SetDatabase(pdatabaseOpen);
+      if( pdatabaseOpen != nullptr ) pdatabaseOpen->release();
+                                                                                                  LOG_INFORMATION_RAW( "Open database: " & stringOpen );
    }
 
    if( stringCommand == "http" )
@@ -331,8 +343,6 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
       auto result_ = CLI::Http_g( &optionsActive, m_pdocumentActive );
       if( result_.first == false ) { return result_; }
    }
-
-
 
    return { true, "" };
 }
@@ -468,6 +478,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add( { "port", "Port number to bind the server to" } );
       optionsCommand.add( { "site", "Folder on disk where to find files"});
       optionsCommand.add( { "add-session", "Adds session values at start, usefull for testing"});
+      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }

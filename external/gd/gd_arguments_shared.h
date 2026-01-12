@@ -410,6 +410,7 @@ public:
       argument(const char8_t* pbsz) : m_eType(arguments::eTypeUtf8String) { m_unionValue.putf8 = pbsz; }
 #endif
       argument(const wchar_t* pwsz) : m_eType( enumType(arguments::eTypeWString) ) { m_unionValue.pwsz = pwsz; }
+      argument(const std::string& s) : m_eType( enumType(arguments::eTypeString) ) { m_unionValue.pbsz = s.c_str(); }
       argument(arguments::enumCType eType, const char* pbsz) : m_eType(enumType(eType)) { m_unionValue.pbsz = pbsz; }
       argument(arguments::enumCType eType, const wchar_t* pwsz) : m_eType(enumType(eType)) { m_unionValue.pwsz = pwsz; }
       argument(arguments::enumType eType, const char* pbsz) : m_eType(eType) { m_unionValue.pbsz = pbsz; }
