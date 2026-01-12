@@ -31,6 +31,14 @@ NAMESPACE_META_BEGIN
 
 class CDatabase
 {
+   enum enumColumnTable {
+      // eColumnTableKey = 0,
+   };
+   
+   enum enumColumnConnection {
+      // eColumnTableKey = 0,
+   };
+   
    // @API [tag: construction]
 public:
    CDatabase() {}
@@ -56,6 +64,8 @@ public:
 // @API [tag: get, set]
 
 // @API [tag: operation]
+   std::pair<bool, std::string> Initialize();
+
 
 
 protected:
@@ -66,12 +76,19 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   std::unique_ptr<gd::table::arguments::table> m_ptableTable;  ///< table holding list of tables
+   std::unique_ptr<gd::table::arguments::table> m_ptableColumn;  ///< table holding column information
+   std::unique_ptr<gd::table::arguments::table> m_ptableJoin;  ///< table with connections between tables
+   std::unique_ptr<gd::table::arguments::table> m_ptableComputed;  ///< table with computed columns
+
 
 
 // @API [tag: free-functions]
 public:
-   static void CreateTable_s( gd::table::arguments::table& tableDatabase );    ///< create session table structure
-   static void CreateConnections_s( gd::table::arguments::table& tableConnections );
+   static void CreateTable_s( gd::table::arguments::table& tableTable );    ///< create session table structure
+   static void CreateColumn_s( gd::table::arguments::table& tableColumn ); ///< create table structure for column information
+   static void CreateJoin_s( gd::table::arguments::table& tableJoin ); ///< create session table structure
+   static void CreateComputed_s( gd::table::arguments::table& tableComputed );
 
 };
 

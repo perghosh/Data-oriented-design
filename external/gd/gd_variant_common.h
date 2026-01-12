@@ -71,7 +71,7 @@ template <typename VARIANT>
 std::string get_type_description( const VARIANT& v_ )
 {
    if( v_.is_bool() ) return "boolean";
-   if( v_.is_int() || v.is_integer() ) return "integer";
+   if( v_.is_int() || v_.is_integer() ) return "integer";
    if( v_.is_decimal() ) return "decimal";
    if( v_.is_string() ) return "string";
    if( v_.is_binary() ) return "binary";
