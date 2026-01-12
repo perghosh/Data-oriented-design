@@ -1,3 +1,12 @@
+<!--
+PAGE_ Method Documentation:
+=========================
+
+PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
+
+-->
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -129,19 +138,21 @@
 
    </div>
 
-   <div class="container-button"><button>Submit</button></div>
+   <div class="container-button" ><button id="idSave">Submit</button></div>
 
    <div class="container-label" data-type="group">
       <select id="idSelectTheme" onchange="ChangeTheme()">
          <option value="variables-candy-light.css">Candy light</option>
-         <option value="variables-blue-fog.css">Blue fog</option>
+         <option value="variables-corporate-blue.css">Corporate Blue</option>
          <option value="variables-purple-soft.css">Purple soft</option>
          <option value="variables-red-black.css">Red black</option>
-         <option value="variables-clay-sea.css">Clay sea</option>
+         <option value="variables-royal-violet.css">Royal violet</option>
          <option value="variables-compular.css">Compular</option>
          <option value="variables-grey.css">Grey</option>
          <option value="variables-soft-candy.css">Soft candy</option>
          <option value="variables-green-food.css">Green food</option>
+         <option value="variables-midnight-gold.css">Midnight gold</option>
+         <option value="variables-modern-emerald.css">Modern emerald</option>
       </select>
    </div>
 <script>
@@ -150,6 +161,9 @@
         { sId: "age", sLabel: "Age", sType: "number", nMin: 18, nMax: 100 },
         { sId: "email", sLabel: "Email", sType: "string", pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
     ]);
+
+    let bModified_g = false;
+    let iIdleTimerId_g = null;
 
    function GlobalEventListener(sAction, eSelector, callback_, eParent)
    {
@@ -173,10 +187,10 @@
 
    function CreateForm(parent_)
    {
-      if(!parent_) {parent_ = "#idContainer"}
+      //if(!parent_) {parent_ = "#idContainer"}
 
-      if( parent_ === "#idContainer")
-      {
+      //if( parent_ === "#idContainer")
+      //{
          let eParent = document.querySelector(parent_);
          if(!eParent) {eParent = document.getElementById(parent_)}
 
@@ -195,6 +209,8 @@
             eField.id = oField.sId;
             eField.placeholder = oField.sLabel;
             eField.required = oField.bRequired;
+
+            eField.dataset.field = eField.id; // data-field="<id>"
          
             eLabel.textContent = oField.sLabel;
 
@@ -203,14 +219,62 @@
          }
 
          eParent.appendChild(eForm);
+      //}
+   }
 
-      }
+   function CollectInputEntries(parent_)
+   {
+      let aData = [];
 
+      let eParent = document.querySelector(parent_);
+      if(!eParent) {eParent = document.getElementById(parent_)}  
 
+      const eInputs = eParent.querySelectorAll("input");
+
+      eInputs.forEach(eInput => {
+         const sKey = eInput.id;
+         const value_ = eInput.value;
+
+         aData.push({sKey, value_});
+
+      });
+
+      return aData;
+   }
+
+   function PAGE_ConfigureListeners() {
+      const eContainer = document.getElementById("idContainer");
+      eContainer.addEventListener("input",(e_) => {
+         const eTarget = e_.target;
+         const sField = eTarget.dataset.field; 
+         if( !sField ) { return; }
+
+         e_.stopPropagation();                                                                     console.log( "Id for field ", sField );
+
+         bModified_g = true;
+
+      });
+   }
+
+   function PAGE_OnIdle() {
+      console.log( "OnIdle: modified = ", bModified_g )
    }
 
    document.addEventListener('DOMContentLoaded', function() {
       CreateForm("#idContainer");
+
+      PAGE_ConfigureListeners();
+               // ## Start idle timer - call PAGE_OnIdle() once per second
+      iIdleTimerId_g = setInterval(PAGE_OnIdle, 1000);
+
+
+
+      GlobalEventListener("click", "#idSave", () =>
+         {
+            const aData = CollectInputEntries("#idContainer");
+            console.log(aData);
+         },
+      )
    });
 
 </script>
