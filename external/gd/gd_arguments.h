@@ -356,11 +356,13 @@ public:
 
       //param(binary_support::uuid* p) : m_eCType(params::eCustomTypeUuid) { m_unionValue.p = p; }
 
-      argument(const char* pbsz) : m_eType( enumType(arguments::eTypeString) ) { m_unionValue.pbsz = pbsz; }
+      explicit argument(const char* pbsz) : m_eType( enumType(arguments::eTypeString) ) { m_unionValue.pbsz = pbsz; }
 #if defined(__cpp_char8_t)
       argument(const char8_t* pbsz) : m_eType(arguments::eTypeUtf8String) { m_unionValue.putf8 = pbsz; }
 #endif
-      argument(const wchar_t* pwsz) : m_eType( enumType(arguments::eTypeWString) ) { m_unionValue.pwsz = pwsz; }
+      explicit argument(const wchar_t* pwsz) : m_eType( enumType(arguments::eTypeWString) ) { m_unionValue.pwsz = pwsz; }
+      explicit argument(const std::string& s) : m_eType( enumType(arguments::eTypeString) ) { m_unionValue.pbsz = s.c_str(); m_uSize = (uint32_t)s.length(); }
+      explicit argument(const std::string_view& s) : m_eType( enumType(arguments::eTypeString) ) { m_unionValue.pbsz = s.data(); m_uSize = (uint32_t)s.length(); }
       argument(arguments::enumCType eType, const char* pbsz) : m_eType(enumType(eType)) { m_unionValue.pbsz = pbsz; }
       argument(arguments::enumCType eType, const wchar_t* pwsz) : m_eType(enumType(eType)) { m_unionValue.pwsz = pwsz; }
       argument(arguments::enumType eType, const char* pbsz) : m_eType(eType) { m_unionValue.pbsz = pbsz; }
@@ -522,6 +524,7 @@ public:
       // attributes
    public:
       arguments::enumType m_eType;      // type of value valid for m_unionValue
+      uint32_t m_uSize = 0;
       union value
       {
          bool b;
