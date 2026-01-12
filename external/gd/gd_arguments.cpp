@@ -1376,6 +1376,11 @@ arguments& arguments::append_argument(const std::string_view& stringName, const 
    return append(uType, pData, argumentValue.length());
 }
 
+arguments& arguments::append_argument( const std::string& stringName, const gd::variant_view& variantValue, tag_view )
+{
+   return append_argument( std::string_view(stringName), variantValue );
+}
+
 /// Add argument named value and try to convert string to proper type
 arguments& arguments::append_argument(const std::string_view stringName, const std::string_view& stringValue, tag_parse_type )
 {

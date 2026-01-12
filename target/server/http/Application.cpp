@@ -170,7 +170,7 @@ std::pair<bool, std::string> CApplication::Initialize()
       {
          if( std::filesystem::exists(stringConfigurationFile) == true )
          {
-            auto result_ = CONFIGURATION_Read(stringConfigurationFile);
+            auto result_ = CONFIGURATION_Read(stringConfigurationFile);      // read configuration from configuration file
             if( result_.first == false ) { return result_; }
          }
          else
@@ -308,6 +308,24 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
 {
    std::string stringCommand = optionsActive.name();                                               assert( stringCommand.empty() == false );
 
+   // ## set global settings from command line
+
+   if( optionsActive.exists( "database-open" ) == true )           
+   {
+      gd::argument::arguments argumentsOpen;
+      std::string stringOpen = optionsActive["database-open"].as_string();
+      if( stringOpen.find( ',' ) != std::string::npos )
+      {
+         auto vector_ = gd::utf8::split( stringOpen, ',' );
+         argumentsOpen.append_range( {"dsn", "user", "password"}, vector_ );
+      }
+      else
+      {
+
+      }
+
+   }
+
    if( stringCommand == "http" )
    {
       auto result_ = CLI::Http_g( &optionsActive, m_pdocumentActive );
@@ -440,6 +458,9 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({"path", "Global path variable used to find files in any of the folders if not found in selected folder, folders are separated by semicolon"});
    optionsApplication.add({"folder-configuration", "Folder where to read configuration files"});
    optionsApplication.add({"folder-logging", "Set folder where logger places log files"});
+
+   // ## Database
+   optionsApplication.add({"database-open", "Open to database, if file database then add file name, if odbc then add the odbc name and use user and other settings comma separated"});
 
    {  // ## `http` command, manage settings for http server
       gd::cli::options optionsCommand( 0, "http", "Webserver configuration" );

@@ -14,6 +14,7 @@
 #include <string_view>
 #include <vector>
 #include <type_traits>
+#include <ranges>
 
 #include "gd_variant_view.h"
 
@@ -32,15 +33,22 @@ struct tag_parse_type{};                                                       /
 struct tag_align {};                                                           ///< align related methods
 struct tag_section {};                                                         ///< section related methods, section in arguments is a named value with multiple non named values after
 
+
+/** ==========================================================================
+ * Concept to check if a type is an arguments object used in template arguments
+ */
+template<typename TYPE>
+concept IsArguments = requires { typename TYPE::tag_is_arguments; };
+
 /** ==========================================================================
  * @brief Range adapter for value iteration over arguments
  * 
  * Provides a convenient range-based for loop interface for iterating
  * over values in an arguments object.
  */
-template<typename ARGUMENTS>
+template<IsArguments ARGUMENTS>
 struct argument_value_range {
-   argument_value_range(const ARGUMENTS* parguments) : m_parguments_(parguments) {}
+   explicit argument_value_range(const ARGUMENTS* parguments) : m_parguments_(parguments) {}
    
    auto begin() const { return m_parguments_->begin(); }
    auto end() const { return m_parguments_->end(); }
@@ -54,9 +62,9 @@ struct argument_value_range {
  * Provides a convenient range-based for loop interface for iterating
  * over name-value pairs in an arguments object.
  */
-template<typename ARGUMENTS>
+template<IsArguments ARGUMENTS>
 struct argument_named_range {
-   argument_named_range(const ARGUMENTS* parguments) : m_parguments_(parguments) {}
+   explicit argument_named_range(const ARGUMENTS* parguments) : m_parguments_(parguments) {}
    
    auto begin() const { return m_parguments_->named_begin(); }
    auto end() const { return m_parguments_->named_end(); }

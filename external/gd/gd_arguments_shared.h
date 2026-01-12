@@ -211,6 +211,8 @@ public:
    struct tag_no_initializer_list {};                                          // do not select initializer_list versions
    struct tag_internal {};                                                     // tag dispatcher for internal use
 
+   struct tag_is_arguments {};                                                 // tag dispatcher to check for arguments object used in template arguments
+
    using named_iterator_t = iterator_named<arguments>;
    using const_named_iterator = iterator_named<const arguments>;
 
@@ -1097,6 +1099,10 @@ public:
 
    std::pair<bool, std::string>  append( const std::string_view& stringValue, tag_parse );
 
+   /// Appends values from range and add them with names from list
+   template<typename RANGE> requires std::ranges::input_range<RANGE>
+   arguments& append_range( std::initializer_list<std::string_view> listName, const RANGE& rangeValue );
+
    /// Append named `argument`
    arguments& append_argument(const std::string_view& stringName, argument argumentValue);
 
@@ -1832,6 +1838,15 @@ inline arguments& arguments::append<std::vector<std::pair<std::string_view, gd::
    return *this;
 }
 
+/// Append values from range and set them with name from list
+template<typename RANGE> requires std::ranges::input_range<RANGE>
+inline arguments& arguments::append_range( std::initializer_list<std::string_view> listName, const RANGE& rangeValue ) {
+   auto itValue = std::begin(rangeValue);
+   for( auto itName = std::begin(listName); itName != std::end(listName) && itValue != std::end(rangeValue); ++itName, ++itValue ) {
+      append_argument(*itName, gd::variant_view(*itValue), tag_view{});
+   }
+   return *this;
+}
 
 /// appends value if it is true (true, valid pointer, non 0 value for numbers, non empty strings)
 template<typename VALUE>
