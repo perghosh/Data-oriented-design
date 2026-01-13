@@ -171,8 +171,9 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
     let table = new Table(["name", "age", "email"]);
 
-    let bModified_g = false;
-    let iIdleTimerId_g = null;
+   let bModified_g = false;
+   let iIdleTimerId_g = null;
+   let oDocument_g;   // Global document object
 
    function GlobalEventListener(sAction, eSelector, callback_, eParent)
    {
@@ -259,16 +260,47 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
          e_.stopPropagation();                                                                     console.log( "Id for field ", sField );
 
-         bModified_g = true;
+         oDocument_g.SetModified(true);
 
       });
    }
 
+   /** --------------------------------------------------------------------- @API [tag: initialize]
+    * Main initialization function that initializes the page
+    */
+   function PAGE_Initialize() {
+      oDocument_g = new CDocument({});
+
+      // ## Start idle timer - call PAGE_OnIdle() once per second
+      CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+
+      CreateForm("#idContainer");
+
+      PAGE_ConfigureListeners();
+               // ## Start idle timer - call PAGE_OnIdle() once per second
+      //iIdleTimerId_g = setInterval(PAGE_OnIdle, 1000);
+
+
+
+      GlobalEventListener("click", "#idSave", () =>
+         {
+            const aData = CollectInputEntries("#idContainer");
+            oDocument_g.SetModified(false);
+            table.Add(aData);
+            console.log(table.GetData());
+         },
+         document
+      )
+   }
+
+   /** --------------------------------------------------------------------- @API [tag: onidle]
+    * Handles idle state by updating UI elements and checking for changes
+    */
    const PAGE_OnIdle = (function() {
       var bLastModified = false;
 
       return function() {
-         const bModified = bModified_g;//oDocument_g.IsModified();
+         const bModified = oDocument_g.IsModified();
 
          if( bModified !== bLastModified ) {
 
@@ -290,24 +322,26 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    })();
 
    document.addEventListener('DOMContentLoaded', function() {
-      CreateForm("#idContainer");
 
-      PAGE_ConfigureListeners();
-               // ## Start idle timer - call PAGE_OnIdle() once per second
-      iIdleTimerId_g = setInterval(PAGE_OnIdle, 1000);
+      PAGE_Initialize();
 
 
-
-      GlobalEventListener("click", "#idSave", () =>
-         {
-            const aData = CollectInputEntries("#idContainer");
-            bModified_g = false;
-            table.Add(aData);
-            console.log(table.GetData());
-         },
-         document
-      )
    });
+
+   class CDocument {
+
+      static iIdleTimerId_s = null; // Global timer ID for idle callback
+
+      constructor( oOptions = {} ) {
+         this.bModified = false; // Initialize modified flag to false
+      }
+
+      // Check if document has been modified ------------------------------
+      IsModified() { return this.bModified; }
+      // Set modified flag to true or false -------------------------------
+      SetModified(bModified) { this.bModified = bModified; }
+
+   }
 
 </script>
 </body>
