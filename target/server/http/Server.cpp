@@ -329,7 +329,7 @@ void CServer::PrepareResponseHeader_s( gd::argument::arguments& argumentHeader, 
    response.set(field::access_control_allow_headers, "content-type, authorization, x-requested-with, accept, origin");
    response.set(field::access_control_max_age, "86400");
 
-   auto u_ = std::distance( response.begin(), response.end() ); // suppress unused warning
+   [[ maybe_unused ]] auto u_ = std::distance( response.begin(), response.end() ); // suppress unused warning
 
    auto stringFormat = argumentHeader["format"].as_string_view();
    if( stringFormat.empty() == false )

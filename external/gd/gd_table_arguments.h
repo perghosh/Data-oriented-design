@@ -566,6 +566,7 @@ public:
    void row_add( const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorValue );
    void row_add( const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorValue, tag_convert );
    void row_add( const gd::argument::arguments& argumentsRow, tag_arguments );
+   void row_add( const gd::argument::arguments& argumentsRow, tag_arguments, tag_convert );
    void row_add( uint64_t uRowToCopy, tag_copy );
    void row_add( unsigned uFirst, const std::string_view& stringRowValue, char chSplit, tag_parse );
    void row_add( const std::string_view& stringRowValue, char chSplit, tag_parse ) { row_add( 0, stringRowValue, chSplit, tag_parse{}); }
@@ -591,6 +592,7 @@ public:
    void row_set( uint64_t uRow, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorValue );
    void row_set( uint64_t uRow, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorValue, tag_convert );
    void row_set( uint64_t uRow, const gd::argument::arguments& argumentsRow, tag_arguments );
+   void row_set( uint64_t uRow, const gd::argument::arguments& argumentsRow, tag_arguments, tag_convert );
    void row_set( uint64_t uRow, uint64_t uRowToCopy );
    void row_set( uint64_t uRow, const std::string_view& stringRowValue, char chSplit, tag_parse );
    void row_set( uint64_t uRow, unsigned uFirst, const std::string_view& stringRowValue, char chSplit, tag_parse );

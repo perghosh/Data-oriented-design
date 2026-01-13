@@ -1052,6 +1052,19 @@ void table::row_add( const gd::argument::arguments& argumentsRow, tag_arguments 
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief Add values from arguments object where names in arguments match column names
+ * @param argumentsRow values added to row
+*/
+void table::row_add( const gd::argument::arguments& argumentsRow, tag_arguments, tag_convert )
+{                                                                                                  assert( empty( tag_raw{} ) == false);
+   uint64_t uRow = m_uRowCount;
+   row_add();
+   if( is_null() == true ) { row_set_null( uRow ); }
+   row_set( uRow, argumentsRow, tag_arguments{}, tag_convert{} );
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief Add row and copy data at specified row to the added row
  * @param uRowToCopy index to row where data is copied from
 */
@@ -1146,6 +1159,33 @@ void table::row_set( uint64_t uRow, const gd::argument::arguments& argumentsRow,
       }
    }
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Add values from arguments object where names in arguments match column names
+ * @param argumentsRow values added to row
+*/
+void table::row_set( uint64_t uRow, const gd::argument::arguments& argumentsRow, tag_arguments, tag_convert )
+{                                                                                                  assert( empty( tag_raw{} ) == false);
+   for( auto pPosition = argumentsRow.next(); pPosition != nullptr; pPosition = argumentsRow.next(pPosition) )
+   {
+      if( gd::argument::arguments::is_name_s(pPosition) == true )
+      {
+         auto stringName = gd::argument::arguments::get_name_s( pPosition );
+         auto value_ = gd::argument::arguments::get_argument_s( pPosition ).as_variant_view();
+
+         int iIndex = column_find_index( stringName );
+         if( iIndex != -1 )
+         {
+            cell_set( uRow, iIndex, value_, tag_convert{});
+         }
+         else
+         {
+            cell_set_argument( uRow, stringName, value_ );
+         }
+      }
+   }
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Set row values

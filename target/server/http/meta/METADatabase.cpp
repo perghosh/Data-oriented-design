@@ -1,3 +1,5 @@
+#include <array>
+
 #include "METADatabase.h"
 
 NAMESPACE_META_BEGIN
@@ -27,6 +29,41 @@ std::pair<bool, std::string> CDatabase::Initialize()
    
    return { true, "" };
 }
+
+std::pair<bool, std::string> CDatabase::Add( gd::table::dto::table& tableTable, gd::types::tag_table )
+{
+   std::array<uint8_t, 512> buffer_;
+   gd::argument::arguments argumentsRow( buffer_ );
+
+   for( auto itRow = tableTable.row_begin(); itRow != tableTable.row_end(); itRow++ )
+   {
+      argumentsRow.clear();
+      itRow.get_arguments( argumentsRow );
+
+      argumentsRow.append( "key", (uint32_t)itRow.get_row() );
+      m_ptableTable->row_add( argumentsRow, gd::table::tag_arguments{}, gd::table::tag_convert{});
+   }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CDatabase::Add( gd::table::dto::table& tableTable, gd::types::tag_column )
+{
+   std::array<uint8_t, 512> buffer_;
+   gd::argument::arguments argumentsRow( buffer_ );
+
+   for( auto itRow = tableTable.row_begin(); itRow != tableTable.row_end(); itRow++ )
+   {
+      argumentsRow.clear();
+      itRow.get_arguments( argumentsRow );
+
+      m_ptableColumn->row_add( argumentsRow, gd::table::tag_arguments{} );
+      itRow.cell_set( "key", (uint32_t)itRow.get_row() );
+   }
+
+   return { true, "" };
+}
+
 
 void CDatabase::CreateTable_s( gd::table::arguments::table& tableTable )
 {
