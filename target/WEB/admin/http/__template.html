@@ -1,0 +1,80 @@
+<!--
+PAGE_ Method Documentation:
+=========================
+
+PAGE_Initialize - Initialize the page
+PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
+<method name> - <description>
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <style>
+   html { height: 100%; margin: 0; overflow: hidden; padding: 0; }
+   </style>
+</head>
+<body>
+   <div id="idPage">
+      Write page information here
+   </div>
+
+   <script>
+   let oDocument_g;
+
+   /** --------------------------------------------------------------------- @API [tag: initialize]
+    * Main initialization function that initializes the page
+    */
+   function PAGE_Initialize() {
+      oDocument_g = new CDocument({});
+
+      // ## Start idle timer - call PAGE_OnIdle() once per second
+      CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+   }
+
+    /** --------------------------------------------------------------------- @API [tag: onidle]
+     * Handles idle state by updating UI elements and checking for changes
+     */
+    const PAGE_OnIdle = (function() {
+      var bLastModified = false;
+
+      return function() {
+         const bModified = oDocument_g.IsModified();
+
+         if( bModified !== bLastModified ) {
+
+            // TODO: Update UI elements based on modified status
+
+            bLastModified = bModified;
+         }
+      }
+   })();
+
+   // Start page initialization -----------------------------------------------
+   document.addEventListener('DOMContentLoaded', function() {
+      PAGE_Initialize();                                                      // Initialize page
+   });
+
+
+   // TODO: CDocumnt is used to manage data, this needs to be implemented
+
+   class CDocument {
+
+      static iIdleTimerId_s = null; // Global timer ID for idle callback
+
+      constructor( oOptions = {} ) {
+         this.bModified = false; // Initialize modified flag to false
+      }
+
+      // Check if document has been modified ------------------------------
+      IsModified() { return this.bModified; }
+      // Set modified flag to true or false -------------------------------
+      SetModified(bModified) { this.bModified = bModified; }
+
+   }
+
+   </script>
+</body>
+</html>
