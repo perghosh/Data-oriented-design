@@ -510,7 +510,7 @@ std::pair<bool, std::string> cursor::open()
 std::pair<bool, std::string> cursor::open(const std::string_view& stringSql)
 {                                                                                                  assert( m_pdatabase != nullptr );
    close();                                                                    // close statement if there is one active open statement
-   sqlite3_stmt* pstmt;
+   sqlite3_stmt* pstmt = nullptr;
    const char* pbszTail;
    auto iResult = ::sqlite3_prepare_v2(m_pdatabase->get_sqlite3(), stringSql.data(), (int)stringSql.length(), &pstmt, &pbszTail);
    if( iResult != SQLITE_OK )
@@ -519,27 +519,27 @@ std::pair<bool, std::string> cursor::open(const std::string_view& stringSql)
       return { false, pbszError };
    }
 
-   bind_columns_s( pstmt, m_recordRow );                                       // bind buffers to columns in result
+   auto stmt_ = std::unique_ptr<sqlite3_stmt, decltype(&sqlite3_finalize)>(pstmt, &sqlite3_finalize);
 
-   m_pstmt = pstmt;
+   bind_columns_s( pstmt, m_recordRow );                                      // bind buffers to columns in result
 
-   iResult = ::sqlite3_step( pstmt );                                          // move to first row in result
+   iResult = ::sqlite3_step( pstmt );                                         // move to first row in result
    if( iResult == SQLITE_ROW )
    {
-      update();                                                                // update buffers for each column
-      m_uState |= eCursorStateRow;                                             // valid row state
+      update( pstmt );                                                        // update buffers for each column
+      m_uState |= eCursorStateRow;                                            // valid row state
    }
    else if( iResult == SQLITE_DONE )
    {
-      m_uState &= ~eCursorStateRow;                                            // no valid row state
+      m_uState &= ~eCursorStateRow;                                           // no valid row state
    }
    else if( iResult == SQLITE_OK )
    {
-      m_uState &= ~eCursorStateRow;                                            // no valid row state
+      m_uState &= ~eCursorStateRow;                                           // no valid row state
    }
    else if( iResult < SQLITE_ROW )   
    {
-      m_uState &= ~eCursorStateRow;                                            // no valid row state
+      m_uState &= ~eCursorStateRow;                                           // no valid row state
       auto pbszError = ::sqlite3_errmsg(m_pdatabase->get_sqlite3());
       return { false, pbszError };
    }
@@ -548,6 +548,8 @@ std::pair<bool, std::string> cursor::open(const std::string_view& stringSql)
       m_uState &= ~eCursorStateRow;                                            // no valid row state
       return { false, "" };                                                    // should we get here?
    }
+
+   m_pstmt = stmt_.release();
 
    return { true, "" };
 }
@@ -779,15 +781,16 @@ std::pair<bool, std::string> cursor::execute()
  * @param uFrom start on column to update buffer
  * @param uTo end before this column updating buffers
 */
-void cursor::update( unsigned uFrom, unsigned uTo )
-{                                                                              assert( m_pstmt != nullptr );
+void cursor::update( unsigned uFrom, unsigned uTo, sqlite3_stmt* pstmt )
+{
+   if( pstmt == nullptr ) pstmt = m_pstmt;                                                         assert( pstmt != nullptr );
    enumColumnTypeComplete eType; // column type
    uint8_t* pbBuffer;            // pointer to active field in sqlite stmt (statement)
    int iValueSize = 0;           // gets value size for field that do not have a max limit for size
 
    for( auto u = uFrom; u < uTo; u++ )
    {
-      int iType = ::sqlite3_column_type( m_pstmt, u );
+      int iType = ::sqlite3_column_type( pstmt, u );
       gd::database::record::column* pcolumn = m_recordRow.get_column( u );
       if (iType != SQLITE_NULL)
       {
@@ -804,7 +807,7 @@ void cursor::update( unsigned uFrom, unsigned uTo )
             //    Remember that first 8 bytes in buffer has length as unsigned and type ans unsigned.
             pbBuffer = m_recordRow.buffer_get_detached( pcolumn->value() ); 
             unsigned uBufferSize = buffers::buffer_size_s( pbBuffer );
-            iValueSize = ::sqlite3_column_bytes(m_pstmt, u);              
+            iValueSize = ::sqlite3_column_bytes(pstmt, u);              
             if( (iValueSize + 1) > ( int )uBufferSize )                        // compare size and add one for the zero terminator
             {
                pbBuffer = m_recordRow.resize( pcolumn->value(), iValueSize + 1 );// increase buffer size, add one for zero termination
@@ -812,7 +815,7 @@ void cursor::update( unsigned uFrom, unsigned uTo )
             pbBuffer = buffers::buffer_get_value_from_root_s( pbBuffer );
 #ifdef _DEBUG
             auto buffer_length_d = *( unsigned* )buffers::buffer_get_root_from_value_s( pbBuffer );
-            auto value_length_d = (unsigned)::sqlite3_column_bytes( m_pstmt, u );
+            auto value_length_d = (unsigned)::sqlite3_column_bytes( pstmt, u );
             assert( buffer_length_d >= value_length_d );
 #endif // _DEBUG
 
@@ -821,19 +824,19 @@ void cursor::update( unsigned uFrom, unsigned uTo )
          switch( eType )
          {
          case eColumnTypeCompleteInt64:
-            *(int64_t*)pbBuffer = ::sqlite3_column_int64( m_pstmt, u );
+            *(int64_t*)pbBuffer = ::sqlite3_column_int64( pstmt, u );
             break;
          case eColumnTypeCompleteCDouble:
-            *(double*)pbBuffer = ::sqlite3_column_double( m_pstmt, u );
+            *(double*)pbBuffer = ::sqlite3_column_double( pstmt, u );
             break;
          case eColumnTypeCompleteUtf8String: 
          {
-            const unsigned char* pbValue = ::sqlite3_column_text(m_pstmt, u);  // get text value from field
+            const unsigned char* pbValue = ::sqlite3_column_text(pstmt, u);  // get text value from field
 
             if( iValueSize == 0 )                                              // if text value length hasn't been retrieved then this must be a fixed buffer
             {
                // ## Copy text from buffer in sqlite db
-               int iSize = ::sqlite3_column_bytes( m_pstmt, u );
+               int iSize = ::sqlite3_column_bytes( pstmt, u );
                memcpy( pbBuffer, pbValue, iSize );
                pbBuffer[iSize] = '\0';
                pcolumn->size( iSize );
@@ -850,12 +853,12 @@ void cursor::update( unsigned uFrom, unsigned uTo )
          break;
          case eColumnTypeCompleteBinary: 
          {
-            const uint8_t* pbValue = (const uint8_t*)::sqlite3_column_blob(m_pstmt, u);  // get binary value from field
+            const uint8_t* pbValue = (const uint8_t*)::sqlite3_column_blob(pstmt, u);  // get binary value from field
 
             if( iValueSize == 0 )                                              // if binary value length hasn't been retrieved then this must be a fixed buffer
             {
                // ## Copy text from buffer in sqlite db
-               int iSize = ::sqlite3_column_bytes( m_pstmt, u );
+               int iSize = ::sqlite3_column_bytes( pstmt, u );
                memcpy( pbBuffer, pbValue, iSize );
                pcolumn->size( iSize );
             }
