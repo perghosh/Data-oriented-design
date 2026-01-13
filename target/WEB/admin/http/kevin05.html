@@ -13,7 +13,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <link id="idCssVariable" rel="stylesheet" href="variables-default.css">
-   <script src="js/classes/gd_data_form.js" src="js/classes/gd_data_table.js"></script>
+   <script src="js/classes/gd_data_form.js"></script>
+   <script src="js/classes/gd_data_table.js"></script>
    <title>Document</title>
    <style>
       
@@ -155,6 +156,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
          <option value="variables-modern-emerald.css">Modern emerald</option>
       </select>
    </div>
+
+   <div></div>
 <script>
    const oForm = new Form([
         { sId: "name", sLabel: "Full Name", sType: "string", bRequired: true, iMinLength: 2 },
@@ -272,8 +275,10 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       GlobalEventListener("click", "#idSave", () =>
          {
             const aData = CollectInputEntries("#idContainer");
+            bModified_g = false;
             console.log(aData);
          },
+         document
       )
    });
 
