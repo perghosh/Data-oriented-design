@@ -306,7 +306,7 @@ struct writer {
 
    /// Create a writer with begin pointer and size
    writer( uint8_t* puBegin, size_t uSize ): m_puPosition( puBegin ), m_puBegin( puBegin ), m_puEnd( puBegin + uSize ) {}
-   writer( void* puBegin, size_t uSize ): m_puPosition( static_cast<uint8_t*>(puBegin) ), m_puBegin( static_cast<uint8_t*>(puBegin) ), m_puEnd( puBegin + uSize ) {}
+   writer( void* puBegin, size_t uSize ): m_puPosition( static_cast<uint8_t*>(puBegin) ), m_puBegin( static_cast<uint8_t*>(puBegin) ), m_puEnd( static_cast<uint8_t*>(puBegin) + uSize ) {}
 
    /// Generic constructor for contiguous containers (std::array, std::vector, std::string)
    template <typename CONTAINER>

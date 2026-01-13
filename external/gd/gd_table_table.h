@@ -216,6 +216,9 @@ public:
       std::vector< gd::variant_view > cell_get_variant_view() const { return m_ptable->cell_get_variant_view( m_uRow ); }
       std::vector< gd::variant_view > get_variant_view( const std::vector<unsigned>& vectorColumn ) const { return m_ptable->row_get_variant_view( m_uRow, vectorColumn ); }
 
+      gd::argument::arguments get_arguments() const { return m_ptable->row_get_arguments( m_uRow ); } 
+      void get_arguments( gd::argument::arguments& argumentsRow ) const { m_ptable->row_get_arguments( m_uRow, argumentsRow ); }
+
       void cell_set( unsigned uColumn, const gd::variant_view& variantviewValue ) { m_ptable->cell_set( m_uRow, uColumn, variantviewValue ); }
       void cell_set( const std::string_view& stringName, const gd::variant_view& variantviewValue ) { m_ptable->cell_set( m_uRow, stringName, variantviewValue ); }
       void cell_set( unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert ) { m_ptable->cell_set( m_uRow, uColumn, variantviewValue, tag_convert{} ); }

@@ -58,17 +58,18 @@ struct code
       eOptionsMAX = 1 << 4,
    };
 
-   code() : m_uOpenBracket(0), m_uCloseBracket(0), m_uKeySeparator(0), m_stringQuoteChars("\"'"), m_uOptions(eTrim | eAllowUnquoted) {}
+   code() : m_uOptions(eTrim | eAllowUnquoted), m_uOpenBracket(0), m_uCloseBracket(0), m_uKeySeparator(0), m_stringQuoteChars("\"'") {}
    /// Construct with custom brackets
-   code(uint8_t uOpenBracket, uint8_t uCloseBracket) : m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(':'), m_stringQuoteChars("\"'`"), m_uOptions(eTrim | eAllowUnquoted) {}
+   code(uint8_t uOpenBracket, uint8_t uCloseBracket) : m_uOptions(eTrim | eAllowUnquoted), m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(':'), m_stringQuoteChars("\"'`") {}
    /// Construct with custom brackets and key separator
-   code(uint8_t uOpenBracket, uint8_t uCloseBracket, uint8_t uKeySeparator) : m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(uKeySeparator), m_stringQuoteChars("\"'`"), m_uOptions(eTrim | eAllowUnquoted) {}
+   code(uint8_t uOpenBracket, uint8_t uCloseBracket, uint8_t uKeySeparator) : m_uOptions(eTrim | eAllowUnquoted), m_uOpenBracket(uOpenBracket), m_uCloseBracket(uCloseBracket), m_uKeySeparator(uKeySeparator), m_stringQuoteChars("\"'`") {}
    /// Construct with custom brackets
    code( std::string_view stringBracket, std::string_view stringQuoteChars = "\"'", unsigned uOptions = eTrim | eAllowUnquoted )
-      : m_uOpenBracket( stringBracket.empty() ? 0 : static_cast<uint8_t>(stringBracket[0]) ),
+      : m_uOptions(uOptions),
+        m_uOpenBracket( stringBracket.empty() ? 0 : static_cast<uint8_t>(stringBracket[0]) ),
         m_uCloseBracket( stringBracket.length() < 2 ? 0 : static_cast<uint8_t>(stringBracket[1]) ),
         m_uKeySeparator(stringBracket.length() < 3 ? 0 : static_cast<uint8_t>( stringBracket[2] )),
-      m_stringQuoteChars(stringQuoteChars), m_uOptions(uOptions) { if( m_uOpenBracket != 0 && m_uCloseBracket == 0 ) { std::swap( m_uCloseBracket, m_uKeySeparator ); } }
+        m_stringQuoteChars(stringQuoteChars) { if( m_uOpenBracket != 0 && m_uCloseBracket == 0 ) { std::swap( m_uCloseBracket, m_uKeySeparator ); } }
 
    code(const code& o): m_uOptions(o.m_uOptions), m_uOpenBracket(o.m_uOpenBracket), m_uCloseBracket(o.m_uCloseBracket), m_uKeySeparator(o.m_uKeySeparator), m_stringQuoteChars(o.m_stringQuoteChars) {}
 

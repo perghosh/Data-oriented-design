@@ -884,7 +884,7 @@ public: //0TAG0construct.arguments
       std::is_trivially_copyable_v<typename CONTAINER::value_type>;
    }
    && ( !std::is_same_v<std::remove_cv_t<CONTAINER>, std::string> && !std::is_same_v<std::remove_cv_t<CONTAINER>, std::wstring> ) // exclude string types
-   arguments( const CONTAINER& container_ ): m_bOwner(false), m_pBuffer((pointer)container_.data()), m_uLength(0), m_uBufferLength(container_.size() * sizeof(typename CONTAINER::value_type)) {
+   arguments( const CONTAINER& container_ ): m_bOwner(false), m_pBuffer((pointer)container_.data()), m_uLength(0), m_uBufferLength((unsigned)container_.size() * sizeof(typename CONTAINER::value_type)) {
       static_assert( std::is_trivially_copyable<typename CONTAINER::value_type>::value, "Container value_type must be trivially copyable (POD)" );
    }
 
