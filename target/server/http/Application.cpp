@@ -336,6 +336,15 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
       m_pdocumentActive->SetDatabase(pdatabaseOpen);
       if( pdatabaseOpen != nullptr ) pdatabaseOpen->release();
                                                                                                   LOG_INFORMATION_RAW( "Open database: " & stringOpen );
+      if( optionsActive.get_arguments().exists_any({"database-meta-tables", "database-meta-columns"}) == true )
+      {
+         gd::argument::arguments arguments_;
+         optionsActive.iif( "database-meta-tables", [&arguments_]( auto& v_ ) { arguments_.append_argument( "tables", v_ ); });
+         optionsActive.iif( "database-meta-columns", [&arguments_]( auto& v_ ) { arguments_.append_argument( "columns", v_ ); });
+
+         m_pdocumentActive->DATABASE_Initialize();
+         m_pdocumentActive->DATABASE_SelectMetadata( arguments_ );
+      }
    }
 
    if( stringCommand == "http" )
@@ -471,6 +480,9 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
 
    // ## Database
    optionsApplication.add({"database-open", "Open to database, if file database then add file name, if odbc then add the odbc name and use user and other settings comma separated"});
+   optionsApplication.add({"database-meta-tables", "Query to read tables from connected database"});
+   optionsApplication.add({"database-meta-columns", "Query to read columns from connected database"});
+   
 
    {  // ## `http` command, manage settings for http server
       gd::cli::options optionsCommand( 0, "http", "Webserver configuration" );
