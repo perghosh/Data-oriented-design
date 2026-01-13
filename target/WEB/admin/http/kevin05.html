@@ -141,6 +141,10 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
    <div class="container-button" ><button id="idSave">Submit</button></div>
 
+   <div class="container-label">
+      <h2 id="idText"></h2>
+   </div>
+
    <div class="container-label" data-type="group">
       <select id="idSelectTheme" onchange="ChangeTheme()">
          <option value="variables-candy-light.css">Candy light</option>
@@ -157,13 +161,15 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       </select>
    </div>
 
-   <div></div>
+
 <script>
    const oForm = new Form([
         { sId: "name", sLabel: "Full Name", sType: "string", bRequired: true, iMinLength: 2 },
         { sId: "age", sLabel: "Age", sType: "number", nMin: 18, nMax: 100 },
         { sId: "email", sLabel: "Email", sType: "string", pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
     ]);
+
+    let table = new Table(["name", "age", "email"]);
 
     let bModified_g = false;
     let iIdleTimerId_g = null;
@@ -235,10 +241,9 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       const eInputs = eParent.querySelectorAll("input");
 
       eInputs.forEach(eInput => {
-         const sKey = eInput.id;
          const value_ = eInput.value;
 
-         aData.push({sKey, value_});
+         aData.push(value_);
 
       });
 
@@ -259,9 +264,30 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       });
    }
 
-   function PAGE_OnIdle() {
-      console.log( "OnIdle: modified = ", bModified_g )
-   }
+   const PAGE_OnIdle = (function() {
+      var bLastModified = false;
+
+      return function() {
+         const bModified = bModified_g;//oDocument_g.IsModified();
+
+         if( bModified !== bLastModified ) {
+
+            // TODO: Update UI elements based on modified status
+
+            let eText = document.querySelector("#idText");
+            if(bModified == true)
+            {
+               eText.textContent = "Modified";  
+            }
+            else
+            {
+               eText.textContent = "";
+            }
+
+            bLastModified = bModified;
+         }
+      }
+   })();
 
    document.addEventListener('DOMContentLoaded', function() {
       CreateForm("#idContainer");
@@ -276,7 +302,8 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
          {
             const aData = CollectInputEntries("#idContainer");
             bModified_g = false;
-            console.log(aData);
+            table.Add(aData);
+            console.log(table.GetData());
          },
          document
       )
