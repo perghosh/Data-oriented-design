@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "gd/gd_types.h"
 #include "gd/gd_uuid.h"
 #include "gd/gd_log_logger.h"
 #include "gd/gd_table_arguments.h"
@@ -65,6 +66,9 @@ public:
 
 // @API [tag: operation]
    std::pair<bool, std::string> Initialize();
+   
+   std::pair<bool, std::string> Add( gd::table::dto::table& tableTable, gd::types::tag_table );
+   std::pair<bool, std::string> Add( gd::table::dto::table& tableTable, gd::types::tag_column );
 
 
 

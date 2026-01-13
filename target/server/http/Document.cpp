@@ -487,7 +487,7 @@ std::pair<bool, std::string> CDocument::DATABASE_Initialize( const gd::argument:
 }
 
 
-// @TODO: fix database read for tables and columns
+// @TODO: [tag: ] fix database read for tables and columns
 
 std::pair<bool, std::string> CDocument::DATABASE_SelectMetadata( const gd::argument::arguments& arguments_ )
 {
@@ -504,6 +504,8 @@ std::pair<bool, std::string> CDocument::DATABASE_SelectMetadata( const gd::argum
       {
          gd::table::dto::table tableResult;
          gd::database::to_table( pcursor, &tableResult);
+         
+         m_pMDatabase->Atables( tableResult );
       }
    }
 
@@ -519,6 +521,8 @@ std::pair<bool, std::string> CDocument::DATABASE_SelectMetadata( const gd::argum
       {
          gd::table::dto::table tableResult;
          gd::database::to_table( pcursor, &tableResult);
+         
+         m_pMDatabase->add_columns( tableResult );
       }
    }
 

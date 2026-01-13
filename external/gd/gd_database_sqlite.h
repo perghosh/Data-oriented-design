@@ -349,8 +349,8 @@ public:
 
    std::pair<bool, std::string> execute();
 
-   void update() { update(0, (unsigned)m_recordRow.size()); }
-   void update( unsigned uFrom, unsigned uTo );
+   void update( sqlite3_stmt* pstmt = nullptr ) { update(0, (unsigned)m_recordRow.size(), pstmt); }
+   void update( unsigned uFrom, unsigned uTo, sqlite3_stmt* pstmt = nullptr );
 
    /// go to next row
    std::pair<bool, std::string> next();

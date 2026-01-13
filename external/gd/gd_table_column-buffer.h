@@ -257,7 +257,7 @@ public:
 
 
 public:
-   /**
+   /** =======================================================================
     * \brief Information about each column in record
     *
     * `column` has information needed to work with data for each column in record.
@@ -339,7 +339,7 @@ public:
       std::string_view m_stringName;
    };
 
-   /**
+   /** =======================================================================
     * @brief iterator to move trough rows in table
     */
    struct iterator_row                                                        // ## @API [tag: iterator] [description: row iterator for table]
@@ -376,6 +376,7 @@ public:
       std::vector< gd::variant_view > get_variant_view( uint64_t uRow, const unsigned* puIndex, unsigned uSize ) const { return m_ptablecolumnbuffer->row_get_variant_view( m_uRow, puIndex, uSize ); }
 
       gd::argument::arguments get_arguments() const { return m_ptablecolumnbuffer->row_get_arguments( m_uRow ); } 
+      void get_arguments( gd::argument::arguments& argumentsRow ) const { m_ptablecolumnbuffer->row_get_arguments( m_uRow, argumentsRow ); }
 
       gd::variant_view cell_get_variant_view( unsigned uIndex ) const { return m_ptablecolumnbuffer->cell_get_variant_view( m_uRow, uIndex ); }
       gd::variant_view cell_get_variant_view( const std::string_view& stringName ) const { return m_ptablecolumnbuffer->cell_get_variant_view( m_uRow, stringName ); }
