@@ -8,6 +8,8 @@
 #include "gd/math/gd_math_string.h"
 #include "gd/parse/gd_parse_formats.h"
 
+#include "gd/database/gd_database_io.h"
+
 #include "pugixml/pugixml.hpp"
 #include "jsoncons/json.hpp"
 #include "jsoncons_ext/jsonpath/jsonpath.hpp"
@@ -464,13 +466,63 @@ std::pair<bool, std::string> CDocument::SESSION_Initialize( size_t uMaxCount)
 
 std::pair<bool, std::string> CDocument::QUERIES_Initialize( const gd::argument::arguments& arguments_ )
 {
-   if( m_pqueries == nullptr )
+   if( m_pMQueries == nullptr )
    {
-      m_pqueries = std::make_unique<META::CQueries>();
-      return m_pqueries->Initialize( arguments_ );
+      m_pMQueries = std::make_unique<META::CQueries>();
+      return m_pMQueries->Initialize( arguments_ );
    }
  
    return {false, "Queries already initialized"};
+}
+
+std::pair<bool, std::string> CDocument::DATABASE_Initialize( const gd::argument::arguments& arguments_ )
+{
+   if( m_pMDatabase == nullptr )
+   {
+      m_pMDatabase = std::make_unique<META::CDatabase>();
+      return m_pMDatabase->Initialize();
+   }
+ 
+   return {false, "Queries already initialized"};
+}
+
+
+// @TODO: fix database read for tables and columns
+
+std::pair<bool, std::string> CDocument::DATABASE_SelectMetadata( const gd::argument::arguments& arguments_ )
+{
+   std::string stringSelect;
+   if( arguments_.exists( "tables" ) == true )
+   {
+      stringSelect = arguments_["tables"].as_string();
+
+      gd::com::pointer<gd::database::cursor_i> pcursor;
+      m_pdatabase->get_cursor( &pcursor );
+
+      auto result_ = pcursor->open( stringSelect );
+      if( result_.first == true )
+      {
+         gd::table::dto::table tableResult;
+         gd::database::to_table( pcursor, &tableResult);
+      }
+   }
+
+   if( arguments_.exists( "columns" ) == true )
+   {
+      stringSelect = arguments_["columns"].as_string();
+
+      gd::com::pointer<gd::database::cursor_i> pcursor;
+      m_pdatabase->get_cursor( &pcursor );
+
+      auto result_ = pcursor->open( stringSelect );
+      if( result_.first == true )
+      {
+         gd::table::dto::table tableResult;
+         gd::database::to_table( pcursor, &tableResult);
+      }
+   }
+
+   return { true, "" };
 }
 
 

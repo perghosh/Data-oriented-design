@@ -54,7 +54,7 @@ void CDatabase::CreateColumn_s( gd::table::arguments::table& tableColumn )
    tableColumn.column_add( {
       { "uint32",  0, "key"         }, // key (these keys do also represent row number to be fast)
       // Link
-      { "uint32",  0, "table_key"    }, // key to the parent table in tableTable (defines which table this column belongs to)
+      { "uint32",  0, "table_key"    }, // key to the parent table in `m_ptableTable` (defines which table this column belongs to)
 
       // Name for table and column      
       { "rstring", 0, "schema"      }, // table schema
@@ -83,10 +83,12 @@ void CDatabase::CreateJoin_s( gd::table::arguments::table& tableJoin )
       // Parent Side (Where we start)
       { "uint32",  0, "parent_key"    }, // parent key to table in database description table 
       { "rstring", 0, "parent_alias"  }, // alias for parent table
+      { "uint32",  0, "parent_suffix" }, // if number is used to make the name unique
 
       // Child Side (Where we go)
       { "uint32",  0, "child_key"     }, // child key to table in database description table 
       { "rstring", 0, "child_alias"   }, // alias for child table
+      { "uint32",  0, "child_suffix"  }, // if number is used to make the name unique
 
       // Join Logic
       { "rstring", 0, "join_on"       }, // The logic: string to generate in sql "parent.id = child.parent_id" or "{=parent}.id = {=child}.parent_id"

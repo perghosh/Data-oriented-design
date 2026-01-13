@@ -325,12 +325,12 @@ inline unsigned detect_ctypegroup_g( const std::string_view& stringText ) { retu
 
 
 /*-----------------------------------------*/ /**
-   * \brief type numbers for common data types
-   *
-   * Numbers for common types used i gd code.
-   * Using these numbers as a form of meta data in code, it will simply
-   * to make code more compatible. Simplify to move data between objects.
-   */
+ * \brief type numbers for common data types
+ *
+ * Numbers for common types used i gd code.
+ * Using these numbers as a form of meta data in code, it will simply
+ * to make code more compatible. Simplify to move data between objects.
+ */
 enum enumTypeNumber
 {
    // ## primitive types

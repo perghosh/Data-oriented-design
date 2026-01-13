@@ -27,6 +27,7 @@
 
 #include "Types.h"
 
+#include "meta/METADatabase.h"
 #include "meta/METAQueries.h"
 
 #include "Session.h"
@@ -215,13 +216,21 @@ public:
    const CSessions* SESSION_Get() const { return m_psessions.get(); }
    std::pair<bool, std::string> SESSION_Initialize( size_t uMaxCount);
 
-// ## @API [tag: queries] [description:  ]
+// ## @API [tag: queries, metadata] [description: meta data about queries ]
 
-   META::CQueries* QUERIES_Get() { return m_pqueries.get(); }
-   const META::CQueries* QUERIES_Get() const { return m_pqueries.get(); }
-   bool QUERIES_Empty() const { return m_pqueries != nullptr && m_pqueries->Empty() == false; }
+   META::CQueries* QUERIES_Get() { return m_pMQueries.get(); }
+   const META::CQueries* QUERIES_Get() const { return m_pMQueries.get(); }
+   bool QUERIES_Empty() const { return m_pMQueries != nullptr && m_pMQueries->Empty() == false; }
    std::pair<bool, std::string> QUERIES_Initialize( const gd::argument::arguments& arguments_ );
    std::pair<bool, std::string> QUERIES_Initialize() { return QUERIES_Initialize( gd::argument::arguments() ); }
+
+// ## @API [tag: database, metadata] [description: metadata about database ]
+
+   META::CDatabase* DATABASE_Get() { return m_pMDatabase.get(); }
+   std::pair<bool, std::string> DATABASE_Initialize( const gd::argument::arguments& arguments_ );
+   std::pair<bool, std::string> DATABASE_Initialize() { return QUERIES_Initialize( gd::argument::arguments() ); }
+   std::pair<bool, std::string> DATABASE_SelectMetadata( const gd::argument::arguments& arguments_ );
+
 
 /** \name ERROR
 * ## @API [tag: error]
@@ -252,7 +261,8 @@ public:
 
    std::unique_ptr<CSessions> m_psessions;      ///< session manager for document if any
 
-   std::unique_ptr<META::CQueries> m_pqueries;  ///< pointer to query information if any, note that this is not thread safe and needs to be static, prepare it before actual work
+   std::unique_ptr<META::CQueries> m_pMQueries;  ///< pointer to query information if any, note that this is not thread safe and needs to be static, prepare it before actual work
+   std::unique_ptr<META::CDatabase> m_pMDatabase;  ///< pointer to query information if any, note that this is not thread safe and needs to be static, prepare it before actual work
 
    // ## cache information is stored in dto tables (dto = data transfer object)
    std::shared_mutex m_sharedmutexTableCache;   ///< mutex used as lock for table methods in document
