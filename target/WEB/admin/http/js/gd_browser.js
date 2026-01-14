@@ -44,6 +44,7 @@ oNS.EncodeUrlParams = function(sUrl) {
       alert("Could not parse the URL. Ensure it looks like a valid web address.");
       return sUrl; // Return original on error
    }
+}
 
 /** ---------------------------------------------------------------------------
  * Converts a string to base64 format.
@@ -55,9 +56,8 @@ oNS.EncodeToBase64 = function(sText) {
    try {
       // ## Handle Unicode strings properly by encoding to UTF-8 first
       return btoa(encodeURIComponent(sText).replace(/%([0-9A-F]{2})/g,
-         function toSolidBytes(match, p1) {
-            return String.fromCharCode('0x' + p1);
-      }));
+         function toSolidBytes(match, p1) { return String.fromCharCode('0x' + p1); }
+      ));
    }
    catch (e_) {
       console.error("Error converting to base64:", e_);

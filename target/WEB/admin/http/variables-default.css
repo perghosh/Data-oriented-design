@@ -3,42 +3,84 @@
 
 ## base classes
 
-1. primary
-2. secondary
-3. success
-4. danger
-5. warning
-6. info
-7. light
-8. dark
+1. **primary**
+2. **secondary**
+3. **success**
+4. **danger**
+5. **warning**
+6. **info**
+7. **light**
+8. **dark**
 */
 
 
 :root {
-   --color-body: #000000; /* Black text for body */
-   --background-body: #ffffff; /* White background for body */
+   /* --- BASE BODY --- */
+   --color-body: #333333; /* Soft dark gray for better reading than pure black */
+   --background-body: #ffffff; /* White background */
 
-   /* Background and Text Colors */
-   --color-primary: #000000; /* Black text for primary background */
-   --color-secondary: #000000; /* Black text for secondary background */
-   --color-success: #000000; /* Black text for success background */
-   --color-danger: #ffffff; /* White text for danger background */
-   --color-warning: #000000; /* Black text for warning background */
-   --color-info: #ffffff; /* White text for info background */
-   --color-light: #000000; /* Black text for light background */
-   --color-dark: #ffffff; /* White text for dark background */
-   /* Background Colors */
-   --background-primary: #d1dbe4; /* Primary */
-   --background-secondary: #a3b7ca; /* Secondary */
-   --background-success: #7593af; /* Success */
-   --background-danger: #476f95; /* Danger */
-   --background-warning: #194a7a; /* Warning */
-   --background-info: #194a7a; /* Info */
-   --background-light: #d1dbe4; /* Light */
-   --background-dark: #194a7a; /* Dark */
-   /* Active and disabled, should work with primary and secondary color for text */
-   --background-active: var(--background-secondary); /* background for active elements */
-   --background-disabled: var(--background-success); /* background for disabled elements */
-   --color-active: var(--color-secondary); /* color for active elements */
-   --color-disabled: var(--color-success); /* color for disabled elements */
+   /* --- THEME COLORS (Orange Palette) --- */
+
+   /* Primary: Main Brand Orange */
+   --color-primary: #ffffff;
+   --background-primary: #F2933D;
+   --background-primary-hover: #d67e2d; /* Darker orange for hover */
+
+   /* Secondary: Pale Peach/Cream (Great for secondary buttons) */
+   --color-secondary: #333333; /* Changed from black to dark gray for softer look */
+   --background-secondary: #fdecdd;
+   --background-secondary-hover: #f5d6c2; /* Darker peach for hover */
+
+   /* Success: Standard Green (Kept distinct so users know it worked) */
+   --color-success: #ffffff;
+   --background-success: #4CAF50;
+   --background-success-hover: #3d8b40;
+
+   /* Danger: Darker Carrot Orange (Matches theme but stands out) */
+   --color-danger: #ffffff; /* Changed to white for better contrast on dark orange */
+   --background-danger: #E67E22;
+   --background-danger-hover: #bf6516; /* Deep orange/brown for hover */
+
+   /* Warning: Bright Orange/Yellow (High visibility) */
+   --color-warning: #000000; /* Black text reads best on bright yellow */
+   --background-warning: #FF9800;
+   --background-warning-hover: #e68900;
+
+   /* Info: Dark Grey with Orange Text (Your "Dark Mode" style) */
+   --color-info: #F2933D; /* Matches your primary color */
+   --background-info: #363636;
+   --background-info-hover: #1a1a1a;
+
+   /* Light: Used for subtle backgrounds */
+   --color-light: #333333; /* FIXED: Was white, now dark gray for readability */
+   --background-light: #ffffff;
+   --background-light-hover: #f0f0f0;
+
+   /* Dark: Used for heavy emphasis */
+   --color-dark: #ffffff;
+   --background-dark: #000000;
+   --background-dark-hover: #222222;
+
+   /* Borders: Warm light gray to match the orange theme instead of cold gray */
+   --color-border: #eaddd5;
+   --color-border-dark: #594a42;
+
+   /* Muted Text: For subtitles and dates */
+   --color-muted: #8a7e75;
+
+   /* Inputs: Standard clean inputs */
+   --background-input: #ffffff;
+   --color-input: #333333;
+
+   /* Links: Matching the Primary Orange */
+   --color-link: #F2933D;
+   --color-link-hover: #d67e2d;
+
+
+   /* --- ACTIVE & DISABLED --- */
+   --background-active: #F2933D;
+   --color-active: #ffffff;
+
+   --background-disabled: #fdecdd; /* Using the light secondary for disabled */
+   --color-disabled: #a89890;
 }
