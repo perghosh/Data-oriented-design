@@ -52,12 +52,12 @@ class UIDraggable {
          fnOnDragEnd: null     // Callback when drag ends
       }, oOptions_);
 
-      // ## Initialize bounds padding if not provided
+      // ## Initialize bounds padding if not provided .........................
       if( this.oOptions.oBounds && !this.oOptions.oBounds.oPadding ) {
          this.oOptions.oBounds.oPadding = { top: 0, right: 0, bottom: 0, left: 0 };
       }
 
-      // ## Initialize drag handle
+      // ## Initialize drag handle ............................................
       if( this.oOptions.eHandle ) {
          this.eDragHandle = this.oOptions.eHandle;
       }
@@ -67,11 +67,11 @@ class UIDraggable {
             this.eElement;
       }
 
-      // Prevent scrolling on touch devices and set grab cursor inline
+      // ## Prevent scrolling on touch devices and set grab cursor inline .....
       this.eDragHandle.style.touchAction = 'none';
       this.eDragHandle.style.cursor = 'grab';
 
-      // Store original styles to restore on destroy
+      // ## Store original styles to restore on destroy .......................
       this.oOriginalHandleStyle = {
          touchAction: this.eDragHandle.style.touchAction,
          cursor: this.eDragHandle.style.cursor
@@ -94,22 +94,20 @@ class UIDraggable {
       this.iXOffset = iInitialLeft;
       this.iYOffset = iInitialTop;
 
-      // Store dragging styles for inline application
+      // ## Store dragging styles for inline application .....................
       this.oDraggingStyles = {
          cursor: 'grabbing',
          opacity: '0.8',
          position: 'relative',
          transition: 'none'
-         //zIndex: '9999'
       };
 
-      // Store original element styles for potential restoration
+      // ## Store original element styles for potential restoration ..........
       this.oOriginalElementStyle = {
          cursor: this.eElement.style.cursor || '',
          opacity: this.eElement.style.opacity || '',
          position: this.eElement.style.position || oComputed.position,
          transition: this.eElement.style.transition || '',
-         //zIndex: this.eElement.style.zIndex || '',
          top: this.eElement.style.top || '',
          left: this.eElement.style.left || ''
       };
@@ -201,32 +199,30 @@ class UIDraggable {
       if( !this.dragging ) return;
 
       // Prevent default to avoid scrolling
-      if( eEvent_.cancelable ) {
-         eEvent_.preventDefault();
-      }
+      if( eEvent_.cancelable ) {  eEvent_.preventDefault(); }
 
-      // ## Get coordinates from mouse or touch
+      // ## Get coordinates from mouse or touch ..............................
       const iClientX = eEvent_.clientX || eEvent_.touches?.[0]?.clientX;
       const iClientY = eEvent_.clientY || eEvent_.touches?.[0]?.clientY;
 
-      // ## Calculate new position
+      // ## Calculate new position ............................................
       let iNewX = iClientX - this.iInitialX;
       let iNewY = iClientY - this.iInitialY;
 
-      // ## Apply grid snapping if enabled
+      // ## Apply grid snapping if enabled ....................................
       if( this.oOptions.bSnapToGrid ) {
          iNewX = Math.round(iNewX / this.oOptions.iGridSize) * this.oOptions.iGridSize;
          iNewY = Math.round(iNewY / this.oOptions.iGridSize) * this.oOptions.iGridSize;
       }
 
-      // ## Apply bounds constraints if configured
+      // ## Apply bounds constraints if configured ............................
       if( this.oOptions.oBounds ) {
          const oConstrained = this._apply_bounds(iNewX, iNewY);
          iNewX = oConstrained.iX;
          iNewY = oConstrained.iY;
       }
 
-      // Update position
+      // ## Update position ..................................................
       this.iCurrentX = iNewX;
       this.iCurrentY = iNewY;
       this.iXOffset = iNewX;
@@ -291,7 +287,7 @@ class UIDraggable {
       let oBounds = this.oOptions.oBounds;
       let oPadding = oBounds.oPadding;
 
-      // If bounds element is specified, calculate bounds relative to that element
+      // ## If bounds element is specified, calculate bounds relative to that element
       if( oBounds.eElement ) {
          const oBoundsRect = oBounds.eElement.getBoundingClientRect();
          const oElementRect = this.eElement.getBoundingClientRect();
@@ -304,7 +300,7 @@ class UIDraggable {
          const iMinY = oBoundsRect.top + oPadding.top;
          const iMaxY = oBoundsRect.bottom - iHeight - oPadding.bottom;
 
-         // Convert to relative coordinates
+         // ## Convert to relative coordinates ................................
          const oParentRect = this.eElement.parentElement.getBoundingClientRect();
          const iRelativeMinX = iMinX - oParentRect.left;
          const iRelativeMaxX = iMaxX - oParentRect.left;
@@ -317,7 +313,7 @@ class UIDraggable {
          };
       }
 
-      // Default to viewport bounds
+      // ## Default to viewport bounds .......................................
       return {
          iX: Math.max(0, Math.min(window.innerWidth - this.eElement.offsetWidth, iX)),
          iY: Math.max(0, Math.min(window.innerHeight - this.eElement.offsetHeight, iY))
@@ -366,7 +362,7 @@ class UIDraggable {
       this._set_position(iX, iY);
    }
 
-   /**
+   /** ------------------------------------------------------------------------
     * Reset the element position to 0,0
     */
    ResetPosition() {
@@ -402,7 +398,7 @@ class UIDraggable {
    UpdateOptions(oNewOptions) {
       this.oOptions = Object.assign({}, this.oOptions, oNewOptions);
 
-      // Update drag handle if selector or element changed
+      // ## Update drag handle if selector or element changed ................
       if( oNewOptions.sHandleSelector || oNewOptions.eHandle ) {
          // Restore previous handle style
          this.eDragHandle.style.touchAction = this.oOriginalHandleStyle.touchAction || '';
@@ -420,11 +416,11 @@ class UIDraggable {
                this.eElement;
          }
 
-         // Apply new handle styles
+         // ## Apply new handle styles .......................................
          this.eDragHandle.style.touchAction = 'none';
          this.eDragHandle.style.cursor = 'grab';
 
-         // Update stored original styles
+         // ## Update stored original styles .................................
          this.oOriginalHandleStyle = {
             touchAction: this.eDragHandle.style.touchAction,
             cursor: this.eDragHandle.style.cursor

@@ -22,6 +22,7 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
    <script src="js/gd_browser.js"></script>
    <script src="js/classes/gd_data_table.js"></script>
    <script src="js/classes/gd_ui_draggable.js"></script>
+   <script src="js/classes/gd_ui_tabs.js"></script>
    <title>Test session logic in http web server</title>
    <style>
    html { height: 100%; margin: 0; overflow: hidden; padding: 0; }
@@ -45,6 +46,7 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
 
    .container-form .row { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; }
    .container-form .row:last-child { margin-bottom: 0; } /* to align last item to bottom */
+   .container-form .rows { margin-bottom: 16px; }
 
    .container-form .fill {flex: 1;} /* makes select fill available width */
    .container-form .half { flex: 1; max-width: 50%; }
@@ -103,8 +105,13 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
                   <input class="third" type="text" class="fill" data-field="alias" placeholder="Alias name for command" />
                   <input class="fill" type="text" class="fill" data-field="description" placeholder="Command description" />
                </div>
-               <div class="row">
-                  <textarea class="fill" rows="2" data-field="endpoint" placeholder="Endpoint URL"></textarea>
+               <div class="rows" data-section="tabs" data-id="endpoint">
+                  <div class="row" data-section="tab" data-name="Endpoint">
+                     <textarea class="fill" rows="2" data-field="endpoint" placeholder="Endpoint URL"></textarea>
+                  </div>
+                  <div class="row" data-section="tab" data-name="Base64 arguments">
+                     <textarea class="fill" rows="2" data-field="endpoint" placeholder="Base64 encoded data"></textarea>
+                  </div>
                </div>
                <div class="row">
                   <textarea class="fill" rows="3" data-field="body" placeholder="Endpoint body content if any"></textarea>
@@ -154,7 +161,35 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
       function PAGE_Initialize() {
          const eWorkArea = document.getElementById('idWorkArea');
 
-         const oOptions = {
+         // ## Initialize tab control
+
+         const eTabsEndpoint = eWorkArea.querySelector('[data-id="endpoint"]');
+
+
+         // Extract tab definitions before creating the control
+         const aTabPage = [];
+         const aTabElements = eTabsEndpoint.querySelectorAll('[data-section="tab"]');
+
+         aTabElements.forEach(eTab => {
+            const sName = eTab.dataset.name;
+            // Clone the content or extract it
+            const eContent = eTab.cloneNode(true); // Clone to preserve original
+            // Remove the data-section and data-name attributes from content
+            delete eContent.dataset.section;
+            delete eContent.dataset.name;
+
+            aTabPage.push({ sTitle: sName, eContent: eContent });
+         });
+
+         // Now create the tab control with the extracted tabs
+         const oTabsEndpoint = new UITabControl(eTabsEndpoint, {
+            aTabs: aTabPage
+         });
+
+         //const oTabsEndpoint = new UITabControl( eTabsEndpoint );
+
+
+         const oDraggableOptions = {
             oBounds: {
                eElement: eWorkArea,
                oPadding: { top: 20, right: 20, bottom: 20, left: 20 }
@@ -165,8 +200,8 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
          const aDraggable = document.querySelectorAll('[data-draggable]');    // find all draggable elements
          aDraggable.forEach(function(eElement) {
             let eHandle = eElement.querySelector("[data-draggable-handle]");
-            oOptions.eHandle = eHandle;
-            const oDraggable = new UIDraggable(eElement, oOptions);
+            oDraggableOptions.eHandle = eHandle;
+            const oDraggable = new UIDraggable(eElement, oDraggableOptions);
             const sName = eElement.getAttribute('data-name');
             const oPosition = oDraggable.GetPosition();
             oDocument_g.Add("draggable", { name: sName, position: oDraggable.GetPosition() });
@@ -499,6 +534,8 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
          document.getElementById('idUrl').querySelector("[data-field='url']").value = sFullUrl;
 
          console.log('Sending request to:', sFullUrl);
+
+         //return;
 
          // ## Prepare fetch options ..........................................
 
