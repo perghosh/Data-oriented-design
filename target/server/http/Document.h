@@ -230,6 +230,7 @@ public:
    std::pair<bool, std::string> DATABASE_Initialize( const gd::argument::arguments& arguments_ );
    std::pair<bool, std::string> DATABASE_Initialize() { return DATABASE_Initialize( gd::argument::arguments() ); }
    std::pair<bool, std::string> DATABASE_SelectMetadata( const gd::argument::arguments& arguments_ );
+   std::pair<bool, std::string> DATABASE_Prepare();
 
 
 /** \name ERROR

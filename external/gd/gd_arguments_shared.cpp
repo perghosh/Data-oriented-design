@@ -2702,9 +2702,17 @@ size_t arguments::size() const
 }
 
 /** ---------------------------------------------------------------------------
- * @brief Free allocated memory if any and set to empty
+ * @brief Remove data by set used buffer size to zero
 */
 void arguments::clear()
+{
+   buffer_set_size( 0 );
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Free allocated memory if any and set to empty
+ */
+void arguments::erase()
 {
    if( m_pbuffer != &m_buffer_s )
    {
