@@ -342,8 +342,12 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
          optionsActive.iif( "database-meta-tables", [&arguments_]( auto& v_ ) { arguments_.append_argument( "tables", v_ ); });
          optionsActive.iif( "database-meta-columns", [&arguments_]( auto& v_ ) { arguments_.append_argument( "columns", v_ ); });
 
-         m_pdocumentActive->DATABASE_Initialize();
-         m_pdocumentActive->DATABASE_SelectMetadata( arguments_ );
+         result_ = m_pdocumentActive->DATABASE_Initialize();
+         if( result_.first == false ) return result_;
+         result_ = m_pdocumentActive->DATABASE_SelectMetadata( arguments_ );
+         if( result_.first == false ) return result_;
+         result_ = m_pdocumentActive->DATABASE_Prepare();
+         if( result_.first == false ) return result_;
       }
    }
 

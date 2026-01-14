@@ -505,8 +505,9 @@ std::pair<bool, std::string> CDocument::DATABASE_SelectMetadata( const gd::argum
          gd::table::dto::table tableResult;
          gd::database::to_table( pcursor, &tableResult);
          
-         m_pMDatabase->Atables( tableResult );
+         m_pMDatabase->Add( tableResult, gd::types::tag_table{});
       }
+      else { return result_; }
    }
 
    if( arguments_.exists( "columns" ) == true )
@@ -522,8 +523,20 @@ std::pair<bool, std::string> CDocument::DATABASE_SelectMetadata( const gd::argum
          gd::table::dto::table tableResult;
          gd::database::to_table( pcursor, &tableResult);
          
-         m_pMDatabase->add_columns( tableResult );
+         m_pMDatabase->Add( tableResult, gd::types::tag_column{} );
       }
+      else { return result_; }
+   }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CDocument::DATABASE_Prepare()
+{
+   if( m_pMDatabase->IsReadyToLinkTables() == true )
+   {
+      auto result_ = m_pMDatabase->LinkTablesTables();
+      if( result_.first == false ) return result_;
    }
 
    return { true, "" };

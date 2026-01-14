@@ -2479,15 +2479,11 @@ size_t arguments::size() const
 }
 
 /** ---------------------------------------------------------------------------
- * @brief Free allocated memory if any and set to empty
+ * @brief Set size to 0 (do not clear memory)
 */
 void arguments::clear()
 {
-   if( is_owner() ) delete[] m_pBuffer;
-   m_bOwner    = false;
-   m_pBuffer   = nullptr;
    m_uLength   = 0;
-   m_uBufferLength = 0;
 }
 
 

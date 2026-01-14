@@ -70,6 +70,11 @@ public:
    std::pair<bool, std::string> Add( gd::table::dto::table& tableTable, gd::types::tag_table );
    std::pair<bool, std::string> Add( gd::table::dto::table& tableTable, gd::types::tag_column );
 
+   /// Check if tables are ready to be connected
+   bool IsReadyToLinkTables() const;
+   /// Connect tables to be able to find metadata for different situations
+   std::pair<bool, std::string> LinkTablesTables();
+
 
 
 protected:

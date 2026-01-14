@@ -1314,8 +1314,10 @@ public:
 
    // ## @API [tag: misc] [description: miscellaneous methods for arguments management]
 
-   /// cleans upp interal data and set it as empty
+   /// reset to empty, do not delete buffer
    void clear();
+   /// cleans upp interal data and set it as empty
+   void erase();
 
    /// Return raw data buffer
    [[nodiscard]] void* data() { return buffer_data(); }
