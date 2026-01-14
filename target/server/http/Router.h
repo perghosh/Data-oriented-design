@@ -23,6 +23,7 @@
 #include "dto/DTOResponse.h"
 
 class CApplication;
+class CDocument;
 
 
 /** @CLASS [tag: router, http] [description: Router class for http server] [name: CRouter]
@@ -57,6 +58,7 @@ public:
 public:
    CRouter() {}
    CRouter(CApplication* pApplication): m_pApplication(pApplication) {}
+   CRouter(CApplication* pApplication, CDocument* pDocument): m_pApplication(pApplication), m_pDocument(pDocument) {}
    CRouter( const std::string_view& stringQueryString ) : m_stringQueryString( stringQueryString ) {}
    CRouter( CApplication* pApplication, const std::string_view& stringQueryString ): m_pApplication(pApplication), m_stringQueryString(stringQueryString) {}
    // copy
@@ -78,6 +80,9 @@ public:
 
    bool IsXml() const { return ( m_uFlags & eResultFormatJson ) == 0; }
    bool IsJson() const { return ( m_uFlags & eResultFormatJson ) == eResultFormatJson; }
+   
+   CRouter& operator=( CApplication* pApplication ) { m_pApplication = pApplication; return *this; }
+   CRouter& operator=( CDocument* pDocument ) { m_pDocument = pDocument; return *this; }
 
 
 // ## methods ------------------------------------------------------------------
@@ -93,7 +98,8 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   CApplication* m_pApplication;       ///< application instance
+   CApplication* m_pApplication{};     ///< application instance
+   CDocument* m_pDocument{};           ///< document instance
    unsigned m_uFlags{};                ///< router flags
    unsigned m_uUserIndex{};            ///< user index for user in session table for users logged in
    std::string m_stringQueryString;    ///< query string from url

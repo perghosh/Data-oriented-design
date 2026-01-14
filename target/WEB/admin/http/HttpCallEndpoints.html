@@ -138,8 +138,429 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
    </div>
 
    <script>
-      // Make oDocument a global variable
-      let oDocument_g;
+      let oDocument_g; // Make oDocument a global variable
+
+      // Initialize page
+      document.addEventListener('DOMContentLoaded', function() {
+         oDocument_g = new CDocument( {callback: PAGE_Callback} );
+         oDocument_g.Add("server", { address: "http://localhost", port: "8001" })
+         PAGE_Initialize();                                                    // Initialize page
+         PAGE_Update(oDocument_g);
+      });
+
+      /** --------------------------------------------------------------------- @API [tag: initialize]
+       * Main initialization function that initializes the page
+       */
+      function PAGE_Initialize() {
+         const eWorkArea = document.getElementById('idWorkArea');
+
+         const oOptions = {
+            oBounds: {
+               eElement: eWorkArea,
+               oPadding: { top: 20, right: 20, bottom: 20, left: 20 }
+            }
+         };
+
+         // ## Initialize draggable elements
+         const aDraggable = document.querySelectorAll('[data-draggable]');    // find all draggable elements
+         aDraggable.forEach(function(eElement) {
+            let eHandle = eElement.querySelector("[data-draggable-handle]");
+            oOptions.eHandle = eHandle;
+            const oDraggable = new UIDraggable(eElement, oOptions);
+            const sName = eElement.getAttribute('data-name');
+            const oPosition = oDraggable.GetPosition();
+            oDocument_g.Add("draggable", { name: sName, position: oDraggable.GetPosition() });
+            oDocument_g.AddCacheItem(["draggable-" + sName, oDraggable]);      // Add draggable object to cache
+         });
+
+         // ## Initialize table cache items
+
+         // Table storing endpoints, contains alias, endpoint, body, description columns and these
+         // column names should match the field attributes used in form to make them work
+         let oTable = new Table(["alias", "endpoint", "body", "description"]);
+         oDocument_g.AddTableCacheItem("endpoint", oTable);                   // Add table object to cache
+
+         PAGE_SetListeners();
+         oDocument_g.Load();
+         oDocument_g.SetModified(false);
+
+         // ## Start idle timer - call PAGE_OnIdle() once per second
+         CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+      }
+
+      function PAGE_UpdateCommands(container_, aCommands) {
+         let eContainer = container_;
+         if(typeof container_ === 'string') { eContainer = document.getElementById(container_); }
+         if(Array.isArray(aCommands)) {
+            for(let oCommand of aCommands) {
+               //let eElement = eContainer.querySelector(`[data-command="${oCommand.id}"]`);
+               //if(eElement) { eElement.value = oCommand.name; }
+            }
+         }
+      }
+
+      /** --------------------------------------------------------------------- @API [tag: update, page]
+       * Update page from source data
+       */
+      function PAGE_Update(source_ = oDocument_g) {
+         // ## check if source_ is instance of CDocument
+         if((source_ instanceof CDocument) === true) {
+            const oDocument = source_;
+
+            // ## Update Url .................................................
+            const eServer = document.getElementById("idServer");
+            const oServer = oDocument.Get("server");
+            if( oServer ) {
+               const o = oServer.object;
+               eServer.querySelector( '[data-field="address"]' ).value = o.address;
+               eServer.querySelector( '[data-field="port"]' ).value = o.port;
+
+               const eUrl = document.getElementById("idUrl");
+               const sUrl = `${o.address}:${o.port}`;
+               eUrl.querySelector( '[data-field="url"]' ).value = sUrl;
+            }
+
+            // ## Update history from endpoints ...............................
+
+            const sCacheName = "endpoint";
+            const oTable = oDocument.GetTableCacheItem( sCacheName );
+
+            const eHistory = document.getElementById("idHistory"); // history element
+            const eCommands = document.querySelector('[data-section="commands"]'); // commands element used as container
+            eCommands.innerHTML = '';
+
+            const iRowCount = oTable.Size();
+            for( let iRow = 0; iRow < iRowCount; iRow++ ) {
+               const eElement = document.createElement("div");
+               const o = oTable.AsObject(iRow);
+               let sName = o.alias;
+               sName += " - ";
+               sName += o.endpoint.length > 60 ? o.endpoint.substr(0, 57) + '...' : o.endpoint;
+               eElement.textContent = sName;
+
+               eElement.dataset.action = "activate-command";
+               eElement.dataset.data = JSON.stringify( o );
+               eElement.dataset.index = iRow;
+               eElement.dataset.cache = sCacheName;
+               eElement.classList.add("page-row-content");
+
+               // Create delete button (X)
+               const eDelete = document.createElement('button');
+               eDelete.classList.add("page-delete-button");
+               eDelete.textContent = "x";
+               eDelete.dataset.action = "delete-command";
+               eDelete.dataset.index = iRow;
+               eDelete.dataset.cache = sCacheName;
+               eDelete.title = "Delete this command";
+
+               const eRow = document.createElement("div");
+               eRow.classList.add("page-row");
+
+               eRow.appendChild(eElement);
+               eRow.appendChild(eDelete);
+
+               eCommands.appendChild(eRow);
+            }
+         }
+         // ## if source_ is element
+         else if( source_ === "draggable" ) {
+            const eContainer = document.getElementById('idWorkArea');
+            if( eContainer.id === "idWorkArea" ) {
+               // ### Place the containers to saved positions
+               const aPosition = oDocument_g.GetAll("draggable");
+
+            }
+         }
+      }
+
+      /**
+       * Handles idle state by updating UI elements and checking for changes
+       */
+      const PAGE_OnIdle = (function() {
+         var bLastModified = false;
+
+         return function() {
+            const bModified = oDocument_g.IsModified();
+
+            if( bModified !== bLastModified ) {
+               let eSave = document.getElementById("idMenu").querySelector('[data-action="save-page"]');
+
+               if( bModified === true ) {
+                  eSave.classList.add("page-button-focus");
+               }
+               else {
+                  eSave.classList.remove("page-button-focus");
+               }
+               bLastModified = bModified;
+            }
+         }
+      })();
+
+
+      /** --------------------------------------------------------------------- @API [tag: event, command]
+       * Configure page listeners, handle page specific events
+       */
+      function PAGE_SetListeners() {
+
+         // ## Initialize page menu listener ..................................
+
+         const eMenu = document.getElementById("idMenu");
+         eMenu.addEventListener('click', function(e_) {                       // click listener for menu buttons
+            const eTarget = e_.target;
+            if(!eTarget.dataset.action) return;                               // If no action is defined, return
+            e_.stopPropagation();
+            const sAction = eTarget.dataset.action;
+            switch(sAction) {
+               case "load-page":
+                  oDocument_g.Load();
+                  PAGE_Update();
+                  break;
+               case "save-page":
+                  oDocument_g.Save();
+                  break;
+               default:
+                  console.error('Unknown action:', sAction);
+            }
+         });
+
+         // listener when values are changed in inputs
+         const eInputs = document.querySelectorAll('input, textarea, select');
+         eInputs.forEach(eInput => {
+            eInput.addEventListener('input', function(e_) {
+               const eTarget = e_.target;
+               const sObject = eTarget.dataset.object;
+               if( typeof sObject === "undefined" ) return;
+               const sField = eTarget.dataset.field;
+               oDocument_g.SetValue(sObject, sField, eTarget.value);
+            });
+         });
+
+
+         // ## Initialize page work area listener .............................
+
+         const eWorkArea = document.getElementById('idWorkArea');
+         eWorkArea.addEventListener('click', function(e_) {
+            const eTarget = e_.target;
+            if(!eTarget.dataset.action) return;                             // If no action is defined, return
+            e_.stopPropagation();
+            const eContainer = eTarget.closest('.container');
+            const sAction = eTarget.dataset.action;
+            switch(sAction) {
+               case "send": {                                                 // send command to wed server
+                  const sEndpoint = eContainer.querySelector('[data-field="endpoint"]').value;
+                  SERVER_Send(sEndpoint).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
+               } break;
+               case "keep": {                                                  // save command
+                  const eCommands = document.getElementById('idCommands');
+                  const aFields = eCommands.querySelectorAll('[data-field]');
+                  const oCommand = {};
+
+                  aFields.forEach(eField => {
+                     const sField = eField.dataset.field;
+                     oCommand[sField] = eField.value;
+                  });
+
+                  let oTable = oDocument_g.GetTableCacheItem("endpoint");
+                  oTable.Add(oCommand);
+                  oDocument_g.SetModified(true);
+                  PAGE_Update();
+               } break;
+               case "activate-command": {                                      // activate command
+                  const sCacheName = eTarget.dataset.cache;
+                  const oTable = oDocument_g.GetTableCacheItem(sCacheName);
+                  const iIndex = eTarget.dataset.index;
+                  const oCommand = oTable.AsObject( iIndex );
+                  const eCommands = document.getElementById('idCommands');
+                  if(eCommands) {
+                     const aFields = eCommands.querySelectorAll('[data-field]');
+                     aFields.forEach(eField => {
+                        const sField = eField.dataset.field;
+                        eField.value = oCommand[sField];
+                     });
+                  }
+               } break;
+               case "delete-command": {                                        // delete command
+                  const sCacheName = eTarget.dataset.cache;
+                  const iIndex = eTarget.dataset.index;
+                  oDocument_g.DeleteTableCache(sCacheName, iIndex);
+                  PAGE_Update();
+               } break;
+               default:
+                  console.error("Unknown action:", sAction);
+            }
+         });
+      }
+
+      /** ---------------------------------------------------------------------
+       * Handle response data from server and display it in the container
+       *
+       * Response data format is { type: <format>, data: <data> } and type can be any of
+       * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
+       *
+       * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
+       */
+      function PAGE_ProcessResponse(oData) {
+
+         // ## Print data to element that shows current response ..............
+         // Container = "idResult" and element = data-field="response"
+
+         let sResult;
+
+         // extract the data and convert it to text and place it in sResult
+         switch(oData.type) {
+            case 'json':
+               sResult = JSON.stringify(oData.data, null, 2);
+               break;
+            case 'xml':
+               // If oData.data is an XML Document object, serialize it to string
+               if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+                  sResult = (new XMLSerializer()).serializeToString(oData.data);
+               } else {
+                  // If it's already a string, use it directly
+                  sResult = oData.data;
+               }
+               break;
+            case 'text':
+               sResult = oData.data;
+               break;
+            default:
+               sResult = 'Unknown format';
+         }
+
+         document.getElementById('idResult').querySelector('[data-field="response"]').textContent = sResult;
+      }
+
+      function PAGE_PrintResponse(oData) {
+         const eResponse = document.getElementById("idResult").querySelector('[data-field="response"]');
+         if(eResponse) {
+            if(oData instanceof Error) {
+               eResponse.textContent = "Error: " + oData.message;
+            } else {
+               eResponse.textContent = JSON.stringify(oData, null, 2);
+            }
+         }
+      }
+
+      function PAGE_Callback(sName, ...args) {
+         const fnCallback = oDocument_g.GetCallback(sName);
+         if(fnCallback) {
+            try {
+               fnCallback(...args);
+               return true;
+            } catch(e) {
+               console.error('Error executing callback "' + sName + '":', e);
+               return false;
+            }
+         }
+         return false;
+      }
+
+      /** ---------------------------------------------------------------------
+       * Send arguments to server,
+       * @param {string} sEndpoint´- endpoint with arguments added after generated domain name
+       * @param {string} [sBody] - optional body sent to server
+       */
+      function SERVER_Send(sEndpoint, sBody) {
+         // ## Prepare variables  .............................................
+
+         const eServerContainer = document.getElementById('idServer');         // Get the server information container
+
+         const eAddress = eServerContainer.querySelector('[data-field="address"]'); // address (domain)
+         const ePort = eServerContainer.querySelector('[data-field="port"]'); // port
+
+         if(!eAddress) { console.error('Server address field not found'); return; }
+
+         const sAddress = eAddress.value.trim();
+         const sPort = ePort.value.trim();
+
+         if(!sAddress) { console.error('Server address is required'); return; } // Validate that we have the required values
+
+         // ## Build the base URL .............................................
+
+         let sBaseUrl = sAddress;
+
+         if(sPort) {                                                           // Add port if provided (and not already included in address)
+            // Check if address already has a port (contains : followed by numbers)
+            const bHasPort = /:\d+/.test(sAddress);
+            if(bHasPort === false) {
+               // ### Remove trailing slash if present before adding port
+               sBaseUrl = sBaseUrl.replace(/\/$/, '');
+               sBaseUrl += ':' + sPort;
+            }
+         }
+
+         if(!sBaseUrl.endsWith('/')) { sBaseUrl += '/'; }                     // Ensure base URL ends with slash for proper endpoint concatenation
+         const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint; // Remove leading slash from endpoint if present (to avoid double slashes)
+         let sFullUrl = sBaseUrl + sCleanEndpoint;                            // Build the complete URL
+
+         sFullUrl = gd.EncodeUrlParams(sFullUrl);
+
+         // ## Set url to top element showing active url
+         document.getElementById('idUrl').querySelector("[data-field='url']").value = sFullUrl;
+
+         console.log('Sending request to:', sFullUrl);
+
+         // ## Prepare fetch options ..........................................
+
+         const oOptions = {
+            method: 'GET', // Default method
+            headers: { 'Content-Type': 'application/xml' }
+         };
+
+         // If body is provided, use POST method and add body
+         if(sBody !== undefined) {
+            oOptions.method = 'POST';
+            oOptions.body = JSON.stringify(sBody);
+         }
+
+         // ## Send the request and pick up the response as { type: <format>, data: <data> }
+
+         return fetch(sFullUrl, oOptions)
+         .then(async  response => {
+            // ### Handle response data .......................................
+
+            const oResponseClone = response.clone();
+            if(!response.ok) {
+               const sErrorMessage = await oResponseClone.text();
+               throw new Error(`HTTP error! status: ${response.status}, message: ${sErrorMessage}`);
+            }
+
+            // Check the content type to determine how to parse the response
+            const sContentType = response.headers.get('content-type');
+
+            if(sContentType && sContentType.includes('application/json')) {
+                return response.json().then(data => ({ type: 'json', data }));
+            }
+            else if(sContentType && (sContentType.includes('application/xml') || sContentType.includes('text/xml'))) {
+               return response.text().then(text => {
+                  const oDOMParser = new DOMParser();
+                  const xml_ = oDOMParser.parseFromString(text, "text/xml");
+                  return { type: 'xml', data: xml_ };
+               });
+            }
+            else {
+               return response.text().then(data => ({ type: 'text', data }));
+            }
+         })
+         .then(data => {
+            // ### Handle parsed data .........................................
+
+            //console.log('Response received:', data);
+
+            // If needed, you can add XML parsing here
+            // const parser = new DOMParser();
+            // const xmlDoc = parser.parseFromString(data, "text/xml");
+
+            return data;                                                       // Return the parsed data
+         })
+         .catch(error => {
+            const sError = "Error sending request:" + error.message;
+            console.error(sError);
+            // You could add error handling UI here
+            document.getElementById('idResult').querySelector('[data-field="response"]').textContent = sError;
+            throw error;
+         });
+      }
 
       class CDocument {
          static iIdleTimerId_s = null; // Global timer ID for idle callback
@@ -277,466 +698,7 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
             }
             return false;                                                     // no data or failed
          }
-
-         /// Register a callback with a name ----------------------------------
-         AddCallback(sName, fnCallback) {                                                          console.assert( typeof fnCallback === 'function' );
-            this.aCallback.push({ name: sName, callback: fnCallback });
-            return true;
-         }
-
-         /// Get a callback by name -------------------------------------------
-         GetCallback(sName) {
-            const oCallback = this.aCallbacks.find(o => o.name === sName);
-            return oCallback ? oCallback.callback : null;
-         }
-
-         /// Call a callback by name with any arguments ------------------------
-         CallCallback(sName, ...args) {
-            const fnCallback = this.GetCallback(sName);
-            if(fnCallback) {
-               try {
-                  fnCallback(...args);
-                  return true;
-               } catch(e) {
-                  console.error('Error executing callback "' + sName + '":', e);
-                  return false;
-               }
-            }
-            else if(this.fnCallback) {
-               try {
-                  this.fnCallback(sName, ...args);
-                  return true;
-               } catch(e) {
-                  console.error('Error executing default callback:', e);
-                  return false;
-               }
-            }
-            return false;
-         }
       }
-
-      /** ---------------------------------------------------------------------
-       * Send arguments to server,
-       * @param {string} sEndpoint´- endpoint with arguments added after generated domain name
-       * @param {string} [sBody] - optional body sent to server
-       */
-      function SERVER_Send(sEndpoint, sBody) {
-         // ## Prepare variables  .............................................
-
-         const eServerContainer = document.getElementById('idServer');         // Get the server information container
-
-         const eAddress = eServerContainer.querySelector('[data-field="address"]'); // address (domain)
-         const ePort = eServerContainer.querySelector('[data-field="port"]'); // port
-
-         if(!eAddress) { console.error('Server address field not found'); return; }
-
-         const sAddress = eAddress.value.trim();
-         const sPort = ePort.value.trim();
-
-         if(!sAddress) { console.error('Server address is required'); return; } // Validate that we have the required values
-
-         // ## Build the base URL .............................................
-
-         let sBaseUrl = sAddress;
-
-         if(sPort) {                                                           // Add port if provided (and not already included in address)
-            // Check if address already has a port (contains : followed by numbers)
-            const bHasPort = /:\d+/.test(sAddress);
-            if(bHasPort === false) {
-               // ### Remove trailing slash if present before adding port
-               sBaseUrl = sBaseUrl.replace(/\/$/, '');
-               sBaseUrl += ':' + sPort;
-            }
-         }
-
-         if(!sBaseUrl.endsWith('/')) { sBaseUrl += '/'; }                     // Ensure base URL ends with slash for proper endpoint concatenation
-         const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint; // Remove leading slash from endpoint if present (to avoid double slashes)
-         let sFullUrl = sBaseUrl + sCleanEndpoint;                            // Build the complete URL
-
-         sFullUrl = gd.EncodeUrlParams(sFullUrl);
-
-         // ## Set url to top element showing active url
-         document.getElementById('idUrl').querySelector("[data-field='url']").value = sFullUrl;
-
-         console.log('Sending request to:', sFullUrl);
-
-         // ## Prepare fetch options ..........................................
-
-         const oOptions = {
-            method: 'GET', // Default method
-            headers: { 'Content-Type': 'application/xml' }
-         };
-
-         // If body is provided, use POST method and add body
-         if(sBody !== undefined) {
-            oOptions.method = 'POST';
-            oOptions.body = JSON.stringify(sBody);
-         }
-
-         // ## Send the request and pick up the response as { type: <format>, data: <data> }
-
-         return fetch(sFullUrl, oOptions)
-         .then(async  response => {
-            // ### Handle response data .......................................
-
-            const oResponseClone = response.clone();
-            if(!response.ok) {
-               const sErrorMessage = await oResponseClone.text();
-               throw new Error(`HTTP error! status: ${response.status}, message: ${sErrorMessage}`);
-            }
-
-            // Check the content type to determine how to parse the response
-            const sContentType = response.headers.get('content-type');
-
-            if(sContentType && sContentType.includes('application/json')) {
-                return response.json().then(data => ({ type: 'json', data }));
-            }
-            else if(sContentType && (sContentType.includes('application/xml') || sContentType.includes('text/xml'))) {
-               return response.text().then(text => {
-                  const oDOMParser = new DOMParser();
-                  const xml_ = oDOMParser.parseFromString(text, "text/xml");
-                  return { type: 'xml', data: xml_ };
-               });
-            }
-            else {
-               return response.text().then(data => ({ type: 'text', data }));
-            }
-         })
-         .then(data => {
-            // ### Handle parsed data .........................................
-
-            //console.log('Response received:', data);
-
-            // If needed, you can add XML parsing here
-            // const parser = new DOMParser();
-            // const xmlDoc = parser.parseFromString(data, "text/xml");
-
-            return data;                                                       // Return the parsed data
-         })
-         .catch(error => {
-            const sError = "Error sending request:" + error.message;
-            console.error(sError);
-            // You could add error handling UI here
-            document.getElementById('idResult').querySelector('[data-field="response"]').textContent = sError;
-            throw error;
-         });
-      }
-
-      /** ---------------------------------------------------------------------
-       * Handle response data and display it in the container
-       *
-       * Response data format is { type: <format>, data: <data> } and type can be any of
-       * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
-       *
-       * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
-       */
-      function PAGE_ProcessResponse(oData) {
-
-         // ## Print data to element that shows current response ..............
-         // Container = "idResult" and element = data-field="response"
-
-         let sResult;
-
-         // extract the data and convert it to text and place it in sResult
-         switch(oData.type) {
-            case 'json':
-               sResult = JSON.stringify(oData.data, null, 2);
-               break;
-            case 'xml':
-               // If oData.data is an XML Document object, serialize it to string
-               if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
-                  sResult = (new XMLSerializer()).serializeToString(oData.data);
-               } else {
-                  // If it's already a string, use it directly
-                  sResult = oData.data;
-               }
-               break;
-            case 'text':
-               sResult = oData.data;
-               break;
-            default:
-               sResult = 'Unknown format';
-         }
-
-         document.getElementById('idResult').querySelector('[data-field="response"]').textContent = sResult;
-      }
-
-      function PAGE_UpdateCommands(container_, aCommands) {
-         let eContainer = container_;
-         if(typeof container_ === 'string') { eContainer = document.getElementById(container_); }
-         if(Array.isArray(aCommands)) {
-            for(let oCommand of aCommands) {
-               //let eElement = eContainer.querySelector(`[data-command="${oCommand.id}"]`);
-               //if(eElement) { eElement.value = oCommand.name; }
-            }
-         }
-      }
-
-      /** --------------------------------------------------------------------- @API [tag: update, page]
-       * Update page from source data
-       */
-      function PAGE_Update(source_ = oDocument_g) {
-         // ## check if source_ is instance of CDocument
-         if((source_ instanceof CDocument) === true) {
-            const oDocument = source_;
-
-            // ## Update Url .................................................
-            const eServer = document.getElementById("idServer");
-            const oServer = oDocument.Get("server");
-            if( oServer ) {
-               const o = oServer.object;
-               eServer.querySelector( '[data-field="address"]' ).value = o.address;
-               eServer.querySelector( '[data-field="port"]' ).value = o.port;
-
-               const eUrl = document.getElementById("idUrl");
-               const sUrl = `${o.address}:${o.port}`;
-               eUrl.querySelector( '[data-field="url"]' ).value = sUrl;
-            }
-
-            // ## Update history from endpoints ...............................
-
-            const sCacheName = "endpoint";
-            const oTable = oDocument.GetTableCacheItem( sCacheName );
-
-            const eHistory = document.getElementById("idHistory"); // history element
-            const eCommands = document.querySelector('[data-section="commands"]'); // commands element used as container
-            eCommands.innerHTML = '';
-
-            const iRowCount = oTable.Size();
-            for( let iRow = 0; iRow < iRowCount; iRow++ ) {
-               const eElement = document.createElement("div");
-               const o = oTable.AsObject(iRow);
-               let sName = o.alias;
-               sName += " - ";
-               sName += o.endpoint.length > 60 ? o.endpoint.substr(0, 57) + '...' : o.endpoint;
-               eElement.textContent = sName;
-
-               eElement.dataset.action = "activate-command";
-               eElement.dataset.data = JSON.stringify( o );
-               eElement.dataset.index = iRow;
-               eElement.dataset.cache = sCacheName;
-               eElement.classList.add("page-row-content");
-
-               // Create delete button (X)
-               const eDelete = document.createElement('button');
-               eDelete.classList.add("page-delete-button");
-               eDelete.textContent = "x";
-               eDelete.dataset.action = "delete-command";
-               eDelete.dataset.index = iRow;
-               eDelete.dataset.cache = sCacheName;
-               eDelete.title = "Delete this command";
-
-               const eRow = document.createElement("div");
-               eRow.classList.add("page-row");
-
-               eRow.appendChild(eElement);
-               eRow.appendChild(eDelete);
-
-               eCommands.appendChild(eRow);
-            }
-         }
-         // ## if source_ is element
-         else if( source_ === "draggable" ) {
-            const eContainer = document.getElementById('idWorkArea');
-            if( eContainer.id === "idWorkArea" ) {
-               // ### Place the containers to saved positions
-               const aPosition = oDocument_g.GetAll("draggable");
-
-            }
-         }
-      }
-
-
-      /**
-       * Handles idle state by updating UI elements and checking for changes
-       */
-      const PAGE_OnIdle = (function() {
-         var bLastModified = false;
-
-         return function() {
-            const bModified = oDocument_g.IsModified();
-
-            if( bModified !== bLastModified ) {
-               let eSave = document.getElementById("idMenu").querySelector('[data-action="save-page"]');
-
-               if( bModified === true ) {
-                  eSave.classList.add("page-button-focus");
-               }
-               else {
-                  eSave.classList.remove("page-button-focus");
-               }
-               bLastModified = bModified;
-            }
-         }
-      })();
-
-
-      /** --------------------------------------------------------------------- @API [tag: initialize]
-       * Main initialization function that initializes the page
-       */
-      function PAGE_Initialize() {
-         const eWorkArea = document.getElementById('idWorkArea');
-
-         const oOptions = {
-            oBounds: {
-               eElement: eWorkArea,
-               oPadding: { top: 20, right: 20, bottom: 20, left: 20 }
-            }
-         };
-
-         // ## Initialize draggable elements
-         const aDraggable = document.querySelectorAll('[data-draggable]');    // find all draggable elements
-         aDraggable.forEach(function(eElement) {
-            let eHandle = eElement.querySelector("[data-draggable-handle]");
-            oOptions.eHandle = eHandle;
-            const oDraggable = new UIDraggable(eElement, oOptions);
-            const sName = eElement.getAttribute('data-name');
-            const oPosition = oDraggable.GetPosition();
-            oDocument_g.Add("draggable", { name: sName, position: oDraggable.GetPosition() });
-            oDocument_g.AddCacheItem(["draggable-" + sName, oDraggable]);      // Add draggable object to cache
-         });
-
-         // ## Initialize table cache items
-
-         // Table storing endpoints, contains alias, endpoint, body, description columns and these
-         // column names should match the field attributes used in form to make them work
-         let oTable = new Table(["alias", "endpoint", "body", "description"]);
-         oDocument_g.AddTableCacheItem("endpoint", oTable);                   // Add table object to cache
-
-         PAGE_SetListeners();
-         oDocument_g.Load();
-         oDocument_g.SetModified(false);
-
-         // ## Start idle timer - call PAGE_OnIdle() once per second
-         CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
-      }
-
-      /** --------------------------------------------------------------------- @API [tag: event, command]
-       * Configure page listeners, handle page specific events
-       */
-      function PAGE_SetListeners() {
-
-         // ## Initialize page menu listener ..................................
-
-         const eMenu = document.getElementById("idMenu");
-         eMenu.addEventListener('click', function(e_) {                       // click listener for menu buttons
-            const eTarget = e_.target;
-            if(!eTarget.dataset.action) return;                               // If no action is defined, return
-            e_.stopPropagation();
-            const sAction = eTarget.dataset.action;
-            switch(sAction) {
-               case "load-page":
-                  oDocument_g.Load();
-                  PAGE_Update();
-                  break;
-               case "save-page":
-                  oDocument_g.Save();
-                  break;
-               default:
-                  console.error('Unknown action:', sAction);
-            }
-         });
-
-         // listener when values are changed in inputs
-         const eInputs = document.querySelectorAll('input, textarea, select');
-         eInputs.forEach(eInput => {
-            eInput.addEventListener('input', function(e_) {
-               const eTarget = e_.target;
-               const sObject = eTarget.dataset.object;
-               if( typeof sObject === "undefined" ) return;
-               const sField = eTarget.dataset.field;
-               oDocument_g.SetValue(sObject, sField, eTarget.value);
-            });
-         });
-
-
-         // ## Initialize page work area listener .............................
-
-         const eWorkArea = document.getElementById('idWorkArea');
-         eWorkArea.addEventListener('click', function(e_) {
-            const eTarget = e_.target;
-            if(!eTarget.dataset.action) return;                             // If no action is defined, return
-            e_.stopPropagation();
-            const eContainer = eTarget.closest('.container');
-            const sAction = eTarget.dataset.action;
-            switch(sAction) {
-               case "send": {                                                 // send command to wed server
-                  const sEndpoint = eContainer.querySelector('[data-field="endpoint"]').value;
-                  SERVER_Send(sEndpoint).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
-               } break;
-               case "keep": {                                                  // save command
-                  const eCommands = document.getElementById('idCommands');
-                  const aFields = eCommands.querySelectorAll('[data-field]');
-                  const oCommand = {};
-
-                  aFields.forEach(eField => {
-                     const sField = eField.dataset.field;
-                     oCommand[sField] = eField.value;
-                  });
-
-                  let oTable = oDocument_g.GetTableCacheItem("endpoint");
-                  oTable.Add(oCommand);
-                  oDocument_g.SetModified(true);
-                  PAGE_Update();
-               } break;
-               case "activate-command": {                                      // activate command
-                  const sCacheName = eTarget.dataset.cache;
-                  const oTable = oDocument_g.GetTableCacheItem(sCacheName);
-                  const iIndex = eTarget.dataset.index;
-                  const oCommand = oTable.AsObject( iIndex );
-                  const eCommands = document.getElementById('idCommands');
-                  if(eCommands) {
-                     const aFields = eCommands.querySelectorAll('[data-field]');
-                     aFields.forEach(eField => {
-                        const sField = eField.dataset.field;
-                        eField.value = oCommand[sField];
-                     });
-                  }
-               } break;
-               case "delete-command": {                                        // delete command
-                  const sCacheName = eTarget.dataset.cache;
-                  const iIndex = eTarget.dataset.index;
-                  oDocument_g.DeleteTableCache(sCacheName, iIndex);
-                  PAGE_Update();
-               } break;
-               default:
-                  console.error("Unknown action:", sAction);
-            }
-         });
-      }
-
-      function PAGE_PrintResponse(oData) {
-         const eResponse = document.getElementById("idResult").querySelector('[data-field="response"]');
-         if(eResponse) {
-            if(oData instanceof Error) {
-               eResponse.textContent = "Error: " + oData.message;
-            } else {
-               eResponse.textContent = JSON.stringify(oData, null, 2);
-            }
-         }
-      }
-
-      function PAGE_Callback(sName, ...args) {
-         const fnCallback = oDocument_g.GetCallback(sName);
-         if(fnCallback) {
-            try {
-               fnCallback(...args);
-               return true;
-            } catch(e) {
-               console.error('Error executing callback "' + sName + '":', e);
-               return false;
-            }
-         }
-         return false;
-      }
-
-      // Initialize draggable element
-      document.addEventListener('DOMContentLoaded', function() {
-         oDocument_g = new CDocument( {callback: PAGE_Callback} );
-         oDocument_g.Add("server", { address: "http://localhost", port: "8001" })
-         PAGE_Initialize();                                                    // Initialize page
-         PAGE_Update(oDocument_g);
-      });
 
    </script>
 </body>
