@@ -244,17 +244,6 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
          CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
       }
 
-      function PAGE_UpdateCommands(container_, aCommands) {
-         let eContainer = container_;
-         if(typeof container_ === 'string') { eContainer = document.getElementById(container_); }
-         if(Array.isArray(aCommands)) {
-            for(let oCommand of aCommands) {
-               //let eElement = eContainer.querySelector(`[data-command="${oCommand.id}"]`);
-               //if(eElement) { eElement.value = oCommand.name; }
-            }
-         }
-      }
-
       /** --------------------------------------------------------------------- @API [tag: update, page]
        * Update page from source data
        */
@@ -361,7 +350,7 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
          // ## Initialize page menu listener ..................................
 
          const eMenu = document.getElementById("idMenu");
-         eMenu.addEventListener('click', function(e_) {                       // click listener for menu buttons
+         eMenu.addEventListener("click", function(e_) {                       // click listener for menu buttons
             const eTarget = e_.target;
             if(!eTarget.dataset.action) return;                               // If no action is defined, return
             e_.stopPropagation();
@@ -395,7 +384,7 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
          // ## Initialize page work area listener .............................
 
          const eWorkArea = document.getElementById('idWorkArea');
-         eWorkArea.addEventListener('click', function(e_) {
+         eWorkArea.addEventListener("click", function(e_) {
             const eTarget = e_.target;
             if(!eTarget.dataset.action) return;                             // If no action is defined, return
             e_.stopPropagation();
@@ -432,7 +421,8 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
                      const aFields = eCommands.querySelectorAll('[data-field]');
                      aFields.forEach(eField => {
                         const sField = eField.dataset.field;
-                        eField.value = oCommand[sField];
+                        const value_ = oCommand[sField] ? oCommand[sField] : "";
+                        eField.value = value_;
                      });
                   }
                } break;
@@ -584,7 +574,7 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
 
          console.log('Sending request to:', sFullUrl);
 
-         //return;
+         return;
 
          // ## Prepare fetch options ..........................................
 
