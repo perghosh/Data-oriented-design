@@ -126,7 +126,7 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
                      <textarea class="fill" rows="2" data-field="endpoint" placeholder="Endpoint URL"></textarea>
                   </div>
                   <div class="row" data-section="tab" data-name="Base64 arguments">
-                     <textarea class="fill" rows="2" data-field="endpoint" placeholder="Base64 encoded data"></textarea>
+                     <textarea class="fill" rows="2" data-field="endpoint64" placeholder="Base64 encoded data"></textarea>
                   </div>
                </div>
                <div class="row">
@@ -233,7 +233,7 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
 
          // Table storing endpoints, contains alias, endpoint, body, description columns and these
          // column names should match the field attributes used in form to make them work
-         let oTable = new Table(["alias", "endpoint", "body", "description"]);
+         let oTable = new Table(["alias", "endpoint", "endpoint64", "body", "description"]);
          oDocument_g.AddTableCacheItem("endpoint", oTable);                   // Add table object to cache
 
          PAGE_SetListeners();
@@ -404,7 +404,8 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
             switch(sAction) {
                case "send": {                                                 // send command to wed server
                   const sEndpoint = eContainer.querySelector('[data-field="endpoint"]').value;
-                  SERVER_Send(sEndpoint).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
+                  const sEndpoint64 = eContainer.querySelector('[data-field="endpoint64"]').value || "";
+                  SERVER_Send(sEndpoint, sEndpoint64).then( function(oResponse) {  PAGE_ProcessResponse( oResponse ); });
                } break;
                case "keep": {                                                  // save command
                   const eCommands = document.getElementById('idCommands');
@@ -514,9 +515,10 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
       /** ---------------------------------------------------------------------
        * Send arguments to server,
        * @param {string} sEndpoint´- endpoint with arguments added after generated domain name
+       * @param {string} [sEndpoint64] - optional endpoint64 sent to server
        * @param {string} [sBody] - optional body sent to server
        */
-      function SERVER_Send(sEndpoint, sBody) {
+      function SERVER_Send(sEndpoint, sEndpoint64, sBody) {
          // ## Prepare variables  .............................................
 
          const eServerContainer = document.getElementById('idServer');         // Get the server information container
@@ -548,6 +550,32 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
          if(!sBaseUrl.endsWith('/')) { sBaseUrl += '/'; }                     // Ensure base URL ends with slash for proper endpoint concatenation
          const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint; // Remove leading slash from endpoint if present (to avoid double slashes)
          let sFullUrl = sBaseUrl + sCleanEndpoint;                            // Build the complete URL
+
+         if(sEndpoint64) {
+            // Parse the endpoint64 string to extract key-value pairs
+            // Expected format: "key1=value1&key2=value2" or "key=value"
+            const aPairs = sEndpoint64.split('&');
+            const aParams = [];
+
+            for(let sPair of aPairs) {
+               const iEqualPos = sPair.indexOf('=');
+               if(iEqualPos !== -1) {
+                  const sKey = sPair.substring(0, iEqualPos).trim();
+                  const sValue = sPair.substring(iEqualPos + 1).trim();
+
+                  // Convert value to base64
+                  const sBase64Value = gd.EncodeToBase64(sValue);
+                  aParams.push(`${sKey}=${encodeURIComponent(sBase64Value)}`);
+               }
+            }
+
+            // Append to URL
+            if(aParams.length > 0) {
+               const sConnector = sFullUrl.includes('?') ? '&' : '?';
+               sFullUrl += sConnector + aParams.join('&');
+            }
+         }
+         //if(sBody) { }
 
          sFullUrl = gd.EncodeUrlParams(sFullUrl);
 
