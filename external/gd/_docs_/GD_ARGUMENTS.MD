@@ -170,10 +170,10 @@ int main() {
    std::string argsHost = args["host"].as_string();
    std::cout << "   Arguments host: " << argsHost << "\n";
 
-   REQUIRE( uriPod.host == "example.com" );
-   REQUIRE( args["host"].as_string() == "example.com" );
-   REQUIRE( args["port"].as_int() == 8080 );
-   REQUIRE( args["secure"].as_bool() == true );
+   assert( uriPod.host == "example.com" );
+   assert( args["host"].as_string() == "example.com" );
+   assert( args["port"].as_int() == 8080 );
+   assert( args["secure"].as_bool() == true );
    ```
 
 #### Construction Options
