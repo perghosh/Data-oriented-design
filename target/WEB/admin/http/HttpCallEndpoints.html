@@ -70,6 +70,22 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
 
    .page-button-focus { background-color: var(--background-active); color: var(--color-primary); }
 
+   .page-button {
+      cursor: pointer; fontSize: 14px; padding: 5px 10px;
+      &-tab { color: var(--color-secondary); background-color: var(--background-secondary); }
+      &-tab:hover { background-color: var(--background-secondary-hover); }
+
+      &-tab-active { color: var(--color-primary); background-color: var(--background-primary); }
+      &-tab-active:hover { background-color: var(--background-primary-hover); }
+   }
+
+   .page-tab-header { display: flex; gap: 5px; padding: 10px 0; }
+   .page-tab-body { /* border: 1px solid var(--color-border); border-top: none; */ }
+   .page-tab-button { background-color: var(--background-secondary); color: var(--color-secondary); cursor: pointer; font-size: 14px; padding: 5px 10px; border: none; border-radius: 4px; }
+   .page-tab-button:hover { background-color: var(--background-secondary-hover); }
+   .page-tab-button-active { background-color: var(--background-primary); color: var(--color-primary); cursor: pointer; font-size: 14px; padding: 5px 10px; border: none; border-radius: 4px; }
+   .page-tab-button-active:hover { background-color: var(--background-primary-hover); }
+
    </style>
 </head>
 <body>
@@ -182,12 +198,17 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
          });
 
          // Now create the tab control with the extracted tabs
-         const oTabsEndpoint = new UITabControl(eTabsEndpoint, {
-            aTabs: aTabPage
-         });
+         const oOptions = {
+            aTabs: aTabPage,
+            style: {
+               class_button: "page-tab-button",
+               class_button_active: "page-tab-button-active",
+               class_header: "page-tab-header",
+               class_body: "page-tab-body"
+            }
+         };
 
-         //const oTabsEndpoint = new UITabControl( eTabsEndpoint );
-
+         const oTabsEndpoint = new UITabControl(eTabsEndpoint, oOptions);
 
          const oDraggableOptions = {
             oBounds: {
