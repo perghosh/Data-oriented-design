@@ -305,6 +305,11 @@ public:
 
    variant(const char* v, bool) : m_uType(variant_type::eTypeString), m_uSize(strlen(v)) { m_V.pbsz_const = v; }
    variant(const std::string_view& v, bool) : m_uType(variant_type::eTypeString), m_uSize(v.length()) { m_V.pbsz_const = v.data(); }
+   
+   // @API [tag: constructor] [description: constructor for variant from string]
+   
+   /// @brief Constructor that tries to figure out the type based on json
+   variant( std::string_view stringJson, bool* pbSucceeded, gd::types::tag_json );
 
    variant( const variant& o ) { common_construct( o ); }                        // copy
    variant( variant&& o ) noexcept { move_construct( o ); }                      // move

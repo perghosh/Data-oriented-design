@@ -41,6 +41,7 @@ public:
 // @API [tag: construction]
 public:
    CSqlBuilder() {}
+   CSqlBuilder( gd::argument::shared::arguments& arguments_ ): m_argumentsValues( arguments_ ) {}
    // copy
    CSqlBuilder( const CSqlBuilder& o ) { common_construct( o ); }
    // assign

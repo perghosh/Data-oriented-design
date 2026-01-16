@@ -16,6 +16,7 @@
 #include <vector>
 #include <type_traits>
 
+#include "gd_compiler.h"
 #include "gd_variant.h"
 #include "gd_variant_view.h"
 
@@ -99,6 +100,28 @@ std::string to_string( const VARIANT& v_ )
    return "";
 }
 
+
+/** --------------------------------------------------------------------------
+ * Get the type of a json primitive from string
+ */
+inline uint32_t get_json_primitive_type( std::string_view stringJsonPrimitive  )
+{
+   if( stringJsonPrimitive.empty() || stringJsonPrimitive[0] == 'n' ) return gd::variant_type::eTypeUnknown;
+   else if( stringJsonPrimitive[0] == 't' || stringJsonPrimitive[0] == 'f' ) return gd::variant_type::eTypeBool;
+   else if( stringJsonPrimitive[0] == '-' || stringJsonPrimitive[0] == '+' ) return gd::variant_type::eTypeCDouble;
+
+   // ## Check for digits and count dots
+   bool bFoundDot = false;
+   for( char i_ : stringJsonPrimitive )
+   {
+      if( std::isdigit(i_) != 0 ) continue;
+      if( bFoundDot == false && i_ == '.' ) { bFoundDot = true; continue; }
+      
+      return gd::variant_type::eTypeString;
+   }
+
+   return gd::variant_type::eTypeCDouble;                                     // All numbers are decimal in json
+}
 
 
 #endif // GD_COMPILER_HAS_CPP20_SUPPORT

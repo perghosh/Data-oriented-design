@@ -3591,6 +3591,9 @@ arguments::argument arguments::get_argument_s(const gd::variant& variantValue)
 {
    switch( variantValue.type_number() )
    {
+   case variant_type::eTypeNumberUnknown:
+      return arguments::argument();
+      break;
    case variant_type::eTypeNumberBool:
       return arguments::argument( (bool)variantValue );
       break;

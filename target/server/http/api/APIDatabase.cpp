@@ -5,11 +5,15 @@
 #include "gd/gd_file.h"
 #include "gd/database/gd_database_io.h"
 
+#include "../service/SERVICE_SqlBuilder.h"
+
 #include "../Router.h"
 #include "../Document.h"
 #include "../Application.h"
 
 #include "APIDatabase.h"
+
+using namespace SERVICE;
 
 
 // common_construct methods are now implemented in CAPI_Base
@@ -308,7 +312,9 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    {
       std::string stringValues = m_argumentsParameter["values"].as_string();
       gd::argument::shared::arguments argumentsValues;
-      gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues );
+      auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues );
+      if( result_.first == false ) return result_;
+      CSqlBuilder sqlbuilder_( argumentsValues );
       // @TODO [tag: sql, insert] [summary: add logic to create insert query]
    }
 
