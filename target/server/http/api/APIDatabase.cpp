@@ -1,5 +1,6 @@
 #include <filesystem>
 
+#include "gd/parse/gd_parse_json.h"
 #include "gd/gd_database_sqlite.h"
 #include "gd/gd_file.h"
 #include "gd/database/gd_database_io.h"
@@ -54,7 +55,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
 
    std::pair<bool, std::string> result_(true,"");
 
-   CRouter::Encode_s( m_argumentsParameter, { "query" } );
+   CRouter::Encode_s( m_argumentsParameter, { "query", "values" } );
 
    for( std::size_t uIndex = 0; uIndex < m_vectorCommand.size(); ++uIndex )
    {
@@ -302,10 +303,18 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
 
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
+   
+   if( m_argumentsParameter.exists("values") == true )
+   {
+      std::string stringValues = m_argumentsParameter["values"].as_string();
+      gd::argument::shared::arguments argumentsValues;
+      gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues );
+      // @TODO [tag: sql, insert] [summary: add logic to create insert query]
+   }
 
    std::string stringQuery = m_argumentsParameter["query"].as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
-
+   
    auto result_ = pdatabase->execute( stringQuery );
    if( result_.first == false ) { return result_; }
 

@@ -21,7 +21,8 @@
 |   |   DTOResponse.*
 |
 +-- meta
-|   |   DTOResponse.*
+|   |   METADatabase.*
+|   |   METAQueries.*
 |
 +-- playground
 |
