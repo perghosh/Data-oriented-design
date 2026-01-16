@@ -139,7 +139,10 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 
    </div>
 
-   <div class="container-button" ><button id="idSave">Submit</button></div>
+   <div class="container-button" id="idContainerButton">
+      <button data-field="save">Submit</button>
+      <button data-field="delete">Remove</button>
+   </div>
 
    <div class="container-label">
       <h2 id="idText"></h2>
@@ -232,6 +235,9 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       //}
    }
 
+   /**
+    * Collect all input entries
+    */
    function CollectInputEntries(parent_)
    {
       let aData = [];
@@ -251,6 +257,21 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
       return aData;
    }
 
+   /**
+    * Delete all input entries
+    */
+   function RemoveInputEntries(parent_)
+   {
+      let eParent = document.querySelector(parent_);
+      if(!eParent) {eParent = document.getElementById(parent_)}  
+
+      const eInputs = eParent.querySelectorAll("input");
+
+      eInputs.forEach(eInput => {
+         eInput.value = "";
+      });
+   }
+
    function PAGE_ConfigureListeners() {
       const eContainer = document.getElementById("idContainer");
       eContainer.addEventListener("input",(e_) => {
@@ -261,6 +282,43 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
          e_.stopPropagation();                                                                     console.log( "Id for field ", sField );
 
          oDocument_g.SetModified(true);
+
+      });
+   }
+
+   /** ---------------------------------------------------------------------
+    * Set listener for click event
+    */
+   function PAGE_SetListener()
+   {
+      const eContainer = document.getElementById("idContainerButton");
+      eContainer.addEventListener("click",(e_) => {
+         const eTarget = e_.target;
+         const sField = eTarget.dataset.field;
+
+         e_.stopPropagation();                                                                     console.log( "Id for button ", sField);
+
+         switch(sField)
+         {
+            case "save":
+               const aData = CollectInputEntries("#idContainer");
+               RemoveInputEntries("#idContainer");
+
+               oDocument_g.SetModified(false);
+               table.Add(aData);
+               console.log(table.GetData());
+
+               break;
+
+            case "delete": 
+               RemoveInputEntries("#idContainer");
+
+               oDocument_g.SetModified(false);
+               
+               break;
+         }
+
+         //oDocument_g.SetModified(true);
 
       });
    }
@@ -280,9 +338,9 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
                // ## Start idle timer - call PAGE_OnIdle() once per second
       //iIdleTimerId_g = setInterval(PAGE_OnIdle, 1000);
 
+      PAGE_SetListener();
 
-
-      GlobalEventListener("click", "#idSave", () =>
+      /*GlobalEventListener("click", "#idSave", () =>
          {
             const aData = CollectInputEntries("#idContainer");
             oDocument_g.SetModified(false);
@@ -290,7 +348,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
             console.log(table.GetData());
          },
          document
-      )
+      )*/
    }
 
    /** --------------------------------------------------------------------- @API [tag: onidle]
