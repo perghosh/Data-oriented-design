@@ -377,6 +377,9 @@ enum enumTypeNumber
    eTypeNumberUuidString   = 37,
 
    eTypeNumberMAX          = 37,
+   
+   eTypeNumberArray        = 62,
+   eTypeNumberObject       = 63,
 };
 
 /*-----------------------------------------*/ /**
@@ -456,7 +459,10 @@ enum enumType
    eTypeRBinary      = eTypeNumberBinary     | eTypeGroupBinary                      | eTypeDetailReference,
    eTypeRString      = eTypeNumberString     | eTypeGroupString                      | eTypeDetailReference,
    eTypeRUtf8String  = eTypeNumberUtf8String | eTypeGroupString                      | eTypeDetailReference,
-   eTypeRWString     = eTypeNumberUtf8String | eTypeGroupString                      | eTypeDetailReference
+   eTypeRWString     = eTypeNumberUtf8String | eTypeGroupString                      | eTypeDetailReference,
+
+   eTypeArray        = eTypeNumberArray                                              | eTypeDetailReference,
+   eTypeObject       = eTypeNumberObject                                             | eTypeDetailReference
 
 };
 

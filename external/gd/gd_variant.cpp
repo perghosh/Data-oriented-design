@@ -7,6 +7,7 @@
 
 #include "gd_types.h"
 #include "gd_utf8.h"
+#include "gd_variant_common.h"
 #include "gd_variant_view.h"
 #include "gd_variant.h"
 
@@ -35,6 +36,59 @@ _GD_BEGIN
 #endif
 
 using namespace variant_type;
+
+/** ---------------------------------------------------------------------------
+ * @brief Constructs a variant from a JSON primitive string.
+ *
+ * This constructor parses a JSON primitive value (boolean, number, or string) and stores
+ * it as the appropriate variant type. The tag_json parameter is used for tag dispatch,
+ * allowing overload resolution to select this constructor specifically for JSON parsing.
+ *
+ * @param stringJson A string_view containing the JSON primitive value to parse.
+ *                   Expected formats:
+ *                   - Boolean: "true" or "false"
+ *                   - Number: integer or decimal (e.g., "123", "-45.67", "+.5")
+ *                   - String: any other valid JSON string
+ * 
+ * @param pbSucceeded Pointer to a boolean indicating whether the parsing was successful.
+ *                   Set to true if the parsing was successful, false otherwise.
+ *
+ * @param tag_json Tag dispatch parameter (unused, enables constructor selection)
+ *
+ *
+ * @note For strings, memory is allocated using the variant's internal allocator.
+ * @note The variant type is set with the eFlagAllocate flag for string types.
+ * @see get_json_primitive_type() for type detection logic.
+ */
+variant::variant( std::string_view stringJson, bool* pbSucceeded, gd::types::tag_json )
+{
+   bool bSucceeded = true;
+   unsigned uType = get_json_primitive_type( stringJson );
+   m_uType = uType;
+   switch( uType )
+   {
+   case eTypeUnknown:
+      m_V.uint64 = 0;
+      break;
+   case eTypeBool:
+      m_V.b = stringJson == "true";
+      break;
+   case eTypeCDouble:
+      m_V.d = std::stod( std::string( stringJson ) );
+      break;
+   case eTypeUtf8String:
+      m_uType = variant_type::eTypeString|variant_type::eFlagAllocate;
+      m_uSize = (decltype(m_uSize))stringJson.length();
+      m_V.pbsz = (char*)allocate( m_uSize + 1u );
+      memcpy( m_V.pbsz, stringJson.data(), m_uSize );
+      m_V.pbsz[m_uSize] = '\0';
+      break;
+   default:
+      bSucceeded = false;
+   }
+   
+   if( pbSucceeded != nullptr ) *pbSucceeded = bSucceeded;
+}
 
 
 bool variant::get_bool() const
@@ -1467,4 +1521,3 @@ namespace debug {
 
 
 } /* namespace gd */
-
