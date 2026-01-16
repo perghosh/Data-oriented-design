@@ -1479,10 +1479,9 @@ namespace gd {
             const uint8_t* pubNext = pubszPosition;
             do
             {
-               pubszPosition = pubNext;
-               if( *pubszPosition > CHARACTER_SPACE ) return pubszPosition;
-               pubNext = next( pubszPosition );
-            } while( pubNext != pubszPosition );
+               if( *pubNext > CHARACTER_SPACE ) return pubNext;
+               pubNext = next( pubNext );
+            } while( *pubNext != uint8_t(0) );
 
             return pubNext;
          }
@@ -1496,12 +1495,12 @@ namespace gd {
          const uint8_t* next_non_space(const uint8_t* pubPosition, const uint8_t* pubEnd )
          {
             const uint8_t* pubNext = pubPosition;
-            while( pubPosition < pubEnd )
+            while( pubNext < pubEnd )
             {
-               if( *pubPosition > CHARACTER_SPACE ) return pubPosition;
-               pubNext = next( pubPosition );
+               if( *pubNext > CHARACTER_SPACE ) return pubNext;
+               pubNext = next( pubNext );
             }
-            return pubPosition;
+            return pubNext;
          }
 
          /**
@@ -1984,17 +1983,17 @@ namespace gd {
          {                                                                                         assert( *pubszPosition != '\0' );
             if( *pubszPosition == '\\' )
             {
-               pubszPosition++;
+               pubszPosition++;                                               // Skip backslash
                if( *pubszPosition == 'u' )
                {
-                  pubszPosition += 5;
+                  return pubszPosition + 5;                                   // Skip 'u' + 4 hex digits
                }
                else
                {
-                  pubszPosition++;
+                  return pubszPosition + 1;                                   // Skip the escaped character (n, t, r, etc.)
                }
             }
-            return pubszPosition;
+            return pubszPosition + 1;
          }
 
          /** ------------------------------------------------------------------

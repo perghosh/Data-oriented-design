@@ -411,6 +411,15 @@ namespace gd {
             return reinterpret_cast<const UTF8_TYPE*>(next_non_space(reinterpret_cast<const uint8_t*>(pubszPosition)));
          };
 
+         // move pointer to next non space character
+         const uint8_t* next_non_space(const uint8_t* puPosition, const uint8_t* pubEnd); // ------ next_non_space
+         template <typename UTF8_TYPE>
+         const UTF8_TYPE* next_non_space(const UTF8_TYPE* puPosition, const UTF8_TYPE* pubEnd) { // next_non_space
+            static_assert(sizeof(UTF8_TYPE) == 1, "Value isn't compatible with uint8_t");
+            return reinterpret_cast<const UTF8_TYPE*>(next_non_space(reinterpret_cast<const uint8_t*>(puPosition), reinterpret_cast<const uint8_t*>(pubEnd)));
+         };
+
+
          ///@}
 
 

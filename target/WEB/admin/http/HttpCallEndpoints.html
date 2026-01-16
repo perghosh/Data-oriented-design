@@ -9,6 +9,7 @@ PAGE_OnIdle - Handles idle state by updating UI elements and checking for change
 PAGE_Initialize - Main initialization function that sets up the page, creates draggable elements and configures listeners
 PAGE_PrintResponse - Prints the response data in the response container based on data type
 PAGE_Callback - Retrieves and executes a callback by name with any provided arguments
+SERVER_Send - Sends a request to the server with specified parameters
 
 -->
 
@@ -33,7 +34,6 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
    .page-1000 { display: block; height: 100%; margin: 0 auto; width: 1000px; }
 
    .button-normal { background-color: var(--background-primary); border-radius: 4px; color: var(--color-primary); cursor: pointer; min-width: 100px; padding: 8px 16px; text-align: center; }
-   .caption { background-color: var(--background-secondary); border-radius: 4px; font-weight: bold; margin-bottom: 10px; padding: 8px 16px;      }
 
    #idPage { display: grid; grid-template-rows: auto 1fr;  height: 100vh; margin: 0 auto; overflow: hidden; width: 1400px; }
 
@@ -86,6 +86,9 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
    .page-tab-button-active { background-color: var(--background-primary); color: var(--color-primary); cursor: pointer; font-size: 14px; padding: 5px 10px; border: none; border-radius: 4px; }
    .page-tab-button-active:hover { background-color: var(--background-primary-hover); }
 
+   .page-caption { background-color: var(--background-secondary); border-radius: 4px; font-weight: bold; margin-bottom: 10px; padding: 8px 16px; }
+   .page-caption-small { background-color: var(--background-secondary); border-radius: 4px; font-weight: bold; margin-bottom: 10px; padding: 4px 16px; }
+
    </style>
 </head>
 <body>
@@ -115,7 +118,7 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
 
          <!-- Section used to display endpoint information and commands to save and send -->
          <div id="idCommands" class="container container-form page-plate" data-name="command" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 20px; left: 20px; padding: 5px; width: 900px;">
-            <div class="caption row handle" data-draggable-handle="1">Command: Endpoint information</div>
+            <div class="page-caption row handle" data-draggable-handle="1">Command: Endpoint information</div>
             <form data-element="container">
                <div class="row">
                   <input class="third" type="text" class="fill" data-field="alias" placeholder="Alias name for command" />
@@ -141,7 +144,7 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
 
          <!-- Section used to display server response -->
          <div id="idResult" class="container container-form page-plate" data-name="result" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 500px; left: 100px; padding: 5px; width: 800px;">
-            <div class="caption row handle" data-draggable-handle="1">Command: Server response</div>
+            <div class="page-caption row handle" data-draggable-handle="1">Command: Server response</div>
             <form data-element="container">
                <div class="row">
                   <textarea class="fill" rows="3" data-field="response" placeholder="Server response"></textarea>
@@ -149,9 +152,20 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
             </form>
          </div>
 
+         <!-- Section for internal messages -->
+         <div id="idMessage" class="container container-form page-plate" data-name="result" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 400px; left: 50px; padding: 5px; width: 500px;">
+            <div class="page-caption-small row handle" data-draggable-handle="1">Message</div>
+            <form data-element="container">
+               <div class="row">
+                  <textarea class="fill" rows="2" data-field="message" placeholder="Browser message"></textarea>
+               </div>
+            </form>
+         </div>
+
+
          <!-- Section used to display history of saved command/endpoints -->
          <div id="idHistory" class="container container-form page-plate" data-name="history" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; height: 300px; width: 800px;">
-            <div class="caption row handle" data-draggable-handle="1">Command: History</div>
+            <div class="page-caption row handle" data-draggable-handle="1">Command: History</div>
             <div class="row" data-section="commands" style="flex-direction: column; align-items: stretch; gap: 8px; overflow-y: auto; overflow-x: hidden;">
 
             </div>
@@ -161,11 +175,12 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
    </div>
 
    <script>
+      "use strict";
       let oDocument_g; // Make oDocument a global variable
 
       // Initialize page
       document.addEventListener('DOMContentLoaded', function() {
-         oDocument_g = new CDocument( {callback: PAGE_Callback} );
+         oDocument_g = new CDocument();
          oDocument_g.Add("server", { address: "http://localhost", port: "8001" })
          PAGE_Initialize();                                                    // Initialize page
          PAGE_Update(oDocument_g);
@@ -488,27 +503,13 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
          }
       }
 
-      function PAGE_Callback(sName, ...args) {
-         const fnCallback = oDocument_g.GetCallback(sName);
-         if(fnCallback) {
-            try {
-               fnCallback(...args);
-               return true;
-            } catch(e) {
-               console.error('Error executing callback "' + sName + '":', e);
-               return false;
-            }
-         }
-         return false;
-      }
-
       /** ---------------------------------------------------------------------
        * Send arguments to server,
        * @param {string} sEndpoint´- endpoint with arguments added after generated domain name
-       * @param {string} [sEndpoint64] - optional endpoint64 sent to server
+       * @param {string} [sArguments] - optional arguments sent to server, each arguments is separated by newline character
        * @param {string} [sBody] - optional body sent to server
        */
-      function SERVER_Send(sEndpoint, sEndpoint64, sBody) {
+      function SERVER_Send(sEndpoint, sArguments, sBody) {
          // ## Prepare variables  .............................................
 
          const eServerContainer = document.getElementById('idServer');         // Get the server information container
@@ -541,40 +542,45 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
          const sCleanEndpoint = sEndpoint.startsWith('/') ? sEndpoint.substring(1) : sEndpoint; // Remove leading slash from endpoint if present (to avoid double slashes)
          let sFullUrl = sBaseUrl + sCleanEndpoint;                            // Build the complete URL
 
-         if(sEndpoint64) {
-            // Parse the endpoint64 string to extract key-value pairs
-            // Expected format: "key1=value1&key2=value2" or "key=value"
-            const aPairs = sEndpoint64.split('&');
-            const aParams = [];
+         let sEncodedArguments = "";
+         if(sArguments) {
+            // ## Split arguments by newline character and then find first '=' to split there
+            const aArguments = sArguments.split('\n');
 
-            for(let sPair of aPairs) {
-               const iEqualPos = sPair.indexOf('=');
-               if(iEqualPos !== -1) {
-                  const sKey = sPair.substring(0, iEqualPos).trim();
-                  const sValue = sPair.substring(iEqualPos + 1).trim();
-
-                  // Convert value to base64
-                  const sBase64Value = gd.EncodeToBase64(sValue);
-                  aParams.push(`${sKey}=${encodeURIComponent(sBase64Value)}`);
+            for(let sArgument of aArguments) {                                // Iterate aArguments
+               const iEqualPosition = sArgument.indexOf('=');
+               if(iEqualPosition !== -1) {
+                  if( sEncodedArguments ) sEncodedArguments += '&';
+                  const sKey = sArgument.substring(0, iEqualPosition).trim();
+                  const sValue = sArgument.substring(iEqualPosition + 1).trim();
+                  sEncodedArguments += sKey + '=' + encodeURIComponent(sValue);
+               }
+               else {
+                  const sError = 'Invalid argument format: ' + sArgument;                          console.log(sError);
+                  document.getElementById("idMessage").querySelector('textarea').value = sError;
+                  return;
                }
             }
-
-            // Append to URL
-            if(aParams.length > 0) {
-               const sConnector = sFullUrl.includes('?') ? '&' : '?';
-               sFullUrl += sConnector + aParams.join('&');
-            }
          }
-         //if(sBody) { }
 
-         sFullUrl = gd.EncodeUrlParams(sFullUrl);
+         sFullUrl = gd.EncodeUrlParams(sFullUrl);                              // Encode URL parameters for first part, here you should only have simple values
+
+         // ## If encoded arguments exist and URL contains '='
+         if( sEncodedArguments.length > 0 && sFullUrl.indexOf('=') !== -1 ) {
+            if(sFullUrl.charAt(sFullUrl.length - 1) !== "&") { sFullUrl += "&"; } // If sFullUrl does not have a trailing '&' then add it
+            sFullUrl += sEncodedArguments;
+         }
+         else if( sEncodedArguments.length > 0 ) {
+            if(sFullUrl.charAt(sFullUrl.length - 1) !== "?") { sFullUrl += "?"; } // If sFullUrl does not have a trailing '?' then add it
+            sFullUrl += sEncodedArguments;
+         }
 
          // ## Set url to top element showing active url
          document.getElementById('idUrl').querySelector("[data-field='url']").value = sFullUrl;
 
-         console.log('Sending request to:', sFullUrl);
+         // console.log('Sending request to:', sFullUrl);
 
-         return;
+         // return;
 
          // ## Prepare fetch options ..........................................
 
@@ -647,7 +653,6 @@ PAGE_Callback - Retrieves and executes a callback by name with any provided argu
             this.aCache = [];
             this.aTableCache = []; // Hold table data like [{id: <string>, table: <table object>}, ...]
             this.aCallback = oOptions.callbacks || [];
-            this.fnCallback = oOptions.callback || null;
          }
 
          // Check if document has been modified ------------------------------
