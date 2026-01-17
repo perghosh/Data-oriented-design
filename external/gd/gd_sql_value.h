@@ -21,6 +21,7 @@
 
 #include "gd_types.h"
 #include "gd_arguments.h"
+#include "gd_arguments_shared.h"
 #include "gd_variant.h"
 #include "gd_variant_view.h"
 
@@ -57,15 +58,24 @@ inline void append_g( const gd::variant& variantValue, std::string& stringSql, t
 /// Make bulk text suitable for parameterized sql insert or updates
 std::tuple<uint64_t,std::string,std::string> make_bulk_g( const std::string_view& stringFixed, const std::string_view& stringParameter, uint64_t uCount, uint64_t uBulkCount );
 
-// 0TAG0replace.sql
-
 std::pair<bool,std::string> replace_g( const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, std::string& stringNew, tag_brace );
+std::pair<bool,std::string> replace_g( const std::string_view& stringSource, const gd::argument::shared::arguments& argumentsValue, std::string& stringNew, tag_brace );
+
 /// Replace values in string with values from arguments object, arguments replaced are in braces
 inline std::string replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_brace) {
    std::string stringNew;
    replace_g(stringSource, argumentsValue, stringNew, tag_brace{});
    return stringNew;
 }
+
+/// Replace values in string with values from arguments object, arguments replaced are in braces
+inline std::string replace_g(const std::string_view& stringSource, const gd::argument::shared::arguments& argumentsValue, tag_brace) {
+   std::string stringNew;
+   replace_g(stringSource, argumentsValue, stringNew, tag_brace{});
+   return stringNew;
+}
+
+
 /// Replace values in string with values from arguments object, arguments replaced are in braces, if argument is not found it is kept. That enables multiple replacements.
 std::string replace_g( const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, tag_brace, tag_keep_not_found );
 
