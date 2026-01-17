@@ -579,72 +579,9 @@ std::tuple<uint64_t, std::string, std::string> make_bulk_g( const std::string_vi
 namespace {
 }
 
-/** ---------------------------------------------------------------------------
- * @brief Replaces placeholders in a source string with values from an argument list, producing a new string.
- *
- * This function processes a source string, replacing placeholders (denoted by curly braces `{}`) with corresponding
- * values from the provided `argumentsValue`. Placeholders can reference arguments by index (e.g., `{0}`) or name
- * (e.g., `{name}`). Special syntax like `{*name}` indicates a required value, and `{=name}` indicates raw value
- * insertion without SQL-specific escaping. The resulting string is built in `stringNew`. The function handles
- * quoted strings and skips them appropriately.
- *
- * @param stringSource The input string containing placeholders to be replaced (as a string_view).
- * @param argumentsValue The collection of arguments providing values for placeholder substitution.
- * @param[out] stringNew The output string where the result is constructed.
- * @param tag_brace A tag indicating this function processes brace-style placeholders (implementation-specific).
- *
- * @return A pair containing:
- *         - `bool`: `true` if the replacement succeeded, `false` if an error occurred (e.g., missing required value or unclosed quote).
- *         - `std::string`: An error message if the operation failed; empty if successful.
- *
- * @note The function assumes the input string is well-formed except where errors are explicitly checked (e.g., unclosed quotes).
- * @note If a placeholder starts with '=', the value is appended raw without SQL escaping.
- * @note The function modifies `stringNew` incrementally and clears it only implicitly via assignment.
- * 
- * @par Examples
- * @parblock
- * **Example 1: Basic indexed placeholder replacement**  
- * @code
- * gd::argument::arguments args({"Alice", 42});
- * std::string result;
- * auto [success, error] = replace_g("Hello {0}, age {1}", args, result, tag_brace{});
- * // success = true, result = "Hello Alice, age 42", error = ""
- * @endcode
- *
- * **Example 2: Named placeholders with SQL escaping**  
- * @code
- * gd::argument::arguments args({{"name", "O'Reilly"}, {"id", 123}});
- * std::string result;
- * auto [success, error] = replace_g("WHERE name = '{name}' AND id = {id}", args, result, tag_brace{});
- * // success = true, result = "WHERE name = 'O''Reilly' AND id = 123", error = ""
- * @endcode
- *
- * **Example 3: Required value with missing argument**  
- * @code
- * gd::argument::arguments args({{"id", 123}});
- * std::string result;
- * auto [success, error] = replace_g("WHERE name = {*name}", args, result, tag_brace{});
- * // success = false, result unchanged, error = "required value not found: name"
- * @endcode
- *
- * **Example 4: Raw value insertion**  
- * @code
- * gd::argument::arguments args({{"table", "users"}});
- * std::string result;
- * auto [success, error] = replace_g("SELECT * FROM {=table}", args, result, tag_brace{});
- * // success = true, result = "SELECT * FROM users", error = ""
- * @endcode
- *
- * **Example 5: Unclosed quote error**  
- * @code
- * gd::argument::arguments args;
- * std::string result;
- * auto [success, error] = replace_g("WHERE name = 'test", args, result, tag_brace{});
- * // success = false, result unchanged, error = "no quote ending: 'test"
- * @endcode
- * @endparblock
- */
-std::pair<bool,std::string> replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, std::string& stringNew, tag_brace)
+// @brief Replace placeholders in a string with values @see replace_g
+template <typename ARGUMENTS> 
+std::pair<bool,std::string> replace_implementation(const std::string_view& stringSource, const ARGUMENTS& argumentsValue, std::string& stringNew, tag_brace)
 {
    using namespace gd::types;
 
@@ -739,6 +676,82 @@ std::pair<bool,std::string> replace_g(const std::string_view& stringSource, cons
    }// for(auto it = std::begin( stringSource ...
 
    return { true, std::string{} };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Replaces placeholders in a source string with values from an argument list, producing a new string.
+ *
+ * This function processes a source string, replacing placeholders (denoted by curly braces `{}`) with corresponding
+ * values from the provided `argumentsValue`. Placeholders can reference arguments by index (e.g., `{0}`) or name
+ * (e.g., `{name}`). Special syntax like `{*name}` indicates a required value, and `{=name}` indicates raw value
+ * insertion without SQL-specific escaping. The resulting string is built in `stringNew`. The function handles
+ * quoted strings and skips them appropriately.
+ *
+ * @param stringSource The input string containing placeholders to be replaced (as a string_view).
+ * @param argumentsValue The collection of arguments providing values for placeholder substitution.
+ * @param[out] stringNew The output string where the result is constructed.
+ * @param tag_brace A tag indicating this function processes brace-style placeholders (implementation-specific).
+ *
+ * @return A pair containing:
+ *         - `bool`: `true` if the replacement succeeded, `false` if an error occurred (e.g., missing required value or unclosed quote).
+ *         - `std::string`: An error message if the operation failed; empty if successful.
+ *
+ * @note The function assumes the input string is well-formed except where errors are explicitly checked (e.g., unclosed quotes).
+ * @note If a placeholder starts with '=', the value is appended raw without SQL escaping.
+ * @note The function modifies `stringNew` incrementally and clears it only implicitly via assignment.
+ * 
+ * @par Examples
+ * @parblock
+ * **Example 1: Basic indexed placeholder replacement**  
+ * @code
+ * gd::argument::arguments args({"Alice", 42});
+ * std::string result;
+ * auto [success, error] = replace_g("Hello {0}, age {1}", args, result, tag_brace{});
+ * // success = true, result = "Hello Alice, age 42", error = ""
+ * @endcode
+ *
+ * **Example 2: Named placeholders with SQL escaping**  
+ * @code
+ * gd::argument::arguments args({{"name", "O'Reilly"}, {"id", 123}});
+ * std::string result;
+ * auto [success, error] = replace_g("WHERE name = '{name}' AND id = {id}", args, result, tag_brace{});
+ * // success = true, result = "WHERE name = 'O''Reilly' AND id = 123", error = ""
+ * @endcode
+ *
+ * **Example 3: Required value with missing argument**  
+ * @code
+ * gd::argument::arguments args({{"id", 123}});
+ * std::string result;
+ * auto [success, error] = replace_g("WHERE name = {*name}", args, result, tag_brace{});
+ * // success = false, result unchanged, error = "required value not found: name"
+ * @endcode
+ *
+ * **Example 4: Raw value insertion**  
+ * @code
+ * gd::argument::arguments args({{"table", "users"}});
+ * std::string result;
+ * auto [success, error] = replace_g("SELECT * FROM {=table}", args, result, tag_brace{});
+ * // success = true, result = "SELECT * FROM users", error = ""
+ * @endcode
+ *
+ * **Example 5: Unclosed quote error**  
+ * @code
+ * gd::argument::arguments args;
+ * std::string result;
+ * auto [success, error] = replace_g("WHERE name = 'test", args, result, tag_brace{});
+ * // success = false, result unchanged, error = "no quote ending: 'test"
+ * @endcode
+ * @endparblock
+ */
+std::pair<bool,std::string> replace_g(const std::string_view& stringSource, const gd::argument::arguments& argumentsValue, std::string& stringNew, tag_brace)
+{
+   return replace_implementation(stringSource, argumentsValue, stringNew, tag_brace{});
+}
+
+/// @brief Replace placeholders in a string with values @see replace_g
+std::pair<bool,std::string> replace_g( const std::string_view& stringSource, const gd::argument::shared::arguments& argumentsValue, std::string& stringNew, tag_brace )
+{
+   return replace_implementation(stringSource, argumentsValue, stringNew, tag_brace{});
 }
 
 /** --------------------------------------------------------------------------- format `replace_g`

@@ -55,6 +55,8 @@ private:
   
 // @API [tag: operator]
 public:
+   CSqlBuilder& operator=( std::string_view stringSql ) { m_stringSql = stringSql; return *this; }
+   CSqlBuilder& operator=( gd::argument::shared::arguments& argumentsValues ) { m_argumentsValues = argumentsValues; return *this; }
 
 
 // ## methods ------------------------------------------------------------------
@@ -62,7 +64,10 @@ public:
 // @API [tag: get, set]
 
 // @API [tag: operation]
-   std::pair<bool, std::string> Initialize( const gd::argument::arguments& arguments_ );           ///< initialize query manager
+   std::pair<bool, std::string> Initialize( gd::argument::shared::arguments arguments_ ); ///< initialize query manager
+   std::pair<bool, std::string> Initialize( gd::argument::shared::arguments arguments_, std::string_view stringSql ); ///< initialize query manager
+   
+   std::pair<bool, std::string> Build( std::string& stringSqlReady ); ///< build query
 
 protected:
 // @API [tag: internal]
@@ -75,6 +80,7 @@ public:
    unsigned m_uUserIndex{};            ///< user index for user in session table for users logged in
    const CDocument* m_pDocument = nullptr;
    enumType m_typeSql = eTypeUnknown; ///< type of query
+   std::string m_stringSql;           ///< query template or raw query
    gd::argument::shared::arguments m_argumentsValues;
 
 // @API [tag: free-functions]

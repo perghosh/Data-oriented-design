@@ -307,6 +307,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
 
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
+
+   CSqlBuilder sqlbuilder;
    
    if( m_argumentsParameter.exists("values") == true )
    {
@@ -314,18 +316,21 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
       gd::argument::shared::arguments argumentsValues;
       auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues );
       if( result_.first == false ) return result_;
-      CSqlBuilder sqlbuilder_( argumentsValues );
-      // @TODO [tag: sql, insert] [summary: add logic to create insert query]
+      sqlbuilder = argumentsValues;
    }
 
    std::string stringQuery = m_argumentsParameter["query"].as_string();
    if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
-   
-   auto result_ = pdatabase->execute( stringQuery );
+   sqlbuilder = stringQuery;
+
+   std::string stringExecute;
+   auto result_ = sqlbuilder.Build( stringExecute );
+   if( result_.first == false ) { return result_; }
+
+   result_ = pdatabase->execute( stringExecute );
    if( result_.first == false ) { return result_; }
 
    auto variantInsertKey = pdatabase->get_insert_key();
-
 
    return { true, "" };
 }
