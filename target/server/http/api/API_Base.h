@@ -67,6 +67,7 @@ public:
 
    /// Helper to simplify getting arguments from arguments object
    gd::variant_view Get( std::string_view stringName ) const { return m_argumentsParameter.get_argument(stringName); }
+   gd::variant_view GetArgument( std::string_view stringName ) const { return m_argumentsParameter.get_argument(stringName); }
 
    std::string GetLastError() const { return m_stringLastError; }
 
