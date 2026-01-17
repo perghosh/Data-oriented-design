@@ -55,21 +55,16 @@ public:
 
    std::pair<bool, std::string> Execute() override;
 
-   /// Create new database
-   std::pair<bool, std::string> Execute_Create();
-
-   /// Open existing database
-   std::pair<bool, std::string> Execute_Open();
-
-   /// Rund any database query
-   std::pair<bool, std::string> Execute_Query();
-
-   /// Select data from database
-   std::pair<bool, std::string> Execute_Select();
-
-   /// Insert data to database
-   std::pair<bool, std::string> Execute_Insert();
-
+   
+   std::pair<bool, std::string> Execute_Create();  ///< Create new database
+   std::pair<bool, std::string> Execute_Open();    ///< Open existing database
+   std::pair<bool, std::string> Execute_Query();   ///< Run any database query
+   std::pair<bool, std::string> Execute_Select();  ///< Select data from database
+   std::pair<bool, std::string> Execute_Insert();  ///< Insert data to database
+   std::pair<bool, std::string> Execute_Update();  ///< Update data in database
+   std::pair<bool, std::string> Execute_Delete();  ///< Delete data from database
+   
+   std::pair<bool, std::string> Sql_Prepare(std::string& stringSql);
 
 protected:
 

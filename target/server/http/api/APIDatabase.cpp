@@ -88,8 +88,13 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       {
          result_ = Execute_Insert();                                          // endpoint db/insert
       }
+      else if( stringCommand == "update" ) 
+      {
+         result_ = Execute_Update();                                          // endpoint db/update
+      }
       else if( stringCommand == "delete" ) 
       {
+         result_ = Execute_Delete();                                          // endpoint db/delete
       }
       else if( stringCommand == "drop" )
       {
@@ -298,6 +303,14 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    return pairReturn;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Execute an insert query.
+ * 
+ * @param "id" Id for query template
+ * @param "values" Values for query template, these are inserted into the query template.
+ * @param "query" Query template to execute
+ * @return A pair containing a boolean indicating success and a string containing the error message if any.
+ */
 std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
 {
    gd::database::database_i* pdatabaseOpen = nullptr;
@@ -308,23 +321,9 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
-   CSqlBuilder sqlbuilder;
-   
-   if( m_argumentsParameter.exists("values") == true )
-   {
-      std::string stringValues = m_argumentsParameter["values"].as_string();
-      gd::argument::shared::arguments argumentsValues;
-      auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues );
-      if( result_.first == false ) return result_;
-      sqlbuilder = argumentsValues;
-   }
-
-   std::string stringQuery = m_argumentsParameter["query"].as_string();
-   if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
-   sqlbuilder = stringQuery;
-
+   // ## Prepare SQL statement ................................................
    std::string stringExecute;
-   auto result_ = sqlbuilder.Build( stringExecute );
+   auto result_ = Sql_Prepare(stringExecute);
    if( result_.first == false ) { return result_; }
 
    result_ = pdatabase->execute( stringExecute );
@@ -335,6 +334,104 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    gd::argument::arguments* parguments_ = new gd::argument::arguments();
    parguments_->append_argument( "key", variantInsertKey );
    m_objects.Add( parguments_ );
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Execute an update query.
+ * 
+ * @param "id" Id for query template
+ * @param "values" Values for query template, these are inserted into the query template.
+ * @param "query" Query template to execute
+ * @return A pair containing a boolean indicating success and a string containing the error message if any.
+ */
+std::pair<bool, std::string> CAPIDatabase::Execute_Update()
+{
+   CDocument* pdocument = GetDocument();
+   if( pdocument == nullptr ) { return { false, GetLastError() }; }
+
+   auto* pdatabase = pdocument->GetDatabase();
+   if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
+
+   // ## Prepare SQL statement ................................................
+   std::string stringExecute;
+   auto result_ = Sql_Prepare(stringExecute);
+   if( result_.first == false ) { return result_; }
+
+   result_ = pdatabase->execute( stringExecute );
+   if( result_.first == false ) { return result_; }
+
+   return { true, "" };
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Execute a delete query.
+ * 
+ * @param "id" Id for query template
+ * @param "values" Values for query template, these are inserted into the query template.
+ * @param "query" Query template to execute
+ * @return A pair containing a boolean indicating success and a string containing the error message if any.
+ */
+std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
+{
+   CDocument* pdocument = GetDocument();
+   if( pdocument == nullptr ) { return { false, GetLastError() }; }
+
+   auto* pdatabase = pdocument->GetDatabase();
+   if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
+
+   // ## Prepare SQL statement ................................................
+   std::string stringExecute;
+   auto result_ = Sql_Prepare(stringExecute);
+   if( result_.first == false ) { return result_; }
+
+   result_ = pdatabase->execute( stringExecute );
+   if( result_.first == false ) { return result_; }
+
+   return { true, "" };
+}
+
+/** --------------------------------------------------------------------------
+ * Prepare SQL statement for execution.
+ * @param stringSql SQL statement to prepare.
+ * @param "values" Values for query template, these are inserted into the query template.
+ * @param "query" Query template to execute
+ * @return A pair containing a boolean indicating success and a string containing the error message if any.
+ */
+std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
+{
+   CSqlBuilder sqlbuilder;
+   std::string stringQueryTemplate;
+   
+   if( Exists("values") == true )
+   {
+      std::string stringValues = GetArgument("values").as_string();
+      gd::argument::shared::arguments argumentsValues;
+      auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues );
+      if( result_.first == false ) return result_;
+      sqlbuilder = argumentsValues;
+   }
+   
+   if( Exists("id") == true )
+   {
+      std::string stringId = GetArgument("id").as_string();
+      // @TODO [tag: query] [description:  Implement query by id, get template from document]
+   }
+   else
+   {
+      stringQueryTemplate = GetArgument("query").as_string();
+   }
+   
+   if( stringQueryTemplate.empty() == true ) { return { false, "no query specified to execute" }; }
+   
+   sqlbuilder = stringQueryTemplate;
+   
+   std::string stringExecute;
+   auto result_ = sqlbuilder.Build( stringExecute );
+   if( result_.first == false ) { return result_; }
+   
+   stringSql = std::move(stringExecute);
 
    return { true, "" };
 }
