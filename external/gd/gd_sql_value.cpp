@@ -577,6 +577,28 @@ std::tuple<uint64_t, std::string, std::string> make_bulk_g( const std::string_vi
 }
 
 namespace {
+   /** ---------------------------------------------------------------------------
+    * @brief Parse placeholder and extract name and format specifier
+    * @param stringPlaceholder full placeholder text (e.g., "value:%.2f")
+    * @param stringName output parameter for variable name
+    * @param stringFormat output parameter for format specification
+   */
+   void get_placeholder( const std::string_view& stringPlaceholder, std::string& stringName, std::string& stringFormat )
+   {
+      stringName.clear();
+      stringFormat.clear();
+   
+      // ## Find colon separator between name and format and replace
+
+      auto uColonPosition = stringPlaceholder.find(':');
+      
+      if( uColonPosition == std::string_view::npos ) { stringName = stringPlaceholder; } // no format specifier
+      else
+      {
+         stringName = stringPlaceholder.substr(0, uColonPosition);
+         stringFormat = stringPlaceholder.substr(uColonPosition + 1);
+      }
+   }   
 }
 
 // @brief Replace placeholders in a string with values @see replace_g
@@ -618,13 +640,9 @@ std::pair<bool,std::string> replace_implementation(const std::string_view& strin
          it++;
          if( *it == '*' ) { bRequired = true; it++; }                          // check if value is required
 
-         // ## copy name of variable
+         // ## copy name of variable .........................................
          stringName.clear();
-         while(*it != '}' && it != itEnd)
-         {
-            stringName += *it;
-            it++;
-         }
+         while(*it != '}' && it != itEnd) { stringName += *it; it++; }
 
          if(*it == '}')
          {
@@ -637,7 +655,7 @@ std::pair<bool,std::string> replace_implementation(const std::string_view& strin
                if(chFirst == '=')
                {
                   bRaw = true;
-                  stringName.erase( stringName.begin() );                      // remove equal charact
+                  stringName.erase( stringName.begin() );                      // remove equal character
                }
             }
 
@@ -649,18 +667,14 @@ std::pair<bool,std::string> replace_implementation(const std::string_view& strin
             else
             {
                // ## investigate type of name
-               char chFirst = stringName.at( 0 );                              // get first character
+               char iFirst = stringName.at( 0 );                              // get first character
 
-
-               if( is_ctype_g( chFirst, "digit"_ctype ) == true)               // is value a number
+               if( is_ctype_g( iFirst, "digit"_ctype ) == true)               // is value a number
                {
-                  unsigned uIndex = std::stoul( stringName );                                   assert( uIndex < 0xffff ); //realistic ??
+                  unsigned uIndex = std::stoul( stringName );                                      assert( uIndex < 0xffff ); //realistic ??
                   v_ = argumentsValue[uIndex].as_variant_view();
                }
-               else
-               {
-                  v_ = argumentsValue[stringName].as_variant_view();
-               }
+               else { v_ = argumentsValue[stringName].as_variant_view(); }
             }
 
             // ## check if value is required and if value is found return error

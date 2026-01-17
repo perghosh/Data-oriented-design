@@ -332,6 +332,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
 
    auto variantInsertKey = pdatabase->get_insert_key();
 
+   gd::argument::arguments* parguments_ = new gd::argument::arguments();
+   parguments_->append_argument( "key", variantInsertKey );
+   m_objects.Add( parguments_ );
+
    return { true, "" };
 }
 
