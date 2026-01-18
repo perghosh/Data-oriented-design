@@ -62,3 +62,18 @@
       "tags": ""
    }
 ]
+
+
+    {
+      //"args": [ "--configuration", "C:\\dev\\home\\DOD\\resource\\.http-configuration.xml" ],
+      //"args": [ "http", "--site", "D:\\temp\\www", "--port", "8001", "--ip", "\"127.0.0.1\"", "--add-session", "00,01,02,03,04,05", "--database-open", "D:/temp/www/test.sqlite" ],
+      "args": [ "http", "--site", "D:\\temp\\www", "--port", "8001", "--ip", "\"127.0.0.1\"", "--add-session", "00,01,02,03,04,05", "--database-open", "D:/temp/www/test.sqlite", "--database-meta-tables", "\"SELECT name AS 'table' FROM sqlite_master WHERE type='table' ORDER BY 1\"",
+                "--database-meta-columns", "\"SELECT m.name AS 'table', ci.cid AS ordinal, ci.name AS 'column', ci.type AS _type, ci.'notnull' AS _flag_null, ci.pk AS _flag_pk FROM sqlite_master m JOIN pragma_table_info(m.name) ci WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%'\"" ],
+
+      "database-meta-tables": null,
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "http.exe (target\\server\\http\\http.exe)",
+      "name": "http.exe (target\\server\\http\\http.exe)",
+      "currentDir": "D:\\temp\\www"
+    }
