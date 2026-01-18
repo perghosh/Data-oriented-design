@@ -1,65 +1,64 @@
-// Zed settings
-//
-// For information on how to configure Zed, see the Zed
-// documentation: https://zed.dev/docs/configuring-zed
-//
-// To see all of Zed's default settings without changing your
-// custom settings, run `zed: open default settings` from the
-// command palette (cmd-shift-p / ctrl-shift-p)
-{
-   "context_servers": {
-      "mcp-server-context7": {
-         "source": "extension",
-         "enabled": false,
-         "settings": {}
-      },
-      "mcp-server-github": {
-         "source": "extension",
-         "enabled": true,
-         "settings": {
-            "github_personal_access_token": "GITHUB_PERSONAL_ACCESS_TOKEN"
-         }
-      }
+[
+   {
+      "alias": "directory-get",
+      "endpoint": "!sys/file/directory?action=get&type=root\n",
+      "body": "What directory for directory type, the web server are using some specific directorires for various operations"
    },
-   "agent": {
-      "default_model": {
-         "provider": "copilot_chat",
-         "model": "gpt-4.1"
-      },
-      "model_parameters": []
+   {
+      "alias": "sqlite-exists",
+      "endpoint": "!sys/file/exists?path=D:/db/sqlite/test.sqlite\n",
+      "body": "Check if sqlite file is found in folder"
    },
-   "languages": {
-      "Python": {
-         "language_servers": ["pyright"],
-         "preferred_line_length": 100,
-         "tab_size": 4
-      }
+   {
+      "alias": "sqlite-create",
+      "endpoint": "!db/create?name=D:/db/sqlite/test.sqlite\n",
+      "body": "Create sqlite database"
    },
-   "buffer_font_family": "Liberation Mono",
-   "telemetry": {
-      "diagnostics": true,
-      "metrics": false
+   {
+      "alias": "sqlite-open",
+      "endpoint": "!db/open?name=D:/db/sqlite/test.sqlite\n",
+      "body": "Open sqlite database"
    },
-   "icon_theme": {
-      "mode": "light",
-      "light": "Catppuccin Mocha",
-      "dark": "Zed (Default)"
+   {
+      "alias": "sqlite-select",
+      "endpoint": "!db/select?select=SELECT * FROM sqlite_master WHERE type='table'\n",
+      "body": "Select result from table"
    },
-   "ui_font_size": 16,
-   "buffer_font_size": 15,
-   "theme": {
-      "mode": "light",
-      "light": "Dracula Light (Alucard)",
-      "dark": "One Dark"
+   {
+      "alias": "sqlite-insert-TPoll",
+      "endpoint": "!db/insert",
+      "endpoint64": "values={ \"table\": \"TPoll\", \"name\": \"poll name\", \"description\": \"description text\"}",
+      "body": "",
+      "description": "Test to send value for insert to TPoll table"
    },
-   "tab_size": 3,
-   "terminal": {
-      "cursor_shape": "underline",
-      "dock": "bottom",
-      "font_family": "FiraMono Nerd Font"
+   {
+      "alias": "sqlite-insert-table_number",
+      "endpoint": "!db/insert",
+      "endpoint64": "values={ \"number\": 500, \"name\": \"TPoll\", \"description\": \"Main table for polling\"}\nquery=INSERT INTO table_number (number, name, description) VALUES ({number}, {name}, {description})",
+      "body": "",
+      "description": "Test to send value for insert to TPoll table"
    },
-   "git": {
-      "inline_blame": { "enabled": false }
+   {
+      "alias": "sqlite-update-table_number",
+      "endpoint": "!db/insert",
+      "endpoint64": "values={ \"number\": 500,  \"description\": \"Main table for polling\"}\nquery=UPDATE table_number SET description={description} WHERE table_number_k = {number}",
+      "body": "",
+      "description": "Update table number"
    },
-   "wrap_guides": [79, 99, 119]
-}
+   {
+      "alias": "sqlite-delete-table_number",
+      "endpoint": "!db/delete",
+      "endpoint64": "query=DELETE FROM table_number",
+      "body": "",
+      "description": "Update table number",
+      "tags": "table_number delete"
+   },
+   {
+      "alias": "meta-add-query",
+      "endpoint": "!sys/meta/query/add\n",
+      "endpoint64": "id=table-number-all\nquery=SELECT * FROM table_number\nformat=text",
+      "body": "Check if sqlite file is found in folder",
+      "description": "Add query to metadata",
+      "tags": ""
+   }
+]
