@@ -46,14 +46,14 @@ std::pair<bool, std::string> CAPISystem::Execute()
          uIndex++;
          if( uIndex >= m_vectorCommand.size() ) return { false, "Missing session command" };
          stringCommand = m_vectorCommand[uIndex];
-         if(stringCommand == "query" || stringCommand == "sql")
+         if(stringCommand == "query" || stringCommand == "sql")               // meta/query|sql
          {
             uIndex++;
             if( uIndex >= m_vectorCommand.size() ) return { false, "Missing session command" };
             stringCommand = m_vectorCommand[uIndex];
 
-            if( stringCommand == "add" )        { result_ = Execute_MetadataQueryAdd(); }
-            else if( stringCommand == "delete" ){ result_ = Execute_MetadataQueryDelete(); }
+            if( stringCommand == "add" )        { result_ = Execute_MetadataQueryAdd(); } // add
+            else if( stringCommand == "delete" ){ result_ = Execute_MetadataQueryDelete(); } // delete
          }
          else if(stringCommand == "db")
          {
@@ -183,10 +183,10 @@ std::pair<bool, std::string> CAPISystem::Execute_FileExists()
  */
 std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryAdd()
 {
-   std::string stringId = Get("id").as_string();
-   std::string stringType = Get("type").as_string();
-   std::string stringFormat = Get("format").as_string();
-   std::string stringQuery = Get("query").as_string();
+   std::string stringId = Get("id").as_string();          // Id for query
+   std::string stringType = Get("type").as_string();      // type of query
+   std::string stringFormat = Get("format").as_string();  // query format, type of format information is stored in like text, xml, json etc
+   std::string stringQuery = Get("query").as_string();    // query
 
    CDocument* pdocument = GetDocument();
    auto* pqueries = pdocument->QUERIES_Get();                                                      assert( pqueries );
