@@ -160,6 +160,8 @@ class Table {
     * @param {number} [options_.iSort=0] Column index to sort by (positive for ascending,
     *                                    negative for descending, 0 for no sorting).
     *                                    Index adjusts based on bIndex option.
+    * @param {Array<number>} [options_.aRows] Array of row indices to include
+    * @param {Array<number>} [options_.aColumn] Array of column indices to include
     * @returns {Array<Array>} 2D array of table data
     * @example
     * // Get all data with header (default)
@@ -172,6 +174,10 @@ class Table {
     * @example
     * // String shorthand: include both index and header
     * const data = table.GetData('index header');
+    *
+    * @example
+    * // String shorthand: include both index and header, and selected rows
+    * const data = table.GetData({ aRows: [0, 2, 4] });
     *
     * @example
     * // Object options: sort by column 2 descending, no header
@@ -190,7 +196,7 @@ class Table {
          options_ = o;
       }
 
-      const oOptions = Object.assign({ bHeader: true, iSort: 0, bIndex: false }, options_); // retrieval configuration
+      const oOptions = Object.assign({ bHeader: true, iSort: 0, bIndex: false, aRows: null, aColumn: null }, options_); // retrieval configuration
       let aData = []; // Generated data that is returned
 
       // ## Build table data to return  .......................................
@@ -205,6 +211,18 @@ class Table {
          }
       }
 
+      // ## If selected rows then extract rows into new array and use that ...
+      if( oOptions.aRows !== null ) {
+         aData = oOptions.aRows.map(iRow => aData[iRow]);
+      }
+
+      // ## If selected columns then extract columns from each row ...............
+      if( oOptions.aColumn !== null ) {
+         aData = aData.map(aRow => {
+            return oOptions.aColumn.map(iCol => aRow[iCol]);
+         });
+      }
+
       // ## Sorting ...........................................................
       const iFirstColumn = oOptions.bIndex === true ? 1 : 0;                  // If index then first column is at 1
       const bIsString = this.GetColumnType(iFirstColumn) === 'string';        // Check if column type is string
@@ -216,7 +234,7 @@ class Table {
                const b_ = b[iSort];
 
                // ## Handle null/undefined values for strings .................
-               if (a_ == null && bVal == null) return 0;
+               if (a_ == null && bIsString == null) return 0;
                if (a_ == null) return -1;                                     // null/undefined comes before strings
                if (b_ == null) return 1;                                      // null/undefined comes before strings
 
@@ -244,9 +262,118 @@ class Table {
          });
       }
 
-      if( oOptions.bHeader) { aData.unshift(this.GetHeaderRow()); }           // add header row
+      // ## Add header row if specified ......................................
+      if(oOptions.bHeader) {
+         let aHeader = this.GetHeaderRow();
+         if(oOptions.aColumn !== null) { aHeader = oOptions.aColumn.map(iColumn => aHeader[iColumn]); } // Filter header columns
+         if(oOptions.bIndex) { aHeader = ["#", ...aHeader]; }                 // Add index column if specified
+         aData.unshift(aHeader);
+      }
 
       return aData;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Find rows based on find condition
+    * @param {Object|Function} find_ Find condition configuration or callback function
+    * @param {Function} [find_.callback] Callback function that receives (aRow, iIndex) and returns boolean
+    * @param {*} [find_.value] Value or array of values to match in any column
+    * @param {number|Array<number>} [find_.iColumn] Column index or array of column indices to search in
+    * @returns {Array<number>} Array of matching row indices
+    * @example
+    * // Find rows using callback
+    * const aRows = table.FindAll((aRow, iIndex) => {
+    *    return aRow[0] > 100 && aRow[1] === 'active';
+    * });
+    *
+    * @example
+    * // Find rows with value 'active' in any column
+    * const aRows = table.FindAll({ value: 'active' });
+    *
+    * @example
+    * // Find rows with value 'active' in column 2
+    * const aRows = table.FindAll({ value: 'active', iColumn: 2 });
+    *
+    * @example
+    * // Find rows with value 100 or 200 in column 0
+    * const aRows = table.FindAll({ value: [100, 200], iColumn: 0 });
+    *
+    * @example
+    * // Find rows with value 'error' in columns 1 or 3
+    * const aRows = table.FindAll({ value: 'error', iColumn: [1, 3] });
+    *
+    * @example
+    * // Find rows with value 'error' in columns 1 or 3 using callback directly
+    * const aRows = table.FindAll((aRow, iIndex) => {
+    *    return aRow[1] === 'error' || aRow[3] === 'error';
+    * });
+    */
+   FindAll(find_) {                                                                                console.assert( typeof find_ === 'function' || (typeof find_ === 'object' && find_ !== null), "FindAll: Invalid find condition. Expected a function or an object.");
+      const aFind = [];
+
+      // ## Handle callback function directly ...................................
+      if( typeof find_ === 'function' ) {
+         for( let iRow = 0; iRow < this.aTable.length; iRow++ ) {
+            const aRow = this.GetRow(iRow);
+            if( find_(aRow, iRow) === true ) {
+               aFind.push(iRow);
+            }
+         }
+         return aFind;
+      }
+
+      // ## Handle object-based find conditions ..............................
+      const bHasCallback = typeof find_.callback === 'function';
+      const bHasValue = 'value' in find_;
+      const bHasColumn = 'iColumn' in find_;
+
+      // ## Callback-based search ..........................................
+      if( bHasCallback ) {
+         for( let iRow = 0; iRow < this.aTable.length; iRow++ ) {
+            const aRow = this.GetRow(iRow);
+            if( find_.callback(aRow, iRow) === true ) {
+               aFind.push(iRow);
+            }
+         }
+         return aFind;
+      }
+
+      // ## Value-based search ............................................
+      if( bHasValue ) {
+         const aValues = Array.isArray(find_.value) ? find_.value : [find_.value]; // Prepare values array
+
+         // Prepare columns array (all columns if not specified)
+         let aColumns = [];
+         if( bHasColumn ) {
+            aColumns = Array.isArray(find_.iColumn) ? find_.iColumn : [find_.iColumn];
+         }
+         else {
+            for( let iColumn = 0; iColumn < this.aColumn.length; iColumn++ ) { aColumns.push(iColumn); }
+         }
+
+         // ### Search through rows ..........................................
+         for( let iRow = 0; iRow < this.aTable.length; iRow++ ) {
+            const aRow = this.GetRow(iRow);
+            let bMatch = false; // No match yet
+
+            // #### Check if any column matches any value
+            for( let i = 0; i < aColumns.length; i++ ) {
+               const iColumn = aColumns[i];
+               const vCell = aRow[iColumn];
+
+               for( let j = 0; j < aValues.length; j++ ) {
+                  const vValue = aValues[j];
+
+                  if( vCell == vValue ) { bMatch = true; break; }             // Compare values (handle type coercion for loose matching)
+               }
+               if( bMatch ) break;
+            }
+
+            if( bMatch ) { aFind.push(iRow); }                                // keep found row index
+         }
+      } // if( bHasValue ) {
+
+      return aFind;
    }
 
    // Convert row data to an object ------------------------------------------
