@@ -98,6 +98,7 @@ SERVER_Send - Sends a request to the server with specified parameters
             <div class="row padding-5">
                <span class="button-normal" data-action="load-page">Load page</span>
                <span class="button-normal" data-action="save-page">Save page</span>
+               <span class="button-normal" data-action="print-history">Print history</span>
             </div>
          </div>
          <h1>HTTP Session Test Page</h1>
@@ -131,6 +132,9 @@ SERVER_Send - Sends a request to the server with specified parameters
                   <div class="row" data-section="tab" data-name="Base64 arguments">
                      <textarea class="fill" rows="2" data-field="endpoint64" placeholder="Base64 encoded data"></textarea>
                   </div>
+                  <div class="row" data-section="tab" data-name="Tags">
+                     <textarea class="fill" rows="2" data-field="tags" placeholder="Tags for filtering"></textarea>
+                  </div>
                </div>
                <div class="row">
                   <textarea class="fill" rows="3" data-field="body" placeholder="Endpoint body content if any"></textarea>
@@ -143,11 +147,11 @@ SERVER_Send - Sends a request to the server with specified parameters
          </div>
 
          <!-- Section used to display server response -->
-         <div id="idResult" class="container container-form page-plate" data-name="result" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 500px; left: 100px; padding: 5px; width: 800px;">
+         <div id="idResult" class="container container-form page-plate" data-name="result" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 500px; left: 100px; padding: 5px; width: 850px;">
             <div class="page-caption row handle" data-draggable-handle="1">Command: Server response</div>
             <form data-element="container">
                <div class="row">
-                  <textarea class="fill" rows="3" data-field="response" placeholder="Server response"></textarea>
+                  <textarea class="fill" rows="6" data-field="response" placeholder="Server response"></textarea>
                </div>
             </form>
          </div>
@@ -164,13 +168,25 @@ SERVER_Send - Sends a request to the server with specified parameters
 
 
          <!-- Section used to display history of saved command/endpoints -->
-         <div id="idHistory" class="container container-form page-plate" data-name="history" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; height: 300px; width: 800px;">
-            <div class="page-caption row handle" data-draggable-handle="1">Command: History</div>
-            <div data-page-name="scrollable-container" class="row" data-section="commands" style="flex-direction: column; align-items: stretch; gap: 8px; overflow-y: auto; overflow-x: hidden;">
+         <div id="idHistory" class="container container-form page-plate" data-name="history" data-draggable="1" style="border: 1px solid black; border-radius: 6px; position: absolute; top: 800px; left: 100px; padding: 5px; height: 300px; width: 800px; display: flex; flex-direction: column;">
+            <div class="page-caption row">
+               <div class="handle fill" data-draggable-handle="1">
+                  <span>Command: History</span>
+               </div>
+               <div>
+                  <select data-section="filter">
+                     <option value=""></option>
+                     <option value="today">Today</option>
+                     <option value="week">Last 7 Days</option>
+                     <option value="month">Last 30 Days</option>
+                     <option value="favorites">Favorites</option>
+                  </select>
+               </div>
+            </div>
+            <div class="row" data-section="commands" style="flex-direction: column; align-items: stretch; gap: 8px; height: 100%; overflow-y: auto; overflow-x: hidden; min-height: 0;">
 
             </div>
          </div>
-
       </div>
    </div>
 
@@ -178,13 +194,23 @@ SERVER_Send - Sends a request to the server with specified parameters
       "use strict";
       let oDocument_g; // Make oDocument a global variable
 
-      // Initialize page
-      document.addEventListener('DOMContentLoaded', function() {
+      // ## Initialize page
+      document.addEventListener('DOMContentLoaded', () => {
          oDocument_g = new CDocument();
          oDocument_g.Add("server", { address: "http://localhost", port: "8001" })
          PAGE_Initialize();                                                    // Initialize page
          PAGE_Update(oDocument_g);
       });
+
+      // ## Initialize page
+      /*
+      window.addEventListener('load', () => {
+         oDocument_g = new CDocument();
+         oDocument_g.Add("server", { address: "http://localhost", port: "8001" })
+         PAGE_Initialize();                                                    // Initialize page
+         PAGE_Update(oDocument_g);
+      });
+      */
 
       /** --------------------------------------------------------------------- @API [tag: initialize]
        * Main initialization function that initializes the page
@@ -195,21 +221,6 @@ SERVER_Send - Sends a request to the server with specified parameters
          // ## Initialize tab control
 
          const eTabsEndpoint = eWorkArea.querySelector('[data-id="endpoint"]');
-
-         {
-            const eHistory = document.getElementById("idHistory");
-            const eCaption = eHistory.querySelector('.page-caption');
-            const eScrollable = eHistory.querySelector('[data-page-name="scrollable-container"]');
-
-            if (eScrollable && eCaption) {
-               const iHistoryHeight = eHistory.offsetHeight;
-               const iCaptionHeight = eCaption.offsetHeight;
-               const iPadding = 20; // Adjust based on your padding
-
-               eScrollable.style.height = `${iHistoryHeight - iCaptionHeight - iPadding}px`;
-            }
-         }
-
 
          // Extract tab definitions before creating the control
          const aTabPage = [];
@@ -263,7 +274,7 @@ SERVER_Send - Sends a request to the server with specified parameters
 
          // Table storing endpoints, contains alias, endpoint, body, description columns and these
          // column names should match the field attributes used in form to make them work
-         let oTable = new Table(["alias", "endpoint", "endpoint64", "body", "description"]);
+         let oTable = new Table(["alias", "endpoint", "endpoint64", "body", "description", "tags"]);
          oDocument_g.AddTableCacheItem("endpoint", oTable);                   // Add table object to cache
 
          PAGE_SetListeners();
@@ -393,6 +404,12 @@ SERVER_Send - Sends a request to the server with specified parameters
                case "save-page":
                   oDocument_g.Save();
                   break;
+               case "print-history":
+                  const oTable = oDocument_g.GetTableCacheItem( "endpoint" );
+                  const sJson = oTable.AsJson();
+                  const eResult = document.getElementById("idResult");
+                  eResult.querySelector("textarea").value = sJson;
+                  break;
                default:
                   console.error('Unknown action:', sAction);
             }
@@ -504,7 +521,9 @@ SERVER_Send - Sends a request to the server with specified parameters
                sResult = 'Unknown format';
          }
 
-         document.getElementById('idResult').querySelector('[data-field="response"]').textContent = sResult;
+         const eResult = document.getElementById('idResult');
+         const eField = eResult.querySelector('[data-field="response"]');     console.assert( eField !== null, 'Element not found' );
+         eField.value = sResult;
       }
 
       function PAGE_PrintResponse(oData) {

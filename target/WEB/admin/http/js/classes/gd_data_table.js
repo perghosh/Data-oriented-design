@@ -346,19 +346,27 @@ class Table {
       return sResult;
    }
 
-   AsJson(iRow, oOptions = {}) {
-      const o = {};
+   AsJson(row_, oOptions = {}) {
       const bIncludeNull = oOptions.bIncludeNull || false;
-      const iIndent = oOptions.iIndent || 0;
+      const iIndent = oOptions.iIndent || 3;
 
-      for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
-         const v_ = this._GetCellValue(iRow, iColumn);
-         if( bIncludeNull || (v_ !== null && v_ !== undefined) ) {
-            o[this.aColumn[iColumn].name] = v_;
+      const iRowBegin = row_ || 0;
+      const iRowEnd = iRowBegin + ( row_ ? 1 : this.Size() );
+
+      let aRows = [];
+
+      for(let iRow = iRowBegin; iRow < iRowEnd; iRow++) {
+         const o = {};
+         for(let iColumn = 0; iColumn < this.aColumn.length; iColumn++) {
+            const v_ = this._GetCellValue(iRow, iColumn);
+            if( bIncludeNull || (v_ !== null && v_ !== undefined) ) {
+               o[this.aColumn[iColumn].name] = v_;
+            }
          }
+         aRows.push(o);
       }
 
-      return JSON.stringify(o, null, iIndent);
+      return JSON.stringify(aRows, null, iIndent);
    }
 
    // Get internal table data array ------------------------------------------
