@@ -119,7 +119,8 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
       return response;
    }
 
-   std::string_view stringTarget = request_.target();
+   std::string_view stringPage = request_.target();
+   std::string_view stringTarget = stringPage;
    if( stringTarget.empty() == true )
    { 
       return bad_request_("Empty request-target, server version: 0.9.0"); 
@@ -137,7 +138,7 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
    }
 
    // ## Request path must be absolute and not contain "..".
-   if( stringTarget.empty() || stringTarget[0] != '/' || stringTarget.find("..") != boost::beast::string_view::npos) 
+   if( stringPage.empty() || stringPage[0] != '/' || stringPage.find("..") != boost::beast::string_view::npos) 
    { 
       return bad_request_("Illegal request-target"); 
    }
