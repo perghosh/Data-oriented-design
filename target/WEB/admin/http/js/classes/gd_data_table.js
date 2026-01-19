@@ -234,9 +234,9 @@ class Table {
                const b_ = b[iSort];
 
                // ## Handle null/undefined values for strings .................
-               if (a_ == null && bIsString == null) return 0;
-               if (a_ == null) return -1;                                     // null/undefined comes before strings
-               if (b_ == null) return 1;                                      // null/undefined comes before strings
+               if(a_ == null && bIsString == null) return 0;
+               if(a_ == null) return -1;                                     // null/undefined comes before strings
+               if(b_ == null) return 1;                                      // null/undefined comes before strings
 
                return String(a_).localeCompare(String(b_));
             }
@@ -252,9 +252,9 @@ class Table {
                const b_ = b[iSort];
 
                // ## Handle null/undefined values for strings (descending order)
-               if (a_ == null && b_ == null) return 0;
-               if (a_ == null) return 1;                                      // null/undefined comes after strings in descending
-               if (b_ == null) return -1;                                     // null/undefined comes after strings in descending
+               if(a_ == null && b_ == null) return 0;
+               if(a_ == null) return 1;                                      // null/undefined comes after strings in descending
+               if(b_ == null) return -1;                                     // null/undefined comes after strings in descending
 
                return String(b_).localeCompare(String(a_));
             }
@@ -374,6 +374,80 @@ class Table {
       } // if( bHasValue ) {
 
       return aFind;
+   }
+
+   /** -----------------------------------------------------------------------
+    * Clone table into new table. New table is identical except the rows that are set to be cloned
+    * Default is to clone all rows
+    *
+    * @param {Object} rows_ Rules on how to clone table
+    * @param {Number} rows_.iBegin Start index of rows to clone
+    * @param {Number} rows_.iCount Number of rows to clone
+    * @param {Array} rows_.aRows Array of row indices to clone, if passed then this has priority
+    * @param {Function} rows_.callback_ Callback function to modify cloned rows, callback format is (aRow, i) and it returns true or false if row is to be added to clone
+    * @returns {Table} New cloned table instance
+    *
+    * @example
+    * // Clone all rows
+    * const clonedTable = table.Clone();
+    *
+    * @example
+    * // Clone rows 2-5
+    * const clonedTable = table.Clone({ iBegin: 2, iCount: 4 });
+    *
+    * @example
+    * // Clone specific rows by index
+    * const clonedTable = table.Clone({ aRows: [0, 2, 5, 7] });
+    *
+    * @example
+    * // Clone rows that match a condition
+    * const clonedTable = table.Clone({
+    *   callback_: (aRow, i) => aRow[0] > 100
+    * });
+    */
+   Clone(rows_) {
+      if( Array.isArray(rows_) ) rows_ = { aRows: rows_ };
+      const oOptions = Object.assign({ iBegin: 0, iCount: this.Size(), aRows: null, callback_: null }, rows_);
+
+      // Clone column definitions (deep copy to avoid reference issues)
+      const aClonedColumns = this.aColumn.map(column_ => {
+         return new Table.column({
+            sName: column_.sName,
+            sAlias: column_.sAlias,
+            sType: column_.sType,
+            iState: column_.iState,
+            iSpecificType: column_.iSpecificType
+         });
+      });
+
+      const tableClone = new Table([], { aColumn: aClonedColumns }); // Create new table with cloned columns
+
+      let aRowIndices = []; // Determine which rows to clone
+
+      if (oOptions.aRows !== null) { aRowIndices = oOptions.aRows; }          // Priority 1: Use explicitly provided row indices
+      else {
+         const iEnd = Math.min(oOptions.iBegin + oOptions.iCount, this.Size());// Priority 2: Use range based on iBegin and iCount
+         for(let i = oOptions.iBegin; i < iEnd; i++) { aRowIndices.push(i); }
+      }
+
+      // ## Clone rows
+      for(let i = 0; i < aRowIndices.length; i++) {
+         const iRowIndex = aRowIndices[i];
+
+         if(iRowIndex < 0 || iRowIndex >= this.Size()) { continue; }          // Skip invalid indices
+
+         const aRow = this.aTable[iRowIndex];
+
+         // ### Apply callback filter if provided ............................
+         if(oOptions.callback_ !== null) {
+            if(!oOptions.callback_(aRow, iRowIndex)) { continue; }            // Skip this row if callback returns false
+         }
+
+         const aClonedRow = [...aRow];                                        // Deep copy the row to avoid reference issues
+         tableClone.aTable.push(aClonedRow);
+      }
+
+      return tableClone;
    }
 
    // Convert row data to an object ------------------------------------------
@@ -500,6 +574,36 @@ class Table {
    Data() { return this.aTable; }
 
    /** -----------------------------------------------------------------------
+    * Get cell
+    * This difers from GetCellValue by returning the cell object instead of the value.
+    * Value in cell if cell is array is the first element of the array.
+    * @param {number} iRow index for row
+    * @param {number | string} column_ index for column or column name
+    */
+   GetCell(iRow, column_) {
+      let iColumn = column_;
+      if( typeof column_ === "string") { iColumn = this.GetColumnIndex(column_); }
+      if(iRow < 0 || iRow >= this.aTable.length || iColumn < 0 || iColumn >= this.aColumn.length) {
+         return null;
+      }
+
+      return this._GetCellValue(iRow, iColumn);
+   }
+
+   /** -----------------------------------------------------------------------
+    * Get cell value
+    * Internal method to get cell value, no checks for valid column or row
+    * @param {number} iRow index for row
+    * @param {number} iColumn index for column
+    */
+   _GetCell(iRow, iColumn) {
+      let value_ = this.aTable[iRow][iColumn]; // Get raw cell value from cell position
+
+      return value_;
+   }
+
+
+   /** -----------------------------------------------------------------------
     * Get cell value
     * @param {number} iRow index for row
     * @param {number | string} column_ index for column or column name
@@ -526,6 +630,8 @@ class Table {
 
       return value_;
    }
+
+
 
    /** -----------------------------------------------------------------------
     * Set cell value
@@ -578,7 +684,8 @@ class Table {
    Empty() { return this.aTable.length === 0; }
 
    // Return number of rows --------------------------------------------------
-   Size() {  return this.aTable.length; }
+   Size() { return this.aTable.length; }
+   GetRowCount() {  return this.aTable.length; }
 
    /** -----------------------------------------------------------------------
     * Add rows to the table
