@@ -11,6 +11,9 @@ PAGE_PrintResponse - Prints the response data in the response container based on
 PAGE_Callback - Retrieves and executes a callback by name with any provided arguments
 SERVER_Send - Sends a request to the server with specified parameters
 
+
+@TODO [tag: table, delete] [description: when delete from history recalculate row indexes]
+
 -->
 
 <!DOCTYPE html>
@@ -486,6 +489,8 @@ SERVER_Send - Sends a request to the server with specified parameters
 
                   let oTable = oDocument_g.GetTableCacheItem("endpoint");
                   oTable.Add(oCommand);
+                  const iLastRow = oTable.Size() - 1;
+                  oTable.SetCellValue( iLastRow, 0, [oTable.GetCellValue( iLastRow, 0 ), iLastRow]); // convert first to array with index
                   oDocument_g.SetModified(true);
                   PAGE_Update();
                } break;
@@ -786,6 +791,11 @@ SERVER_Send - Sends a request to the server with specified parameters
          DeleteTableCache(sCacheName, iIndex) {
             const oTable = this.GetTableCacheItem( sCacheName );
             if(oTable) { oTable.Delete(iIndex); this.bModified = true; }
+            // Recalculate row indexes after deletion
+            const iLastRow = oTable.Size() - 1;
+            for(let i = 0; i < oTable.Size(); i++) {
+               oTable.SetCellValue(i, 0, [oTable.GetCellValue(i, 0), i]);
+            }
          }
 
          /// Remove object from array ----------------------------------------
