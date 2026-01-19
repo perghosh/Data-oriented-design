@@ -174,12 +174,10 @@ SERVER_Send - Sends a request to the server with specified parameters
                   <span>Command: History</span>
                </div>
                <div>
-                  <select data-section="filter">
+                  <select data-section="filter" onchange="PAGE_Update('filter-history', this.value)">
                      <option value=""></option>
-                     <option value="today">Today</option>
-                     <option value="week">Last 7 Days</option>
-                     <option value="month">Last 30 Days</option>
-                     <option value="favorites">Favorites</option>
+                     <option value="delete">delete</option>
+                     <option value="table_number">table_number</option>
                   </select>
                </div>
             </div>
@@ -275,6 +273,10 @@ SERVER_Send - Sends a request to the server with specified parameters
          // Table storing endpoints, contains alias, endpoint, body, description columns and these
          // column names should match the field attributes used in form to make them work
          let oTable = new Table(["alias", "endpoint", "endpoint64", "body", "description", "tags"]);
+         for(let i = 0; i < oTable.GetRowCount(); i++) {
+            const sAlias = oTable.GetCellValue(i, "alias");
+            oTable.SetCellValue(i, "key",[sAlias, i]);
+         }
          oDocument_g.AddTableCacheItem("endpoint", oTable);                   // Add table object to cache
 
          PAGE_SetListeners();
@@ -287,8 +289,10 @@ SERVER_Send - Sends a request to the server with specified parameters
 
       /** --------------------------------------------------------------------- @API [tag: update, page]
        * Update page from source data
+       * @param {string|Document} source_ - value to update
+       * @param {string} value_ - value to update
        */
-      function PAGE_Update(source_ = oDocument_g) {
+      function PAGE_Update(source_ = oDocument_g, value_) {
          // ## check if source_ is instance of CDocument
          if((source_ instanceof CDocument) === true) {
             const oDocument = source_;
@@ -308,8 +312,14 @@ SERVER_Send - Sends a request to the server with specified parameters
 
             // ## Update history from endpoints ...............................
 
+            let oTable;
             const sCacheName = "endpoint";
-            const oTable = oDocument.GetTableCacheItem( sCacheName );
+            if( Array.isArray( value_ ) === true ) {
+               const aRows = value_;
+               const t_ = oDocument.GetTableCacheItem( sCacheName );
+               oTable = t_.Clone(aRows)
+            }
+            else { oTable = oDocument.GetTableCacheItem( sCacheName ); }
 
             const eHistory = document.getElementById("idHistory"); // history element
             const eCommands = document.querySelector('[data-section="commands"]'); // commands element used as container
@@ -324,9 +334,10 @@ SERVER_Send - Sends a request to the server with specified parameters
                sName += o.endpoint.length > 60 ? o.endpoint.substr(0, 57) + '...' : o.endpoint;
                eElement.textContent = sName;
 
+               const iKey = oTable._GetCell(iRow, 0)[1];                      // first column holds array and second valus is the key
                eElement.dataset.action = "activate-command";
                eElement.dataset.data = JSON.stringify( o );
-               eElement.dataset.index = iRow;
+               eElement.dataset.index = iKey;
                eElement.dataset.cache = sCacheName;
                eElement.classList.add("page-row-content");
 
@@ -335,7 +346,7 @@ SERVER_Send - Sends a request to the server with specified parameters
                eDelete.classList.add("page-delete-button");
                eDelete.textContent = "x";
                eDelete.dataset.action = "delete-command";
-               eDelete.dataset.index = iRow;
+               eDelete.dataset.index = iKey;
                eDelete.dataset.cache = sCacheName;
                eDelete.title = "Delete this command";
 
@@ -348,13 +359,33 @@ SERVER_Send - Sends a request to the server with specified parameters
                eCommands.appendChild(eRow);
             }
          }
-         // ## if source_ is element
-         else if( source_ === "draggable" ) {
-            const eContainer = document.getElementById('idWorkArea');
-            if( eContainer.id === "idWorkArea" ) {
-               // ### Place the containers to saved positions
-               const aPosition = oDocument_g.GetAll("draggable");
+         else if( typeof source_ === "string" ) {
+            // ## check if update history table based on filter word
+            if( source_ === "filter-history" ) {
+               const oTable = oDocument_g.GetTableCacheItem("endpoint");      // find table holding history for enpoints
+               let aRows = [];
+               if( !value_ ) {                                                // empty filter, update all rows
+                  PAGE_Update();
+                  return;
+               }
 
+               // ### Find all rows containing the word using callback, the tags column should consist of single words
+               const iTagsColumn = oTable.GetColumnIndex("tags");                                  console.assert(iTagsColumn >= 0);
+               const sWord = value_;                                          // value to search for
+               aRows = oTable.FindAll((aRow, iRow) => {
+                  const sTags = aRow[iTagsColumn];
+                  if( typeof sTags === "string" ) {
+                     const aWords = sTags.split(/\s+/);                       // Split on whitespace
+                     for( let i = 0; i < aWords.length; i++ ) {
+                        if( aWords[i].toLowerCase() === sWord.toLowerCase() ) {
+                           return true;
+                        }
+                     }
+                  }
+                  return false;
+               });
+
+               PAGE_Update( oDocument_g, aRows );                             // Update the table with the filtered rows
             }
          }
       }
@@ -776,6 +807,11 @@ SERVER_Send - Sends a request to the server with specified parameters
 
                // ## Save table cache .........................................
                for(let o of this.aTableCache) {
+                  // ### Reset to value from array ............................
+                  for( let i = 0; i < o.table.Size(); i++ ) {
+                     const v_ = o.table._GetCellValue(i, 0);
+                     o.table.SetValue(i, 0, v_);
+                  }
                   oTableCache[o.id] = o.table.Data();                         // Save table data as an array
                }
                localStorage.setItem('table-cache', JSON.stringify(oTableCache));
@@ -803,7 +839,10 @@ SERVER_Send - Sends a request to the server with specified parameters
                      let oTable = this.GetTableCacheItem( sId );
                      oTable.Clear();
                      const aRow = oTableCache[sId];
-                     if(oTable) oTable.Add(aRow);
+                     if(oTable) {
+                        oTable.Add(aRow);
+                        for(let i = 0; i < oTable.Size(); i++) { oTable.SetCellValue(i, 0, [oTable.GetCellValue(i, 0), i]); }
+                     }
                   }
                }
                return true;                                                   // success
