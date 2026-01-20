@@ -24,11 +24,11 @@ void CDTOResponse::Initialize()
    if( m_pcolumnsBody_s == nullptr )
    {
       m_pcolumnsBody_s = new gd::table::detail::columns{};                    /// static columns for body, remember to delete on shutdown (release)
-      m_pcolumnsBody_s->add( "uint32", 0, "key" );
-      m_pcolumnsBody_s->add( "uint32", 0, "type" );
-      m_pcolumnsBody_s->add( "rstring", 0, "text" );
-      m_pcolumnsBody_s->add( "pointer", 0, "object" );
-      m_pcolumnsBody_s->add( "string", 32, "hint" );
+      m_pcolumnsBody_s->add( "uint32", 0, "key" );       // key for response body part
+      m_pcolumnsBody_s->add( "uint32", 0, "type" );      // type of response body part
+      m_pcolumnsBody_s->add( "rstring", 0, "text" );     // text of response body part
+      m_pcolumnsBody_s->add( "pointer", 0, "object" );   // pointer to object if result data is store as some object
+      m_pcolumnsBody_s->add( "string", 32, "echo" );     // echo is used to echo back some shorter value back to client
       m_pcolumnsBody_s->add_reference();
    }
 
@@ -60,6 +60,12 @@ std::pair<bool, std::string> CDTOResponse::AddTransfer( Types::Objects* pobjects
    return { true, "" };
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Serializes the contents of the table to XML format, storing the result in a string and returning a status indicator and message.
+ * @param stringXml A reference to a string where the resulting XML will be appended.
+ * @param parguments_ A pointer to a gd::argument::arguments object, used for additional serialization context (may be unused in this function).
+ * @return A std::pair where the first element is a boolean indicating success (true) or failure (false), and the second element is a string containing an error message if serialization failed, or an empty string on success.
+ */
 std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, const gd::argument::arguments* parguments_ )
 {
    using namespace pugi;
@@ -82,6 +88,15 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
          stringJson.reserve( 512 );                                           // preallocate 512 byte for json string
 
          auto xmlnodeResult = xmlnodeResults.append_child( m_stringResult_s );// create result node
+         
+         if( m_argumentsContext.empty() == false )
+         {
+            // ## Check if echo exists and if so add echo attribute to child
+            if(  m_argumentsContext.exists("echo") == true )
+            {
+               xmlnodeResult.append_attribute("echo").set_value( m_argumentsContext["echo"].get<std::string_view>());
+            }
+         }
 
          // ### If table then serialize table object
 

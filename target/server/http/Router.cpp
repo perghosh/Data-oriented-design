@@ -64,8 +64,12 @@ std::pair<bool, std::string> CRouter::Run()
          m_pdtoresponse->Initialize();
       }
 
-      auto [vectorPath, arguments_] = gd::parse::uri::parse_path_and_query( m_stringQueryString );
+      // ## parse command path and query arguments and prepare important variables
+      auto [vectorPath, arguments_] = gd::parse::uri::parse_path_and_query( m_stringQueryString ); 
       if( vectorPath.empty() == true ) { return { false, "No command found in query string: " + m_stringQueryString }; }
+      
+      // ### Check for echo, echo is used to return information to client and this is sent fron client 
+      if( arguments_.exists("echo") == true ) { m_pdtoresponse->AddContext( "echo", arguments_["echo"].as_variant_view() ); }
 
       std::string_view stringCommand = vectorPath[0];
       if( stringCommand == "db" )                                             // database related commands, select, create, delete, open, close database
