@@ -21,13 +21,17 @@
  *
  */
 
- /** @CLASS [name: CDTOResponse] [description:  ]
+ /** @CLASS [name: CDTOResponse] [description: Store result information and pack it before sending to client ]
   * 
   * \brief Data transfer object for HTTP response
   *
   * Holds response data in a table, there are pointers to objects used to store response
   * data or text data directly in the table.
   * Information stored in table will be used to create the actual HTTP response.
+  * 
+  * Note that each respons may also add some sort of context information to help
+  * the client to figure out what to do with result returned. This context may be
+  * information that is passed with the request information.
   *
   \code
   \endcode
@@ -62,6 +66,8 @@ public:
 
 void Initialize();
 
+void AddContext( std::string_view stringName, gd::variant_view value_ );
+
 std::pair<bool, std::string> AddTransfer( Types::Objects* pobjects_ );
 
 std::pair<bool, std::string> PrintXml( std::string& stringXml, const gd::argument::arguments* parguments_ );
@@ -80,6 +86,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   gd::argument::arguments m_argumentsContext;  ///< response arguments that holds context information for response
    gd::table::arguments::table m_tableBody;   ///< response headers
 
    inline static gd::table::detail::columns* m_pcolumnsBody_s = nullptr; ///< static columns for body
@@ -91,6 +98,9 @@ public:
 public:
    static void Destroy_s();
 
-
-
 };
+
+/// Add context to response, this are values that in some way will append information to the generated result returned to client
+inline void CDTOResponse::AddContext( std::string_view stringName, gd::variant_view value_ ) {
+   m_argumentsContext.append_argument( stringName, value_ );
+}
