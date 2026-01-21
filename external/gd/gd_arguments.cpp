@@ -668,6 +668,7 @@ std::string arguments::argument::get_string() const
       break;
       case arguments::eTypeNumberWString:
       {
+         uint32_t uLength = length();
          gd::utf8::convert_utf16_to_uft8( reinterpret_cast<const uint16_t*>(m_unionValue.pwsz), s);
       }
       break;
@@ -1334,9 +1335,17 @@ arguments& arguments::append_argument(std::string_view stringName, const gd::var
    {
       if( uType > ARGUMENTS_NO_LENGTH )
       {
-         if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
+         if( uType != eTypeNumberWString )
+         {
+            if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
 
-         uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+            uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+         }
+         else
+         {
+            uType |= eValueLength;
+            uLength = (variantValue.length() * sizeof(char16_t)) + get_string_zero_terminate_length_s(uType);
+         }
 
          return append(stringName, uType, pData, uLength);
       }
@@ -2946,8 +2955,16 @@ arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition
    case arguments::eTypeNumberWString: return arguments::argument(eTypeWString, (const uint8_t*)(const wchar_t*)(pPosition));
    case arguments::eTypeNumberBinary: return arguments::argument(eTypeGuid, (const uint8_t*)pPosition);
 
-   case (arguments::eTypeNumberString | arguments::eValueLength): return arguments::argument(eTypeString | arguments::eValueLength, (const uint8_t*)(const char*)(pPosition + sizeof(uint32_t)));
-   case (arguments::eTypeNumberUtf8String | arguments::eValueLength): return arguments::argument(eTypeUtf8String | arguments::eValueLength, (const uint8_t*)(const char*)(pPosition + sizeof(uint32_t)));
+   case (arguments::eTypeNumberString | arguments::eValueLength): {
+      uint32_t uSize = *(uint32_t*)pPosition;
+      const uint8_t* p_ = (const uint8_t*)pPosition + sizeof(uint32_t);
+      return arguments::argument( p_, uSize, enumType(eTypeString | arguments::eValueLength) );
+   }
+   case (arguments::eTypeNumberUtf8String | arguments::eValueLength): {
+      uint32_t uSize = *(uint32_t*)pPosition;
+      const uint8_t* p_ = (const uint8_t*)pPosition + sizeof(uint32_t);
+      return arguments::argument( p_, uSize, enumType(eTypeUtf8String | arguments::eValueLength) );
+   }
    case (arguments::eTypeNumberWString | arguments::eValueLength): return arguments::argument(eTypeWString | arguments::eValueLength, (const uint8_t*)(const wchar_t*)(pPosition + sizeof(uint32_t)));
    case (arguments::eTypeNumberBinary | arguments::eValueLength): {
       uint32_t uSize = *(uint32_t*)pPosition;

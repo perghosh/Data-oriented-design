@@ -19,6 +19,27 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE( "[uri] gd::variant", "[uri]" ) {
+   gd::variant v_ = "one";
+   gd::argument::arguments arguments_;
+   arguments_.append_argument( v_.as_string_view(), v_ );
+
+   v_ = "two";
+   arguments_.append_argument( v_.as_string_view(), v_ );
+
+   v_ = "three";
+   arguments_.append_argument( v_.as_string_view(), v_ );
+
+   v_ = L"1234567890";
+   arguments_.append_argument( "1234567890", v_ );
+
+   auto s_ = arguments_["three"].as_string_view();
+   auto string_ = arguments_["1234567890"].as_string();
+
+   s_ = arguments_["two"].as_string_view();
+
+}
+
 TEST_CASE( "[uri] test with plain old data POD", "[uri]" ) {
    
    // ## POD STRUCT APPROACH - Fixed structure, rigid
