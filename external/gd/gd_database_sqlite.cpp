@@ -1333,6 +1333,11 @@ std::pair<bool, std::string> database_i::execute( const std::string_view& string
    return m_pdatabase->execute( stringStatement );
 }
 
+std::pair<bool, std::string> database_i::execute( const std::string_view& stringStatement, std::function<bool( const gd::argument::arguments* )> callback_ )
+{                                                                                                  assert( m_pdatabase != nullptr );
+   return m_pdatabase->execute( stringStatement, callback_ );
+}
+
 std::pair<bool, std::string> database_i::ask( const std::string_view& stringStatement, gd::variant* pvariantValue )
 {                                                                                                  assert( m_pdatabase != nullptr );
    return m_pdatabase->ask( stringStatement, pvariantValue );

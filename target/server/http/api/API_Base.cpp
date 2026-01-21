@@ -33,6 +33,8 @@ void CAPI_Base::common_construct( CAPI_Base&& o ) noexcept
     m_vectorCommand = std::move( o.m_vectorCommand );
     m_uCommandIndex = o.m_uCommandIndex;
     m_argumentsParameter = std::move( o.m_argumentsParameter );
+    m_arrayBufferCounter = std::move( m_arrayBufferCounter );
+    m_argumentsArgumentCount = std::move( o.m_argumentsArgumentCount );
     m_objects = std::move( o.m_objects );
     m_stringLastError = std::move( o.m_stringLastError );
     m_papplication = o.m_papplication;
@@ -73,13 +75,15 @@ CDocument* CAPI_Base::GetDocument()
  * @return The number of occurrences of the specified argument name in the command list.
  */
 size_t CAPI_Base::GetArgumentIndex( const std::string_view& stringName ) const 
-{                                                                                                  assert( m_vectorCommand.empty() == false && "No commands");
+{
+   if( m_argumentsArgumentCount.empty() ) return 0;
+
    size_t uCount = 0;
-   for( unsigned uIndex = 0; uIndex < m_uCommandIndex; ++uIndex )
+   if( m_argumentsArgumentCount.exists( stringName ) == true )
    {
-      std::string_view stringCommand = m_vectorCommand[uIndex];
-      if( stringCommand == stringName ) { ++uCount; }
+      uCount = m_argumentsArgumentCount[stringName].as_uint();
    }
+
    return uCount;
 }
 
@@ -105,6 +109,21 @@ size_t CAPI_Base::GetArgumentIndex( const std::string_view& stringFirst, const s
       if( stringCommandFirst == stringFirst || stringCommandSecond == stringSecond ) { ++uCount; }
    }
    return uCount;
+}
+
+void CAPI_Base::IncrementArgumentCounter( std::string_view stringName )
+{                                                                                                  assert( stringName.length() < 20 ); // no need to have these long arguments if more than 20 ???
+   uint16_t uCount = 1;
+   if( m_argumentsArgumentCount.exists( stringName ) == false )
+   {
+      m_argumentsArgumentCount.append( stringName, uCount );
+   }
+   else
+   {
+      uCount = m_argumentsArgumentCount[stringName];
+      uCount++;
+      m_argumentsArgumentCount.set( stringName, uCount );
+   }
 }
 
 /// @brief Check argument name exists

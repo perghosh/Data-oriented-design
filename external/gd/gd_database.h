@@ -98,6 +98,8 @@ struct database_i : public com::unknown_i
    virtual std::pair<bool, std::string> open( const gd::argument::arguments& argumentsConnect ) = 0;
    /// execute sql statement
    virtual std::pair<bool, std::string> execute( const std::string_view& stringStatement ) = 0;
+   /// execute sql statement and return specified generated values
+   virtual std::pair<bool, std::string> execute( const std::string_view& stringStatement, std::function<bool( const gd::argument::arguments* )> callback_ ) = 0;
    /// execute sql statement that returns one single value, handy i many situations to get database information without having to use cursor
    virtual std::pair<bool, std::string> ask( const std::string_view& stringStatement, gd::variant* pvariantValue ) = 0;
    /// create cursor for database, remember to close/release cursor when done

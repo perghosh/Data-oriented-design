@@ -281,15 +281,16 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
 
-   auto uIndex = GetArgumentIndex( "select" );
-   std::string stringQuery = ( *this )[{"select", uIndex}].as_string();
-   if( stringQuery.empty() == true ) { return { false, "no query specified to execute" }; }
+   // ## Prepare SQL statement ................................................
+   std::string stringSelect;
+   auto result_ = Sql_Prepare(stringSelect);
+   if( result_.first == false ) { return result_; }
 
    gd::com::pointer<gd::database::cursor_i> pcursor;
    pdatabase->get_cursor( &pcursor );
 
    std::pair< bool, std::string > pairReturn;   
-   pairReturn = pcursor->open( stringQuery );
+   pairReturn = pcursor->open( stringSelect );
 
    // ## create table to hold select result
 
@@ -326,10 +327,20 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    auto result_ = Sql_Prepare(stringExecute);
    if( result_.first == false ) { return result_; }
 
-   result_ = pdatabase->execute( stringExecute );
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsKey( buffer_ );
+   result_ = pdatabase->execute( stringExecute, [&argumentsKey]( const auto* parguments_ ){ argumentsKey = *parguments_; return true; });
    if( result_.first == false ) { return result_; }
 
-   auto variantInsertKey = pdatabase->get_insert_key();
+   gd::variant variantInsertKey;
+   if( argumentsKey.empty() == false ) { variantInsertKey = argumentsKey[0u].as_variant(); }
+   else { variantInsertKey = pdatabase->get_insert_key(); }
+
+   // ## if not the last command in endpoint sequence then add to arguments as
+   if( IsLastCommand() == false )
+   {
+      m_argumentsGlobal.set( "key", variantInsertKey.as_variant_view() );
+   }
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments();
    parguments_->append_argument( "key", variantInsertKey );
@@ -401,6 +412,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
  */
 std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
 {
+   
    CSqlBuilder sqlbuilder;
    std::string stringQueryTemplate;
    
@@ -408,28 +420,45 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
    {
       std::string stringValues = GetArgument("values").as_string();
       gd::argument::shared::arguments argumentsValues;
+      argumentsValues.reserve( 128 );
       auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues );
       if( result_.first == false ) return result_;
+
+      if( m_argumentsGlobal.empty() == false )
+      {
+         for( const auto [key_, value_] : m_argumentsGlobal.named() )
+         {
+            std::string stringKey("::");
+            stringKey += key_;
+            argumentsValues.append_argument( stringKey, value_, gd::types::tag_view{});
+         }
+      }
+
       sqlbuilder = argumentsValues;
    }
    
-   if( Exists("id") == true )
-   {
-      std::string stringId = GetArgument("id").as_string();
-      // @TODO [tag: query] [description:  Implement query by id, get template from document]
-   }
+   auto uIndex = GetArgumentIndex( "query" );
+   if( uIndex == 0 ) stringQueryTemplate = GetArgument("query").as_string();
    else
    {
-      stringQueryTemplate = GetArgument("query").as_string();
+      stringQueryTemplate = (*this)[{"query", uIndex}].as_string();
    }
    
    if( stringQueryTemplate.empty() == true ) { return { false, "no query specified to execute" }; }
-   
-   sqlbuilder = stringQueryTemplate;
+
+   if( stringQueryTemplate[0] == '#' )
+   {
+      // @TODO [tag: query] [description: Add logic to get template from document]
+      assert( false );
+   }
+
+   sqlbuilder = stringQueryTemplate;                                         // assign to template
    
    std::string stringExecute;
    auto result_ = sqlbuilder.Build( stringExecute );
    if( result_.first == false ) { return result_; }
+
+   IncrementArgumentCounter( "query" );
    
    stringSql = std::move(stringExecute);
 
