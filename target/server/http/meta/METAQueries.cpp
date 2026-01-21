@@ -97,6 +97,12 @@ std::pair<bool, std::string> CQueries::Delete( const std::pair<std::string_view,
    return { true, "" };
 }
 
+std::pair<bool, std::string> Load( std::string_view stringPath )
+{
+    
+   return { true, "" };
+}
+
 
 /** --------------------------------------------------------------------------
  * @brief Initializes and prepares a query table with predefined columns and metadata flags.

@@ -76,6 +76,10 @@ public:
 
    bool Empty() const { return m_tableQuery.empty(); }                                            ///< check if there are any active queries
 
+   // @API [tag: load, save]
+   
+   std::pair<bool, std::string> Load( std::string_view stringPath );
+   
 protected:
    // @API [tag: internal]
 
