@@ -21,7 +21,7 @@
 
 TEST_CASE( "[uri] gd::variant", "[uri]" ) {
    gd::variant v_ = "one";
-   gd::argument::arguments arguments_;
+   gd::argument::shared::arguments arguments_;
    arguments_.append_argument( v_.as_string_view(), v_ );
 
    v_ = "two";

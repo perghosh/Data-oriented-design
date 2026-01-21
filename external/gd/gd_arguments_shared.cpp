@@ -1303,6 +1303,65 @@ arguments& arguments::append(const char* pbszName, uint32_t uNameLength, argumen
 }
 
 /*----------------------------------------------------------------------------- append_argument */ /**
+ * Add argument from variant_view
+ * \param stringName argument name
+ * \param variantValue argument value added
+ * \return arguments::arguments& reference to this if nested operations is wanted
+ */
+arguments& arguments::append_argument(std::string_view stringName, const gd::variant& variantValue)
+{
+   auto argumentValue = get_argument_s(variantValue);
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();                               // get type for value
+   unsigned uLength;                                                           // length for value
+   if( stringName.empty() == false )                                           // if name is given then add name to value
+   {
+      if( uType > ARGUMENTS_NO_LENGTH )
+      {
+         if( uType != eTypeNumberWString )
+         {
+            if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
+
+            uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+         }
+         else
+         {
+            uType |= eValueLength;
+            uLength = (variantValue.length() * sizeof(char16_t)) + get_string_zero_terminate_length_s(uType);
+         }
+
+         return append(stringName, uType, pData, uLength);
+      }
+      else
+      {
+         return append(stringName, uType, pData, argumentValue.length());
+      }
+   }
+
+   // ## no name, just add value ............................................
+
+   if( uType > ARGUMENTS_NO_LENGTH )
+   {
+      if( uType != eTypeNumberWString )
+      {
+         if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
+
+         uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+      }
+      else
+      {
+         uType |= eValueLength;
+         uLength = (variantValue.length() * sizeof(char16_t)) + get_string_zero_terminate_length_s(uType);
+      }
+
+      return append(uType, pData, uLength);
+   }
+
+   return append(uType, pData, argumentValue.length());
+}
+
+
+/*----------------------------------------------------------------------------- append_argument */ /**
  * Add argument from variant, this value isn't named
  * \param variantValue argument value added
  * \return arguments::arguments& reference to this if nested operations is wanted
