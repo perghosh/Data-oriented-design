@@ -629,6 +629,7 @@ public:
    std::pair<bool, std::string> open( const std::string_view& stringDriverConnect ) override;
    std::pair<bool, std::string> open( const gd::argument::arguments& argumentsConnect ) override;
    std::pair<bool, std::string> execute( const std::string_view& stringStatement ) override;
+   std::pair<bool, std::string> execute( const std::string_view& stringStatement, std::function<bool( const gd::argument::arguments* )> callback_ ) override;
    std::pair<bool, std::string> ask( const std::string_view& stringStatement, gd::variant* pvariantValue ) override;
    std::pair<bool, std::string> transaction(const gd::variant_view& transaction_) override;
 

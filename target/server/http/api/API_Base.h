@@ -65,6 +65,9 @@ public:
    const CDocument* GetDocument() const { return m_pdocument; }
    CDocument* GetDocument();
 
+   /// Checks to se if there is more commands left to process
+   bool IsLastCommand() const { return m_uCommandIndex >= (unsigned)m_vectorCommand.size(); }
+
    /// Helper to simplify getting arguments from arguments object
    gd::variant_view Get( std::string_view stringName ) const { return m_argumentsParameter.get_argument(stringName); }
    gd::variant_view GetArgument( std::string_view stringName ) const { return m_argumentsParameter.get_argument(stringName); }
@@ -73,7 +76,12 @@ public:
 
    /// Count the keys used based on current command index
    size_t GetArgumentIndex( const std::string_view& stringName ) const;
+   [[deprecated]]
    size_t GetArgumentIndex( const std::string_view& stringFirst, const std::string_view& stringSecond ) const;
+
+   /// For some arguments that may be used for different operations and if multiple operations are used 
+   /// this is used to know what argument to use in a serie.
+   void IncrementArgumentCounter( std::string_view stringName );
    
    /// Check argument name exists
    bool Exists(const std::string_view& stringName) const;
@@ -89,10 +97,13 @@ public:
    std::vector<std::string_view> m_vectorCommand;     ///< command path segments
    unsigned m_uCommandIndex{};                        ///< current command index being processed
    gd::argument::arguments m_argumentsParameter;      ///< parameters for api command
+   gd::argument::arguments m_argumentsGlobal;         ///< store global variablies, prefixed with "g_"
    Types::Objects m_objects;                          ///< objects used to store result objects
    std::string m_stringLastError;                     ///< last error message 
    CApplication* m_papplication{};                    ///< application pointer, access application that is used as object root for server
-   CDocument* m_pdocument{};                          ///< application pointer, access application that is used as object root for server
+   CDocument* m_pdocument{};                          ///< document pointer, access document for active user
+   std::array<std::byte, 64> m_arrayBufferCounter;
+   gd::argument::arguments m_argumentsArgumentCount{ m_arrayBufferCounter };
 
 // ## free functions ---------------------------------------------------------
 public:
