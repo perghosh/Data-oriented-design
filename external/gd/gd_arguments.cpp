@@ -1359,9 +1359,17 @@ arguments& arguments::append_argument(std::string_view stringName, const gd::var
 
    if( uType > ARGUMENTS_NO_LENGTH )
    {
-      if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
+      if( uType != eTypeNumberWString )
+      {
+         if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
 
-      uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+         uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+      }
+      else
+      {
+         uType |= eValueLength;
+         uLength = (variantValue.length() * sizeof(char16_t)) + get_string_zero_terminate_length_s(uType);
+      }
 
       return append(uType, pData, uLength);
    }
