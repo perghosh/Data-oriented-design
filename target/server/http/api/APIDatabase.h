@@ -60,6 +60,7 @@ public:
    std::pair<bool, std::string> Execute_Open();    ///< Open existing database
    std::pair<bool, std::string> Execute_Query();   ///< Run any database query
    std::pair<bool, std::string> Execute_Select();  ///< Select data from database
+   std::pair<bool, std::string> Execute_Ask();     ///< Similar to select but will only return one single row and not i tabular format
    std::pair<bool, std::string> Execute_Insert();  ///< Insert data to database
    std::pair<bool, std::string> Execute_Update();  ///< Update data in database
    std::pair<bool, std::string> Execute_Delete();  ///< Delete data from database

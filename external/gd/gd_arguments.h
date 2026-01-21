@@ -372,6 +372,7 @@ public:
       argument(arguments::enumType eType,const uint8_t* p) : m_eType(eType) { m_unionValue.puch = p; }
       argument(unsigned uType,const uint8_t* p) : m_eType((enumType)uType) { m_unionValue.puch = p; }
       argument(const uint8_t* p, enumType eType) : m_eType(eType) { m_unionValue.puch = p; }
+      argument(const uint8_t* p, uint32_t uSize, enumType eType) : m_eType(eType), m_uSize(uSize) { m_unionValue.puch = p; }
 
 
       //@}
@@ -1088,6 +1089,8 @@ public:
    arguments& append_argument(const variant& variantValue);
    arguments& append_argument(const variant_view& variantviewValue, tag_view);
 
+   arguments& append_argument(std::string_view stringName, const gd::variant& variantValue);
+   /*
    arguments& append_argument(std::string_view stringName, const gd::variant& variantValue) {
       auto argumentValue = get_argument_s(variantValue);
       const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
@@ -1095,6 +1098,7 @@ public:
       if( uType > ARGUMENTS_NO_LENGTH ) { uType |= eValueLength; }
       return append(stringName, uType, pData, argumentValue.length());
    }
+   */
 
    arguments& append_argument(const std::string_view& stringName, const gd::variant_view& variantValue);
    arguments& append_argument(const std::string_view& stringName, const gd::variant_view& variantValue, tag_view) { return append_argument( stringName, variantValue ); }

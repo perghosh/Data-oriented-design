@@ -3743,7 +3743,8 @@ gd::variant_view arguments::get_variant_view_s(const arguments::argument& argume
       return gd::variant_view(value.d);
       break;
    case arguments::eTypeNumberGuid:
-      return gd::variant_view(value.pbsz, (size_t)argumentValue.length());
+                                                                                                   assert( argumentValue.length() == 16 );
+      return gd::variant_view(value.puch, gd::types::tag_uuid{});
       break;
    case arguments::eTypeNumberString: {                                                            assert( (size_t)value.pbsz % 4 == 0 );
          size_t uSize = (size_t)*(uint32_t*)(value.pbsz - sizeof(uint32_t));
@@ -3759,6 +3760,9 @@ gd::variant_view arguments::get_variant_view_s(const arguments::argument& argume
          size_t uSize = (size_t)*(uint32_t*)(value.pwsz - sizeof(uint32_t));
          return gd::variant_view(value.pwsz, uSize);
       }
+      break;
+   case arguments::eTypeNumberBinary:
+      return gd::variant_view(value.puch, (size_t)argumentValue.length(), gd::types::tag_binary{});
       break;
    default:
       assert(false);

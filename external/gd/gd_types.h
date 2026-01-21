@@ -215,6 +215,10 @@ struct tag_xml {};            ///< data is in xml format
 struct tag_yaml {};           ///< data is in YAML format
 
 // ----------------------------------------------------------------------------
+// ## extended types
+struct tag_uuid {};           ///< data is uuid
+
+// ----------------------------------------------------------------------------
 // ## unit related tag dispatchers
 struct tag_angle {};          ///< data is in angle format, like 10.00 deg or 10.00 rad
 struct tag_area {};           ///< data is in area format, like 10.00 m² or 10.00 ft²

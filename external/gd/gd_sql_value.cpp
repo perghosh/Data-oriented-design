@@ -618,6 +618,15 @@ std::pair<bool,std::string> replace_implementation(const std::string_view& strin
          else
          {                                                                     // string is found, when in string we need to copy until end of string is found
             const char* pbszFind = &(*it) + 1; 
+
+            // ## Check for double qoute, same as single .....................
+            if( *pbszFind == '\'' )
+            {
+               stringNew += *it;
+               it++;
+               continue;
+            }
+
             pbszFind = gd::parse::strchr( pbszFind, '\'', gd::parse::sql{} );  // method used to find last quote, this method knows how to skip double quoutes
             if(pbszFind != nullptr && pbszFind <= &(*(itEnd - 1)))
             {
@@ -700,6 +709,8 @@ std::pair<bool,std::string> replace_implementation(const std::string_view& strin
  * (e.g., `{name}`). Special syntax like `{*name}` indicates a required value, and `{=name}` indicates raw value
  * insertion without SQL-specific escaping. The resulting string is built in `stringNew`. The function handles
  * quoted strings and skips them appropriately.
+ * 
+ * Note that double '' is replaced with single ' and works as a normal character
  *
  * @param stringSource The input string containing placeholders to be replaced (as a string_view).
  * @param argumentsValue The collection of arguments providing values for placeholder substitution.
