@@ -112,6 +112,8 @@ public:
    variant_view( const char* v, size_t uLength, bool ): m_uType(variant_type::eTypeString), m_uSize(uLength) { m_V.pbsz = const_cast<char*>(v); }
    variant_view( const wchar_t* v, size_t uLength) : m_uType(variant_type::eTypeWString), m_uSize(uLength) { m_V.pwsz_const = v; }
    variant_view( const unsigned char* v, size_t uLength) : m_uType(variant_type::eTypeBinary), m_uSize(uLength) { m_V.pb_const = v; }
+   variant_view( const unsigned char* v, gd::types::tag_uuid) : m_uType(variant_type::eTypeGuid), m_uSize(16) { m_V.pb_const = v; }
+   variant_view( const unsigned char* v, size_t uLength, gd::types::tag_binary) : m_uType(variant_type::eTypeBinary), m_uSize(uLength) { m_V.pb_const = v; }
    variant_view( const variant_type::utf8& v) : m_uType(variant_type::eTypeUtf8String), m_uSize(v.m_uLength) { m_V.pbsz_const = v.m_pbsz; }
    variant_view( const variant_type::utf8& v, unsigned int uType) : m_uType(uType), m_uSize(v.m_uLength) { m_V.pbsz_const = v.m_pbsz; }
    variant_view( const variant_type::uuid& v) : m_uType(variant_type::eTypeGuid), m_uSize(16) { m_V.pb_const = v.m_pbUuid; }

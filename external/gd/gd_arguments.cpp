@@ -1319,6 +1319,49 @@ arguments& arguments::append_argument(const variant& variantValue)
 }
 
 /*----------------------------------------------------------------------------- append_argument */ /**
+ * Add argument from variant_view
+ * \param stringName argument name
+ * \param variantValue argument value added
+ * \return arguments::arguments& reference to this if nested operations is wanted
+ */
+arguments& arguments::append_argument(std::string_view stringName, const gd::variant& variantValue)
+{
+   auto argumentValue = get_argument_s(variantValue);
+   const_pointer pData = (argumentValue.type_number() <= eTypeNumberPointer ? (const_pointer)&argumentValue.m_unionValue : (const_pointer)argumentValue.get_raw_pointer());
+   unsigned uType = argumentValue.type_number();                               // get type for value
+   unsigned uLength;                                                           // length for value
+   if( stringName.empty() == false )                                           // if name is given then add name to value
+   {
+      if( uType > ARGUMENTS_NO_LENGTH )
+      {
+         if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
+
+         uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+
+         return append(stringName, uType, pData, uLength);
+      }
+      else
+      {
+         return append(stringName, uType, pData, argumentValue.length());
+      }
+   }
+
+   // ## no name, just add value
+
+   if( uType > ARGUMENTS_NO_LENGTH )
+   {
+      if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
+
+      uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+
+      return append(uType, pData, uLength);
+   }
+
+   return append(uType, pData, argumentValue.length());
+}
+
+
+/*----------------------------------------------------------------------------- append_argument */ /**
  * Add argument from variant_view, this value isn't named
  * \param variantviewValue argument value added
  * \return arguments::arguments& reference to this if nested operations is wanted
@@ -2906,7 +2949,11 @@ arguments::argument arguments::get_argument_s(arguments::const_pointer pPosition
    case (arguments::eTypeNumberString | arguments::eValueLength): return arguments::argument(eTypeString | arguments::eValueLength, (const uint8_t*)(const char*)(pPosition + sizeof(uint32_t)));
    case (arguments::eTypeNumberUtf8String | arguments::eValueLength): return arguments::argument(eTypeUtf8String | arguments::eValueLength, (const uint8_t*)(const char*)(pPosition + sizeof(uint32_t)));
    case (arguments::eTypeNumberWString | arguments::eValueLength): return arguments::argument(eTypeWString | arguments::eValueLength, (const uint8_t*)(const wchar_t*)(pPosition + sizeof(uint32_t)));
-   case (arguments::eTypeNumberBinary | arguments::eValueLength): return arguments::argument(eTypeBinary | arguments::eValueLength, (const uint8_t*)pPosition + sizeof(uint32_t));
+   case (arguments::eTypeNumberBinary | arguments::eValueLength): {
+      uint32_t uSize = *(uint32_t*)pPosition;
+      const uint8_t* p_ = (const uint8_t*)pPosition + sizeof(uint32_t);
+      return arguments::argument( p_, uSize, enumType(eTypeBinary | arguments::eValueLength) );
+   }
 
    case arguments::eType_ParameterName:
    {
@@ -3418,6 +3465,9 @@ gd::variant arguments::get_variant_s(const arguments::argument& argumentValue)
    case arguments::eTypeNumberWString:
       return gd::variant(value.pwsz, (size_t)argumentValue.length() - sizeof(wchar_t) );
       break;
+   case arguments::eTypeNumberBinary:
+      return gd::variant(value.puch, (size_t)argumentValue.length(), gd::types::tag_binary{});
+      break;
    default:
       assert(false);
    }
@@ -3558,6 +3608,9 @@ gd::variant_view arguments::get_variant_view_s(const arguments::argument& argume
       break;
    case arguments::eTypeNumberWString:
       return gd::variant_view(value.pwsz, (size_t)argumentValue.length() - sizeof(wchar_t));
+      break;
+   case arguments::eTypeNumberBinary:
+      return gd::variant_view(value.puch, (size_t)argumentValue.length(), gd::types::tag_binary{});
       break;
    default:
       assert(false);

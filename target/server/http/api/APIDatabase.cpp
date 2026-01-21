@@ -68,34 +68,14 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
 
       if( stringCommand == "db" ) continue;
 
-      if( stringCommand == "create" )
-      {
-         result_ = Execute_Create();                                          // endpoint db/create
-      }
-      else if( stringCommand == "open" )
-      {
-         result_ = Execute_Open();                                            // endpoint db/open
-      }
-      else if( stringCommand == "query" )                                     
-      {
-         result_ = Execute_Query();                                           // endpoint db/query
-      }
-      else if( stringCommand == "select" )
-      {
-         result_ = Execute_Select();                                          // endpoint db/select
-      }
-      else if( stringCommand == "insert" )
-      {
-         result_ = Execute_Insert();                                          // endpoint db/insert
-      }
-      else if( stringCommand == "update" ) 
-      {
-         result_ = Execute_Update();                                          // endpoint db/update
-      }
-      else if( stringCommand == "delete" ) 
-      {
-         result_ = Execute_Delete();                                          // endpoint db/delete
-      }
+      if( stringCommand == "create" ) { result_ = Execute_Create(); }         // endpoint db/create
+      else if( stringCommand == "open" ) { result_ = Execute_Open(); }        // endpoint db/open
+      else if( stringCommand == "query" ) { result_ = Execute_Query(); }      // endpoint db/query
+      else if( stringCommand == "select" ) { result_ = Execute_Select(); }    // endpoint db/select
+      else if( stringCommand == "ask" ) { result_ = Execute_Ask(); }          // endpoint db/select
+      else if( stringCommand == "insert" ) { result_ = Execute_Insert(); }    // endpoint db/insert
+      else if( stringCommand == "update" ) { result_ = Execute_Update(); }    // endpoint db/update
+      else if( stringCommand == "delete" ) { result_ = Execute_Delete(); }    // endpoint db/delete
       else if( stringCommand == "drop" )
       {
       }
@@ -275,8 +255,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
 {
    gd::database::database_i* pdatabaseOpen = nullptr;
 
-   CDocument* pdocument = GetDocument();
-   if( pdocument == nullptr ) { return { false, GetLastError() }; }
+   CDocument* pdocument = GetDocument();                                                           if( pdocument == nullptr ) { return { false, GetLastError() }; }
 
    auto* pdatabase = pdocument->GetDatabase();
    if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
@@ -299,6 +278,51 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
       auto ptable_ = new gd::table::dto::table( gd::table::tag_full_meta{} );
       gd::database::to_table( pcursor.get(), ptable_ );
       m_objects.Add( ptable_ );
+   }
+
+   return pairReturn;
+}
+
+std::pair<bool, std::string> CAPIDatabase::Execute_Ask()
+{
+   gd::database::database_i* pdatabaseOpen = nullptr;
+
+   CDocument* pdocument = GetDocument();                                                           if( pdocument == nullptr ) { return { false, GetLastError() }; }
+
+   auto* pdatabase = pdocument->GetDatabase();
+   if( pdatabase == nullptr ) return { false, "no database connection in document: " + std::string( pdocument->GetName() ) };
+
+   // ## Prepare SQL statement ................................................
+   std::string stringSelect;
+   auto result_ = Sql_Prepare(stringSelect);
+   if( result_.first == false ) { return result_; }
+
+   gd::com::pointer<gd::database::cursor_i> pcursor;
+   pdatabase->get_cursor( &pcursor );
+
+   std::pair< bool, std::string > pairReturn;   
+   pairReturn = pcursor->open( stringSelect );
+
+   // ## create table to hold select result
+
+   if( pairReturn.first == true )
+   {
+      /*
+      auto ptable_ = new gd::table::dto::table( gd::table::tag_full_meta{} );
+      gd::database::to_table( pcursor.get(), ptable_ );
+      m_objects.Add( ptable_ );
+      */
+      gd::table::dto::table table_( gd::table::tag_full_meta{} );
+      gd::database::to_table( pcursor.get(), &table_ );
+
+      gd::argument::arguments* parguments_ = new gd::argument::arguments();
+
+      if( table_.size() > 0 )
+      {
+         table_.row_get_arguments( 0u, *parguments_ );
+      }
+
+      m_objects.Add( parguments_ );
    }
 
    return pairReturn;
