@@ -905,13 +905,16 @@ public: //0TAG0construct.arguments
 protected:
    // common copy
    void common_construct(const arguments& o) {
-      if( o.m_uLength )
+      if( o.m_uLength > 0 )
       {
-         reserve_no_copy(o.m_uLength);
+         if( o.m_uLength > m_uBufferLength ) { reserve_no_copy(o.m_uLength); }
          memcpy(m_pBuffer, o.m_pBuffer, o.m_uLength);
+         m_uLength = o.m_uLength;                                                                  assert( m_uLength <= m_uBufferLength );
       }
-      m_bOwner = o.m_bOwner;
-      m_uLength = o.m_uLength;
+      else
+      {
+         clear();
+      }
    }
 
    void common_construct(arguments&& o) noexcept {
