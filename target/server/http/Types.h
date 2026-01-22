@@ -104,8 +104,10 @@ struct Object
    Object( Types::enumType eType, void* pobject ) 
       : m_eType(eType), m_pobject(pobject, [eType](void* p){ Types::Clear_g(eType, p); }) {}
    
-   Object(const Object& other): m_eType(other.m_eType), m_pobject(nullptr), m_buffer_(other.m_buffer_), m_argumentsAttribute(m_buffer_) {}
-   Object(Object&& other) noexcept : m_eType(other.m_eType), m_pobject(std::move(other.m_pobject)), m_buffer_(std::move(other.m_buffer_)), m_argumentsAttribute(m_buffer_) {}
+   Object(const Object& o): m_eType(o.m_eType), m_pobject(nullptr)
+      { m_argumentsAttribute = o.m_argumentsAttribute; }
+   Object(Object&& o) noexcept : m_eType(o.m_eType), m_pobject(std::move(o.m_pobject))
+      { m_argumentsAttribute = o.m_argumentsAttribute; }
 
    // ## methods -----------------------------------------------------------------
    Types::enumType type() const { return m_eType; }
