@@ -28,7 +28,8 @@ void CDTOResponse::Initialize()
       m_pcolumnsBody_s->add( "uint32", 0, "type" );      // type of response body part
       m_pcolumnsBody_s->add( "rstring", 0, "text" );     // text of response body part
       m_pcolumnsBody_s->add( "pointer", 0, "object" );   // pointer to object if result data is store as some object
-      m_pcolumnsBody_s->add( "string", 32, "echo" );     // echo is used to echo back some shorter value back to client
+      m_pcolumnsBody_s->add( "string", 16, "command" );     // echo is used to echo back some shorter value back to client
+      m_pcolumnsBody_s->add( "string", 16, "echo" );     // echo is used to echo back some shorter value back to client
       m_pcolumnsBody_s->add_reference();
    }
 
@@ -56,6 +57,18 @@ std::pair<bool, std::string> CDTOResponse::AddTransfer( Types::Objects* pobjects
       intptr_t iTableAddress2_d = (intptr_t)pobject_d;
       assert( iTableAddress_d == iTableAddress2_d );
 #endif
+   
+      // ## Check for default values in arguments ...........................
+
+      const auto& arguments_ = object_.arguments();
+      for( const auto [key_, value_] : arguments_.named() )
+      {
+         if( key_ == "command" || key_ == "echo" )
+         {                                                                                         assert( value_.length() < 12 );
+            m_tableBody.cell_set( uRow, key_, value_.as_string_view() );
+         }
+      }
+
    }
    return { true, "" };
 }
@@ -88,7 +101,16 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
          stringJson.reserve( 512 );                                           // preallocate 512 byte for json string
 
          auto xmlnodeResult = xmlnodeResults.append_child( m_stringResult_s );// create result node
+
+         /*
+         const auto& arguments_ = pobject->arguments();
+         for( auto [key_, value_] : arguments_.named() )
+         {
+            xmlnodeResult.append_attribute(key_).set_value( value_.as_string() );
+         }
+         */
          
+         /*
          if( m_argumentsContext.empty() == false )
          {
             // ## Check if echo exists and if so add echo attribute to child
@@ -97,6 +119,21 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
                xmlnodeResult.append_attribute("echo").set_value( m_argumentsContext["echo"].get<std::string_view>());
             }
          }
+         */
+
+         // ### Check for command and echo
+         auto command_ = m_tableBody.cell_get_variant_view( uRow, "command" );// "command" attribute
+         if( command_.is_string() == true )
+         {
+            xmlnodeResult.append_attribute("command").set_value( command_.as_string_view() );
+         }
+
+         auto echo_ = m_tableBody.cell_get_variant_view( uRow, "echo" );     // "echo" attribute
+         if( echo_.is_string() == true )
+         {
+            xmlnodeResult.append_attribute("echo").set_value( echo_.as_string_view() );
+         }
+
 
          // ### If table then serialize table object
 

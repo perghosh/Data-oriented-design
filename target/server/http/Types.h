@@ -103,14 +103,22 @@ struct Object
    Object() = default;
    Object( Types::enumType eType, void* pobject ) 
       : m_eType(eType), m_pobject(pobject, [eType](void* p){ Types::Clear_g(eType, p); }) {}
+   
+   Object(const Object& other): m_eType(other.m_eType), m_pobject(nullptr), m_buffer_(other.m_buffer_), m_argumentsAttribute(m_buffer_) {}
+   Object(Object&& other) noexcept : m_eType(other.m_eType), m_pobject(std::move(other.m_pobject)), m_buffer_(std::move(other.m_buffer_)), m_argumentsAttribute(m_buffer_) {}
 
    // ## methods -----------------------------------------------------------------
    Types::enumType type() const { return m_eType; }
    void* get() const { return m_pobject.get(); }
    void* release() { return m_pobject.release(); } // detach pointer
 
+   gd::argument::arguments& arguments() { return m_argumentsAttribute; }
+   const gd::argument::arguments& arguments() const { return m_argumentsAttribute; }
+
    Types::enumType m_eType = (Types::enumType)0;  ///< type of result
    std::unique_ptr<void, Delete_> m_pobject; ///< pointer to data
+   std::array<std::byte,128> m_buffer_;
+   gd::argument::arguments m_argumentsAttribute{ m_buffer_ };
 };
 
 struct Objects
@@ -118,11 +126,18 @@ struct Objects
    // ## construction ------------------------------------------------------------
    Objects() = default;
 
+   /// Index operator is used on latest added object and works on the member m_argumentsAttribute
+   /// This can be used to add attribute values to the section for result data for specific endpoint command
+   gd::argument::arguments::argument_proxy operator[]( std::string_view stringName ) {
+      Object& object_ = m_vectorObjects[Back()];
+      return object_.arguments()[stringName];
+   }
+
    void Add( gd::table::dto::table* p_ ) { m_vectorObjects.emplace_back( Object{ eTypeDtoTable, p_ } ); }
    void Add( gd::argument::arguments* p_ ) { m_vectorObjects.emplace_back( Object{ eTypeArguments, p_ } ); }
 
    size_t Size() const noexcept { return m_vectorObjects.size(); }
-
+   size_t Back() const noexcept { return m_vectorObjects.size() - 1; }
    bool Empty() const noexcept { return m_vectorObjects.empty(); }
 
    // ## attributes --------------------------------------------------------------
