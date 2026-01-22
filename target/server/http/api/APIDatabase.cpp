@@ -278,6 +278,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
       auto ptable_ = new gd::table::dto::table( gd::table::tag_full_meta{} );
       gd::database::to_table( pcursor.get(), ptable_ );
       m_objects.Add( ptable_ );
+      m_objects["command"] = "select";
    }
 
    return pairReturn;
@@ -307,11 +308,6 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Ask()
 
    if( pairReturn.first == true )
    {
-      /*
-      auto ptable_ = new gd::table::dto::table( gd::table::tag_full_meta{} );
-      gd::database::to_table( pcursor.get(), ptable_ );
-      m_objects.Add( ptable_ );
-      */
       gd::table::dto::table table_( gd::table::tag_full_meta{} );
       gd::database::to_table( pcursor.get(), &table_ );
 
@@ -323,6 +319,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Ask()
       }
 
       m_objects.Add( parguments_ );
+      m_objects["command"] = "ask";
    }
 
    return pairReturn;
