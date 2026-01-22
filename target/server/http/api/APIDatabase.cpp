@@ -66,7 +66,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       m_uCommandIndex = static_cast<unsigned>( uIndex );
       std::string_view stringCommand = m_vectorCommand[uIndex];
 
-      if( stringCommand == "db" ) continue;
+      if( stringCommand == "db" ) continue;                                   // skip db
 
       if( stringCommand == "create" ) { result_ = Execute_Create(); }         // endpoint db/create
       else if( stringCommand == "open" ) { result_ = Execute_Open(); }        // endpoint db/open
@@ -85,6 +85,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       }
 
       if( result_.first == false ) { return result_; }
+
+#ifndef NDEBUG
+      auto uObjectCount_d = m_objects.Size();
+#endif // NDEBUG
       
       m_objects["command"] = stringCommand;
    }
@@ -363,9 +367,11 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
       m_argumentsGlobal.set( "key", variantInsertKey.as_variant_view() );
    }
 
-   gd::argument::arguments* parguments_ = new gd::argument::arguments();
-   parguments_->append_argument( "key", variantInsertKey );
-   m_objects.Add( parguments_ );
+   if( argumentsKey.empty() == false )
+   {
+      gd::argument::arguments* parguments_ = new gd::argument::arguments( argumentsKey );
+      m_objects.Add( parguments_ );
+   }
 
    return { true, "" };
 }
