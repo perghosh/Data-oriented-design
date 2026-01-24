@@ -76,7 +76,10 @@ public:
 
    bool Empty() const { return m_tableQuery.empty(); }                                            ///< check if there are any active queries
 
-   // @API [tag: access]
+   int64_t Find( const gd::argument::arguments& arguments_ ) const;                               ///< find query by arguments, returns row index or -1 if not found
+
+   // @API [tag: access, row] [description: Methods to return query row data]
+   gd::types::uuid GetQueryId( uint64_t uRow );
    std::pair<bool, std::string> GetQuery( std::string_view stringName, std::string& stringQuery );
 
    // @API [tag: load, save]

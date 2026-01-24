@@ -90,7 +90,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       auto uObjectCount_d = m_objects.Size();
 #endif // NDEBUG
       
-      m_objects["command"] = stringCommand;
+      if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
    }
 
 

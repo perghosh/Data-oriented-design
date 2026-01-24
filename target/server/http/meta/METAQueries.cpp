@@ -99,6 +99,40 @@ std::pair<bool, std::string> CQueries::Delete( const std::pair<std::string_view,
    return { true, "" };
 }
 
+int64_t CQueries::Find( const gd::argument::arguments& arguments_ ) const
+{
+   if( arguments_.exists( "name" ) == true )
+   {
+      std::string_view stringName = arguments_["name"].get<std::string_view>();
+      if( stringName.empty() == false )
+      {
+         int64_t iRow = m_tableQuery.find( eColumnName, stringName );
+         if( iRow != -1 ) return iRow;
+      }
+   }
+   /*
+   gd::uuid uuidFind;
+   std::string_view stringUuid = arguments_.get<std::string_view>( "id" );
+   if( stringUuid.empty() == false )
+   {
+      uuidFind = gd::uuid( stringUuid );
+      gd::types::uuid uuidFindType( uuidFind.data() );
+      int64_t iRow = m_tableQuery.find( eColumnId, uuidFindType );
+      if( iRow != -1 ) return iRow;
+   }
+   */
+   return -1;
+}
+
+gd::types::uuid CQueries::GetQueryId( uint64_t uRow )
+{                                                                                                  assert( uRow < m_tableQuery.size() );
+   auto id_ = m_tableQuery.cell_get_variant_view( uRow, eColumnId );
+
+   gd::types::uuid uuidId = id_;
+
+   return uuidId;
+}
+
 std::pair<bool, std::string> CQueries::GetQuery( std::string_view stringName, std::string& stringQuery )
 {
    // Find row in table for name
