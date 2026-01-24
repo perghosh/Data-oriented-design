@@ -232,6 +232,11 @@ public:
    std::pair<bool, std::string> DATABASE_SelectMetadata( const gd::argument::arguments& arguments_ );
    std::pair<bool, std::string> DATABASE_Prepare();
 
+// ## @API [tag: load] [description: metadata about database]
+
+   std::pair<bool, std::string> META_LoadQueries( std::string_view stringFileName );
+
+
 
 /** \name ERROR
 * ## @API [tag: error]
