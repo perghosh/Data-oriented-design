@@ -46,17 +46,17 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringQuery, enumFo
 /** ---------------------------------------------------------------------------
  * @brief Adds a new query to the table with the specified ID, type, format, and query.
  *
- * @param stringId The ID of the query.
+ * @param stringName Name for query.
  * @param stringType The type of the query.
  * @param stringFormat The format of the query.
  * @param stringQuery The query itself.
  * @return std::pair<bool, std::string> A pair containing a boolean indicating success and the ID of the added query.
  */
-std::pair<bool, std::string> CQueries::Add( std::string_view stringId, std::string_view stringType, std::string_view stringFormat, std::string_view stringQuery )
+std::pair<bool, std::string> CQueries::Add( std::string_view stringName, std::string_view stringType, std::string_view stringFormat, std::string_view stringQuery )
 {
    if( stringType.empty() == true ) stringType = "select";
 
-   if( stringId.empty() || stringQuery.empty() ) { return { false, "Invalid input" }; }
+   if( stringQuery.empty() ) { return { false, "Invalid input" }; }
 
    auto uType = ToType_s( stringType );
    auto uFormat = ToFormat_s( stringFormat );
@@ -73,6 +73,8 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringId, std::stri
    m_tableQuery.cell_set( uRow, "type", uType );
    m_tableQuery.cell_set( uRow, "format", uFormat );
    m_tableQuery.cell_set( uRow, "query", stringQuery );
+
+   if( stringName.empty() == false ) m_tableQuery.cell_set( uRow, "name", stringName );
 
    std::string stringUuid = gd::binary_to_hex_g( uuidQuery.data(), 16, false );
 
@@ -116,7 +118,7 @@ void CQueries::CreateTable_s( gd::table::arguments::table& tableQuery )
 {                                                                                                  assert( tableQuery.empty() == true );
    tableQuery.set_flags( gd::table::tag_meta{} );
    tableQuery.column_prepare();
-   tableQuery.column_add( {{ "uuid", 0, "id"}, { "uint16", 0, "flags" }, { "uint16", 0, "type" }, { "rstring", 0, "name" }, { "rstring", 0, "query" }, { "rstring", 0, "meta" } }, gd::table::tag_type_name{});
+   tableQuery.column_add( {{ "uuid", 0, "id"}, { "uint16", 0, "flags" }, { "uint16", 0, "type" }, { "uint16", 0, "format" }, { "rstring", 0, "name" }, { "rstring", 0, "query" }, { "rstring", 0, "meta" } }, gd::table::tag_type_name{});
    tableQuery.prepare();
 }
 
