@@ -439,7 +439,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
  */
 std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
 {
-   
+   CDocument* pdocument = GetDocument();                                                           assert( pdocument != nullptr );
    CSqlBuilder sqlbuilder;
    std::string stringQueryTemplate;
    
@@ -475,8 +475,12 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
 
    if( stringQueryTemplate[0] == '#' )
    {
-      // @TODO [tag: query] [description: Add logic to get template from document]
-      assert( false );
+      // ## Get query based on name .........................................
+      std::string_view stringQueryName( stringQueryTemplate.c_str() + 1, stringQueryTemplate.length() - 1 );
+      META::CQueries* pqueries = pdocument->QUERIES_Get();
+
+      auto result_ = pqueries->GetQuery( stringQueryName, stringQueryTemplate );
+      if( result_.first == false ) { return result_; }
    }
 
    sqlbuilder = stringQueryTemplate;                                         // assign to template

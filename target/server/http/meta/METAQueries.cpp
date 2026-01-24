@@ -99,7 +99,23 @@ std::pair<bool, std::string> CQueries::Delete( const std::pair<std::string_view,
    return { true, "" };
 }
 
-std::pair<bool, std::string> Load( std::string_view stringPath )
+std::pair<bool, std::string> CQueries::GetQuery( std::string_view stringName, std::string& stringQuery )
+{
+   // Find row in table for name
+   int64_t iRow = m_tableQuery.find( eColumnName, stringName );
+   if( iRow != -1 )
+   {
+      stringQuery = m_tableQuery.cell_get_variant_view( iRow, eColumnQuery ).as_string();
+   }
+   else
+   {
+      return { false, std::format( "No query found for name '{}'", stringName ) };
+   }
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CQueries::Load( std::string_view stringPath )
 {
     
    return { true, "" };
