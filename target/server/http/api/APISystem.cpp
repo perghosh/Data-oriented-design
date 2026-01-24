@@ -42,6 +42,8 @@ std::pair<bool, std::string> CAPISystem::Execute()
             else if( stringCommand == "directory" ){ result_ = Execute_FileDirectory(); }
             else if( stringCommand == "exists" )   { result_ = Execute_FileExists(); }
             else break;
+
+            if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
          }
       }
       else if( stringCommand == "meta" )
@@ -61,6 +63,8 @@ std::pair<bool, std::string> CAPISystem::Execute()
                else if( stringCommand == "delete" ){ result_ = Execute_MetadataQueryDelete(); }    // delete
                else if( stringCommand == "exists" ){ result_ = Execute_MetadataQueryExists(); }    // exists
                else break;
+
+               if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
             }
          }
          else if(stringCommand == "db")
@@ -83,6 +87,8 @@ std::pair<bool, std::string> CAPISystem::Execute()
             else if( stringCommand == "delete" )   { result_ = Execute_SessionDelete(); }
             else if( stringCommand == "list" )     { result_ = Execute_SessionList(); }
             else break;
+
+            if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
          }
       }
       else
@@ -204,6 +210,12 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryAdd()
 
    auto result_ = pqueries->Add( stringName, stringType, stringFormat, stringQuery );
 
+   if( result_.first == true ) 
+   {
+      gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "id", result_.second } } ); // result data
+      m_objects.Add( parguments_ );
+   }
+
    return result_;
 }
 
@@ -235,7 +247,9 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryExists()
    if( iRow >= 0 )
    {
       auto uuid_ = pqueries->GetQueryId( iRow );
-      //parguments_->append( "id",  );
+      std::string stringUuid;
+      gd::binary_to_hex_g( uuid_, 16, stringUuid );
+      parguments_->append( "id", stringUuid );
    }
 
    m_objects.Add( parguments_ );
