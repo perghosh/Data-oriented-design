@@ -42,9 +42,9 @@ public:
    /// The type of query
    enum enumType { eTypeUnknown = 0, eTypeSelect = 1, eTypeInsert = 2, eTypeUpdate = 3, eTypeDelete = 4, eTypeAsk = 5, eTypeBatch = 6 };
    /// The format of how query is store before it is generated
-   enum enumFormat { eFormatUnknown = 0, eFormatText = 1, eFormatJinja = 2, eFormatXml = 3, eFormatJson = 4 };
+   enum enumFormat { eFormatUnknown = 0, eFormatText = 1, eFormatJinja = 2, eFormatXml = 3, eFormatJson = 4 }; // 
    /// Column indexes for fixed columns
-   enum enumColumn { eColumnId, eColumnFlags, eColumnType, eColumnName, eColumnQuery, eColumnMeta };
+   enum enumColumn { eColumnId, eColumnFlags, eColumnType, eColumnFormat, eColumnName, eColumnQuery, eColumnMeta };
    // @API [tag: construction]
 public:
    CQueries() {}
