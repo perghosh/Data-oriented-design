@@ -203,6 +203,7 @@ public:
    operator const unsigned char*() const { assert(type_number() == variant_type::eTypeNumberGuid || type_number() == variant_type::eTypeNumberBinary); return m_V.pb; }
 
    operator std::string_view() const { assert(type_number() == variant_type::eTypeNumberString || type_number() == variant_type::eTypeNumberUtf8String || type_number() == variant_type::eTypeNumberJson || type_number() == variant_type::eTypeNumberXml ); return std::string_view( m_V.pbsz, m_uSize ); }
+   operator gd::types::uuid() const { assert(type_number() == variant_type::eTypeNumberGuid || type_number() == variant_type::eTypeNumberBinary ); return gd::types::uuid( m_V.pb ); }
 
    bool operator==( bool v_ ) const { return compare( variant_view( v_ ) ); }
    bool operator==( const variant_view& o ) const { return compare( o ); }

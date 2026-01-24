@@ -57,8 +57,9 @@ std::pair<bool, std::string> CAPISystem::Execute()
             {
                stringCommand = m_vectorCommand[uIndex];
 
-               if( stringCommand == "add" )        { result_ = Execute_MetadataQueryAdd(); } // add
-               else if( stringCommand == "delete" ){ result_ = Execute_MetadataQueryDelete(); } // delete
+               if( stringCommand == "add" )        { result_ = Execute_MetadataQueryAdd(); }       // add
+               else if( stringCommand == "delete" ){ result_ = Execute_MetadataQueryDelete(); }    // delete
+               else if( stringCommand == "exists" ){ result_ = Execute_MetadataQueryExists(); }    // exists
                else break;
             }
          }
@@ -216,7 +217,30 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryDelete()
 
    auto result_ = pqueries->Delete( {stringId, stringKey} );
    return result_;
+}
 
+std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryExists()
+{
+   std::string stringName = Get("name").as_string();
+
+   if( stringName.empty() == true ) { return { false, "Missing parameter 'name'" }; }
+
+   CDocument* pdocument = GetDocument();
+   META::CQueries* pqueries = pdocument->QUERIES_Get();                                            assert( pqueries );
+   
+   gd::argument::arguments arguments_( { { "name", stringName } } );
+   int64_t iRow = pqueries->Find( arguments_ );
+
+   gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "exists", iRow } } ); // result data
+   if( iRow >= 0 )
+   {
+      auto uuid_ = pqueries->GetQueryId( iRow );
+      //parguments_->append( "id",  );
+   }
+
+   m_objects.Add( parguments_ );
+
+   return { true, "" };
 }
 
 /** --------------------------------------------------------------------------
