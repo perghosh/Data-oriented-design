@@ -400,6 +400,13 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Update()
    result_ = pdatabase->execute( stringExecute );
    if( result_.first == false ) { return result_; }
 
+   // ## Find out number of rows affected ....................................
+   gd::variant vChangeCount = pdatabase->get_change_count();
+   
+   gd::argument::arguments* parguments_ = new gd::argument::arguments( {{ "count", vChangeCount.as_int64() }} );
+   m_objects.Add( parguments_ );
+
+
    return { true, "" };
 }
 
@@ -426,6 +433,13 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
 
    result_ = pdatabase->execute( stringExecute );
    if( result_.first == false ) { return result_; }
+   
+   // ## Find out number of rows affected ....................................
+   gd::variant vChangeCount = pdatabase->get_change_count();
+   
+   gd::argument::arguments* parguments_ = new gd::argument::arguments( {{ "count", vChangeCount.as_int64() }} );
+   m_objects.Add( parguments_ );
+   
 
    return { true, "" };
 }
