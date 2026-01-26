@@ -59,7 +59,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
 
    std::pair<bool, std::string> result_(true,"");
 
-   CRouter::Encode_s( m_argumentsParameter, { "query", "values" } );
+   //CRouter::Encode_s( m_argumentsParameter, { "query", "values" } );
 
    for( std::size_t uIndex = 0; uIndex < m_vectorCommand.size(); ++uIndex )
    {

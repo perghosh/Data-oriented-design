@@ -96,6 +96,8 @@ std::pair<bool, std::string> CQueries::Delete( const std::pair<std::string_view,
 
    if( iRow == -1 ) return { false, std::format( "No row for {} or {}", stringName, stringUuid)};
 
+   m_tableQuery.erase( iRow );
+
    return { true, "" };
 }
 
