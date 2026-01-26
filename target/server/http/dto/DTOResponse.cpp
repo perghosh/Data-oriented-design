@@ -141,8 +141,9 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
          if( Types::TypeNumber_g("table") == uType )
          {
             gd::table::dto::table* ptable = (gd::table::dto::table*)pobject;  //  cast to table object
+            stringJson += '[';
             to_string( *ptable, stringJson, tag_io_json{}, tag_io_name{});
-
+            stringJson += ']';
             // #### add json as xml node as cdata
             xmlnodeResult.append_child(node_cdata).set_value(stringJson);
          }
