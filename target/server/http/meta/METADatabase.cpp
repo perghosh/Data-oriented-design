@@ -127,6 +127,46 @@ std::pair<bool, std::string> CDatabase::LinkTablesTables()
    return { true, "" };
 }
 
+std::pair<bool, std::string> CDatabase::ComputeTextLength( std::string_view stringTable, std::vector<std::string_view> vectorField, uint64_t* puMaxLength ) const
+{                                                                                                  assert( m_ptableColumn && m_ptableColumn->size() > 0 );
+   uint64_t uMaxNameLength = 0;
+
+   // ## First calculate max length for text names in column
+   for( const auto& stringMatchColumn : vectorField ) { uMaxNameLength = std::max( uMaxNameLength, (uint64_t)stringMatchColumn.length() ); }
+
+
+   for( auto itRow = m_ptableColumn->row_begin(); itRow != m_ptableColumn->row_end(); itRow++ )
+   {
+      auto table_ = itRow.cell_get_variant_view( "table" );
+      auto stringMatchTable = table_.as_string_view();
+      if( stringMatchTable != stringTable ) { continue; }                              // Skip other tables
+
+      // ## Note that all columns in table are grouped so when the table is found 
+      //    we can skip the rest of the table and match columns that belongs to found table
+
+      for( ;itRow != m_ptableColumn->row_end() && stringTable == stringMatchTable; itRow++ )
+      { 
+         auto column_ = itRow.cell_get_variant_view( "column" );
+         auto stringColumn = column_.as_string_view();
+         for( const auto& stringMatchColumn : vectorField )
+         {
+            if( stringColumn == stringMatchColumn )
+            {
+               // ## Compute max length for text names in column
+               auto alias_ = itRow.cell_get_variant_view( "alias" );
+               if( alias_.is_string() == true ) uMaxNameLength = std::max( uMaxNameLength, (uint64_t)alias_.as_string_view().length() );
+               break;
+            }
+         }
+      }
+
+      break;
+   }
+
+   if( puMaxLength != nullptr ) { *puMaxLength = uMaxNameLength; }
+   return { true, "" };
+}
+
 
 void CDatabase::CreateTable_s( gd::table::arguments::table& tableTable )
 {

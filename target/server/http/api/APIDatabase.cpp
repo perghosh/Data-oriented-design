@@ -60,8 +60,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
    std::pair<bool, std::string> result_(true,"");
 
    //CRouter::Encode_s( m_argumentsParameter, { "query", "values" } );
-
-   for( std::size_t uIndex = 0; uIndex < m_vectorCommand.size(); ++uIndex )
+   std::size_t uIndex = m_uCommandIndex;
+   for( ; uIndex < m_vectorCommand.size(); ++uIndex )
    {
       m_uCommandIndex = static_cast<unsigned>( uIndex );
       std::string_view stringCommand = m_vectorCommand[uIndex];
@@ -92,6 +92,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       
       if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
    }
+
+   SetCommandIndex( static_cast<unsigned>( uIndex ) );
 
 
    return { true, "" };
