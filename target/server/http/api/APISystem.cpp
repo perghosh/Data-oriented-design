@@ -5,6 +5,8 @@
 #include "gd/gd_arguments.h"
 #include "gd/gd_binary.h"
 #include "gd/gd_uuid.h"
+#include "gd/gd_table_column-buffer.h"
+
 
 #include "../Router.h"
 #include "../Document.h"
@@ -24,9 +26,8 @@ std::pair<bool, std::string> CAPISystem::Execute()
 
    CRouter::Encode_s( m_argumentsParameter, { "query" } );
 
-   for( std::size_t uIndex = 0; uIndex < m_vectorCommand.size(); ++uIndex )
+   for( std::size_t uIndex = m_uCommandIndex; uIndex < m_vectorCommand.size(); ++uIndex )
    {
-      m_uCommandIndex = static_cast<unsigned>( uIndex );
       std::string_view stringCommand = m_vectorCommand[uIndex];
 
       if( stringCommand == "sys" ) continue;
@@ -70,8 +71,15 @@ std::pair<bool, std::string> CAPISystem::Execute()
          else if(stringCommand == "db")
          {
             uIndex++;
-            if( uIndex >= m_vectorCommand.size() ) return { false, "Missing session command" };
-            stringCommand = m_vectorCommand[uIndex];
+            for( ; uIndex < m_vectorCommand.size(); uIndex++ && result_.first == true )
+            {
+               stringCommand = m_vectorCommand[uIndex];
+
+               if( stringCommand == "fields" )     { result_ = Execute_MetadataDBField(); }
+               else break;
+
+               if( m_objects.Empty() == false ) { m_objects["command"] = stringCommand; }
+            }
          }
       }
       else if( stringCommand == "session" )
@@ -80,6 +88,8 @@ std::pair<bool, std::string> CAPISystem::Execute()
          for( ; uIndex < m_vectorCommand.size(); uIndex++ && result_.first == true )
          {
             stringCommand = m_vectorCommand[uIndex];
+
+            if( stringCommand.empty() == true ) { break; }
          
             if( stringCommand == "add" )           { result_ = Execute_SessionAdd(); }
             else if( stringCommand == "count" )    { result_ = Execute_SessionCount(); }
@@ -96,8 +106,9 @@ std::pair<bool, std::string> CAPISystem::Execute()
          return { false, "unknown database command: " + std::string(stringCommand) };
       }
 
+      SetCommandIndex( uIndex );
+
       if( result_.first == false ) { return result_; }
-      else if( uIndex < m_vectorCommand.size() ) { return { false, "Missing session command" }; }
    }
 
    return { true, "" };
@@ -231,6 +242,13 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryDelete()
    return result_;
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Checks if a metadata query with the specified name exists and stores the result.
+ * 
+ * @param "name" query name to check if it exists
+ * 
+ * @return A pair where the first element is true if the operation was successful, false otherwise. The second element is an error message if the operation failed
+ */
 std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryExists()
 {
    std::string stringName = Get("name").as_string();
@@ -257,6 +275,31 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryExists()
    return { true, "" };
 }
 
+std::pair<bool, std::string> CAPISystem::Execute_MetadataDBField()
+{
+   using namespace gd::table::dto;
+   std::string stringTable = Get( "table" ).as_string();                      // Table name field belongs to
+   std::string stringField = Get( "field" ).as_string();                      // Return information about field or fields if comma separated list
+
+   auto vectorField = gd::utf8::split( std::string_view( stringField ), ',' );
+
+   if( stringTable.empty() == true || stringField.empty() == true ) return { false, "Missing parameter 'table' or 'field'" };
+
+   // ## Build information for fields ........................................
+
+   CDocument* pdocument = GetDocument();
+   uint64_t uMaxTextLength = 0;
+   const META::CDatabase* pdatabase_ =  pdocument->DATABASE_Get();
+   auto result_ = pdatabase_->ComputeTextLength( stringTable, vectorField, &uMaxTextLength );
+   if( result_.first == false ) { return result_; }
+
+   // Columns for each field is table, name, alias, type, js type, description
+   uMaxTextLength++; // add one for extra space
+   table* ptable_ = new table( (table::eTableFlagNull32), { { "string", uMaxTextLength, "table"}, { "column", uMaxTextLength, "name"}, { "string", uMaxTextLength, "alias"} }, gd::table::tag_prepare{} );
+
+   return { true, "" };
+}
+
 /** --------------------------------------------------------------------------
  * @brief Adds a session key
  * 
@@ -267,14 +310,14 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryExists()
  */
 std::pair<bool, std::string> CAPISystem::Execute_SessionAdd()
 {
-   gd::types::uuid uuid;
-   std::string stringSession;
+   gd::types::uuid uuid; // uuid for session
+   std::string stringSession; // session string read from request
 
    if( m_argumentsParameter.exists("new") == false )
    {
       stringSession = m_argumentsParameter["session"].as_string();    // get session to add
 
-      if( stringSession.size() < 32 ) { stringSession.append( 32 - stringSession.size(), '0' ); }
+      if( stringSession.size() < 32 ) { stringSession.append( 32 - stringSession.size(), '0' ); } // Pad session if less than 32 bytes
    
       auto result_ = ValidateSession_s(stringSession);
       if( result_.first == false ) { return result_; }

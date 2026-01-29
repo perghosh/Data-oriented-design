@@ -76,6 +76,9 @@ public:
    std::pair<bool, std::string> LinkTablesTables();
 
 
+   /// Compute max length of text field in vector of string views
+   std::pair<bool, std::string> ComputeTextLength( std::string_view stringTable, std::vector<std::string_view> vectorField, uint64_t* puMaxLength ) const;
+
 
 protected:
 // @API [tag: internal]

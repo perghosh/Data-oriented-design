@@ -65,6 +65,8 @@ public:
    const CDocument* GetDocument() const { return m_pdocument; }
    CDocument* GetDocument();
 
+   /// Sets the current command index
+   void SetCommandIndex( unsigned uIndex ) { m_uCommandIndex = uIndex; assert( m_uCommandIndex <= m_vectorCommand.size() ); }
    /// Checks to se if there is more commands left to process
    bool IsLastCommand() const { return m_uCommandIndex >= (unsigned)m_vectorCommand.size(); }
 
@@ -95,14 +97,14 @@ public:
 // ## attributes -------------------------------------------------------------
 public:
    std::vector<std::string_view> m_vectorCommand;     ///< command path segments
-   unsigned m_uCommandIndex{};                        ///< current command index being processed
+   unsigned m_uCommandIndex{};                        ///< current command index being processed, command index are the index within m_vectorCommand
    gd::argument::arguments m_argumentsParameter;      ///< parameters for api command
    gd::argument::arguments m_argumentsGlobal;         ///< store global variablies, prefixed with "g_"
    Types::Objects m_objects;                          ///< objects used to store result objects
    std::string m_stringLastError;                     ///< last error message 
    CApplication* m_papplication{};                    ///< application pointer, access application that is used as object root for server
    CDocument* m_pdocument{};                          ///< document pointer, access document for active user
-   std::array<std::byte, 64> m_arrayBufferCounter;
+   std::array<std::byte, 64> m_arrayBufferCounter;    ///< Internal buffer used for argument counting to avoid dynamic allocations
    gd::argument::arguments m_argumentsArgumentCount{ m_arrayBufferCounter };
 
 // ## free functions ---------------------------------------------------------
