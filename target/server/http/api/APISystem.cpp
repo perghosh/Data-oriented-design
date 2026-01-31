@@ -109,6 +109,8 @@ std::pair<bool, std::string> CAPISystem::Execute()
       SetCommandIndex( uIndex );
 
       if( result_.first == false ) { return result_; }
+
+      if( stringCommand.empty() == true ) { break; }                         // if empty comand that means that we are going back to root
    }
 
    return { true, "" };
