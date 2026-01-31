@@ -2251,7 +2251,7 @@ void table_column_buffer::cell_get( uint64_t uRow, const std::span<unsigned> spa
    for( unsigned uColumn : spanColumn )
    {
       std::string_view stringColumn = column_get_name( uColumn );
-      argumentsValue.push_back( { stringColumn, cell_get_variant_view( uRow, uColumn ) } );
+      argumentsValue.push_back( stringColumn, cell_get_variant_view( uRow, uColumn ) );
    }
 }
 

@@ -188,7 +188,7 @@ std::pair<bool, std::string> CDatabase::ReadColumnMetadata( std::string_view str
          {
             if( stringColumn == stringMatchColumn )
             {
-               m_ptableColumn->cell_g
+               //m_ptableColumn->cell_g
                break;
             }
          }
@@ -196,7 +196,7 @@ std::pair<bool, std::string> CDatabase::ReadColumnMetadata( std::string_view str
       break;
    }      
    
-
+   return { true, "" };
 }
 
 
