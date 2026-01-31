@@ -85,6 +85,10 @@ CApplication::~CApplication()
    }
 
    if( m_pserverBoost ) delete m_pserverBoost;
+
+   gd::log::logger<0>* plogger = gd::log::get_s();
+   // Call logger destructor
+   plogger->clear();
 }
 
 
@@ -167,8 +171,13 @@ std::pair<bool, std::string> CApplication::Initialize()
       if( stringConfigurationFile.empty() == true )
       {
          // ## try to find configuration file in application folder
-         gd::file::path pathFolderApplication(papplication_g->PROPERTY_Get("folder-application").as_string());
-         pathFolderApplication += "configuration.xml";
+         std::string stringApplicationFolder = papplication_g->PROPERTY_Get("folder-application").as_string(); 
+         if( stringApplicationFolder.empty() == false )
+         {
+            gd::file::path pathFolderApplication( stringApplicationFolder );
+            pathFolderApplication += "configuration.xml";
+            stringConfigurationFile = pathFolderApplication.string();
+         }
       }
 
       if( stringConfigurationFile.empty() == false )
@@ -206,8 +215,8 @@ std::pair<bool, std::string> CApplication::Initialize()
       // ## color console messages in debug mode
       pprinter_console->set_margin( 8 );                                       // set log margin
       pprinter_console->set_margin_color( eColorBrightBlack );
-
-      plogger->append( std::make_unique<gd::log::printer_file>(stringLogFile) );// append printer to logger, prints to file
+      auto pprinterfile = std::make_unique<gd::log::printer_file>(stringLogFile);
+      //plogger->append( std::move( pprinterfile ) );// append printer to logger, prints to file
 #else
       plogger->set_severity( unsigned(eSeverityNumberVerbose) | unsigned(eSeverityGroupDebug) );   // set severity filter, messages within this filter is printed
 
@@ -583,6 +592,47 @@ void CApplication::DATABASE_SetActive(const std::variant<std::size_t, std::strin
    }
 }
 
+std::pair<bool, std::string> CApplication::DATABASE_Connect( const gd::argument::arguments& argumentsConnect )
+{
+   if( argumentsConnect.exists( "database-open" ) == true )           
+   {
+      gd::argument::arguments argumentsOpen;
+      std::string stringOpen = argumentsConnect["database-open"].as_string();
+      if( stringOpen.find( ',' ) != std::string::npos )
+      {
+         auto vector_ = gd::utf8::split( stringOpen, ',' );
+         argumentsOpen.append_range( {"dsn", "user", "password"}, vector_ );
+      }
+      else
+      {
+         argumentsOpen["type"] = "sqlite";                                    // if file then sqlite
+         argumentsOpen["name"] = stringOpen;                                  // probably a file name
+      }
+
+      gd::database::database_i* pdatabaseOpen = nullptr;
+      auto result_ = OpenDatabase_s( argumentsOpen, pdatabaseOpen );                              assert( m_pdocumentActive != nullptr );
+      if( result_.first == false ) return result_;
+      m_pdocumentActive->SetDatabase(pdatabaseOpen);
+      if( pdatabaseOpen != nullptr ) pdatabaseOpen->release();
+
+      if( argumentsConnect.exists_any({"database-meta-tables", "database-meta-columns"}) == true )
+      {
+         gd::argument::arguments arguments_;
+         argumentsConnect.iif( "database-meta-tables", [&arguments_]( auto& v_ ) { arguments_.append_argument( "tables", v_ ); });
+         argumentsConnect.iif( "database-meta-columns", [&arguments_]( auto& v_ ) { arguments_.append_argument( "columns", v_ ); });
+
+         result_ = m_pdocumentActive->DATABASE_Initialize();
+         if( result_.first == false ) return result_;
+         result_ = m_pdocumentActive->DATABASE_SelectMetadata( arguments_ );
+         if( result_.first == false ) return result_;
+         result_ = m_pdocumentActive->DATABASE_Prepare();
+         if( result_.first == false ) return result_;
+      }
+   }
+
+   return { true, "" };
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief Read configuration file, reads settings from xml file
@@ -619,13 +669,18 @@ std::pair<bool, std::string> CApplication::CONFIGURATION_Read( const std::string
             if( std::string_view( xmlnode.name() ) == "property" )
             {
                const char* pbszKey = xmlnode.attribute( "key" ).value();
-               const char* pbszValue = xmlnode.attribute( "value" ).value();
 
-               if( *pbszKey != '\0' && *pbszValue != '\0' )
+               // ## read value from attribute value or cdata
+               std::string stringValue;
+
+               if( xmlnode.attribute("value") ) { stringValue = xmlnode.attribute( "value" ).as_string(); }
+               else { stringValue = xmlnode.child_value(); }
+
+               if( stringValue.empty() == false )
                {
                   if( PROPERTY_Has( pbszKey ) == false )                      // check if property is added, if not then it is ok to add from configuration
                   {
-                     PROPERTY_Add( pbszKey, pbszValue );                      // add property
+                     PROPERTY_Add( pbszKey, stringValue );                    // add property
                   }
                }
             }

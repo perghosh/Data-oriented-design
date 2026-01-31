@@ -1091,7 +1091,7 @@ class logger
 // ## construction -------------------------------------------------------------
 public:
    logger(): m_uSeverity( enumSeverity::eSeverityNone ) {}
-   ~logger() {}
+   ~logger();
 
 private:
    logger( const logger& ) {}
@@ -1379,6 +1379,16 @@ void logger<iLoggerKey, bThread>::print(std::initializer_list<message> listMessa
    }
 }
 
+template<int iLoggerKey, bool bThread>
+logger<iLoggerKey, bThread>::~logger() 
+{
+   for( auto it = m_vectorPrinter.begin(); it != m_vectorPrinter.end(); it++ )
+   {
+      //(*it)->
+   }
+
+   m_vectorPrinter.clear();
+}
 
 template<int iLoggerKey, bool bThread>
 void logger<iLoggerKey, bThread>::print_( const message& message, bool bFilter )
@@ -1452,9 +1462,13 @@ void logger<iLoggerKey,bThread>::clear()
 { 
    m_uFlags = 0;
    m_vectorPrinter.clear();
+   m_vectorPrinter.shrink_to_fit();
    m_vectorError.clear();
+   m_vectorError.shrink_to_fit();
    m_vectorCallback.clear();
+   m_vectorCallback.shrink_to_fit();
    m_vectorTag.clear();
+   m_vectorTag.shrink_to_fit();
 }
 
 /// ----------------------------------------------------------------------------
@@ -1540,7 +1554,7 @@ auto ploggerThreadSafe = gd::log::get_s<1, true>();
  */
 template<int iLoggerKey, bool bThread>
 logger<iLoggerKey,bThread>& logger<iLoggerKey,bThread>::get_instance_s() {
-   static logger<iLoggerKey,bThread> logger_s;
+   static logger<iLoggerKey,bThread> logger_s;                                // here the logger is created as a static value
    return logger_s;
 }
 

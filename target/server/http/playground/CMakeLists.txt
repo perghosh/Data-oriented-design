@@ -43,6 +43,8 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
    target_compile_definitions(${TEST_NAME_} PRIVATE GD_LOG_SIMPLE)
    target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE )
+   target_compile_definitions(${TEST_NAME_} PRIVATE $<$<CONFIG:Debug>:_CRTDBG_MAP_ALLOC>
+)
 endif()
 
 set( USE_TEST_ ON )

@@ -31,25 +31,6 @@ int main(int iArgumentCount, char* ppbszArgumentValue[])
 }
 
 
-/** ---------------------------------------------------------------------------
-* @brief Create initialized applicaton object
-* @return std::unique_ptr<CApplication> smart pointer for application object
-*/
-/*
-std::unique_ptr<CApplication> APPLICATION_Create()
-{
-   auto severity_ = LOG_GET_SEVERITY();
-   LOG_SET_SEVERITY( "ERROR" );
-   std::unique_ptr<CApplication> papplication = std::make_unique<CApplication>();
-   auto result_ = papplication->Main( mainarguments_g.m_iArgumentCount, mainarguments_g.m_ppbszArgumentValue, nullptr );
-   result_ = papplication->Initialize();                                                           LOG_ERROR_RAW_IF( result_.first == false, "== Failed to initialize application object: " << result_.second );
-   LOG_SET_SEVERITY( severity_ );
-
-   return std::move( papplication );
-}
-*/
-
-
 
 /** ---------------------------------------------------------------------------
  * @brief Walk upp the folder tree and try to find folder containing file
