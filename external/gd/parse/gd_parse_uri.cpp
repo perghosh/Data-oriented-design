@@ -265,8 +265,8 @@ std::pair<bool, std::string> parse_path( std::string_view stringPath, std::vecto
    {
       if( *piPosition == '/' )
       {
-         // Found segment separator
-         if( piPosition > piSegmentStart ) { vectorSegments.emplace_back( piSegmentStart, piPosition - piSegmentStart ); }
+         // Found segment separator, note that two segment separators that follows will add empty string
+         if( piPosition >= piSegmentStart ) { vectorSegments.emplace_back( piSegmentStart, piPosition - piSegmentStart ); }
          piPosition++;
          piSegmentStart = piPosition;
       }
