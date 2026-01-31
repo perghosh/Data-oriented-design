@@ -295,7 +295,15 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataDBField()
 
    // Columns for each field is table, name, alias, type, js type, description
    uMaxTextLength++; // add one for extra space
-   table* ptable_ = new table( (table::eTableFlagNull32), { { "string", uMaxTextLength, "table"}, { "column", uMaxTextLength, "name"}, { "string", uMaxTextLength, "alias"} }, gd::table::tag_prepare{} );
+   table* ptable_ = new table( (table::eTableFlagNull32), { { "string", uMaxTextLength, "table"}, { "string", uMaxTextLength, "column"}, { "string", uMaxTextLength, "alias"} }, gd::table::tag_prepare{} );
+
+   result_ = pdatabase_->ReadColumnMetadata( stringTable, vectorField, ptable_ );
+
+#ifndef NDEBUG
+   std::string stringTable_d = gd::table::debug::print( *ptable_ );
+#endif // NDEBUG
+
+   m_objects.Add( ptable_ );
 
    return { true, "" };
 }

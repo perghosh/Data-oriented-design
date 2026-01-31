@@ -728,6 +728,9 @@ public:
    /// get cell value using name or column index, if name then column gets index to speed up the process next time value is returned
    gd::variant_view cell_get_variant_view( uint64_t uRow, std::variant< unsigned, std::string_view >* pvariantColumn ) const noexcept;
 
+   /// get cell value using column indexes in container, values are placed in argumentsValue with name and value
+   void cell_get( uint64_t uRow, const std::span<unsigned> spanColumn, gd::argument::arguments& argumentsValue ) const;
+
    unsigned cell_get_length( uint64_t uRow, unsigned uColumn ) const noexcept;
 
    // ## @API [tag: cell] [description: cell management methods]

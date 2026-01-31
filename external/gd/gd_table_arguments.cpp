@@ -1955,6 +1955,21 @@ gd::variant_view table::cell_get_variant_view(uint64_t uRow, std::variant<unsign
    return gd::variant_view();
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief get cell value using column indexes in container, values are placed in argumentsValue with name and value
+ * @param uRow row index to get value from
+ * @param spanColumn span with column indexes to get value from
+ * @param argumentsValue arguments container to place values in
+ */
+void table::cell_get( uint64_t uRow, const std::span<unsigned> spanColumn, gd::argument::arguments& argumentsValue ) const
+{                                                                                                  assert( uRow < size() );
+   for( unsigned uColumn : spanColumn )
+   {
+      std::string_view stringColumn = column_get_name( uColumn );
+      argumentsValue.push_back( stringColumn, cell_get_variant_view( uRow, uColumn ) );
+   }
+}
+
 unsigned table::cell_get_length( uint64_t uRow, unsigned uColumnIndex ) const noexcept
 {
    unsigned uLength = 0;
