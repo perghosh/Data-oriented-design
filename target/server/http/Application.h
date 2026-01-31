@@ -111,6 +111,8 @@ public:
    gd::database::database_i* DATABASE_Get( const std::string_view& stringDatabaseName ) const;
    /// Check if there is any database connection
    bool DATABASE_Empty() const { return m_vectorDatabase.empty(); }
+   ///
+   std::pair<bool, std::string> DATABASE_Connect( const gd::argument::arguments& argumentsConnect );
 //@}
 
 /** \name CONFIGURATION
