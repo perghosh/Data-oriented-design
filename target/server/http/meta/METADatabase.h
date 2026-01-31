@@ -79,6 +79,8 @@ public:
    /// Compute max length of text field in vector of string views
    std::pair<bool, std::string> ComputeTextLength( std::string_view stringTable, std::vector<std::string_view> vectorField, uint64_t* puMaxLength ) const;
 
+   std::pair<bool, std::string> ReadColumnMetadata( std::string_view stringTable, std::vector<std::string_view> vectorField, gd::table::dto::table* ptableColumn ) const;
+
 
 protected:
 // @API [tag: internal]

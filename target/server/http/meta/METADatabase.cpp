@@ -167,6 +167,38 @@ std::pair<bool, std::string> CDatabase::ComputeTextLength( std::string_view stri
    return { true, "" };
 }
 
+std::pair<bool, std::string> CDatabase::ReadColumnMetadata( std::string_view stringTable, std::vector<std::string_view> vectorField, gd::table::dto::table* ptableColumn ) const
+{
+    auto vectorColumnNames = ptableColumn->column_get_name();
+    auto vectorColumnIndices = m_ptableColumn->column_get_index( vectorColumnNames );
+   
+   // ## Find first row for table name in internal table holding column information
+   
+   for( auto itRow = m_ptableColumn->row_begin(); itRow != m_ptableColumn->row_end(); itRow++ )
+   {
+      auto table_ = itRow.cell_get_variant_view( "table" );
+      auto stringMatchTable = table_.as_string_view();
+      if( stringMatchTable != stringTable ) { continue; }                              // Skip other tables
+      
+      for( ;itRow != m_ptableColumn->row_end() && stringTable == stringMatchTable; itRow++ )
+      { 
+         auto column_ = itRow.cell_get_variant_view( "column" );
+         auto stringColumn = column_.as_string_view();
+         for( const auto& stringMatchColumn : vectorField )
+         {
+            if( stringColumn == stringMatchColumn )
+            {
+               m_ptableColumn->cell_g
+               break;
+            }
+         }
+      }
+      break;
+   }      
+   
+
+}
+
 
 void CDatabase::CreateTable_s( gd::table::arguments::table& tableTable )
 {
@@ -290,4 +322,3 @@ void CDatabase::CreateComputed_s( gd::table::arguments::table& tableComputed )
 
 
 NAMESPACE_META_END
-

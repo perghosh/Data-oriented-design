@@ -1,13 +1,6 @@
 // @FILE [tag: strstr, playground] [description: Key value and finding things in string] [type: playground]
 
 #include <filesystem>
-#ifdef _WIN32
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-#include <windows.h>
-#include <psapi.h>
-#endif
 #include "catch2/catch_amalgamated.hpp"
 
 #include "gd/gd_arguments.h"
@@ -15,8 +8,17 @@
 #include "gd/gd_table_io.h"
 
 #include "../Session.h"
+#include "../Router.h"
 #include "../Document.h"
 #include "../Application.h"
+
+#ifdef _WIN32
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+#include <windows.h>
+#endif
+
 
 #include "main.h"
 
@@ -58,6 +60,11 @@ TEST_CASE("[session] test uri logic", "[session]")
          std::string stringArguments_d = gd::argument::debug::print( argumentsDatabase );
          std::tie(bOk, stringError) = papplication_g->DATABASE_Connect(argumentsDatabase);            REQUIRE( bOk == true );
       }
+
+      std::string stringEnpoint = "!sys/meta/db/fields//sys/meta/query/exists?table=TUser&field=FAlias,FMail";
+      CRouter router_(papplication_g, stringEnpoint);
+      auto result_ = router_.Parse();                                                              REQUIRE( result_.first == true );
+      result_ = router_.Run();                                                                     REQUIRE( result_.first == true );
    }
 
    // Take a memory snapshot at the end and compare

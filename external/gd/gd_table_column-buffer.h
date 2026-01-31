@@ -911,8 +911,8 @@ public:
 
    // ## @API [tag: cell] [description: cell management methods]
 
-   uint64_t cell_offset( uint64_t uRow, unsigned uColumn ) noexcept;
-   uint64_t cell_offset(uint64_t uRow, const std::string_view& stringName) noexcept;
+   uint64_t cell_offset( uint64_t uRow, unsigned uColumn ) noexcept; ///< get offset of cell in buffer
+   uint64_t cell_offset(uint64_t uRow, const std::string_view& stringName) noexcept; ///< get offset of cell in buffer
 
    uint8_t* cell_get( uint64_t uRow, unsigned uColumn ) noexcept;
    const uint8_t* cell_get( uint64_t uRow, unsigned uColumn ) const noexcept;
@@ -944,6 +944,8 @@ public:
 
    const uint8_t* cell_get(  const std::vector< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& vectorFind, unsigned uColumn, tag_find ) const noexcept;
    gd::variant_view cell_get_variant_view(  const std::vector< std::pair< std::variant< unsigned, std::string_view>, gd::variant_view > >& vectorFind, unsigned uColumn, tag_find ) const noexcept;
+   
+   void cell_get( uint64_t uRow, const std::span<unsigned> spanColumn, gd::argument::arguments& argumentsValue ) const;
 
 
    unsigned cell_get_length( uint64_t uRow, unsigned uColumn ) const noexcept;
