@@ -1134,6 +1134,7 @@ public:
    arguments& append_object( const OBJECT object ) { return append_object( std::string_view(), object ); }
 
    arguments& push_back( const variant_view& variantviewValue ) { return append_argument(variantviewValue, tag_view{}); }
+   arguments& push_back( std::string_view stringName, const variant& variantValue ) { return append_argument( stringName, variantValue); }
    arguments& push_back( std::string_view stringName, const variant_view& variantviewValue ) { return append_argument( stringName, variantviewValue, tag_view{}); }
    arguments& push_back( const std::pair<std::string_view, gd::variant_view>& pairArgument ) { return append_argument(pairArgument, tag_view{}); }
 
@@ -1265,6 +1266,9 @@ public:
    [[nodiscard]] bool compare(const std::pair<std::string_view, gd::variant_view>& pairMatch) const { return find(pairMatch) != nullptr; }
    [[nodiscard]] bool compare(const std::string_view& stringName, const arguments& argumentsCompareTo) const;
    [[nodiscard]] bool compare_exists(const arguments& argumentsExists) const { return compare_exists_s( *this, argumentsExists ); }
+
+   bool iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > callback_ ) const;
+
 
    // ## @API [tag: walk, iterator] [description: walk between items in arguments, moves pointer to next value, can't go back]
 

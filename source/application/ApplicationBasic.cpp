@@ -61,6 +61,24 @@ std::pair<bool, std::string> CApplication::Exit()
    return { true, "" };
 }
 
+gd::argument::arguments CApplication::PROPERTY_Get( const std::initializer_list<std::string_view>& listName, gd::types::tag_argument ) const
+{
+   gd::argument::arguments arguments_;
+   for( const auto& it : m_vectorProperty )
+   {
+      // ## Compare with it.first for all values in listName
+      for( const auto& name_ : listName )
+      {
+         if( it.first == name_ ) 
+         {
+            arguments_.push_back( it.first, it.second );
+            break;
+         }
+      }
+   }
+
+   return arguments_;
+}
+
 
 APPLICATION_APPLICATION_BASIC_END
-

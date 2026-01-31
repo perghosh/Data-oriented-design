@@ -80,6 +80,7 @@ public:
    bool PROPERTY_Exists( const std::string_view& stringName ) { return PROPERTY_Has( stringName ); }
    size_t PROPERTY_Size() const noexcept { return m_vectorProperty.size(); }
    std::unique_ptr<gd::table::dto::table> PROPERTY_ToTable() const;
+   gd::argument::arguments PROPERTY_Get( const std::initializer_list<std::string_view>& listName, gd::types::tag_argument ) const; 
 //@}
 
    /// ## Application version information

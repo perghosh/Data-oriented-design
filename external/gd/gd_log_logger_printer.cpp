@@ -346,6 +346,7 @@ printer_file::printer_file( const std::string_view& stringFileName ): m_stringSp
    constexpr unsigned uBufferSize = 512;                                                           assert( stringFileName.length() < uBufferSize );
    wchar_t pwszBuffer[uBufferSize];
    size_t uLength = stringFileName.length();
+   m_stringFileName.reserve( uLength +1 );
 
    std::mbstowcs(pwszBuffer, stringFileName.data(), uLength);
    m_stringFileName.assign( pwszBuffer, uLength );

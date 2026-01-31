@@ -2546,6 +2546,23 @@ void arguments::clear()
    m_uLength   = 0;
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Check if value exists and if found then call callback
+ * @param stringName name of value to find
+ * @param callback_ callback to call if value is found
+ * @return true if value was found, false if not
+ */
+bool arguments::iif( const std::string_view& stringName, std::function< void( const gd::variant_view& ) > callback_ ) const
+{
+   gd::variant_view variantviewValue = get_variant_view( stringName );
+   if( variantviewValue.is_true() == true )
+   {
+      callback_( variantviewValue );
+      return true;
+   }
+   
+   return false;
+}
 
    
 /*----------------------------------------------------------------------------- get_param */ /**
