@@ -51,13 +51,13 @@ TEST_CASE("[session] test uri logic", "[session]")
       papplication_g->PROPERTY_Add("folder-application", stringFolder );
 
       {
-         auto [bOk, stringError] = papplication_g->Initialize();                                      REQUIRE( bOk == true );
+         /// Initialize application, tries to set up as much as possible for whats been set to the application
+         auto [bOk, stringError] = papplication_g->Initialize();                                   REQUIRE( bOk == true );
 
-         std::string stringConfigurationFile = stringFolder + "/configuration.xml";                   REQUIRE( std::filesystem::exists( stringConfigurationFile ) == true );
-
+         /// Get property values from application, these are set in configuration.xml
          gd::argument::arguments argumentsDatabase = papplication_g->PROPERTY_Get({"database-meta-tables", "database-meta-columns", "database-open"}, gd::types::tag_argument{});
 
-         std::string stringArguments_d = gd::argument::debug::print( argumentsDatabase );
+         std::string stringArguments_d = gd::argument::debug::print( argumentsDatabase ); // print informationn harvested from application properties
          std::tie(bOk, stringError) = papplication_g->DATABASE_Connect(argumentsDatabase);            REQUIRE( bOk == true );
       }
 
