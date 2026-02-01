@@ -180,17 +180,12 @@ std::pair<bool, std::string> CApplication::Initialize()
          }
       }
 
-      if( stringConfigurationFile.empty() == false )
+      if( stringConfigurationFile.empty() == false && std::filesystem::exists(stringConfigurationFile) == true )
       {
-         if( std::filesystem::exists(stringConfigurationFile) == true )
-         {
-            auto result_ = CONFIGURATION_Read(stringConfigurationFile);      // read configuration from configuration file
-            if( result_.first == false ) { return result_; }
-         }
-         else
-         {
-            return std::pair<bool, std::string>( false, "Configuration file '" + stringConfigurationFile + "' does not exist!" );
-         }
+         auto result_ = CONFIGURATION_Read(stringConfigurationFile);      // read configuration from configuration file
+         if( result_.first == false ) { return result_; }
+
+         //return std::pair<bool, std::string>( false, "Configuration file '" + stringConfigurationFile + "' does not exist!" );
       }
    } // ## end read configuration file
 
