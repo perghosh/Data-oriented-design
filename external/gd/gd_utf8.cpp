@@ -2188,7 +2188,7 @@ namespace gd {
                      if( uExpected == 1 ) { *pubszCharacter = puPosition; return pu4Byte[0]; } // Simple ASCII percent-encoding
                   }
    
-               } while( *puPosition == '%' );                                  // Continue only if next character is also '%' (i.e., more encoded bytes)
+               } while( *puPosition == '%' && uByteCount < pNeededByteCount_s[pu4Byte[0]] ); // Continue only if next character is also '%' (i.e., more encoded bytes)
    
                // ### Now combine the collected UTF-8 bytes 
                // 
@@ -2421,7 +2421,7 @@ namespace gd {
             for( auto pubszPosition = pubszText; pubszPosition != pubszEnd; )
             {                                                                                      assert( pubszPosition < pubszEnd );
                auto uCharacter = uri::character( &pubszPosition );
-               if( uCharacter == 0xFFFFFFFF ) return { false, pubszPosition }; // error in uri format
+               if( uCharacter == 0xFFFFFFFF ) { assert(false); return { false, pubszPosition }; } // error in uri format
 
                pubszInsert += convert( uCharacter, pubszInsert );
             }

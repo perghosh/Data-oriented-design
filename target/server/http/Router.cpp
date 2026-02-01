@@ -94,6 +94,9 @@ std::pair<bool, std::string> CRouter::Run()
       // ## parse command path and query arguments and prepare important variables
       auto [vectorPath, arguments_] = gd::parse::uri::parse_path_and_query( m_stringQueryString ); 
       if( vectorPath.empty() == true ) { return { false, "No command found in query string: " + m_stringQueryString }; }
+#ifndef NDEBUG
+      std::string stringArguments_d = gd::argument::debug::print( arguments_ );
+#endif // NDEBUG
       
       // ### Check for echo, echo is used to return information to client and this is sent fron client 
       if( arguments_.exists("echo") == true ) { m_pdtoresponse->AddContext( "echo", arguments_["echo"].as_variant_view() ); }
