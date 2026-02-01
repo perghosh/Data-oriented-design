@@ -9,10 +9,14 @@ public:
    CAPISql() {}
    CAPISql( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
       : CAPI_Base( vectorCommand, argumentsParameter ) {}
+   CAPISql( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex )
+      : CAPI_Base( vectorCommand, argumentsParameter, uCommandIndex ) {}
    CAPISql( std::vector<std::string_view>&& vectorCommand, gd::argument::arguments&& argumentsParameter )
       : CAPI_Base( std::move( vectorCommand ), std::move( argumentsParameter ) ) { }
    CAPISql(CApplication* pApplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter)
       : CAPI_Base( pApplication, vectorCommand, argumentsParameter ) {}
+   CAPISql(CApplication* pApplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex)
+      : CAPI_Base( pApplication, vectorCommand, argumentsParameter, uCommandIndex ) {}
    // copy - explicitly deleted to make class move-only (inherited from CAPI_Base)
    CAPISql( const CAPISql& ) = delete;
    CAPISql& operator=( const CAPISql& ) = delete;

@@ -6,6 +6,11 @@
 
 #include "Session.h"
 
+CSessions::~CSessions()
+{
+
+}
+
 void CSessions::Initialize( size_t uMaxCount )
 {
    CreateTable_s( m_tableSession );

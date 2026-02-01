@@ -14,7 +14,7 @@
 #include "jsoncons/json.hpp"
 #include "jsoncons_ext/jsonpath/jsonpath.hpp"
 
-// #include "Session.h"
+#include "dto/DTOResponse.h"
 #include "Application.h"
 
 #include "Document.h"
@@ -587,7 +587,7 @@ void CDocument::ERROR_Add( const std::string_view& stringError )
    m_vectorError.push_back( std::move(argumentsError) );
 }
 
-/** ---------------------------------------------------------------------------
+/** --------------------------------------------------------------------------
  * @brief Add warning to internal list of problems
  * @param stringWarning warning information
  */
@@ -613,4 +613,12 @@ void CDocument::ERROR_Print( bool bClear )
 
    if (bClear == true) m_vectorError.clear();                                 // clear error list
 
+}
+
+/** --------------------------------------------------------------------------
+ * @brief Destroy static objects used by document 
+ */
+void CDocument::Destroy_s()
+{
+   CDTOResponse::Destroy_s();                                                 // destroy static objects used for transport data with CDTOResponse object
 }
