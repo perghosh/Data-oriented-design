@@ -96,6 +96,9 @@ public:
 
    std::pair<bool, std::string> PrintResponseXml( std::string& stringXml, const gd::argument::arguments* parguments_ );
 
+   template<typename APIObject>
+   std::pair<bool, std::string> ExecuteCommand_( const std::vector<std::string_view>& vectorPath, const gd::argument::arguments& arguments_, unsigned& uCommandIndex);
+
 // ## attributes ----------------------------------------------------------------
 public:
    CApplication* m_pApplication{};     ///< application instance

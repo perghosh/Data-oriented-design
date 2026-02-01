@@ -89,6 +89,9 @@ CApplication::~CApplication()
    gd::log::logger<0>* plogger = gd::log::get_s();
    // Call logger destructor
    plogger->clear();
+
+   // ## Clean up static items
+   CDocument::Destroy_s();
 }
 
 

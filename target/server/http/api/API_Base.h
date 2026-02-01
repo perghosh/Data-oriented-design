@@ -33,10 +33,15 @@ public:
     CAPI_Base() {}
     CAPI_Base( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
         : m_vectorCommand( vectorCommand ), m_argumentsParameter( argumentsParameter ) {}
+    CAPI_Base( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex )
+        : m_vectorCommand( vectorCommand ), m_uCommandIndex( uCommandIndex ), m_argumentsParameter( argumentsParameter ) { assert( uCommandIndex < vectorCommand.size() ); }
     CAPI_Base( std::vector<std::string_view>&& vectorCommand, gd::argument::arguments&& argumentsParameter )
        : m_vectorCommand( std::move( vectorCommand ) ), m_argumentsParameter( std::move( argumentsParameter ) ) { }
     CAPI_Base(CApplication* papplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter)
         : m_vectorCommand( vectorCommand ), m_argumentsParameter( argumentsParameter ), m_papplication( papplication ) {}
+    CAPI_Base(CApplication* papplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex)
+        : m_vectorCommand( vectorCommand ), m_uCommandIndex( uCommandIndex ), m_argumentsParameter( argumentsParameter ), m_papplication( papplication ) { assert( uCommandIndex < vectorCommand.size() ); }
+
     // copy - explicitly deleted to make class move-only
     CAPI_Base( const CAPI_Base& ) = delete;
     CAPI_Base& operator=( const CAPI_Base& ) = delete;
@@ -65,6 +70,8 @@ public:
    const CDocument* GetDocument() const { return m_pdocument; }
    CDocument* GetDocument();
 
+   /// Get currect command index value
+   unsigned GetCommandIndex() const { assert( m_uCommandIndex <= m_vectorCommand.size() ); return m_uCommandIndex; }
    /// Sets the current command index
    void SetCommandIndex( unsigned uIndex ) { m_uCommandIndex = uIndex; assert( m_uCommandIndex <= m_vectorCommand.size() ); }
    /// Checks to se if there is more commands left to process

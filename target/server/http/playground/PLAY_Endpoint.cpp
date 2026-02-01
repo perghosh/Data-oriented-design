@@ -27,7 +27,7 @@
 #define new DEBUG_NEW
 #endif
 
-
+// @TODO Clean upp static objects related to document, search for "if( m_pcolumnsBody_s == nullptr )"
 
 TEST_CASE("[session] test uri logic", "[session]") 
 {
@@ -40,7 +40,7 @@ TEST_CASE("[session] test uri logic", "[session]")
    _CrtMemCheckpoint(&memStateStart);
 
    //_CrtSetBreakAlloc(1223);
-   //_CrtSetBreakAlloc(1213);
+   //_CrtSetBreakAlloc(4850);
    #endif
 
    {
@@ -54,6 +54,9 @@ TEST_CASE("[session] test uri logic", "[session]")
          /// Initialize application, tries to set up as much as possible for whats been set to the application
          auto [bOk, stringError] = papplication_g->Initialize();                                   REQUIRE( bOk == true );
 
+         auto* pdocument = papplication_g->GetDocument();
+         pdocument->SESSION_Initialize( 12 );
+
          /// Get property values from application, these are set in configuration.xml
          gd::argument::arguments argumentsDatabase = papplication_g->PROPERTY_Get({"database-meta-tables", "database-meta-columns", "database-open"}, gd::types::tag_argument{});
 
@@ -61,7 +64,8 @@ TEST_CASE("[session] test uri logic", "[session]")
          std::tie(bOk, stringError) = papplication_g->DATABASE_Connect(argumentsDatabase);            REQUIRE( bOk == true );
       }
 
-      std::string stringEnpoint = "!sys/meta/db/fields//sys/meta/query/exists?table=TUser&field=FAlias,FMail";
+      //std::string stringEnpoint = "!sys/meta/db/fields?table=TUser&field=FAlias,FMail&session=01";
+      std::string stringEnpoint = "!sys/session/add//sys/meta/db/fields?table=TUser&field=FAlias,FMail&session=01";
       CRouter router_(papplication_g, stringEnpoint);
       auto result_ = router_.Parse();                                                              REQUIRE( result_.first == true );
       result_ = router_.Run();                                                                     REQUIRE( result_.first == true );
