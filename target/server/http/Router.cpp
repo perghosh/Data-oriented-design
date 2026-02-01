@@ -104,58 +104,14 @@ std::pair<bool, std::string> CRouter::Run()
          if( stringCommand == "db" )                                             // database related commands, select, create, delete, open, close database
          {
             result_ = ExecuteCommand_<CAPIDatabase>( vectorPath, arguments_, uCommandIndex );
-            /*
-            CAPIDatabase database_( m_pApplication, vectorPath, arguments_, uCommandIndex ); // create api database object with command and arguments
-            result_ = database_.Execute();                                       // execute command base on command
-
-            if( result_.first == true )                                          // if success get objects from database api
-            {
-               Types::Objects* pobjectsResult = database_.GetObjects();                               assert( pobjectsResult );
-               if( pobjectsResult != nullptr && pobjectsResult->Empty() == false )
-               { 
-                  result_ = m_pdtoresponse->AddTransfer( pobjectsResult );       // add objects to response dto
-               }
-            }
-
-            uCommandIndex = database_.GetCommandIndex();                         // get current active command index
-            */
          } 
          else if( stringCommand == "sql" )                                       // sql commands are logic related to sql queries, adding, remove or edit sql queries
          {
             result_ = ExecuteCommand_<CAPISql>( vectorPath, arguments_, uCommandIndex );
-            /*
-            CAPISql sql_( m_pApplication, vectorPath, arguments_, uCommandIndex ); // create api database object with command and arguments
-            result_ = sql_.Execute();                                       // execute command base on command
-
-            if( result_.first == true )                                          // if success get objects from database api
-            {
-               Types::Objects* pobjectsResult = sql_.GetObjects();                                    assert( pobjectsResult );
-               if( pobjectsResult != nullptr && pobjectsResult->Empty() == false )
-               { 
-                  result_ = m_pdtoresponse->AddTransfer( pobjectsResult );       // add objects to response dto
-               }
-            }
-
-            uCommandIndex = sql_.GetCommandIndex();                              // get current active command index
-            */
          }
          else if( stringCommand == "sys" )                                       // system related commands, thing that affects the complete system
          {
             result_ = ExecuteCommand_<CAPISystem>( vectorPath, arguments_, uCommandIndex );
-            /*
-            CAPISystem system_( m_pApplication, vectorPath, arguments_, uCommandIndex );         
-            result_ = system_.Execute();
-            if( result_.first == true )                                          // if success get objects from database api
-            {
-               Types::Objects* pobjectsResult = system_.GetObjects();                                 assert( pobjectsResult );
-               if( pobjectsResult != nullptr && pobjectsResult->Empty() == false )
-               { 
-                  result_ = m_pdtoresponse->AddTransfer( pobjectsResult );       // add objects to response dto
-               }
-            }
-
-            uCommandIndex = system_.GetCommandIndex();                           // get current active command index
-            */
          }
 
          uCommandIndex++;
