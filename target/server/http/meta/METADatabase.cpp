@@ -167,10 +167,18 @@ std::pair<bool, std::string> CDatabase::ComputeTextLength( std::string_view stri
    return { true, "" };
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Read selected column metadata into table
+ * @param stringTable name of table to filter columns on
+ * @param vectorField fields in table to read information about
+ * @param ptableColumn pointer to table where column information are placed 
+ * @return success if ok, false and error message if not ok
+ */
 std::pair<bool, std::string> CDatabase::ReadColumnMetadata( std::string_view stringTable, std::vector<std::string_view> vectorField, gd::table::dto::table* ptableColumn ) const
 {
-    auto vectorColumnNames = ptableColumn->column_get_name();
-    auto vectorColumnIndices = m_ptableColumn->column_get_index( vectorColumnNames );
+   std::array<uint8_t, 256> buffer_;
+   auto vectorColumnNames = ptableColumn->column_get_name();
+   auto vectorColumnIndices = m_ptableColumn->column_get_index( vectorColumnNames );
    
    // ## Find first row for table name in internal table holding column information
    
@@ -188,7 +196,9 @@ std::pair<bool, std::string> CDatabase::ReadColumnMetadata( std::string_view str
          {
             if( stringColumn == stringMatchColumn )
             {
-               //m_ptableColumn->cell_g
+               gd::argument::arguments arguments_( buffer_ );
+               m_ptableColumn->cell_get( itRow.get_row(), vectorColumnIndices, arguments_);
+               ptableColumn->row_add( arguments_, gd::table::tag_arguments{});
                break;
             }
          }
