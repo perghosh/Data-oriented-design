@@ -115,6 +115,7 @@ size_t binary_copy_hex_g( uint8_t* puBuffer, size_t uBufferSize, std::string_vie
 /// Convert binary data to hexadecimal string
 void binary_to_hex_g( const uint8_t* puBuffer, size_t uBufferSize, std::string& stringHex, bool bUppercase = false );
 std::string binary_to_hex_g( const uint8_t* puBuffer, size_t uBufferSize, bool bUppercase = false );
+inline std::string binary_to_hex_g( std::string_view stringBuffer, bool bUppercase = false ) { return binary_to_hex_g( (const uint8_t*)stringBuffer.data(), stringBuffer.length(), bUppercase ); }
 
 // @API [tag: binary, find] [description:  find patterns etc in binary data]
 
