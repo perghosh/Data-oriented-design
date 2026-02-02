@@ -1,5 +1,6 @@
 #include <filesystem>
 
+#include "gd/gd_binary.h"
 #include "gd/parse/gd_parse_json.h"
 #include "gd/gd_database_sqlite.h"
 #include "gd/gd_file.h"
@@ -285,6 +286,10 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Select()
    {
       auto ptable_ = new gd::table::dto::table( gd::table::tag_full_meta{} );
       gd::database::to_table( pcursor.get(), ptable_ );
+#ifndef NDEBUG
+      // std::string stringTable_d = gd::table::debug::print( *ptable_ );
+      // std::string stringTableHex_d = gd::binary_to_hex_g( stringTable_d );
+#endif // NDEBUG
       m_objects.Add( ptable_ );
    }
 
@@ -464,7 +469,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
       std::string stringValues = GetArgument("values").as_string();
       gd::argument::shared::arguments argumentsValues;
       argumentsValues.reserve( 128 );
-      auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues );
+      auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues, false );
       if( result_.first == false ) return result_;
 
       if( m_argumentsGlobal.empty() == false )
