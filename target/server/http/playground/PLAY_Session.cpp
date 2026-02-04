@@ -25,12 +25,15 @@
 
 TEST_CASE( "[session] vector - default construction", "[session]" )
 {
-   gd::stack::vector<uint32_t, 5> vec;
-   
-   REQUIRE(vec.empty());
-   REQUIRE(vec.size() == 0);
-   REQUIRE(vec.capacity() == 5);
-   REQUIRE(vec.inline_capacity() == 5);
+   gd::stack::vector<std::byte, 128> vec;
+
+   gd::argument::arguments arguments_( vec );
+
+   arguments_.append("test", "test");
+   arguments_.append("test1", "test1");
+   arguments_.append("test2", "test2");
+
+   REQUIRE(arguments_["test1"].as_string() == "test1");
 }
 
 TEST_CASE( "[session] vector - size construction", "[session]" )
