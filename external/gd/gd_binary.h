@@ -179,10 +179,10 @@ namespace binary {
 
 // Concept: Container that can be resized and has contiguous data
 template <typename TYPE>
-concept concept_resizable_container = requires(TYPE container, size_t n) {
+concept concept_resizable_container = requires(TYPE container, size_t uSize) {
    { container.data() } -> std::convertible_to<typename TYPE::value_type*>;
    { container.size() } -> std::convertible_to<size_t>;
-   { container.resize(n) } -> std::same_as<void>;
+   { container.resize(uSize) } -> std::same_as<void>;
    typename TYPE::value_type;
 };
 
