@@ -37,34 +37,32 @@ template<typename VALUE>
 class vector_base
 {
 public:
-   using value_type = VALUE;
-   using size_type = std::size_t;
-   using difference_type = std::ptrdiff_t;
-   using reference = value_type&;
-   using const_reference = const value_type&;
-   using pointer = value_type*;
-   using const_pointer = const value_type*;
-   using iterator = value_type*;
-   using const_iterator = const value_type*;
-   using reverse_iterator = std::reverse_iterator<iterator>;
-   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+   using value_type      = VALUE;                                             // Type of values stored in the container
+   using size_type       = std::size_t;                                       // Type for size measurements
+   using difference_type = std::ptrdiff_t;                                    // Type for differences between iterators
+   using reference       = value_type&;                                       // Reference to stored value type
+   using const_reference = const value_type&;                                 // Const reference to stored value type
+   using pointer         = value_type*;                                       // Pointer to stored value type
+   using const_pointer   = const value_type*;                                 // Const pointer to stored value type
+   using iterator        = value_type*;                                       // Iterator for traversing container elements
+   using const_iterator  = const value_type*;                                 // Const iterator for traversing container elements
+   using reverse_iterator       = std::reverse_iterator<iterator>;            // Iterator for reverse traversal
+   using const_reverse_iterator = std::reverse_iterator<const_iterator>;      // Const iterator for reverse traversal
 
 protected:
    vector_base() noexcept = default;
    ~vector_base() noexcept { destroy(); }
+   
+   // ## Non-copyable, non-movable (derived class handles this) .............
 
-   // Non-copyable, non-movable (derived class handles this)
    vector_base(const vector_base&) = delete;
    vector_base& operator=(const vector_base&) = delete;
    vector_base(vector_base&&) = delete;
    vector_base& operator=(vector_base&&) = delete;
 
    /// Initialize base with inline buffer
-   void init_base(VALUE* pInlineBuffer, size_type uInlineCapacity) noexcept
-   {
-      m_pBuffer = pInlineBuffer;
-      m_uInlineCapacity = uInlineCapacity;
-      m_uCapacity = uInlineCapacity;
+   void init_base(VALUE* pInlineBuffer, size_type uInlineCapacity) noexcept {                      assert( uInlineCapacity < 0x10'00'00 ); assert( uInlineCapacity > 0 ? (pInlineBuffer != nullptr) : true ); // realistic !
+      m_pBuffer = pInlineBuffer; m_uInlineCapacity = uInlineCapacity; m_uCapacity = uInlineCapacity;
    }
 
    /// Check if using heap storage
@@ -116,9 +114,8 @@ public:
    [[nodiscard]] size_type capacity() const noexcept { return m_uCapacity; }
    [[nodiscard]] size_type inline_capacity() const noexcept { return m_uInlineCapacity; }
 
-   void reserve(size_type uNewCapacity)
-   {
-      if( uNewCapacity > m_uCapacity ) { allocate(uNewCapacity); }
+   void reserve(size_type uNeededCapacity) {
+      if( uNeededCapacity > m_uCapacity ) { allocate(uNeededCapacity); }
    }
 
    /// ## Modifiers
@@ -155,32 +152,29 @@ public:
       std::destroy_at(m_pBuffer + m_uSize);
    }
 
-   void resize(size_type uNewSize)
+   void resize(size_type uNeededSize)
    {
-      if( uNewSize > m_uSize )
+      if( uNeededSize > m_uSize )
       {
-         if( uNewSize > m_uCapacity ) { allocate(uNewSize); }
-         std::uninitialized_value_construct_n(m_pBuffer + m_uSize, uNewSize - m_uSize);
+         if( uNeededSize > m_uCapacity ) { allocate(uNeededSize); }
+         std::uninitialized_value_construct_n(m_pBuffer + m_uSize, uNeededSize - m_uSize);
       }
-      else if( uNewSize < m_uSize )
+      else if( uNeededSize < m_uSize )
       {
-         std::destroy_n(m_pBuffer + uNewSize, m_uSize - uNewSize);
+         std::destroy_n(m_pBuffer + uNeededSize, m_uSize - uNeededSize);
       }
-      m_uSize = uNewSize;
+      m_uSize = uNeededSize;
    }
 
-   void resize(size_type uNewSize, const VALUE& value)
+   void resize(size_type uNeededSize, const VALUE& value)
    {
-      if( uNewSize > m_uSize )
+      if( uNeededSize > m_uSize )
       {
-         if( uNewSize > m_uCapacity ) { allocate(uNewSize); }
-         std::uninitialized_fill_n(m_pBuffer + m_uSize, uNewSize - m_uSize, value);
+         if( uNeededSize > m_uCapacity ) { allocate(uNeededSize); }
+         std::uninitialized_fill_n(m_pBuffer + m_uSize, uNeededSize - m_uSize, value);
       }
-      else if( uNewSize < m_uSize )
-      {
-         std::destroy_n(m_pBuffer + uNewSize, m_uSize - uNewSize);
-      }
-      m_uSize = uNewSize;
+      else if( uNeededSize < m_uSize ) { std::destroy_n(m_pBuffer + uNeededSize, m_uSize - uNeededSize); }
+      m_uSize = uNeededSize;
    }
 
    /// ## Comparison operators (C++20)
@@ -197,37 +191,29 @@ protected:
    {
       if( uNeededCapacity <= m_uCapacity ) { return; }
       
-      size_type uGrowCapacity = std::max(uNeededCapacity, m_uCapacity + m_uCapacity / 2);
+      size_type uAllocateCapacity = std::max(uNeededCapacity, m_uCapacity + m_uCapacity / 2); // increase by 1.5x
       
-      // allocate new storage
-      VALUE* pNew = std::allocator<VALUE>().allocate(uGrowCapacity);
+      VALUE* pvalueNew = std::allocator<VALUE>().allocate(uAllocateCapacity);    // allocate new storage
 
-      // ### Move or copy elements to new storage
-      if constexpr( std::is_nothrow_move_constructible_v<VALUE> )
+      // ### Move or copy elements to new storage ............................
+
+      if constexpr( std::is_nothrow_move_constructible_v<VALUE> )            // Ask if type can be moved without throwing
       {
-         std::uninitialized_move_n(m_pBuffer, m_uSize, pNew);
+         std::uninitialized_move_n(m_pBuffer, m_uSize, pvalueNew);           // raw copy
       }
       else
       {
-         try
-         {
-            std::uninitialized_copy_n(m_pBuffer, m_uSize, pNew);
-         }
-         catch( ... )
-         {
-            std::allocator<VALUE>().deallocate(pNew, uGrowCapacity);
-            throw;
-         }
+         try { std::uninitialized_copy_n(m_pBuffer, m_uSize, pvalueNew); }
+         catch( ... ) { std::allocator<VALUE>().deallocate(pvalueNew, uAllocateCapacity); throw; }
       }
 
       // ## destroy old elements and free old storage
       std::destroy_n(m_pBuffer, m_uSize);
-      if( is_external() ) { std::allocator<VALUE>().deallocate(m_pHeap, m_uCapacity); }
+      if( is_external() == true ) { std::allocator<VALUE>().deallocate(m_pHeap, m_uCapacity); }
 
-      // ## update to new storage
-      m_pBuffer = pNew;
-      m_pHeap = pNew;
-      m_uCapacity = uGrowCapacity;
+      m_pBuffer   = pvalueNew;
+      m_pHeap     = pvalueNew;
+      m_uCapacity = uAllocateCapacity;
    }
 
    void destroy() noexcept
@@ -259,7 +245,7 @@ protected:
 template<typename VALUE, std::size_t uCapacityStack = 1>
 class vector : public vector_base<VALUE>
 {
-   using base = vector_base<VALUE>;
+   using base = vector_base<VALUE>; // alias for base
 
 public:
    using typename base::value_type;
@@ -297,21 +283,15 @@ public:
             size_type uMinSize = std::min(this->m_uSize, o.m_uSize);
             std::copy_n(o.m_pBuffer, uMinSize, this->m_pBuffer);
             
-            if( o.m_uSize > this->m_uSize )
-            {
-               std::uninitialized_copy_n(o.m_pBuffer + this->m_uSize, o.m_uSize - this->m_uSize, this->m_pBuffer + this->m_uSize);
-            }
-            else
-            {
-               std::destroy_n(this->m_pBuffer + o.m_uSize, this->m_uSize - o.m_uSize);
-            }
+            if( o.m_uSize > this->m_uSize ) { std::uninitialized_copy_n(o.m_pBuffer + this->m_uSize, o.m_uSize - this->m_uSize, this->m_pBuffer + this->m_uSize); } // raw copy
+            else { std::destroy_n(this->m_pBuffer + o.m_uSize, this->m_uSize - o.m_uSize); }
             this->m_uSize = o.m_uSize;
          }
          else
          {
             // ### Need to allocate new storage
-            vector temp(o);
-            swap(temp);
+            vector temp_(o);
+            swap(temp_);
          }
       }
       return *this;
@@ -403,8 +383,7 @@ vector<VALUE,uCapacityStack>::vector(vector&& o) noexcept(std::is_nothrow_move_c
    }
    else
    {
-      // ### Move inline elements
-      std::uninitialized_move_n(o.m_pBuffer, o.m_uSize, this->m_pBuffer);
+      std::uninitialized_move_n(o.m_pBuffer, o.m_uSize, this->m_pBuffer);    // raw copy
    }
       
    this->m_uSize = o.m_uSize;
@@ -483,23 +462,19 @@ void vector<VALUE,uCapacityStack>::swap(vector& o) noexcept(std::is_nothrow_move
       std::swap(this->m_uCapacity, o.m_uCapacity);
       std::swap(this->m_uSize, o.m_uSize);
    }
-   else if( !this->is_external() && !o.is_external() )
+   else if( this->is_external() == false && o.is_external() == false )        // no external storage
    {
-      // ### Both using inline storage - swap elements
-      vector* pSmaller = (this->m_uSize < o.m_uSize) ? this : &o;
-      vector* pLarger = (this->m_uSize < o.m_uSize) ? &o : this;
+      vector* pvectorSmaller = (this->m_uSize < o.m_uSize) ? this : &o;
+      vector* pvectorLarger = (this->m_uSize < o.m_uSize) ? &o : this;
          
-      size_type uMinSize = pSmaller->m_uSize;
-      for( size_type i = 0; i < uMinSize; ++i )
-      {
-         std::swap((*pSmaller)[i], (*pLarger)[i]);
-      }
+      size_type uMinSize = pvectorSmaller->m_uSize;
+      for( size_type u = 0; u < uMinSize; ++u ) { std::swap((*pvectorSmaller)[u], (*pvectorLarger)[u]); }
          
       // move remaining elements from larger to smaller
-      std::uninitialized_move_n(pLarger->m_pBuffer + uMinSize, pLarger->m_uSize - uMinSize, pSmaller->m_pBuffer + uMinSize);
-      std::destroy_n(pLarger->m_pBuffer + uMinSize, pLarger->m_uSize - uMinSize);
+      std::uninitialized_move_n(pvectorLarger->m_pBuffer + uMinSize, pvectorLarger->m_uSize - uMinSize, pvectorSmaller->m_pBuffer + uMinSize);
+      std::destroy_n(pvectorLarger->m_pBuffer + uMinSize, pvectorLarger->m_uSize - uMinSize);
          
-      std::swap(pSmaller->m_uSize, pLarger->m_uSize);
+      std::swap(pvectorSmaller->m_uSize, pvectorLarger->m_uSize);
    }
    else
    {
@@ -511,7 +486,7 @@ void vector<VALUE,uCapacityStack>::swap(vector& o) noexcept(std::is_nothrow_move
       size_type uHeapCapacity = pHeap->m_uCapacity;
          
       // move inline elements to heap's inline storage
-      std::uninitialized_move_n(pInline->m_pBuffer, pInline->m_uSize, pHeap->get_inline_buffer());
+      std::uninitialized_move_n(pInline->m_pBuffer, pInline->m_uSize, pHeap->get_inline_buffer()); // raw copy
       std::destroy_n(pInline->m_pBuffer, pInline->m_uSize);
          
       // give heap storage to inline vector
