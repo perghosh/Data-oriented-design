@@ -670,7 +670,7 @@ variant_view to_variant_view_g( const VARIANT& v_, variant_type::tag_std_variant
 }
 
 
-// �'static_assert( sizeof(_variant) == 16, "_variant size isn't 16 bytes" );
+// 'static_assert( sizeof(_variant) == 16, "_variant size isn't 16 bytes" );
 static_assert( sizeof(variant_view) == 16, "variant size isn't 16 bytes" );
 static_assert( sizeof( gd::variant ) == sizeof( gd::variant_view ), "variant and variant_view have different sizes!!!" );
 

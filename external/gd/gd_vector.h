@@ -272,68 +272,56 @@ public:
 
    ~vector() noexcept = default;
 
-   /// ## Copy assignment operator
+   /// Copy assignment operator
    vector& operator=(const vector& o)
    {
       if( this != &o )
       {
-         if( o.m_uSize <= this->m_uCapacity )
+         if( o.m_uSize <= this->m_uCapacity )                                 // if vector to copy is within capacity
          {
-            // ### Reuse existing storage
-            size_type uMinSize = std::min(this->m_uSize, o.m_uSize);
-            std::copy_n(o.m_pBuffer, uMinSize, this->m_pBuffer);
+            size_type uMinSize = std::min(this->m_uSize, o.m_uSize);         // number of elements to assign with copy operator
+            std::copy_n(o.m_pBuffer, uMinSize, this->m_pBuffer);             // assign existing elements instead of assigning where they overlap, this is an optimization an may save allocations
             
-            if( o.m_uSize > this->m_uSize ) { std::uninitialized_copy_n(o.m_pBuffer + this->m_uSize, o.m_uSize - this->m_uSize, this->m_pBuffer + this->m_uSize); } // raw copy
-            else { std::destroy_n(this->m_pBuffer + o.m_uSize, this->m_uSize - o.m_uSize); }
+            if( o.m_uSize > this->m_uSize ) { std::uninitialized_copy_n(o.m_pBuffer + this->m_uSize, o.m_uSize - this->m_uSize, this->m_pBuffer + this->m_uSize); } // raw copy new elements
+            else { std::destroy_n(this->m_pBuffer + o.m_uSize, this->m_uSize - o.m_uSize); }   // destroy excess elements in destination
             this->m_uSize = o.m_uSize;
          }
          else
          {
-            // ### Need to allocate new storage
-            vector temp_(o);
-            swap(temp_);
+            vector temp_(o);                                                 // Need to allocate new storage into temporay vector
+            swap(temp_);                                                     // Swap this temp_ with current into current
          }
       }
       return *this;
    }
 
-   /// ## Move assignment operator
+   /// Move assignment operator
    vector& operator=(vector&& o) noexcept(std::is_nothrow_move_constructible_v<VALUE>)
    {
       if( this != &o )
       {
-         this->destroy();
+         this->destroy();                                                     // clean up
          
-         if( o.is_external() )
-         {
-            this->m_pHeap = o.m_pHeap;
-            this->m_pBuffer = o.m_pHeap;
-            this->m_uCapacity = o.m_uCapacity;
-            
-            o.m_pHeap = nullptr;
-            o.m_pBuffer = o.get_inline_buffer();
-            o.m_uCapacity = uCapacityStack;
+         if( o.is_external() == true ) {
+            this->m_pHeap = o.m_pHeap; this->m_pBuffer = o.m_pHeap; this->m_uCapacity = o.m_uCapacity;// move            
+            o.m_pHeap = nullptr; o.m_pBuffer = o.get_inline_buffer(); o.m_uCapacity = uCapacityStack; // clear
          }
-         else
-         {
-            this->m_pBuffer = get_inline_buffer();
-            std::uninitialized_move_n(o.m_pBuffer, o.m_uSize, this->m_pBuffer);
-         }
+         else { this->m_pBuffer = get_inline_buffer(); std::uninitialized_move_n(o.m_pBuffer, o.m_uSize, this->m_pBuffer); } // copy
          
-         this->m_uSize = o.m_uSize;
-         o.m_uSize = 0;
+         this->m_uSize = o.m_uSize; o.m_uSize = 0;                            // transfer size
       }
       return *this;
    }
 
-   /// ## Static capacity query
+   /// Static capacity query
    [[nodiscard]] static constexpr size_type inline_capacity() noexcept { return uCapacityStack; }
    
    /// Swap contents with another vector
    void swap(vector& o) noexcept(std::is_nothrow_move_constructible_v<VALUE>);
 
+// ## attributes -------------------------------------------------------------
 private:
-   alignas(VALUE) std::byte m_buffer[sizeof(VALUE) * uCapacityStack]; // inline storage buffer
+   alignas(VALUE) std::byte m_buffer[sizeof(VALUE) * uCapacityStack]; // inline storage buffer @CRITICAL [tag: stack, memory] [description: inline storage buffer]
 
    [[nodiscard]] VALUE* get_inline_buffer() noexcept { return reinterpret_cast<VALUE*>(m_buffer); }
    [[nodiscard]] const VALUE* get_inline_buffer() const noexcept { return reinterpret_cast<const VALUE*>(m_buffer); }
