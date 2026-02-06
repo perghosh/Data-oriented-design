@@ -8,6 +8,7 @@
 - `@TODO`: Used to describe tasks that need to be completed. Short reminder
 - `@DEBUG`: Used to describe code used for debugging purposes.
 - `@CLASS`: classes and structs
+- `@DEPRICATED`: Used to describe code that is no longer in use.
 
 ## Folder Structure
 - **api**: Contains modules that handle specific API endpoints for database, SQL, and system operations.

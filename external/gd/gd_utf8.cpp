@@ -2394,7 +2394,7 @@ namespace gd {
           * @param stringUri uri formated string that is converted to utf8
           * @param stringUtf8 converted string is placed in this string
           * @return true if ok, false and position in buffer if error
-         */
+          */
          std::pair<bool, const uint8_t*> convert_uri_to_uf8( const std::string_view& stringUri, std::string& stringUtf8 )
          {
             auto uSize = get_character_size( reinterpret_cast<const uint8_t*>(stringUri.data()), reinterpret_cast<const uint8_t*>(stringUri.data()) + stringUri.length() );
@@ -2412,8 +2412,41 @@ namespace gd {
             return result_;
          }
 
+         /** ------------------------------------------------------------------
+          * @brief converts uri formated text to utf8
+          * @param stringUri uri formated string that is converted to utf8
+          * @param stringUtf8 converted string is placed in this string
+          * @return true if ok, false and position in buffer if error
+          */
+         std::pair<bool, const uint8_t*> convert_uri_to_uf8( std::u8string_view stringUri, std::string& stringUtf8 )
+         {
+            auto uSize = get_character_size( reinterpret_cast<const uint8_t*>(stringUri.data()), reinterpret_cast<const uint8_t*>(stringUri.data()) + stringUri.length() );
+            std::vector<char> vectorText;                                      // using vector as temporary buffer because std::string do not have the logic for that
+
+            vectorText.reserve( uSize );
+            auto result_ = convert_uri_to_uf8( reinterpret_cast<const uint8_t*>(stringUri.data()), reinterpret_cast<const uint8_t*>(stringUri.data()) + stringUri.length(), (uint8_t*)vectorText.data() );
+            if( result_.first == true )
+            {
+               decltype(vectorText.data()) puEnd = decltype(vectorText.data())(result_.second); // get last position for converted text found in vector
+               stringUtf8.append( vectorText.data(), puEnd );
+               return { true, nullptr };
+            }
+   
+            return result_;
+         }
+
+
          /// @brief Helper function to convert uri formated text to utf8 formated text
-         std::string convert_uri_to_uf8(const std::string_view& stringUri)
+         std::string convert_uri_to_uf8(std::string_view stringUri)
+         {
+            std::string stringUtf8; // generated string
+            auto result_ = convert_uri_to_uf8(stringUri, stringUtf8);
+            if(result_.first == true) { return stringUtf8; }
+            return {};
+         }
+
+         /// @brief Helper function to convert uri formated text to utf8 formated text
+         std::string convert_uri_to_uf8(std::u8string_view stringUri)
          {
             std::string stringUtf8; // generated string
             auto result_ = convert_uri_to_uf8(stringUri, stringUtf8);

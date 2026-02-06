@@ -647,6 +647,7 @@ namespace gd {
          const uint8_t* next( const uint8_t* pubszPosition );
          const uint8_t* next_sequence( const uint8_t* pubszPosition, const uint8_t* pubszEnd  );
          inline const uint8_t* next_sequence( const std::string_view& stringUriText ) { return next_sequence( reinterpret_cast<const uint8_t*>(stringUriText.data()), reinterpret_cast<const uint8_t*>(stringUriText.data()) + stringUriText.length() ); }
+         inline const uint8_t* next_sequence( const std::u8string_view& stringUriText ) { return next_sequence( reinterpret_cast<const uint8_t*>(stringUriText.data()), reinterpret_cast<const uint8_t*>(stringUriText.data()) + stringUriText.length() ); }
 
          // ## convert uri formated text to utf7
          std::pair<bool, const uint8_t*> convert_uri_to_uf8( const uint8_t* pubszText, const uint8_t* pubszEnd, uint8_t* pbszTo );
@@ -655,7 +656,9 @@ namespace gd {
             return convert_uri_to_uf8( reinterpret_cast<const uint8_t*>(stringText.data()), reinterpret_cast<const uint8_t*>(stringText.data()) + stringText.length(), pbszTo);
          };
          std::pair<bool, const uint8_t*> convert_uri_to_uf8( const std::string_view& stringUri, std::string& stringUtf8 );
-         std::string convert_uri_to_uf8(const std::string_view& stringUri);
+         std::pair<bool, const uint8_t*> convert_uri_to_uf8( std::u8string_view stringUri, std::string& stringUtf8 );
+         std::string convert_uri_to_uf8(std::string_view stringUri);
+            std::string convert_uri_to_uf8(std::u8string_view stringUri);
 
          // ## convert utf8 text to uri escaped text
          std::pair<bool, const uint8_t*> convert_utf8_to_uri( const uint8_t* pubszText, const uint8_t* pubszEnd, uint8_t* pbszTo );

@@ -197,7 +197,7 @@ std::pair<bool, std::string> parse_shallow_object_implementation( std::string_vi
          }
          else { stringValue = std::string_view( piValueStart, piValueEnd - piValueStart ); }
 
-         argumentsJson.push_back( { stringKey, stringValue } );
+         argumentsJson.push_back( { stringKey, gd::variant_type::utf8( stringValue ) } );
       }
       else
       {

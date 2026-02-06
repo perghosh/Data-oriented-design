@@ -358,7 +358,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Insert()
    std::string stringExecute;
    auto result_ = Sql_Prepare(stringExecute);
    if( result_.first == false ) { return result_; }
-
+                                                                                                   //LOG_DEBUG_RAW( "SQL-INSERT: " & stringExecute.substr( 0, 128 ) );
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsKey( buffer_ );
    result_ = pdatabase->execute( stringExecute, [&argumentsKey]( const auto* parguments_ ){ argumentsKey = *parguments_; return true; });

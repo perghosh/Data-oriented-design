@@ -94,7 +94,7 @@ void append_ascii( const uint8_t* pbszAscii, size_t uLength, std::string& string
  * @brief Append utf8 (that is the default) text to string object
  * @param pbszUft8 utf8 formated text appended to text
  * @param stringSql utf8 text is appended to string
-*/
+ */
 void append_utf8( const uint8_t* pbszUft8, std::string& stringSql )
 {
    while( *pbszUft8 )
@@ -105,6 +105,26 @@ void append_utf8( const uint8_t* pbszUft8, std::string& stringSql )
       pbszUft8++;
    }
 }
+
+/** ---------------------------------------------------------------------------
+ * @brief Append utf8 (that is the default) text to string object
+ * @param pbszUft8 utf8 formated text appended to text
+ * @param uLength utf8 text length
+ * @param stringSql utf8 text is appended to string
+ */
+void append_utf8( const uint8_t* puUft8, std::size_t uLength, std::string& stringSql )
+{                                                                                                  assert( uLength < 100'000'000 ); // realistic?
+   const uint8_t* puPosition = puUft8;
+      const uint8_t* puEnd = puUft8 + uLength;
+   while( puPosition < puEnd )
+   {
+      if( *puPosition != '\'' ) stringSql += (char)*puPosition;
+      else                      stringSql += std::string_view{"''"};
+
+      puPosition++;
+   }
+}
+
 
 static const uint8_t binary_pszHEX_s[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
                                   
@@ -392,7 +412,7 @@ void append_g( const gd::variant_view& variantValue, std::string& stringSql )
    case eTypeNumberUtf8String: 
    {
       stringSql += '\'';
-      append_utf8( (uint8_t*)value.pb, stringSql );
+      append_utf8( (uint8_t*)value.pb, variantValue.length(), stringSql);
       stringSql += '\'';
    }
    break;

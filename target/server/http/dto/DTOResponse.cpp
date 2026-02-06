@@ -85,6 +85,10 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
    using namespace gd::table;
    xml_document xmldocument;   // xml document used to load xml from file
 
+   auto xmlnodeDeclaration = xmldocument.append_child(pugi::node_declaration);
+   xmlnodeDeclaration.append_attribute("version") = "1.0";
+   xmlnodeDeclaration.append_attribute("encoding") = "UTF-8";
+
    pugi::xml_node xmlnodeResults = xmldocument.append_child( m_stringResults_s );
 
    // ## iterate all objects in table and serialize them to xml
@@ -101,25 +105,6 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
          stringJson.reserve( 512 );                                           // preallocate 512 byte for json string
 
          auto xmlnodeResult = xmlnodeResults.append_child( m_stringResult_s );// create result node
-
-         /*
-         const auto& arguments_ = pobject->arguments();
-         for( auto [key_, value_] : arguments_.named() )
-         {
-            xmlnodeResult.append_attribute(key_).set_value( value_.as_string() );
-         }
-         */
-         
-         /*
-         if( m_argumentsContext.empty() == false )
-         {
-            // ## Check if echo exists and if so add echo attribute to child
-            if(  m_argumentsContext.exists("echo") == true )
-            {
-               xmlnodeResult.append_attribute("echo").set_value( m_argumentsContext["echo"].get<std::string_view>());
-            }
-         }
-         */
 
          // ### Check for command and echo
          auto command_ = m_tableBody.cell_get_variant_view( uRow, "command" );// "command" attribute
@@ -163,7 +148,7 @@ std::pair<bool, std::string> CDTOResponse::PrintXml( std::string& stringXml, con
    
    // ## serialize xml document to `stringXml`
    std::stringstream stringstream_;
-   xmldocument.save( stringstream_ );
+   xmldocument.save( stringstream_, "", pugi::format_raw, pugi::encoding_utf8);
    stringXml += stringstream_.str();
 
    return { true, "" };
