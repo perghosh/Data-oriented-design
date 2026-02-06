@@ -330,7 +330,7 @@ std::pair<bool, std::string> parse_query_implementation( std::string_view string
             piValueEnd = piPosition;
             
             // ## Check value for uri encoded characters ....................
-            std::string_view stringValue( piValueStart, piValueEnd - piValueStart );
+            std::u8string_view stringValue( reinterpret_cast<const char8_t*>( piValueStart ), piValueEnd - piValueStart );
             if( gd::utf8::uri::next_sequence( stringValue ) == nullptr ) argumentsQuery.push_back( { stringKey, stringValue } );
             else
             {
