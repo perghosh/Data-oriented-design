@@ -54,7 +54,7 @@ public:
    CSessions& operator=( const CSessions& o ) { common_construct( o ); return *this; }
    CSessions& operator=( CSessions&& o ) noexcept { common_construct( std::move( o ) ); return *this; }
 
-   ~CSessions() {}
+   ~CSessions();
 private:
    // common copy
    void common_construct( const CSessions& o ) {}

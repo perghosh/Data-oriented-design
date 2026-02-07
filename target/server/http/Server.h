@@ -90,7 +90,6 @@ public:
    /// Route command
    boost::beast::http::message_generator RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_ );
 
-   std::pair<bool, std::string> Execute( gd::com::server::command_i* pcommand );
    std::pair<bool, std::string> Execute( const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand );
 
    

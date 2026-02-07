@@ -190,8 +190,9 @@ namespace variant_type
     */
    struct utf8
    {
-      utf8( const char* pbsz ) : m_pbsz(pbsz), m_uLength( strlen( pbsz ) ) {}
-      utf8( const char* pbsz, size_t uLength ) : m_pbsz(pbsz), m_uLength( uLength ) {}
+      explicit utf8( const char* pbsz ) : m_pbsz(pbsz), m_uLength( strlen( pbsz ) ) {}
+      explicit utf8( const char* pbsz, size_t uLength ) : m_pbsz(pbsz), m_uLength( uLength ) {}
+      explicit utf8( std::string_view stringUtf8 ): m_pbsz(stringUtf8.data()), m_uLength(stringUtf8.size()) {}
       utf8( const utf8& o ) { m_pbsz = o.m_pbsz; m_uLength = o.m_uLength; }
       // attributes
       public:

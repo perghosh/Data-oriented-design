@@ -243,7 +243,7 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    gd::argument::arguments argumentHeader( (gd::argument::arguments::pointer)array_.data(), (unsigned)array_.size() );
 
    if( router_.IsJson() == true ){ argumentHeader["format"] = "json"; }
-   else { argumentHeader["format"] = "xml"; }
+   else { argumentHeader["format"] = "xml; charset=utf-8"; }                  // set format of response, this will be added to response header
 
    boost::beast::http::file_body::value_type body_;
 
@@ -261,35 +261,6 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
    return response;
 }
 
-
-// @DEPRICATED
-std::pair<bool, std::string> CServer::Execute(gd::com::server::command_i* pcommand)
-{  assert( false );
-/*
-   CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
-
-   gd::com::server::response_i* presponse = nullptr;
-
-   auto result_ = phttpserver->Execute( pcommand, &presponse );
-   */
-
-
-   //std::string_view stringCommand = vectorCommand[0];
-
-   //gd::com::server::server_i* pserver = m_router.GetServer( stringCommand );
-   // CHttpServer* phttpserver = m_ppapplication->GetHttpServer();
-
-   // auto result_ = phttpserver->Get( vectorCommand, pcommand );
-
-   // if( pserver == nullptr ) { return { false, "No server found for command: " + std::string(stringCommand) }; }
-
-   // pserver->get( vectorCommand, nullptr, pcommand, nullptr);
-
-
-
-   return { true, "" };
-}
-
 // @DEPRICATED
 std::pair<bool, std::string> CServer::Execute(const std::vector<std::string_view>& vectorCommand, gd::com::server::command_i* pcommand)
 {                                                                                                  assert( vectorCommand.empty() == false );
@@ -304,7 +275,7 @@ assert( false );
 }
 
 
-/** --------------------------------------------------------------------------
+/** -------------------------------------------------------------------------- @API [tag: response, header] [summary: Prepares response header for request]
  * @brief Prepares response header for request
  * 
  * This method sets up the HTTP response headers based on the provided argument header information.

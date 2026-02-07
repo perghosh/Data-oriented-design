@@ -288,6 +288,8 @@ public:
 
 // ## free functions ---------------------------------------------------------
 public:
+   /// @brief Delete global/static objects allocated by document (shared objects)
+   static void Destroy_s();
 
 };
 
