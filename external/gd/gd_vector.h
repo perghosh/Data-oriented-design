@@ -1,5 +1,25 @@
 // @FILE [tag: vector] [description: Vector variants with special storage features]] [type: header] [name: gd_vector.h]
 
+/**
+ * \file gd_vector.h
+ *
+ * \brief Small vector optimization (SVO) container with inline storage capacity
+ *
+ * Vector is a hybrid container that stores elements inline up to a specified capacity (uCapacityStack),
+ * then dynamically allocates additional storage when needed. This is similar to std::vector but with
+ * optimized storage for small containers to avoid heap allocation when possible.
+ *
+ | Area                | Methods (Examples)                                                                                      | Description                                                                                   |
+ |---------------------|--------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ | Construction        | `vector()`, `vector(const vector&)`, `vector(vector&&)`, `vector(initializer_list)`, `vector(size_type, const VALUE&)` | Constructors for creating, copying, and moving vector instances with various initialization strategies. |
+ | Assignment          | `operator=(const vector&)`, `operator=(vector&&)`, `swap(...)`                                         | Methods for assigning or moving vector contents, including efficient swap operations.        |
+ | Element Access      | `operator[](...)`, `at(...)`, `front()`, `back()`, `data()`, `get_buffer()`, `get_inline_buffer()`     | Methods for accessing elements in the container with bounds checking or direct access.       |
+ | Iterators           | `begin()`, `end()`, `cbegin()`, `cend()`, `rbegin()`, `rend()`, `crbegin()`, `crend()`                | Iterator methods for forward, const, and reverse traversal of container elements.             |
+ | Capacity            | `empty()`, `size()`, `capacity()`, `capacity_inline()`, `reserve(...)`, `is_external()`               | Methods for querying size, capacity, and storage mode (inline vs. heap).                       |
+ | Modifiers           | `push_back(...)`, `emplace_back(...)`, `pop_back()`, `resize(...)`, `clear()`                          | Methods for adding, removing, and modifying elements in the container.                       |
+ | Comparison          | `operator==(...)`, `operator<=>(...)`                                                                  | Comparison operators for lexicographical comparison between vectors.                          |
+ | Memory Management   | `allocate(...)`, `destroy()`, `init_base(...)`                                                          | Internal methods for memory allocation, deallocation, and buffer initialization.              |
+ */
 
 #pragma once
 
@@ -59,6 +79,16 @@ protected:
    vector_base& operator=(const vector_base&) = delete;
    vector_base(vector_base&&) = delete;
    vector_base& operator=(vector_base&&) = delete;
+   
+   /// ## Comparison operators (C++20)
+   [[nodiscard]] bool operator==(const vector_base& o) const {
+      return m_uSize == o.m_uSize && std::equal(begin(), end(), o.begin());
+   }
+   
+   [[nodiscard]] auto operator<=>(const vector_base& o) const requires std::three_way_comparable<VALUE> {
+      return std::lexicographical_compare_three_way(begin(), end(), o.begin(), o.end());
+   }
+   
 
    /// Initialize base with inline buffer
    void init_base(VALUE* pInlineBuffer, size_type uInlineCapacity) noexcept {                      assert( uInlineCapacity < 0x10'00'00 ); assert( uInlineCapacity > 0 ? (pInlineBuffer != nullptr) : true ); // realistic !
@@ -112,7 +142,7 @@ public:
    [[nodiscard]] bool empty() const noexcept { return m_uSize == 0; }
    [[nodiscard]] size_type size() const noexcept { return m_uSize; }
    [[nodiscard]] size_type capacity() const noexcept { return m_uCapacity; }
-   [[nodiscard]] size_type inline_capacity() const noexcept { return m_uInlineCapacity; }
+   [[nodiscard]] size_type capacity_inline() const noexcept { return m_uInlineCapacity; }
 
    void reserve(size_type uNeededCapacity) {
       if( uNeededCapacity > m_uCapacity ) { allocate(uNeededCapacity); }
@@ -175,15 +205,6 @@ public:
       }
       else if( uNeededSize < m_uSize ) { std::destroy_n(m_pBuffer + uNeededSize, m_uSize - uNeededSize); }
       m_uSize = uNeededSize;
-   }
-
-   /// ## Comparison operators (C++20)
-   [[nodiscard]] bool operator==(const vector_base& o) const {
-      return m_uSize == o.m_uSize && std::equal(begin(), end(), o.begin());
-   }
-
-   [[nodiscard]] auto operator<=>(const vector_base& o) const requires std::three_way_comparable<VALUE> {
-      return std::lexicographical_compare_three_way(begin(), end(), o.begin(), o.end());
    }
 
 protected:
@@ -314,7 +335,7 @@ public:
    }
 
    /// Static capacity query
-   [[nodiscard]] static constexpr size_type inline_capacity() noexcept { return uCapacityStack; }
+   [[nodiscard]] static constexpr size_type capacity_inline() noexcept { return uCapacityStack; }
    
    /// Swap contents with another vector
    void swap(vector& o) noexcept(std::is_nothrow_move_constructible_v<VALUE>);
