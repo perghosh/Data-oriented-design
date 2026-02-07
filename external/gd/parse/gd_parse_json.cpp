@@ -39,7 +39,7 @@ _GD_PARSE_JSON_BEGIN
  * @return Pair of success flag and error message
  */
 template<typename ARGUMENTS>
-std::pair<bool, std::string> parse_shallow_object_implementation( std::string_view stringJson, ARGUMENTS& argumentsJson )
+std::pair<bool, std::string> parse_shallow_object_implementation( std::string_view stringJson, ARGUMENTS& argumentsJson, bool bEncode = true )
 {
    // Clear any existing arguments 
    argumentsJson.clear();
@@ -119,8 +119,12 @@ std::pair<bool, std::string> parse_shallow_object_implementation( std::string_vi
          
          // ## Decode JSON escape sequences in key ..........................
          
-         std::string_view stringKeyEncoded( piKeyStart, piKeyEnd - piKeyStart );
-         stringKey = gd::utf8::convert_json( stringKeyEncoded );
+         if( bEncode == true )
+         {
+            std::string_view stringKeyEncoded( piKeyStart, piKeyEnd - piKeyStart );
+            stringKey = gd::utf8::convert_json( stringKeyEncoded );
+         }
+         else { stringKey = std::string_view( piKeyStart, piKeyEnd - piKeyStart ); }
       }
       else
       {
@@ -186,10 +190,14 @@ std::pair<bool, std::string> parse_shallow_object_implementation( std::string_vi
          piPosition++;                                                        // skip closing quote
          
          // ## Decode JSON escape sequences in value ............................
-         
-         std::string_view stringValueEncoded( piValueStart, piValueEnd - piValueStart );
-         stringValue = gd::utf8::convert_json( stringValueEncoded );
-         argumentsJson.push_back( { stringKey, stringValue } );
+         if( bEncode == true )
+         {
+            std::string_view stringValueEncoded( piValueStart, piValueEnd - piValueStart );
+            stringValue = gd::utf8::convert_json( stringValueEncoded );
+         }
+         else { stringValue = std::string_view( piValueStart, piValueEnd - piValueStart ); }
+
+         argumentsJson.push_back( { stringKey, gd::variant_type::utf8( stringValue ) } );
       }
       else
       {
@@ -260,9 +268,9 @@ std::pair<bool, std::string> parse_shallow_object_implementation( std::string_vi
  *   "{\"name\":\"John\",\"age\":30}" -> {{"name", "John"}, {"age", "30"}}
  *   "key=value&another=data" -> {{"key", "value"}, {"another", "data"}}
  */
-std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson, gd::argument::arguments& argumentsJson )
+std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson, gd::argument::arguments& argumentsJson, bool bEncode )
 {
-   return parse_shallow_object_implementation( stringJson, argumentsJson );
+   return parse_shallow_object_implementation( stringJson, argumentsJson, bEncode );
 }
 
 /**
@@ -279,9 +287,9 @@ std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson
  *   "{\"name\":\"John\",\"age\":30}" -> {{"name", "John"}, {"age", "30"}}
  *   "key=value&another=data" -> {{"key", "value"}, {"another", "data"}}
  */
-std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson, gd::argument::shared::arguments& argumentsJson )
+std::pair<bool, std::string> parse_shallow_object_g( std::string_view stringJson, gd::argument::shared::arguments& argumentsJson, bool bEncode )
 {
-   return parse_shallow_object_implementation( stringJson, argumentsJson );
+   return parse_shallow_object_implementation( stringJson, argumentsJson, bEncode );
 }
 
 

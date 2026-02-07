@@ -32,22 +32,26 @@ class CAPIDatabase : public CAPI_Base
 {
 // ## construction -------------------------------------------------------------
 public:
-    CAPIDatabase() {}
-    CAPIDatabase( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
-        : CAPI_Base( vectorCommand, argumentsParameter ) {}
-    CAPIDatabase( std::vector<std::string_view>&& vectorCommand, gd::argument::arguments&& argumentsParameter )
-       : CAPI_Base( std::move( vectorCommand ), std::move( argumentsParameter ) ) { }
-	 CAPIDatabase(CApplication* pApplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter)
-        : CAPI_Base( pApplication, vectorCommand, argumentsParameter ) {}
-    // copy - explicitly deleted to make class move-only (inherited from CAPI_Base)
-    CAPIDatabase( const CAPIDatabase& ) = delete;
-    CAPIDatabase& operator=( const CAPIDatabase& ) = delete;
-    
-    // move - only move operations allowed (inherited from CAPI_Base)
-    CAPIDatabase( CAPIDatabase&& o ) noexcept : CAPI_Base( std::move( o ) ) {}
-    CAPIDatabase& operator=( CAPIDatabase&& o ) noexcept { CAPI_Base::operator=( std::move( o ) ); return *this; }
+   CAPIDatabase() {}
+   CAPIDatabase( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
+      : CAPI_Base( vectorCommand, argumentsParameter ) {}
+   CAPIDatabase( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex )
+      : CAPI_Base( vectorCommand, argumentsParameter, uCommandIndex ) {}
+   CAPIDatabase( std::vector<std::string_view>&& vectorCommand, gd::argument::arguments&& argumentsParameter )
+      : CAPI_Base( std::move( vectorCommand ), std::move( argumentsParameter ) ) { }
+	CAPIDatabase(CApplication* pApplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter)
+      : CAPI_Base( pApplication, vectorCommand, argumentsParameter ) {}
+	CAPIDatabase(CApplication* pApplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex)
+      : CAPI_Base( pApplication, vectorCommand, argumentsParameter, uCommandIndex ) {}
+   // copy - explicitly deleted to make class move-only (inherited from CAPI_Base)
+   CAPIDatabase( const CAPIDatabase& ) = delete;
+   CAPIDatabase& operator=( const CAPIDatabase& ) = delete;
+   
+   // move - only move operations allowed (inherited from CAPI_Base)
+   CAPIDatabase( CAPIDatabase&& o ) noexcept : CAPI_Base( std::move( o ) ) {}
+   CAPIDatabase& operator=( CAPIDatabase&& o ) noexcept { CAPI_Base::operator=( std::move( o ) ); return *this; }
 
-    ~CAPIDatabase() override {}
+   ~CAPIDatabase() override {}
 
 // ## methods ------------------------------------------------------------------
 public:

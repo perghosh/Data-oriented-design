@@ -48,6 +48,7 @@ void append_ascii( const uint8_t* pbszAscii, std::string& stringSql );
 void append_ascii( const uint8_t* pbszAscii, size_t uLength, std::string& stringSql );
 /// Append utf8 (that is the default) text to string object
 void append_utf8( const uint8_t* pbszUft8, std::string& stringSql );
+void append_utf8( const uint8_t* puUft8, std::size_t uLength, std::string& stringSql );
 
 void append_g( const gd::variant& variantValue, std::string& stringSql );
 void append_g( const gd::variant_view& variantValue, std::string& stringSql );

@@ -115,6 +115,7 @@ size_t binary_copy_hex_g( uint8_t* puBuffer, size_t uBufferSize, std::string_vie
 /// Convert binary data to hexadecimal string
 void binary_to_hex_g( const uint8_t* puBuffer, size_t uBufferSize, std::string& stringHex, bool bUppercase = false );
 std::string binary_to_hex_g( const uint8_t* puBuffer, size_t uBufferSize, bool bUppercase = false );
+inline std::string binary_to_hex_g( std::string_view stringBuffer, bool bUppercase = false ) { return binary_to_hex_g( (const uint8_t*)stringBuffer.data(), stringBuffer.length(), bUppercase ); }
 
 // @API [tag: binary, find] [description:  find patterns etc in binary data]
 
@@ -178,10 +179,10 @@ namespace binary {
 
 // Concept: Container that can be resized and has contiguous data
 template <typename TYPE>
-concept concept_resizable_container = requires(TYPE container, size_t n) {
+concept concept_resizable_container = requires(TYPE container, size_t uSize) {
    { container.data() } -> std::convertible_to<typename TYPE::value_type*>;
    { container.size() } -> std::convertible_to<size_t>;
-   { container.resize(n) } -> std::same_as<void>;
+   { container.resize(uSize) } -> std::same_as<void>;
    typename TYPE::value_type;
 };
 

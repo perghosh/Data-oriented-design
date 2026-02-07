@@ -9,10 +9,14 @@ public:
    CAPISystem() {}
    CAPISystem( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter )
       : CAPI_Base( vectorCommand, argumentsParameter ) {}
+   CAPISystem( const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex )
+      : CAPI_Base( vectorCommand, argumentsParameter, uCommandIndex ) {}
    CAPISystem( std::vector<std::string_view>&& vectorCommand, gd::argument::arguments&& argumentsParameter )
       : CAPI_Base( std::move( vectorCommand ), std::move( argumentsParameter ) ) { }
    CAPISystem(CApplication* pApplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter)
       : CAPI_Base( pApplication, vectorCommand, argumentsParameter ) {}
+   CAPISystem(CApplication* pApplication, const std::vector<std::string_view>& vectorCommand, const gd::argument::arguments& argumentsParameter, unsigned uCommandIndex)
+      : CAPI_Base( pApplication, vectorCommand, argumentsParameter, uCommandIndex ) {}
    // copy - explicitly deleted to make class move-only (inherited from CAPI_Base)
    CAPISystem( const CAPISystem& ) = delete;
    CAPISystem& operator=( const CAPISystem& ) = delete;
