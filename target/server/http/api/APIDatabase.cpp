@@ -484,6 +484,10 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
 
       sqlbuilder = argumentsValues;
    }
+   else if( Exists( "record" ) == true )
+   {
+      std::string stringRecord = GetArgument("record").as_string();
+   }
    
    auto uIndex = GetArgumentIndex( "query" );
    if( uIndex == 0 ) stringQueryTemplate = GetArgument("query").as_string();
