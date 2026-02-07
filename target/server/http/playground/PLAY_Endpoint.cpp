@@ -29,6 +29,26 @@
 
 // @TODO Clean upp static objects related to document, search for "if( m_pcolumnsBody_s == nullptr )"
 
+TEST_CASE("[session] insert", "[session]") 
+{
+   {
+      std::string stringRecord( R"({"table": "TPollQuestion", "values": {"FName": "query name"}, "FDescription": "Describe query"})" );
+      std::unique_ptr< CApplication > papplication_ = std::make_unique<CApplication>();
+
+      std::string stringFolder = FOLDER_GetRoot_g( "target/server/http/playground/data" );
+      papplication_->PROPERTY_Add("folder-application", stringFolder );
+      auto [bOk, stringError] = papplication_g->Initialize();                                   REQUIRE( bOk == true );
+
+      /// Get property values from application, these are set in configuration.xml
+      gd::argument::arguments argumentsDatabase = papplication_g->PROPERTY_Get({"database-meta-tables", "database-meta-columns", "database-open"}, gd::types::tag_argument{});
+
+      std::string stringArguments_d = gd::argument::debug::print( argumentsDatabase ); // print informationn harvested from application properties
+      std::tie(bOk, stringError) = papplication_g->DATABASE_Connect(argumentsDatabase);            REQUIRE( bOk == true );
+   }
+}
+
+
+
 TEST_CASE("[session] test uri logic", "[session]") 
 {
    using namespace gd::log;
