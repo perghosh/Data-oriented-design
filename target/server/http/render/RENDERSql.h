@@ -23,7 +23,18 @@
  */
 class CRENDERSql
 {
-   // @API [tag: construction]
+public:   
+   enum enumSqlQueryType
+   {
+      eSqlQueryTypeInsert,
+      eSqlQueryTypeUpdate,
+      eSqlQueryTypeDelete,
+      eSqlQueryTypeSelect,
+      eSqlQueryTypeCount,
+      enumSqlQueryType_Max
+   };
+
+// @API [tag: construction]
 public:
    CRENDERSql() {}
    // copy
@@ -53,8 +64,10 @@ public:
    void AddValue( const gd::argument::arguments argumentsField );
    void Add( std::string_view stringName, std::string_view stringValue );
    void Add( std::string_view stringName, gd::variant_view variantviewValue );
+   
+   std::pair<bool,std::string> GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery );
 
-
+   //std::string Dump() const;
 protected:
 // @API [tag: internal]
    
