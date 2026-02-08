@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <document>
    <properties>
-      <property key="database-open"><![CDATA[D:/temp/www/test.sqlite]]></property>
+      <property key="database-open"><![CDATA[C:/temp/www/test.sqlite]]></property>
       <property key="database-meta-tables"><![CDATA[SELECT name AS 'table' FROM sqlite_master WHERE type='table' ORDER BY 1]]></property>
       <property key="database-meta-columns"><![CDATA[SELECT m.name AS 'table', ci.cid AS ordinal, ci.name AS 'column', ci.type AS _type, ci.'notnull' AS _flag_null, ci.pk AS _flag_pk FROM sqlite_master m JOIN pragma_table_info(m.name) ci WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%']]></property>
    </properties>
