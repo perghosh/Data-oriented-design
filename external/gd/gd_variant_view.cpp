@@ -270,20 +270,14 @@ std::string variant_view::get_string() const
       break;
    case eTypeNumberUtf8String  : 
    case eTypeNumberString      : return std::string( m_V.pbsz, m_uSize ); 
-   case eTypeNumberWString     : 
-   {
+   case eTypeNumberWString     : {
       std::string s;
       gd::utf8::convert_utf16_to_uft8( reinterpret_cast<const uint16_t*>(m_V.pwsz), s);
       return std::move(s);
-   }
-      /*
-   case eTypeNumberJson        : return gd_std::wstring( gd_std::string::utf8( m_V.pbsz ), m_uSize ); 
-   case eTypeNumberXml         : return gd_std::wstring( gd_std::string::utf8( m_V.pbsz ), m_uSize ); 
-      break;
-   */
+      }
    }
 
-   return std::string();
+   return {};
 }
 
 std::string variant_view::get_string( gd::variant_type::tag_scientific ) const

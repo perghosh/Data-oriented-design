@@ -111,6 +111,8 @@ using tag_copy = gd::types::tag_copy;
 using tag_convert = gd::types::tag_convert;
 /// for adjusting methods
 using tag_adjust = gd::types::tag_adjust;
+/// Used for functionality when value for some reason do not fit within reserved storage and need to "spill", how it spills depends on context
+struct tag_spill {};
 /// prepare (allocate internal buffers) table to be ready for work
 struct tag_prepare {};
 /// use name in operation
