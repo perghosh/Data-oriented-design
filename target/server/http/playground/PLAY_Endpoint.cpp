@@ -7,6 +7,8 @@
 #include "gd/gd_arguments_shared.h"
 #include "gd/gd_table_io.h"
 
+#include "../render/RENDERSql.h"
+
 #include "../Session.h"
 #include "../Router.h"
 #include "../Document.h"
@@ -37,13 +39,27 @@ TEST_CASE("[session] insert", "[session]")
 
       std::string stringFolder = FOLDER_GetRoot_g( "target/server/http/playground/data" );
       papplication_->PROPERTY_Add("folder-application", stringFolder );
-      auto [bOk, stringError] = papplication_g->Initialize();                                   REQUIRE( bOk == true );
+      auto [bOk, stringError] = papplication_->Initialize();                                      REQUIRE( bOk == true );
 
       /// Get property values from application, these are set in configuration.xml
-      gd::argument::arguments argumentsDatabase = papplication_g->PROPERTY_Get({"database-meta-tables", "database-meta-columns", "database-open"}, gd::types::tag_argument{});
+      gd::argument::arguments argumentsDatabase = papplication_->PROPERTY_Get({"database-meta-tables", "database-meta-columns", "database-open"}, gd::types::tag_argument{});
 
       std::string stringArguments_d = gd::argument::debug::print( argumentsDatabase ); // print informationn harvested from application properties
-      std::tie(bOk, stringError) = papplication_g->DATABASE_Connect(argumentsDatabase);            REQUIRE( bOk == true );
+      std::tie(bOk, stringError) = papplication_->DATABASE_Connect(argumentsDatabase);            REQUIRE( bOk == true );
+
+      CRENDERSql rendersql_;
+      rendersql_.Initialize();
+
+      std::array< std::byte, 256> buffer_;
+      gd::argument::arguments argumentsField( buffer_ );
+
+      argumentsField.set( {{"table", "TPollQuestion"}, {"column", "FName"}, {"value", "name value"}} );
+      rendersql_.AddValue( argumentsField );
+
+      argumentsField.set( {{"table", "TPollQuestion"}, {"column", "FDescription"}, {"value", "input value"}} );
+      rendersql_.AddValue( argumentsField );
+
+      CRENDERSql::Destroy_s();
    }
 }
 

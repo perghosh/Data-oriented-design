@@ -169,12 +169,12 @@ std::pair<bool, std::string> CApplication::Initialize()
    }
 
    {  // ## Read configuration file
-      std::string stringConfigurationFile = papplication_g->PROPERTY_Get("configuration").as_string();
+      std::string stringConfigurationFile = PROPERTY_Get("configuration").as_string();
 
       if( stringConfigurationFile.empty() == true )
       {
          // ## try to find configuration file in application folder
-         std::string stringApplicationFolder = papplication_g->PROPERTY_Get("folder-application").as_string(); 
+         std::string stringApplicationFolder = PROPERTY_Get("folder-application").as_string(); 
          if( stringApplicationFolder.empty() == false )
          {
             gd::file::path pathFolderApplication( stringApplicationFolder );
@@ -196,13 +196,13 @@ std::pair<bool, std::string> CApplication::Initialize()
    {
       using namespace gd::log;
       gd::log::logger<0>* plogger = gd::log::get_s();                          // get pointer to logger 0
-      std::string stringLogFile = papplication_g->PROPERTY_Get("folder-log").as_string();
+      std::string stringLogFile = PROPERTY_Get("folder-log").as_string();
       std::string stringDate = gd::file::rotate::backup_history::date_now_s();
       // replace dashes in string
       std::replace( stringDate.begin(), stringDate.end(), '-', '_');
       stringLogFile += stringDate;
       stringLogFile += ".log";
-      papplication_g->PROPERTY_Set("file-log", stringLogFile);
+      PROPERTY_Set("file-log", stringLogFile);
 #ifndef NDEBUG
 #     ifdef _WIN32
       //plogger->append( std::make_unique<gd::log::printer_console>() );         // append printer to logger, this prints to console
@@ -219,8 +219,8 @@ std::pair<bool, std::string> CApplication::Initialize()
       plogger->set_severity( unsigned(eSeverityNumberVerbose) | unsigned(eSeverityGroupDebug) );   // set severity filter, messages within this filter is printed
 
       // ## if logging or ignore-error option is set then turn on console logging
-      //if( papplication_g->PROPERTY_Get( "log-console" ).is_null() == false || papplication_g->PROPERTY_Get( "ignore-error" ).is_true() )
-      if( papplication_g->PROPERTY_Get( { "log-console", "ignore-error" } ).is_null() == false  )
+      //if( PROPERTY_Get( "log-console" ).is_null() == false || PROPERTY_Get( "ignore-error" ).is_true() )
+      if( PROPERTY_Get( { "log-console", "ignore-error" } ).is_null() == false  )
       {
          plogger->append( std::make_unique<gd::log::printer_console>() );      // append printer to logger, this prints to console
          // ## set margin for log messages, this to make it easier to read. a bit hacky 
@@ -230,9 +230,9 @@ std::pair<bool, std::string> CApplication::Initialize()
          pprinter_console->set_margin_color( eColorBrightBlack );
 
          unsigned uSeverity = unsigned(eSeverityNumberVerbose) | unsigned(eSeverityGroupDebug);
-         if( papplication_g->PROPERTY_Get( "log-console" ).is_null() == false )
+         if( PROPERTY_Get( "log-console" ).is_null() == false )
          {
-            uSeverity = papplication_g->PROPERTY_Get( "log-console" ).as_uint();
+            uSeverity = PROPERTY_Get( "log-console" ).as_uint();
             if((uSeverity & 0xff) >= eSeverityNumberMAX)
             {
                return { false, "Log console severity level is invalid, max level is " + std::to_string( eSeverityNumberMAX - 1 ) };
@@ -250,9 +250,9 @@ std::pair<bool, std::string> CApplication::Initialize()
 #endif
       plogger->set_severity( uSeverity );                                      // set severity filter, messages within this filter is printed
 
-      if( papplication_g->PROPERTY_Get( "log-level" ).is_null() == false )
+      if( PROPERTY_Get( "log-level" ).is_null() == false )
       {
-         unsigned uSeverityLevel = papplication_g->PROPERTY_Get( "log-level" ).as_uint();
+         unsigned uSeverityLevel = PROPERTY_Get( "log-level" ).as_uint();
          plogger->set_severity_Level( uSeverityLevel );                        // set severity filter level
       }
    }
@@ -286,9 +286,9 @@ std::pair<bool, std::string> CApplication::Initialize()
    */
 
    { // ## add main site if values are set ....................................
-      std::string stringIp = papplication_g->PROPERTY_Get("ip").as_string(); // get ip address
-      uint32_t uPort = papplication_g->PROPERTY_Get("port").as_uint(); // get port number
-      std::string stringRoot = papplication_g->PROPERTY_Get("folder-root").as_string(); // get root folder
+      std::string stringIp = PROPERTY_Get("ip").as_string(); // get ip address
+      uint32_t uPort = PROPERTY_Get("port").as_uint(); // get port number
+      std::string stringRoot = PROPERTY_Get("folder-root").as_string(); // get root folder
       if( stringRoot.empty() == false )
       {
          if( uPort == 0 ) uPort = 80;

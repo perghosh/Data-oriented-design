@@ -789,7 +789,7 @@ inline query& query::add( const gd::variant_view& variantTable, const std::strin
 template<typename FLAG>
 bool query::flag_has_s(unsigned uTest, FLAG uFlag) {
    static_assert( sizeof(FLAG) >= 4, "Value isn't compatible with unsigned (4 byte)");
-   return (uTest & (unsigned)uFlag) == 0;
+   return (uTest & (unsigned)uFlag) != 0;
 }
 
 /// add surrounded value to string, like XXXX => "XXXX"

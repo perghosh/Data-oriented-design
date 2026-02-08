@@ -9,6 +9,7 @@
 
 #include "gd/gd_arguments_io.h"
 #include "gd/gd_table_io.h"
+#include "gd/gd_sql_query.h"
 
 #include "RENDERSql.h"
 
@@ -36,6 +37,8 @@ void CRENDERSql::Initialize()
 void CRENDERSql::AddValue( const gd::argument::arguments argumentsField )
 {
    auto uRow = m_tableField.row_add_one();
+   m_tableField.cell_set( uRow, 0u, uint32_t(uRow + 1) );                     // set key value
+
    for( auto [key_, value_] : argumentsField.named() )
    {
       if( value_.is_string() == true ) { Add( key_, value_.as_string_view() ); }
@@ -53,6 +56,26 @@ void CRENDERSql::Add( std::string_view stringName, gd::variant_view variantviewV
 {
    std::string stringValue = variantviewValue.as_string();
    Add( stringName, std::string_view( stringValue ) );
+}
+
+std::pair<bool,std::string> CRENDERSql::GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery )
+{
+   switch( eSqlQueryType )
+   {
+      case eSqlQueryTypeInsert:
+         break;
+      case eSqlQueryTypeUpdate:
+         break;
+      case eSqlQueryTypeDelete:
+         break;
+      case eSqlQueryTypeSelect:
+         break;
+      case eSqlQueryTypeCount:
+         break;
+      default:
+         return {false, "Invalid query type"};
+   }
+   return {true, stringQuery};
 }
 
 
