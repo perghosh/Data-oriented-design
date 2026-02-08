@@ -15,6 +15,7 @@
 #include "jsoncons_ext/jsonpath/jsonpath.hpp"
 
 #include "dto/DTOResponse.h"
+#include "render/RENDERSql.h"
 #include "Application.h"
 
 #include "Document.h"
@@ -620,5 +621,6 @@ void CDocument::ERROR_Print( bool bClear )
  */
 void CDocument::Destroy_s()
 {
+   CRENDERSql::Destroy_s();
    CDTOResponse::Destroy_s();                                                 // destroy static objects used for transport data with CDTOResponse object
 }

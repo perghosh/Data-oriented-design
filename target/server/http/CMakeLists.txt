@@ -48,6 +48,10 @@ file(GLOB FILES_ "meta/*.h" "meta/*.cpp" )
 list(APPEND TARGET_FILES_ ${FILES_})
 unset(FILES_)
 
+file(GLOB FILES_ "render/*.h" "render/*.cpp" )
+list(APPEND TARGET_FILES_ ${FILES_})
+unset(FILES_)
+
 file(GLOB FILES_ "service/*.h" "service/*.cpp" )
 list(APPEND TARGET_FILES_ ${FILES_})
 unset(FILES_)

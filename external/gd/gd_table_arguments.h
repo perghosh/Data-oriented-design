@@ -469,6 +469,9 @@ public:
    std::vector<std::string_view> column_get_name(const std::vector<unsigned>& vectorColumn) const;
    std::string_view column_get_alias( unsigned uIndex ) const;
    void column_get( unsigned uIndex, argument::column& column_ ) const;
+   
+   bool column_validate_type( unsigned uIndex, gd::variant_view v_ ) const { return m_pcolumns->ctype_number( uIndex ) == v_.type_number(); }
+   bool column_validate_size( unsigned uIndex, gd::variant_view v_ ) const { return m_pcolumns->size( uIndex ) >= v_.length_in_bytes(); }
 
    /// Rename column
    std::string column_rename( unsigned uColumn, const std::string_view& stringNewName );
@@ -743,6 +746,7 @@ public:
    void cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& variantviewValue, tag_convert );
    void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_convert );
    void cell_set( uint64_t uRow, const std::string_view& stringAlias, const gd::variant_view& variantviewValue, tag_convert, tag_alias );
+   void cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_spill );
    void cell_set( uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue );
    void cell_set( uint64_t uRow, unsigned uColumn, const std::vector<gd::variant_view>& vectorValue, tag_convert );
    void cell_set( uint64_t uRow, const std::string_view& stringName, const std::vector<gd::variant_view>& vectorValue ) { cell_set( uRow, column_get_index(stringName), vectorValue ); }
