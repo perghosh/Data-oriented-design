@@ -1956,6 +1956,34 @@ gd::variant_view table::cell_get_variant_view(uint64_t uRow, std::variant<unsign
 }
 
 /** ---------------------------------------------------------------------------
+ * @brief get first non null value for name
+ * 
+ * This tries to find value among fixed columns first, if not found there or if
+ * value is null (not set) it tries to find the value in arguments
+ * 
+ * @param uRow index to row where cell value is found
+ * @param stringName column name for column where cell value is found
+ * @return variant_view value is returned in variant view
+ */
+gd::variant_view table::cell_get_variant_view( uint64_t uRow, const std::string_view& stringName, tag_not_null ) const noexcept
+{                                                                                                  assert( uRow < m_uReservedRowCount );
+   int iColumnIndex = column_find_index( stringName );
+   if( iColumnIndex != -1 && cell_is_null( uRow, iColumnIndex ) == false )
+   {
+      return cell_get_variant_view( uRow, (unsigned)iColumnIndex );
+   }
+
+   gd::argument::shared::arguments* pargumentsRow = (gd::argument::shared::arguments*)row_get_arguments_meta(uRow);
+   if( *(intptr_t*)pargumentsRow != 0 )
+   {
+      return (*pargumentsRow)[stringName].as_variant_view();
+   }
+
+   return gd::variant_view();
+}
+
+
+/** ---------------------------------------------------------------------------
  * @brief get cell value using column indexes in container, values are placed in argumentsValue with name and value
  * @param uRow row index to get value from
  * @param spanColumn span with column indexes to get value from

@@ -114,10 +114,15 @@ struct tag_count {};          ///< count is used in some form
 struct tag_single {};         ///< single is used in some form
 struct tag_double {};         ///< double is used in some form
 struct tag_multiple {};       ///< multiple is used in some form
+struct tag_null {};           ///< null is used in some form
+struct tag_not_null {};       ///< not null is used in some form
+struct tag_min {};            ///< min is used in some form
+struct tag_max {};            ///< max is used in some form
 
 
 // ----------------------------------------------------------------------------
 // ## value related tag dispatchers
+
 struct tag_alias {};          ///< alias is used in some form
 struct tag_category {};       ///< category is used in some form, like type or group
 struct tag_color {};          ///< color used in some form
