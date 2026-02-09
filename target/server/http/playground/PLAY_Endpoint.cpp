@@ -34,7 +34,6 @@
 TEST_CASE("[session] insert", "[session]") 
 {
    {
-      std::string stringRecord( R"({"table": "TPollQuestion", "values": {"FName": "query name"}, "FDescription": "Describe query"})" );
       std::unique_ptr< CApplication > papplication_ = std::make_unique<CApplication>();
 
       std::string stringFolder = FOLDER_GetRoot_g( "target/server/http/playground/data" );
@@ -58,6 +57,13 @@ TEST_CASE("[session] insert", "[session]")
 
       argumentsField.set( {{"table", "TPollQuestion"}, {"column", "FDescription"}, {"value", "input value"}} );
       rendersql_.AddValue( argumentsField );
+
+      argumentsField.set( {{"table", "TPollQuestion"}, {"column", "PollK"}, {"type", (uint32_t)gd::types::type_g("binary")}, {"value", "1641AC8D3C4DAEB196655AEEF79F30DA"}});
+      rendersql_.AddValue( argumentsField );
+
+
+      std::string stringInsert;
+      std::tie( bOk, stringError) = rendersql_.ToSqlInsert( stringInsert );                       REQUIRE( bOk == true );
 
       CRENDERSql::Destroy_s();
    }

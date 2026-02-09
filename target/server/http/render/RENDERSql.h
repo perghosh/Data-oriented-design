@@ -33,10 +33,21 @@ public:
       eSqlQueryTypeCount,
       enumSqlQueryType_Max
    };
-
+   
+ enum enumColumnField
+   {
+      eColumnFieldId,
+      eColumnFieldTable,
+      eColumnFieldColumn,
+      eColumnFieldAlias,
+      eColumnFieldValue,
+      eColumnFieldType,
+      eColumnField_Max
+   };
+   
 // @API [tag: construction]
 public:
-   CRENDERSql() {}
+   CRENDERSql(): m_tableField(8, gd::table::tag_full_meta{}) {}
    // copy
    CRENDERSql( const CRENDERSql& o ) { common_construct( o ); }
    CRENDERSql( CRENDERSql&& o ) noexcept { common_construct( std::move( o ) ); }
@@ -66,6 +77,8 @@ public:
    void Add( std::string_view stringName, gd::variant_view variantviewValue );
    
    std::pair<bool,std::string> GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery );
+   
+   std::pair<bool,std::string> ToSqlInsert( std::string& stringQuery );
 
    //std::string Dump() const;
 protected:

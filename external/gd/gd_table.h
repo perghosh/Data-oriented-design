@@ -96,7 +96,9 @@ using tag_member = gd::types::tag_member;
 /// tag dispatcher for speed up unnecessary assignments
 struct tag_undefined {};
 /// tag dispatcher used to construct object where null values are valid
-struct tag_null {};
+using tag_null = gd::types::tag_null;
+/// tag dispatcher used to construct object where null values are not valid
+using tag_not_null = gd::types::tag_not_null;
 /// tag dispatcher to mark to use meta information
 struct tag_meta {};
 /// tag dispatcher to create object with all meta data turned on
