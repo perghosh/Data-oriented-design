@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "gd/gd_sql_types.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_table_arguments.h"
 
@@ -48,6 +49,7 @@ public:
 // @API [tag: construction]
 public:
    CRENDERSql(): m_tableField(8, gd::table::tag_full_meta{}) {}
+   CRENDERSql( gd::sql::enumSqlDialect eSqlDialect ): m_eSqlDialect(eSqlDialect), m_tableField(8, gd::table::tag_full_meta{}) {}
    // copy
    CRENDERSql( const CRENDERSql& o ) { common_construct( o ); }
    CRENDERSql( CRENDERSql&& o ) noexcept { common_construct( std::move( o ) ); }
@@ -62,12 +64,14 @@ private:
    void common_construct( CRENDERSql&& o ) noexcept {}
 
 // @API [tag: operator]
+   CRENDERSql& operator()( gd::sql::enumSqlDialect eSqlDialect ) { m_eSqlDialect = eSqlDialect; return *this; }
 public:
 
 
 // ## methods ------------------------------------------------------------------
 public:
 // @API [tag: get, set]
+   void SetDialect( gd::sql::enumSqlDialect dialect ) noexcept { m_eSqlDialect = dialect; }
 
 // @API [tag: operation]
 
@@ -92,6 +96,7 @@ public:
 public:
    static constexpr unsigned m_uMaxStringBufferLength_s = 16; ///< Maximum length for string names if not placed as arguments in table
 
+   gd::sql::enumSqlDialect m_eSqlDialect = gd::sql::eSqlDialectUnknown;
    gd::table::arguments::table m_tableField;   ///< Values or Names used to produce query
 
    inline static gd::table::detail::columns* m_pcolumnsField_s = nullptr; ///< static columns for body
