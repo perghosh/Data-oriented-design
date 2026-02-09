@@ -551,19 +551,130 @@ void append_g( const gd::variant_view& variantValue, std::string& stringSql, tag
 /** --------------------------------------------------------------------------
  * @brief Append string_view value to string in a format that works for sql
  * 
- * Meethods used to check type and append string to sql string
+ * Methods used to check type and append string to sql string
  * gd::types::is_binary_g( uType )
+ * gd::types::is_number_g( uType )
+ * gd::types::is_boolean_g( uType )
  * 
- * @param stringValue 
- * @param uType 
- * @param uDialect 
- * @param stringSql 
+ * This function assumes stringValue is already in the correct text format.
+ * It handles:
+ * - Numbers (int, float, etc.) - appended as-is without quotes
+ * - Booleans - appended as-is (should be '0' or '1') without quotes  
+ * - Strings - wrapped in single quotes with internal quotes doubled
+ * - Binary - formatted according to database-specific syntax
+ * 
+ * @param stringValue value to append (already in correct format)
+ * @param uType type of the value (from gd::types)
+ * @param uDialect SQL dialect to use for formatting
+ * @param stringSql output string to append formatted value to
  */
 void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, std::string& stringSql )
 {
-
+   using namespace gd::types;
+   
+   // Handle numbers and booleans - append directly without quotes
+   // Numbers: integers, floats, decimals
+   // Booleans: 0 or 1 (treated as numbers in SQL)
+   if( is_number_g( uType ) || is_boolean_g( uType ) )
+   {
+      stringSql.append( stringValue.data(), stringValue.length() );  return;
+   }
+   
+   // Handle binary types - different databases have different binary literal syntax
+   if( is_binary_g( uType ) )
+   {
+      const uint8_t* puBinary = reinterpret_cast<const uint8_t*>( stringValue.data() );
+      unsigned uLength = static_cast<unsigned>( stringValue.length() );
+      
+      switch( uDialect )
+      {
+      case eSqlDialectPostgreSql:
+      case eSqlDialectCockroachDB:
+      case eSqlDialectRedshift:
+         // PostgreSQL family uses: E'\\x...' or '\\x...' format
+         stringSql += "'\\\\x";
+         append_binary( puBinary, uLength, stringSql );
+         stringSql += '\'';
+         break;
+         
+      case eSqlDialectMySql:
+      case eSqlDialectMariaDB:
+         // MySQL/MariaDB uses: X'...' or 0x... format (X'...' is preferred)
+         stringSql += "X'";
+         append_binary( puBinary, uLength, stringSql );
+         stringSql += '\'';
+         break;
+         
+      case eSqlDialectSqlServer:
+         // SQL Server uses: 0x... format
+         stringSql += "0x";
+         append_binary( puBinary, uLength, stringSql );
+         break;
+         
+      case eSqlDialectOracle:
+         // Oracle uses: HEXTORAW('...') format
+         stringSql += "HEXTORAW('";
+         append_binary( puBinary, uLength, stringSql );
+         stringSql += "')";
+         break;
+         
+      case eSqlDialectSqlite:
+         // SQLite uses: X'...' format
+         stringSql += "X'";
+         append_binary( puBinary, uLength, stringSql );
+         stringSql += '\'';
+         break;
+         
+      case eSqlDialectDB2:
+         // DB2 uses: BLOB(X'...') or BX'...' format
+         stringSql += "BX'";
+         append_binary( puBinary, uLength, stringSql );
+         stringSql += '\'';
+         break;
+         
+      default:
+         // Default to PostgreSQL-style for ANSI compliance and cloud warehouses
+         stringSql += "'\\\\x";
+         append_binary( puBinary, uLength, stringSql );
+         stringSql += '\'';
+         break;
+      }
+      
+      return;
+   }
+   
+   // Handle string types - need to properly escape quotes
+   // All SQL databases use single quotes for strings and escape single quotes by doubling them
+   stringSql += '\'';
+   
+   // Fast path: scan for quotes to decide if we need special handling
+   const char* piData = stringValue.data();
+   const char* piEnd = piData + stringValue.length();
+   const char* piStart = piData;
+   
+   // Scan and copy in chunks, doubling quotes as we find them
+   while( piData < piEnd )
+   {
+      if( *piData == '\'' )
+      {
+         // Copy everything up to (but not including) the quote
+         if( piData > piStart )
+         {
+            stringSql.append( piStart, piData - piStart );
+         }
+         // Add doubled quote
+         stringSql += "''";
+         piData++;
+         piStart = piData; // Reset start to character after quote
+      }
+      else { piData++; }
+   }
+   
+   // Copy any remaining characters
+   if( piData > piStart ) { stringSql.append( piStart, piData - piStart ); }
+   
+   stringSql += '\'';
 }
-
 
 
 

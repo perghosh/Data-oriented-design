@@ -46,7 +46,7 @@ TEST_CASE("[session] insert", "[session]")
       std::string stringArguments_d = gd::argument::debug::print( argumentsDatabase ); // print informationn harvested from application properties
       std::tie(bOk, stringError) = papplication_->DATABASE_Connect(argumentsDatabase);            REQUIRE( bOk == true );
 
-      CRENDERSql rendersql_;
+      CRENDERSql rendersql_( gd::sql::sql_get_dialect_g("sqlite") );
       rendersql_.Initialize();
 
       std::array< std::byte, 256> buffer_;

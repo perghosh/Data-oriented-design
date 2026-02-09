@@ -524,6 +524,9 @@ public:
    static void values_get_s( const std::vector< gd::variant_view >& vectorValue, std::string& stringValues );
    static std::pair<bool, std::string> values_get_s( const std::vector< std::pair<std::string, gd::variant> >& vectorValue );
 
+   /// Generate `VALUES` compatible section that formats values to work in sql queries
+   static std::pair<bool, std::string> values_get_s( std::vector< std::pair<uint32_t, gd::variant_view> >& vectorValue, unsigned uDialect );
+
 
    static std::pair<bool, std::string> add_s( query& queryTo, const query& queryFrom );
 
@@ -657,134 +660,6 @@ inline void query::format_add_and_surround_s(std::string& stringText, const std:
    stringText += chCharacter;
 }
 
-/** ---------------------------------------------------------------------------
- * @brief Return  part number for part name
- * Converts sql part name to part number and are able to do this at commpile time.
- * Valid part names are:
- * DELETE, FROM, GROUPBY, HAVING, INSERT, LIMIT, ORDERBY, SELECT, UPDATE, WHERE, WITH
- * @param stringPartName Part as name that is converted to number
- * @return {enumSqlPart} number for part name
-*/
-constexpr enumSqlPart sql_get_part_type_g(const std::string_view& stringPartName)
-{                                                                              assert(stringPartName.empty() == false);
-   // ## convert character to uppercase if lowercase is found
-   constexpr uint8_t LOWER_A = 'a';
-   uint8_t uFirst = (uint8_t)stringPartName[0];                                // only check first character
-   if( uFirst >= LOWER_A ) uFirst -= ('a' - 'A');                              // convert to lowercase subtracting to capital letter
-
-   switch( uFirst )
-   {
-   case 'D': return enumSqlPart::eSqlPartDelete;
-   case 'F': return enumSqlPart::eSqlPartFrom;
-   case 'G': return enumSqlPart::eSqlPartGroupBy;
-   case 'H': return enumSqlPart::eSqlPartHaving;
-   case 'I': return enumSqlPart::eSqlPartInsert;
-   case 'L': return enumSqlPart::eSqlPartLimit;
-   case 'O': return enumSqlPart::eSqlPartOrderBy;
-   case 'S': return enumSqlPart::eSqlPartSelect;
-   case 'U': return enumSqlPart::eSqlPartUpdate;
-   case 'W': {
-      if( stringPartName[1] == 'I' || stringPartName[1] == 'i' ) return enumSqlPart::eSqlPartWith;
-      return enumSqlPart::eSqlPartWhere;
-      }
-   }
-   return eSqlPartUnknown;
-}
-
-/** ---------------------------------------------------------------------------
- * @brief Return dialect enum value from dialect name (case-insensitive)
- *
- * Converts dialect name (SQL server, PostgreSql, mysql, etc.) to enumSqlDialect.
- * Designed to be very fast and constexpr-evaluable.
- * Accepts mixed/upper/lower case.
- *
- * Most common dialects are resolved with 1–2 char checks.
- * Longer/rarer names fall through to slightly more comparisons.
- *
- * @param stringDialect Dialect name (e.g. "PostgreSQL", "mysql", "SQLSERVER")
- * @return enumSqlDialect value, or eSqlDialectUnknown if no match
- */
-constexpr enumSqlDialect sql_get_dialect_g( std::string_view stringDialect )
-{
-   if( stringDialect.empty() ) { return eSqlDialectUnknown; }
-
-   // Fast uppercase-first-letter trick (like in sql_get_part_type_g)
-   constexpr uint8_t LOWER_A = 'a';
-   uint8_t uFirst = static_cast<uint8_t>( stringDialect[0] );
-   if( uFirst >= LOWER_A ) { uFirst -= ( 'a' - 'A' ); }
-
-   switch( uFirst )
-   {
-   case 'B':   // BigQuery
-   if( stringDialect.size() >= 7 && ( stringDialect[1] == 'i' || stringDialect[1] == 'I' ) && ( stringDialect[2] == 'g' || stringDialect[2] == 'G' ) ) { return eSqlDialectBigQuery; }
-   break;
-
-   case 'C':   // ClickHouse, CockroachDB
-   if( stringDialect.size() >= 10 ) 
-   {
-      char iSecond = ( stringDialect[1] == 'o' || stringDialect[1] == 'O' ) ? 'o' : 0;
-      if( iSecond ) 
-      {
-         char iThird = ( stringDialect[2] == 'c' || stringDialect[2] == 'C' ) ? 'c' : 0;
-         if( iThird ) { return eSqlDialectCockroachDB; }
-      }
-   }
-   if( stringDialect.size() >= 10 && ( stringDialect[1] == 'l' || stringDialect[1] == 'L' ) && ( stringDialect[2] == 'i' || stringDialect[2] == 'I' ) ) { return eSqlDialectClickHouse; }
-   break;
-
-   case 'D':   // DB2, Derby
-   if( stringDialect.size() >= 3 && ( stringDialect[1] == 'B' || stringDialect[1] == 'b' ) && ( stringDialect[2] == '2' ) ) { return eSqlDialectDB2; }
-   if( stringDialect.size() >= 5 && ( stringDialect[1] == 'e' || stringDialect[1] == 'E' ) && ( stringDialect[2] == 'r' || stringDialect[2] == 'R' ) ) { return eSqlDialectDerby; }
-   break;
-
-   case 'H':   // H2, HSQLDB
-   if( stringDialect.size() >= 2 ) {
-      char iSecond = ( stringDialect[1] == '2' ) ? '2' : 0;
-      if( iSecond ) return eSqlDialectH2;
-
-      if( ( stringDialect[1] == 's' || stringDialect[1] == 'S' ) && ( stringDialect[2] == 'q' || stringDialect[2] == 'Q' ) ) { return eSqlDialectHSQLDB; }
-   }
-   break;
-
-   case 'M':   // MariaDB, MySQL
-   if( stringDialect.size() >= 6 && ( stringDialect[1] == 'a' || stringDialect[1] == 'A' ) && ( stringDialect[2] == 'r' || stringDialect[2] == 'R' ) ) { return eSqlDialectMariaDB; }
-   if( stringDialect.size() >= 5 && ( stringDialect[1] == 'y' || stringDialect[1] == 'Y' ) && ( stringDialect[2] == 'S' || stringDialect[2] == 's' ) ) { return eSqlDialectMySql; }
-   break;
-
-   case 'O':   // Oracle
-   if( stringDialect.size() >= 6 && ( stringDialect[1] == 'r' || stringDialect[1] == 'R' ) && ( stringDialect[2] == 'a' || stringDialect[2] == 'A' ) ) { return eSqlDialectOracle; }
-   break;
-
-   case 'P':   // PostgreSQL
-   if( stringDialect.size() >= 10 && ( stringDialect[1] == 'o' || stringDialect[1] == 'O' ) && ( stringDialect[2] == 's' || stringDialect[2] == 'S' ) ) { return eSqlDialectPostgreSql; }
-   break;
-
-   case 'R':   // Redshift
-   if( stringDialect.size() >= 8 && ( stringDialect[1] == 'e' || stringDialect[1] == 'E' ) && ( stringDialect[2] == 'd' || stringDialect[2] == 'D' ) ) { return eSqlDialectRedshift; }
-   break;
-
-   case 'S':   // SQL Server, Snowflake, SQLite
-   if( stringDialect.size() >= 6 ) {
-      char iSecond = ( stringDialect[1] == 'Q' || stringDialect[1] == 'q' ) ? 'Q' : 0;
-      if( iSecond ) {
-         if( ( stringDialect[2] == 'L' || stringDialect[2] == 'l' ) ) {
-            // SQL...
-            if( ( stringDialect[3] == 'S' || stringDialect[3] == 's' ) ||
-                ( stringDialect[4] == 'S' || stringDialect[4] == 's' ) ) {  // SQLServer or MSSQL etc.
-               return eSqlDialectSqlServer;
-            }
-            // SQLite
-            if( ( stringDialect[3] == 'i' || stringDialect[3] == 'I' ) ) {  return eSqlDialectSqlite; }
-         }
-      }
-   }
-   // Snowflake
-   if( stringDialect.size() >= 8 && ( stringDialect[1] == 'n' || stringDialect[1] == 'N' ) && ( stringDialect[2] == 'o' || stringDialect[2] == 'O' ) ) { return eSqlDialectSnowflake; }
-   break;
-   }
-
-   return eSqlDialectUnknown;
-}
 
 
 _GD_SQL_QUERY_END // namespace _GD_CALCULATE_PARSE_BEGIN

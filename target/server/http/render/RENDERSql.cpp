@@ -90,13 +90,15 @@ std::pair<bool,std::string> CRENDERSql::ToSqlInsert( std::string& stringQuery )
    gd::sql::query queryInsert( gd::sql::eSqlInsert, stringTable, gd::sql::tag_table{});
    queryInsert.sql_set_dialect( gd::sql::sql_get_dialect_g("sqlite"));
 
-   std::vector<gd::variant_view> vectorValue;
+   // std::vector<gd::variant_view> vectorValue;
+   std::vector< std::pair<uint32_t, gd::variant_view> > vectorValue;
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
       std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
       queryInsert.field_add( stringColumn );
+      uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
       auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
-      vectorValue.push_back( value_ );
+      vectorValue.push_back( { uType, value_ } );
    }
 
    // ## Generate insert query ..............................................
@@ -105,7 +107,7 @@ std::pair<bool,std::string> CRENDERSql::ToSqlInsert( std::string& stringQuery )
 	stringInsertSql += "INSERT INTO ";
 	stringInsertSql += queryInsert.sql_get_insert();
 	stringInsertSql += "\nVALUES(";
-	stringInsertSql += gd::sql::query::values_get_s( vectorValue ).second;// append values from name value pairs
+	stringInsertSql += gd::sql::query::values_get_s( vectorValue, m_eSqlDialect ).second;// append values from name value pairs
 	stringInsertSql += ")";
 
    // ## Set the out string to query .........................................

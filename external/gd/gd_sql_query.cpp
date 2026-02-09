@@ -1029,6 +1029,32 @@ std::pair<bool, std::string> query::values_get_s( const std::vector< gd::variant
    return { true, std::move( stringValues ) };
 }
 
+std::pair<bool, std::string> query::values_get_s( std::vector< std::pair<uint32_t, gd::variant_view> >& vectorValue, unsigned uDialect )
+{
+   std::string stringValues;
+   stringValues.reserve( vectorValue.size() * 16 );                          // preallocate to avoid smaller allocations, this is just one estimate
+
+   for( auto it = std::begin( vectorValue ), itEnd = std::end( vectorValue ); it != itEnd; it++ )
+   {
+      if( stringValues.empty() == false ) { stringValues += ','; }
+      unsigned uType = it->first;
+      if( uType == 0 )                                                        // default is string
+      {
+         append_g( it->second, stringValues );
+      }
+      else
+      {
+         if( it->second.is_char_string() == true )
+         {
+            append_g( it->second, uType, uDialect, stringValues );
+         }
+      }
+   }
+
+   return { true, std::move( stringValues ) };
+}
+
+
 /** ---------------------------------------------------------------------------
  * @brief Variant Values in vector is converted to string in a format that works for sql 
  * @param vectorValue values converted to string
