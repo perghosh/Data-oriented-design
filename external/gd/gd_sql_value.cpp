@@ -548,6 +548,22 @@ void append_g( const gd::variant_view& variantValue, std::string& stringSql, tag
 
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Append string_view value to string in a format that works for sql
+ * 
+ * Meethods used to check type and append string to sql string
+ * gd::types::is_binary_g( uType )
+ * 
+ * @param stringValue 
+ * @param uType 
+ * @param uDialect 
+ * @param stringSql 
+ */
+void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, std::string& stringSql )
+{
+
+}
+
 
 
 
