@@ -20,6 +20,7 @@
 #include <type_traits>
 
 #include "gd_types.h"
+#include "gd_sql_types.h"
 #include "gd_arguments.h"
 #include "gd_arguments_shared.h"
 #include "gd_variant.h"
@@ -53,6 +54,8 @@ void append_utf8( const uint8_t* puUft8, std::size_t uLength, std::string& strin
 void append_g( const gd::variant& variantValue, std::string& stringSql );
 void append_g( const gd::variant_view& variantValue, std::string& stringSql );
 void append_g( const gd::variant_view& variantValue, std::string& stringSql, tag_raw );
+
+void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, std::string& stringSql );
 
 inline void append_g( const gd::variant& variantValue, std::string& stringSql, tag_raw ) { append_g( gd::variant_view( variantValue ), stringSql, tag_raw{}); }
 
