@@ -77,6 +77,8 @@ public:
 
    void Initialize();
    void AddValue( const gd::argument::arguments argumentsField );
+   std::pair<bool,std::string> AddValue( std::string_view stringJson, gd::types::tag_json );
+
    void Add( std::string_view stringName, std::string_view stringValue );
    void Add( std::string_view stringName, gd::variant_view variantviewValue );
    
