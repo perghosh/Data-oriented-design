@@ -64,9 +64,42 @@ TEST_CASE("[session] insert", "[session]")
 
       std::string stringInsert;
       std::tie( bOk, stringError) = rendersql_.ToSqlInsert( stringInsert );                       REQUIRE( bOk == true );
-
-      CRENDERSql::Destroy_s();
    }
+
+   CRENDERSql::Destroy_s();
+
+   {
+      std::unique_ptr< CApplication > papplication_ = std::make_unique<CApplication>();
+
+      std::string stringFolder = FOLDER_GetRoot_g( "target/server/http/playground/data" );
+      papplication_->PROPERTY_Add("folder-application", stringFolder );
+      auto [bOk, stringError] = papplication_->Initialize();                                      REQUIRE( bOk == true );
+
+      /// Get property values from application, these are set in configuration.xml
+      gd::argument::arguments argumentsDatabase = papplication_->PROPERTY_Get({"database-meta-tables", "database-meta-columns", "database-open"}, gd::types::tag_argument{});
+
+      std::string stringArguments_d = gd::argument::debug::print( argumentsDatabase ); // print informationn harvested from application properties
+      std::tie(bOk, stringError) = papplication_->DATABASE_Connect(argumentsDatabase);            REQUIRE( bOk == true );
+
+      CRENDERSql rendersql_( gd::sql::sql_get_dialect_g("sqlite") );
+      rendersql_.Initialize();
+
+      // Create json with the format { "table": "TPollQuestion", "column": "FName", "value": "name value" }
+
+
+      std::array< std::byte, 256> buffer_;
+      gd::argument::arguments argumentsField( buffer_ );
+
+      rendersql_.AddValue( R"({ "table": "TPollQuestion", "column" : "FName", "value" : "name value" })", gd::types::tag_json{});
+      rendersql_.AddValue( R"({ "table": "TPollQuestion", "column" : "FDescription", "value" : "description value" })", gd::types::tag_json{} );
+      rendersql_.AddValue( R"({ "table": "TPollQuestion", "column" : "FName", "value" : "1641AC8D3C4DAEB196655AEEF79F30DA" })", gd::types::tag_json{} );
+
+      std::string stringInsert;
+      std::tie( bOk, stringError) = rendersql_.ToSqlInsert( stringInsert );                       REQUIRE( bOk == true );
+   }
+
+   CRENDERSql::Destroy_s();
+
 }
 
 

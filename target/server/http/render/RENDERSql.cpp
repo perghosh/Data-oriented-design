@@ -11,6 +11,8 @@
 #include "gd/gd_table_io.h"
 #include "gd/gd_sql_query.h"
 
+#include "gd/parse/gd_parse_json.h"
+
 #include "RENDERSql.h"
 
 
@@ -49,6 +51,22 @@ void CRENDERSql::AddValue( const gd::argument::arguments argumentsField )
          else { Add( key_, value_ ); }
       }
    }
+}
+
+std::pair<bool,std::string> CRENDERSql::AddValue( std::string_view stringJson, gd::types::tag_json )
+{
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_(buffer_);
+   
+   auto result_ = gd::parse::json::parse_shallow_object_g( stringJson, arguments_, false );
+   if( result_.first == false ) { return result_; }
+   
+   // check for value
+   if( arguments_.exists("value") == false ) { return {false, "missing value"}; }
+
+   AddValue( arguments_ );
+
+   return {true, ""};
 }
 
 void CRENDERSql::Add( std::string_view stringName, std::string_view stringValue )
