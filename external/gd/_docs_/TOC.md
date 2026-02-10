@@ -38,6 +38,12 @@ High performance table operations.
 - [Table I/O](GD_TABLE_IO.MD) - *Table output formatting for CSV, JSON, SQL, CLI, and custom formats*
 - [Table Table](GD_TABLE_TABLE.MD) - *Optimized member table for long-lived objects with shared columns*
 
+## Optimized STL dropin replacements
+
+Objects that are optimized for performance and memory usage that mimic the standard library containers.
+
+- [Optimized Vector](GD_VECTOR.MD) - *Optimized vector variants*
+
 ## Command Line Documentation
 
 Command line logic for terminal applications.
