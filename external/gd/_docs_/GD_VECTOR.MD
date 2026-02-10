@@ -255,7 +255,7 @@ public:
         // Add recent frames for smoothing
         recent_frames_.push_back(dt);
         if (recent_frames_.size() > recent_frames_.capacity_inline()) {
-            recent_frames_.pop_front();  // Keep within inline capacity
+            recent_frames_.pop_back();  // Keep within inline capacity
         }
     }
     
@@ -275,6 +275,70 @@ config.push_back({"max_connections", 100});
 config.push_back({"timeout", 30});
 config.push_back({"retry_count", 3});
 // Zero heap allocation, perfect for small config sets
+
+// Example 5: JSON conversion with owning variants (AsVariant)
+// Demonstrates how gd::variant_array (using stack::vector) efficiently handles JSON parsing
+gd::variant AsVariant( const jsonpath::json& json )
+{
+    if( json.is_null() )            return gd::variant();
+    else if( json.is_boolean() )    return gd::variant( json.as_bool() );
+    else if( json.is_number() )     return gd::variant( json.as_double() );
+    else if( json.is_string() )
+        return gd::variant( json.as_string() );
+    else if( json.is_array() )
+    {
+        gd::variant_array array;
+        for ( const auto& item : json )
+            array.push_back( AsVariant( item ) );
+        return gd::variant( std::move( array ) );
+    }
+    else if( json.is_object() )
+    {
+        gd::variant_object object;
+        for ( const auto& [key, value] : json )
+            object[key] = AsVariant( value );
+        return gd::variant( std::move( object ) );
+    }
+    else
+        return gd::variant();
+}
+
+// Example 6: JSON conversion with view variants (AsVariantView)
+// Similar to AsVariant but optimized for view-based variant semantics
+// Use when you need non-owning references to the underlying JSON data
+gd::variant AsVariantView( const jsonpath::json& json )
+{
+    if( json.is_null() )            return gd::variant();
+    else if( json.is_boolean() )    return gd::variant( json.as_bool() );
+    else if( json.is_number() )     return gd::variant( json.as_double() );
+    else if( json.is_string() )
+        return gd::variant( json.as_string() );
+    else if( json.is_array() )
+    {
+        gd::variant_array array;
+        for ( const auto& item : json )
+            array.push_back( AsVariantView( item ) );
+        return gd::variant( std::move( array ) );
+    }
+    else if( json.is_object() )
+    {
+        gd::variant_object object;
+        for ( const auto& [key, value] : json )
+            object[key] = AsVariantView( value );
+        return gd::variant( std::move( object ) );
+    }
+    else
+        return gd::variant();
+}
+
+// When parsing typical JSON with small arrays:
+// - { "name": "test", "values": [1, 2, 3] }
+// The array [1, 2, 3] uses inline storage (3 ≤ typical capacity)
+// - No heap allocation for small nested arrays
+// - Efficient JSON-to-variant conversion in hot paths
+// - Perfect for API responses, configuration files, and message parsing
+// - AsVariant: Creates owning copies (safe for temporary JSON objects)
+// - AsVariantView: Creates lightweight views (use with persistent JSON objects)
 ```
 
 #### Comparison with Other Containers

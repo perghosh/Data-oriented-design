@@ -13,6 +13,8 @@
 
 #include "gd/parse/gd_parse_json.h"
 
+#include "../convert/CONVERTCore.h"
+
 #include "RENDERSql.h"
 
 
@@ -37,6 +39,11 @@ void CRENDERSql::Initialize()
    m_tableField.prepare();
 }
 
+/**
+ * @brief Add new field to be used in  SQL query that is generated.
+ *
+ * @param argumentsField information about the field to add.
+ */
 void CRENDERSql::AddValue( const gd::argument::arguments argumentsField )
 {
    auto uRow = m_tableField.row_add_one();
@@ -53,6 +60,13 @@ void CRENDERSql::AddValue( const gd::argument::arguments argumentsField )
    }
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Add a value to the table field.
+ *
+ * @param stringJson The JSON string to parse.
+ * @param tag_json The tag_json type.
+ * @return std::pair<bool,std::string> A pair containing a boolean indicating success and a string containing an error message.
+ */
 std::pair<bool,std::string> CRENDERSql::AddValue( std::string_view stringJson, gd::types::tag_json )
 {
    std::array<std::byte, 256> buffer_;
@@ -69,6 +83,45 @@ std::pair<bool,std::string> CRENDERSql::AddValue( std::string_view stringJson, g
    return {true, ""};
 }
 
+std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, gd::types::tag_json )
+{
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_(buffer_);
+
+   try 
+   {
+      jsoncons::json jsonRecord = jsoncons::json::parse(stringJson);
+
+      // ## Extract table and fields from json
+      auto jsonTable = jsonRecord["table"];
+      std::string stringTable = jsonTable.as_string();
+
+      auto jsonValues = jsonRecord["values"];
+
+      for( const auto& itValue : jsonValues.object_range() )
+      {
+         arguments_.append( "table", stringTable );
+         arguments_.append( "column", itValue.key() );
+         arguments_.append_argument( "value", CONVERT::AsVariantView( itValue.value() ) );
+      }
+
+   }
+   catch( jsoncons::json_exception& e )
+   {
+      std::string stringError = e.what();
+      return {false, stringError};
+   }
+   
+   
+   return {true, ""};
+}
+
+/** ---------------------------------------------------------------------------
+ * @brief Add a value to last row witch are the latest added field..
+ *
+ * @param stringName The name of the column.
+ * @param stringValue The value to add.
+ */
 void CRENDERSql::Add( std::string_view stringName, std::string_view stringValue )
 {
    uint64_t uRow = m_tableField.get_row_count() - 1;
@@ -79,6 +132,13 @@ void CRENDERSql::Add( std::string_view stringName, gd::variant_view variantviewV
 {
    std::string stringValue = variantviewValue.as_string();
    Add( stringName, std::string_view( stringValue ) );
+}
+
+void CRENDERSql::SetColumnValue( std::string_view stringName, gd::variant_view variantviewValue )
+{
+   auto iColumn = m_tableField.column_find_index( stringName );
+   if( iColumn < 0 ) return
+   m_tableField.column_fill( (unsigned)iColumn, variantviewValue, gd::table::tag_convert{} );
 }
 
 std::pair<bool,std::string> CRENDERSql::GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery )
