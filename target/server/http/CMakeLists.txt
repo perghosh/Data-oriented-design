@@ -40,6 +40,10 @@ file(GLOB FILES_ "cli/*.h" "cli/*.cpp" )
 list(APPEND TARGET_FILES_ ${FILES_})
 unset(FILES_)
 
+file(GLOB FILES_ "convert/*.h" "convert/*.cpp" )
+list(APPEND TARGET_FILES_ ${FILES_})
+unset(FILES_)
+
 file(GLOB FILES_ "dto/*.h" "dto/*.cpp" )
 list(APPEND TARGET_FILES_ ${FILES_})
 unset(FILES_)

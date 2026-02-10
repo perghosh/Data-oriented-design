@@ -78,9 +78,13 @@ public:
    void Initialize();
    void AddValue( const gd::argument::arguments argumentsField );
    std::pair<bool,std::string> AddValue( std::string_view stringJson, gd::types::tag_json );
+   /// Adds data for a complete record for specified table
+   std::pair<bool,std::string> AddRecord( std::string_view stringJson, gd::types::tag_json );
 
    void Add( std::string_view stringName, std::string_view stringValue );
    void Add( std::string_view stringName, gd::variant_view variantviewValue );
+
+   void SetColumnValue( std::string_view stringName, gd::variant_view variantviewValue );
    
    std::pair<bool,std::string> GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery );
    
