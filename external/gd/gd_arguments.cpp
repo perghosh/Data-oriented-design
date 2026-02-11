@@ -2337,7 +2337,7 @@ bool arguments::reserve(unsigned int uCount)
       if( m_uLength > 0 ) memcpy(pBuffer, m_pBuffer, m_uLength);
       if( is_owner() ) delete m_pBuffer;
 
-      m_bOwner = true;
+      set_owner( true );
       m_pBuffer = pBuffer;
       m_uBufferLength = uCount;
 
@@ -2414,14 +2414,18 @@ void arguments::remove_all(const std::string_view& stringName)
 }
 
 
+/*----------------------------------------------------------------------------- reserve_no_copy */ /**
+ * Reserve buffer for count bytes without copying old data, this is used when old data is not needed and can be discarded
+ * \param uCount number of bytes to reserve
+ * \return pointer to new buffer
+ */
 arguments::pointer arguments::_reserve_no_copy(unsigned int uCount)
 {
    unsigned char* pBuffer = new unsigned char[uCount];
-
-   if( is_owner() ) delete m_pBuffer;
+   if( is_owner() == true ) delete m_pBuffer;
 
    m_uLength = 0;
-   m_bOwner = true;
+   set_owner( true );
    m_pBuffer = pBuffer;
    m_uBufferLength = uCount;
 
@@ -2514,7 +2518,7 @@ void arguments::shrink_to_fit()
 
       if( is_owner() ) delete m_pBuffer;                                       // clear old buffer
 
-      m_bOwner = true;
+      set_owner( true );
       m_pBuffer = pBuffer;
 
       m_uBufferLength = m_uLength;                                             // set buffer size
