@@ -605,11 +605,17 @@ public:
    vector() noexcept;
    vector(VALUE* pBuffer, size_type uCapacity) noexcept;
    
-   template<size_type uN>
-   explicit vector(VALUE (&array)[uN]) noexcept;
+   // ## Borrow from container with .data() and .size() - works with std::vector, std::array, C-arrays, etc.
+   template<typename CONTAINER>
+   requires requires(CONTAINER& c_) {
+      { c_.data() } -> std::convertible_to<VALUE*>;
+      { c_.size() } -> std::convertible_to<size_type>;
+   }
+   && ( !std::is_same_v<std::remove_cv_t<CONTAINER>, vector> )               // exclude self
+   explicit vector(CONTAINER& container_) noexcept;
    
    template<size_type uN>
-   explicit vector(std::array<VALUE, uN>& array) noexcept;
+   explicit vector(VALUE (&array)[uN]) noexcept;                             // C-array specialization (no .data()/.size())
    
    vector(const vector& o);
    vector(vector&& o) noexcept;
@@ -741,16 +747,23 @@ vector<VALUE>::vector(VALUE (&array)[uN]) noexcept
 {
 }
 
-/** -------------------------------------------------------------------------- Borrow from std::array constructor
- * @brief Creates a vector that borrows storage from a std::array
+/** -------------------------------------------------------------------------- Borrow from container constructor
+ * @brief Creates a vector that borrows storage from a container with .data() and .size()
  * 
- * @tparam uN Size of the array
- * @param array Reference to std::array to borrow storage from
+ * Works with std::vector, std::array, and other containers providing .data() and .size() methods.
+ * 
+ * @tparam CONTAINER Container type with .data() and .size() methods
+ * @param container_ Reference to container to borrow storage from
  */
 template<typename VALUE>
-template<std::size_t uN>
-vector<VALUE>::vector(std::array<VALUE, uN>& array) noexcept 
-   : m_pBuffer(array.data()), m_uSize(0), m_uCapacity(uN | BORROW_BIT) 
+template<typename CONTAINER>
+requires requires(CONTAINER& c_) {
+   { c_.data() } -> std::convertible_to<VALUE*>;
+   { c_.size() } -> std::convertible_to<std::size_t>;
+}
+&& ( !std::is_same_v<std::remove_cv_t<CONTAINER>, vector<VALUE>> )
+vector<VALUE>::vector(CONTAINER& container_) noexcept 
+   : m_pBuffer(container_.data()), m_uSize(0), m_uCapacity(container_.size() | BORROW_BIT) 
 {
 }
 
@@ -973,8 +986,7 @@ typename vector<VALUE>::const_reference vector<VALUE>::front() const noexcept
  */
 template<typename VALUE>
 typename vector<VALUE>::reference vector<VALUE>::back() noexcept 
-{
-   assert(m_uSize > 0);                                                       // verify vector is not empty
+{                                                                                                  assert(m_uSize > 0); // verify vector is not empty
    return m_pBuffer[m_uSize - 1];
 }
 
