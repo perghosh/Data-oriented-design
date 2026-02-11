@@ -1,3 +1,6 @@
+
+[← TOC](TOC.md)
+
 ### Short Tutorial: `gd::stack::vector` – Small Vector Optimization with Zero-Heap Performance
 
 The `gd::stack::vector` class is a **hybrid container** that provides the familiar interface of `std::vector` with **small vector optimization (SVO)**. It stores elements inline (on the stack) up to a specified capacity, then seamlessly transitions to heap allocation when needed.
