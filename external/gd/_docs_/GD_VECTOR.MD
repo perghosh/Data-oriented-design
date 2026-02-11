@@ -25,17 +25,17 @@ It's perfect for:
 #### Memory Layout
 
 ```
-┌─────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────┐
 │  gd::stack::vector<int, 4>  (capacity_inline = 4)          │
-├─────────────────────────────────────────────────────────────┤
+├────────────────────────────────────────────────────────────┤
 │  Inline Buffer (stack): [int][int][int][int]               │
 │                          └───────────────┘                 │
 │                          Used when size ≤ 4                │
-│                                                             │
-│  Heap Buffer (optional): [int][int][int][int]...            │
+│                                                            │
+│  Heap Buffer (optional): [int][int][int][int]...           │
 │                          └───────────────┘                 │
-│                          Used when size > 4                 │
-└─────────────────────────────────────────────────────────────┘
+│                          Used when size > 4                │
+└────────────────────────────────────────────────────────────┘
 ```
 
 When `size ≤ 4`: All elements stored in inline stack buffer (zero heap allocation)
@@ -358,12 +358,12 @@ gd::variant AsVariantView( const jsonpath::json& json )
 | Scenario                                | Use `gd::stack::vector`? | Why |
 |-----------------------------------------|--------------------------|-----|
 | Temporary small buffers in functions    | **Yes**                  | Zero heap, automatic cleanup |
-| Hot code paths with known small size     | **Yes**                  | Cache-friendly, no allocation |
+| Hot code paths with known small size    | **Yes**                  | Cache-friendly, no allocation |
 | Embedded systems / limited heap         | **Yes**                  | Reduces heap pressure |
-| Many instances with ≤N elements          | **Yes**                  | Dramatically reduces heap usage |
+| Many instances with ≤N elements         | **Yes**                  | Dramatically reduces heap usage |
 | Large data structures (>1000 elements)  | Maybe                    | Use std::vector if always large |
-| Need fixed-size array                    | No                       | Use std::array instead |
-| Need specialized data structures         | No                       | Use appropriate container |
+| Need fixed-size array                   | No                       | Use std::array instead |
+| Need specialized data structures        | No                       | Use appropriate container |
 
 #### Capacity and Storage Mode
 
