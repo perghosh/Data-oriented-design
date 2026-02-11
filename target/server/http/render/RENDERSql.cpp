@@ -203,6 +203,13 @@ std::pair<bool,std::string> CRENDERSql::ToSqlInsert( std::string& stringQuery )
 	stringInsertSql += gd::sql::query::values_get_s( vectorValue, m_eSqlDialect ).second;// append values from name value pairs
 	stringInsertSql += ")";
 
+   std::string_view stringReturning = GetProperty( "returning" ).as_string_view();
+   if( stringReturning.empty() == false )
+   {
+      stringInsertSql += "\n";                                                // append newline before returning clause
+      gd::sql::query::returning_get_s( stringReturning, stringInsertSql, m_eSqlDialect ); // generate returning clause and append to insert query
+   }
+
    // ## Set the out string to query .........................................
 
    if( stringQuery.empty() == true ) stringQuery = std::move( stringInsertSql );

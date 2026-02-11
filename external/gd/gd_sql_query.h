@@ -533,6 +533,7 @@ public:
    static std::pair<bool, std::string> add_s( query& queryTo, const query& queryFrom );
 
    static void returning_get_s( const gd::borrow::vector< std::pair< std::string_view, std::string_view > >& vectorValue, std::string& stringReturning, unsigned uDialect );
+   static void returning_get_s( std::string_view stringColumn, std::string& stringReturning, unsigned uDialect, char iSplitColumn = ';', char iSplitAlias = ',');
 
 };
 

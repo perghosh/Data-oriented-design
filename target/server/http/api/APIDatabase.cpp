@@ -493,6 +493,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
       std::string stringRecord = GetArgument("record").as_string();
       if( GetCommand() == "insert" )
       {
+         sqlbuilder.SetType( CSqlBuilder::eTypeInsert );
          CRENDERSql sql_( "sqlite" );
          sql_.Initialize();
          result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{});
@@ -507,30 +508,42 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
       
    }
    
-   auto uIndex = GetArgumentIndex( "query" );
-   if( uIndex == 0 ) stringQueryTemplate = GetArgument("query").as_string();
-   else
+   // ## if sqlbuilder is not ready then try to build it from query template and values
+   if( sqlbuilder.IsSqlReady() == false )
    {
-      stringQueryTemplate = (*this)[{"query", uIndex}].as_string();
-   }
+      auto uIndex = GetArgumentIndex( "query" );
+      if( uIndex == 0 ) stringQueryTemplate = GetArgument("query").as_string();
+      else
+      {
+         stringQueryTemplate = (*this)[{"query", uIndex}].as_string();
+      }
    
-   if( stringQueryTemplate.empty() == true ) { return { false, "no query specified to execute" }; }
+      if( stringQueryTemplate.empty() == true ) { return { false, "no query specified to execute" }; }
 
-   if( stringQueryTemplate[0] == '#' )
-   {
-      // ## Get query based on name .........................................
-      std::string_view stringQueryName( stringQueryTemplate.c_str() + 1, stringQueryTemplate.length() - 1 );
-      META::CQueries* pqueries = pdocument->QUERIES_Get();
+      if( stringQueryTemplate[0] == '#' )
+      {
+         // ## Get query based on name .........................................
+         std::string_view stringQueryName( stringQueryTemplate.c_str() + 1, stringQueryTemplate.length() - 1 );
+         META::CQueries* pqueries = pdocument->QUERIES_Get();
 
-      result_ = pqueries->GetQuery( stringQueryName, stringQueryTemplate );
-      if( result_.first == false ) { return result_; }
+         result_ = pqueries->GetQuery( stringQueryName, stringQueryTemplate );
+         if( result_.first == false ) { return result_; }
+      }
+
+      sqlbuilder = stringQueryTemplate;                                       // assign to template
    }
-
-   sqlbuilder = stringQueryTemplate;                                         // assign to template
    
    std::string stringExecute;
-   result_ = sqlbuilder.Build( stringExecute );
-   if( result_.first == false ) { return result_; }
+
+   if( sqlbuilder.IsSqlReady() == false )
+   {
+      result_ = sqlbuilder.Build( stringExecute );
+      if( result_.first == false ) { return result_; }
+   }
+   else
+   {
+      stringExecute =std::move( sqlbuilder.GetSql() );
+   }
 
    IncrementArgumentCounter( "query" );
    
