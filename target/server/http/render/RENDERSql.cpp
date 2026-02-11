@@ -110,6 +110,13 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
          AddValue( arguments_ );
       }
 
+      auto jsonReturning = jsonRecord["returning"];
+      if( jsonReturning.is_string() )
+      {
+         AddProperty( "returning", jsonReturning.as_string_view() );
+      }
+
+
    }
    catch( jsoncons::json_exception& e )
    {
@@ -175,15 +182,16 @@ std::pair<bool,std::string> CRENDERSql::ToSqlInsert( std::string& stringQuery )
    gd::sql::query queryInsert( gd::sql::eSqlInsert, stringTable, gd::sql::tag_table{});
    queryInsert.sql_set_dialect( gd::sql::sql_get_dialect_g("sqlite"));
 
-   // std::vector<gd::variant_view> vectorValue;
+   // ## Extract column names and values from table field and add to query ...
+   
    std::vector< std::pair<uint32_t, gd::variant_view> > vectorValue;
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
       std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
-      queryInsert.field_add( stringColumn );
+      queryInsert.field_add( stringColumn );                                  // add column to query
       uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
       auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
-      vectorValue.push_back( { uType, value_ } );
+      vectorValue.push_back( { uType, value_ } );                             // add value to vector for later use in query
    }
 
    // ## Generate insert query ..............................................

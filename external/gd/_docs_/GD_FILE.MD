@@ -1,3 +1,6 @@
+
+[← TOC](TOC.md)
+
 ### Overview: `gd::file` – Cross-Platform File & Path Utilities
 
 The `gd::file` header provides a **lightweight, OS-independent** set of tools for common file and path operations. It wraps and extends `std::filesystem` with simpler APIs, better error handling, and useful utilities missing from the standard library.

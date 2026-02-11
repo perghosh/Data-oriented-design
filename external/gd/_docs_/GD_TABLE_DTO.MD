@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Short Tutorial: `gd::table::dto::table` – High-Performance Columnar Data Transfer Object (DTO)
 
 `gd::table::dto::table` (aliased from the internal `table_column_buffer`) is a **highly optimized, contiguous-memory columnar table** designed for **fast data transfer and temporary storage** inside C++ applications.

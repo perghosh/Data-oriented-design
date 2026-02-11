@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Overview: `gd::variant` – A Flexible, Type-Safe Runtime Value Holder
 
 The `gd::variant` class is a powerful, lightweight C++ variant type designed to store **any primitive value** (numbers, bool, pointers) or **common dynamic types** (strings, binary data, GUIDs) in a single object, while owning its data and managing memory automatically.

@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Short Tutorial: `gd::sql` – Safe SQL Value Formatting and Templating System
 
 The `gd::sql` namespace provides a **comprehensive, type-safe SQL value formatting and templating system**. It automatically handles SQL escaping, type conversion, and parameter substitution, helping you prevent SQL injection while building complex queries dynamically.

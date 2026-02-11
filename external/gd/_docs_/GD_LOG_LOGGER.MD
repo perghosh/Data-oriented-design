@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 # Introduction: `gd::log` – Flexible, Thread-Safe Logging Framework
 
 The `gd::log` framework is a comprehensive, highly configurable logging system designed for C++ applications that need flexible output with fine-grained control over message filtering, formatting, and destination. It provides a simple yet powerful API for logging messages to various outputs (console, file, etc.) with thread safety and minimal performance overhead.

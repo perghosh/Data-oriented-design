@@ -1,3 +1,6 @@
+
+[← TOC](TOC.md)
+
 ### Overview: `gd::table::table` – Optimized Member Table for Columnar Data
 
 `gd::table::table` is a **high-performance, contiguous-memory columnar table** designed specifically to be used as a **member variable** in C++ classes or structs — especially in multithreaded or long-lived objects.

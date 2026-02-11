@@ -1,3 +1,6 @@
+
+[← TOC](TOC.md)
+
 ### Short Tutorial: `gd::argument::shared::arguments` – High-Performance, Reference-Counted Key-Value Buffer
 
 The `gd::argument::shared::arguments` class is the **high-performance variant** of the arguments buffer system. It uses **reference-counted shared buffers** with **aligned 32-bit headers** for faster access and better cache locality, at the cost of slightly higher memory usage and no stack-only mode.

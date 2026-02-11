@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Short Tutorial: `gd::argument::arguments` – Ultra-Compact, Stack-Friendly Key-Value Buffer
 
 The `gd::argument::arguments` class is a **highly optimized, contiguous byte buffer** designed to store **named or unnamed values** (key-value pairs) with **minimal memory overhead** and **no internal alignment padding**.

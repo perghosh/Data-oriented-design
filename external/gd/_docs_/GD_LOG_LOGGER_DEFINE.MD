@@ -1,3 +1,6 @@
+
+[← TOC](TOC.md)
+
 # Logging Macros and Definitions: `gd_log_logger_define.h`
 
 The `gd_log_logger_define.h` header provides a comprehensive set of macros that simplify logging operations and make the logging code more readable and maintainable. These macros act as convenience wrappers around the core logging functionality.

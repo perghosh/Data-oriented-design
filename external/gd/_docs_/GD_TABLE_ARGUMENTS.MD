@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Overview: `gd::table::arguments::table` – Flexible Table with Per-Row Extra Columns
 
 `gd::table::arguments::table` is a **powerful, dynamic columnar table** that extends `gd::table::table` with the ability to store **extra, row-specific columns** using a per-row `gd::argument::arguments` object.

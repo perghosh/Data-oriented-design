@@ -83,6 +83,9 @@ public:
    /// Adds data for a complete record for specified table
    std::pair<bool,std::string> AddRecord( std::string_view stringJson, gd::types::tag_json );
 
+   void AddProperty( std::string_view key_, gd::variant_view value_ ) { m_argumentsProperty.append_argument( key_, value_ ); }
+   gd::variant_view GetProperty( std::string_view key_ ) const { return m_argumentsProperty.get_argument( key_ ); }
+
    void Add( std::string_view stringName, std::string_view stringValue );
    void Add( std::string_view stringName, gd::variant_view variantviewValue );
 
@@ -107,6 +110,8 @@ public:
 
    gd::sql::enumSqlDialect m_eSqlDialect = gd::sql::eSqlDialectUnknown;
    gd::table::arguments::table m_tableField;   ///< Values or Names used to produce query
+
+   gd::argument::shared::arguments m_argumentsProperty; ///< arguments used for specific properties of query, this is used for example to store table name, where conditions, etc. as arguments instead of columns in table
 
    inline static gd::table::detail::columns* m_pcolumnsField_s = nullptr; ///< static columns for body
 
