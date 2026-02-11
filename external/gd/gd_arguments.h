@@ -993,13 +993,17 @@ public:
    /// return last position for buffer where values are stored
    pointer get_buffer_end() { return m_pBuffer + m_uLength; }
    const_pointer get_buffer_end() const { return m_pBuffer + m_uLength; }
+
+
+   /// return if object owns memory, if it does it should be deleted when arguments goes out of scope
+   bool is_owner() const noexcept { return m_bOwner; }
+   /// set if object owns memory, if it does it should be deleted when arguments goes out of scope
+   void set_owner( bool bOwner = true ) noexcept { m_bOwner = bOwner; }
+
 //@}
 
 /** \name OPERATION
 *///@{
-
-   // return if object owns memory, if it does it should be deleted when arguments goes out of scope
-   bool is_owner() const noexcept { return m_bOwner; }
 
    // ## @API [tag: append] [description: append data to arguments]
    //    note: remember that each value has its type and type in stream is just
