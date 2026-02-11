@@ -41,6 +41,7 @@ public:
 // @API [tag: construction]
 public:
    CSqlBuilder() {}
+   explicit CSqlBuilder( enumType eType ) : m_eType( eType ) {}
    CSqlBuilder( gd::argument::shared::arguments& arguments_ ): m_argumentsValues( arguments_ ) {}
    // copy
    CSqlBuilder( const CSqlBuilder& o ) { common_construct( o ); }
@@ -62,6 +63,9 @@ public:
 // ## methods ------------------------------------------------------------------
 public:
 // @API [tag: get, set]
+   void SetType( enumType eType ) { m_eType = eType; }
+   bool IsSqlReady() const; ///< check if query is ready to be built
+   std::string& GetSql() { return m_stringSql; }
 
 // @API [tag: operation]
    std::pair<bool, std::string> Initialize( gd::argument::shared::arguments arguments_ ); ///< initialize query manager
@@ -79,13 +83,27 @@ public:
 public:
    unsigned m_uUserIndex{};            ///< user index for user in session table for users logged in
    const CDocument* m_pDocument = nullptr;
-   enumType m_typeSql = eTypeUnknown; ///< type of query
+   enumType m_eType = eTypeUnknown; ///< type of query
    std::string m_stringSql;           ///< query template or raw query
    gd::argument::shared::arguments m_argumentsValues;
 
 // @API [tag: free-functions]
 public:
-
+   static constexpr enumType ToType_s( std::string_view stringType )
+   {
+      if( stringType == "select" ) return eTypeSelect;
+      if( stringType == "insert" ) return eTypeInsert;
+      if( stringType == "update" ) return eTypeUpdate;
+      if( stringType == "delete" ) return eTypeDelete;
+      if( stringType == "ask" )    return eTypeAsk;
+      if( stringType == "batch" )  return eTypeBatch;
+      return eTypeUnknown;
+   }
 };
+
+inline bool CSqlBuilder::IsSqlReady() const
+{
+   return ( m_eType != eTypeUnknown ) && ( m_stringSql.empty() == false );
+}
 
 NAMESPACE_SERVICE_END
