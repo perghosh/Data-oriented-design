@@ -484,17 +484,17 @@ It's perfect for:
 #### Memory Layout
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  gd::borrow::vector<int> with borrowed std::array          │
-├─────────────────────────────────────────────────────────────┤
-│  External Buffer: [int][int][int][int]... (borrowed)       │
-│                     └───────────────┘                       │
-│                     Used when borrowed and size ≤ capacity  │
-│                                                             │
-│  Heap Buffer (optional): [int][int][int][int]...            │
-│                     └───────────────┘                       │
+┌──────────────────────────────────────────────────────────────┐
+│  gd::borrow::vector<int> with borrowed std::array            │
+├──────────────────────────────────────────────────────────────┤
+│  External Buffer: [int][int][int][int]... (borrowed)         │
+│                     └───────────────┘                        │
+│                     Used when borrowed and size ≤ capacity   │
+│                                                              │
+│  Heap Buffer (optional): [int][int][int][int]...             │
+│                     └───────────────┘                        │
 │                     Used when exceeded or default-constructed│
-└─────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────┘
 ```
 
 **Borrowed Mode**: Uses external buffer provided at construction (zero heap allocation)
