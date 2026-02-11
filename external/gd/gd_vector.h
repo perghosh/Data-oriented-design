@@ -458,7 +458,7 @@ vector<VALUE,uCapacityStack>::vector(iterator_ itFirst, iterator_ itLast)
       
    if constexpr( std::forward_iterator<iterator_> )
    {
-      auto uDistance = static_cast<size_type>(std::distance(itFirst, itLast));
+      auto uDistance = static_cast<size_t>(std::distance(itFirst, itLast));
       if( uDistance > uCapacityStack )
       {
          this->m_pHeap = std::allocator<VALUE>().allocate(uDistance);
@@ -606,12 +606,22 @@ public:
    vector(VALUE* pBuffer, size_type uCapacity) noexcept;
    
    // ## Borrow from container with .data() and .size() - works with std::vector, std::array, C-arrays, etc.
+   /*
    template<typename CONTAINER>
    requires requires(CONTAINER& c_) {
       { c_.data() } -> std::convertible_to<VALUE*>;
       { c_.size() } -> std::convertible_to<typename vector<VALUE>::size_type>;
    }
    && ( !std::is_same_v<std::remove_cv_t<CONTAINER>, vector<VALUE>> )
+   explicit vector(CONTAINER& container_) noexcept;
+   */
+// ## Borrow from container with .data() and .size()
+   template<typename CONTAINER>
+   requires requires(CONTAINER& c_) {
+      { c_.data() } -> std::convertible_to<VALUE*>;
+      { c_.size() } -> std::convertible_to<std::size_t>; 
+   }
+   && ( !std::is_same_v<std::remove_cvref_t<CONTAINER>, vector<VALUE>> )
    explicit vector(CONTAINER& container_) noexcept;
    
    template<size_type uN>
@@ -677,8 +687,16 @@ public:
    void clear() noexcept;
    void push_back(const VALUE& value);
    void push_back(VALUE&& value);
-   
+   /*
    template<typename... ARGUMENTS>
+   reference emplace_back(ARGUMENTS&&... arguments);
+   */
+   template<typename... ARGUMENTS>
+      requires (sizeof...(ARGUMENTS) == 1) || (!(std::same_as<std::remove_cvref_t<ARGUMENTS>, VALUE> && ...))
+   reference emplace_back(ARGUMENTS&&... arguments);
+
+   template<typename... ARGUMENTS>
+      requires (sizeof...(ARGUMENTS) > 1) && (std::same_as<std::remove_cvref_t<ARGUMENTS>, VALUE> && ...)
    reference emplace_back(ARGUMENTS&&... arguments);
    
    void pop_back() noexcept;
@@ -755,6 +773,7 @@ vector<VALUE>::vector(VALUE (&array)[uN]) noexcept
  * @tparam CONTAINER Container type with .data() and .size() methods
  * @param container_ Reference to container to borrow storage from
  */
+ /*
 template<typename VALUE>
 template<typename CONTAINER>
 requires requires(CONTAINER& c_) {
@@ -762,6 +781,18 @@ requires requires(CONTAINER& c_) {
    { c_.size() } -> std::convertible_to<typename vector<VALUE>::size_type>;
 }
 && ( !std::is_same_v<std::remove_cv_t<CONTAINER>, vector<VALUE>> )
+vector<VALUE>::vector(CONTAINER& container_) noexcept 
+   : m_pBuffer(container_.data()), m_uSize(0), m_uCapacity(container_.size() | BORROW_BIT) 
+{
+}
+*/
+template<typename VALUE>
+template<typename CONTAINER>
+requires requires(CONTAINER& c_) {
+   { c_.data() } -> std::convertible_to<VALUE*>;
+   { c_.size() } -> std::convertible_to<std::size_t>; 
+}
+&& ( !std::is_same_v<std::remove_cvref_t<CONTAINER>, vector<VALUE>> )
 vector<VALUE>::vector(CONTAINER& container_) noexcept 
    : m_pBuffer(container_.data()), m_uSize(0), m_uCapacity(container_.size() | BORROW_BIT) 
 {
@@ -836,7 +867,7 @@ vector<VALUE>::vector(iterator_ itFirst, iterator_ itLast)
 {
    if constexpr( std::forward_iterator<iterator_> )
    {
-      auto uDistance = static_cast<size_type>(std::distance(itFirst, itLast));
+      auto uDistance = static_cast<size_t>(std::distance(itFirst, itLast));
       reserve(uDistance);
       std::uninitialized_copy(itFirst, itLast, m_pBuffer);
       m_uSize = uDistance;
@@ -1064,11 +1095,22 @@ void vector<VALUE>::push_back(VALUE&& value)
  */
 template<typename VALUE>
 template<typename... ARGUMENTS>
-typename vector<VALUE>::reference vector<VALUE>::emplace_back(ARGUMENTS&&... arguments) 
-{
+   requires (sizeof...(ARGUMENTS) == 1) || (!(std::same_as<std::remove_cvref_t<ARGUMENTS>, VALUE> && ...))
+typename vector<VALUE>::reference vector<VALUE>::emplace_back(ARGUMENTS&&... arguments) {
    if( m_uSize >= capacity() ) { allocate(m_uSize + 1); }
    std::construct_at(m_pBuffer + m_uSize, std::forward<ARGUMENTS>(arguments)...);
    return m_pBuffer[m_uSize++];
+}
+
+template<typename VALUE>
+template<typename... ARGUMENTS>
+   requires (sizeof...(ARGUMENTS) > 1) && (std::same_as<std::remove_cvref_t<ARGUMENTS>, VALUE> && ...)
+typename vector<VALUE>::reference vector<VALUE>::emplace_back(ARGUMENTS&&... arguments) {
+   reserve(m_uSize + sizeof...(ARGUMENTS));
+   ([&]<typename T>(T&& arg) { 
+      std::construct_at(m_pBuffer + m_uSize++, std::forward<T>(arg)); 
+   }(std::forward<ARGUMENTS>(arguments)), ...);
+   return back();
 }
 
 /** -------------------------------------------------------------------------- pop_back
