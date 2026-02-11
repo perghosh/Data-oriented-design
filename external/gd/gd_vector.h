@@ -606,16 +606,6 @@ public:
    vector(VALUE* pBuffer, size_type uCapacity) noexcept;
    
    // ## Borrow from container with .data() and .size() - works with std::vector, std::array, C-arrays, etc.
-   /*
-   template<typename CONTAINER>
-   requires requires(CONTAINER& c_) {
-      { c_.data() } -> std::convertible_to<VALUE*>;
-      { c_.size() } -> std::convertible_to<typename vector<VALUE>::size_type>;
-   }
-   && ( !std::is_same_v<std::remove_cv_t<CONTAINER>, vector<VALUE>> )
-   explicit vector(CONTAINER& container_) noexcept;
-   */
-// ## Borrow from container with .data() and .size()
    template<typename CONTAINER>
    requires requires(CONTAINER& c_) {
       { c_.data() } -> std::convertible_to<VALUE*>;
