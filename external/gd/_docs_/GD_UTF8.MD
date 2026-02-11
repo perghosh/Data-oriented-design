@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Overview: `gd_utf8.h` – High-Performance UTF-8 String Utilities
 
 **`gd_utf8.h`** is a lightweight, fast, and modern C++ header for working with UTF-8 encoded text. It provides a comprehensive set of functions for reading, writing, validating, converting, searching, trimming, splitting, and formatting UTF-8 strings — all with **minimal dependencies** and excellent performance.

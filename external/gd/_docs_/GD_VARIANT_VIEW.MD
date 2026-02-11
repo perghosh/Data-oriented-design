@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Overview: `gd::variant_view` – A Non-Owning, Lightweight Runtime Value View
 
 The `gd::variant_view` class is a **non-owning counterpart** to `gd::variant`. It has the **exact same memory layout (16 bytes)** and supports nearly all the same operations — type inspection, safe retrieval, comparison, arithmetic — but **does not allocate or free any memory**.

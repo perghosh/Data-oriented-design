@@ -74,6 +74,7 @@
 #include "gd_arguments.h"
 #include "gd_variant.h"
 #include "gd_variant_view.h"
+#include "gd_vector.h"
 
 
 #if defined( __clang__ )
@@ -461,6 +462,7 @@ public:
    [[nodiscard]] std::string sql_get_orderby() const;
    [[nodiscard]] std::string sql_get_limit() const;
    [[nodiscard]] std::string sql_get_with() const;
+   [[nodiscard]] std::string sql_get_returning() const;
 
    [[nodiscard]] std::string sql_get( enumSql eSql ) const;
    [[nodiscard]] std::string sql_get( enumSql eSql, const unsigned* puPartOrder ) const;
@@ -530,7 +532,7 @@ public:
 
    static std::pair<bool, std::string> add_s( query& queryTo, const query& queryFrom );
 
-
+   static void returning_get_s( const gd::borrow::vector< std::pair< std::string_view, std::string_view > >& vectorValue, std::string& stringReturning, unsigned uDialect );
 
 };
 

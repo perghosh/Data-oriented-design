@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Overview: `gd::table::index` – Fast Lookup Indexes for Tables
 
 `gd::table::index` provides lightweight, **sorted index classes** to speed up lookups in `gd::table::table` and `gd::table::dto::table` objects.

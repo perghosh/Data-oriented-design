@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 # Core Type System: `gd::types` – Foundation for GD Library
 
 The `gd_types.h` header defines the fundamental type system that underpins the entire GD library. This system provides a unified way to identify, classify, and work with different data types throughout the library components.

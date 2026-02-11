@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Description: `gd_compiler.h`
 
 **Lightweight compiler & C++ standard detection header**

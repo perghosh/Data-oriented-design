@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Overview: `gd::database::sqlite` – Simple & Safe SQLite Wrapper
 
 `gd::database::sqlite` provides a **modern, clean C++ wrapper** around SQLite, making it easy to:

@@ -1,3 +1,5 @@
+[← TOC](TOC.md)
+
 ### Overview: `gd::database::odbc` – Modern ODBC Wrapper for C++
 
 `gd::database::odbc` is a **clean, modern C++ wrapper** around ODBC (Open Database Connectivity), making it simple to connect to any ODBC-compliant database (SQL Server, PostgreSQL, MySQL, Oracle, Access, Excel, etc.) with minimal boilerplate.

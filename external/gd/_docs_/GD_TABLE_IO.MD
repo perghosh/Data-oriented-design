@@ -1,3 +1,6 @@
+
+[← TOC](TOC.md)
+
 ### Overview: `gd::table::io` – Table Output Formatting (CSV, JSON, SQL, CLI, etc.)
 
 `gd::table::io` (defined in `gd_table_io.h`) provides a **flexible, high-quality output system** for converting `gd::table::table` and `gd::table::dto::table` objects into various human-readable and machine-readable formats.

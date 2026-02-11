@@ -1,3 +1,6 @@
+
+[← TOC](TOC.md)
+
 ### Short Tutorial: `gd::arg`, `gd::arg_view`, `gd::args`, and `gd::args_view` – Flexible Key-Value Argument Containers
 
 These four lightweight classes form a powerful system for handling **named arguments** (key-value pairs) in C++, similar to Python's keyword arguments or JavaScript object literals, but with strong typing, zero-overhead views, and full integration with `gd::variant`/`variant_view`.
