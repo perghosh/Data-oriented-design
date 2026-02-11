@@ -70,6 +70,10 @@ public:
    const CDocument* GetDocument() const { return m_pdocument; }
    CDocument* GetDocument();
 
+   /// Get current command being processed, this is the command at m_uCommandIndex in m_vectorCommand
+   std::string_view GetCommand() const { assert( m_uCommandIndex < m_vectorCommand.size() ); return m_stringCommand; }
+   /// Set current command being processed, this is the command at m_uCommandIndex in m_vectorCommand
+   void SetCommand( std::string_view stringCommand ) { m_stringCommand = stringCommand; }
    /// Get currect command index value
    unsigned GetCommandIndex() const { assert( m_uCommandIndex <= m_vectorCommand.size() ); return m_uCommandIndex; }
    /// Sets the current command index
@@ -103,6 +107,7 @@ public:
 
 // ## attributes -------------------------------------------------------------
 public:
+   std::string_view m_stringCommand;                  ///< Current command being processed, this is the command at m_uCommandIndex in m_vectorCommand
    std::vector<std::string_view> m_vectorCommand;     ///< command path segments
    unsigned m_uCommandIndex{};                        ///< current command index being processed, command index are the index within m_vectorCommand
    gd::argument::arguments m_argumentsParameter;      ///< parameters for api command
