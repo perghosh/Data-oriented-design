@@ -23,6 +23,17 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE( "[session] borrow vector 1", "[session]" )
+{
+   std::array<int,20> buffer_;
+   gd::borrow::vector<int> vector_( buffer_ );
+
+   vector_.push_back( 1 );                                                    REQUIRE( vector_[0] == 1 ); REQUIRE( vector_.owner() == false);
+   for( int i = 0; i < 10; ++i ) { vector_.push_back( i ); }                  REQUIRE( vector_[0] == 1 ); REQUIRE( vector_[1] == 0 ); REQUIRE( vector_[2] == 1 ); REQUIRE( vector_[3] == 2 ); REQUIRE( vector_[4] == 3 ); REQUIRE( vector_[5] == 4 ); REQUIRE( vector_[6] == 5 ); REQUIRE( vector_[7] == 6 ); REQUIRE( vector_[8] == 7 ); REQUIRE( vector_[9] == 8 );
+   vector_.emplace_back( 10, 20, 30, 40, 50, 60 );                            REQUIRE( vector_[11] == 10 );  REQUIRE( vector_[16] == 60 );
+   for( int i = 100; i < 110; ++i ) { vector_.push_back( i ); }               REQUIRE( vector_.owner() == true);
+}
+
 TEST_CASE( "[session] vector - default construction", "[session]" )
 {
    gd::stack::vector<std::byte, 128> vec;
