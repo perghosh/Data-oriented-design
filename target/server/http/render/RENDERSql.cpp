@@ -18,6 +18,9 @@
 #include "RENDERSql.h"
 
 
+/** --------------------------------------------------------------------------
+ * @brief Initializes the static data table structure used to hold response body parts for SQL field information.
+ */
 void CRENDERSql::Initialize()
 {
    // Initialize datable that will hold response body parts
@@ -39,7 +42,7 @@ void CRENDERSql::Initialize()
    m_tableField.prepare();
 }
 
-/**
+/** --------------------------------------------------------------------------
  * @brief Add new field to be used in  SQL query that is generated.
  *
  * @param argumentsField information about the field to add.
@@ -100,9 +103,11 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
 
       for( const auto& itValue : jsonValues.object_range() )
       {
+         arguments_.clear();
          arguments_.append( "table", stringTable );
          arguments_.append( "column", itValue.key() );
-         arguments_.append_argument( "value", CONVERT::AsVariantView( itValue.value() ) );
+         arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
+         AddValue( arguments_ );
       }
 
    }
@@ -143,9 +148,11 @@ void CRENDERSql::SetColumnValue( std::string_view stringName, gd::variant_view v
 
 std::pair<bool,std::string> CRENDERSql::GetQuery( enumSqlQueryType eSqlQueryType, std::string& stringQuery )
 {
+   std::pair<bool, std::string> result_( true, "" );
    switch( eSqlQueryType )
    {
       case eSqlQueryTypeInsert:
+      result_ = ToSqlInsert( stringQuery );
          break;
       case eSqlQueryTypeUpdate:
          break;
@@ -158,7 +165,7 @@ std::pair<bool,std::string> CRENDERSql::GetQuery( enumSqlQueryType eSqlQueryType
       default:
          return {false, "Invalid query type"};
    }
-   return {true, stringQuery};
+   return result_;
 }
 
 std::pair<bool,std::string> CRENDERSql::ToSqlInsert( std::string& stringQuery )

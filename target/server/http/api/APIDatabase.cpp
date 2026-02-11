@@ -7,6 +7,7 @@
 #include "gd/database/gd_database_io.h"
 
 #include "../service/SERVICE_SqlBuilder.h"
+#include "../render/RENDERSql.h"
 
 #include "../Router.h"
 #include "../Document.h"
@@ -68,6 +69,8 @@ std::pair<bool, std::string> CAPIDatabase::Execute()
       std::string_view stringCommand = m_vectorCommand[uIndex];
 
       if( stringCommand == "db" ) continue;                                   // skip db
+
+      SetCommand( stringCommand );                                            // set current command being processed, this is the command at m_uCommandIndex in m_vectorCommand
 
       if( stringCommand == "create" ) { result_ = Execute_Create(); }         // endpoint db/create
       else if( stringCommand == "open" ) { result_ = Execute_Open(); }        // endpoint db/open
@@ -460,6 +463,7 @@ std::pair<bool, std::string> CAPIDatabase::Execute_Delete()
  */
 std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
 {
+   std::pair<bool, std::string> result_( true, "" );
    CDocument* pdocument = GetDocument();                                                           assert( pdocument != nullptr );
    CSqlBuilder sqlbuilder;
    std::string stringQueryTemplate;
@@ -487,6 +491,19 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
    else if( Exists( "record" ) == true )
    {
       std::string stringRecord = GetArgument("record").as_string();
+      if( GetCommand() == "insert" )
+      {
+         CRENDERSql sql_( "sqlite" );
+         sql_.Initialize();
+         result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{});
+         if( result_.first == false ) { return result_; }
+
+         std::string stringQuery;
+         result_ = sql_.ToSqlInsert( stringQuery );
+         if( result_.first == false ) { return result_; }
+
+         sqlbuilder = stringQuery;
+      }
       
    }
    
@@ -505,14 +522,14 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
       std::string_view stringQueryName( stringQueryTemplate.c_str() + 1, stringQueryTemplate.length() - 1 );
       META::CQueries* pqueries = pdocument->QUERIES_Get();
 
-      auto result_ = pqueries->GetQuery( stringQueryName, stringQueryTemplate );
+      result_ = pqueries->GetQuery( stringQueryName, stringQueryTemplate );
       if( result_.first == false ) { return result_; }
    }
 
    sqlbuilder = stringQueryTemplate;                                         // assign to template
    
    std::string stringExecute;
-   auto result_ = sqlbuilder.Build( stringExecute );
+   result_ = sqlbuilder.Build( stringExecute );
    if( result_.first == false ) { return result_; }
 
    IncrementArgumentCounter( "query" );
