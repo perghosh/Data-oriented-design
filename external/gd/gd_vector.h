@@ -556,7 +556,7 @@ _GD_BEGIN
 namespace borrow {
 
 
-/**
+/** ==========================================================================
  * @brief A dynamic array that may not own its storage initially, but can grow and allocate its own storage if needed.
  * 
  * The vector have three members to manage its storage:
@@ -627,13 +627,18 @@ public:
 
    ~vector() noexcept;
 
-   /// ## Assignment operators
+   /// ## @API [tag: assign] [summary: Assign operators] 
 
    vector& operator=(const vector& o);
    vector& operator=(vector&& o) noexcept;
    vector& operator=(std::initializer_list<VALUE> list_);
+   
+   /// ## @API [tag: operator] [summary: Comparison operators]
 
-   /// ## Element access
+   [[nodiscard]] bool operator==(const vector& o) const;
+   [[nodiscard]] auto operator<=>(const vector& o) const requires std::three_way_comparable<VALUE>;
+
+   /// ## @API [tag: access] [summary: Element access]
 
    [[nodiscard]] reference operator[](size_type uIndex) noexcept;
    [[nodiscard]] const_reference operator[](size_type uIndex) const noexcept;
@@ -646,7 +651,7 @@ public:
    [[nodiscard]] VALUE* data() noexcept { return m_pBuffer; }
    [[nodiscard]] const VALUE* data() const noexcept { return m_pBuffer; }
 
-   /// ## Iterators
+   /// ## @API [tag: iterator] [summary: Iterators] 
 
    [[nodiscard]] iterator begin() noexcept { return m_pBuffer; }
    [[nodiscard]] iterator end() noexcept { return m_pBuffer + m_uSize; }
@@ -662,7 +667,7 @@ public:
    [[nodiscard]] const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
    [[nodiscard]] const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
-   /// ## Capacity
+   /// ## @API [tag: capacity] [summary: Capacity]  
 
    [[nodiscard]] bool empty() const noexcept { return m_uSize == 0; }
    [[nodiscard]] size_type size() const noexcept { return m_uSize; }
@@ -672,15 +677,11 @@ public:
 
    void reserve(size_type uNewCapacity);
 
-   /// ## Modifiers
+   /// ## @API [tag: modify] [summary: Modifiers] 
 
    void clear() noexcept;
    void push_back(const VALUE& value);
    void push_back(VALUE&& value);
-   /*
-   template<typename... ARGUMENTS>
-   reference emplace_back(ARGUMENTS&&... arguments);
-   */
    template<typename... ARGUMENTS>
       requires (sizeof...(ARGUMENTS) == 1) || (!(std::same_as<std::remove_cvref_t<ARGUMENTS>, VALUE> && ...))
    reference emplace_back(ARGUMENTS&&... arguments);
@@ -700,20 +701,15 @@ public:
    
    void swap(vector& o) noexcept;
 
-   /// ## Comparison operators
-
-   [[nodiscard]] bool operator==(const vector& o) const;
-   [[nodiscard]] auto operator<=>(const vector& o) const requires std::three_way_comparable<VALUE>;
-
 private:
    void copy_from(const vector& o);
    void allocate(size_type uMinCapacity);
    void destroy() noexcept;
 
 private:
-   VALUE* m_pBuffer;                                                          // pointer to current storage (borrowed or owned)
-   size_type m_uSize;                                                         // current number of elements
-   size_type m_uCapacity;                                                     // capacity with high bit indicating borrowed storage
+   VALUE* m_pBuffer;       ///< pointer to current storage (borrowed or owned)
+   size_type m_uSize;      ///< current number of elements
+   size_type m_uCapacity;  ///< capacity with high bit indicating borrowed storage
 };
 
 // ============================================================================
