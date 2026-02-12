@@ -139,7 +139,8 @@ public:
    [[nodiscard]] const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
    [[nodiscard]] const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
-   /// ## Capacity
+   /// ## @API [tag: capacity] [summary: Capacity]  
+
    [[nodiscard]] bool empty() const noexcept { return m_uSize == 0; }
    [[nodiscard]] size_type size() const noexcept { return m_uSize; }
    [[nodiscard]] size_type capacity() const noexcept { return m_uCapacity; }
@@ -671,7 +672,7 @@ public:
 
    [[nodiscard]] bool empty() const noexcept { return m_uSize == 0; }
    [[nodiscard]] size_type size() const noexcept { return m_uSize; }
-   [[nodiscard]] size_type max_size() const noexcept { return std::numeric_limits<size_type>::max() / sizeof(VALUE); }
+   [[nodiscard]] size_type max_size() const noexcept { return (std::numeric_limits<size_type>::max() >> 1) / sizeof(VALUE); }
    [[nodiscard]] size_type capacity() const noexcept { return m_uCapacity & ~BORROW_BIT; }
    [[nodiscard]] bool owner() const noexcept { return (m_uCapacity & BORROW_BIT) == 0 && m_pBuffer != nullptr; }
    [[nodiscard]] bool is_borrowed() const noexcept { return (m_uCapacity & BORROW_BIT) != 0; }
@@ -682,6 +683,8 @@ public:
    /// ## @API [tag: modify] [summary: Modifiers] 
 
    void assign(std::initializer_list<VALUE> list_);
+   template<typename INPUT_IT>
+   void assign(INPUT_IT itFirst, INPUT_IT itLast);
    void clear() noexcept;
    void push_back(const VALUE& value);
    void push_back(VALUE&& value);
@@ -931,6 +934,32 @@ void vector<VALUE>::assign(std::initializer_list<VALUE> list_)
    reserve(list_.size());
    std::uninitialized_copy(list_.begin(), list_.end(), m_pBuffer);
    m_uSize = list_.size();
+}
+
+/** -------------------------------------------------------------------------- assign (iterator range)
+ * @brief Assigns elements from an iterator range
+ * 
+ * @tparam INPUT_IT Iterator type
+ * @param itFirst Beginning of range
+ * @param itLast End of range
+ */
+template<typename VALUE>
+template<typename INPUT_IT>
+void vector<VALUE>::assign(INPUT_IT itFirst, INPUT_IT itLast) 
+{
+   clear();
+   
+   if constexpr( std::forward_iterator<INPUT_IT> )
+   {
+      auto uDistance = static_cast<size_t>(std::distance(itFirst, itLast));    // Calculate distance between iterators
+      reserve(uDistance);                                                      // Reserve memory for elements
+      std::uninitialized_copy(itFirst, itLast, m_pBuffer);                     // Copy elements from iterator range
+      m_uSize = uDistance;
+   }
+   else
+   {
+      for( ; itFirst != itLast; ++itFirst ) { push_back(*itFirst); }           // Copy elements from iterator range
+   }
 }
 
 // ============================================================================
