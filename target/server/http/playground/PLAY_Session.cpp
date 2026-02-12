@@ -25,6 +25,19 @@
 
 TEST_CASE( "[session] borrow vector 1", "[session]" )
 {
+   gd::borrow::vector< std::pair<std::string_view, gd::variant_view> > vector_;
+   vector_.push_back( {"key1", "value1"} );
+   vector_.push_back( {"key2", "value2"} );
+   vector_.push_back( {"key3", "value3"} );
+   vector_.push_back( {"key5", "value4"} );
+
+   gd::argument::arguments arguments_( vector_, gd::types::tag_view{});
+
+}
+
+
+TEST_CASE( "[session] borrow vector 1", "[session]" )
+{
    std::array<int,20> buffer_;
    gd::borrow::vector<int> vector_( buffer_ );
 
@@ -51,7 +64,7 @@ TEST_CASE( "[session] vector - default construction", "[session]" )
 
 TEST_CASE( "[session] borrow vector 2 - default construct", "[session]" )
 {
-   gd::borrow::vector<int> vector_;                                             REQUIRE( vector_.empty() == true ); REQUIRE( vector_.size() == 0 ); REQUIRE( vector_.owner() == true ); REQUIRE( vector_.is_borrowed() == false );
+   gd::borrow::vector<int> vector_;                                             REQUIRE( vector_.empty() == true ); REQUIRE( vector_.size() == 0 ); REQUIRE( vector_.empty() == true ); REQUIRE( vector_.is_borrowed() == false );
    vector_.push_back( 1 );                                                      REQUIRE( vector_.size() == 1 ); REQUIRE( vector_[0] == 1 );
    vector_.push_back( 2 );                                                      REQUIRE( vector_.size() == 2 ); REQUIRE( vector_[1] == 2 );
 }
