@@ -1,6 +1,16 @@
-
 [← TOC](TOC.md)
 
+
+---
+
+## Table of Contents
+
+- [gd::stack::vector](#stack-vector) – Small Vector Optimization with Zero-Heap Performance
+- [gd::borrow::vector](#borrow-vector) – Zero-Heap Performance with External Storage
+
+---
+
+<a name="stack-vector"></a>
 ### Short Tutorial: `gd::stack::vector` – Small Vector Optimization with Zero-Heap Performance
 
 The `gd::stack::vector` class is a **hybrid container** that provides the familiar interface of `std::vector` with **small vector optimization (SVO)**. It stores elements inline (on the stack) up to a specified capacity, then seamlessly transitions to heap allocation when needed.
@@ -457,6 +467,7 @@ Use it whenever you have **many small containers** or **hot code paths** where a
 
 It's the "smart vector" that knows how to stay fast when small and stay flexible when large.
 
+<a name="borrow-vector"></a>
 ---
 
 ### Short Tutorial: `gd::borrow::vector` – Zero-Heap Performance with External Storage

@@ -738,8 +738,7 @@ vector<VALUE>::vector() noexcept
 template<typename VALUE>
 vector<VALUE>::vector(VALUE* pBuffer, size_type uCapacity) noexcept 
    : m_pBuffer(pBuffer), m_uSize(0), m_uCapacity(uCapacity | BORROW_BIT) 
-{
-   assert(pBuffer != nullptr || uCapacity == 0);                              // verify buffer is valid or capacity is zero
+{                                                                                                  assert(pBuffer != nullptr || uCapacity == 0); // verify buffer is valid or capacity is zero
 }
 
 /** -------------------------------------------------------------------------- Borrow from C-array constructor
@@ -749,9 +748,9 @@ vector<VALUE>::vector(VALUE* pBuffer, size_type uCapacity) noexcept
  * @param array Reference to array to borrow storage from
  */
 template<typename VALUE>
-template<std::size_t uN>
-vector<VALUE>::vector(VALUE (&array)[uN]) noexcept 
-   : m_pBuffer(array), m_uSize(0), m_uCapacity(uN | BORROW_BIT) 
+template<std::size_t uSize>
+vector<VALUE>::vector(VALUE (&array_)[uSize]) noexcept 
+   : m_pBuffer( array_ ), m_uSize( 0 ), m_uCapacity( uSize | BORROW_BIT )     // note the BORROW_BIT is set in capacity to indicate borrowed storage
 {
 }
 
@@ -763,28 +762,15 @@ vector<VALUE>::vector(VALUE (&array)[uN]) noexcept
  * @tparam CONTAINER Container type with .data() and .size() methods
  * @param container_ Reference to container to borrow storage from
  */
- /*
 template<typename VALUE>
 template<typename CONTAINER>
 requires requires(CONTAINER& c_) {
-   { c_.data() } -> std::convertible_to<VALUE*>;
-   { c_.size() } -> std::convertible_to<typename vector<VALUE>::size_type>;
-}
-&& ( !std::is_same_v<std::remove_cv_t<CONTAINER>, vector<VALUE>> )
-vector<VALUE>::vector(CONTAINER& container_) noexcept 
-   : m_pBuffer(container_.data()), m_uSize(0), m_uCapacity(container_.size() | BORROW_BIT) 
-{
-}
-*/
-template<typename VALUE>
-template<typename CONTAINER>
-requires requires(CONTAINER& c_) {
-   { c_.data() } -> std::convertible_to<VALUE*>;
-   { c_.size() } -> std::convertible_to<std::size_t>; 
+   { c_.data() } -> std::convertible_to<VALUE*>;                              // verify container has .data() returning pointer to VALUE
+   { c_.size() } -> std::convertible_to<std::size_t>;                         // verify container has .size() returning size type
 }
 && ( !std::is_same_v<std::remove_cvref_t<CONTAINER>, vector<VALUE>> )
 vector<VALUE>::vector(CONTAINER& container_) noexcept 
-   : m_pBuffer(container_.data()), m_uSize(0), m_uCapacity(container_.size() | BORROW_BIT) 
+   : m_pBuffer( container_.data() ), m_uSize( 0 ), m_uCapacity( container_.size() | BORROW_BIT ) // note the BORROW_BIT is set in capacity to indicate borrowed storage
 {
 }
 
@@ -910,12 +896,8 @@ vector<VALUE>& vector<VALUE>::operator=(vector&& o) noexcept
    if( this != &o )
    {
       destroy();
-      m_pBuffer = o.m_pBuffer;
-      m_uSize = o.m_uSize;
-      m_uCapacity = o.m_uCapacity;
-      o.m_pBuffer = nullptr;
-      o.m_uSize = 0;
-      o.m_uCapacity = 0;
+      m_pBuffer = o.m_pBuffer; m_uSize = o.m_uSize;   m_uCapacity = o.m_uCapacity; // take ownership of storage
+      o.m_pBuffer = nullptr;   o.m_uSize = 0;         o.m_uCapacity = 0;      // clear source vector
    }
    return *this;
 }
@@ -948,15 +930,13 @@ vector<VALUE>& vector<VALUE>::operator=(std::initializer_list<VALUE> list_)
  */
 template<typename VALUE>
 typename vector<VALUE>::reference vector<VALUE>::operator[](size_type uIndex) noexcept 
-{
-   assert(uIndex < m_uSize);                                                  // verify index is within bounds
+{                                                                                                  assert(uIndex < m_uSize); // verify index is within bounds
    return m_pBuffer[uIndex];
 }
 
 template<typename VALUE>
 typename vector<VALUE>::const_reference vector<VALUE>::operator[](size_type uIndex) const noexcept 
-{
-   assert(uIndex < m_uSize);                                                  // verify index is within bounds
+{                                                                                                  assert(uIndex < m_uSize); // verify index is within bounds
    return m_pBuffer[uIndex];
 }
 
@@ -988,15 +968,13 @@ typename vector<VALUE>::const_reference vector<VALUE>::at(size_type uIndex) cons
  */
 template<typename VALUE>
 typename vector<VALUE>::reference vector<VALUE>::front() noexcept 
-{
-   assert(m_uSize > 0);                                                       // verify vector is not empty
+{                                                                                                  assert(m_uSize > 0); // verify vector is not empty
    return m_pBuffer[0];
 }
 
 template<typename VALUE>
 typename vector<VALUE>::const_reference vector<VALUE>::front() const noexcept 
-{
-   assert(m_uSize > 0);                                                       // verify vector is not empty
+{                                                                                                  assert(m_uSize > 0); // verify vector is not empty
    return m_pBuffer[0];
 }
 
@@ -1013,8 +991,7 @@ typename vector<VALUE>::reference vector<VALUE>::back() noexcept
 
 template<typename VALUE>
 typename vector<VALUE>::const_reference vector<VALUE>::back() const noexcept 
-{
-   assert(m_uSize > 0);                                                       // verify vector is not empty
+{                                                                                                  assert(m_uSize > 0); // verify vector is not empty
    return m_pBuffer[m_uSize - 1];
 }
 
