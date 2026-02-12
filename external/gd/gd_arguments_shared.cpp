@@ -931,31 +931,6 @@ arguments::arguments(std::pair<std::string_view, gd::variant> pairArgument)
    append_argument(pairArgument.first, _argument);
 }
 
-
-/** ---------------------------------------------------------------------------
- * @brief Constructs an arguments object from an initializer list of string-variant pairs.
- * @param listPair An initializer list of pairs containing string views and gd::variant values.
- * Initializes the object by appending each pair from the list.
- */
-arguments::arguments(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair)
-{
-   zero();
-   for( auto it : listPair ) append_argument(it);
-}
-
-
-/** ---------------------------------------------------------------------------
- * @brief Constructs an arguments object from a vector of string-variant_view pairs with a tag_view.
- * @param listPair A vector of pairs containing string views and gd::variant_view values.
- * @param tag_view A tag indicating the use of variant_view (distinguishes constructor overload).
- * Initializes the object by appending each pair from the vector using the tag_view overload.
- */
-arguments::arguments( std::vector<std::pair<std::string_view, gd::variant_view>> vectorPair, tag_view )
-{
-   zero();
-   append(vectorPair);
-}
-
 /** ---------------------------------------------------------------------------
 * @brief Constructs an arguments object from an initializer list and another arguments object.
 *
