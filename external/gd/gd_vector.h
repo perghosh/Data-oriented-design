@@ -671,14 +671,17 @@ public:
 
    [[nodiscard]] bool empty() const noexcept { return m_uSize == 0; }
    [[nodiscard]] size_type size() const noexcept { return m_uSize; }
+   [[nodiscard]] size_type max_size() const noexcept { return std::numeric_limits<size_type>::max() / sizeof(VALUE); }
    [[nodiscard]] size_type capacity() const noexcept { return m_uCapacity & ~BORROW_BIT; }
    [[nodiscard]] bool owner() const noexcept { return (m_uCapacity & BORROW_BIT) == 0 && m_pBuffer != nullptr; }
    [[nodiscard]] bool is_borrowed() const noexcept { return (m_uCapacity & BORROW_BIT) != 0; }
 
    void reserve(size_type uNewCapacity);
+   void shrink_to_fit();
 
    /// ## @API [tag: modify] [summary: Modifiers] 
 
+   void assign(std::initializer_list<VALUE> list_);
    void clear() noexcept;
    void push_back(const VALUE& value);
    void push_back(VALUE&& value);
@@ -696,6 +699,8 @@ public:
    
    iterator insert(const_iterator itPosition, const VALUE& value);
    iterator insert(const_iterator itPosition, VALUE&& value);
+   template<class... Args>
+   iterator emplace(const_iterator position, Args&&... args);
    iterator erase(const_iterator itPosition);
    iterator erase(const_iterator itFirst, const_iterator itLast);
    
@@ -914,6 +919,20 @@ vector<VALUE>& vector<VALUE>::operator=(std::initializer_list<VALUE> list_)
    return *this;
 }
 
+/** -------------------------------------------------------------------------- assign
+ * @brief Assigns elements from an initializer list
+ * 
+ * @param list_ Initializer list of values to assign
+ */
+template<typename VALUE>
+void vector<VALUE>::assign(std::initializer_list<VALUE> list_) 
+{
+   clear();
+   reserve(list_.size());
+   std::uninitialized_copy(list_.begin(), list_.end(), m_pBuffer);
+   m_uSize = list_.size();
+}
+
 // ============================================================================
 // ## Element access methods
 // ============================================================================
@@ -1010,6 +1029,38 @@ void vector<VALUE>::reserve(size_type uNewCapacity)
    {
       allocate(uNewCapacity);
    }
+}
+
+/** -------------------------------------------------------------------------- shrink_to_fit
+ * @brief Reduce capacity to match size
+ * 
+ * If the vector owns its storage and size() < capacity(), reallocates to reduce
+ * memory usage. Does nothing if the vector is borrowed or if size() == capacity().
+ */
+template<typename VALUE>
+void vector<VALUE>::shrink_to_fit() 
+{
+   if( is_borrowed() ) { return; }                                             // Do nothing if storage is borrowed - we don't own it
+   
+   if( m_uSize == capacity() ) { return; }                                     // Do nothing if size already equals capacity
+   
+   if( m_uSize == 0 ) {  destroy(); return; }                                  // If empty, destroy and deallocate 
+   
+   // ## Reallocate to exactly match size .....................................
+   size_type uOldCapacity = capacity();
+   VALUE* pNewBuffer = std::allocator<VALUE>().allocate(m_uSize);
+   
+   if constexpr( std::is_nothrow_move_constructible_v<VALUE> )
+   {
+      std::uninitialized_move_n(m_pBuffer, m_uSize, pNewBuffer);
+   }
+   else { std::uninitialized_copy_n(m_pBuffer, m_uSize, pNewBuffer); }
+   
+   std::destroy_n(m_pBuffer, m_uSize);
+   std::allocator<VALUE>().deallocate(m_pBuffer, uOldCapacity);
+   
+   m_pBuffer = pNewBuffer;
+   m_uCapacity = m_uSize;
 }
 
 // ============================================================================
@@ -1148,6 +1199,38 @@ typename vector<VALUE>::iterator vector<VALUE>::insert(const_iterator itPosition
    else
    {
       std::construct_at(m_pBuffer + m_uSize, value);
+   }
+   ++m_uSize;
+   return m_pBuffer + uIndex;
+}
+
+/** -------------------------------------------------------------------------- emplace
+ * @brief Construct element in-place at position
+ * 
+ * @tparam Args Types of constructor arguments
+ * @param position Iterator to position where element will be constructed
+ * @param args Arguments to forward to element constructor
+ * @return Iterator to newly constructed element
+ */
+template<typename VALUE>
+template<class... Args>
+typename vector<VALUE>::iterator vector<VALUE>::emplace(const_iterator position, Args&&... args) 
+{
+   size_type uIndex = position - begin();
+   if( m_uSize >= capacity() ) { allocate(m_uSize + 1); }
+   
+   // ### Shift elements to make room ........................................
+
+   if( uIndex < m_uSize )
+   {
+      std::construct_at(m_pBuffer + m_uSize, std::move(m_pBuffer[m_uSize - 1])); // Construct new element at end
+      std::move_backward(m_pBuffer + uIndex, m_pBuffer + m_uSize - 1, m_pBuffer + m_uSize); // Shift elements to make room
+      std::destroy_at(m_pBuffer + uIndex);                                    // Destroy old element at index
+      std::construct_at(m_pBuffer + uIndex, std::forward<Args>(args)...);     // Construct new element at index   
+   }
+   else
+   {
+      std::construct_at(m_pBuffer + m_uSize, std::forward<Args>(args)...);
    }
    ++m_uSize;
    return m_pBuffer + uIndex;
