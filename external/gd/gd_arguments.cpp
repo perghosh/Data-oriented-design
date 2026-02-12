@@ -918,18 +918,6 @@ arguments::arguments(std::pair<std::string_view, gd::variant> pairArgument)
    append_argument(pairArgument.first, _argument);
 }
 
-
-/** ---------------------------------------------------------------------------
- * @brief Constructs an arguments object from an initializer list of string-variant pairs.
- * @param listPair An initializer list of pairs containing string views and gd::variant values.
- * Initializes the object by appending each pair from the list.
- */
-arguments::arguments(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair)
-{
-   zero();
-   for( auto it : listPair ) append_argument(it);
-}
-
 /** ---------------------------------------------------------------------------
  * @brief Constructs an arguments object from a pointer buffer and size, and an initializer list of string-variant pairs.
  * @param pBuffer Pointer to the buffer where the arguments will be stored.
