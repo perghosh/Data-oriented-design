@@ -81,6 +81,8 @@ public:
 
    std::pair<bool, std::string> ReadColumnMetadata( std::string_view stringTable, std::vector<std::string_view> vectorField, gd::table::dto::table* ptableColumn ) const;
 
+   [[nodiscard]] int64_t Column_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept;
+
 
 protected:
 // @API [tag: internal]
