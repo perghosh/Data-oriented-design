@@ -742,6 +742,7 @@ public:
    int64_t find( const std::string_view& stringName, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( stringName, 0, get_row_count(), variantviewFind ); }
    int64_t find( unsigned uColumn, bool bAscending, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( uColumn, bAscending, 0, get_row_count(), variantviewFind ); }
    int64_t find( const std::string_view& stringName, bool bAscending, const gd::variant_view& variantviewFind ) const noexcept { return find_variant_view( column_get_index( stringName ), bAscending, 0, get_row_count(), variantviewFind ); }
+   int64_t find( unsigned uColumn, uint64_t uStartRow, const gd::variant_view& variantviewFind ) const noexcept { return find( uColumn, uStartRow, get_row_count() - uStartRow, variantviewFind ); }
    int64_t find( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;
 
    int64_t find_variant_view( unsigned uColumn, uint64_t uStartRow, uint64_t uCount, const gd::variant_view& variantviewFind ) const noexcept;

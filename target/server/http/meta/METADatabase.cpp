@@ -209,6 +209,52 @@ std::pair<bool, std::string> CDatabase::ReadColumnMetadata( std::string_view str
    return { true, "" };
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Find a row in the column metadata table by hierarchical search criteria
+ * 
+ * Performs a hierarchical search through the column metadata table using schema,
+ * table, and column names as filters. The search progressively narrows results:
+ * first by schema (if provided), then by table name (if provided), and finally
+ * by column name (if provided).
+ * 
+ * @param argumentsFind Arguments containing search criteria with keys:
+ *                      - "schema": Schema name (optional)
+ *                      - "table": Table name (optional)
+ *                      - "column": Column name (optional)
+ * @return Row index (0-based) if found, -1 if not found
+ * 
+ * @note The method uses progressive filtering where each level depends on the
+ *       success of the previous level. If a schema search fails, table and column
+ *       searches are not performed.
+ */
+int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept
+{
+   int64_t iRow = 0;
+   std::string_view stringSchema = argumentsFind["schema"].as_string_view();  // Get schema name from arguments
+   std::string_view stringTable = argumentsFind["table"].as_string_view();    // Get table name from arguments
+   std::string_view stringColumn = argumentsFind["column"].as_string_view();  // Get column name from arguments
+
+   if( stringSchema.empty() == false )
+   {
+      unsigned uColumn = m_ptableColumn->column_get_index( "schema" );
+      iRow = m_ptableColumn->find( uColumn, stringSchema );
+   }
+
+   if( iRow != -1 && stringTable.empty() == false )
+   {
+      unsigned uColumn = m_ptableColumn->column_get_index( "table" );
+      iRow = m_ptableColumn->find( uColumn, (uint64_t)iRow, stringTable );
+   }
+
+   if( iRow != -1 && stringColumn.empty() == false )
+   {
+      unsigned uColumn = m_ptableColumn->column_get_index( "column" );
+      iRow = m_ptableColumn->find( uColumn, (uint64_t)iRow, uColumn, stringColumn );
+   }
+                                                                                                   assert( iRow != -1 && "Row not found, this should not happen" );
+   return -1;
+}
+
 
 void CDatabase::CreateTable_s( gd::table::arguments::table& tableTable )
 {

@@ -13,9 +13,11 @@
 ## Folder Structure
 - **api**: Contains modules that handle specific API endpoints for database, SQL, and system operations.
 - **cli**: Contains modules for command-line interface HTTP handling.
+- **convert**: Contains modules for data conversion and transformation.
 - **dto**: Contains data transfer objects used for structuring HTTP responses.
 - **meta**: Contains metadata-related modules, data used in webserver.
 - **playground**: A space for experimental code and testing new features.
+- **render**: Contains modules for rendering information, for example render SQL queries and results.
 
 ```
 |   Application.*
@@ -34,6 +36,9 @@
 +-- cli
 |   |   CLIHttp.*
 |
++-- convert
+|   |   CONVERTCore.*
+|
 +-- dto
 |   |   DTOResponse.*
 |
@@ -41,6 +46,9 @@
 |   |   METADatabase.*
 |   |   METAQueries.*
 |
++-- render
+|   |   RENDERSql.*
+
 +-- playground
 |
 +-- state
