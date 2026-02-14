@@ -97,8 +97,27 @@ std::pair<bool, std::string> CDatabase::Add( gd::table::dto::table& tableColumn,
          }
       }
 
-      // @TODO: [tag: database, convert, column] [description: check for special columns that should be converted to internal logic]
+      uint32_t uFlags = 0;
 
+      if( iColumnPK != -1 )
+      {
+         bool bPK = itRow.cell_get_variant_view( (unsigned)iColumnPK ).as_bool();
+         uFlags |= bPK ? eColumnFlagKey : 0;
+      }
+
+      if( iColumnFK != -1 )
+      {
+         bool bFK = itRow.cell_get_variant_view( (unsigned)iColumnFK ).as_bool();
+         uFlags |= bFK ? eColumnFlagFKey : 0;
+      }
+
+      if( iColumnNotNull != -1 )
+      {
+         bool bNotNull = itRow.cell_get_variant_view( (unsigned)iColumnNotNull ).as_bool();
+         uFlags |= bNotNull ? eColumnFlagNotNull : 0;
+      }
+
+      argumentsRow.append( "flags", uFlags );
       argumentsRow.append( "key", (uint32_t)itRow.get_row() );
       m_ptableColumn->row_add( argumentsRow, gd::table::tag_arguments{}, gd::table::tag_convert{});
    }
