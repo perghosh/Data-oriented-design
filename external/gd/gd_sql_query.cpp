@@ -1056,6 +1056,10 @@ std::pair<bool, std::string> query::values_get_s( std::vector< std::pair<uint32_
          {
             append_g( it->second, uType, uDialect, stringValues );
          }
+         else if( it->second.is_integer() == true )
+         {
+            append_g( it->second, uType, uDialect, stringValues );
+         }
       }
    }
 

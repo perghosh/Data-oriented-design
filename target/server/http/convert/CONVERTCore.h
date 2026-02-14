@@ -7,6 +7,7 @@
 #include "jsoncons/json.hpp"
 #include "jsoncons_ext/jsonpath/jsonpath.hpp"
 
+#include "gd/gd_types.h"
 #include "gd/gd_variant.h"
 #include "gd/gd_variant_view.h"
 #include "gd/gd_arguments.h"
@@ -15,6 +16,8 @@ namespace CONVERT {
 
 gd::variant AsVariant( const jsoncons::json& json );
 gd::variant_view AsVariantView( const jsoncons::json& json );
+
+gd::types::enumType DatabaseTypeToGdType( std::string_view stringType );
 
 
 }

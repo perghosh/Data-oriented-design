@@ -494,10 +494,12 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
       if( GetCommand() == "insert" )
       {
          sqlbuilder.SetType( CSqlBuilder::eTypeInsert );
-         CRENDERSql sql_( "sqlite" );
+         CRENDERSql sql_( pdocument, "sqlite" );
          sql_.Initialize();
          result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{});
          if( result_.first == false ) { return result_; }
+
+         result_ = sql_.Prepare();
 
          std::string stringQuery;
          result_ = sql_.ToSqlInsert( stringQuery );

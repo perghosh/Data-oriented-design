@@ -349,9 +349,9 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
          optionsActive.iif( "database-meta-tables", [&arguments_]( auto& v_ ) { arguments_.append_argument( "tables", v_ ); });
          optionsActive.iif( "database-meta-columns", [&arguments_]( auto& v_ ) { arguments_.append_argument( "columns", v_ ); });
 
-         result_ = m_pdocumentActive->DATABASE_Initialize();
+         result_ = m_pdocumentActive->DATABASE_Initialize();                  // initialize database connection, this is needed to be able to select metadata for tables and columns
          if( result_.first == false ) return result_;
-         result_ = m_pdocumentActive->DATABASE_SelectMetadata( arguments_ );
+         result_ = m_pdocumentActive->DATABASE_SelectMetadata( arguments_ );  // select metadata for tables and columns
          if( result_.first == false ) return result_;
          result_ = m_pdocumentActive->DATABASE_Prepare();
          if( result_.first == false ) return result_;

@@ -1,5 +1,7 @@
 #include <array>
 
+#include "../convert/CONVERTCore.h"
+
 #include "METADatabase.h"
 
 NAMESPACE_META_BEGIN
@@ -63,12 +65,37 @@ std::pair<bool, std::string> CDatabase::Add( gd::table::dto::table& tableColumn,
    std::array<uint8_t, 512> add_;
    gd::argument::arguments argumentsAdd( add_ );
 
+   int iColumnType = -1;
+   int iColumnPK = -1;
+   int iColumnFK = -1;
+   int iColumnNotNull = -1;
+   auto vectorColumn = tableColumn.column_get_name();
+   unsigned uColumnIndex = 0;
+   for( const auto& column_ : vectorColumn )
+   {
+      uColumnIndex++;
+      if( column_.find( "type" ) != std::string_view::npos ) { iColumnType = uColumnIndex -1; continue; }
+      if( column_.find( "pk" ) != std::string_view::npos ) { iColumnPK = uColumnIndex - 1; continue; }
+      if( column_.find( "fk" ) != std::string_view::npos ) { iColumnFK = uColumnIndex - 1; continue; }
+      if( column_.find( "null" ) != std::string_view::npos ) { iColumnNotNull = uColumnIndex - 1; continue; }
+   }
+
    for( auto itRow = tableColumn.row_begin(); itRow != tableColumn.row_end(); itRow++ )
    {
       argumentsRow.clear();
       itRow.get_arguments( argumentsRow );
       argumentsAdd.clear();
       argumentsAdd.append( argumentsRow, {"table", "column", "ordinal"});
+
+      if( iColumnType != -1 )
+      {
+         std::string stringType = itRow.cell_get_variant_view( (unsigned)iColumnType ).as_string();
+         if( stringType.empty() == false )
+         {
+            uint32_t uType = CONVERT::DatabaseTypeToGdType( stringType );
+            argumentsRow.append( "type", uType );
+         }
+      }
 
       // @TODO: [tag: database, convert, column] [description: check for special columns that should be converted to internal logic]
 
@@ -249,10 +276,19 @@ int64_t CDatabase::Column_FindRow( const gd::argument::arguments& argumentsFind 
    if( iRow != -1 && stringColumn.empty() == false )
    {
       unsigned uColumn = m_ptableColumn->column_get_index( "column" );
-      iRow = m_ptableColumn->find( uColumn, (uint64_t)iRow, uColumn, stringColumn );
+      iRow = m_ptableColumn->find( uColumn, (uint64_t)iRow, stringColumn );
    }
                                                                                                    assert( iRow != -1 && "Row not found, this should not happen" );
-   return -1;
+   return iRow;
+}
+
+uint32_t CDatabase::Column_GetType( uint64_t uRow ) const noexcept
+{                                                                                                  assert( uRow < m_ptableColumn->get_row_count() && "Row index out of range" );
+   uint32_t uType = 0;
+   unsigned uColumn = m_ptableColumn->column_get_index( "type" );
+   gd::variant_view vType = m_ptableColumn->cell_get_variant_view( uRow, uColumn );
+   if( vType.is_uint32() == true ) { uType = vType.as_uint32(); }
+   return uType;
 }
 
 

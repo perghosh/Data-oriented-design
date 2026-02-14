@@ -15,7 +15,10 @@
 
 #include "../convert/CONVERTCore.h"
 
+#include "../Document.h"
+
 #include "RENDERSql.h"
+
 
 
 /** --------------------------------------------------------------------------
@@ -30,6 +33,7 @@ void CRENDERSql::Initialize()
       constexpr auto uSize = m_uMaxStringBufferLength_s;
       m_pcolumnsField_s = new gd::table::detail::columns{};                    /// static columns for body, remember to delete on shutdown (release)
       m_pcolumnsField_s->add( "uint32", 0, "key" );
+      m_pcolumnsField_s->add( "string", uSize, "schema" );                    // schema for table field belongs to
       m_pcolumnsField_s->add( "string", uSize, "table" );                     // name for table field belongs to
       m_pcolumnsField_s->add( "string", uSize, "column" );                    // name for column in table
       m_pcolumnsField_s->add( "string", uSize, "alias" );                     // alias for column in table
@@ -127,6 +131,39 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
    
    return {true, ""};
 }
+
+std::pair<bool, std::string> CRENDERSql::Prepare()
+{                                                                                                  assert( m_pdocument != nullptr ); assert( m_tableField.size() > 1 ); // at least one field should be added before preparing query
+   std::array<std::byte, 256> buffer_;
+   const META::CDatabase* pdatabase_ = m_pdocument->DATABASE_Get();
+
+   for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
+   {
+      std::string stringTable = itRow.cell_get_variant_view( "table", gd::table::tag_not_null{}).as_string();
+      std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
+
+      gd::argument::arguments argumentsFind( buffer_ );
+      argumentsFind.append( { {"table", stringTable}, {"column", stringColumn} });
+      int64_t iRow = pdatabase_->Column_FindRow( argumentsFind );                                  assert( iRow >= 0 && "Developer error because this should not assert");
+
+      if( iRow > 0 )
+      {
+         uint32_t uType = pdatabase_->Column_GetType( iRow );
+         itRow.cell_set( "type", uType ); // set type for column in table field
+      }
+   }
+
+
+   // ## Prepare the query, this can include validation and transformation of the data in the table field before generating the final SQL query.
+   // For example, you can check if all required fields are present, if the data types are correct, or if there are any constraints that need to be applied.
+
+
+
+
+   return {true, ""};
+}
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief Add a value to last row witch are the latest added field..
