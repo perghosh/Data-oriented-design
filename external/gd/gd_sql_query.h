@@ -222,6 +222,7 @@ public:
       std::string name() const { return m_argumentsField["name"].get_string(); }
       std::string alias() const { return m_argumentsField["alias"].get_string(); }
       std::string raw() const { return m_argumentsField["raw"].get_string(); }
+      arguments::argument value() const { return m_argumentsField["value"]; }
 
       arguments& get_arguments() { return m_argumentsField; }
       const arguments& get_arguments() const { return m_argumentsField; }

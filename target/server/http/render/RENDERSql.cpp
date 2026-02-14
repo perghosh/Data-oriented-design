@@ -293,6 +293,13 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
 
 std::pair<bool, std::string> CRENDERSql::ToSqlDelete( std::string& stringQuery )
 {
+   // ## Generate insert query ..............................................
+
+   std::string stringDeleteSql;
+	stringDeleteSql += queryUpdate.sql_get_delete( vectorValue );
+	stringDeleteSql += "\nWHERE ";
+	//stringUpdateSql += gd::sql::query::where_get_s( vectorValue, m_eSqlDialect ).second;// append where clause from name value pairs
+
    if( stringQuery.empty() == true ) stringQuery = std::move( stringDeleteSql );
    else stringQuery += "\n\n" + stringDeleteSql;
 
