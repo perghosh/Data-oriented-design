@@ -507,7 +507,24 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
 
          sqlbuilder = stringQuery;
       }
-      
+      else if( GetCommand() == "update" )
+      {
+         sqlbuilder.SetType( CSqlBuilder::eTypeUpdate );
+         CRENDERSql sql_( pdocument, "sqlite" );
+         sql_.Initialize();
+         result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{} );
+         if( result_.first == false ) { return result_; }
+         result_ = sql_.Prepare();
+
+         std::string stringQuery;
+         result_ = sql_.ToSqlUpdate( stringQuery );
+         if( result_.first == false ) { return result_; }
+         sqlbuilder = stringQuery;
+      }
+      else
+      {
+         return { false, "record parameter only supported for insert and update commands" };
+      }
    }
    
    // ## if sqlbuilder is not ready then try to build it from query template and values

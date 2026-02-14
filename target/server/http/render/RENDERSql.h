@@ -101,6 +101,8 @@ public:
    std::pair<bool, std::string> GetQuery( std::string_view stringQueryType, std::string& stringQuery ) { return GetQuery( QueryType_s( stringQueryType ), stringQuery ); }
    
    std::pair<bool,std::string> ToSqlInsert( std::string& stringQuery );
+   std::pair<bool, std::string> ToSqlUpdate( std::string& stringQuery );
+   std::pair<bool, std::string> ToSqlDelete( std::string& stringQuery );
 
    //std::string Dump() const;
 protected:
