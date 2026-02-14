@@ -35,6 +35,14 @@ class CDatabase
    enum enumColumnTable {
       // eColumnTableKey = 0,
    };
+
+   enum enumColumnFlag {
+      eColumnFlagKey = 1,
+      eColumnFlagFKey = 2,
+      eColumnFlagNotNull = 4,
+      eColumnFlagComputed = 8,
+   };
+
    
    enum enumColumnConnection {
       // eColumnTableKey = 0,
