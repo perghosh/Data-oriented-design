@@ -14,6 +14,8 @@
 
 #include "../Types.h"
 
+class CDocument;
+
 /** @CLASS [name: CRENDERSql] [description:  ]
  * \brief
  *
@@ -50,8 +52,8 @@ public:
 // @API [tag: construction]
 public:
    CRENDERSql(): m_tableField(8, gd::table::tag_full_meta{}) {}
-   CRENDERSql( gd::sql::enumSqlDialect eSqlDialect ): m_eSqlDialect(eSqlDialect), m_tableField(8, gd::table::tag_full_meta{}) {}
-   CRENDERSql( std::string_view stringDialect ): m_eSqlDialect( gd::sql::sql_get_dialect_g(stringDialect) ), m_tableField(8, gd::table::tag_full_meta{}) {}
+   CRENDERSql( const CDocument* pdocument, gd::sql::enumSqlDialect eSqlDialect ): m_pdocument(pdocument), m_eSqlDialect(eSqlDialect), m_tableField(8, gd::table::tag_full_meta{}) {}
+   CRENDERSql( const CDocument* pdocument, std::string_view stringDialect ): m_pdocument(pdocument), m_eSqlDialect( gd::sql::sql_get_dialect_g(stringDialect) ), m_tableField(8, gd::table::tag_full_meta{}) {}
    // copy
    CRENDERSql( const CRENDERSql& o ) { common_construct( o ); }
    CRENDERSql( CRENDERSql&& o ) noexcept { common_construct( std::move( o ) ); }
@@ -78,10 +80,14 @@ public:
 // @API [tag: operation]
 
    void Initialize();
+
    void AddValue( const gd::argument::arguments argumentsField );
    std::pair<bool,std::string> AddValue( std::string_view stringJson, gd::types::tag_json );
    /// Adds data for a complete record for specified table
    std::pair<bool,std::string> AddRecord( std::string_view stringJson, gd::types::tag_json );
+
+   std::pair<bool, std::string> Prepare();
+   std::pair<bool, std::string> Validate();
 
    void AddProperty( std::string_view key_, gd::variant_view value_ ) { m_argumentsProperty.append_argument( key_, value_ ); }
    gd::variant_view GetProperty( std::string_view key_ ) const { return m_argumentsProperty.get_argument( key_ ); }
@@ -106,14 +112,14 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
-   static constexpr unsigned m_uMaxStringBufferLength_s = 16; ///< Maximum length for string names if not placed as arguments in table
-
+   const CDocument* m_pdocument = nullptr;
    gd::sql::enumSqlDialect m_eSqlDialect = gd::sql::eSqlDialectUnknown;
    gd::table::arguments::table m_tableField;   ///< Values or Names used to produce query
 
    gd::argument::shared::arguments m_argumentsProperty; ///< arguments used for specific properties of query, this is used for example to store table name, where conditions, etc. as arguments instead of columns in table
 
    inline static gd::table::detail::columns* m_pcolumnsField_s = nullptr; ///< static columns for body
+   static constexpr unsigned m_uMaxStringBufferLength_s = 16; ///< Maximum length for string names if not placed as arguments in table
 
 // @API [tag: free-functions]
 public:

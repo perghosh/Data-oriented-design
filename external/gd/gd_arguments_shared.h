@@ -1119,6 +1119,23 @@ public:
    arguments& append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue );
    arguments& append( const std::vector<std::pair<std::string,gd::variant>>& vectorStringVariant );
    arguments& append( const std::vector<std::pair<std::string_view, gd::variant_view>>& vectorStringVariantView );
+
+   /// -----------------------------------------------------------------------
+   /// @brief appends an arguments object container or an initializer list of string-variant pairs.
+   template<std::ranges::input_range RANGE>
+   requires std::convertible_to<std::ranges::range_value_t<RANGE>, std::pair<std::string_view, gd::variant>>
+   arguments& append(RANGE&& rangePair) {  for( auto it : rangePair ) append_argument( it.first, it.second ); return *this; }
+   /// The Bridge for {{key, val}} syntax
+   arguments& append(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair ) { for( auto it : listPair ) append_argument( it.first, it.second ); return *this; }
+
+   /// -----------------------------------------------------------------------
+   /// @brief appends an arguments object container or an initializer list of string-variant_view pairs.
+   template<std::ranges::input_range RANGE>
+   requires std::convertible_to<std::ranges::range_value_t<RANGE>, std::pair<std::string_view, gd::variant_view>>
+   arguments& append(RANGE&& rangePair, tag_view view_) {  for( auto it : rangePair ) append_argument( it.first, it.second, view_ ); return *this; }
+   /// The Bridge for {{key, val}} syntax
+   arguments& append(std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view view_ ) { for( auto it : listPair ) append_argument( it.first, it.second, view_ ); return *this; }
+
    arguments& append( const std::vector<std::pair<std::string_view,std::string_view>>& vectorStringValue, tag_parse_type );
    arguments& append( const std::vector<std::pair<std::string,std::string>>& vectorStringValue, tag_parse_type );
 

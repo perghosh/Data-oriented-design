@@ -82,6 +82,7 @@ public:
    std::pair<bool, std::string> ReadColumnMetadata( std::string_view stringTable, std::vector<std::string_view> vectorField, gd::table::dto::table* ptableColumn ) const;
 
    [[nodiscard]] int64_t Column_FindRow( const gd::argument::arguments& argumentsFind ) const noexcept;
+   [[nodiscard]] uint32_t Column_GetType( uint64_t iRow ) const noexcept;
 
 
 protected:

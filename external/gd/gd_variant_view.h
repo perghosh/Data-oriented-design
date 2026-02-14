@@ -313,7 +313,9 @@ public:
    // ## as_* methods, similar to C++ stl to_
    bool as_bool() const { return get_bool(); }
    int as_int() const { return get_int(); }
+   int32_t as_int32() const { return get_int(); }
    unsigned as_uint() const { return get_uint(); }
+   uint32_t as_uint32() const { return get_uint(); }
    int64_t as_int64() const { return get_int64(); }
    uint64_t as_uint64() const { return get_uint64(); }
    double as_double() const { return get_decimal(); }
@@ -373,6 +375,11 @@ public:
    bool is_number() const { return m_uType & (variant_type::eGroupInteger | variant_type::eGroupDecimal) ? true : false; }
    bool is_string() const { return (m_uType & variant_type::eGroupString ? true : false); }
    bool is_binary() const { return (m_uType & variant_type::eGroupBinary ? true : false); }
+
+   bool is_int32() const noexcept { return variant_type::eTypeNumberInt32 == type_number(); }
+   bool is_int64() const noexcept { return variant_type::eTypeNumberInt64 == type_number(); }
+   bool is_uint32() const noexcept { return variant_type::eTypeNumberUInt32 == type_number(); }
+   bool is_uint64() const noexcept { return variant_type::eTypeNumberUInt64 == type_number(); }
 
    bool is_08() const noexcept   { return m_uType & variant_type::eGroupSize08; }
    bool is_16() const noexcept   { return m_uType & variant_type::eGroupSize16; }
