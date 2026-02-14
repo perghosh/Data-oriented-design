@@ -581,10 +581,10 @@ void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, 
    }
    
    // Handle binary types - different databases have different binary literal syntax
+   // Binary data is typically represented as hexadecimal strings, but the exact syntax varies:
    if( is_binary_g( uType ) )
    {
-      const uint8_t* puBinary = reinterpret_cast<const uint8_t*>( stringValue.data() );
-      unsigned uLength = static_cast<unsigned>( stringValue.length() );
+      unsigned uLength = static_cast<unsigned>( stringValue.length() );                            assert( uLength % 2 == 0 ); // binary should be even length hex string
       
       switch( uDialect )
       {
@@ -593,7 +593,7 @@ void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, 
       case eSqlDialectRedshift:
          // PostgreSQL family uses: E'\\x...' or '\\x...' format
          stringSql += "'\\\\x";
-         append_binary( puBinary, uLength, stringSql );
+         stringSql.append(stringValue);
          stringSql += '\'';
          break;
          
@@ -601,41 +601,41 @@ void append_g( std::string_view stringValue, unsigned uType, unsigned uDialect, 
       case eSqlDialectMariaDB:
          // MySQL/MariaDB uses: X'...' or 0x... format (X'...' is preferred)
          stringSql += "X'";
-         append_binary( puBinary, uLength, stringSql );
+         stringSql.append(stringValue);
          stringSql += '\'';
          break;
          
       case eSqlDialectSqlServer:
          // SQL Server uses: 0x... format
          stringSql += "0x";
-         append_binary( puBinary, uLength, stringSql );
+         stringSql.append(stringValue);
          break;
          
       case eSqlDialectOracle:
          // Oracle uses: HEXTORAW('...') format
          stringSql += "HEXTORAW('";
-         append_binary( puBinary, uLength, stringSql );
+         stringSql.append(stringValue);
          stringSql += "')";
          break;
          
       case eSqlDialectSqlite:
          // SQLite uses: X'...' format
          stringSql += "X'";
-         append_binary( puBinary, uLength, stringSql );
+         stringSql.append(stringValue);
          stringSql += '\'';
          break;
          
       case eSqlDialectDB2:
          // DB2 uses: BLOB(X'...') or BX'...' format
          stringSql += "BX'";
-         append_binary( puBinary, uLength, stringSql );
+         stringSql.append(stringValue);
          stringSql += '\'';
          break;
          
       default:
          // Default to PostgreSQL-style for ANSI compliance and cloud warehouses
          stringSql += "'\\\\x";
-         append_binary( puBinary, uLength, stringSql );
+         stringSql.append(stringValue);
          stringSql += '\'';
          break;
       }
