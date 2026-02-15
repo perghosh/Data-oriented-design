@@ -2155,6 +2155,34 @@ void table::cell_set( uint64_t uRow, const std::string_view& stringName, const g
    }
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief Set cell value and if value is too large it "spills" into a new value in arguments for row
+ * 
+ * @param uRow row index for cell
+ * @param stringName column name (column has to have a name)
+ * @param variantviewValue value set to cell and cell type need to match
+ */
+void table::cell_set( uint64_t uRow, const std::string_view& stringName, const gd::variant_view& variantviewValue, tag_spill, tag_convert )
+{                                                                                                  assert( uRow < m_uReservedRowCount ); 
+   int iColumnIndex = column_find_index( stringName );
+   if( iColumnIndex != -1 )
+   {
+      if( variantviewValue.is_primitive() == true || column_validate_size( iColumnIndex, variantviewValue ) == true )
+      {
+         cell_set(uRow, (unsigned)iColumnIndex, variantviewValue, tag_convert{});
+      }
+      else
+      {
+         cell_set_argument( uRow, stringName, variantviewValue );
+      }
+   }
+   else
+   {
+      cell_set_argument( uRow, stringName, variantviewValue );
+   }
+}
+
+
 
 /** ---------------------------------------------------------------------------
  * @brief Set cell value in table, convert to proper value type used in column if value type do not match

@@ -39,6 +39,7 @@ void CRENDERSql::Initialize()
       m_pcolumnsField_s->add( "string", uSize, "alias" );                     // alias for column in table
       m_pcolumnsField_s->add( "string", uSize * 2, "value" );                 // value for column in table
       m_pcolumnsField_s->add( "uint32", 0, "type" );                          // type of value
+      m_pcolumnsField_s->add( "uint32", 0, "part_type" );                     // part type of value   
       m_pcolumnsField_s->add_reference();
    }
 
@@ -111,6 +112,18 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
          arguments_.append( "table", stringTable );
          arguments_.append( "column", itValue.key() );
          arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
+         arguments_.append( "part_type", uint32_t( ePartTypeValue ) ); // value part of query (insert and update queries)
+         AddValue( arguments_ );
+      }
+
+      auto jsonWhere = jsonRecord["where"];
+      for( const auto& itValue : jsonWhere.object_range() )
+      {
+         arguments_.clear();
+         arguments_.append( "table", stringTable );
+         arguments_.append( "column", itValue.key() );
+         arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
+         arguments_.append( "part_type", uint32_t( ePartTypeWhere ) ); // where part of query (select, update and delete queries)
          AddValue( arguments_ );
       }
 
@@ -174,13 +187,29 @@ std::pair<bool, std::string> CRENDERSql::Prepare()
 void CRENDERSql::Add( std::string_view stringName, std::string_view stringValue )
 {
    uint64_t uRow = m_tableField.get_row_count() - 1;
-   m_tableField.cell_set( uRow, stringName, stringValue, gd::table::tag_spill{});
+   m_tableField.cell_set( uRow, stringName, stringValue, gd::table::tag_spill{}, gd::table::tag_convert{} );
 }
 
 void CRENDERSql::Add( std::string_view stringName, gd::variant_view variantviewValue )
 {
    std::string stringValue = variantviewValue.as_string();
    Add( stringName, std::string_view( stringValue ) );
+}
+
+/** --------------------------------------------------------------------------
+ * @brief Counts the number of rows in the field table that match the specified part type.
+ * @param ePartType The part type to search for and count in the table.
+ * @return The number of rows with a matching part type.
+ */
+std::size_t CRENDERSql::CountPartType( enumPartType ePartType ) const
+{
+   std::size_t uCount = 0;
+   for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
+   {
+      uint32_t uType = itRow.cell_get_variant_view(eColumnFieldPartType).as_uint();
+      if( uType == static_cast<uint32_t>( ePartType ) ) { ++uCount; }
+   }
+   return uCount;
 }
 
 void CRENDERSql::SetColumnValue( std::string_view stringName, gd::variant_view variantviewValue )
