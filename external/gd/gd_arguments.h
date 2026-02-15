@@ -746,7 +746,7 @@ public:
       using self = iterator_;
       using difference_type = std::ptrdiff_t;
       using pointer = const argument*;
-      using reference = const argument&;
+      using reference = argument; // Returns by value because arguments are constructed from buffer
 
 
       iterator_() : m_parguments(nullptr), m_uPosition(0) {}
@@ -765,6 +765,16 @@ public:
 
       argument operator*() const {                                                                 assert( m_parguments->verify_d( buffer_offset() ));
          return get_argument();
+      }
+
+      /// Proxy class for arrow operator that mimics pointer behavior
+      struct argument_proxy {
+         argument m_argument;
+         const argument* operator->() const { return &m_argument; }
+      };
+
+      argument_proxy operator->() const {                                                              assert( m_parguments->verify_d( buffer_offset() ));
+         return { get_argument() };
       }
       self& operator++() {                                                                         assert( m_parguments->verify_d( buffer_offset() ));
          m_uPosition = arguments::next_s(m_parguments->buffer_data(), m_uPosition);                assert(m_parguments->verify_d(buffer_offset()));
