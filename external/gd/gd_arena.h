@@ -911,39 +911,37 @@ template<typename ALLOCATOR>
 void* arena<ALLOCATOR>::allocate_from_block(block_header* pBlock, size_type uSize, size_type uAlignment)
 {
    std::byte* pCurrent = pBlock->current_position();
+   std::uintptr_t uCurrentAddress = reinterpret_cast<std::uintptr_t>(pCurrent);
    
-   // Calculate aligned position for allocation header
-   std::uintptr_t uHeaderAddr = reinterpret_cast<std::uintptr_t>(pCurrent);
-   size_type uHeaderMisalignment = uHeaderAddr % alignof(allocation_header);
-   if(uHeaderMisalignment != 0) { pCurrent += (alignof(allocation_header) - uHeaderMisalignment); }
+   // The header must precede the data. 
+   // We find the earliest address for pData that satisfies uAlignment 
+   // AND leaves enough room for the header.
+   const size_type uHeaderSize = sizeof(allocation_header);
+   std::uintptr_t uDataAddress = (uCurrentAddress + uHeaderSize + (uAlignment - 1)) & ~(uAlignment - 1);
    
-   allocation_header* pHeader = reinterpret_cast<allocation_header*>(pCurrent);
-   std::byte* pData = pCurrent + sizeof(allocation_header);
-   
-   // Calculate aligned position for user data
-   std::uintptr_t uDataAddr = reinterpret_cast<std::uintptr_t>(pData);
-   size_type uDataMisalignment = uDataAddr % uAlignment;
-   if(uDataMisalignment != 0) { pData += (uAlignment - uDataMisalignment); }
-   
-   // Calculate total space needed including padding for next allocation
+   std::byte* pData = reinterpret_cast<std::byte*>(uDataAddress);
+   allocation_header* pHeader = reinterpret_cast<allocation_header*>(pData - uHeaderSize);
+
+   // Calculate where the NEXT allocation would start to determine total space used.
+   // We align the end of this allocation to the same boundary to keep the block 'clean'.
    std::byte* pNext = pData + uSize;
-   size_type uNextMisalignment = reinterpret_cast<std::uintptr_t>(pNext) % uAlignment;
-   if(uNextMisalignment != 0) { pNext += (uAlignment - uNextMisalignment); }
-   
-   size_type uTotalNeeded = static_cast<size_type>(pNext - pBlock->current_position());
-   
-   // Check if block has enough space
-   if(uTotalNeeded > pBlock->available()) { return nullptr; }
-   
+   std::uintptr_t uNextAddress = reinterpret_cast<std::uintptr_t>(pNext);
+   uNextAddress = (uNextAddress + (uAlignment - 1)) & ~(uAlignment - 1);
+   pNext = reinterpret_cast<std::byte*>(uNextAddress);
+
+   size_type uTotalNeeded = static_cast<size_type>( pNext - pCurrent ); // Total space needed from current position to end of this allocation (including header and alignment)
+
+   if(uTotalNeeded > pBlock->available()) { return nullptr; }                 // Check if block has enough space
+
    // Initialize allocation header
    new (pHeader) allocation_header();
    pHeader->m_uSize = static_cast<std::uint32_t>(uSize);
    pHeader->m_uAlignment = static_cast<std::uint32_t>(uAlignment);
-   
+
    // Update block state
-   pBlock->m_uUsedSize += static_cast<std::uint32_t>(uTotalNeeded);
-   pBlock->m_uAllocCount += 1;
-   
+   pBlock->m_uUsedSize += static_cast<std::uint32_t>( uTotalNeeded );         // Update used size
+   pBlock->m_uAllocCount += 1;                                                // Allocate successful, update block allocation count
+
    return pData;
 }
 
