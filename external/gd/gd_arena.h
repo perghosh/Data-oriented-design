@@ -285,7 +285,7 @@ public:
 
    /// ## @API [tag: iterator] [summary: Block and allocation iteration]
 
-   [[nodiscard]] block_iterator begin_blocks() noexcept { return block_iterator(m_pFirstBlock); }
+   [[nodiscard]] block_iterator begin_blocks() noexcept { return block_iterator(m_pblockheaderFirst); }
    [[nodiscard]] block_iterator end_blocks() noexcept { return block_iterator(nullptr); }
    [[nodiscard]] allocation_iterator begin_allocations(block_header* pBlock) noexcept;
    [[nodiscard]] allocation_iterator end_allocations(block_header* pBlock) noexcept;
@@ -310,8 +310,8 @@ private:
    [[nodiscard]] static size_type align_size(size_type uSize, size_type uAlignment) noexcept;
 
 private:
-   block_header* m_pFirstBlock;     ///< Pointer to first block in chain
-   block_header* m_pCurrentBlock;   ///< Pointer to current block for allocation
+   block_header* m_pblockheaderFirst;///< Pointer to first block in chain
+   block_header* m_pblockheaderCurrent;///< Pointer to current block for allocation
    size_type     m_uBlockSize;      ///< Size of each block
    ALLOCATOR     m_allocator;       ///< Allocator for block memory
 };
@@ -325,7 +325,7 @@ private:
  */
 template<typename ALLOCATOR>
 arena<ALLOCATOR>::arena() noexcept(noexcept(ALLOCATOR())) 
-   : m_pFirstBlock(nullptr), m_pCurrentBlock(nullptr), m_uBlockSize(DEFAULT_BLOCK_SIZE), m_allocator()
+   : m_pblockheaderFirst(nullptr), m_pblockheaderCurrent(nullptr), m_uBlockSize(DEFAULT_BLOCK_SIZE), m_allocator()
 {
 }
 
@@ -336,7 +336,7 @@ arena<ALLOCATOR>::arena() noexcept(noexcept(ALLOCATOR()))
  */
 template<typename ALLOCATOR>
 arena<ALLOCATOR>::arena(size_type uBlockSize) noexcept(noexcept(ALLOCATOR())) 
-   : m_pFirstBlock(nullptr), m_pCurrentBlock(nullptr), m_uBlockSize(uBlockSize > 0 ? uBlockSize : DEFAULT_BLOCK_SIZE), m_allocator()
+   : m_pblockheaderFirst(nullptr), m_pblockheaderCurrent(nullptr), m_uBlockSize(uBlockSize > 0 ? uBlockSize : DEFAULT_BLOCK_SIZE), m_allocator()
 {
 }
 
@@ -348,7 +348,7 @@ arena<ALLOCATOR>::arena(size_type uBlockSize) noexcept(noexcept(ALLOCATOR()))
  */
 template<typename ALLOCATOR>
 arena<ALLOCATOR>::arena(size_type uBlockSize, const ALLOCATOR& allocator_) noexcept(noexcept(ALLOCATOR(allocator_))) 
-   : m_pFirstBlock(nullptr), m_pCurrentBlock(nullptr), m_uBlockSize(uBlockSize > 0 ? uBlockSize : DEFAULT_BLOCK_SIZE), m_allocator(allocator_)
+   : m_pblockheaderFirst(nullptr), m_pblockheaderCurrent(nullptr), m_uBlockSize(uBlockSize > 0 ? uBlockSize : DEFAULT_BLOCK_SIZE), m_allocator(allocator_)
 {
 }
 
@@ -361,11 +361,11 @@ arena<ALLOCATOR>::arena(size_type uBlockSize, const ALLOCATOR& allocator_) noexc
  */
 template<typename ALLOCATOR>
 arena<ALLOCATOR>::arena(const arena& o) 
-   : m_pFirstBlock(nullptr), m_pCurrentBlock(nullptr), m_uBlockSize(o.m_uBlockSize), m_allocator(o.m_allocator)
+   : m_pblockheaderFirst(nullptr), m_pblockheaderCurrent(nullptr), m_uBlockSize(o.m_uBlockSize), m_allocator(o.m_allocator)
 {
    // Deep copy all blocks
-   block_header* pSourceBlock = o.m_pFirstBlock;
-   block_header** ppDestBlock = &m_pFirstBlock;
+   block_header* pSourceBlock = o.m_pblockheaderFirst;
+   block_header** ppDestBlock = &m_pblockheaderFirst;
    
    while (pSourceBlock)
    {
@@ -385,10 +385,10 @@ arena<ALLOCATOR>::arena(const arena& o)
       
       // Link block
       *ppDestBlock = pNewBlock;
-      ppDestBlock = &(pNewBlock->next_block());
+      ppDestBlock = &pNewBlock->m_pblockheaderNext;
       
       // Update current block pointer
-      if(pSourceBlock == o.m_pCurrentBlock) { m_pCurrentBlock = pNewBlock; }
+      if(pSourceBlock == o.m_pblockheaderCurrent) { m_pblockheaderCurrent = pNewBlock; }
       
       pSourceBlock = pSourceBlock->next_block();
    }
@@ -401,10 +401,10 @@ arena<ALLOCATOR>::arena(const arena& o)
  */
 template<typename ALLOCATOR>
 arena<ALLOCATOR>::arena(arena&& o) noexcept 
-   : m_pFirstBlock(o.m_pFirstBlock), m_pCurrentBlock(o.m_pCurrentBlock), m_uBlockSize(o.m_uBlockSize), m_allocator(std::move(o.m_allocator))
+   : m_pblockheaderFirst(o.m_pblockheaderFirst), m_pblockheaderCurrent(o.m_pblockheaderCurrent), m_uBlockSize(o.m_uBlockSize), m_allocator(std::move(o.m_allocator))
 {
-   o.m_pFirstBlock = nullptr;
-   o.m_pCurrentBlock = nullptr;
+   o.m_pblockheaderFirst = nullptr;
+   o.m_pblockheaderCurrent = nullptr;
 }
 
 /** -------------------------------------------------------------------------- Destructor
@@ -436,8 +436,8 @@ arena<ALLOCATOR>& arena<ALLOCATOR>::operator=(const arena& o)
       m_allocator = o.m_allocator;
       
       // Deep copy all blocks (same logic as copy constructor)
-      block_header* pSourceBlock = o.m_pFirstBlock;
-      block_header** ppDestBlock = &m_pFirstBlock;
+      block_header* pSourceBlock = o.m_pblockheaderFirst;
+      block_header** ppDestBlock = &m_pblockheaderFirst;
       
       while (pSourceBlock)
       {
@@ -453,9 +453,9 @@ arena<ALLOCATOR>& arena<ALLOCATOR>::operator=(const arena& o)
          std::memcpy(pNewBlock->m_pData, pSourceBlock->m_pData, pSourceBlock->m_uUsedSize);
          
          *ppDestBlock = pNewBlock;
-         ppDestBlock = &(pNewBlock->next_block());
+         ppDestBlock = &pNewBlock->m_pblockheaderNext;
          
-         if(pSourceBlock == o.m_pCurrentBlock) { m_pCurrentBlock = pNewBlock; }
+         if(pSourceBlock == o.m_pblockheaderCurrent) { m_pblockheaderCurrent = pNewBlock; }
          
          pSourceBlock = pSourceBlock->next_block();
       }
@@ -475,13 +475,13 @@ arena<ALLOCATOR>& arena<ALLOCATOR>::operator=(arena&& o) noexcept
    if(this != &o)
    {
       destroy();
-      m_pFirstBlock = o.m_pFirstBlock;
-      m_pCurrentBlock = o.m_pCurrentBlock;
+      m_pblockheaderFirst = o.m_pblockheaderFirst;
+      m_pblockheaderCurrent = o.m_pblockheaderCurrent;
       m_uBlockSize = o.m_uBlockSize;
       m_allocator = std::move(o.m_allocator);
       
-      o.m_pFirstBlock = nullptr;
-      o.m_pCurrentBlock = nullptr;
+      o.m_pblockheaderFirst = nullptr;
+      o.m_pblockheaderCurrent = nullptr;
    }
    return *this;
 }
@@ -503,32 +503,30 @@ void* arena<ALLOCATOR>::allocate(size_type uSize)
 }
 
 /** -------------------------------------------------------------------------- allocate_objects
- * @brief Allocate memory for an array of objects
- * 
- * @param uCount Number of objects to allocate
+ * @brief Allocate memory for an array of objects with correct type alignment
+ * * @param uCount Number of objects to allocate
  * @return Pointer to allocated memory
  */
 template<typename ALLOCATOR>
 template<typename OBJECT>
 OBJECT* arena<ALLOCATOR>::allocate_objects(std::size_t uCount)
 {
-    return static_cast<OBJECT*>( allocate(sizeof(OBJECT) * uCount) );
+   return static_cast<OBJECT*>( allocate_aligned(sizeof(OBJECT) * uCount, alignof(OBJECT)) );
 }
 
 /** -------------------------------------------------------------------------- allocate_span
  * @brief Allocate memory for an array of objects and return as a span
- * 
- * @param uSize Number of objects to allocate
+ * * @param uSize Number of objects to allocate
  * @return Span of allocated objects
  */
 template<typename ALLOCATOR>
 template<typename OBJECT>
 std::span<OBJECT> arena<ALLOCATOR>::allocate_span(size_type uSize)
 {
-    OBJECT* pobject_ = allocate_objects<OBJECT>(uSize);
-    return std::span<OBJECT>(pobject_, uSize);
+   // This now correctly inherits the alignment from the updated allocate_objects.
+   OBJECT* pobject_ = allocate_objects<OBJECT>(uSize);
+   return std::span<OBJECT>(pobject_, uSize);
 }
-
 
 /** -------------------------------------------------------------------------- allocate_aligned
  * @brief Allocate memory with specified alignment
@@ -539,33 +537,30 @@ std::span<OBJECT> arena<ALLOCATOR>::allocate_span(size_type uSize)
  */
 template<typename ALLOCATOR>
 void* arena<ALLOCATOR>::allocate_aligned(size_type uSize, size_type uAlignment)
-{
-   assert(uAlignment > 0 && (uAlignment & (uAlignment - 1)) == 0);  // verify alignment is power of 2
-   assert(uSize > 0);  // verify size is non-zero
-   
-   // Try to allocate from current block
-   if(m_pCurrentBlock)
+{                                                                                                  assert(uSize <= 0xFFFFFFFFu && "Allocation size exceeds 4GB limit of uint32_t headers");
+                                                                                                   assert(uAlignment > 0 && (uAlignment & (uAlignment - 1)) == 0);  // verify alignment is power of 2
+                                                                                                   assert(uSize > 0);  // verify size is non-zero
+   // ## Try to allocate from current block ..................................
+   if(m_pblockheaderCurrent != nullptr)
    {
-      void* pResult = allocate_from_block(m_pCurrentBlock, uSize, uAlignment);
+      void* pResult = allocate_from_block(m_pblockheaderCurrent, uSize, uAlignment);
       if(pResult) { return pResult; }
    }
    
-   // Need new block - calculate required size
+   // ## Need new block - calculate required size ............................
    size_type uRequiredSize = sizeof(allocation_header) + uSize + uAlignment;
    size_type uNewBlockSize = std::max(m_uBlockSize, uRequiredSize);
    
-   // Create new block
-   block_header* pNewBlock = create_block(uNewBlockSize);
+   block_header* pNewBlock = create_block(uNewBlockSize);                     // Create new block
    
-   // Link to chain
-   if(m_pCurrentBlock) { m_pCurrentBlock->next_block(pNewBlock); }
-   else { m_pFirstBlock = pNewBlock; }
+   // ## Link to chain .......................................................
+   if(m_pblockheaderCurrent) { m_pblockheaderCurrent->next_block(pNewBlock); }
+   else { m_pblockheaderFirst = pNewBlock; }
    
-   m_pCurrentBlock = pNewBlock;
+   m_pblockheaderCurrent = pNewBlock;
    
-   // Allocate from new block
-   void* pResult = allocate_from_block(pNewBlock, uSize, uAlignment);
-   assert(pResult != nullptr);  // verify allocation succeeded in new block
+   // ## Allocate from new block .............................................
+   void* pResult = allocate_from_block(pNewBlock, uSize, uAlignment);                              assert(pResult != nullptr);  // verify allocation succeeded in new block
    return pResult;
 }
 
@@ -599,7 +594,7 @@ template<typename ALLOCATOR>
 typename arena<ALLOCATOR>::size_type arena<ALLOCATOR>::block_count() const noexcept
 {
    size_type uCount = 0;
-   for (block_header* pBlock = m_pFirstBlock; pBlock != nullptr; pBlock = pBlock->next_block()) { ++uCount; }
+   for (block_header* pBlock = m_pblockheaderFirst; pBlock != nullptr; pBlock = pBlock->next_block()) { ++uCount; }
    return uCount;
 }
 
@@ -612,7 +607,7 @@ template<typename ALLOCATOR>
 typename arena<ALLOCATOR>::size_type arena<ALLOCATOR>::total_allocated() const noexcept
 {
    size_type uTotal = 0;
-   for (block_header* pBlock = m_pFirstBlock; pBlock != nullptr; pBlock = pBlock->next_block()) { uTotal += pBlock->m_uUsedSize; }
+   for (block_header* pBlock = m_pblockheaderFirst; pBlock != nullptr; pBlock = pBlock->next_block()) { uTotal += pBlock->m_uUsedSize; }
    return uTotal;
 }
 
@@ -625,7 +620,7 @@ template<typename ALLOCATOR>
 typename arena<ALLOCATOR>::size_type arena<ALLOCATOR>::total_capacity() const noexcept
 {
    size_type uTotal = 0;
-   for (block_header* pBlock = m_pFirstBlock; pBlock != nullptr; pBlock = pBlock->next_block()) { uTotal += pBlock->m_uBlockSize; }
+   for (block_header* pBlock = m_pblockheaderFirst; pBlock != nullptr; pBlock = pBlock->next_block()) { uTotal += pBlock->m_uBlockSize; }
    return uTotal;
 }
 
@@ -687,7 +682,7 @@ template<typename ALLOCATOR>
 void arena<ALLOCATOR>::dump_blocks() const noexcept
 {
    size_type uBlockNum = 0;
-   for (block_header* pBlock = m_pFirstBlock; pBlock != nullptr; pBlock = pBlock->next_block())
+   for (block_header* pBlock = m_pblockheaderFirst; pBlock != nullptr; pBlock = pBlock->next_block())
    {
       printf("Block %zu: Size=%u, Used=%u, Available=%zu, Allocations=%u, Magic=%08X\n", uBlockNum++, pBlock->m_uBlockSize, pBlock->m_uUsedSize, pBlock->available(), pBlock->m_uAllocCount, pBlock->m_uMagic);
    }
@@ -732,7 +727,7 @@ void arena<ALLOCATOR>::dump_allocations(const block_header* pBlock) const noexce
 template<typename ALLOCATOR>
 bool arena<ALLOCATOR>::validate() const noexcept
 {
-   for (block_header* pBlock = m_pFirstBlock; pBlock != nullptr; pBlock = pBlock->next_block())
+   for (block_header* pBlock = m_pblockheaderFirst; pBlock != nullptr; pBlock = pBlock->next_block())
    {
       if(!pBlock->is_valid()) { return false; }
       if(pBlock->m_uUsedSize > pBlock->m_uBlockSize) { return false; }
@@ -775,12 +770,12 @@ bool arena<ALLOCATOR>::validate() const noexcept
 template<typename ALLOCATOR>
 void arena<ALLOCATOR>::clear() noexcept
 {
-   for (block_header* pBlock = m_pFirstBlock; pBlock != nullptr; pBlock = pBlock->next_block())
+   for (block_header* pBlock = m_pblockheaderFirst; pBlock != nullptr; pBlock = pBlock->next_block())
    {
       pBlock->m_uUsedSize = 0;
       pBlock->m_uAllocCount = 0;
    }
-   m_pCurrentBlock = m_pFirstBlock;
+   m_pblockheaderCurrent = m_pblockheaderFirst;
 }
 
 /** -------------------------------------------------------------------------- reset
@@ -791,10 +786,10 @@ void arena<ALLOCATOR>::clear() noexcept
 template<typename ALLOCATOR>
 void arena<ALLOCATOR>::reset() noexcept
 {
-   if(!m_pFirstBlock) { return; }
+   if(!m_pblockheaderFirst) { return; }
    
    // Destroy all blocks except first
-   block_header* pBlock = m_pFirstBlock->next_block();
+   block_header* pBlock = m_pblockheaderFirst->next_block();
    while (pBlock)
    {
       block_header* pNext = pBlock->next_block();
@@ -805,10 +800,10 @@ void arena<ALLOCATOR>::reset() noexcept
    }
    
    // Clear first block
-   m_pFirstBlock->next_block(nullptr);
-   m_pFirstBlock->m_uUsedSize = 0;
-   m_pFirstBlock->m_uAllocCount = 0;
-   m_pCurrentBlock = m_pFirstBlock;
+   m_pblockheaderFirst->next_block(nullptr);
+   m_pblockheaderFirst->m_uUsedSize = 0;
+   m_pblockheaderFirst->m_uAllocCount = 0;
+   m_pblockheaderCurrent = m_pblockheaderFirst;
 }
 
 /** -------------------------------------------------------------------------- shrink_to_fit
@@ -817,17 +812,17 @@ void arena<ALLOCATOR>::reset() noexcept
 template<typename ALLOCATOR>
 void arena<ALLOCATOR>::shrink_to_fit() noexcept
 {
-   if(!m_pFirstBlock) { return; }
+   if(!m_pblockheaderFirst) { return; }
    
    block_header* pblockheaderPrevious = nullptr;
-   block_header* pblockheader_ = m_pFirstBlock; // Start from first block
+   block_header* pblockheader_ = m_pblockheaderFirst; // Start from first block
    
    while( pblockheader_ )                                                     // Iterate through blocks
    {
       block_header* pblockheaderNext = pblockheader_->next_block(); // Cache next block before potential deallocation
       
       // ## Keep first block and non-empty blocks ............................
-      if(pblockheader_ == m_pFirstBlock || pblockheader_->m_uUsedSize > 0)
+      if(pblockheader_ == m_pblockheaderFirst || pblockheader_->m_uUsedSize > 0)
       {
          pblockheaderPrevious = pblockheader_;
          pblockheader_ = pblockheaderNext;
@@ -841,7 +836,7 @@ void arena<ALLOCATOR>::shrink_to_fit() noexcept
       
       // ## Update chain .....................................................
       if(pblockheaderPrevious) { pblockheaderPrevious->next_block(pblockheaderNext); }
-      if(m_pCurrentBlock == pblockheader_) { m_pCurrentBlock = pblockheaderPrevious ? pblockheaderPrevious : m_pFirstBlock; }
+      if(m_pblockheaderCurrent == pblockheader_) { m_pblockheaderCurrent = pblockheaderPrevious ? pblockheaderPrevious : m_pblockheaderFirst; }
       
       pblockheader_ = pblockheaderNext;
    }
@@ -856,8 +851,8 @@ void arena<ALLOCATOR>::shrink_to_fit() noexcept
 template<typename ALLOCATOR>
 void arena<ALLOCATOR>::swap(arena& o) noexcept
 {
-   std::swap(m_pFirstBlock, o.m_pFirstBlock);
-   std::swap(m_pCurrentBlock, o.m_pCurrentBlock);
+   std::swap(m_pblockheaderFirst, o.m_pblockheaderFirst);
+   std::swap(m_pblockheaderCurrent, o.m_pblockheaderCurrent);
    std::swap(m_uBlockSize, o.m_uBlockSize);
    std::swap(m_allocator, o.m_allocator);
 }
@@ -891,7 +886,7 @@ block_header* arena<ALLOCATOR>::create_block(size_type uSize)
 template<typename ALLOCATOR>
 void arena<ALLOCATOR>::destroy() noexcept
 {
-   block_header* pBlock = m_pFirstBlock;
+   block_header* pBlock = m_pblockheaderFirst;
    while (pBlock)
    {
       block_header* pNext = pBlock->next_block();
@@ -900,8 +895,8 @@ void arena<ALLOCATOR>::destroy() noexcept
       m_allocator.deallocate(reinterpret_cast<std::byte*>(pBlock), uTotalSize);
       pBlock = pNext;
    }
-   m_pFirstBlock = nullptr;
-   m_pCurrentBlock = nullptr;
+   m_pblockheaderFirst = nullptr;
+   m_pblockheaderCurrent = nullptr;
 }
 
 /** -------------------------------------------------------------------------- allocate_from_block
@@ -978,4 +973,285 @@ void swap(gd::arena::arena<ALLOCATOR>& lhs, gd::arena::arena<ALLOCATOR>& rhs) no
    lhs.swap(rhs);
 }
 
+_GD_BEGIN
+
+namespace arena {
+
+// ============================================================================
+// ## arena_allocator class
+// ============================================================================
+
+/**
+ * \brief STL-compatible allocator that uses arena for memory allocation
+ * 
+ * This allocator wraps an arena instance and provides the standard allocator
+ * interface required by STL containers. All allocations are delegated to the
+ * underlying arena, which means:
+ * - Individual deallocations are no-ops (arena doesn't support individual deallocation)
+ * - Memory is reclaimed when the arena is cleared or destroyed
+ * - Allocations are fast and cache-friendly due to arena's block-based design
+ * 
+ * \par Example
+ * \code{.cpp}
+ * gd::arena::arena<> myArena(8192);
+ * gd::arena::arena_allocator<int> allocator(myArena);
+ * 
+ * std::vector<int, gd::arena::arena_allocator<int>> vec(allocator);
+ * vec.push_back(42);
+ * vec.push_back(100);
+ * 
+ * std::basic_string<char, std::char_traits<char>, gd::arena::arena_allocator<char>> str(allocator);
+ * str = "Hello from arena!";
+ * \endcode
+ * 
+ * \tparam T Type of objects to allocate
+ * \tparam ALLOCATOR Underlying allocator used by the arena (default: std::allocator<std::byte>)
+ */
+template<typename TYPE, typename ALLOCATOR = std::allocator<std::byte>>
+class arena_allocator
+{
+public:
+   /// ## Type definitions required by std::allocator_traits
+
+   using value_type      = TYPE;
+   using size_type       = std::size_t;
+   using difference_type = std::ptrdiff_t;
+   using pointer         = TYPE*;
+   using const_pointer   = const TYPE*;
+   
+   /// Rebind allocator to different type (required for STL containers)
+   template<typename U>
+   struct rebind
+   {
+      using other = arena_allocator<U, ALLOCATOR>;
+   };
+
+   /// ## Constructors
+
+   /** ----------------------------------------------------------------------- Constructor with arena reference
+    * @brief Creates allocator that uses the provided arena
+    * 
+    * @param arena_ Reference to arena instance to use for allocations
+    */
+   explicit arena_allocator(arena<ALLOCATOR>& arena_) noexcept 
+      : m_parena(&arena_)
+   {}
+
+   /** ----------------------------------------------------------------------- Copy constructor
+    * @brief Creates allocator from another allocator of same type
+    * 
+    * @param o Allocator to copy from
+    */
+   arena_allocator(const arena_allocator& o) noexcept 
+      : m_parena(o.m_parena)
+   {}
+
+   /** ----------------------------------------------------------------------- Rebind copy constructor
+    * @brief Creates allocator from allocator of different type
+    * 
+    * Allows containers to create allocators for internal types (e.g., node allocators).
+    * 
+    * @param o Allocator of different type to copy from
+    */
+   template<typename U>
+   arena_allocator(const arena_allocator<U, ALLOCATOR>& o) noexcept 
+      : m_parena(o.m_parena)
+   {}
+
+   /** ----------------------------------------------------------------------- Move constructor
+    * @brief Moves allocator from another allocator
+    * 
+    * @param o Allocator to move from
+    */
+   arena_allocator(arena_allocator&& o) noexcept 
+      : m_parena(o.m_parena)
+   {
+      o.m_parena = nullptr;
+   }
+
+   /// ## Assignment operators
+
+   /** ----------------------------------------------------------------------- Copy assignment
+    * @brief Assigns allocator from another allocator
+    * 
+    * @param o Allocator to copy from
+    * @return Reference to this allocator
+    */
+   arena_allocator& operator=(const arena_allocator& o) noexcept
+   {
+      if(this != &o)
+      {
+         m_parena = o.m_parena;
+      }
+      return *this;
+   }
+
+   /** ----------------------------------------------------------------------- Move assignment
+    * @brief Moves allocator from another allocator
+    * 
+    * @param o Allocator to move from
+    * @return Reference to this allocator
+    */
+   arena_allocator& operator=(arena_allocator&& o) noexcept
+   {
+      if(this != &o)
+      {
+         m_parena = o.m_parena;
+         o.m_parena = nullptr;
+      }
+      return *this;
+   }
+
+   /// ## Allocation interface (STL required methods)
+
+   /** ----------------------------------------------------------------------- allocate
+    * @brief Allocate memory for n objects of type TYPE
+    * 
+    * Allocates memory from the underlying arena with proper alignment for type TYPE.
+    * 
+    * @param uCount Number of objects to allocate space for
+    * @return Pointer to allocated memory
+    * @throws std::bad_alloc if arena pointer is null
+    */
+   [[nodiscard]] TYPE* allocate(size_type uCount)
+   {
+      if(!m_parena) { throw std::bad_alloc(); }
+      
+      size_type uSize = uCount * sizeof(TYPE);
+      size_type uAlignment = alignof(TYPE);
+      
+      void* pMemory = m_parena->allocate_aligned(uSize, uAlignment);
+      return static_cast<TYPE*>(pMemory);
+   }
+
+   /** ----------------------------------------------------------------------- deallocate
+    * @brief Deallocate memory (no-op for arena allocators)
+    * 
+    * Arena allocators do not support individual deallocation. Memory is reclaimed
+    * when the arena is cleared or destroyed. This method is required by the STL
+    * allocator interface but does nothing.
+    * 
+    * @param pPtr Pointer to memory (ignored)
+    * @param uCount Number of objects (ignored)
+    */
+   void deallocate(TYPE* pPtr, size_type uCount) noexcept
+   {
+      if(m_parena) { m_parena->deallocate(pPtr, uCount * sizeof(TYPE)); }
+   }
+
+   /// ## Comparison operators
+
+   /** ----------------------------------------------------------------------- Equality comparison
+    * @brief Check if two allocators use the same arena
+    * 
+    * @param o Allocator to compare with
+    * @return true if allocators use the same arena
+    */
+   [[nodiscard]] bool operator==(const arena_allocator& o) const noexcept
+   {
+      return m_parena == o.m_parena;
+   }
+
+   /** ----------------------------------------------------------------------- Inequality comparison
+    * @brief Check if two allocators use different arenas
+    * 
+    * @param o Allocator to compare with
+    * @return true if allocators use different arenas
+    */
+   [[nodiscard]] bool operator!=(const arena_allocator& o) const noexcept
+   {
+      return m_parena != o.m_parena;
+   }
+
+   /// ## Cross-type comparison operators
+
+   /** ----------------------------------------------------------------------- Cross-type equality comparison
+    * @brief Check if allocators of different types use the same arena
+    * 
+    * @param o Allocator of different type to compare with
+    * @return true if allocators use the same arena
+    */
+   template<typename U>
+   [[nodiscard]] bool operator==(const arena_allocator<U, ALLOCATOR>& o) const noexcept
+   {
+      return m_parena == o.m_parena;
+   }
+
+   /** ----------------------------------------------------------------------- Cross-type inequality comparison
+    * @brief Check if allocators of different types use different arenas
+    * 
+    * @param o Allocator of different type to compare with
+    * @return true if allocators use different arenas
+    */
+   template<typename U>
+   [[nodiscard]] bool operator!=(const arena_allocator<U, ALLOCATOR>& o) const noexcept
+   {
+      return m_parena != o.m_parena;
+   }
+
+   /// ## Access to underlying arena
+
+   /** -------------------------------------------------------------------------- get_arena
+    * @brief Get reference to underlying arena
+    * 
+    * @return Reference to arena
+    * @throws std::runtime_error if arena pointer is null
+    */
+   [[nodiscard]] arena<ALLOCATOR>& get_arena() const
+   {
+      if(!m_parena) { throw std::runtime_error("arena_allocator: null arena pointer"); }
+      return *m_parena;
+   }
+
+private:
+   arena<ALLOCATOR>* m_parena;  ///< Pointer to arena instance
+
+   // Allow other instantiations to access private members for rebind
+   template<typename U, typename A>
+   friend class arena_allocator;
+};
+
+// ============================================================================
+// ## Convenience type aliases
+// ============================================================================
+
+/*
+/// String type using arena allocator
+template<typename ALLOCATOR = std::allocator<std::byte>>
+using arena_string = std::basic_string<char, std::char_traits<char>, arena_allocator<char, ALLOCATOR>>;
+
+/// Vector type using arena allocator
+template<typename T, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_vector = std::vector<T, arena_allocator<T, ALLOCATOR>>;
+
+/// List type using arena allocator
+template<typename T, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_list = std::list<T, arena_allocator<T, ALLOCATOR>>;
+
+/// Deque type using arena allocator
+template<typename T, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_deque = std::deque<T, arena_allocator<T, ALLOCATOR>>;
+
+/// Map type using arena allocator
+template<typename KEY, typename VALUE, typename COMPARE = std::less<KEY>, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_map = std::map<KEY, VALUE, COMPARE, arena_allocator<std::pair<const KEY, VALUE>, ALLOCATOR>>;
+
+/// Set type using arena allocator
+template<typename T, typename COMPARE = std::less<T>, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_set = std::set<T, COMPARE, arena_allocator<T, ALLOCATOR>>;
+
+/// Unordered map type using arena allocator
+template<typename KEY, typename VALUE, typename HASH = std::hash<KEY>, typename EQUAL = std::equal_to<KEY>, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_unordered_map = std::unordered_map<KEY, VALUE, HASH, EQUAL, arena_allocator<std::pair<const KEY, VALUE>, ALLOCATOR>>;
+
+/// Unordered set type using arena allocator
+template<typename T, typename HASH = std::hash<T>, typename EQUAL = std::equal_to<T>, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_unordered_set = std::unordered_set<T, HASH, EQUAL, arena_allocator<T, ALLOCATOR>>;
+*/
+
+} // namespace arena
+
+_GD_END
+
 #endif // GD_COMPILER_HAS_CPP20_SUPPORT
+
