@@ -759,6 +759,8 @@ public:
       bool operator!=(const self& o) const { return !(*this == o); }
       bool operator>(const self& o) const { return m_uPosition > o.m_uPosition; }
       bool operator<(const self& o) const { return m_uPosition < o.m_uPosition; }
+      bool operator<=(const self& o) const { return m_uPosition <= o.m_uPosition; }
+      bool operator>=(const self& o) const { return m_uPosition >= o.m_uPosition; }
 
       operator const ARGUMENTS*() const { return m_parguments; }
       operator arguments::const_pointer() const { return buffer_offset(); }
@@ -828,6 +830,11 @@ public:
 
       argument get_argument() { return ARGUMENTS::get_argument_s(buffer_offset()); }
       const argument get_argument() const { return ARGUMENTS::get_argument_s(buffer_offset()); }
+
+      arguments::enumCType type_number() const { return ARGUMENTS::type_s(buffer_offset()); }
+
+      template<typename TYPE>
+      TYPE get() const { return get_argument().template get<TYPE>(); }
 
 
       template<std::size_t uIndex>
