@@ -68,7 +68,6 @@ TEST_CASE( "[arena] arguments 02 - append and retrieve various types", "[arena]"
 
    // Verify values
    auto it = arguments_.begin();
-   /*
    REQUIRE( (it++)->as_bool() == true );
    REQUIRE( (it++)->as_bool() == false );
    REQUIRE( (it++)->as_int() == -42 );
@@ -83,7 +82,6 @@ TEST_CASE( "[arena] arguments 02 - append and retrieve various types", "[arena]"
    REQUIRE( std::abs( (it++)->as_double() - 2.71828 ) < 0.0001 );
    REQUIRE( (it++)->as_string() == "Hello, Arena!" );
    REQUIRE( (it++)->as_string() == "Test string" );
-   */
 }
 
 TEST_CASE( "[arena] arguments 03 - named arguments (key-value pairs)", "[arena]" )
