@@ -554,7 +554,7 @@ std::string query::sql_get_where() const
          stringWhere += stringOperator;                                        // add operator text
          if( uOperator != eOperatorTypeNumberNull && uOperator != eOperatorTypeNumberNotNull )
          {
-            value_get_s( itCondition->value().get_variant_view(), stringWhere );   // print where value to string
+            value_get_s( itCondition->value(), stringWhere );   // print where value to string
          }
       }
 
@@ -610,7 +610,45 @@ std::string query::sql_get_insert() const
 
 std::string query::sql_get_update() const
 {
-   std::string stringUpdate; // generated update string 
+   std::string stringUpdate;
+
+   const auto ptable = &(*std::begin(m_vectorTable));
+   if( ptable->has( "schema" ) == true )
+   {
+      stringUpdate += ptable->schema();
+      stringUpdate += ".";
+      stringUpdate += ptable->name();
+   }
+   else
+   {
+      stringUpdate += ptable->name();
+   }
+
+   stringUpdate += "\nSET ";
+
+   // ## Add all set fields
+   unsigned uFieldIndex = 0;
+   for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField; itField++ )
+   {
+      if( uFieldIndex > 0 ) stringUpdate += ", ";
+      stringUpdate += itField->name();
+      stringUpdate += std::string_view{ " = " };
+      auto uType = itField->type();
+      auto value_ = itField->value();
+      if( uType == 0 ) { value_get_s( value_, stringUpdate); }
+      else
+      {
+         if( value_.is_char_string() == true )
+         {
+            append_g( value_, uType, m_eSqlDialect, stringUpdate );
+         }
+         else
+         {
+            value_get_s( value_, stringUpdate );
+         }
+      }
+      uFieldIndex++;
+   }
 
    return stringUpdate;
 }
@@ -646,7 +684,20 @@ std::string query::sql_get_update( const std::vector<gd::variant_view>& vectorVa
       if( uFieldIndex > 0 ) stringUpdate += ", ";
       stringUpdate += itField->name();
       stringUpdate += std::string_view{ " = " };
-      value_get_s( vectorValue[uFieldIndex], stringUpdate);
+      auto uType = itField->type();
+      if( uType == 0 ) { value_get_s( vectorValue[uFieldIndex], stringUpdate); }
+      else
+      {
+         auto value_ = vectorValue[uFieldIndex];
+         if( value_.is_char_string() == true )
+         {
+            append_g( value_, uType, m_eSqlDialect, stringUpdate );
+         }
+         else
+         {
+            value_get_s( vectorValue[uFieldIndex], stringUpdate );
+         }
+      }
       uFieldIndex++;
    }
 
@@ -949,7 +1000,7 @@ void query::print_condition_values_s( const std::vector<const condition*>& vecto
    {
       if( uCount > 0 ) stringValues += std::string_view{ ", " };
       auto value_ = it->value();
-      value_get_s( value_.get_variant_view(), stringValues);
+      value_get_s( value_, stringValues);
       uCount++;
    }
 }
