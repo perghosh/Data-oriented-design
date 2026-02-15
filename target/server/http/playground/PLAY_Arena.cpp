@@ -22,6 +22,56 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+TEST_CASE( "[arena] std::vector", "[arena]" )
+{
+   using namespace gd::arena;
+   std::cout << "\n=== Example 1: std::vector with arena_allocator ===\n";
+   
+   // Create arena with 4KB blocks
+   arena<> myArena(4096);
+   
+   // Create allocator from arena
+   arena_allocator<int> allocator(myArena);
+   
+   // Create vector using arena allocator
+   std::vector<int, arena_allocator<int>> vec(allocator);
+   
+   // Add elements
+   for(int i = 0; i < 100; ++i) { vec.push_back(i); }
+   
+   std::cout << "Vector size: " << vec.size() << "\n";
+   std::cout << "First 10 elements: ";
+   for(int i = 0; i < 10; ++i) { std::cout << vec[i] << " "; }
+   std::cout << "\n";
+   
+   // Show arena statistics
+   std::cout << "Arena blocks: " << myArena.block_count() << "\n";
+   std::cout << "Total allocated: " << myArena.total_allocated() << " bytes\n";
+   std::cout << "Total capacity: " << myArena.total_capacity() << " bytes\n";
+   std::cout << "Fragmentation: " << (myArena.fragmentation() * 100.0) << "%\n";
+}
+
+TEST_CASE( "[arena] std::string", "[arena]" )
+{
+   using namespace gd::arena;
+   std::cout << "\n=== Example 2: std::string with arena_allocator ===\n";
+   
+   arena<> myArena(2048);
+   arena_allocator<char> allocator(myArena);
+   
+   // Create string using arena allocator
+   std::basic_string<char, std::char_traits<char>, arena_allocator<char>> str(allocator);
+   
+   str = "Hello from arena allocator!";
+   str += " This string is allocated in an arena.";
+   
+   std::cout << "String: " << str << "\n";
+   std::cout << "Length: " << str.length() << "\n";
+   std::cout << "Arena allocated: " << myArena.total_allocated() << " bytes\n";
+}
+
+
+
 TEST_CASE( "[arena] arguments 01 - basic allocation", "[arena]" )
 {
    gd::arena::arena<> arena_;
