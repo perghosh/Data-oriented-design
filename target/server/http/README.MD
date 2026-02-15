@@ -1,6 +1,7 @@
 ## Search tags
 
 - `@CRITICAL`: Indicates critical sections of code that require immediate attention.
+- `@NOTE` : Something that is important to note, may effect other parts, important to understand context etc
 - `@FILE`: Describes the file (always placed at the top).
 - `@PROJECT`: Used for project management. Searching for a project name lists all its tasks.
 - `@TASK`: Describes a specific task or feature within the project.

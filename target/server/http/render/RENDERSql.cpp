@@ -262,25 +262,27 @@ std::pair<bool,std::string> CRENDERSql::ToSqlInsert( std::string& stringQuery )
 
 std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
 {
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_( buffer_ );
+
    std::string stringTable = m_tableField.cell_get_variant_view(0u, "table", gd::table::tag_not_null{}).as_string();
 
    gd::sql::query queryUpdate( gd::sql::eSqlUpdate, stringTable, gd::sql::tag_table{});
 
-   std::vector< std::pair<uint32_t, gd::variant_view> > vectorValue;
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
+      arguments_.clear();
       std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
-      queryUpdate.field_add( stringColumn );                                  // add column to query
       uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
       auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
-      vectorValue.push_back( { uType, value_ } );                             // add value to vector for later use in query
+      arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
    }
 
 
    // ## Generate insert query ..............................................
 
    std::string stringUpdateSql;
-	stringUpdateSql += queryUpdate.sql_get_update( vectorValue );
+	stringUpdateSql += queryUpdate.sql_get_update();
 	stringUpdateSql += "\nWHERE ";
 	//stringUpdateSql += gd::sql::query::where_get_s( vectorValue, m_eSqlDialect ).second;// append where clause from name value pairs
 
@@ -294,7 +296,7 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
 std::pair<bool, std::string> CRENDERSql::ToSqlDelete( std::string& stringQuery )
 {
    // ## Generate insert query ..............................................
-
+   /*
    std::string stringDeleteSql;
 	stringDeleteSql += queryUpdate.sql_get_delete( vectorValue );
 	stringDeleteSql += "\nWHERE ";
@@ -302,6 +304,7 @@ std::pair<bool, std::string> CRENDERSql::ToSqlDelete( std::string& stringQuery )
 
    if( stringQuery.empty() == true ) stringQuery = std::move( stringDeleteSql );
    else stringQuery += "\n\n" + stringDeleteSql;
+   */
 
    return { true, "" };
 }

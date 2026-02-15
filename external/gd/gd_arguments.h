@@ -1048,6 +1048,8 @@ public:
    arguments& append(uint32_t v) { return append(eTypeNumberUInt32, (const_pointer)&v, sizeof(uint32_t)); }
    arguments& append(int64_t v) { return append(eTypeNumberInt64, (const_pointer)&v, sizeof(int64_t)); }
    arguments& append(uint64_t v) { return append(eTypeNumberUInt64, (const_pointer)&v, sizeof(uint64_t)); }
+   arguments& append(float v) { return append(eTypeNumberFloat, (const_pointer)&v, sizeof(float)); }
+   arguments& append(double v) { return append(eTypeNumberDouble, (const_pointer)&v, sizeof(double)); }
    arguments& append(const std::string_view& v) { return append((eTypeNumberString | eValueLength), (const_pointer)v.data(), (unsigned int)v.length() + 1); }
    arguments& append(const std::wstring_view& v) { return append((eTypeNumberWString | eValueLength), (const_pointer)v.data(), ((unsigned int)v.length() + 1) * sizeof(wchar_t)); }
 #if defined(__cpp_char8_t)
