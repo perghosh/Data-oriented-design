@@ -574,7 +574,7 @@ std::string query::sql_get_insert() const
 {                                                                                                  assert( m_vectorTable.empty() == false );
    std::string stringInsert; // generated insert string with tables used in query
 
-   unsigned uTableIndex = 0;                                                     // active index for current table processed
+   //unsigned uTableIndex = 0;                                                     // active index for current table processed
    for( auto itTable = std::begin(m_vectorTable), itEnd = std::end(m_vectorTable); itTable != itEnd; itTable++ )
    {
       const auto ptable = &(*itTable);
