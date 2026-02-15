@@ -9,6 +9,17 @@
 
 _GD_SQL_QUERY_BEGIN
 
+#if defined( __clang__ )
+   #pragma GCC diagnostic push
+   #pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#elif defined( __GNUC__ )
+   #pragma GCC diagnostic push
+   #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+#elif defined( _MSC_VER )
+   #pragma warning(push)
+   #pragma warning( disable : 4267 26495 26812 )
+#endif
+
 /// tag dispatcher used for table operations
 struct tag_table {};
 /// tag dispatcher used for field operations
@@ -350,6 +361,14 @@ constexpr enumSqlDialect sql_get_dialect_g( std::string_view stringDialect )
                                                                                                    assert( false );
    return eSqlDialectUnknown;
 }
+
+#if defined(__clang__)
+   #pragma clang diagnostic pop
+#elif defined(__GNUC__)
+   #pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+   #pragma warning(pop)
+#endif
 
 
 _GD_SQL_QUERY_END
