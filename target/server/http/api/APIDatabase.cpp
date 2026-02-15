@@ -514,6 +514,9 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
          sql_.Initialize();
          result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{} );
          if( result_.first == false ) { return result_; }
+
+         if( sql_.CountPartType( CRENDERSql::ePartTypeWhere ) == 0 ) { return { false, "Invalid update: missing WHERE clause" }; }
+
          result_ = sql_.Prepare();
 
          std::string stringQuery;
