@@ -42,6 +42,7 @@ High performance table operations.
 
 Objects that are optimized for performance and memory usage that mimic the standard library containers.
 
+- [Arena](GD_ARENA.MD) - *High-performance memory allocator*
 - [Optimized Vector](GD_VECTOR.MD) - *Optimized vector variants*
 
 ## Command Line Documentation
