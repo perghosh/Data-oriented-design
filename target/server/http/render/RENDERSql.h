@@ -27,6 +27,27 @@ class CDocument;
 class CRENDERSql
 {
 public:   
+
+   /**
+    * @brief Specifies the type of part in a database query.
+    */
+   enum enumPartType
+   {
+      ePartTypeUnknown,
+      ePartTypeSelect,           ///< select part of query
+      ePartTypeValue,            ///< value part of query, used for insert and update queries
+      ePartTypeWhere,            ///< where part of query, used for select, update and delete queries
+      enumPartType_Max
+   };
+
+   enum enumSqlRenderState
+   {
+      eSqlRenderStateInitial,
+      eSqlRenderStatePrepared,
+      eSqlRenderStateValidated,
+      enumSqlRenderState_Max
+   };
+
    enum enumSqlQueryType
    {
       eSqlQueryTypeInsert,
@@ -46,6 +67,7 @@ public:
       eColumnFieldAlias,
       eColumnFieldValue,
       eColumnFieldType,
+      eColumnFieldPartType,
       eColumnField_Max
    };
    
@@ -94,6 +116,9 @@ public:
 
    void Add( std::string_view stringName, std::string_view stringValue );
    void Add( std::string_view stringName, gd::variant_view variantviewValue );
+
+   /// Counts the number of columns for the specified part type in the query.
+   std::size_t CountPartType( enumPartType ePartType ) const;
 
    void SetColumnValue( std::string_view stringName, gd::variant_view variantviewValue );
    
