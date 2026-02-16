@@ -2167,7 +2167,7 @@ void table::cell_set( uint64_t uRow, const std::string_view& stringName, const g
    int iColumnIndex = column_find_index( stringName );
    if( iColumnIndex != -1 )
    {
-      if( variantviewValue.is_primitive() == true || column_validate_size( iColumnIndex, variantviewValue ) == true )
+      if( column_is_primitive( iColumnIndex ) == true || column_validate_size( iColumnIndex, variantviewValue ) == true )
       {
          cell_set(uRow, (unsigned)iColumnIndex, variantviewValue, tag_convert{});
       }
