@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <sstream>
+#include <string_view>
 
 #include "pugixml/pugixml.hpp"
 #include "jsoncons/json.hpp"
@@ -26,6 +27,7 @@
  */
 void CRENDERSql::Initialize()
 {
+   using namespace std::literals::string_view_literals;
    // Initialize datable that will hold response body parts
 
    if( m_pcolumnsField_s == nullptr )
@@ -41,6 +43,9 @@ void CRENDERSql::Initialize()
       m_pcolumnsField_s->add( "uint32", 0, "type" );                          // type of value
       m_pcolumnsField_s->add( "uint32", 0, "part_type" );                     // part type of value   
       m_pcolumnsField_s->add_reference();
+                                                                                                   assert( m_pcolumnsField_s->find_index( "key"sv ) == eColumnFieldId );
+                                                                                                   assert( m_pcolumnsField_s->find_index( "alias"sv ) == eColumnFieldAlias );
+                                                                                                   assert( m_pcolumnsField_s->find_index( "part_type"sv ) == eColumnFieldPartType );
    }
 
    m_tableField.set_columns( m_pcolumnsField_s );

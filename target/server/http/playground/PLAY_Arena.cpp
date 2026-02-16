@@ -24,7 +24,7 @@
 
 TEST_CASE( "[arena] std::vector", "[arena]" )
 {
-   using namespace gd::arena;
+   using namespace gd::memory;
    std::cout << "\n=== Example 1: std::vector with arena_allocator ===\n";
    
    // Create arena with 4KB blocks
@@ -53,7 +53,7 @@ TEST_CASE( "[arena] std::vector", "[arena]" )
 
 TEST_CASE( "[arena] std::string", "[arena]" )
 {
-   using namespace gd::arena;
+   using namespace gd::memory;
    std::cout << "\n=== Example 2: std::string with arena_allocator ===\n";
    
    arena<> myArena(2048);
@@ -74,7 +74,7 @@ TEST_CASE( "[arena] std::string", "[arena]" )
 
 TEST_CASE( "[arena] arguments 01 - basic allocation", "[arena]" )
 {
-   gd::arena::arena<> arena_;
+   gd::memory::arena<> arena_;
 
    auto span = arena_.allocate_span<std::byte>( 256 );
 
@@ -86,7 +86,7 @@ TEST_CASE( "[arena] arguments 01 - basic allocation", "[arena]" )
 
 TEST_CASE( "[arena] arguments 02 - append and retrieve various types", "[arena]" )
 {
-   gd::arena::arena<> arena_;
+   gd::memory::arena<> arena_;
 
    auto span = arena_.allocate_span<std::byte>( 1024 );
 
@@ -136,7 +136,7 @@ TEST_CASE( "[arena] arguments 02 - append and retrieve various types", "[arena]"
 
 TEST_CASE( "[arena] arguments 03 - named arguments (key-value pairs)", "[arena]" )
 {
-   gd::arena::arena<> arena_;
+   gd::memory::arena<> arena_;
 
    auto span = arena_.allocate_span<std::byte>( 1024 );
 
@@ -169,7 +169,7 @@ TEST_CASE( "[arena] arguments 03 - named arguments (key-value pairs)", "[arena]"
 
 TEST_CASE( "[arena] arguments 04 - multiple allocations in same arena", "[arena]" )
 {
-   gd::arena::arena<> arena_;
+   gd::memory::arena<> arena_;
 
    // First allocation
    auto span1 = arena_.allocate_span<std::byte>( 512 );
@@ -206,7 +206,7 @@ TEST_CASE( "[arena] arguments 04 - multiple allocations in same arena", "[arena]
 
 TEST_CASE( "[arena] arguments 05 - complex nested structures", "[arena]" )
 {
-   gd::arena::arena<> arena_;
+   gd::memory::arena<> arena_;
 
    auto span = arena_.allocate_span<std::byte>( 2048 );
 
@@ -252,8 +252,8 @@ TEST_CASE( "[arena] arguments 05 - complex nested structures", "[arena]" )
 
 TEST_CASE( "[arena] arguments 06 - serialization and deserialization", "[arena]" )
 {
-   gd::arena::arena<> arena1;
-   gd::arena::arena<> arena2;
+   gd::memory::arena<> arena1;
+   gd::memory::arena<> arena2;
 
    // Create and populate first arguments
    auto span1 = arena1.allocate_span<std::byte>( 1024 );
@@ -278,7 +278,7 @@ TEST_CASE( "[arena] arguments 06 - serialization and deserialization", "[arena]"
 
 TEST_CASE( "[arena] arguments 07 - edge cases", "[arena]" )
 {
-   gd::arena::arena<> arena_;
+   gd::memory::arena<> arena_;
 
    auto span = arena_.allocate_span<std::byte>( 256 );
 
@@ -309,7 +309,7 @@ TEST_CASE( "[arena] arguments 07 - edge cases", "[arena]" )
 
 TEST_CASE( "[arena] arguments 08 - array allocations", "[arena]" )
 {
-   gd::arena::arena<> arena_;
+   gd::memory::arena<> arena_;
 
    // Test allocate_objects
    int* intArray = arena_.allocate_objects<int>( 10 );
@@ -363,7 +363,7 @@ TEST_CASE( "[arena] arguments 08 - array allocations", "[arena]" )
 
 TEST_CASE( "[arena] arguments 09 - iteration and traversal", "[arena]" )
 {
-   gd::arena::arena<> arena_;
+   gd::memory::arena<> arena_;
 
    auto span = arena_.allocate_span<std::byte>( 1024 );
 
@@ -391,7 +391,7 @@ TEST_CASE( "[arena] arguments 09 - iteration and traversal", "[arena]" )
 
 TEST_CASE( "[arena] arguments 10 - mixed type operations", "[arena]" )
 {
-   gd::arena::arena<> arena_;
+   gd::memory::arena<> arena_;
 
    auto span = arena_.allocate_span<std::byte>( 1024 );
 

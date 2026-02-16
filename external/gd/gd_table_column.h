@@ -273,7 +273,7 @@ public:
    column* get( size_t uIndex ) { assert( uIndex < size() ); return &m_vectorColumn[uIndex]; }
    const column* get( size_t uIndex ) const { assert( uIndex < size() ); return &m_vectorColumn[uIndex]; }
 #endif
-   int find_index( const std::string_view& stringName ) const noexcept;
+   int find_index( std::string_view stringName ) const noexcept;
    int find_index( const gd::variant_view& column_ ) const noexcept;
 
    unsigned state( unsigned uIndex ) const { return get( uIndex )->state(); }

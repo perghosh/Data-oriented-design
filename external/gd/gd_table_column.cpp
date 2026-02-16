@@ -235,7 +235,7 @@ columns& columns::add( const columns* p_ )
  * @param stringName column name column index is returned for
  * @return int index to column for column name if found, -1 if not found
 */
-int columns::find_index( const std::string_view& stringName ) const noexcept
+int columns::find_index( std::string_view stringName ) const noexcept
 {
    for( auto it = std::begin( m_vectorColumn ), itEnd = std::end( m_vectorColumn ); it != itEnd; it++ )
    {
