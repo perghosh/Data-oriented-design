@@ -203,6 +203,9 @@ void CRENDERSql::Add( std::string_view stringName, gd::variant_view variantviewV
  */
 std::size_t CRENDERSql::CountPartType( enumPartType ePartType ) const
 {
+#ifndef NDEBUG
+   std::string stringTable_d = gd::table::arguments::debug::print( m_tableField );
+#endif // NDEBUG
    std::size_t uCount = 0;
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {

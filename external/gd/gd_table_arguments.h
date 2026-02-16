@@ -471,6 +471,7 @@ public:
    std::vector<std::string_view> column_get_name(const std::vector<unsigned>& vectorColumn) const;
    std::string_view column_get_alias( unsigned uIndex ) const;
    void column_get( unsigned uIndex, argument::column& column_ ) const;
+   bool column_is_primitive( unsigned uIndex ) const { return m_pcolumns->is_primitive( uIndex ); }  
    
    bool column_validate_type( unsigned uIndex, gd::variant_view v_ ) const { return m_pcolumns->ctype_number( uIndex ) == v_.type_number(); }
    bool column_validate_size( unsigned uIndex, gd::variant_view v_ ) const { return m_pcolumns->size( uIndex ) >= v_.length_in_bytes(); }

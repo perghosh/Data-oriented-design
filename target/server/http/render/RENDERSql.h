@@ -62,6 +62,7 @@ public:
  enum enumColumnField
    {
       eColumnFieldId,
+      eColumnFieldSchema,
       eColumnFieldTable,
       eColumnFieldColumn,
       eColumnFieldAlias,
@@ -156,7 +157,8 @@ public:
    static void Destroy_s();
 };
 
-
+/// --------------------------------------------------------------------------
+/// Converts a string representation of a SQL query type to its corresponding enum value. The comparison is case-insensitive.
 constexpr CRENDERSql::enumSqlQueryType CRENDERSql::QueryType_s( std::string_view stringQueryType ) noexcept
 {
    auto equals_no_case_ = []( std::string_view a_, std::string_view b_ ) constexpr noexcept -> bool

@@ -862,7 +862,7 @@ void arena<ALLOCATOR>::swap(arena& o) noexcept
 // ============================================================================
 
 /** -------------------------------------------------------------------------- create_block
- * @brief Create a new block with specified size
+ * @brief Create a new block with specified size                              @CRITICAL: [tag: create, block] [description: Allocates memory for a new block and initializes its header. The block size includes the header and data area. The block is not linked into the arena chain; caller is responsible for linking it.]
  * 
  * @param uSize Size of block data area (excluding header)
  * @return Pointer to new block header
@@ -873,11 +873,11 @@ block_header* arena<ALLOCATOR>::create_block(size_type uSize)
    size_type uTotalSize = sizeof(block_header) + uSize;
    std::byte* pMemory = m_allocator.allocate(uTotalSize);
    
-   block_header* pBlock = new (pMemory) block_header();
-   pBlock->m_uBlockSize = static_cast<std::uint32_t>(uSize);
-   pBlock->m_pData = pMemory + sizeof(block_header);
+   block_header* pblockheader_ = new ( pMemory ) block_header(); // Placement new to construct block header in place
+   pblockheader_->m_uBlockSize = static_cast<std::uint32_t>(uSize);
+   pblockheader_->m_pData = pMemory + sizeof(block_header);
    
-   return pBlock;
+   return pblockheader_;
 }
 
 /** -------------------------------------------------------------------------- destroy

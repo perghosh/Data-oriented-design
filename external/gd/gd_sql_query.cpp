@@ -608,6 +608,10 @@ std::string query::sql_get_insert() const
    return stringInsert;
 }
 
+/**
+ * @brief Generates the table and SET clause portion of an SQL UPDATE statement.
+ * @return A string containing the table name (with optional schema prefix) and SET clause with field assignments for an UPDATE statement.
+ */
 std::string query::sql_get_update() const
 {
    std::string stringUpdate;
