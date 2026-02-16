@@ -9,13 +9,13 @@
  * for optimal cache performance. When a block is full, a new block is automatically created and linked.
  * The arena supports iteration over all blocks and allocations within blocks for debugging and diagnostics.
  *
- | Area                | Methods (Examples)                                                                                      | Description                                                                                   |
- |---------------------|--------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ | Area                | Methods (Examples)                                                                                    | Description                                                                                   |
+ |---------------------|-------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
  | Construction        | `arena()`, `arena(size_type)`, `arena(const arena&)`, `arena(arena&&)`                                | Constructors for creating arena instances with specified block sizes.                        |
- | Assignment          | `operator=(const arena&)`, `operator=(arena&&)`, `swap(...)`                                           | Methods for assigning or moving arena contents, including efficient swap operations.         |
+ | Assignment          | `operator=(const arena&)`, `operator=(arena&&)`, `swap(...)`                                          | Methods for assigning or moving arena contents, including efficient swap operations.         |
  | Allocation          | `allocate(...)`, `allocate_aligned(...)`, `deallocate(...)`                                           | Methods for allocating and deallocating memory from the arena.                               |
  | Capacity            | `block_size()`, `block_count()`, `total_allocated()`, `total_capacity()`, `fragmentation()`           | Methods for querying arena capacity, usage, and fragmentation statistics.                    |
- | Iteration           | `begin_blocks()`, `end_blocks()`, `begin_allocations(...)`, `end_allocations(...)`                    | Iterator methods for traversing blocks and allocations within blocks.                        |
+ | Iteration           | `begin_block()`, `end_block()`, `begin_allocation(...)`, `end_allocation(...)`                        | Iterator methods for traversing blocks and allocations within blocks.                        |
  | Diagnostics         | `dump_blocks()`, `dump_allocations()`, `validate()`                                                   | Methods for debugging and validating arena state.                                            |
  | Management          | `clear()`, `reset()`, `shrink_to_fit()`                                                               | Methods for clearing allocations and managing arena memory.                                  |
  */
@@ -326,10 +326,10 @@ public:
 
    /// ## @API [tag: iterator] [summary: Block and allocation iteration]
 
-   [[nodiscard]] iterator_block begin_blocks() noexcept { return iterator_block(m_pblockheaderFirst); }
-   [[nodiscard]] iterator_block end_blocks() noexcept { return iterator_block(nullptr); }
-   [[nodiscard]] iterator_allocation begin_allocations(block_header* pBlock) noexcept;
-   [[nodiscard]] iterator_allocation end_allocations(block_header* pBlock) noexcept;
+   [[nodiscard]] iterator_block begin_block() noexcept { return iterator_block(m_pblockheaderFirst); }
+   [[nodiscard]] iterator_block end_block() noexcept { return iterator_block(nullptr); }
+   [[nodiscard]] iterator_allocation begin_allocation(block_header* pblockheader) noexcept;
+   [[nodiscard]] iterator_allocation end_allocation(block_header* pblockheader) noexcept;
 
    /// ## @API [tag: diagnostics] [summary: Debugging and validation]
 
@@ -693,10 +693,10 @@ double arena<ALLOCATOR>::fragmentation() const noexcept
  * @return Iterator to first allocation
  */
 template<typename ALLOCATOR>
-iterator_allocation arena<ALLOCATOR>::begin_allocations(block_header* pBlock) noexcept
+iterator_allocation arena<ALLOCATOR>::begin_allocation(block_header* pblockheader) noexcept
 {
-   if(!pBlock || pBlock->m_uUsedSize == 0) { return iterator_allocation(); }
-   return iterator_allocation(pBlock->m_pData, pBlock->m_pData + pBlock->m_uUsedSize);
+   if(!pblockheader || pblockheader->m_uUsedSize == 0) { return iterator_allocation(); }
+   return iterator_allocation(pblockheader->m_pData, pblockheader->m_pData + pblockheader->m_uUsedSize);
 }
 
 /** -------------------------------------------------------------------------- end_allocations
@@ -706,9 +706,9 @@ iterator_allocation arena<ALLOCATOR>::begin_allocations(block_header* pBlock) no
  * @return Iterator past last allocation
  */
 template<typename ALLOCATOR>
-iterator_allocation arena<ALLOCATOR>::end_allocations(block_header* pBlock) noexcept
+iterator_allocation arena<ALLOCATOR>::end_allocation(block_header* pblockheader) noexcept
 {
-   (void)pBlock;
+   (void)pblockheader;
    return iterator_allocation();
 }
 

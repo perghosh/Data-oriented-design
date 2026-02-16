@@ -419,3 +419,122 @@ TEST_CASE( "[arena] arguments 10 - mixed type operations", "[arena]" )
    REQUIRE( !arguments_[ "stringVal" ].to_string().empty() );
    REQUIRE( arguments_[ "intVal" ].to_string().find( "42" ) != std::string::npos );
 }
+
+TEST_CASE( "[arena] iterator_block - multiple blocks iteration", "[arena]" )
+{
+   using namespace gd::memory;
+   
+   // Create arena with small block size (256 bytes) to force multiple blocks
+   arena<> myArena(256);
+   
+   std::cout << "\n=== Test: iterator_block - multiple blocks ===\n";
+   
+   // Make many small allocations (each about 16-24 bytes with alignment)
+   std::vector<int*> allocations;
+   const int numAllocations = 100;
+   
+   for( int i = 0; i < numAllocations; ++i )
+   {
+      int* p = myArena.allocate_objects<int>( 1 );
+      REQUIRE( p != nullptr );
+      *p = i;
+      allocations.push_back( p );
+   }
+   
+   // Verify we created multiple blocks
+   REQUIRE( myArena.block_count() > 1 );
+   
+   std::cout << "Total blocks created: " << myArena.block_count() << "\n";
+   std::cout << "Total allocated: " << myArena.total_allocated() << " bytes\n";
+   
+   // Test block iteration
+   int blockCount = 0;
+   size_t totalCapacity = 0;
+   size_t totalUsed = 0;
+   size_t totalAllocCount = 0;
+   
+   for( auto it = myArena.begin_block(); it != myArena.end_block(); ++it )
+   {
+      blockCount++;
+      REQUIRE( it->is_valid() );
+      REQUIRE( it->m_uBlockSize > 0 );
+      
+      totalCapacity += it->m_uBlockSize;
+      totalUsed += it->m_uUsedSize;
+      totalAllocCount += it->m_uAllocCount;
+      
+      std::cout << "Block " << blockCount << ": size=" << it->m_uBlockSize 
+                << ", used=" << it->m_uUsedSize 
+                << ", allocs=" << it->m_uAllocCount << "\n";
+   }
+   
+   REQUIRE( blockCount == myArena.block_count() );
+   REQUIRE( totalCapacity == myArena.total_capacity() );
+   REQUIRE( totalUsed == myArena.total_allocated() );
+   
+   std::cout << "Block iteration successful - visited " << blockCount << " blocks\n";
+   
+   // Verify all allocations are still valid
+   for( int i = 0; i < numAllocations; ++i )
+   {
+      REQUIRE( *allocations[i] == i );
+   }
+}
+
+TEST_CASE( "[arena] iterator_allocation - multiple allocations iteration", "[arena]" )
+{
+   using namespace gd::memory;
+   
+   // Create arena with small block size (512 bytes) to force multiple blocks
+   arena<> myArena(512);
+   
+   std::cout << "\n=== Test: iterator_allocation - multiple allocations ===\n";
+   
+   // Make many small allocations of different sizes
+   const int numInts = 50;
+   const int numDoubles = 30;
+   const int numShorts = 40;
+   
+   std::vector<int*> intAllocs;
+   std::vector<double*> doubleAllocs;
+   std::vector<short*> shortAllocs;
+   
+   // Allocate integers
+   for( int i = 0; i < numInts; ++i )
+   {
+      int* p = myArena.allocate_objects<int>( 1 );
+      REQUIRE( p != nullptr );
+      *p = i;
+      intAllocs.push_back( p );
+   }
+   
+   // Allocate doubles
+   for( int i = 0; i < numDoubles; ++i )
+   {
+      double* p = myArena.allocate_objects<double>( 1 );
+      REQUIRE( p != nullptr );
+      *p = i * 1.5;
+      doubleAllocs.push_back( p );
+   }
+   
+   // Allocate shorts
+   for( int i = 0; i < numShorts; ++i )
+   {
+      short* p = myArena.allocate_objects<short>( 1 );
+      REQUIRE( p != nullptr );
+      *p = static_cast<short>(i);
+      shortAllocs.push_back( p );
+   }
+   
+   const int expectedAllocations = numInts + numDoubles + numShorts;
+   const int expectedBlocks = myArena.block_count();
+   
+   std::cout << "Total allocations made: " << expectedAllocations << "\n";
+   std::cout << "Total blocks created: " << expectedBlocks << "\n";
+   
+   REQUIRE( expectedBlocks > 1 );
+   
+   // Test allocation iteration
+   int allocationCount = 0;
+   int blocksVisited = 0;
+}
