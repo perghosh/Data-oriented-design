@@ -453,47 +453,51 @@ public:
 
    /// ## @API [tag: allocate] [summary: Allocation interface]
 
-   [[nodiscard]] T* allocate(size_type uCount) 
+   [[nodiscard]] T* allocate( size_type uCount )
    {
-      const size_type uBytes = uCount * sizeof(T);
-      
-      // ## Try arena allocation first ..........................................
+      const size_type uBytes = uCount * sizeof( T );
+
+      // ## Try arena allocation .............................................
       if( m_parena != nullptr )
       {
-         void* pMemory = m_parena->allocate(uBytes, alignof(T));
-         if( pMemory != nullptr )
-         {
-            return static_cast<T*>(pMemory);                                  // arena allocation succeeded
-         }
+         void* pMemory = m_parena->allocate( uBytes, alignof( T ) );
+         if( pMemory != nullptr ) return static_cast<T*>( pMemory );
       }
-      
-      // ## Fallback to heap allocation with header .............................
-      const size_type uTotalBytes = sizeof(allocation_header) + uBytes;
-      void* pRawMemory = ::operator new(uTotalBytes, std::align_val_t(alignof(allocation_header)));
-      
-      // ## Write header ........................................................
-      allocation_header* pheader = static_cast<allocation_header*>(pRawMemory);
-      pheader->uSize = uBytes;
-      
-      // ## Return pointer after header .........................................
-      return reinterpret_cast<T*>(pheader + 1);
+
+      // ## Fallback to heap allocation with header ..........................
+      //    We need the header to be a multiple of T's alignment so T is aligned.
+      constexpr size_type uInternalHeaderSize = sizeof( allocation_header );
+      const size_type uAlignment = std::max( alignof( allocation_header ), alignof( T ) );
+
+      // ### Align the header size up to the requirement of T
+      const size_type uHeaderSize = ( uInternalHeaderSize + uAlignment - 1 ) & ~( uAlignment - 1 );
+      const size_type uTotalBytes = uHeaderSize + uBytes;
+
+      void* pRawMemory = ::operator new( uTotalBytes, std::align_val_t( uAlignment ) ); // Allocate raw memory for header + data with proper alignment
+
+      // ## Write header .....................................................
+      allocation_header* pallocationheader = static_cast<allocation_header*>( pRawMemory );
+      pallocationheader->uSize = uBytes; // Store the original request size
+
+      // ## Return pointer after header ......................................
+      return reinterpret_cast<T*>( static_cast<std::byte*>( pRawMemory ) + uHeaderSize );
    }
-   
-   void deallocate(T* pMemory, size_type uCount) noexcept 
+
+   void deallocate( T* pMemory, size_type uCount ) noexcept
    {
-      if( pMemory == nullptr ) { return; }
-      
-      // ## Check if allocation is from arena ...................................
-      if( m_parena != nullptr && m_parena->contains(pMemory) )
-      {
-         // ## Arena allocation - no-op (arena handles bulk deallocation) .......
-         return;
-      }
-      
-      // ## Heap allocation - read header and deallocate ........................
-      allocation_header* pheader = reinterpret_cast<allocation_header*>(pMemory) - 1;
-      const size_type uTotalBytes = sizeof(allocation_header) + pheader->uSize;
-      ::operator delete(pheader, uTotalBytes, std::align_val_t(alignof(allocation_header)));
+      if( pMemory == nullptr ) return;
+
+      if( m_parena != nullptr && m_parena->contains( pMemory ) ) return;
+
+      // Must use the same alignment logic to find the original header start
+      const size_type uAlignment = std::max( alignof( allocation_header ), alignof( T ) );
+      const size_type uHeaderSize = ( sizeof( allocation_header ) + uAlignment - 1 ) & ~( uAlignment - 1 );
+      // Step back by the padded size
+      void* pRawMemory = static_cast<std::byte*>( static_cast<void*>( pMemory ) ) - uHeaderSize;
+      allocation_header* pallocationheader = static_cast<allocation_header*>( pRawMemory );
+
+      const size_type uTotalBytes = uHeaderSize + pallocationheader->uSize;
+      ::operator delete( pRawMemory, uTotalBytes, std::align_val_t( uAlignment ) );
    }
 
    /// ## @API [tag: operator] [summary: Comparison operators]
