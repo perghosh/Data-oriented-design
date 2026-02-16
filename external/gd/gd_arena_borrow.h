@@ -100,6 +100,10 @@ public:
    /// ## @API [tag: allocate] [summary: Memory allocation]
 
    [[nodiscard]] void* allocate(size_type uBytes, size_type uAlignment = alignof(std::max_align_t)) noexcept;
+   template<typename OBJECT>
+   [[nodiscard]] OBJECT* allocate_objects(size_type uCount);
+   template<typename OBJECT>
+   [[nodiscard]] std::span<OBJECT> allocate_span(size_type uCount);
    void deallocate(void* pMemory, size_type uBytes) noexcept;                 // no-op for simple arena
    void reset() noexcept;                                                     // reset allocation pointer to beginning
 
@@ -279,6 +283,31 @@ inline void* arena::allocate(size_type uBytes, size_type uAlignment) noexcept
    m_uUsed = uNewUsed;
    return pResult;
 }
+
+/** -------------------------------------------------------------------------- allocate_objects
+ * @brief Allocate memory for an array of objects with correct type alignment
+ * @param uCount Number of objects to allocate
+ * @return Pointer to allocated memory
+ */
+template<typename OBJECT>
+OBJECT* arena::allocate_objects(std::size_t uCount)
+{
+   return static_cast<OBJECT*>( allocate(sizeof(OBJECT) * uCount, alignof(OBJECT)) );
+}
+
+/** -------------------------------------------------------------------------- allocate_span
+ * @brief Allocate memory for an array of objects and return as a span
+ * @param uSize Number of objects to allocate
+ * @return Span of allocated objects
+ */
+template<typename OBJECT>
+std::span<OBJECT> arena::allocate_span(size_type uSize)
+{
+   // This now correctly inherits the alignment from the updated allocate_objects.
+   OBJECT* pobject_ = allocate_objects<OBJECT>(uSize);
+   return std::span<OBJECT>(pobject_, uSize);
+}
+
 
 /** -------------------------------------------------------------------------- deallocate
  * @brief Deallocate memory (no-op for simple bump allocator)
