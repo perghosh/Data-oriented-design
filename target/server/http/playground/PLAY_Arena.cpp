@@ -11,6 +11,7 @@
 
 
 #include "gd/gd_arena.h"
+#include "gd/gd_arena_borrow.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_vector.h"
 
@@ -526,8 +527,8 @@ TEST_CASE( "[arena] iterator_allocation - multiple allocations iteration", "[are
       shortAllocs.push_back( p );
    }
    
-   const int expectedAllocations = numInts + numDoubles + numShorts;
-   const int expectedBlocks = myArena.block_count();
+   const int expectedAllocations = int(numInts + numDoubles + numShorts);
+   const int expectedBlocks = (int)myArena.block_count();
    
    std::cout << "Total allocations made: " << expectedAllocations << "\n";
    std::cout << "Total blocks created: " << expectedBlocks << "\n";

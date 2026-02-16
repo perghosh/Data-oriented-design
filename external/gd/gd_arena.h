@@ -480,9 +480,9 @@ arena<ALLOCATOR>& arena<ALLOCATOR>::operator=(const arena& o)
       block_header* pblockheaderSource = o.m_pblockheaderFirst;
       block_header** ppblockheaderDest = &m_pblockheaderFirst;
       
-      while(pSourceBlock)
+      while(pblockheaderSource != nullptr)
       {
-         size_type uTotalSize = sizeof(block_header) + pSourceBlock->m_uBlockSize;
+         size_type uTotalSize = sizeof(block_header) + pblockheaderSource->m_uBlockSize;
          std::byte* pMemory = m_allocator.allocate(uTotalSize);
          
          block_header* pblockheaderNew = new (pMemory) block_header();

@@ -28,43 +28,38 @@ namespace arena {
 namespace borrow {
 
 /** ==========================================================================
- * @brief A simple arena allocator that may borrow its initial storage or allocate on heap
+ * @brief A simple arena allocator with fixed capacity
  * 
- * The arena manages a single memory block that can either be:
- * - Borrowed from external storage (std::array, std::vector, C-array, or raw buffer)
- * - Allocated on the heap when borrowed storage is exhausted
+ * The arena manages a single memory block with a fixed capacity that can be:
+ * - Borrowed from external storage (std::array, std::vector, C-array)
+ * - Allocated on heap at construction time
  * 
- * The arena tracks allocations using a simple bump allocator pattern. When the 
- * borrowed storage is full, it allocates a new block on the heap and continues 
- * allocating from there.
+ * The arena uses a simple bump allocator pattern and NEVER grows beyond its
+ * initial capacity. When storage is exhausted, allocate() returns nullptr.
  * 
  * **Memory Ownership Tracking**:
  * The highest bit in `m_uCapacity` indicates borrowed storage (BORROW_BIT).
- * When set, the arena does not own the memory and will not deallocate it.
- * When allocating on heap, this bit is cleared and the arena takes ownership.
+ * - BORROW_BIT set: Arena borrows memory, will NOT deallocate on destruction
+ * - BORROW_BIT clear: Arena owns memory, WILL deallocate on destruction
  * 
- * @par Example
+ * @par Example - Borrowed Storage
  * @code{.cpp}
  * std::array<std::byte, 1024> buffer_;
- * gd::borrow::arena arenaLocal( buffer_ );
+ * gd::arena::borrow::arena arenaLocal( buffer_ );
  * 
- * // ## Allocate from borrowed storage ......................................
- * void* pMemory1 = arenaLocal.allocate( 64 );
- * assert( arenaLocal.is_borrowed() == true ); // still using borrowed storage
- * 
- * // ## Force heap allocation when borrowed storage is full ..................
- * void* pMemory2 = arenaLocal.allocate( 2048 ); // exceeds borrowed capacity
- * assert( arenaLocal.is_borrowed() == false ); // now owner heap storage
+ * void* pMemory = arenaLocal.allocate( 64 );
+ * assert( arenaLocal.is_borrowed() == true );  // using borrowed storage
+ * assert( arenaLocal.owner() == false );       // does not own the storage
  * @endcode
  * 
- * @par Usage with STL Allocators
+ * @par Example - Owned Storage
  * @code{.cpp}
- * std::array<std::byte, 512> buffer_;
- * gd::borrow::arena arenaLocal( buffer_ );
+ * gd::arena::borrow::arena arenaLocal( nullptr, 1024 );  // allocates 1024 bytes on heap
  * 
- * // ## Use with custom allocator for std::string ............................
- * using string_type = std::basic_string<char, std::char_traits<char>, arena_allocator<char>>;
- * string_type stringLocal( arena_allocator<char>( &arenaLocal ) );
+ * void* pMemory = arenaLocal.allocate( 64 );
+ * assert( arenaLocal.is_borrowed() == false ); // using owned storage
+ * assert( arenaLocal.owner() == true );        // owns the storage
+ * // Storage is deallocated when arenaLocal is destroyed
  * @endcode
  */
 class arena
@@ -74,7 +69,6 @@ public:
    using byte_type = std::byte;                                               // type for raw memory
    
    static constexpr size_type BORROW_BIT = size_type(1) << (sizeof(size_type) * 8 - 1); // bit flag indicating borrowed storage
-   static constexpr size_type DEFAULT_HEAP_SIZE = 4096;                       // default heap allocation size in bytes
 
    /// ## Constructors
    
@@ -105,7 +99,7 @@ public:
 
    /// ## @API [tag: allocate] [summary: Memory allocation]
 
-   [[nodiscard]] void* allocate(size_type uBytes, size_type uAlignment = alignof(std::max_align_t));
+   [[nodiscard]] void* allocate(size_type uBytes, size_type uAlignment = alignof(std::max_align_t)) noexcept;
    void deallocate(void* pMemory, size_type uBytes) noexcept;                 // no-op for simple arena
    void reset() noexcept;                                                     // reset allocation pointer to beginning
 
@@ -116,9 +110,12 @@ public:
    [[nodiscard]] size_type available() const noexcept { return capacity() - m_uUsed; }
    [[nodiscard]] bool is_borrowed() const noexcept { return (m_uCapacity & BORROW_BIT) != 0; }
    [[nodiscard]] bool owner() const noexcept { return (m_uCapacity & BORROW_BIT) == 0 && m_pBuffer != nullptr; }
+   
+   /// ## @API [tag: query] [summary: Memory queries]
+   
+   [[nodiscard]] bool contains(const void* pMemory) const noexcept;           // check if pointer is within arena bounds
 
 private:
-   void grow(size_type uMinCapacity);
    void destroy() noexcept;
    
    [[nodiscard]] static size_type align_up(size_type uValue, size_type uAlignment) noexcept;
@@ -138,17 +135,41 @@ private:
  */
 inline arena::arena() noexcept 
    : m_pBuffer(nullptr), m_uUsed(0), m_uCapacity(0) 
-{}
+{
+}
 
 /** -------------------------------------------------------------------------- Borrow buffer constructor
- * @brief Creates an arena that borrows external storage
+ * @brief Creates an arena that borrows or owns storage
  * 
- * @param pBuffer Pointer to external storage buffer
- * @param uCapacity Number of bytes the external buffer can hold
+ * If `pBuffer` is not nullptr, the arena borrows that external storage.
+ * If `pBuffer` is nullptr and `uCapacity` > 0, the arena allocates owned storage on heap.
+ * 
+ * @param pBuffer Pointer to external storage buffer (nullptr to allocate on heap)
+ * @param uCapacity Number of bytes the buffer can hold (or to allocate if pBuffer is nullptr)
  */
 inline arena::arena(void* pBuffer, size_type uCapacity) noexcept 
-   : m_pBuffer(static_cast<byte_type*>(pBuffer)), m_uUsed(0), m_uCapacity(uCapacity | BORROW_BIT) // note the BORROW_BIT is set in capacity to indicate borrowed storage
-{                                                                                                  assert(pBuffer != nullptr || uCapacity == 0); // verify buffer is valid or capacity is zero
+{
+   if( pBuffer != nullptr )
+   {
+      // ## Borrow external storage .............................................
+      m_pBuffer = static_cast<byte_type*>(pBuffer);
+      m_uUsed = 0;
+      m_uCapacity = uCapacity | BORROW_BIT;                                   // set BORROW_BIT to indicate borrowed storage
+   }
+   else if( uCapacity > 0 )
+   {
+      // ## Allocate owned storage on heap ......................................
+      m_pBuffer = static_cast<byte_type*>(::operator new(uCapacity, std::align_val_t(alignof(std::max_align_t))));
+      m_uUsed = 0;
+      m_uCapacity = uCapacity;                                                // no BORROW_BIT - we own this memory
+   }
+   else
+   {
+      // ## Empty arena .........................................................
+      m_pBuffer = nullptr;
+      m_uUsed = 0;
+      m_uCapacity = 0;
+   }
 }
 
 /** -------------------------------------------------------------------------- Borrow from C-array constructor
@@ -159,8 +180,11 @@ inline arena::arena(void* pBuffer, size_type uCapacity) noexcept
  */
 template<std::size_t uN>
 inline arena::arena(std::byte (&array_)[uN]) noexcept 
-   : m_pBuffer(array_), m_uUsed(0), m_uCapacity(uN | BORROW_BIT)               // note the BORROW_BIT is set in capacity to indicate borrowed storage
-{}
+   : m_pBuffer(array_), 
+     m_uUsed(0), 
+     m_uCapacity(uN | BORROW_BIT)                                             // note the BORROW_BIT is set in capacity to indicate borrowed storage
+{
+}
 
 /** -------------------------------------------------------------------------- Borrow from container constructor
  * @brief Creates an arena that borrows storage from a container with .data() and .size()
@@ -190,7 +214,9 @@ inline arena::arena(CONTAINER& container_) noexcept
  * @param o Arena to move from
  */
 inline arena::arena(arena&& o) noexcept 
-   : m_pBuffer(o.m_pBuffer), m_uUsed(o.m_uUsed), m_uCapacity(o.m_uCapacity) 
+   : m_pBuffer(o.m_pBuffer), 
+     m_uUsed(o.m_uUsed), 
+     m_uCapacity(o.m_uCapacity) 
 {
    o.m_pBuffer = nullptr;
    o.m_uUsed = 0;
@@ -233,26 +259,21 @@ inline arena& arena::operator=(arena&& o) noexcept
 /** -------------------------------------------------------------------------- allocate
  * @brief Allocate memory from arena
  * 
- * Allocates `uBytes` bytes with specified alignment. If borrowed storage is 
- * exhausted, allocates new heap storage and transitions to owned mode.
+ * Allocates `uBytes` bytes with specified alignment. Returns nullptr if 
+ * insufficient space is available. The arena NEVER grows beyond its initial capacity.
  * 
  * @param uBytes Number of bytes to allocate
  * @param uAlignment Alignment requirement (default: alignof(std::max_align_t))
- * @return Pointer to allocated memory
+ * @return Pointer to allocated memory, or nullptr if insufficient space
  */
-inline void* arena::allocate(size_type uBytes, size_type uAlignment) 
+inline void* arena::allocate(size_type uBytes, size_type uAlignment) noexcept
 {
    // ## Align current position ..............................................
    size_type uAlignedUsed = align_up(m_uUsed, uAlignment);
    size_type uNewUsed = uAlignedUsed + uBytes;
    
    // ## Check if allocation fits in current buffer ..........................
-   if( uNewUsed > capacity() )
-   {
-      grow(uNewUsed);
-      uAlignedUsed = align_up(m_uUsed, uAlignment);                           // recalculate after grow
-      uNewUsed = uAlignedUsed + uBytes;
-   }
+   if( uNewUsed > capacity() ) { return nullptr; }                            // return nullptr if insufficient space
    
    void* pResult = m_pBuffer + uAlignedUsed;
    m_uUsed = uNewUsed;
@@ -278,61 +299,40 @@ inline void arena::deallocate(void* pMemory, size_type uBytes) noexcept
  * @brief Reset arena to initial state
  * 
  * Resets the allocation pointer to the beginning of the buffer, effectively 
- * reclaiming all allocated memory. Does not deallocate owned storage.
+ * reclaiming all allocated memory.
  */
 inline void arena::reset() noexcept 
 {
    m_uUsed = 0;
 }
 
+/** -------------------------------------------------------------------------- contains
+ * @brief Check if a pointer is within arena bounds
+ * 
+ * @param pMemory Pointer to check
+ * @return true if pointer is within arena's memory range
+ */
+inline bool arena::contains(const void* pMemory) const noexcept
+{
+   if( m_pBuffer == nullptr || pMemory == nullptr ) { return false; }
+   
+   const byte_type* pByte = static_cast<const byte_type*>(pMemory);
+   return pByte >= m_pBuffer && pByte < (m_pBuffer + capacity());
+}
+
 // ============================================================================
 // ## Private helper methods
 // ============================================================================
 
-/** -------------------------------------------------------------------------- grow
- * @brief Allocate new heap storage and transfer ownership
- * 
- * This method allocates new heap storage, copies existing data to it,
- * and takes ownership. If storage was borrowed, the borrow bit is cleared.
- * 
- * @param uMinCapacity Minimum capacity required in bytes
- */
-inline void arena::grow(size_type uMinCapacity) 
-{
-   size_type uOldCapacity = capacity();
-   
-   // ## Calculate new capacity with growth factor ...........................
-   size_type uNewCapacity = std::max({
-      uOldCapacity * 2,                                                       // standard growth factor of 2
-      uMinCapacity,                                                           // minimum requested capacity
-      DEFAULT_HEAP_SIZE                                                       // minimum heap allocation size
-   });
-   
-   // ## Allocate new buffer ..................................................
-   byte_type* pNewBuffer = static_cast<byte_type*>(::operator new(uNewCapacity, std::align_val_t(alignof(std::max_align_t))));
-   
-   // ## Copy existing data to new buffer .....................................
-   if( m_pBuffer != nullptr && m_uUsed > 0 )
-   {
-      std::memcpy(pNewBuffer, m_pBuffer, m_uUsed);
-   }
-   
-   // ## Deallocate old buffer only if we owned it ............................
-   if( owner() == true )
-   {
-      ::operator delete(m_pBuffer, uOldCapacity, std::align_val_t(alignof(std::max_align_t)));
-   }
-   
-   m_pBuffer = pNewBuffer;
-   m_uCapacity = uNewCapacity;                                                // clear borrow bit by setting without it
-}
-
 /** -------------------------------------------------------------------------- destroy
  * @brief Deallocate owned storage
+ * 
+ * Only deallocates if the arena owns its storage (BORROW_BIT is not set).
+ * Borrowed storage is never deallocated.
  */
 inline void arena::destroy() noexcept 
 {
-   if( owner() == true )
+   if( owner() == true )                                                      // only deallocate if we own the storage
    {
       ::operator delete(m_pBuffer, capacity(), std::align_val_t(alignof(std::max_align_t)));
    }
@@ -354,28 +354,47 @@ inline arena::size_type arena::align_up(size_type uValue, size_type uAlignment) 
 }
 
 // ============================================================================
-// ## STL-compatible allocator adapter
+// ## STL-compatible allocator adapter with heap fallback
 // ============================================================================
 
 /** ==========================================================================
- * @brief STL-compatible allocator that uses an arena for memory allocation
+ * @brief STL-compatible allocator that uses arena with heap fallback
  * 
- * This allocator allows STL containers to use arena memory. It wraps a pointer 
- * to an arena and forwards allocation requests to it.
+ * This allocator tries to allocate from the arena first. If the arena is full
+ * or the allocation is too large, it falls back to heap allocation.
  * 
- * @par Example
+ * **Key feature**: Tracks whether each allocation came from arena or heap,
+ * so heap allocations are properly deallocated while arena allocations are not.
+ * 
+ * **Memory Tracking Strategy**:
+ * - Arena allocations: Identified by checking if pointer is within arena bounds
+ * - Heap allocations: Uses a small header before the user data to store size
+ * 
+ * @par Example - Borrowed Storage
  * @code{.cpp}
- * std::array<std::byte, 1024> buffer_;
- * gd::borrow::arena arenaLocal( buffer_ );
+ * std::array<std::byte, 256> buffer_;
+ * gd::arena::borrow::arena arenaLocal( buffer_ );
  * 
- * // ## Use with std::vector .................................................
- * std::vector<int, arena_allocator<int>> vectorLocal( arena_allocator<int>(&arenaLocal) );
- * vectorLocal.push_back(42);
- * 
- * // ## Use with std::string .................................................
- * using string_type = std::basic_string<char, std::char_traits<char>, arena_allocator<char>>;
+ * using string_type = std::basic_string<char, std::char_traits<char>, 
+ *                                        arena_allocator<char>>;
  * string_type stringLocal( arena_allocator<char>(&arenaLocal) );
- * stringLocal = "Hello, arena!";
+ * 
+ * stringLocal = "Small";  // allocated from borrowed arena
+ * stringLocal = "This is a very long string...";  // automatically uses heap when arena is full
+ * @endcode
+ * 
+ * @par Example - Owned Storage
+ * @code{.cpp}
+ * gd::arena::borrow::arena arenaLocal( nullptr, 512 );  // arena owns 512 bytes on heap
+ * 
+ * std::vector<int, arena_allocator<int>> vectorLocal( arena_allocator<int>(&arenaLocal) );
+ * 
+ * for( int i = 0; i < 100; ++i )
+ * {
+ *    vectorLocal.push_back(i);  // uses arena first, then heap fallback
+ * }
+ * // When vectorLocal is destroyed, heap allocations are freed
+ * // When arenaLocal is destroyed, its owned 512 bytes are freed
  * @endcode
  * 
  * @tparam T Type of objects to allocate
@@ -388,6 +407,12 @@ public:
    using size_type = std::size_t;
    using difference_type = std::ptrdiff_t;
    
+   /// ## Allocation header for heap allocations
+   struct allocation_header
+   {
+      size_type uSize;          ///< size of allocation in bytes (not including header)
+   };
+   
    /// ## Constructors
    
    arena_allocator() noexcept : m_parena(nullptr) {}
@@ -399,16 +424,46 @@ public:
    /// ## @API [tag: allocate] [summary: Allocation interface]
 
    [[nodiscard]] T* allocate(size_type uCount) 
-   {                                                                                                  assert(m_parena != nullptr); // verify arena is valid
-      return static_cast<T*>(m_parena->allocate(uCount * sizeof(T), alignof(T)));
+   {
+      const size_type uBytes = uCount * sizeof(T);
+      
+      // ## Try arena allocation first ..........................................
+      if( m_parena != nullptr )
+      {
+         void* pMemory = m_parena->allocate(uBytes, alignof(T));
+         if( pMemory != nullptr )
+         {
+            return static_cast<T*>(pMemory);                                  // arena allocation succeeded
+         }
+      }
+      
+      // ## Fallback to heap allocation with header .............................
+      const size_type uTotalBytes = sizeof(allocation_header) + uBytes;
+      void* pRawMemory = ::operator new(uTotalBytes, std::align_val_t(alignof(allocation_header)));
+      
+      // ## Write header ........................................................
+      allocation_header* pheader = static_cast<allocation_header*>(pRawMemory);
+      pheader->uSize = uBytes;
+      
+      // ## Return pointer after header .........................................
+      return reinterpret_cast<T*>(pheader + 1);
    }
    
    void deallocate(T* pMemory, size_type uCount) noexcept 
    {
-      if( m_parena != nullptr )
+      if( pMemory == nullptr ) { return; }
+      
+      // ## Check if allocation is from arena ...................................
+      if( m_parena != nullptr && m_parena->contains(pMemory) )
       {
-         m_parena->deallocate(pMemory, uCount * sizeof(T));
+         // ## Arena allocation - no-op (arena handles bulk deallocation) .......
+         return;
       }
+      
+      // ## Heap allocation - read header and deallocate ........................
+      allocation_header* pheader = reinterpret_cast<allocation_header*>(pMemory) - 1;
+      const size_type uTotalBytes = sizeof(allocation_header) + pheader->uSize;
+      ::operator delete(pheader, uTotalBytes, std::align_val_t(alignof(allocation_header)));
    }
 
    /// ## @API [tag: operator] [summary: Comparison operators]
@@ -436,3 +491,5 @@ private:
 } // namespace arena
 
 _GD_END
+
+#endif // GD_COMPILER_HAS_CPP20_SUPPORT
