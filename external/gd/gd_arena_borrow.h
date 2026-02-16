@@ -446,6 +446,7 @@ public:
    
    arena_allocator() noexcept : m_parena(nullptr) {}
    explicit arena_allocator(arena* parena_) noexcept : m_parena(parena_) {}
+   explicit arena_allocator(arena& arena_) noexcept : m_parena(&arena_) {}
    
    template<typename U>
    arena_allocator(const arena_allocator<U>& o) noexcept : m_parena(o.m_parena) {}
