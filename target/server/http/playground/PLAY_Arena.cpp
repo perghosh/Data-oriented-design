@@ -539,3 +539,260 @@ TEST_CASE( "[arena] iterator_allocation - multiple allocations iteration", "[are
    int allocationCount = 0;
    int blocksVisited = 0;
 }
+
+
+
+// Helper to check alignment
+bool is_aligned(void* ptr, std::size_t alignment) {
+    return (reinterpret_cast<std::uintptr_t>(ptr) & (alignment - 1)) == 0;
+}
+
+TEST_CASE( "[arena::borrow] lifecycle 01 - borrowed storage (std::array)", "[arena][borrow]" ) {
+    // Setup a buffer on the stack
+    std::array<std::byte, 1024> buffer;
+    
+    // Initialize arena borrowing the buffer
+    gd::arena::borrow::arena arena(buffer);
+
+    SECTION("Check initial state properties") {
+        REQUIRE( arena.capacity() == 1024 );
+        REQUIRE( arena.used() == 0 );
+        REQUIRE( arena.available() == 1024 );
+        
+        // Logic checks for ownership flags
+        REQUIRE( arena.is_borrowed() == true );
+        REQUIRE( arena.owner() == false );
+    }
+
+    SECTION("Basic allocation works") {
+        void* p1 = arena.allocate(128);
+        REQUIRE( p1 != nullptr );
+        REQUIRE( arena.contains(p1) );
+        REQUIRE( arena.used() == 128 );
+        REQUIRE( arena.available() == (1024 - 128) );
+
+        // Ensure we are actually inside the source buffer
+        REQUIRE( p1 >= buffer.data() );
+        REQUIRE( p1 < buffer.data() + buffer.size() );
+    }
+
+    SECTION("Reset clears usage but keeps storage") {
+        void* p1 = arena.allocate(500);
+        REQUIRE( arena.used() == 500 );
+        
+        arena.reset();
+        
+        REQUIRE( arena.used() == 0 );
+        REQUIRE( arena.available() == 1024 );
+        
+        // Allocation after reset should succeed (reuse memory)
+        void* p2 = arena.allocate(500);
+        REQUIRE( p2 != nullptr );
+        // In a bump allocator, p2 usually equals p1 if alignment is identical
+        REQUIRE( p2 == p1 ); 
+    }
+}
+
+TEST_CASE( "[arena::borrow] lifecycle 02 - owned storage (heap)", "[arena][borrow]" ) {
+    // Initialize arena requesting 2048 bytes from heap
+    gd::arena::borrow::arena arena(nullptr, 2048);
+
+    REQUIRE( arena.capacity() == 2048 );
+    REQUIRE( arena.is_borrowed() == false );
+    REQUIRE( arena.owner() == true );
+
+    void* p1 = arena.allocate(100);
+    REQUIRE( p1 != nullptr );
+    REQUIRE( arena.contains(p1) );
+}
+
+TEST_CASE( "[arena::borrow] allocation 03 - alignment and exhaustion", "[arena][borrow]" ) {
+    std::array<std::byte, 100> buffer;
+    gd::arena::borrow::arena arena(buffer);
+
+    SECTION("Alignment padding is added correctly") {
+        // Allocate 1 byte (misaligns the bump pointer)
+        void* p1 = arena.allocate(1); 
+        REQUIRE( p1 != nullptr );
+        REQUIRE( arena.used() == 1 );
+
+        // Allocate double (needs 8-byte alignment)
+        // If p1 was at 0, next is at 1. Next aligned 8 is 8. Padding = 7 bytes.
+        // Used should become 8 + sizeof(double) = 16.
+        void* p2 = arena.allocate(sizeof(double), alignof(double));
+        
+        REQUIRE( p2 != nullptr );
+        REQUIRE( is_aligned(p2, alignof(double)) );
+        REQUIRE( arena.used() >= (1 + sizeof(double)) ); 
+    }
+
+    SECTION("Exhaustion returns nullptr") {
+        // Consume almost all
+        arena.allocate(80);
+        REQUIRE( arena.available() == 20 );
+
+        // Try to allocate more than available
+        void* pFail = arena.allocate(21);
+        REQUIRE( pFail == nullptr );
+        
+        // State remains unchanged
+        REQUIRE( arena.used() == 80 );
+    }
+}
+
+TEST_CASE( "[arena::borrow] adapter 04 - STL allocator fallback logic", "[arena][borrow]" ) {
+    // Create a small arena to force fallback
+    std::array<std::byte, 128> small_buffer;
+    gd::arena::borrow::arena arena(small_buffer);
+
+    using Allocator = gd::arena::borrow::arena_allocator<int>;
+    std::vector<int, Allocator> vec{ Allocator(&arena) };
+
+    SECTION("Allocations fit in arena") {
+        vec.reserve(10); // 10 * 4 bytes = 40 bytes (fits in 128)
+        
+        REQUIRE( vec.capacity() >= 10 );
+        REQUIRE( arena.used() > 0 );
+        REQUIRE( arena.contains(vec.data()) );
+        
+        vec.push_back(42);
+        REQUIRE( vec[0] == 42 );
+    }
+
+    SECTION("Fallback to heap when arena is full") {
+        // 1. Fill the arena manually so the vector can't fit there
+        void* dummy = arena.allocate(100); 
+        REQUIRE( dummy != nullptr );
+        REQUIRE( arena.available() < 40 ); // Less than needed for vector below
+
+        // 2. Trigger vector allocation
+        // This should trigger the `::operator new` fallback in the allocator header logic
+        vec.reserve(20); // 80 bytes needed, won't fit
+        
+        REQUIRE( vec.capacity() >= 20 );
+        
+        // 3. Verify logic: Data is valid, but NOT in arena
+        vec.push_back(999);
+        REQUIRE( vec[0] == 999 );
+        REQUIRE_FALSE( arena.contains(vec.data()) ); 
+    }
+    
+    SECTION("Fallback on null arena") {
+        // Construct allocator with nullptr (pure heap mode)
+        Allocator heapAlloc(nullptr);
+        std::vector<int, Allocator> heapVec(heapAlloc);
+        
+        heapVec.push_back(100);
+        REQUIRE( heapVec[0] == 100 );
+        
+        // No arena involved, simply ensure no crash
+    }
+}
+
+#ifdef _WIN32
+
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+
+/** * Helper to check for leaks within a specific scope.
+ */
+struct LeakCheck {
+    _CrtMemState s1, s2, s3;
+    LeakCheck() { _CrtMemCheckpoint(&s1); }
+    ~LeakCheck() {
+        _CrtMemCheckpoint(&s2);
+        if (_CrtMemDifference(&s3, &s1, &s2)) {
+            _CrtMemDumpStatistics(&s3);
+            // This will trigger a failure in Catch2 if leaks are detected
+            FAIL("Memory leak detected! Check output window for details.");
+        }
+    }
+};
+
+TEST_CASE( "[arena::borrow] memory 05 - owned arena heap cleanup", "[arena][borrow][windows]" ) {
+    SECTION("Arena-owned buffer is released on destruction") {
+        LeakCheck check; // Check for leaks in this scope
+        {
+            // Arena allocates 4KB on heap
+            gd::arena::borrow::arena arena(nullptr, 4096);
+            REQUIRE(arena.owner() == true);
+            void* p = arena.allocate(100);
+            REQUIRE(p != nullptr);
+        }
+        // arena goes out of scope, calls destroy() which calls ::operator delete
+    }
+}
+
+TEST_CASE( "[arena::borrow] memory 06 - allocator fallback cleanup", "[arena][borrow][windows]" ) {
+    SECTION("STL allocator cleans up heap fallbacks") {
+        LeakCheck check;
+        {
+            // Small arena to force fallback
+            gd::arena::borrow::arena arena(nullptr, 64); 
+            using Allocator = gd::arena::borrow::arena_allocator<int>;
+            std::vector<int, Allocator> vec((Allocator(&arena)));
+
+            // 1. This fits in the 64-byte arena
+            vec.push_back(1); 
+            
+            // 2. This resize will exceed 64 bytes, forcing a heap fallback allocation
+            // The allocator writes an allocation_header to the heap
+            vec.resize(100); 
+            
+            REQUIRE_FALSE(arena.contains(vec.data()));
+        }
+        // 1. vector goes out of scope, calling deallocate()
+        // 2. deallocate() detects the pointer is not in the arena
+        // 3. deallocate() adjusts the pointer to the header and deletes it
+    }
+}
+
+
+
+TEST_CASE( "[arena::borrow] stress 08 - heavy allocations with leak check", "[arena][borrow][stress][windows]" ) {
+    // 1. Setup Windows leak detection for this scope
+    _CrtMemState sOld, sNew, sDiff;
+    _CrtMemCheckpoint(&sOld);
+
+    {
+        const std::size_t ARENA_SIZE = 1024 * 512; // 512KB Arena
+        gd::arena::borrow::arena arena(nullptr, ARENA_SIZE);
+        
+        using Allocator = gd::arena::borrow::arena_allocator<std::byte>;
+        Allocator alloc(&arena);
+
+        struct Rec { std::byte* p; std::size_t s; };
+        std::vector<Rec> allocations;
+        
+        std::mt19937 rng(123);
+        std::uniform_int_distribution<std::size_t> dist(64, 10000);
+
+        // 2. Perform enough allocations to force many heap fallbacks
+        // Total potential memory: 1000 * ~5KB = ~5MB (10x the arena size)
+        for(int i = 0; i < 1000; ++i) {
+            std::size_t size = dist(rng);
+            std::byte* p = alloc.allocate(size);
+            
+            if (p) {
+                allocations.push_back({p, size});
+                std::memset(p, 0xAA, size); // Touch memory to ensure it's mapped
+            }
+        }
+
+        // 3. Cleanup: Deallocate everything
+        // This tests that the allocator correctly identifies arena vs heap pointers
+        for(auto& a : allocations) {
+            alloc.deallocate(a.p, a.s);
+        }
+    } 
+    // Arena is destroyed here. If it owned memory, it calls destroy().
+
+    // 4. Final Verification
+    _CrtMemCheckpoint(&sNew);
+    if (_CrtMemDifference(&sDiff, &sOld, &sNew)) {
+        _CrtMemDumpStatistics(&sDiff);
+        FAIL("Stress test leaked memory! Check the Debug Output window.");
+    }
+}
+
+#endif
