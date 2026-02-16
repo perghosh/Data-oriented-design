@@ -588,6 +588,45 @@ TEST_CASE( "[arena::borrow] string and vector", "[arena][borrow]" ) {
 }
 
 
+// A type with very strict alignment requirements
+struct alignas(64) HighAlign {
+    float data[16];
+};
+
+
+TEST_CASE( "[arena::borrow] simd", "[arena][borrow]" ) {
+    alignas(64) std::array<std::byte, 1024> buffer;
+    gd::arena::borrow::arena my_arena(buffer);
+    gd::arena::borrow::arena_allocator<HighAlign> alloc(my_arena);
+
+    std::cout << "--- Starting Alignment Test ---\n";
+
+    // 1. Test Arena Allocation Alignment
+    HighAlign* p1 = alloc.allocate(1);
+    uintptr_t addr1 = reinterpret_cast<uintptr_t>(p1);
+    std::cout << "Arena Addr: " << addr1 << " | Alignment: " << (addr1 % 64 == 0 ? "PASS" : "FAIL") << "\n";
+    assert(addr1 % 64 == 0);
+    assert(my_arena.contains(p1));
+
+    // 2. Test Heap Fallback Alignment
+    // Force fallback by allocating something huge
+    HighAlign* p2 = alloc.allocate(100); 
+    uintptr_t addr2 = reinterpret_cast<uintptr_t>(p2);
+    
+    std::cout << "Heap Addr:  " << addr2 << " | Alignment: " << (addr2 % 64 == 0 ? "PASS" : "FAIL") << "\n";
+    
+    // If this fails, the 'paddedHeaderSize' logic in the previous step is missing!
+    assert(addr2 % 64 == 0); 
+    assert(!my_arena.contains(p2)); // Should be on heap
+
+    // 3. Test Deallocation of Fallback
+    // This should not crash and should correctly handle the padded header
+    alloc.deallocate(p2, 100);
+    
+    std::cout << "Cleanup successful. All assertions passed.\n";
+}
+
+
 
 
 // Helper to check alignment
