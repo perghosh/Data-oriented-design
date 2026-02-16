@@ -20,6 +20,45 @@
  | Management          | `clear()`, `reset()`, `shrink_to_fit()`                                                               | Methods for clearing allocations and managing arena memory.                                  |
  */
 
+// ============================================================================
+// ## Convenience type aliases
+// ============================================================================
+
+/*
+/// String type using arena allocator
+template<typename ALLOCATOR = std::allocator<std::byte>>
+using arena_string = std::basic_string<char, std::char_traits<char>, arena_allocator<char, ALLOCATOR>>;
+
+/// Vector type using arena allocator
+template<typename T, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_vector = std::vector<T, arena_allocator<T, ALLOCATOR>>;
+
+/// List type using arena allocator
+template<typename T, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_list = std::list<T, arena_allocator<T, ALLOCATOR>>;
+
+/// Deque type using arena allocator
+template<typename T, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_deque = std::deque<T, arena_allocator<T, ALLOCATOR>>;
+
+/// Map type using arena allocator
+template<typename KEY, typename VALUE, typename COMPARE = std::less<KEY>, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_map = std::map<KEY, VALUE, COMPARE, arena_allocator<std::pair<const KEY, VALUE>, ALLOCATOR>>;
+
+/// Set type using arena allocator
+template<typename T, typename COMPARE = std::less<T>, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_set = std::set<T, COMPARE, arena_allocator<T, ALLOCATOR>>;
+
+/// Unordered map type using arena allocator
+template<typename KEY, typename VALUE, typename HASH = std::hash<KEY>, typename EQUAL = std::equal_to<KEY>, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_unordered_map = std::unordered_map<KEY, VALUE, HASH, EQUAL, arena_allocator<std::pair<const KEY, VALUE>, ALLOCATOR>>;
+
+/// Unordered set type using arena allocator
+template<typename T, typename HASH = std::hash<T>, typename EQUAL = std::equal_to<T>, typename ALLOCATOR = std::allocator<std::byte>>
+using arena_unordered_set = std::unordered_set<T, HASH, EQUAL, arena_allocator<T, ALLOCATOR>>;
+*/
+
+
 #pragma once
 
 #include "gd_compiler.h"
@@ -48,7 +87,7 @@ _GD_BEGIN
 /**
  * \brief Namespace for arena memory allocators
  */
-namespace arena {
+namespace memory {
 
 // ============================================================================
 // ## Forward declarations
@@ -138,20 +177,20 @@ public:
    using pointer           = block_header*;
    using reference         = block_header&;
 
-   block_iterator() noexcept : m_pBlock(nullptr) {}
-   explicit block_iterator(block_header* pBlock) noexcept : m_pBlock(pBlock) {}
+   block_iterator() noexcept : m_pblockheader(nullptr) {}
+   explicit block_iterator(block_header* pblockheader_) noexcept : m_pblockheader(pblockheader_) {}
 
-   [[nodiscard]] reference operator*() const noexcept { assert(m_pBlock != nullptr); return *m_pBlock; }
-   [[nodiscard]] pointer operator->() const noexcept { assert(m_pBlock != nullptr); return m_pBlock; }
+   [[nodiscard]] reference operator*() const noexcept { assert(m_pblockheader != nullptr); return *m_pblockheader; }
+   [[nodiscard]] pointer operator->() const noexcept { assert(m_pblockheader != nullptr); return m_pblockheader; }
 
-   block_iterator& operator++() noexcept { if(m_pBlock) { m_pBlock = m_pBlock->next_block(); } return *this; }
-   block_iterator operator++(int) noexcept { block_iterator tmp = *this; ++(*this); return tmp; }
+   block_iterator& operator++() noexcept { if(m_pblockheader) { m_pblockheader = m_pblockheader->next_block(); } return *this; }
+   block_iterator operator++(int) noexcept { block_iterator itTemp = *this; ++(*this); return itTemp; }
 
-   [[nodiscard]] bool operator==(const block_iterator& o) const noexcept { return m_pBlock == o.m_pBlock; }
-   [[nodiscard]] bool operator!=(const block_iterator& o) const noexcept { return m_pBlock != o.m_pBlock; }
+   [[nodiscard]] bool operator==(const block_iterator& o) const noexcept { return m_pblockheader == o.m_pblockheader; }
+   [[nodiscard]] bool operator!=(const block_iterator& o) const noexcept { return m_pblockheader != o.m_pblockheader; }
 
 private:
-   block_header* m_pBlock;
+   block_header* m_pblockheader;
 };
 
 // ============================================================================
@@ -161,7 +200,7 @@ private:
 /**
  * \brief Iterator for traversing allocations within a block
  */
-class allocation_iterator
+class iterator_allocation
 {
 public:
    using iterator_category = std::forward_iterator_tag;
@@ -170,44 +209,46 @@ public:
    using pointer           = allocation_header*;
    using reference         = allocation_header&;
 
-   allocation_iterator() noexcept : m_pAlloc(nullptr), m_pEnd(nullptr) {}
-   allocation_iterator(std::byte* pStart, std::byte* pEnd) noexcept : m_pAlloc(reinterpret_cast<allocation_header*>(pStart)), m_pEnd(pEnd) { if(m_pAlloc && !is_valid_position()) { m_pAlloc = nullptr; } }
+   iterator_allocation() noexcept : m_pallocationheader(nullptr), m_pEnd(nullptr) {}
+   iterator_allocation(std::byte* pStart, std::byte* pEnd) noexcept : m_pallocationheader(reinterpret_cast<allocation_header*>(pStart)), m_pEnd(pEnd) { if(m_pallocationheader && !is_valid_position()) { m_pallocationheader = nullptr; } }
 
-   [[nodiscard]] reference operator*() const noexcept { assert(m_pAlloc != nullptr); return *m_pAlloc; }
-   [[nodiscard]] pointer operator->() const noexcept { assert(m_pAlloc != nullptr); return m_pAlloc; }
-   [[nodiscard]] void* data() const noexcept { assert(m_pAlloc != nullptr); return reinterpret_cast<std::byte*>(m_pAlloc) + sizeof(allocation_header); }
+   [[nodiscard]] reference operator*() const noexcept { assert(m_pallocationheader != nullptr); return *m_pallocationheader; }
+   [[nodiscard]] pointer operator->() const noexcept { assert(m_pallocationheader != nullptr); return m_pallocationheader; }
+   [[nodiscard]] void* data() const noexcept { assert(m_pallocationheader != nullptr); return reinterpret_cast<std::byte*>(m_pallocationheader) + sizeof(allocation_header); }
 
-   allocation_iterator& operator++() noexcept
+   iterator_allocation& operator++() noexcept
    {
-      if(m_pAlloc)
+      if(m_pallocationheader != nullptr)
       {
-         std::byte* pNext = reinterpret_cast<std::byte*>(m_pAlloc) + sizeof(allocation_header) + m_pAlloc->m_uSize;
-         std::size_t uAlignment = m_pAlloc->m_uAlignment > 0 ? m_pAlloc->m_uAlignment : DEFAULT_ALIGNMENT;
+         // ## Move to next allocation header based on current allocation size and alignment
+
+         std::byte* pNext = reinterpret_cast<std::byte*>(m_pallocationheader) + sizeof(allocation_header) + m_pallocationheader->m_uSize;
+         std::size_t uAlignment = m_pallocationheader->m_uAlignment > 0 ? m_pallocationheader->m_uAlignment : DEFAULT_ALIGNMENT;
          std::size_t uMisalignment = reinterpret_cast<std::uintptr_t>(pNext) % uAlignment;
          if(uMisalignment != 0) { pNext += (uAlignment - uMisalignment); }
          
-         m_pAlloc = reinterpret_cast<allocation_header*>(pNext);
-         if(!is_valid_position()) { m_pAlloc = nullptr; }
+         m_pallocationheader = reinterpret_cast<allocation_header*>(pNext);
+         if(!is_valid_position()) { m_pallocationheader = nullptr; }
       }
       return *this;
    }
    
-   allocation_iterator operator++(int) noexcept { allocation_iterator tmp = *this; ++(*this); return tmp; }
+   iterator_allocation operator++(int) noexcept { iterator_allocation tmp = *this; ++(*this); return tmp; }
 
-   [[nodiscard]] bool operator==(const allocation_iterator& o) const noexcept { return m_pAlloc == o.m_pAlloc; }
-   [[nodiscard]] bool operator!=(const allocation_iterator& o) const noexcept { return m_pAlloc != o.m_pAlloc; }
+   [[nodiscard]] bool operator==(const iterator_allocation& o) const noexcept { return m_pallocationheader == o.m_pallocationheader; }
+   [[nodiscard]] bool operator!=(const iterator_allocation& o) const noexcept { return m_pallocationheader != o.m_pallocationheader; }
 
 private:
    [[nodiscard]] bool is_valid_position() const noexcept
    {
-      if(!m_pAlloc) { return false; }
-      std::byte* pPos = reinterpret_cast<std::byte*>(m_pAlloc);
+      if( m_pallocationheader == nullptr) { return false; }
+      std::byte* pPos = reinterpret_cast<std::byte*>(m_pallocationheader);
       if(pPos >= m_pEnd) { return false; }
       if(pPos + sizeof(allocation_header) > m_pEnd) { return false; }
-      return m_pAlloc->is_valid();
+      return m_pallocationheader->is_valid();
    }
 
-   allocation_header* m_pAlloc;
+   allocation_header* m_pallocationheader;
    std::byte* m_pEnd;
 };
 
@@ -287,8 +328,8 @@ public:
 
    [[nodiscard]] block_iterator begin_blocks() noexcept { return block_iterator(m_pblockheaderFirst); }
    [[nodiscard]] block_iterator end_blocks() noexcept { return block_iterator(nullptr); }
-   [[nodiscard]] allocation_iterator begin_allocations(block_header* pBlock) noexcept;
-   [[nodiscard]] allocation_iterator end_allocations(block_header* pBlock) noexcept;
+   [[nodiscard]] iterator_allocation begin_allocations(block_header* pBlock) noexcept;
+   [[nodiscard]] iterator_allocation end_allocations(block_header* pBlock) noexcept;
 
    /// ## @API [tag: diagnostics] [summary: Debugging and validation]
 
@@ -652,10 +693,10 @@ double arena<ALLOCATOR>::fragmentation() const noexcept
  * @return Iterator to first allocation
  */
 template<typename ALLOCATOR>
-allocation_iterator arena<ALLOCATOR>::begin_allocations(block_header* pBlock) noexcept
+iterator_allocation arena<ALLOCATOR>::begin_allocations(block_header* pBlock) noexcept
 {
-   if(!pBlock || pBlock->m_uUsedSize == 0) { return allocation_iterator(); }
-   return allocation_iterator(pBlock->m_pData, pBlock->m_pData + pBlock->m_uUsedSize);
+   if(!pBlock || pBlock->m_uUsedSize == 0) { return iterator_allocation(); }
+   return iterator_allocation(pBlock->m_pData, pBlock->m_pData + pBlock->m_uUsedSize);
 }
 
 /** -------------------------------------------------------------------------- end_allocations
@@ -665,10 +706,10 @@ allocation_iterator arena<ALLOCATOR>::begin_allocations(block_header* pBlock) no
  * @return Iterator past last allocation
  */
 template<typename ALLOCATOR>
-allocation_iterator arena<ALLOCATOR>::end_allocations(block_header* pBlock) noexcept
+iterator_allocation arena<ALLOCATOR>::end_allocations(block_header* pBlock) noexcept
 {
    (void)pBlock;
-   return allocation_iterator();
+   return iterator_allocation();
 }
 
 // ============================================================================
@@ -960,20 +1001,20 @@ typename arena<ALLOCATOR>::size_type arena<ALLOCATOR>::align_size(size_type uSiz
    return uSize + (uAlignment - uMisalignment);
 }
 
-} // namespace arena
+} // namespace memory
 
 _GD_END
 
 /// ## std::swap specialization for arena::arena
 template<typename ALLOCATOR>
-void swap(gd::arena::arena<ALLOCATOR>& lhs, gd::arena::arena<ALLOCATOR>& rhs) noexcept
+void swap(gd::memory::arena<ALLOCATOR>& lhs, gd::memory::arena<ALLOCATOR>& rhs) noexcept
 {
    lhs.swap(rhs);
 }
 
 _GD_BEGIN
 
-namespace arena {
+namespace memory {
 
 // ============================================================================
 // ## arena_allocator class
@@ -991,14 +1032,14 @@ namespace arena {
  * 
  * \par Example
  * \code{.cpp}
- * gd::arena::arena<> myArena(8192);
- * gd::arena::arena_allocator<int> allocator(myArena);
+ * gd::memory::arena<> myArena(8192);
+ * gd::memory::arena_allocator<int> allocator(myArena);
  * 
- * std::vector<int, gd::arena::arena_allocator<int>> vec(allocator);
+ * std::vector<int, gd::memory::arena_allocator<int>> vec(allocator);
  * vec.push_back(42);
  * vec.push_back(100);
  * 
- * std::basic_string<char, std::char_traits<char>, gd::arena::arena_allocator<char>> str(allocator);
+ * std::basic_string<char, std::char_traits<char>, gd::memory::arena_allocator<char>> str(allocator);
  * str = "Hello from arena!";
  * \endcode
  * 
@@ -1011,11 +1052,11 @@ class arena_allocator
 public:
    /// ## Type definitions required by std::allocator_traits
 
-   using value_type      = TYPE;
-   using size_type       = std::size_t;
-   using difference_type = std::ptrdiff_t;
-   using pointer         = TYPE*;
-   using const_pointer   = const TYPE*;
+   using value_type = TYPE;                  ///< Type of objects allocated
+   using size_type       = std::size_t;      ///< Type for sizes and counts
+   using difference_type = std::ptrdiff_t;   ///< Type for pointer differences
+   using pointer         = TYPE*;            ///< Pointer to allocated type
+   using const_pointer   = const TYPE*;      ///< Const pointer to allocated type
    
    /// Rebind allocator to different type (required for STL containers)
    template<typename U>
@@ -1129,12 +1170,12 @@ public:
     * when the arena is cleared or destroyed. This method is required by the STL
     * allocator interface but does nothing.
     * 
-    * @param pPtr Pointer to memory (ignored)
+    * @param ptype_ Pointer to memory (ignored)
     * @param uCount Number of objects (ignored)
     */
-   void deallocate(TYPE* pPtr, size_type uCount) noexcept
+   void deallocate(TYPE* ptype_, size_type uCount) noexcept
    {
-      if(m_parena) { m_parena->deallocate(pPtr, uCount * sizeof(TYPE)); }
+      if(m_parena) { m_parena->deallocate(ptype_, uCount * sizeof(TYPE)); }
    }
 
    /// ## Comparison operators
@@ -1209,45 +1250,7 @@ private:
    friend class arena_allocator;
 };
 
-// ============================================================================
-// ## Convenience type aliases
-// ============================================================================
-
-/*
-/// String type using arena allocator
-template<typename ALLOCATOR = std::allocator<std::byte>>
-using arena_string = std::basic_string<char, std::char_traits<char>, arena_allocator<char, ALLOCATOR>>;
-
-/// Vector type using arena allocator
-template<typename T, typename ALLOCATOR = std::allocator<std::byte>>
-using arena_vector = std::vector<T, arena_allocator<T, ALLOCATOR>>;
-
-/// List type using arena allocator
-template<typename T, typename ALLOCATOR = std::allocator<std::byte>>
-using arena_list = std::list<T, arena_allocator<T, ALLOCATOR>>;
-
-/// Deque type using arena allocator
-template<typename T, typename ALLOCATOR = std::allocator<std::byte>>
-using arena_deque = std::deque<T, arena_allocator<T, ALLOCATOR>>;
-
-/// Map type using arena allocator
-template<typename KEY, typename VALUE, typename COMPARE = std::less<KEY>, typename ALLOCATOR = std::allocator<std::byte>>
-using arena_map = std::map<KEY, VALUE, COMPARE, arena_allocator<std::pair<const KEY, VALUE>, ALLOCATOR>>;
-
-/// Set type using arena allocator
-template<typename T, typename COMPARE = std::less<T>, typename ALLOCATOR = std::allocator<std::byte>>
-using arena_set = std::set<T, COMPARE, arena_allocator<T, ALLOCATOR>>;
-
-/// Unordered map type using arena allocator
-template<typename KEY, typename VALUE, typename HASH = std::hash<KEY>, typename EQUAL = std::equal_to<KEY>, typename ALLOCATOR = std::allocator<std::byte>>
-using arena_unordered_map = std::unordered_map<KEY, VALUE, HASH, EQUAL, arena_allocator<std::pair<const KEY, VALUE>, ALLOCATOR>>;
-
-/// Unordered set type using arena allocator
-template<typename T, typename HASH = std::hash<T>, typename EQUAL = std::equal_to<T>, typename ALLOCATOR = std::allocator<std::byte>>
-using arena_unordered_set = std::unordered_set<T, HASH, EQUAL, arena_allocator<T, ALLOCATOR>>;
-*/
-
-} // namespace arena
+} // namespace memory
 
 _GD_END
 
