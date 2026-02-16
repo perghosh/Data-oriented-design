@@ -168,7 +168,7 @@ struct allocation_header
 /**
  * \brief Iterator for traversing blocks in the arena
  */
-class block_iterator
+class iterator_block
 {
 public:
    using iterator_category = std::forward_iterator_tag;
@@ -177,17 +177,17 @@ public:
    using pointer           = block_header*;
    using reference         = block_header&;
 
-   block_iterator() noexcept : m_pblockheader(nullptr) {}
-   explicit block_iterator(block_header* pblockheader_) noexcept : m_pblockheader(pblockheader_) {}
+   iterator_block() noexcept : m_pblockheader(nullptr) {}
+   explicit iterator_block(block_header* pblockheader_) noexcept : m_pblockheader(pblockheader_) {}
 
    [[nodiscard]] reference operator*() const noexcept { assert(m_pblockheader != nullptr); return *m_pblockheader; }
    [[nodiscard]] pointer operator->() const noexcept { assert(m_pblockheader != nullptr); return m_pblockheader; }
 
-   block_iterator& operator++() noexcept { if(m_pblockheader) { m_pblockheader = m_pblockheader->next_block(); } return *this; }
-   block_iterator operator++(int) noexcept { block_iterator itTemp = *this; ++(*this); return itTemp; }
+   iterator_block& operator++() noexcept { if(m_pblockheader) { m_pblockheader = m_pblockheader->next_block(); } return *this; }
+   iterator_block operator++(int) noexcept { iterator_block itTemp = *this; ++(*this); return itTemp; }
 
-   [[nodiscard]] bool operator==(const block_iterator& o) const noexcept { return m_pblockheader == o.m_pblockheader; }
-   [[nodiscard]] bool operator!=(const block_iterator& o) const noexcept { return m_pblockheader != o.m_pblockheader; }
+   [[nodiscard]] bool operator==(const iterator_block& o) const noexcept { return m_pblockheader == o.m_pblockheader; }
+   [[nodiscard]] bool operator!=(const iterator_block& o) const noexcept { return m_pblockheader != o.m_pblockheader; }
 
 private:
    block_header* m_pblockheader;
@@ -326,8 +326,8 @@ public:
 
    /// ## @API [tag: iterator] [summary: Block and allocation iteration]
 
-   [[nodiscard]] block_iterator begin_blocks() noexcept { return block_iterator(m_pblockheaderFirst); }
-   [[nodiscard]] block_iterator end_blocks() noexcept { return block_iterator(nullptr); }
+   [[nodiscard]] iterator_block begin_blocks() noexcept { return iterator_block(m_pblockheaderFirst); }
+   [[nodiscard]] iterator_block end_blocks() noexcept { return iterator_block(nullptr); }
    [[nodiscard]] iterator_allocation begin_allocations(block_header* pBlock) noexcept;
    [[nodiscard]] iterator_allocation end_allocations(block_header* pBlock) noexcept;
 
@@ -485,18 +485,18 @@ arena<ALLOCATOR>& arena<ALLOCATOR>::operator=(const arena& o)
          size_type uTotalSize = sizeof(block_header) + pSourceBlock->m_uBlockSize;
          std::byte* pMemory = m_allocator.allocate(uTotalSize);
          
-         block_header* pNewBlock = new (pMemory) block_header();
-         pNewBlock->m_uBlockSize = pSourceBlock->m_uBlockSize;
-         pNewBlock->m_uUsedSize = pSourceBlock->m_uUsedSize;
-         pNewBlock->m_uAllocCount = pSourceBlock->m_uAllocCount;
-         pNewBlock->m_pData = pMemory + sizeof(block_header);
+         block_header* pblockheaderNew = new (pMemory) block_header();
+         pblockheaderNew->m_uBlockSize = pSourceBlock->m_uBlockSize;
+         pblockheaderNew->m_uUsedSize = pSourceBlock->m_uUsedSize;
+         pblockheaderNew->m_uAllocCount = pSourceBlock->m_uAllocCount;
+         pblockheaderNew->m_pData = pMemory + sizeof(block_header);
          
-         std::memcpy(pNewBlock->m_pData, pSourceBlock->m_pData, pSourceBlock->m_uUsedSize);
+         std::memcpy(pblockheaderNew->m_pData, pSourceBlock->m_pData, pSourceBlock->m_uUsedSize);
          
-         *ppDestBlock = pNewBlock;
-         ppDestBlock = &pNewBlock->m_pblockheaderNext;
+         *ppDestBlock = pblockheaderNew;
+         ppDestBlock = &pblockheaderNew->m_pblockheaderNext;
          
-         if(pSourceBlock == o.m_pblockheaderCurrent) { m_pblockheaderCurrent = pNewBlock; }
+         if(pSourceBlock == o.m_pblockheaderCurrent) { m_pblockheaderCurrent = pblockheaderNew; }
          
          pSourceBlock = pSourceBlock->next_block();
       }
