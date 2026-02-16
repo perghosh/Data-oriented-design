@@ -540,6 +540,54 @@ TEST_CASE( "[arena] iterator_allocation - multiple allocations iteration", "[are
    int blocksVisited = 0;
 }
 
+TEST_CASE( "[arena::borrow] string and vector", "[arena][borrow]" ) {
+   // Initialize arena requesting 2048 bytes from heap
+   std::array<std::byte, 2048> buffer;
+   gd::arena::borrow::arena arena_( buffer );
+ 
+   for( int i = 0; i < 10; ++i )
+   {
+      arena_.reset();
+      gd::arena::borrow::arena_allocator<char> allocator(arena_);
+      std::basic_string<char, std::char_traits<char>, gd::arena::borrow::arena_allocator<char>> string_(allocator);
+
+      string_ += "Hello from arena allocator!";
+      string_ += " This string is allocated in an arena.";
+      string_ += " Additional text.";
+
+      std::vector<int, gd::arena::borrow::arena_allocator<int>> vec{ gd::arena::borrow::arena_allocator<int>( arena_ ) };
+      vec.reserve( 20 );
+      for( int j = 0; j < 20; ++j )
+      {
+         vec.push_back( j );
+      }
+
+      for( auto& val : vec )
+      {
+         string_ += std::to_string( val ) + " ";
+      }
+
+      std::cout << "String: " << string_ << "\n";
+      std::cout << "Used: " << arena_.used() << " and capacity: " << arena_.capacity() << "\n";
+   }
+
+   arena_.reset();
+   int* piBuffer = arena_.allocate_objects<int>( 100 ); // Allocate some more to test reuse after reset
+   for( int i = 0; i < 100; ++i )
+   {
+      piBuffer[ i ] = i * 10;
+   }
+
+   // sum numbers to verify allocation is working
+   int sum = 0;
+   for( int i = 0; i < 100; ++i ) 
+   {
+      sum += piBuffer[ i ];
+   }
+   std::cout << "Used: " << arena_.used() << " and capacity: " << arena_.capacity() << "\n";
+}
+
+
 
 
 // Helper to check alignment
