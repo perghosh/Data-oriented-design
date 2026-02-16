@@ -19,12 +19,19 @@
 @AI [tag: styleguide, cpp, commenting] [llm: core]
 [sample: """Hints about commenting
 Try to use markdown syntax to make comments more readable.
+Quote variables is places inside backticks, like `variableName` to make it more clear that it is variable. Use bold for important things, like **important**.
 If the comment starts with ## that means that it describes more than one line, like next block of code.
 And if there are sub-sections, use ### for each sub-section.
-## Sub-section example
+## Sub-section example .......................................................
 ### Sub-sub-section example
 All variables should have a comment after or just before if declared separately.
 Try to avoid comments in code, when code on row is described if possible try to start at column 80 after line. or if line is longer just put it when code ends on that line.
+
+if statements should be like this: if( condition ) { statement; } and if there are multiple statements use allman style with braces on new line.
+
+comment memeber variables with comment after declaration lkie this: std::uint32_t m_uMagic; ///< Magic number for validation (ALLOC_MAGIC)
+
+writing template classes, methods thould be placed outside of class definition and use doxygen style comments with @tparam for template parameters and @brief for method description, also use @param for method parameters and @return for return value. And if there are multiple template parameters, use @tparam for each parameter and describe them separately.
 """]
 */
 
@@ -44,6 +51,10 @@ Try to avoid comments in code, when code on row is described if possible try to 
 | `m_`* | **member variables** | `uint64_t m_uRowCount;`  `std::vector<column> m_vectorColumn;` `uint8_t* m_puTableData = nullptr;` |
 | `string`* | **all string objects** | `std::string_view stringName;`  `std::string stringName;` `std::wstring stringName;` |
 | *`_` | **view declaration** | `std::string body_;` |
+
+Note that these prefixes are the only ones allowed for variable names, and they should be used consistently throughout the codebase.
+Other objects like pairs, vectors, tables, queries should start with the class name in lowercase and then the name of the variable, for example `std::vector<std::pair<std::string, gd::variant>> vectorNameValue;` or `std::pair<std::string_view,std::string_view> pairSelect;` and `gd::sql::query queryInsert;`. This is to make it clear what type of object it is and to follow the same style for all variables.
+Another sample: block_header* pblockheaderSource; Note that the full name for object is used but no underscore, remove underscore and use camel case for the rest of the name.
 """]
 */
 

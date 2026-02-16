@@ -144,7 +144,7 @@ struct block_header
 // ## Allocation header structure
 // ============================================================================
 
-/**
+/** ==========================================================================
  * \brief Header for each allocation within a block
  * 
  * Each allocation is prefixed with this header for tracking and validation.
@@ -165,7 +165,7 @@ struct allocation_header
 // ## Block iterator
 // ============================================================================
 
-/**
+/** ==========================================================================
  * \brief Iterator for traversing blocks in the arena
  */
 class iterator_block
@@ -197,7 +197,7 @@ private:
 // ## Allocation iterator
 // ============================================================================
 
-/**
+/** ==========================================================================
  * \brief Iterator for traversing allocations within a block
  */
 class iterator_allocation
@@ -256,7 +256,7 @@ private:
 // ## Arena allocator class
 // ============================================================================
 
-/**
+/** ==========================================================================
  * \brief Arena allocator with block chaining and 32-bit alignment
  * 
  * The arena allocates memory in blocks. When a block is full, a new block
@@ -405,33 +405,33 @@ arena<ALLOCATOR>::arena(const arena& o)
    : m_pblockheaderFirst(nullptr), m_pblockheaderCurrent(nullptr), m_uBlockSize(o.m_uBlockSize), m_allocator(o.m_allocator)
 {
    // Deep copy all blocks
-   block_header* pSourceBlock = o.m_pblockheaderFirst;
-   block_header** ppDestBlock = &m_pblockheaderFirst;
+   block_header* pblockheaderSource = o.m_pblockheaderFirst;
+   block_header** ppblockheaderDest = &m_pblockheaderFirst;
    
-   while (pSourceBlock)
+   while(pblockheaderSource)
    {
-      // Allocate memory for new block
-      size_type uTotalSize = sizeof(block_header) + pSourceBlock->m_uBlockSize;
+      // ## Allocate memory for new block ....................................
+      size_type uTotalSize = sizeof(block_header) + pblockheaderSource->m_uBlockSize;
       std::byte* pMemory = m_allocator.allocate(uTotalSize);
       
-      // Copy block header
-      block_header* pNewBlock = new (pMemory) block_header();
-      pNewBlock->m_uBlockSize = pSourceBlock->m_uBlockSize;
-      pNewBlock->m_uUsedSize = pSourceBlock->m_uUsedSize;
-      pNewBlock->m_uAllocCount = pSourceBlock->m_uAllocCount;
-      pNewBlock->m_pData = pMemory + sizeof(block_header);
+      // ## Copy block header ................................................
+      block_header* pblockheaderNew = new (pMemory) block_header();
+      pblockheaderNew->m_uBlockSize = pblockheaderSource->m_uBlockSize;
+      pblockheaderNew->m_uUsedSize = pblockheaderSource->m_uUsedSize;
+      pblockheaderNew->m_uAllocCount = pblockheaderSource->m_uAllocCount;
+      pblockheaderNew->m_pData = pMemory + sizeof(block_header);
       
       // Copy block data
-      std::memcpy(pNewBlock->m_pData, pSourceBlock->m_pData, pSourceBlock->m_uUsedSize);
+      std::memcpy(pblockheaderNew->m_pData, pblockheaderSource->m_pData, pblockheaderSource->m_uUsedSize);
       
       // Link block
-      *ppDestBlock = pNewBlock;
-      ppDestBlock = &pNewBlock->m_pblockheaderNext;
+      *ppblockheaderDest = pblockheaderNew;
+      ppblockheaderDest = &pblockheaderNew->m_pblockheaderNext;
       
       // Update current block pointer
-      if(pSourceBlock == o.m_pblockheaderCurrent) { m_pblockheaderCurrent = pNewBlock; }
+      if(pblockheaderSource == o.m_pblockheaderCurrent) { m_pblockheaderCurrent = pblockheaderNew; }
       
-      pSourceBlock = pSourceBlock->next_block();
+      pblockheaderSource = pblockheaderSource->next_block();
    }
 }
 
@@ -477,28 +477,28 @@ arena<ALLOCATOR>& arena<ALLOCATOR>::operator=(const arena& o)
       m_allocator = o.m_allocator;
       
       // Deep copy all blocks (same logic as copy constructor)
-      block_header* pSourceBlock = o.m_pblockheaderFirst;
-      block_header** ppDestBlock = &m_pblockheaderFirst;
+      block_header* pblockheaderSource = o.m_pblockheaderFirst;
+      block_header** ppblockheaderDest = &m_pblockheaderFirst;
       
-      while (pSourceBlock)
+      while(pSourceBlock)
       {
          size_type uTotalSize = sizeof(block_header) + pSourceBlock->m_uBlockSize;
          std::byte* pMemory = m_allocator.allocate(uTotalSize);
          
          block_header* pblockheaderNew = new (pMemory) block_header();
-         pblockheaderNew->m_uBlockSize = pSourceBlock->m_uBlockSize;
-         pblockheaderNew->m_uUsedSize = pSourceBlock->m_uUsedSize;
-         pblockheaderNew->m_uAllocCount = pSourceBlock->m_uAllocCount;
+         pblockheaderNew->m_uBlockSize = pblockheaderSource->m_uBlockSize;
+         pblockheaderNew->m_uUsedSize = pblockheaderSource->m_uUsedSize;
+         pblockheaderNew->m_uAllocCount = pblockheaderSource->m_uAllocCount;
          pblockheaderNew->m_pData = pMemory + sizeof(block_header);
          
-         std::memcpy(pblockheaderNew->m_pData, pSourceBlock->m_pData, pSourceBlock->m_uUsedSize);
+         std::memcpy(pblockheaderNew->m_pData, pblockheaderSource->m_pData, pblockheaderSource->m_uUsedSize);
          
-         *ppDestBlock = pblockheaderNew;
-         ppDestBlock = &pblockheaderNew->m_pblockheaderNext;
+         *ppblockheaderDest = pblockheaderNew;
+         ppblockheaderDest = &pblockheaderNew->m_pblockheaderNext;
          
-         if(pSourceBlock == o.m_pblockheaderCurrent) { m_pblockheaderCurrent = pblockheaderNew; }
+         if(pblockheaderSource == o.m_pblockheaderCurrent) { m_pblockheaderCurrent = pblockheaderNew; }
          
-         pSourceBlock = pSourceBlock->next_block();
+         pblockheaderSource = pblockheaderSource->next_block();
       }
    }
    return *this;
@@ -743,7 +743,7 @@ void arena<ALLOCATOR>::dump_allocations(const block_header* pBlock) const noexce
    std::byte* pCurrent = pBlock->m_pData;
    std::byte* pEnd = pBlock->m_pData + pBlock->m_uUsedSize;
    
-   while (pCurrent < pEnd)
+   while(pCurrent < pEnd)
    {
       allocation_header* pAlloc = reinterpret_cast<allocation_header*>(pCurrent);
       if(!pAlloc->is_valid()) { break; }
@@ -778,7 +778,7 @@ bool arena<ALLOCATOR>::validate() const noexcept
       std::byte* pEnd = pBlock->m_pData + pBlock->m_uUsedSize;
       size_type uAllocCount = 0;
       
-      while (pCurrent < pEnd)
+      while(pCurrent < pEnd)
       {
          allocation_header* pAlloc = reinterpret_cast<allocation_header*>(pCurrent);
          if(!pAlloc->is_valid()) { return false; }
@@ -831,7 +831,7 @@ void arena<ALLOCATOR>::reset() noexcept
    
    // Destroy all blocks except first
    block_header* pBlock = m_pblockheaderFirst->next_block();
-   while (pBlock)
+   while(pBlock)
    {
       block_header* pNext = pBlock->next_block();
       size_type uTotalSize = sizeof(block_header) + pBlock->m_uBlockSize;
@@ -928,7 +928,7 @@ template<typename ALLOCATOR>
 void arena<ALLOCATOR>::destroy() noexcept
 {
    block_header* pBlock = m_pblockheaderFirst;
-   while (pBlock)
+   while(pBlock)
    {
       block_header* pNext = pBlock->next_block();
       size_type uTotalSize = sizeof(block_header) + pBlock->m_uBlockSize;
@@ -1020,7 +1020,7 @@ namespace memory {
 // ## arena_allocator class
 // ============================================================================
 
-/**
+/** ==========================================================================
  * \brief STL-compatible allocator that uses arena for memory allocation
  * 
  * This allocator wraps an arena instance and provides the standard allocator
