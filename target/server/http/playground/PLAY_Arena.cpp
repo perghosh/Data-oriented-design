@@ -231,21 +231,6 @@ TEST_CASE( "[arena] arguments 05 - complex nested structures", "[arena]" )
 
    REQUIRE( arguments_.size() == 10 );
 
-   // Count scores
-   /*
-   std::vector<int> retrievedScores;
-   for( auto it = arguments_.begin(); it != arguments_.end(); ++it )
-   {
-      if( it->is_name() && it->name() == "score" )
-      {
-         retrievedScores.push_back( it->as_int() );
-      }
-   }
-   */
-
-   //REQUIRE( retrievedScores.size() == 5 );
-   //REQUIRE( retrievedScores == scores );
-
    // Verify other values
    REQUIRE( arguments_[ "user" ].as_string() == "Alice" );
    REQUIRE( arguments_[ "active" ].as_bool() == true );
@@ -540,6 +525,24 @@ TEST_CASE( "[arena] iterator_allocation - multiple allocations iteration", "[are
    int blocksVisited = 0;
 }
 
+TEST_CASE( "[arena::borrow] std::string allocation count", "[arena][borrow]" ) {
+   std::array<std::byte, 2048> buffer;
+   gd::arena::borrow::arena arena_( buffer );
+   gd::arena::borrow::arena_allocator<char> allocator(arena_);
+   std::basic_string<char, std::char_traits<char>, gd::arena::borrow::arena_allocator<char>> string_(allocator);
+
+   //string_.reserve( 100 );
+
+   // add 500 characters to force multiple blocks
+   for( int i = 0; i < 600; ++i )
+   {
+      string_ += "x";
+   }
+
+   std::cout << "String length: " << string_.length() << "\n";
+   std::cout << "Used: " << arena_.used() << " and capacity: " << arena_.capacity() << "\n";
+}
+
 TEST_CASE( "[arena::borrow] string and vector", "[arena][borrow]" ) {
    // Initialize arena requesting 2048 bytes from heap
    std::array<std::byte, 2048> buffer;
@@ -715,7 +718,7 @@ TEST_CASE( "[arena::borrow] allocation 03 - alignment and exhaustion", "[arena][
 
     SECTION("Exhaustion returns nullptr") {
         // Consume almost all
-        arena.allocate(80);
+        auto temp_ =arena.allocate(80);
         REQUIRE( arena.available() == 20 );
 
         // Try to allocate more than available
