@@ -125,10 +125,17 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
       for( const auto& itValue : jsonWhere.object_range() )
       {
          arguments_.clear();
-         arguments_.append( "table", stringTable );
-         arguments_.append( "column", itValue.key() );
-         arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
-         arguments_.append( "part_type", uint32_t( ePartTypeWhere ) ); // where part of query (select, update and delete queries)
+         if( itValue.value().is_object() == true ) 
+         { continue; 
+         // @TODO: Manage objects in where part, for example for operators like greater than, less than, etc.
+         } 
+         else
+         {
+            arguments_.append( "table", stringTable );
+            arguments_.append( "column", itValue.key() );
+            arguments_.append_argument( "value", CONVERT::AsVariant( itValue.value() ) );
+            arguments_.append( "part_type", uint32_t( ePartTypeWhere ) ); // where part of query (select, update and delete queries)
+         }
          AddValue( arguments_ );
       }
 
@@ -157,6 +164,8 @@ std::pair<bool, std::string> CRENDERSql::Prepare()
 
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
+      //uint32_t uType = itRow.cell_get_variant_view( "part_type" );
+
       std::string stringTable = itRow.cell_get_variant_view( "table", gd::table::tag_not_null{}).as_string();
       std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
 
@@ -309,10 +318,25 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
       arguments_.clear();
-      std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
-      uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
-      auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
-      arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
+
+      uint32_t uType = itRow.cell_get_variant_view( "part_type" );
+      if( uType == uint32_t( ePartTypeValue ) )
+      {
+         std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
+         uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
+         auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
+         arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
+         queryUpdate.field_add( arguments_ );                                 // add column to query
+      }
+      else if( uType == uint32_t( ePartTypeWhere ) )
+      {
+         std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
+         uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
+         auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
+         uint32_t uOperator = itRow.cell_get_variant_view("operator").as_uint();
+         arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType }, { "operator", uOperator } }, gd::types::tag_view{});
+         // queryUpdate.condition_add( arguments_ );                             // add condition to query
+      }
    }
 
 
