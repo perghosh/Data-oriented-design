@@ -81,9 +81,14 @@ void query::common_construct(query&& o) noexcept
 */
 const query::table* query::table_get(const gd::variant_view& variantTableIndex) const
 {
-   if( variantTableIndex.is_integer() == true )
+   if( variantTableIndex.is_null() == true )                                  // if index is null return first table, if there is no table return nullptr
    {
-      unsigned uIndex = variantTableIndex.get_uint();                            assert( uIndex < m_vectorTable.size() );
+      if( m_vectorTable.empty() == false ) return &m_vectorTable[0];          // get first table, this is the default to simplify working with query when there is only one table, otherwise it is better to use index or name to get table
+      else { assert(false); return nullptr; }
+   }
+   else if( variantTableIndex.is_integer() == true )
+   {
+      unsigned uIndex = variantTableIndex.get_uint();                                              assert( uIndex < m_vectorTable.size() );
       return &m_vectorTable[uIndex];
    }
    else
@@ -254,6 +259,36 @@ gd::sql::query::condition* query::condition_add(const gd::variant_view& variantT
 {
    auto ptable = table_get(variantTable);                                                          assert(ptable != nullptr);
    return condition_add_(ptable, stringName, variantOperator, variantValue);
+}
+
+/*----------------------------------------------------------------------------- condition_add */ /**
+ * Add condition to query
+ * \param argumentsCondition vector with condition properties, each property has a name and a value, vector must contain "table" property with index to table condition belongs to
+ * \return condition* pointer to added condition
+ */
+gd::sql::query::condition* query::condition_add( const gd::argument::arguments& argumentsCondition )
+{   
+   auto ptable = table_get( argumentsCondition["table"].as_variant_view() );                       assert(ptable != nullptr);
+   condition conditionAdd( *ptable ); // create condition object that is added to query
+   for( const auto& it : argumentsCondition.named() )
+   {  // append values for field added to query
+      std::string_view stringName = it.first;                                                      assert( stringName.empty() == false );
+
+      if( stringName[0] == 'o' && stringName == "operator" )
+      {
+         enumOperator eOperator = get_where_operator_number_s(it.second);                          assert( eOperator != eOperatorError ); // note that operator should be checked before calling this method
+         conditionAdd.append("operator", eOperator);
+      }
+      else 
+      { 
+         if( stringName == "value" || stringName == "raw" )
+         {
+            conditionAdd.append_argument(it.first, it.second); 
+         }
+      }             
+   }
+   m_vectorCondition.push_back(std::move(conditionAdd));                      // add condition to list
+   return &m_vectorCondition.back();                                          // return pointer to added condition}
 }
 
 /*----------------------------------------------------------------------------- condition_add */ /**
@@ -800,8 +835,11 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          break;
 
       case eSqlPartWhere:
+         {
+         if( m_vectorCondition.empty() == true ) continue;
          stringSql += std::string_view{ "\nWHERE\n\t" };
          stringSql += sql_get_where();
+         }
          break;
 
       case eSqlPartGroupBy:
@@ -825,6 +863,19 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
    return stringSql;
 }
 
+
+
+/** --------------------------------------------------------------------------
+ * @brief Clears all tables, fields, and conditions from the query.
+ */
+void query::clear()
+{
+   m_vectorTable.clear();
+   m_vectorField.clear();
+   m_vectorCondition.clear();
+   m_argumentsAttribute.clear();
+   m_uNextKey = 0;
+}
 
 
 
@@ -878,6 +929,9 @@ std::string_view query::sql_get_join_text_s(enumJoin eJoinType)
 
 /*----------------------------------------------------------------------------- get_where_operator_number_s */ /**
  * get where operator number
+ * This method tries to figure out the operator type for operator sent as text, id doesn't
+ * validate operator text, and might return operator number for text that is misspelled, 
+ * so it is recommended to validate operator text before calling this method.
  * \param stringOperator
  * \return gd::sql::enumOperator
  */
@@ -888,14 +942,14 @@ enumOperator query::get_where_operator_number_s(std::string_view stringOperator)
    {
    case '=': return eOperatorEqual;
    case '!': return eOperatorNotEqual;
-   case '<': {
-      if( *(pbszOperator + 1) == '\0' ) return eOperatorLess;
+   case '<': { 
+      if( stringOperator.length() == 1 ) return eOperatorLess;
       else if( *(pbszOperator + 1) == '=' ) return eOperatorLessEqual;
       else if( *(pbszOperator + 1) == '>' ) return eOperatorNotEqual;
    }
    break;
    case '>': {
-      if( *(pbszOperator + 1) == '\0' ) return eOperatorGreater;
+      if( stringOperator.length() == 1 ) return eOperatorGreater;
       else if( *(pbszOperator + 1) == '=' ) return eOperatorGreaterEqual;
    }
    break;
@@ -918,7 +972,7 @@ enumOperator query::get_where_operator_number_s(std::string_view stringOperator)
    }
    break;
    case 'n': {
-      if( stringOperator.length() == (sizeof("notequal") - 1) ) return eOperatorEqual; // !=
+      if( stringOperator.length() == (sizeof("notequal") - 1) ) return eOperatorNotEqual; // !=
       else if( stringOperator.length() == (sizeof("null") - 1)) return eOperatorNull; // IS NULL
       else if( stringOperator.length() == (sizeof("notnull") - 1) ) return eOperatorNotNull; // IS NOT NULL
       else if( stringOperator.length() == (sizeof("notin") - 1) ) return eOperatorNotIn; // NOT IN

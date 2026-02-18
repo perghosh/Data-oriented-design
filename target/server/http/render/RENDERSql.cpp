@@ -334,8 +334,9 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
          uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
          auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
          uint32_t uOperator = itRow.cell_get_variant_view("operator").as_uint();
+         // ## Generate condition, name, value, type and operator are needed to generate condition for where part of query
          arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType }, { "operator", uOperator } }, gd::types::tag_view{});
-         // queryUpdate.condition_add( arguments_ );                             // add condition to query
+         queryUpdate.condition_add( arguments_ );                             // add condition to query
       }
    }
 
