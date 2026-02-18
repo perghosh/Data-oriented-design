@@ -464,15 +464,15 @@ public:
          }
       }
 
-      bool         as_bool() const { return get_bool(); }
-      unsigned int as_uint() const { return get_uint(); }
-      int          as_int() const { return get_int(); }
-      int64_t      as_int64() const { return get_int64(); }
-      uint64_t     as_uint64() const { return get_uint64(); }
-      double       as_double() const { return get_double(); }
-      std::string  as_string() const { return get_string(); };
-      std::string  as_utf8() const { return get_utf8(); };
-      gd::variant  as_variant() const { return get_variant(); }
+      bool         as_bool() const     { return get_bool(); }
+      unsigned int as_uint() const     { return get_uint(); }
+      int          as_int() const      { return get_int(); }
+      int64_t      as_int64() const    { return get_int64(); }
+      uint64_t     as_uint64() const   { return get_uint64(); }
+      double       as_double() const   { return get_double(); }
+      std::string  as_string() const   { return get_string(); };
+      std::string  as_utf8() const     { return get_utf8(); };
+      gd::variant  as_variant() const  { return get_variant(); }
       gd::variant_view as_variant_view() const { return get_variant_view(); }
       std::string_view as_string_view() const { return get_string_view(); }
 

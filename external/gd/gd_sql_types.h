@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "gd_types.h"
+
 #ifndef _GD_SQL_QUERY_BEGIN
    #define _GD_SQL_QUERY_BEGIN namespace gd { namespace sql {
    #define _GD_SQL_QUERY_END } }
@@ -21,14 +23,15 @@ _GD_SQL_QUERY_BEGIN
 #endif
 
 /// tag dispatcher used for table operations
-struct tag_table {};
+using tag_table = gd::types::tag_table;
 /// tag dispatcher used for field operations
 struct tag_field {};
 /// tag dispatcher used for condition operations
 struct tag_condition {};
 /// tag dispatcher used name
-struct tag_name {};
-
+using tag_name = gd::types::tag_name;
+/// tag dispatcher for arguments, used to add arguments to query
+struct tag_arguments {};
 
 /// tag dispatcher for values that is owned
 struct tag_value {};

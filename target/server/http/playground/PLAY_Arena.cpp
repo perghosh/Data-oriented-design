@@ -532,8 +532,7 @@ TEST_CASE( "[arena::borrow] std::string allocation count", "[arena][borrow]" ) {
    std::basic_string<char, std::char_traits<char>, gd::arena::borrow::arena_allocator<char>> string_(allocator);
 
    //string_.reserve( 100 );
-
-   // add 500 characters to force multiple blocks
+   // add 600 characters to force multiple blocks
    for( int i = 0; i < 600; ++i )
    {
       string_ += "x";

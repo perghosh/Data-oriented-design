@@ -240,6 +240,7 @@ public:
 
       // attributes
       public:
+         query* m_pQuery = nullptr;  ///< pointer to query that owns condition
          unsigned m_uTableKey = 0;   ///< table that owns field
          unsigned m_uUseAndType = 0; ///< Field has specific rules (format or where to place it) flags and use type is used
                                      ///< default (m_uUseAndType = 0) and field is only used in select part
@@ -262,8 +263,8 @@ public:
       condition& operator=( condition&& o ) noexcept { common_construct( o ); return *this; }
 
       operator gd::argument::arguments() const { return m_argumentsCondition; }
-      void common_construct(const condition& o) { m_uTableKey = o.m_uTableKey; m_argumentsCondition = o.m_argumentsCondition; }
-      void common_construct(condition&& o) noexcept { m_uTableKey = o.m_uTableKey; m_argumentsCondition = std::move(o.m_argumentsCondition); }
+      void common_construct(const condition& o) { m_pQuery = o.m_pQuery; m_uTableKey = o.m_uTableKey; m_argumentsCondition = o.m_argumentsCondition; }
+      void common_construct(condition&& o) noexcept { m_pQuery = o.m_pQuery; m_uTableKey = o.m_uTableKey; m_argumentsCondition = std::move(o.m_argumentsCondition); o.m_pQuery = nullptr; o.m_uTableKey = 0; }
 
       /// return value for conditions, this is places in arguments named to "value"
       gd::variant_view value() const { return m_argumentsCondition["value"].as_variant_view(); }
@@ -289,11 +290,10 @@ public:
       /// compare named value with sent condition, if both condition values for name match return true, otherwise false
       bool compare(const std::string_view& stringName, const condition* pconditionCompareTo) const { return m_argumentsCondition.compare( stringName, *pconditionCompareTo ); }
 
-
-
       // attributes
       public:
-         unsigned m_uTableKey = 0;   ///< table that owns condition
+         query* m_pQuery = nullptr; ///< pointer to query that owns condition
+         unsigned m_uTableKey = 0;  ///< table that owns condition
          gd::argument::arguments m_argumentsCondition; ///< all condition properties
    };
 
@@ -331,8 +331,8 @@ public:
 
 //@}
 
-/** \name TABLE
-*///@{
+/// @API [tag: table] [summary: table management] [description: methods to add and manage tables in query]
+
    /// get pointer to first table in query (this should be the root table)
    const table* table_get() const { return &m_vectorTable[0]; }
    const table* table_get(const gd::variant_view& variantTable) const;
@@ -352,12 +352,9 @@ public:
    std::vector<table>::const_iterator table_begin() const { return m_vectorTable.cbegin(); }
    std::vector<table>::iterator table_end() { return m_vectorTable.end(); }
    std::vector<table>::const_iterator table_end() const { return m_vectorTable.cend(); }
-//@}
 
+// ## @API [tag: field] [summary: field management] [description: methods to add and manage fields in query]
 
-/** \name FIELD
-*///@{
-   // ## add fields to query
    field* field_add(const std::string_view& stringName) { return field_add(gd::variant_view(0u), stringName, std::string_view()); }
    void field_add(const std::vector<std::string_view>& vectorName, tag_name );
    field* field_add(const gd::variant_view& variantTable, std::string_view stringName) { return field_add(gd::variant_view(0u), stringName, std::string_view()); }
@@ -367,7 +364,8 @@ public:
    field* field_add( const field& fieldAdd ) { m_vectorField.push_back( fieldAdd ); return &m_vectorField.back(); }
    field* field_add( field&& fieldAdd ) { m_vectorField.push_back( std::move( fieldAdd ) ); return &m_vectorField.back(); }
 
-   field* field_add( const gd::argument::arguments& argumentsField ) { m_vectorField.push_back( field( m_vectorTable[0], argumentsField ) ); return &m_vectorField.back(); }
+   field* field_add( const gd::argument::arguments& argumentsField, tag_arguments );
+   field* field_add( std::string_view stringTable, const gd::argument::arguments& argumentsField, tag_arguments );
 
    void field_add_many(const std::vector< std::vector< std::pair<std::string_view, gd::variant_view> > >& vectorVectorField );
 
@@ -388,11 +386,9 @@ public:
    std::vector<field>::const_iterator field_begin() const { return m_vectorField.cbegin();  }
    std::vector<field>::iterator field_end() { return m_vectorField.end(); }
    std::vector<field>::const_iterator field_end() const { return m_vectorField.cend(); }
-//@}
 
-/** \name CONDITION
-*///@{
-   // ## add condition to query
+// ## @API [tag: condition] [summary: condition management] [description: methods to add and manage conditions in query]
+
    condition* condition_add(std::string_view stringName, const gd::variant_view& variantValue) { return condition_add( stringName, gd::variant_view(), variantValue ); }
    condition* condition_add(std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue);
    condition* condition_add(const gd::variant_view& variantTable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue);
@@ -400,6 +396,8 @@ public:
    condition* condition_add(const gd::variant_view& variantTable, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorCondition );
    condition* condition_add( const condition& conditionAdd ) { m_vectorCondition.push_back( conditionAdd ); return &m_vectorCondition.back(); }
    condition* condition_add( condition&& conditionAdd ) { m_vectorCondition.push_back( std::move( conditionAdd ) ); return &m_vectorCondition.back(); }
+   condition* condition_add( const gd::argument::arguments& argumentsCondition );
+
    condition* condition_add_(const table* ptable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue);
    condition* condition_add_raw(const gd::variant_view& variantTable, const std::string_view& stringCondition);
 
@@ -410,7 +408,6 @@ public:
    std::vector<condition>::iterator condition_end() { return m_vectorCondition.end(); }
    std::vector<condition>::const_iterator condition_end() const { return m_vectorCondition.cend(); }
 
-//@}
 
 /** \name ADD - simplified add operations wrapping other methods
 *///@{
@@ -468,6 +465,9 @@ public:
    [[nodiscard]] std::string sql_get( enumSql eSql ) const;
    [[nodiscard]] std::string sql_get( enumSql eSql, const unsigned* puPartOrder ) const;
 
+/// ## @API [tag: modifiers]
+
+   void clear();
 
 //@}
 
@@ -565,6 +565,21 @@ inline const query::table* query::table_get_for_key(unsigned uTableKey) const {
    }
    return nullptr;
 }
+
+/// Add field with arguments, arguments should have at least "name" argument, otherwise assert is triggered
+inline query::field* query::field_add( const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true ); assert( m_vectorTable.empty() == false );
+const auto* ptable = table_get();                                                                  assert( ptable != nullptr );
+   m_vectorField.push_back( field( *ptable, argumentsField ) ); 
+   return &m_vectorField.back(); 
+}
+
+/// Add table field with arguments, arguments should have at least "name" argument, otherwise assert is triggered
+inline query::field* query::field_add(std::string_view stringTable, const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true );
+   const auto* ptable = table_get( stringTable );                                                  assert( ptable != nullptr );
+   m_vectorField.push_back( field( *ptable, argumentsField ) ); 
+   return &m_vectorField.back(); 
+}
+
 
 /// add field names only using the column name in database
 inline void query::field_add( const std::vector<std::string_view>& vectorName, tag_name ) {
