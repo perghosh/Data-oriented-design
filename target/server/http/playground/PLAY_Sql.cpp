@@ -29,12 +29,34 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
 
    auto stringSQL = querySelect.sql_get( eSqlSelect );
    std::cout << stringSQL << "\n";
-
    querySelect.clear();
+
    querySelect.table_add( "test_table1" );
    querySelect.field_add( {{"name", "id"}, {"alias", "key"}}, tag_arguments{} );
    querySelect.field_add( "name" );
 
    stringSQL = querySelect.sql_get( eSqlSelect );
    std::cout << stringSQL << "\n";
+
+   querySelect.clear();
+   querySelect.table_add( "table1" );
+   querySelect.field_add( {{"name", "id"}, {"alias", "key"}}, tag_arguments{} );
+   querySelect.field_add( "name" );
+   querySelect.condition_add( { {"name", "id"}, {"operator", eOperatorTypeNumberEqual}, {"value", 123} }, tag_arguments{} );
+
+   stringSQL = querySelect.sql_get( eSqlSelect );
+   std::cout << stringSQL << "\n";
+
+   querySelect.clear();
+   querySelect.table_add( "table1" );
+   querySelect.field_add( {{"name", "id"}, {"alias", "key"}}, tag_arguments{} );
+   querySelect.field_add( "name" );
+   querySelect.condition_add( { {"name", "id"}, {"operator", eOperatorTypeNumberEqual}, {"value", 123} }, tag_arguments{} );
+   querySelect.condition_add( { {"name", "id"}, {"operator", eOperatorTypeNumberEqual}, {"value", 456} }, tag_arguments{} );
+   querySelect.condition_add( { {"name", "id"}, {"operator", eOperatorTypeNumberEqual}, {"value", 789} }, tag_arguments{} );
+
+   stringSQL = querySelect.sql_get( eSqlSelect );
+   std::cout << stringSQL << "\n";
+
+
 }

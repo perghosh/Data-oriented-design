@@ -266,7 +266,7 @@ gd::sql::query::condition* query::condition_add(const gd::variant_view& variantT
  * \param argumentsCondition vector with condition properties, each property has a name and a value, vector must contain "table" property with index to table condition belongs to
  * \return condition* pointer to added condition
  */
-gd::sql::query::condition* query::condition_add( const gd::argument::arguments& argumentsCondition )
+gd::sql::query::condition* query::condition_add( const gd::argument::arguments& argumentsCondition, tag_arguments )
 {   
    auto ptable = table_get( argumentsCondition["table"].as_variant_view() );                       assert(ptable != nullptr);
    condition conditionAdd( *ptable ); // create condition object that is added to query
@@ -281,10 +281,7 @@ gd::sql::query::condition* query::condition_add( const gd::argument::arguments& 
       }
       else 
       { 
-         if( stringName == "value" || stringName == "raw" )
-         {
-            conditionAdd.append_argument(it.first, it.second); 
-         }
+         conditionAdd.append_argument(it.first, it.second); 
       }             
    }
    m_vectorCondition.push_back(std::move(conditionAdd));                      // add condition to list
@@ -940,8 +937,19 @@ enumOperator query::get_where_operator_number_s(std::string_view stringOperator)
    auto pbszOperator = stringOperator.data();
    switch( *pbszOperator )
    {
-   case '=': return eOperatorEqual;
+   case '=': {
+      if( stringOperator.length() == 1 ) return eOperatorEqual;
+      else if( *( pbszOperator + 1 ) == '*' ) return eOperatorLikeBegin;
+      return eOperatorEqual;
+   }
+   break;
    case '!': return eOperatorNotEqual;
+   case '*': {
+      if( stringOperator.length() == 1 ) return eOperatorLike;
+      else if( *( pbszOperator + 1 ) == '=' ) return eOperatorLikeEnd;
+      return eOperatorLike;
+   }
+   break;
    case '<': { 
       if( stringOperator.length() == 1 ) return eOperatorLess;
       else if( *(pbszOperator + 1) == '=' ) return eOperatorLessEqual;
