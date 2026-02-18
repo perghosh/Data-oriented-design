@@ -396,7 +396,7 @@ public:
    condition* condition_add(const gd::variant_view& variantTable, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorCondition );
    condition* condition_add( const condition& conditionAdd ) { m_vectorCondition.push_back( conditionAdd ); return &m_vectorCondition.back(); }
    condition* condition_add( condition&& conditionAdd ) { m_vectorCondition.push_back( std::move( conditionAdd ) ); return &m_vectorCondition.back(); }
-   condition* condition_add( const gd::argument::arguments& argumentsCondition );
+   condition* condition_add( const gd::argument::arguments& argumentsCondition, tag_arguments );
 
    condition* condition_add_(const table* ptable, std::string_view stringName, const gd::variant_view& variantOperator, const gd::variant_view& variantValue);
    condition* condition_add_raw(const gd::variant_view& variantTable, const std::string_view& stringCondition);
