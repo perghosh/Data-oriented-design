@@ -744,6 +744,18 @@ std::string query::sql_get_delete() const
 {
    std::string stringDelete; // generated delete string 
 
+   const auto ptable = &(*std::begin(m_vectorTable));
+   if( ptable->has( "schema" ) == true )
+   {
+      stringDelete += ptable->schema();
+      stringDelete += ".";
+      stringDelete += ptable->name();
+   }
+   else
+   {
+      stringDelete += ptable->name();
+   }
+
    return stringDelete;
 }
 
@@ -826,8 +838,18 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          stringSql += sql_get_insert();
          break;
 
+      case eSqlPartUpdate:
+         stringSql += std::string_view{ "UPDATE " };
+         stringSql += sql_get_update();
+         break;
+
+      case eSqlPartDelete:
+         stringSql += std::string_view{ "DELETE " };
+         //stringSql += sql_get_delete();
+         break;
+
       case eSqlPartFrom:
-         stringSql += std::string_view{ "\nFROM\n\t" };
+         stringSql += std::string_view{ " FROM " };
          stringSql += sql_get_from();
          break;
 

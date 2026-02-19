@@ -19,6 +19,7 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+/*
 TEST_CASE( "[sql] simple select", "[sql]" ) {
    using namespace gd::sql;
    query querySelect;
@@ -57,6 +58,26 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
 
    stringSQL = querySelect.sql_get( eSqlSelect );
    std::cout << stringSQL << "\n";
+}
+*/
 
+TEST_CASE( "[sql] update", "[sql]" ) {
+   using namespace gd::sql;
+   query queryUpdate;
+
+   queryUpdate.table_add( "table1" );
+   queryUpdate.field_add( {{"name", "id"}, {"value", "id-value"}}, tag_arguments{} );
+   queryUpdate.field_add( {{"name", "name"}, {"value", "name-value"}}, tag_arguments{} );
+   queryUpdate.condition_add( { {"name", "id"}, {"operator", eOperatorTypeNumberEqual}, {"value", 123} }, tag_arguments{} );
+
+   auto stringSQL = queryUpdate.sql_get( eSqlUpdate );
+   std::cout << stringSQL << "\n";
+
+   query queryDelete;
+   queryDelete.table_add( "table1" );
+   queryDelete.condition_add( { {"name", "id"}, {"operator", eOperatorTypeNumberEqual}, {"value", 123} }, tag_arguments{} );
+
+   stringSQL = queryDelete.sql_get( eSqlDelete );
+   std::cout << stringSQL << "\n";
 
 }
