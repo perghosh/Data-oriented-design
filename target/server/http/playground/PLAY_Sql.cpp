@@ -61,6 +61,39 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
 }
 */
 
+TEST_CASE( "[sql] update with types", "[sql]" ) {
+
+/*
+1. `3f7c9b1a8d4e6f2a5c8b7d1e9f3a4c6d`
+2. `a1b2c3d4e5f67890123456789abcdef0`
+3. `7d8e9f0a1b2c3d4e5f67890123456789`
+4. `f0e1d2c3b4a5968778695a4b3c2d1e0f`
+5. `1a2b3c4d5e6f7890abcdef1234567890`
+*/
+
+   using namespace gd::sql;
+   query queryUpdate( eSqlDialectSqlite );
+
+   queryUpdate.table_add( "table1" );
+   queryUpdate.field_add( {{"name", "id"}, {"value", "id-value"}, {"type", "utf8"}}, tag_arguments{} );
+   queryUpdate.field_add( {{"name", "uuid"}, {"value", "3f7c9b1a8d4e6f2a5c8b7d1e9f3a4c6d"}, {"type", "uuid"}}, tag_arguments{} );
+   queryUpdate.condition_add( { {"name", "uuid"}, {"operator", eOperatorTypeNumberEqual}, {"value", "1a2b3c4d5e6f7890abcdef1234567890"}, {"type", "uuid"} }, tag_arguments{} );
+
+   auto stringSQL = queryUpdate.sql_get( eSqlUpdate );
+   std::cout << stringSQL << "\n";
+   queryUpdate.sql_set_dialect( eSqlDialectSqlServer );
+   stringSQL = queryUpdate.sql_get( eSqlUpdate );
+   std::cout << stringSQL << "\n";
+   queryUpdate.sql_set_dialect( eSqlDialectOracle );
+   stringSQL = queryUpdate.sql_get( eSqlUpdate );
+   std::cout << stringSQL << "\n";
+
+   stringSQL = queryUpdate.sql_get( eSqlInsert );
+   std::cout << stringSQL << "\n";
+
+}
+
+
 TEST_CASE( "[sql] update", "[sql]" ) {
    using namespace gd::sql;
    query queryUpdate;

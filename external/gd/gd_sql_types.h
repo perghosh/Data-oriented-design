@@ -230,7 +230,7 @@ enum enumSqlPart
 enum enumSql
 {
    eSqlSelect =            eSqlPartSelect | eSqlPartFrom | eSqlPartWhere | eSqlPartOrderBy | eSqlPartGroupBy | eSqlPartWith | eSqlPartLimit,
-   eSqlInsert =            eSqlPartInsert,
+   eSqlInsert =            eSqlPartInsert | eSqlPartValues | eSqlPartReturning,
    eSqlUpdate =            eSqlPartUpdate | eSqlPartWhere,
    eSqlDelete =            eSqlPartDelete | eSqlPartFrom | eSqlPartWhere,
 };

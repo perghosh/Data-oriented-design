@@ -218,7 +218,7 @@ public:
       std::string_view name() const { return m_argumentsField["name"].as_string_view(); }
       std::string_view alias() const { return m_argumentsField["alias"].as_string_view(); }
       std::string raw() const { return m_argumentsField["raw"].as_string(); }
-      uint32_t type() const { return m_argumentsField["type"].get_uint(); }
+      uint32_t type() const { auto v_ = m_argumentsField["type"]; return v_.is_uint32() ? (uint32_t)v_ : query::type_s( v_.as_variant_view() ); }
       gd::variant_view value() const { return m_argumentsField["value"].as_variant_view(); }
 
       gd::argument::arguments& get_arguments() { return m_argumentsField; }
@@ -272,6 +272,7 @@ public:
       std::string name() const { return m_argumentsCondition["name"].get_string(); }
       std::string value_string() const { return m_argumentsCondition["value"].get_string(); }
       std::string raw() const { return m_argumentsCondition["raw"].get_string(); }
+      uint32_t type() const { auto v_ = m_argumentsCondition["type"]; return v_.is_uint32() ? (uint32_t)v_ : query::type_s( v_.as_variant_view() ); }
 
       unsigned get_table_key() const { return m_uTableKey; }
       unsigned get_operator() const { return m_argumentsCondition["operator"].get_uint(); }
@@ -457,6 +458,7 @@ public:
    [[nodiscard]] std::string sql_get_update( const std::vector< gd::variant_view >& vectorValue ) const;
    [[nodiscard]] std::string sql_get_delete() const;
    [[nodiscard]] std::string sql_get_groupby() const;
+   [[nodiscard]] std::string sql_get_values() const;
    [[nodiscard]] std::string sql_get_orderby() const;
    [[nodiscard]] std::string sql_get_limit() const;
    [[nodiscard]] std::string sql_get_with() const;
@@ -492,6 +494,10 @@ public:
 
 // ## free functions ------------------------------------------------------------------
 public:
+   // ## type handling
+   static uint32_t type_s( gd::variant_view v );
+   static void print_type_value_s( uint32_t uType, gd::variant_view VVValue, enumSqlDialect eDialect, std::string& stringTo );
+
    // ## SQL key words and type numbers
    static enumJoin get_join_type_s(const std::string_view& stringJoin);
    static std::string_view sql_get_join_text_s(enumJoin eJoinType);
@@ -527,7 +533,7 @@ public:
    static void values_get_s( const std::vector< gd::variant_view >& vectorValue, std::string& stringValues );
    static std::pair<bool, std::string> values_get_s( const std::vector< std::pair<std::string, gd::variant> >& vectorValue );
 
-   /// Generate `VALUES` compatible section that formats values to work in sql queries
+   /// Generate `VALUES` compatible section that formats values to work in sql queries             @NOTE [tag: type] [summary: type handling] [description: methods to handle types in values, this is used to format values to work in sql queries]
    static std::pair<bool, std::string> values_get_s( std::vector< std::pair<uint32_t, gd::variant_view> >& vectorValue, unsigned uDialect );
 
 

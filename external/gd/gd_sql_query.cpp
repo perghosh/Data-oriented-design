@@ -44,6 +44,7 @@ unsigned query::m_puPartOrder_s[] =
 { 
    eSqlPartSelect, 
    eSqlPartInsert, 
+   eSqlPartValues,
    eSqlPartUpdate, 
    eSqlPartDelete, 
    eSqlPartFrom, 
@@ -586,7 +587,10 @@ std::string query::sql_get_where() const
          stringWhere += stringOperator;                                        // add operator text
          if( uOperator != eOperatorTypeNumberNull && uOperator != eOperatorTypeNumberNotNull )
          {
-            value_get_s( itCondition->value(), stringWhere );   // print where value to string
+             // ## print where value to string ...............................
+            auto uType = itCondition->type();
+
+            print_type_value_s( uType, itCondition->value(), m_eSqlDialect, stringWhere );
          }
       }
 
@@ -671,18 +675,7 @@ std::string query::sql_get_update() const
       stringUpdate += std::string_view{ " = " };
       auto uType = itField->type();
       auto value_ = itField->value();
-      if( uType == 0 ) { value_get_s( value_, stringUpdate); }
-      else
-      {
-         if( value_.is_char_string() == true )
-         {
-            append_g( value_, uType, m_eSqlDialect, stringUpdate );
-         }
-         else
-         {
-            value_get_s( value_, stringUpdate );
-         }
-      }
+      print_type_value_s( uType, value_, m_eSqlDialect, stringUpdate );
       uFieldIndex++;
    }
 
@@ -764,6 +757,26 @@ std::string query::sql_get_groupby() const
    std::string stringGroupBy; // generated group by string 
 
    return stringGroupBy;
+}
+
+/** --------------------------------------------------------------------------
+ * @brief Build SQL VALUES part for insert query using all added fields and values sent
+ * @return 
+ */
+std::string query::sql_get_values() const
+{
+   std::string stringValues; // generated values string
+   // ## Add all set fields
+   unsigned uFieldIndex = 0;
+   for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField; itField++ )
+   {
+      if( uFieldIndex > 0 ) stringValues += ", ";
+      auto uType = itField->type();
+      print_type_value_s( uType, itField->value(), m_eSqlDialect, stringValues );
+      uFieldIndex++;
+   }
+
+   return stringValues;
 }
 
 /**
@@ -867,6 +880,12 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
       case eSqlPartHaving:
          break;
 
+      case eSqlPartValues:
+         stringSql += std::string_view{ "\nVALUES(\n\t" };
+         stringSql += sql_get_values();
+         stringSql += std::string_view{ ")" };
+         break;
+
       case eSqlPartOrderBy:
          break;
 
@@ -894,6 +913,49 @@ void query::clear()
    m_vectorCondition.clear();
    m_argumentsAttribute.clear();
    m_uNextKey = 0;
+}
+
+/** --------------------------------------------------------------------------
+ * @brief Convert value to type, variant_view holds information about the value type.
+ * @param v The variant view to extract the type from.
+ * @return A type identifier as a 32-bit unsigned integer. Returns 0 if the variant is null or if the type cannot be determined.
+ */
+uint32_t query::type_s( gd::variant_view v )
+{
+   if( v.is_char_string() )
+   {
+      return gd::types::type_g( v.as_string_view() );
+   }
+   else if( v.is_number() )
+   {
+      return v.as_uint();
+   }
+   else if( v.is_null() == true ) return 0;
+
+   return 0;
+}
+
+/** --------------------------------------------------------------------------
+ * @brief Formats and appends a value to a string based on its type and SQL dialect.
+ * @param uType The type identifier for the value. When 0, performs direct value extraction.
+ * @param value_ A variant view containing the value to format and append.
+ * @param eDialect The SQL dialect to use for formatting the value.
+ * @param stringTo The output string to append the formatted value to.
+ */
+void query::print_type_value_s( uint32_t uType, gd::variant_view value_, enumSqlDialect eDialect, std::string& stringTo )
+{
+   if( uType == 0 ) { value_get_s( value_, stringTo ); }
+   else
+   {
+      if( value_.is_char_string() == true )
+      {
+         append_g( value_, uType, eDialect, stringTo );
+      }
+      else
+      {
+         value_get_s( value_, stringTo );
+      }
+   }
 }
 
 
