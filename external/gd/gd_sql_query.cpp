@@ -843,26 +843,31 @@ std::string query::sql_get_values() const
    return stringValues;
 }
 
-/**
- * @brief Build sql order part used in select query
- * @return string with sql formated to order columns in query
-*/
-std::string query::sql_get_orderby() const
+/** --------------------------------------------------------------------------
+ * @brief Generates an SQL ORDER BY clause based on fields marked for ordering.
+ * @param stringOrderByPrefix The prefix string to prepend to the ORDER BY clause.
+ * @return A string containing the ORDER BY clause with column indices and sort directions (ASC/DESC).
+ */
+std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
 {
    std::string stringOrderBy; // generated order by string 
 
+   unsigned uFieldIndex = 0;
    for( auto it = field_begin(); it != field_end(); it++ )
    {
-      if( it->is_orderby() == false ) [[likely]] continue;                     // no order by field ?
+      uFieldIndex++;
+      if( it->is_orderby() == false ) [[likely]] continue;                    // no order by field ?
 
       if( stringOrderBy.empty() == false ) { stringOrderBy += std::string_view{ ", " }; }
+      else { stringOrderBy += stringOrderByPrefix; }
 
-      if( it->has( "index" ) == true )                                         // found index number for column
-      {
-         stringOrderBy += (*it)["index"].as_string();
+      stringOrderBy += std::to_string( uFieldIndex );                         // column index 
 
-         if( (*it)["desc"].is_true() == true ) stringOrderBy += std::string_view{ " DESC" };
-      }
+      auto order_ = it->order();
+      auto iAscending = order_.as_int();
+
+      if( iAscending >= 0 ) stringOrderBy += std::string_view{ " ASC" };
+      else stringOrderBy += std::string_view{ " DESC" };
    }
 
    return stringOrderBy;
@@ -963,6 +968,7 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          break;
 
       case eSqlPartOrderBy:
+         stringSql += sql_get_orderby( "\nORDER BY\n\t" );
          break;
 
       case eSqlPartLimit:
