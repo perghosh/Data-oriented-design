@@ -25,6 +25,7 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
 
    querySelect.table_add( "test_table" );
    querySelect.field_add( {{"name", "id"}, {"alias", "key"}}, tag_arguments{} );
+   querySelect.field_add( {{"name", "test"}, {"alias", "alias_for_test"}, {"order", 1}}, tag_arguments{} );
    querySelect.field_add( "name" );
    querySelect.set_limit( 10, 10 );
 

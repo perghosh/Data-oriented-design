@@ -221,6 +221,8 @@ public:
       uint32_t type() const { auto v_ = m_argumentsField["type"]; return v_.is_uint32() ? (uint32_t)v_ : query::type_s( v_.as_variant_view() ); }
       gd::variant_view value() const { return m_argumentsField["value"].as_variant_view(); }
 
+      gd::variant_view order() const { return m_argumentsField["order"].as_variant_view(); }
+
       gd::argument::arguments& get_arguments() { return m_argumentsField; }
       const gd::argument::arguments& get_arguments() const { return m_argumentsField; }
 
@@ -234,7 +236,7 @@ public:
       bool compare(const table* pTable) const { return m_uTableKey == *pTable; }
 
       bool is_groupby() const { return m_uUseAndType & eSqlPartGroupBy; }
-      bool is_orderby() const { return m_uUseAndType & eSqlPartOrderBy; }
+      bool is_orderby() const { return /*m_uUseAndType & eSqlPartOrderBy || */ m_argumentsField.exists("order") == true; }
       bool is_select() const { return m_uUseAndType == 0 || m_uUseAndType & eSqlPartSelect; }
 
 
@@ -462,7 +464,7 @@ public:
    [[nodiscard]] std::string sql_get_delete() const;
    [[nodiscard]] std::string sql_get_groupby() const;
    [[nodiscard]] std::string sql_get_values() const;
-   [[nodiscard]] std::string sql_get_orderby() const;
+   [[nodiscard]] std::string sql_get_orderby( std::string_view stringOrderByPrefix ) const;
    [[nodiscard]] std::string sql_get_limit() const;
    [[nodiscard]] std::string sql_get_with() const;
    [[nodiscard]] std::string sql_get_returning() const;
