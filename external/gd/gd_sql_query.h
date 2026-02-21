@@ -432,10 +432,14 @@ public:
 
 /** \name OPERATION
 *///@{
+   void sql_set_dialect( enumSqlDialect eSqlDialect ) { m_eSqlDialect = eSqlDialect; }
+
+
    template <typename VALUE>
    void set_attribute( const std::string_view& stringName, const VALUE& value_ ) { m_argumentsAttribute.set( stringName, value_ ); }
    gd::variant_view distinct() const { return m_argumentsAttribute["distinct"].get_variant_view(); }
    gd::variant_view limit() const { return m_argumentsAttribute["limit"].get_variant_view(); }
+   void set_limit( std::size_t uOffset = 0, std::size_t uCount = 0 );
 
 
    /// Generate key values for internal data in query
@@ -443,7 +447,6 @@ public:
    // sql_update(), sql_update( iDbType )
    // sql_insert(), sql_insert( iDbType )
 
-   void sql_set_dialect( enumSqlDialect eSqlDialect ) { m_eSqlDialect = eSqlDialect; }
 
    std::string sql_get_join_for_table( const table* ptable, const table* ptableParent ) const;
    std::string sql_get_join_for_table( const table* ptable ) const { return sql_get_join_for_table( ptable, nullptr ); }

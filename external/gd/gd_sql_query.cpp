@@ -380,6 +380,70 @@ query& query::add( const query& queryFrom )
    return *this;
 }
 
+/** ----------------------------------------------------------------------------- set_limit */ /**
+ * @brief Generate limit part based on what type of sql dialect that is used.
+ * 
+ * `m_eSqlDialect` is used to determine what type of sql dialect is used, based on that the limit
+ * part is generated. For example for MySQL it is `LIMIT uOffset, uCount`, for SQL Server it
+ * is `OFFSET uOffset ROWS FETCH NEXT uCount ROWS ONLY` and default is `LIMIT uCount OFFSET uOffset`.
+ * If both `uOffset` and `uCount` is 0 then limit part is removed from query.
+ * 
+ * @param uOffset 
+ * @param uCount 
+ */
+void query::set_limit( std::size_t uOffset, std::size_t uCount )
+{
+   if( uOffset == 0 && uCount == 0 )
+   {
+      m_argumentsAttribute.remove( "limit" );
+      return;
+   }
+
+   std::string stringLimit;
+
+   switch( m_eSqlDialect )
+   {
+   case eSqlDialectSqlServer:
+   case eSqlDialectOracle:
+   case eSqlDialectDB2:
+   case eSqlDialectSnowflake:
+      stringLimit += "OFFSET ";
+      stringLimit += std::to_string( uOffset );
+      stringLimit += " ROWS FETCH NEXT ";
+      stringLimit += std::to_string( uCount );
+      stringLimit += " ROWS ONLY";
+      break;
+
+   case eSqlDialectMySql:
+   case eSqlDialectMariaDB:
+      if( uOffset == 0 )
+      {
+         stringLimit += "LIMIT ";
+         stringLimit += std::to_string( uCount );
+      }
+      else
+      {
+         stringLimit += "LIMIT ";
+         stringLimit += std::to_string( uOffset );
+         stringLimit += ", ";
+         stringLimit += std::to_string( uCount );
+      }
+      break;
+
+   default:
+      stringLimit += "LIMIT ";
+      stringLimit += std::to_string( uCount );
+      if( uOffset != 0 )
+      {
+         stringLimit += " OFFSET ";
+         stringLimit += std::to_string( uOffset );
+      }
+      break;
+   }
+
+   m_argumentsAttribute.set( "limit", stringLimit );
+}
+
 
 
 std::string query::sql_get_join_for_table( const table* ptable, const table* ptableParent ) const
@@ -804,9 +868,21 @@ std::string query::sql_get_orderby() const
    return stringOrderBy;
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Retrieves the SQL LIMIT clause as a string.
+ * @return A string containing the LIMIT clause with a leading newline if a limit is set and is a string type, otherwise an empty string.
+ */
 std::string query::sql_get_limit() const
 {
    std::string stringLimit; // string with limit information
+
+   auto limit_ = limit();
+
+   if( limit_.is_string() == true )
+   {
+      stringLimit += "\n";
+      stringLimit += limit_.as_string_view();
+   }
 
    return stringLimit;
 }
