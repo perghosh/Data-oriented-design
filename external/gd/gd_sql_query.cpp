@@ -902,6 +902,15 @@ std::string query::sql_get_with() const
 std::string query::sql_get_returning() const
 {
    std::string stringReturning; // returning section
+
+   // ## check for returning property
+   const auto retuning_ = returning();
+   if( retuning_.is_string() == true ) { stringReturning += retuning_.as_string_view(); }
+   else
+   {
+      //for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField
+   }
+
    return stringReturning;
 }
 
@@ -973,6 +982,10 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
 
       case eSqlPartLimit:
          stringSql += sql_get_limit();
+         break;
+
+      case eSqlPartReturning:
+         stringSql += sql_get_returning();
          break;
 
       default:

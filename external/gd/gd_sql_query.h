@@ -235,9 +235,13 @@ public:
       bool compare( const std::pair<std::string_view, gd::variant_view>& pairMatch) const { return m_argumentsField.find(pairMatch) != nullptr; }
       bool compare(const table* pTable) const { return m_uTableKey == *pTable; }
 
+      /// When default field will be added to select, insert and update queries
+      bool is_default() const { return m_uUseAndType == 0; }
+
       bool is_groupby() const { return m_uUseAndType & eSqlPartGroupBy; }
-      bool is_orderby() const { return /*m_uUseAndType & eSqlPartOrderBy || */ m_argumentsField.exists("order") == true; }
+      bool is_orderby() const { return m_uUseAndType & eSqlPartOrderBy  }
       bool is_select() const { return m_uUseAndType == 0 || m_uUseAndType & eSqlPartSelect; }
+      bool is_returning() const { return m_uUseAndType & eSqlPartReturning; }
 
 
       // attributes
@@ -443,6 +447,8 @@ public:
    gd::variant_view distinct() const { return m_argumentsAttribute["distinct"].get_variant_view(); }
    gd::variant_view limit() const { return m_argumentsAttribute["limit"].get_variant_view(); }
    void set_limit( std::size_t uOffset = 0, std::size_t uCount = 0 );
+   gd::variant_view returning() const { return m_argumentsAttribute["returning"].get_variant_view(); }
+   void set_returning( const std::string_view& stringReturning ) { m_argumentsAttribute.set( "returning", stringReturning ); }
 
 
    /// Generate key values for internal data in query

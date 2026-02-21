@@ -265,31 +265,32 @@ std::pair<bool,std::string> CRENDERSql::GetQuery( enumSqlQueryType eSqlQueryType
  */
 std::pair<bool,std::string> CRENDERSql::ToSqlInsert( std::string& stringQuery )
 {
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_( buffer_ );
+
    std::string stringTable = m_tableField.cell_get_variant_view(0u, "table", gd::table::tag_not_null{}).as_string();
 
-   gd::sql::query queryInsert( gd::sql::eSqlInsert, stringTable, gd::sql::tag_table{});
-   queryInsert.sql_set_dialect( gd::sql::sql_get_dialect_g("sqlite"));
+   gd::sql::query queryInsert( m_eSqlDialect, gd::sql::eSqlInsert, stringTable, gd::sql::tag_table{});
 
    // ## Extract column names and values from table field and add to query ...
    
    std::vector< std::pair<uint32_t, gd::variant_view> > vectorValue;
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
+      arguments_.clear();
+
       std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
-      queryInsert.field_add( stringColumn );                                  // add column to query
+      //queryInsert.field_add( stringColumn );                                  // add column to query
       uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
       auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
-      vectorValue.push_back( { uType, value_ } );                             // add value to vector for later use in query
+      arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
+      queryInsert.field_add( arguments_, gd::sql::tag_arguments{} );       // add column to query
    }
 
    // ## Generate insert query ..............................................
 
    std::string stringInsertSql;
-	stringInsertSql += "INSERT INTO ";
-	stringInsertSql += queryInsert.sql_get_insert();
-	stringInsertSql += "\nVALUES(";
-	stringInsertSql += gd::sql::query::values_get_s( vectorValue, m_eSqlDialect ).second;// append values from name value pairs
-	stringInsertSql += ")";
+	stringInsertSql += queryInsert.sql_get( gd::sql::eSqlInsert );
 
    std::string_view stringReturning = GetProperty( "returning" ).as_string_view();
    if( stringReturning.empty() == false )
