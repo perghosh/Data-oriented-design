@@ -308,6 +308,7 @@ public:
    query( unsigned uFormatOptions ): m_uFormatOptions(uFormatOptions) {}
    query( std::string_view stringTable, tag_table ) { add( stringTable, tag_table{}); }
    query( unsigned uFormatOptions, std::string_view stringTable, tag_table ): m_uFormatOptions(uFormatOptions) { add( stringTable, tag_table{}); }
+   query( enumSqlDialect eSqlDialect, unsigned uFormatOptions, std::string_view stringTable, tag_table ): m_eSqlDialect(eSqlDialect), m_uFormatOptions(uFormatOptions) { add( stringTable, tag_table{}); }
    // copy
    query( const query& o ) { common_construct( o ); }
    query( query&& o ) noexcept { common_construct( std::move( o ) ); }

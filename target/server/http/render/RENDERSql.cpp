@@ -313,7 +313,7 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
 
    std::string stringTable = m_tableField.cell_get_variant_view(0u, "table", gd::table::tag_not_null{}).as_string();
 
-   gd::sql::query queryUpdate( gd::sql::eSqlUpdate, stringTable, gd::sql::tag_table{});
+   gd::sql::query queryUpdate( m_eSqlDialect, gd::sql::eSqlUpdate, stringTable, gd::sql::tag_table{});
 
    for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
    {
@@ -326,7 +326,7 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
          uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
          auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
          arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType } }, gd::types::tag_view{});
-         queryUpdate.field_add( arguments_ );                                 // add column to query
+         queryUpdate.field_add( arguments_, gd::sql::tag_arguments{} );       // add column to query
       }
       else if( uType == uint32_t( ePartTypeWhere ) )
       {
@@ -336,7 +336,7 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
          uint32_t uOperator = itRow.cell_get_variant_view("operator").as_uint();
          // ## Generate condition, name, value, type and operator are needed to generate condition for where part of query
          arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType }, { "operator", uOperator } }, gd::types::tag_view{});
-         queryUpdate.condition_add( arguments_ );                             // add condition to query
+         queryUpdate.condition_add( arguments_, gd::sql::tag_arguments{} );   // add condition to query
       }
    }
 
@@ -344,10 +344,7 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
    // ## Generate insert query ..............................................
 
    std::string stringUpdateSql;
-	stringUpdateSql += queryUpdate.sql_get_update();
-	stringUpdateSql += "\nWHERE ";
-	//stringUpdateSql += gd::sql::query::where_get_s( vectorValue, m_eSqlDialect ).second;// append where clause from name value pairs
-
+	stringUpdateSql += queryUpdate.sql_get( gd::sql::eSqlUpdate );
 
    if( stringQuery.empty() == true ) stringQuery = std::move( stringUpdateSql );
    else stringQuery += "\n\n" + stringUpdateSql;
