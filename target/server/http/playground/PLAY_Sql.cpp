@@ -77,7 +77,7 @@ TEST_CASE( "[sql] update with types", "[sql]" ) {
    queryUpdate.table_add( "table1" );
    queryUpdate.field_add( {{"name", "id"}, {"value", "id-value"}, {"type", "utf8"}}, tag_arguments{} );
    queryUpdate.field_add( {{"name", "uuid"}, {"value", "3f7c9b1a8d4e6f2a5c8b7d1e9f3a4c6d"}, {"type", "uuid"}}, tag_arguments{} );
-   queryUpdate.condition_add( { {"name", "uuid"}, {"operator", eOperatorTypeNumberEqual}, {"value", "1a2b3c4d5e6f7890abcdef1234567890"}, {"type", "uuid"} }, tag_arguments{} );
+   queryUpdate.condition_add( { {"name", "uuid"}, {"operator", "="}, {"value", "1a2b3c4d5e6f7890abcdef1234567890"}, {"type", "uuid"} }, tag_arguments{} );
 
    auto stringSQL = queryUpdate.sql_get( eSqlUpdate );
    std::cout << stringSQL << "\n";
