@@ -156,12 +156,19 @@ enum enumOperatorTypeNumber
    eOperatorTypeNumberGreater = 4,      // >
    eOperatorTypeNumberGreaterEqual = 5, // >=
    eOperatorTypeNumberLike = 6,         // ..=..
-   eOperatorTypeNumberLikeBegin = 7,    // ..=
-   eOperatorTypeNumberLikeEnd = 8,      // =..
-   eOperatorTypeNumberNull = 9,         // IS NULL
-   eOperatorTypeNumberNotNull = 10,     // IS NOT NULL
-   eOperatorTypeNumberIn = 11,          // IN
-   eOperatorTypeNumberNotIn = 12,       // NOT IN
+   eOperatorTypeNumberNotLike = 7,      // NOT LIKE
+   eOperatorTypeNumberLikeBegin = 8,    // ..=
+   eOperatorTypeNumberLikeEnd = 9,      // =..
+   eOperatorTypeNumberNull = 10,        // IS NULL
+   eOperatorTypeNumberNotNull = 11,     // IS NOT NULL
+   eOperatorTypeNumberIn = 12,          // IN
+   eOperatorTypeNumberNotIn = 13,       // NOT IN
+   eOperatorTypeNumberBetween = 14,     // BETWEEN
+   eOperatorTypeNumberNotBetween = 15,  // NOT BETWEEN
+   eOperatorTypeNumberIsTrue = 16,      // IS TRUE
+   eOperatorTypeNumberIsFalse = 17,     // IS FALSE
+   eOperatorTypeNumberExist = 18,       // EXISTS
+   eOperatorTypeNumberNotExist = 19,    // NOT EXISTS
    eOperatorTypeNumberEND,              // Used to check for max valid operator number
 };
 
@@ -172,25 +179,39 @@ enum enumOperatorGroupType
    eOperatorGroupTypeDate       = 0x00000400,   // date value
    eOperatorGroupTypeString     = 0x00000800,   // text value
    eOperatorGroupTypeBinary     = 0x00001000,   // binary
+   eOperatorGroupTypeQuery      = 0x00002000,   // query
 };
 
+/** ==========================================================================
+ * @brief Defines comparison and logical operators that can be applied to different data types including booleans, numbers, dates, strings, and binary data.
+ * 
+ * Each operator is represented as a combination of an operator type and one or more operator group types. This to speed up what types an operator can be applied to, and what operator type it is. 
+ * For example, eOperatorEqual can be applied to boolean, number, date, string, and binary types, and is of type "equal". The operator groups are represented as bit flags, allowing for efficient checks of operator applicability to data types.
+ */
 enum enumOperator
 {
-   eOperatorEqual =                 eOperatorTypeNumberEqual | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
-   eOperatorNotEqual =              eOperatorTypeNumberNotEqual | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
-   eOperatorLess =                  eOperatorTypeNumberLess | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString,
-   eOperatorLessEqual =             eOperatorTypeNumberLessEqual | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString,
-   eOperatorGreater =               eOperatorTypeNumberGreater | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString,
-   eOperatorGreaterEqual =          eOperatorTypeNumberGreaterEqual | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString,
-   eOperatorLike =                  eOperatorTypeNumberLike | eOperatorGroupTypeString,
-   eOperatorLikeBegin =             eOperatorTypeNumberLikeBegin | eOperatorGroupTypeString,
-   eOperatorLikeEnd =               eOperatorTypeNumberLikeEnd | eOperatorGroupTypeString,
-   eOperatorNull =                  eOperatorTypeNumberNull | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
-   eOperatorNotNull =               eOperatorTypeNumberNotNull | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
-   eOperatorIn =                    eOperatorTypeNumberIn | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
-   eOperatorNotIn =                 eOperatorTypeNumberNotIn | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
+   eOperatorEqual        = eOperatorTypeNumberEqual       | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
+   eOperatorNotEqual     = eOperatorTypeNumberNotEqual    | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
+   eOperatorLess         = eOperatorTypeNumberLess        | eOperatorGroupTypeNumber  | eOperatorGroupTypeDate   | eOperatorGroupTypeString,
+   eOperatorLessEqual    = eOperatorTypeNumberLessEqual   | eOperatorGroupTypeNumber  | eOperatorGroupTypeDate   | eOperatorGroupTypeString,
+   eOperatorGreater      = eOperatorTypeNumberGreater     | eOperatorGroupTypeNumber  | eOperatorGroupTypeDate   | eOperatorGroupTypeString,
+   eOperatorGreaterEqual = eOperatorTypeNumberGreaterEqual| eOperatorGroupTypeNumber  | eOperatorGroupTypeDate   | eOperatorGroupTypeString,
+   eOperatorLike         = eOperatorTypeNumberLike        | eOperatorGroupTypeString,
+   eOperatorNotLike      = eOperatorTypeNumberNotLike     | eOperatorGroupTypeString,
+   eOperatorLikeBegin    = eOperatorTypeNumberLikeBegin   | eOperatorGroupTypeString,
+   eOperatorLikeEnd      = eOperatorTypeNumberLikeEnd     | eOperatorGroupTypeString,
+   eOperatorNull         = eOperatorTypeNumberNull        | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
+   eOperatorNotNull      = eOperatorTypeNumberNotNull     | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
+   eOperatorIn           = eOperatorTypeNumberIn          | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
+   eOperatorNotIn        = eOperatorTypeNumberNotIn       | eOperatorGroupTypeBoolean | eOperatorGroupTypeNumber | eOperatorGroupTypeDate | eOperatorGroupTypeString | eOperatorGroupTypeBinary,
+   eOperatorBetween      = eOperatorTypeNumberBetween     | eOperatorGroupTypeNumber  | eOperatorGroupTypeDate   | eOperatorGroupTypeString,
+   eOperatorNotBetween   = eOperatorTypeNumberNotBetween  | eOperatorGroupTypeNumber  | eOperatorGroupTypeDate   | eOperatorGroupTypeString,
+   eOperatorIsTrue       = eOperatorTypeNumberIsTrue      | eOperatorGroupTypeBoolean,
+   eOperatorIsFalse      = eOperatorTypeNumberIsFalse     | eOperatorGroupTypeBoolean,
+   eOperatorExist        = eOperatorTypeNumberExist       | eOperatorGroupTypeQuery,
+   eOperatorNotExist     = eOperatorTypeNumberNotExist    | eOperatorGroupTypeQuery,
 
-   eOperatorError =                 0xffffffff,
+   eOperatorError        = 0xffffffff,
 };
 
 enum enumOperatorMask
@@ -198,41 +219,63 @@ enum enumOperatorMask
    eOperatorMaskNumber = 0x000000ff,
 };
 
-/**
- * \brief Important sql parts to build sql queries.
+/** ==========================================================================
+ * \brief Important SQL parts used to build SQL queries.
  *
- * `query` are able to generate sql queries, different parts can be selected
- * for generation. To combine parts you can sett flags for wich parts that
- * is generated. Flags from `enumSqlPart` are used for that.
+ * The bit position defines the generation order.
+ * Parts are emitted in ascending bit order.
  *
  */
-enum enumSqlPart
+enum enumSqlPart : uint32_t
 {
-   eSqlPartUnknown =       0b0000'0000'0000'0000'0000'0000'0000'0000,
-   //                        3       2 2       1 1
-   //                        1       4 3       6 5       8 7       0
-   eSqlPartSelect =        0b0000'0000'0000'0001'0000'0000'0000'0000,
-   eSqlPartInsert =        0b0000'0000'0000'0010'0000'0000'0000'0000,
-   eSqlPartUpdate =        0b0000'0000'0000'0100'0000'0000'0000'0000,
-   eSqlPartDelete =        0b0000'0000'0000'1000'0000'0000'0000'0000,
-   eSqlPartFrom =          0b0000'0000'0001'0000'0000'0000'0000'0000,
-   eSqlPartWhere =         0b0000'0000'0010'0000'0000'0000'0000'0000,
-   eSqlPartLimit =         0b0000'0000'0100'0000'0000'0000'0000'0000,
-   eSqlPartOrderBy =       0b0000'0000'1000'0000'0000'0000'0000'0000,
-   eSqlPartGroupBy =       0b0000'0001'0000'0000'0000'0000'0000'0000,
-   eSqlPartWith =          0b0000'0010'0000'0000'0000'0000'0000'0000,
-   eSqlPartHaving =        0b0000'0100'0000'0000'0000'0000'0000'0000,
-   eSqlPartValues =        0b0000'1000'0000'0000'0000'0000'0000'0000,
-   eSqlPartSet =           0b0001'0000'0000'0000'0000'0000'0000'0000,
-   eSqlPartReturning =     0b0010'0000'0000'0000'0000'0000'0000'0000,
+   eSqlPartUnknown   = 0,
+
+   // --- Common prefix ---
+   eSqlPartWith      = 1u << 0,   // WITH (CTE)
+
+   // --- Statement type ---
+   eSqlPartSelect    = 1u << 1,   // SELECT
+   eSqlPartDistinct  = 1u << 2,   // DISTINCT (SELECT only)
+   eSqlPartInsert    = 1u << 3,   // INSERT
+   eSqlPartUpdate    = 1u << 4,   // UPDATE
+   eSqlPartDelete    = 1u << 5,   // DELETE
+
+   // --- INSERT specific ---
+   eSqlPartInto      = 1u << 6,   // INTO
+   eSqlPartValues    = 1u << 7,   // VALUES
+
+   // --- UPDATE specific ---
+   eSqlPartSet       = 1u << 8,   // SET
+
+   // --- FROM/JOIN ---
+   eSqlPartFrom      = 1u << 9,   // FROM
+   eSqlPartJoin      = 1u << 10,  // JOIN
+
+   // --- Filtering ---
+   eSqlPartWhere     = 1u << 11,  // WHERE
+
+   // --- Aggregation ---
+   eSqlPartGroupBy   = 1u << 12,  // GROUP BY
+   eSqlPartHaving    = 1u << 13,  // HAVING
+
+   // --- Sorting / Paging ---
+   eSqlPartOrderBy   = 1u << 14,  // ORDER BY
+   eSqlPartLimit     = 1u << 15,  // LIMIT
+   eSqlPartOffset    = 1u << 16,  // OFFSET
+
+   // --- Output ---
+   eSqlPartReturning = 1u << 17,  // RETURNING
 };
 
+/** ==========================================================================
+ * @brief Defines SQL statement types by combining various SQL clause parts using bitwise flags.
+ */
 enum enumSql
 {
-   eSqlSelect =            eSqlPartSelect | eSqlPartFrom | eSqlPartWhere | eSqlPartOrderBy | eSqlPartGroupBy | eSqlPartWith | eSqlPartLimit,
-   eSqlInsert =            eSqlPartInsert | eSqlPartValues | eSqlPartReturning,
-   eSqlUpdate =            eSqlPartUpdate | eSqlPartWhere,
-   eSqlDelete =            eSqlPartDelete | eSqlPartFrom | eSqlPartWhere,
+   eSqlSelect = eSqlPartSelect | eSqlPartDistinct | eSqlPartFrom | eSqlPartWhere | eSqlPartOrderBy | eSqlPartGroupBy | eSqlPartWith | eSqlPartLimit,
+   eSqlInsert = eSqlPartInsert | eSqlPartInto | eSqlPartValues | eSqlPartReturning,
+   eSqlUpdate = eSqlPartUpdate | eSqlPartWhere,
+   eSqlDelete = eSqlPartDelete | eSqlPartFrom | eSqlPartWhere,
 };
 
 
