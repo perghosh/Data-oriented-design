@@ -19,7 +19,6 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
-/*
 TEST_CASE( "[sql] simple select", "[sql]" ) {
    using namespace gd::sql;
    query querySelect;
@@ -27,6 +26,7 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
    querySelect.table_add( "test_table" );
    querySelect.field_add( {{"name", "id"}, {"alias", "key"}}, tag_arguments{} );
    querySelect.field_add( "name" );
+   querySelect.set_limit( 10, 10 );
 
    auto stringSQL = querySelect.sql_get( eSqlSelect );
    std::cout << stringSQL << "\n";
@@ -59,7 +59,6 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
    stringSQL = querySelect.sql_get( eSqlSelect );
    std::cout << stringSQL << "\n";
 }
-*/
 
 TEST_CASE( "[sql] update with types", "[sql]" ) {
 
