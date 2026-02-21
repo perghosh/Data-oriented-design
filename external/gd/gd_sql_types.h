@@ -279,39 +279,62 @@ enum enumSql
 };
 
 
-/** ---------------------------------------------------------------------------
- * @brief Return  part number for part name
- * Converts sql part name to part number and are able to do this at commpile time.
- * Valid part names are:
- * DELETE, FROM, GROUPBY, HAVING, INSERT, LIMIT, ORDERBY, SELECT, UPDATE, WHERE, WITH
- * @param stringPartName Part as name that is converted to number
- * @return {enumSqlPart} number for part name
-*/
-constexpr enumSqlPart sql_get_part_type_g(const std::string_view& stringPartName)
-{                                                                              assert(stringPartName.empty() == false);
-   // ## convert character to uppercase if lowercase is found
-   constexpr uint8_t LOWER_A = 'a';
-   uint8_t uFirst = (uint8_t)stringPartName[0];                                // only check first character
-   if( uFirst >= LOWER_A ) uFirst -= ('a' - 'A');                              // convert to lowercase subtracting to capital letter
+/// @brief Convert a character to uppercase if it's a lowercase letter; otherwise, return it unchanged.
+constexpr char upper_g( char i )
+{
+   return ( i >= 'a' && i <= 'z' ) ? static_cast<char>( i - ( 'a' - 'A' ) ) : i;
+}
 
-   switch( uFirst )
+/** ---------------------------------------------------------------------------
+ * @brief Return SQL part enum for given keyword.
+ * Flexible + fast: uses first character, optional next chars,
+ * allows extended words starting with valid keyword (prefix matching).
+ *
+ * @param stringPartName Part name as string_view
+ * @return {enumSqlPart} Corresponding SQL part
+*/
+constexpr enumSqlPart sql_get_part_type_g( const std::string_view& stringPartName )
+{
+   assert( !stringPartName.empty() );
+
+   const size_t uSize = stringPartName.size();
+   const char i0 = upper_g( stringPartName[0] );
+
+   switch( i0 )
    {
-   case 'D': return enumSqlPart::eSqlPartDelete;
-   case 'F': return enumSqlPart::eSqlPartFrom;
-   case 'G': return enumSqlPart::eSqlPartGroupBy;
-   case 'H': return enumSqlPart::eSqlPartHaving;
-   case 'I': return enumSqlPart::eSqlPartInsert;
-   case 'L': return enumSqlPart::eSqlPartLimit;
-   case 'O': return enumSqlPart::eSqlPartOrderBy;
-   case 'S': return enumSqlPart::eSqlPartSelect;
-   case 'U': return enumSqlPart::eSqlPartUpdate;
-   case 'W': {
-      if( stringPartName[1] == 'I' || stringPartName[1] == 'i' ) return enumSqlPart::eSqlPartWith;
-      return enumSqlPart::eSqlPartWhere;
-      }
+   case 'F': return eSqlPartFrom;                                             // FROM (any prefix is fine)
+   case 'J': return eSqlPartJoin;                                             // JOIN
+   case 'L': return eSqlPartLimit;                                            // LIMIT
+   case 'H': return eSqlPartHaving;                                           // HAVING
+   case 'G': return eSqlPartGroupBy;                                          // GROUPBY
+   case 'R': return eSqlPartReturning;                                        // RETURNING
+   case 'V': return eSqlPartValues;                                           // VALUES
+   case 'U': return eSqlPartUpdate;                                           // UPDATE
+
+   case 'W':                                                                  // WITH / WHERE
+      if( uSize >= 5 && upper_g( stringPartName[1] ) == 'H' ) return eSqlPartWhere;
+      return eSqlPartWith;
+
+   case 'S':                                                                  // SELECT / SET
+      if( uSize >= 3 && upper_g( stringPartName[1] ) == 'E' && upper_g( stringPartName[2] ) == 'T' ) return eSqlPartSet;
+      return eSqlPartSelect;
+
+   case 'D':                                                                  // DELETE / DISTINCT
+      if( uSize >= 8 && upper_g( stringPartName[1] ) == 'I' && upper_g( stringPartName[2] ) == 'S' ) return eSqlPartDistinct;
+      return eSqlPartDelete;
+
+   case 'I':                                                                  // INSERT / INTO
+      if( uSize >= 4 && upper_g( stringPartName[1] ) == 'N' && upper_g( stringPartName[2] ) == 'T' ) return eSqlPartInto;
+      return eSqlPartInsert;
+
+   case 'O':                                                                  // ORDERBY / OFFSET
+      if( uSize >= 6 && upper_g( stringPartName[1] ) == 'F' ) return eSqlPartOffset;
+      return eSqlPartOrderBy;
    }
+
    return eSqlPartUnknown;
 }
+
 
 /** ---------------------------------------------------------------------------
  * @brief Return dialect enum value from dialect name (case-insensitive)
