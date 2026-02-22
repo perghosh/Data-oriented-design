@@ -238,9 +238,12 @@ public:
       /// When default field will be added to select, insert and update queries
       bool is_default() const { return m_uUseAndType == 0; }
 
-      bool is_groupby() const { return m_uUseAndType & eSqlPartGroupBy; }
-      bool is_orderby() const { return m_uUseAndType & eSqlPartOrderBy  }
       bool is_select() const { return m_uUseAndType == 0 || m_uUseAndType & eSqlPartSelect; }
+      bool is_insert() const { return m_uUseAndType == 0 || m_uUseAndType & eSqlPartInsert; }
+      bool is_update() const { return m_uUseAndType == 0 || m_uUseAndType & eSqlPartUpdate; }
+
+      bool is_groupby() const { return m_uUseAndType & eSqlPartGroupBy; }
+      bool is_orderby() const { return m_uUseAndType & eSqlPartOrderBy;  }
       bool is_returning() const { return m_uUseAndType & eSqlPartReturning; }
 
 
@@ -373,7 +376,14 @@ public:
    field* field_add( field&& fieldAdd ) { m_vectorField.push_back( std::move( fieldAdd ) ); return &m_vectorField.back(); }
 
    field* field_add( const gd::argument::arguments& argumentsField, tag_arguments );
-   field* field_add( std::string_view stringTable, const gd::argument::arguments& argumentsField, tag_arguments );
+   field* field_add( unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments );
+
+   /// add field with type, type is used to mark where field is used in query.
+   field* field_add_type( unsigned uPartType, const gd::argument::arguments& argumentsField, tag_arguments );
+   field* field_add_type( std::string_view stringPart, const gd::argument::arguments& argumentsField, tag_arguments ) { return field_add_type( query::part_s( stringPart ), argumentsField, tag_arguments{} ); }
+   field* field_add_type( unsigned uPartType, unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments );
+   field* field_add_type( std::string_view stringPart, unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments ) { return field_add_type( query::part_s( stringPart ), uTableKey, argumentsField, tag_arguments{} ); }
+
 
    void field_add_many(const std::vector< std::vector< std::pair<std::string_view, gd::variant_view> > >& vectorVectorField );
 
@@ -554,6 +564,16 @@ public:
    static void returning_get_s( const gd::borrow::vector< std::pair< std::string_view, std::string_view > >& vectorValue, std::string& stringReturning, unsigned uDialect );
    static void returning_get_s( std::string_view stringColumn, std::string& stringReturning, unsigned uDialect, char iSplitColumn = ';', char iSplitAlias = ',');
 
+   static constexpr unsigned part_s(std::string_view stringPart) {
+      if (stringPart == "select") return eSqlPartSelect;
+      if (stringPart == "insert") return eSqlPartInsert;
+      if (stringPart == "update") return eSqlPartUpdate;
+      if (stringPart == "groupby") return eSqlPartGroupBy;
+      if (stringPart == "orderby") return eSqlPartOrderBy;
+      if (stringPart == "returning") return eSqlPartReturning;
+                                                                                                   assert( false && "Invalid SQL part" );
+      return 0;
+   }
 };
 
 /// Add table
@@ -586,17 +606,30 @@ inline const query::table* query::table_get_for_key(unsigned uTableKey) const {
 
 /// Add field with arguments, arguments should have at least "name" argument, otherwise assert is triggered
 inline query::field* query::field_add( const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true ); assert( m_vectorTable.empty() == false );
-const auto* ptable = table_get();                                                                  assert( ptable != nullptr );
+   const auto* ptable = table_get();                                                               assert( ptable != nullptr );
    m_vectorField.push_back( field( *ptable, argumentsField ) ); 
    return &m_vectorField.back(); 
 }
 
 /// Add table field with arguments, arguments should have at least "name" argument, otherwise assert is triggered
-inline query::field* query::field_add(std::string_view stringTable, const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true );
-   const auto* ptable = table_get( stringTable );                                                  assert( ptable != nullptr );
-   m_vectorField.push_back( field( *ptable, argumentsField ) ); 
+inline query::field* query::field_add(unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true ); assert( table_get( uTableKey ) != nullptr );
+   m_vectorField.push_back( field( uTableKey, argumentsField ) ); 
    return &m_vectorField.back(); 
 }
+
+/// add field with type, type is used to mark where field is used in query. For example if field is used in select part of query then type is eSqlPartSelect, if field is used in group by part of query then type is eSqlPartGroupBy and so on. If field is used in multiple parts of query then type is combination of types, for example if field is used in select and group by part of query then type is eSqlPartSelect | eSqlPartGroupBy.
+inline query::field* query::field_add_type( unsigned uPartType, const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true ); assert( m_vectorTable.empty() == false );
+   const auto* ptable = table_get();                                                               assert( ptable != nullptr );
+   m_vectorField.push_back( field( *ptable, uPartType, argumentsField ) ); 
+   return &m_vectorField.back(); 
+}
+
+/// Add table field with arguments, arguments should have at least "name" argument, otherwise assert is triggered
+inline query::field* query::field_add_type(unsigned uPartType,unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true ); assert( table_get( uTableKey ) != nullptr );
+   m_vectorField.push_back( field( uTableKey, uPartType, argumentsField ) ); 
+   return &m_vectorField.back(); 
+}
+
 
 
 /// add field names only using the column name in database
