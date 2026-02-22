@@ -131,9 +131,13 @@ inline query& operator<<(query& query_, table_builder&& tablebuilder_)
 struct field_builder
 {
     explicit field_builder(std::string_view stringName)  { m_arguments.append("name", stringName); }
+    explicit field_builder(std::string_view stringTable, std::string_view stringName): m_stringTable(stringTable) { m_arguments.append("name", stringName); }
     
     template<typename CONTAINER>
     explicit field_builder(std::string_view stringName, CONTAINER container_): m_arguments(container_) {  
+       m_arguments.append("name", stringName); }    
+    template<typename CONTAINER>
+    explicit field_builder(std::string_view stringTable, std::string_view stringName, CONTAINER container_): m_stringTable(stringTable), m_arguments(container_) {  
        m_arguments.append("name", stringName); }    
 
     // @API [tag: operator] [summary: simplify with operators for use in methods]
@@ -145,7 +149,8 @@ struct field_builder
     
     // @API [tag: getter, setter] [summary: get and set members]
 
-    unsigned get_parttype() const noexcept { return m_uPartType; }
+    [[nodiscard]] unsigned get_parttype() const noexcept { return m_uPartType; }
+    [[nodiscard]] std::string_view get_table() const noexcept { return m_stringTable; }
     
     // @API [tag: attribute] [summary: set attribute values for field]
 
@@ -182,20 +187,34 @@ struct field_builder
     field_builder&& returning() &&  { m_uPartType = eSqlPartReturning; return std::move(*this); }
     
     unsigned m_uPartType = 0;            ///< part type in sql query
+    std::string_view m_stringTable;      ///< optional table name for field (used for disambiguation in joins)
     gd::argument::arguments m_arguments; ///< arguments used to pass into query
 };
 
 /// global method to create field builder: field_g("name").as("alias").orderby()
 inline field_builder field_g(std::string_view stringName) { return field_builder{stringName}; }
+inline field_builder field_g(std::string_view stringTable, std::string_view stringName) { return field_builder{stringTable, stringName}; }
 
 /// global method to create field builder using any container — std::array, std::vector, std::span, gd::memory::arena span
 template<typename CONTAINER>
+requires (!std::convertible_to<CONTAINER, std::string_view>)
 inline field_builder field_g(std::string_view stringName, CONTAINER& buffer_)
 { return field_builder{stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof(typename CONTAINER::value_type)}}; }
+
+/// global method to create field builder using any container — std::array, std::vector, std::span, gd::memory::arena span
+template<typename CONTAINER>
+requires (!std::convertible_to<CONTAINER, std::string_view>)
+inline field_builder field_g(std::string_view stringTable, std::string_view stringName, CONTAINER& buffer_)
+{ return field_builder{stringTable, stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof(typename CONTAINER::value_type)}}; }
+
 
 /// global method to create field builder using raw C buffer
 inline field_builder field_g(std::string_view stringName, void* pBuffer_, std::size_t uSize)
 { return field_builder{stringName, std::span<std::byte>{(std::byte*)pBuffer_, uSize}}; }
+
+/// global method to create field builder using raw C buffer
+inline field_builder field_g(std::string_view stringTable,std::string_view stringName, void* pBuffer_, std::size_t uSize)
+{ return field_builder{stringTable, stringName, std::span<std::byte>{(std::byte*)pBuffer_, uSize}}; }
 
 
 /// ---------------------------------------------------------------------------
@@ -210,11 +229,25 @@ inline field_builder field_g(std::string_view stringName, void* pBuffer_, std::s
 /// @endcode
 inline query& operator<<(query& query_, field_builder&& fieldbuilder_)
 {
-   if(fieldbuilder_.m_uPartType != 0)
+   if( fieldbuilder_.get_table().empty() == false )
    {
-      query_.field_add_parttype(fieldbuilder_.m_uPartType, fieldbuilder_, tag_arguments{});
+      const auto* ptable_ = query_.table_get( fieldbuilder_.get_table() );                         assert( ptable_ != nullptr && "Table not found in query" );
+
+      if(fieldbuilder_.m_uPartType != 0)
+      {
+         query_.field_add_parttype( *ptable_, fieldbuilder_.m_uPartType, fieldbuilder_, tag_arguments{});
+      }
+      else { query_.field_add( *ptable_, fieldbuilder_, tag_arguments{}); }
+
    }
-   else { query_.field_add(fieldbuilder_, tag_arguments{}); }
+   else
+   {
+      if(fieldbuilder_.m_uPartType != 0)
+      {
+         query_.field_add_parttype(fieldbuilder_.m_uPartType, fieldbuilder_, tag_arguments{});
+      }
+      else { query_.field_add(fieldbuilder_, tag_arguments{}); }
+   }
    
    return query_;
 }

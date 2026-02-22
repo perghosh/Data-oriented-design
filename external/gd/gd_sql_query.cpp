@@ -89,8 +89,9 @@ const query::table* query::table_get(const gd::variant_view& variantTableIndex) 
    }
    else if( variantTableIndex.is_integer() == true )
    {
-      unsigned uIndex = variantTableIndex.get_uint();                                              assert( uIndex < m_vectorTable.size() );
-      return &m_vectorTable[uIndex];
+      unsigned uKey = variantTableIndex.get_uint();                                                assert( uKey != 0 );
+      const table* ptable = table_get_for_key( uKey );                                             assert( ptable != nullptr ); // find table with key value
+      return ptable;
    }
    else
    {
