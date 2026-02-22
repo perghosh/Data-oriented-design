@@ -1238,14 +1238,13 @@ struct is_variant : std::false_type {};
 template <typename... Types>
 struct is_variant<std::variant<Types...>> : std::true_type {};
 
-// ### std::deque
 
-// Default case: any type T is not considered a deque, hence false
-// template <typename T>
-// struct is_deque : std::false_type {};
-// Specialization for std::deque: this type is indeed a deque, so true
-// template <typename T, typename Alloc>
-// struct is_deque<std::deque<T, Alloc>> : std::true_type {};
+// ### concepts for gd types
+
+/// Concept to check if type is a arguments type, which is used to mark types that can be used as arguments in functions
+/// Sample: `field* add( is_arguments auto const& arguments_ );`
+template<typename TYPE>
+concept is_arguments = requires { typename TYPE::tag_is_arguments; };
 
 /*-----------------------------------------*/ /**
    * \brief wrapper used to uuid value

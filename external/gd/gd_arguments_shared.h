@@ -212,6 +212,7 @@ public:
    struct tag_internal {};                                                     // tag dispatcher for internal use
 
    struct tag_is_arguments {};                                                 // tag dispatcher to check for arguments object used in template arguments
+   struct tag_is_shared_arguments {};                                          // tag dispatcher to check for this specific arguments object used in template arguments
 
    using named_iterator_t = iterator_named<arguments>;
    using const_named_iterator = iterator_named<const arguments>;

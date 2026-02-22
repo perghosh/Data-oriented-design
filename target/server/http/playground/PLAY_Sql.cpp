@@ -14,10 +14,23 @@
 #include "gd/gd_uuid.h"
 
 #include "gd/gd_sql_query.h"
+#include "gd/gd_sql_query_builder.h"
 
 #include "main.h"
 
 #include "catch2/catch_amalgamated.hpp"
+
+TEST_CASE( "[sql] builder 1", "[sql]" ) {
+   using namespace gd::sql;
+   std::array<char, 128> buffer_;
+   query query01("table-name", tag_table{});
+   query01 << field_g("name", buffer_).as("alias")
+           << field_g("name", buffer_).as("alias").orderby();
+
+   std::string stringSQL = query01.sql_get( eSqlSelect );
+   std::cout << stringSQL << "\n";
+
+}
 
 TEST_CASE( "[sql] simple select", "[sql]" ) {
    using namespace gd::sql;
@@ -36,7 +49,7 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
    querySelect.table_add( "test_table1" );
    querySelect.field_add( {{"name", "id"}, {"alias", "key"}}, tag_arguments{} );
    querySelect.field_add( "name" );
-   querySelect.field_add_type( "orderby", {{"name", "name"}}, tag_arguments{});
+   querySelect.field_add_parttype( "orderby", {{"name", "name"}}, tag_arguments{});
 
    stringSQL = querySelect.sql_get( eSqlSelect );
    std::cout << stringSQL << "\n";
@@ -44,7 +57,7 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
    querySelect.clear();
    querySelect.table_add( "table1" );
    querySelect.field_add( {{"name", "id"}, {"alias", "key"}}, tag_arguments{} );
-   querySelect.field_add_type( "orderby", {{"name", "name"}}, tag_arguments{});
+   querySelect.field_add_parttype( "orderby", {{"name", "name"}}, tag_arguments{});
    querySelect.condition_add( { {"name", "id"}, {"operator", eOperatorEqual}, {"value", 123} }, tag_arguments{} );
 
    stringSQL = querySelect.sql_get( eSqlSelect );

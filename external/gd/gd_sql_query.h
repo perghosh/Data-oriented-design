@@ -379,10 +379,10 @@ public:
    field* field_add( unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments );
 
    /// add field with type, type is used to mark where field is used in query.
-   field* field_add_type( unsigned uPartType, const gd::argument::arguments& argumentsField, tag_arguments );
-   field* field_add_type( std::string_view stringPart, const gd::argument::arguments& argumentsField, tag_arguments ) { return field_add_type( query::part_s( stringPart ), argumentsField, tag_arguments{} ); }
-   field* field_add_type( unsigned uPartType, unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments );
-   field* field_add_type( std::string_view stringPart, unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments ) { return field_add_type( query::part_s( stringPart ), uTableKey, argumentsField, tag_arguments{} ); }
+   field* field_add_parttype( unsigned uPartType, const gd::argument::arguments& argumentsField, tag_arguments );
+   field* field_add_parttype( std::string_view stringPart, const gd::argument::arguments& argumentsField, tag_arguments ) { return field_add_parttype( query::part_s( stringPart ), argumentsField, tag_arguments{} ); }
+   field* field_add_parttype( unsigned uPartType, unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments );
+   field* field_add_parttype( std::string_view stringPart, unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments ) { return field_add_parttype( query::part_s( stringPart ), uTableKey, argumentsField, tag_arguments{} ); }
 
 
    void field_add_many(const std::vector< std::vector< std::pair<std::string_view, gd::variant_view> > >& vectorVectorField );
@@ -618,14 +618,14 @@ inline query::field* query::field_add(unsigned uTableKey, const gd::argument::ar
 }
 
 /// add field with type, type is used to mark where field is used in query. For example if field is used in select part of query then type is eSqlPartSelect, if field is used in group by part of query then type is eSqlPartGroupBy and so on. If field is used in multiple parts of query then type is combination of types, for example if field is used in select and group by part of query then type is eSqlPartSelect | eSqlPartGroupBy.
-inline query::field* query::field_add_type( unsigned uPartType, const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true ); assert( m_vectorTable.empty() == false );
+inline query::field* query::field_add_parttype( unsigned uPartType, const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true ); assert( m_vectorTable.empty() == false );
    const auto* ptable = table_get();                                                               assert( ptable != nullptr );
    m_vectorField.push_back( field( *ptable, uPartType, argumentsField ) ); 
    return &m_vectorField.back(); 
 }
 
 /// Add table field with arguments, arguments should have at least "name" argument, otherwise assert is triggered
-inline query::field* query::field_add_type(unsigned uPartType,unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true ); assert( table_get( uTableKey ) != nullptr );
+inline query::field* query::field_add_parttype(unsigned uPartType,unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true ); assert( table_get( uTableKey ) != nullptr );
    m_vectorField.push_back( field( uTableKey, uPartType, argumentsField ) ); 
    return &m_vectorField.back(); 
 }
