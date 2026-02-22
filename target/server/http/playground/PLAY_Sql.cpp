@@ -54,6 +54,7 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
    querySelect.table_add( "table1" );
    querySelect.field_add( {{"name", "id"}, {"alias", "key"}}, tag_arguments{} );
    querySelect.field_add( "name" );
+   querySelect.field_add_type( eSqlPartSelect|eSqlPartOrderBy, {{"name", "city"}, {"alias", "stad"}}, tag_arguments{} );
    querySelect.condition_add( { {"name", "id"}, {"operator", eOperatorEqual}, {"value", 123} }, tag_arguments{} );
    querySelect.condition_add( { {"name", "id"}, {"operator", eOperatorEqual}, {"value", 456} }, tag_arguments{} );
    querySelect.condition_add( { {"name", "id"}, {"operator", "="}, {"value", 789}}, tag_arguments{});
