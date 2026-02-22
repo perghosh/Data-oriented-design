@@ -148,6 +148,8 @@ public:
 
       operator unsigned() const { return m_uKey;  }
 
+      unsigned get_key() const { return m_uKey; }
+
 
       std::string_view name() const { return m_argumentsTable["name"].get_string_view(); }
       void name(std::string_view stringName) { m_argumentsTable.set( "name", stringName ); }
@@ -203,10 +205,10 @@ public:
       field() {}
       explicit field(unsigned uTable) : m_uTableKey(uTable) {}
       explicit field( unsigned uTable, unsigned uUseAndType ) : m_uTableKey( uTable ), m_uUseAndType{ uUseAndType } {}
-      field( unsigned uTable, const gd::argument::arguments& arguments_ ): m_uTableKey(uTable), m_uUseAndType(0), m_argumentsField(arguments_) {}
-      field( unsigned uTable, unsigned uUseAndType, const gd::argument::arguments& arguments_ ): m_uTableKey(uTable), m_uUseAndType(uUseAndType), m_argumentsField(arguments_) {}
-      field(unsigned uTable, std::string_view stringName): m_uTableKey(uTable) { append("name", stringName); }
-      field(unsigned uTable, std::string_view stringName, std::string_view stringAlias): m_uTableKey(uTable) { append("name", stringName); append("alias", stringAlias); }
+      explicit field( unsigned uTable, const gd::argument::arguments& arguments_ ): m_uTableKey(uTable), m_uUseAndType(0), m_argumentsField(arguments_) {}
+      explicit field( unsigned uTable, unsigned uUseAndType, const gd::argument::arguments& arguments_ ): m_uTableKey(uTable), m_uUseAndType(uUseAndType), m_argumentsField(arguments_) {}
+      explicit field(unsigned uTable, std::string_view stringName): m_uTableKey(uTable) { append("name", stringName); }
+      explicit field(unsigned uTable, std::string_view stringName, std::string_view stringAlias): m_uTableKey(uTable) { append("name", stringName); append("alias", stringAlias); }
       field( const field& o ) { common_construct( o ); }
       field( field&& o ) noexcept { common_construct( o ); }
       field& operator=( const field& o ) { common_construct( o ); return *this; }
@@ -353,7 +355,7 @@ public:
 /// @API [tag: table] [summary: table management] [description: methods to add and manage tables in query]
 
    /// get pointer to first table in query (this should be the root table)
-   const table* table_get() const { return &m_vectorTable[0]; }
+   const table* table_get() const { assert(m_vectorTable.empty() == false); return &m_vectorTable[0]; }
    const table* table_get(const gd::variant_view& variantTable) const;
    table* table_get( const std::pair<std::string_view, gd::variant_view>& pairField );
    const table* table_get( const table& tableFind ) const noexcept;
@@ -375,12 +377,12 @@ public:
 
 // ## @API [tag: field] [summary: field management] [description: methods to add and manage fields in query]
 
-   field* field_add(const std::string_view& stringName) { return field_add(gd::variant_view(0u), stringName, std::string_view()); }
-   void field_add(const std::vector<std::string_view>& vectorName, tag_name );
-   field* field_add(const gd::variant_view& variantTable, std::string_view stringName) { return field_add(gd::variant_view(0u), stringName, std::string_view()); }
+   field* field_add(const std::string_view& stringName, tag_index); 
+
+   field* field_add(const std::string_view& stringName) { return field_add( stringName, tag_index{} ); }
+   field* field_add(const gd::variant_view& variantTable, std::string_view stringName) { return field_add(variantTable, stringName, std::string_view()); }
+   field* field_add(std::string_view stringName, std::string_view stringAlias, tag_index); 
    field* field_add(const gd::variant_view& variantTable, std::string_view stringName, std::string_view stringAlias);
-   field* field_add(const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorField) { return field_add( gd::variant_view(0u), vectorField ); }
-   field* field_add(const gd::variant_view& variantTable, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorField );
    field* field_add( const field& fieldAdd ) { m_vectorField.push_back( fieldAdd ); return &m_vectorField.back(); }
    field* field_add( field&& fieldAdd ) { m_vectorField.push_back( std::move( fieldAdd ) ); return &m_vectorField.back(); }
 
@@ -394,6 +396,7 @@ public:
    field* field_add_parttype( std::string_view stringPart, unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments ) { return field_add_parttype( query::part_s( stringPart ), uTableKey, argumentsField, tag_arguments{} ); }
 
 
+   void field_add(const std::vector<std::string_view>& vectorName, tag_name );
    void field_add_many(const std::vector< std::vector< std::pair<std::string_view, gd::variant_view> > >& vectorVectorField );
 
    field* field_add_as_orderby(const gd::variant_view& variantviewField ) { return field_add_as_orderby( gd::variant_view(0u), variantviewField ); }
@@ -618,6 +621,12 @@ inline const query::table* query::table_get_for_key(unsigned uTableKey) const {
    return nullptr;
 }
 
+inline query::field* query::field_add(const std::string_view& stringName, tag_index) {                    assert( stringName.empty() == false ); assert( m_vectorTable.empty() == false );
+   const auto* ptable = &m_vectorTable[0];
+   m_vectorField.push_back( field( ptable->get_key(), stringName ) );
+   return &m_vectorField.back(); 
+}
+
 /// Add field with arguments, arguments should have at least "name" argument, otherwise assert is triggered
 inline query::field* query::field_add( const gd::argument::arguments& argumentsField, tag_arguments ) {          assert( argumentsField.exists("name") == true ); assert( m_vectorTable.empty() == false );
    const auto* ptable = table_get();                                                               assert( ptable != nullptr );
@@ -651,10 +660,6 @@ inline void query::field_add( const std::vector<std::string_view>& vectorName, t
    for( auto it : vectorName ) field_add( it );
 }
 
-/// Add field with name and alias
-inline void query::field_add_many(const std::vector< std::vector< std::pair<std::string_view, gd::variant_view> > >& vectorVectorField) {
-   for( auto& it : vectorVectorField ) field_add(it);
-}
 
 /**----------------------------------------------------------------------------
  * @brief Check if operator number is within limitis
@@ -689,21 +694,6 @@ inline query& query::add( const gd::variant_view& variantTable, const std::strin
    field_add( variantTable, stringName, stringAlias ); return *this;
 }
 
-inline query& query::add( const gd::variant_view& variantTable, const std::initializer_list< const char* > listField, tag_field ) {
-   for( const auto& it : listField ) {                                                             assert( it != nullptr );
-      field_add( variantTable, it );
-   }
-   return *this;
-}
-
-/*
-inline query& query::add( const gd::variant_view& variantTable, std::initializer_list< std::pair<const std::string_view, const std::string_view> > listField, tag_field ) {
-   for( const auto& it : listField ) {                                                             assert( it.first.empty() == false );
-      field_add( variantTable, it.first, it.second );
-   }
-   return *this;
-}
-*/
 
 inline query& query::add( const gd::variant_view& variantTable, std::initializer_list< std::pair<const char*, const char*> > listField, tag_field ) {
    for( const auto& it : listField ) {

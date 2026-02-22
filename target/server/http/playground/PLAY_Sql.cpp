@@ -3,6 +3,7 @@
 #include <array>
 #include <filesystem>
 
+#include "gd/gd_arena.h"
 #include "gd/gd_binary.h"
 #include "gd/gd_utf8.h"
 #include "gd/gd_arguments.h"
@@ -22,16 +23,51 @@
 
 TEST_CASE( "[sql] builder 1", "[sql]" ) {
    using namespace gd::sql;
-   std::array<char, 500> buffer_;
-   query query01;
-   query01 << table_g( "table_name" )
-           << table_g( "table_name_02" ).parent( "table_name" ).join( "table_name.id = table_name_02.table_name_id" )
-           << field_g("name", buffer_).as("alias")
-           << field_g("table_name_02", "name", buffer_).as("alias02")
-           << field_g("name", buffer_).as("alias").orderby();
 
-   std::string stringSQL = query01.sql_get( eSqlSelect );
-   std::cout << stringSQL << "\n";
+   {
+      std::array<char, 128> buffer_;
+      query query01;
+      query01 << table_g( "table_name" )
+              << table_g( "table_name_02" ).parent( "table_name" ).join( "table_name.id = table_name_02.table_name_id" );
+      query01 << field_g("name", buffer_).as("alias");
+      query01 << field_g("table_name_02", "name", buffer_).as("alias02");
+      query01 << field_g("name", buffer_).as("alias").orderby();
+
+      std::string stringSQL = query01.sql_get( eSqlSelect );
+      std::cout << stringSQL << "\n";
+   }
+
+
+   {
+      gd::memory::arena<> arena_( 1024 );
+      
+      query query01;
+      auto buffer1 = arena_.allocate_span<std::byte>(128u);
+      auto buffer2 = arena_.allocate_span<std::byte>(128u);
+      auto buffer3 = arena_.allocate_span<std::byte>(128u);
+      
+      query01 << table_g( "table_name" )
+              << table_g( "table_name_02" ).parent( "table_name" ).join( "table_name.id = table_name_02.table_name_id" )
+              << field_g("name", buffer1).as("alias")
+              << field_g("table_name_02", "name", buffer2).as("alias02")
+              << field_g("name", buffer3).as("alias").orderby();
+
+      std::string stringSQL = query01.sql_get( eSqlSelect );
+      std::cout << stringSQL << "\n";
+   }
+
+   {
+      query query01;
+      query01 << table_g( "table_name" )
+              << table_g( "table_name_02" ).parent( "table_name" ).join( "table_name.id = table_name_02.table_name_id" )
+              << field_g("name").as("alias")
+              << field_g("table_name_02", "name").as("alias02")
+              << field_g("name").as("alias").orderby();
+
+      std::string stringSQL = query01.sql_get( eSqlSelect );
+      std::cout << stringSQL << "\n";
+   }
+
 }
 
 TEST_CASE( "[sql] simple select", "[sql]" ) {

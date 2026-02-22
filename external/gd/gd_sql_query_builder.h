@@ -198,23 +198,23 @@ inline field_builder field_g(std::string_view stringTable, std::string_view stri
 /// global method to create field builder using any container — std::array, std::vector, std::span, gd::memory::arena span
 template<typename CONTAINER>
 requires (!std::convertible_to<CONTAINER, std::string_view>)
-inline field_builder field_g(std::string_view stringName, CONTAINER& buffer_)
-{ return field_builder{stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof(typename CONTAINER::value_type)}}; }
+inline field_builder field_g(std::string_view stringName, CONTAINER& buffer_) { 
+   return field_builder{stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof(typename CONTAINER::value_type)}}; }
 
 /// global method to create field builder using any container — std::array, std::vector, std::span, gd::memory::arena span
 template<typename CONTAINER>
 requires (!std::convertible_to<CONTAINER, std::string_view>)
-inline field_builder field_g(std::string_view stringTable, std::string_view stringName, CONTAINER& buffer_)
-{ return field_builder{stringTable, stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof(typename CONTAINER::value_type)}}; }
+inline field_builder field_g(std::string_view stringTable, std::string_view stringName, CONTAINER& buffer_) { 
+   return field_builder{stringTable, stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof(typename CONTAINER::value_type)}}; }
 
 
 /// global method to create field builder using raw C buffer
-inline field_builder field_g(std::string_view stringName, void* pBuffer_, std::size_t uSize)
-{ return field_builder{stringName, std::span<std::byte>{(std::byte*)pBuffer_, uSize}}; }
+inline field_builder field_g(std::string_view stringName, void* pBuffer_, std::size_t uSize) { 
+   return field_builder{stringName, std::span<std::byte>{(std::byte*)pBuffer_, uSize}}; }
 
 /// global method to create field builder using raw C buffer
-inline field_builder field_g(std::string_view stringTable,std::string_view stringName, void* pBuffer_, std::size_t uSize)
-{ return field_builder{stringTable, stringName, std::span<std::byte>{(std::byte*)pBuffer_, uSize}}; }
+inline field_builder field_g(std::string_view stringTable,std::string_view stringName, void* pBuffer_, std::size_t uSize) { 
+   return field_builder{stringTable, stringName, std::span<std::byte>{(std::byte*)pBuffer_, uSize}}; }
 
 
 /// ---------------------------------------------------------------------------

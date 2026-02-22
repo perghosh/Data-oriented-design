@@ -174,6 +174,23 @@ query::table* query::table_add( const table& tableFrom )
    return &m_vectorTable.back();
 }
 
+/*----------------------------------------------------------------------------- field_add */ /**
+ * Add field and set field name
+ * \param stringName name for field
+ * \param stringAlias alias for field
+ * \return query::field* pointer to added field
+ */
+query::field* query::field_add(std::string_view stringName, std::string_view stringAlias, tag_index) 
+{                                                                                                  assert( m_vectorTable.empty() == false );
+   const auto* ptable = &m_vectorTable[0];
+
+   m_vectorField.push_back(field(ptable->get_key(), stringName));
+
+   auto pfield = &m_vectorField.back();
+   if( stringAlias.empty() == false ) pfield->append("alias", stringAlias);
+
+   return pfield;
+}
 
 
 /*----------------------------------------------------------------------------- field_add */ /**
@@ -193,27 +210,6 @@ query::field* query::field_add(const gd::variant_view& variantTable, std::string
    if( stringAlias.empty() == false ) pfield->append("alias", stringAlias);
 
    return pfield;
-}
-
-/*----------------------------------------------------------------------------- field_add */ /**
- * Add field to query
- * \param variantTable index to table field belongs to
- * \param vectorField vector with field properties, each property has a name and a value
- * \return gd::sql::query::field* pointer to added field
- */
-query::field* query::field_add(const gd::variant_view& variantTable, const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorField)
-{
-   auto ptable = table_get(variantTable);                                                          assert(ptable != nullptr);
-
-   field fieldAdd( *ptable );                                                  // create field object that is added to query
-
-   for( auto it : vectorField )
-   {  // append values for field added to query
-      fieldAdd.append_argument(it.first, it.second);                           // first = name, second = value
-   }
-
-   m_vectorField.push_back(std::move(fieldAdd));                               // add to list with fields
-   return &m_vectorField.back();                                               // return pointer to added field
 }
 
 /** ---------------------------------------------------------------------------

@@ -32,6 +32,8 @@ struct tag_condition {};
 using tag_name = gd::types::tag_name;
 /// tag dispatcher for arguments, used to add arguments to query
 struct tag_arguments {};
+/// tag dispatcher for index, used to add index to query
+struct tag_index {};
 
 /// tag dispatcher for values that is owned
 struct tag_value {};
