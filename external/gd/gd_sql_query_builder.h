@@ -34,6 +34,89 @@
 _GD_SQL_QUERY_BEGIN
 
 /** ==========================================================================
+ * @brief Fluent builder for table definitions in SQL queries.
+ * 
+ * A proxy object that allows chaining of method calls to set table attributes 
+ * such as alias, parent, schema, owner, join conditions, and key relationships.
+ * 
+ * @par Example
+ * @code
+ * query << table_g("users").as("u").join("LEFT JOIN orders ON u.id = orders.user_id");
+ * query << table_g("customers").schema("public").key("id").fk("customer_id");
+ * @endcode
+ */
+struct table_builder
+{
+    explicit table_builder(std::string_view stringName)  { m_arguments.append("name", stringName); }
+    
+    template<typename CONTAINER>
+    explicit table_builder(std::string_view stringName, CONTAINER container_): m_arguments(container_) {  
+       m_arguments.append("name", stringName); }    
+
+    // @API [tag: operator] [summary: simplify with operators for use in methods]
+    
+     /// Implicit conversion to arguments reference for passing to query methods
+    operator gd::argument::arguments&() { return m_arguments; }
+     /// Implicit conversion to arguments reference for passing to query methods
+    operator const gd::argument::arguments&() const { return m_arguments; }
+    
+    // @API [tag: attribute] [summary: set attribute values for table]
+
+    table_builder& as(std::string_view v_) &       { m_arguments.set("alias", v_);   return *this; }
+    table_builder&& as(std::string_view v_) &&     { m_arguments.set("alias", v_);   return std::move(*this); }
+    
+    table_builder& parent(std::string_view v_) &   { m_arguments.set("parent", v_); return *this; }
+    table_builder&& parent(std::string_view v_) && { m_arguments.set("parent", v_); return std::move(*this); }
+    
+    table_builder& schema(std::string_view v_) &  { m_arguments.set("schema", v_); return *this; }
+    table_builder&& schema(std::string_view v_) && { m_arguments.set("schema", v_); return std::move(*this); }
+    
+    table_builder& owner(std::string_view v_) &    { m_arguments.set("owner", v_);   return *this; }
+    table_builder&& owner(std::string_view v_) &&  { m_arguments.set("owner", v_);   return std::move(*this); }
+    
+    table_builder& join(std::string_view v_) &     { m_arguments.set("join", v_);    return *this; }
+    table_builder&& join(std::string_view v_) &&   { m_arguments.set("join", v_);    return std::move(*this); }
+    
+    table_builder& key(std::string_view v_) &      { m_arguments.set("key", v_);     return *this; }
+    table_builder&& key(std::string_view v_) &&    { m_arguments.set("key", v_);     return std::move(*this); }
+    
+    table_builder& fk(std::string_view v_) &       { m_arguments.set("fk", v_);      return *this; }
+    table_builder&& fk(std::string_view v_) &&     { m_arguments.set("fk", v_);      return std::move(*this); }
+    
+    gd::argument::arguments m_arguments; ///< arguments used to pass into query
+};
+
+/// global method to create table builder: table_g("users").as("u").join("LEFT JOIN orders ON u.id = orders.user_id");
+inline table_builder table_g(std::string_view stringName) { return table_builder{stringName}; }
+
+/// global method to create table builder using any container — std::array, std::vector, std::span, gd::memory::arena span
+template<typename CONTAINER>
+inline table_builder table_g(std::string_view stringName, CONTAINER& buffer_)
+{ return table_builder{stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof(typename CONTAINER::value_type)}}; }
+
+/// global method to create table builder using raw C buffer
+inline table_builder table_g(std::string_view stringName, void* pBuffer_, std::size_t uSize)
+{ return table_builder{stringName, std::span<std::byte>{(std::byte*)pBuffer_, uSize}}; }
+
+
+/// ---------------------------------------------------------------------------
+/// @brief Stream operator to add a table builder to a query
+/// @param query_ The query to add the table to
+/// @param tablebuilder_ The table builder (moved from)
+/// @return Reference to the query for chaining
+/// @par Example
+/// @code
+/// query << table_g("users").as("u") 
+///       << table_g("orders").join("LEFT JOIN users ON orders.user_id = users.id");
+/// @endcode
+inline query& operator<<(query& query_, table_builder&& tablebuilder_)
+{
+   query_.table_add(tablebuilder_, tag_arguments{});
+   return query_;
+}
+
+
+/** ==========================================================================
  * @brief Fluent builder for field definitions in SQL queries.
  * 
  * A proxy object that allows chaining of method calls to set field attributes 

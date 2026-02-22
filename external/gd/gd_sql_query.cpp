@@ -564,7 +564,7 @@ std::string query::sql_get_from() const
          }
          else
          {
-            std::string stringParent = itTable->parent();                      assert( stringParent.empty() == false );
+            std::string_view stringParent = itTable->parent();                                     assert( stringParent.empty() == false );
             stringFrom += sql_get_join_for_table( table_get( stringParent ) );
             stringFrom += std::string_view{ " = " };
             stringFrom += sql_get_join_for_table( &(*itTable), stringParent );

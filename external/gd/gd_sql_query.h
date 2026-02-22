@@ -137,6 +137,7 @@ public:
       table(unsigned uTable, const std::string_view& stringName): m_uKey(uTable) { append("name", stringName); }
       table(unsigned uTable, const std::string_view& stringName, const std::string_view& stringAlias): m_uKey(uTable) { append("name", stringName); append_if("alias", stringAlias); }
       table(unsigned uTable, const std::string_view& stringName, const std::string_view& stringAlias, const std::string_view& stringParent): m_uKey(uTable) { append("name", stringName); append_if("alias", stringAlias); append_if("parent", stringParent); }
+      table( unsigned uTable, const gd::argument::arguments& arguments_ ) : m_uKey( uTable ), m_argumentsTable( arguments_ ) {}
       table( const table& o ) { common_construct( o ); }
       table( table&& o ) noexcept { common_construct( o ); }
       table& operator=( const table& o ) { common_construct( o ); return *this; }
@@ -148,17 +149,24 @@ public:
       operator unsigned() const { return m_uKey;  }
 
 
-      std::string name() const { return m_argumentsTable["name"].get_string(); }
-      std::string alias() const { return m_argumentsTable["alias"].get_string(); }
-      void alias(const std::string_view& stringAlias) { m_argumentsTable.set( "alias", stringAlias ); }
-      std::string parent() const { return m_argumentsTable["parent"].get_string(); }
-      std::string schema() const { return m_argumentsTable["schema"].get_string(); }
-      std::string owner() const { return m_argumentsTable["owner"].get_string(); }
-      std::string join() const { return m_argumentsTable["join"].get_string(); }
-      /// get key name
-      std::string key() const { return m_argumentsTable["key"].get_string(); }
-      /// get foreign key name
-      std::string fk() const { return m_argumentsTable["fk"].get_string(); }
+      std::string_view name() const { return m_argumentsTable["name"].get_string_view(); }
+      void name(std::string_view stringName) { m_argumentsTable.set( "name", stringName ); }
+      std::string_view alias() const { return m_argumentsTable["alias"].get_string_view(); }
+      void alias(std::string_view stringAlias) { m_argumentsTable.set( "alias", stringAlias ); }
+      std::string_view parent() const { return m_argumentsTable["parent"].get_string_view(); }
+      void parent(std::string_view stringParent) { m_argumentsTable.set( "parent", stringParent ); }
+      std::string_view schema() const { return m_argumentsTable["schema"].get_string_view(); }
+      void schema( std::string_view stringSchema ) { m_argumentsTable.set( "schema", stringSchema ); }
+      std::string_view owner() const { return m_argumentsTable["owner"].get_string_view(); }
+      void owner( std::string_view stringOwner ) { m_argumentsTable.set( "owner", stringOwner ); }
+      std::string_view join() const { return m_argumentsTable["join"].get_string_view(); }
+      void join( std::string_view stringJoin ) { m_argumentsTable.set( "join", stringJoin ); }  
+      /// get key field name, this to generate join part in query
+      std::string_view key() const { return m_argumentsTable["key"].get_string_view(); }
+      void key(std::string_view stringKey) { m_argumentsTable.set( "key", stringKey ); }
+      /// get foreign key field name, this to generate join part in query
+      std::string_view fk() const { return m_argumentsTable["fk"].get_string_view(); }
+      void fk(std::string_view stringFk) { m_argumentsTable.set( "fk", stringFk ); }
 
       gd::argument::arguments& get_arguments() { return m_argumentsTable; }
       const gd::argument::arguments& get_arguments() const { return m_argumentsTable; }
@@ -355,6 +363,7 @@ public:
    table* table_add(const std::string_view& stringName, const std::string_view& stringAlias, const std::string_view& stringparent );
    table* table_add(const std::vector< std::pair<std::string_view, gd::variant_view> >& vectorTable );
    table* table_add(const table& tableAdd );
+   table* table_add( const gd::argument::arguments& argumentsTable, tag_arguments );
    bool table_exists( const table& tableExists ) const noexcept { return table_get( tableExists ) != nullptr; }
    std::size_t table_size() const { return m_vectorTable.size(); }
    bool table_empty() const { return m_vectorTable.empty(); }
@@ -595,6 +604,11 @@ inline query::table* query::table_add( const std::string_view& stringName, const
    return &m_vectorTable.back();
 }
 
+/// Add table with arguments, arguments should have at least "name" argument, otherwise assert is triggered
+inline query::table* query::table_add( const gd::argument::arguments& argumentsTable, tag_arguments ) {
+   m_vectorTable.push_back( table( next_key(), argumentsTable ) );
+   return &m_vectorTable.back();
+}
 
 /// Return table pointer for table key if found, nullptr if not found
 inline const query::table* query::table_get_for_key(unsigned uTableKey) const {
