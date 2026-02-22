@@ -57,6 +57,22 @@ TEST_CASE( "[sql] builder 1", "[sql]" ) {
    }
 
    {
+      gd::memory::arena<> arena_( 1024 );
+      
+      query query01;
+      
+      query01 << table_g( "table_name" )
+              << table_g( "table_name_02" ).parent( "table_name" ).join( "table_name.id = table_name_02.table_name_id" )
+              << field_g("name", arena_.allocate( 128 ), 128 ).as("alias")
+              << field_g("table_name_02", "name", arena_.allocate( 128 ), 128 ).as("alias02")
+              << field_g("name", arena_.allocate( 128 ), 128 ).as("alias").orderby();
+
+      std::string stringSQL = query01.sql_get( eSqlSelect );
+      std::cout << stringSQL << "\n";
+   }
+
+
+   {
       query query01;
       query01 << table_g( "table_name" )
               << table_g( "table_name_02" ).parent( "table_name" ).join( "table_name.id = table_name_02.table_name_id" )
