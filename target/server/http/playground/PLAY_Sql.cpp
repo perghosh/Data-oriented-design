@@ -36,6 +36,7 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
    querySelect.table_add( "test_table1" );
    querySelect.field_add( {{"name", "id"}, {"alias", "key"}}, tag_arguments{} );
    querySelect.field_add( "name" );
+   querySelect.field_add_type( "orderby", {{"name", "name"}}, tag_arguments{});
 
    stringSQL = querySelect.sql_get( eSqlSelect );
    std::cout << stringSQL << "\n";
@@ -43,7 +44,7 @@ TEST_CASE( "[sql] simple select", "[sql]" ) {
    querySelect.clear();
    querySelect.table_add( "table1" );
    querySelect.field_add( {{"name", "id"}, {"alias", "key"}}, tag_arguments{} );
-   querySelect.field_add( "name" );
+   querySelect.field_add_type( "orderby", {{"name", "name"}}, tag_arguments{});
    querySelect.condition_add( { {"name", "id"}, {"operator", eOperatorEqual}, {"value", 123} }, tag_arguments{} );
 
    stringSQL = querySelect.sql_get( eSqlSelect );

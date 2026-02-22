@@ -504,7 +504,7 @@ std::string query::sql_get_select() const
          stringSelect += it->name();
          if( it->has("alias") == true )                                        // found alias ?
          {
-            stringSelect += " ";
+            stringSelect += " AS ";
             if( flag_has_s(uFormatOptions, eFormatUseQuotes) == false ) stringSelect += it->alias();
             else format_add_and_surround_s(stringSelect, it->alias(), '\"');
 
@@ -693,6 +693,8 @@ std::string query::sql_get_insert() const
       unsigned uFieldIndex = 0;
       for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField; itField++ )
       {
+         if( itField->is_insert() == false ) [[unlikely]] continue;           // no insert field ?
+
          if( itField->compare(ptable) == true )
          {
             if( uFieldIndex == 0 ) stringInsert += " (";
@@ -774,6 +776,8 @@ std::string query::sql_get_update( const std::vector<gd::variant_view>& vectorVa
    unsigned uFieldIndex = 0;
    for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField; itField++ )
    {
+      if( itField->is_update() == false ) [[unlikely]] continue;             // no update field ?
+
       if( uFieldIndex > 0 ) stringUpdate += ", ";
       stringUpdate += itField->name();
       stringUpdate += std::string_view{ " = " };
@@ -816,9 +820,27 @@ std::string query::sql_get_delete() const
    return stringDelete;
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Generates the SQL GROUP BY clause string from fields marked for grouping.
+ * @return A comma-separated string of field names (with table aliases if present) for use in a SQL GROUP BY clause.
+ */
 std::string query::sql_get_groupby() const
 {
    std::string stringGroupBy; // generated group by string 
+
+   for( auto itField = std::begin( m_vectorField ), itEndField = std::end( m_vectorField ); itField != itEndField; itField++ )
+   {
+      if( itField->is_groupby() == false ) [[likely]] continue;               // no group by field ?
+
+      if( stringGroupBy.empty() == false ) stringGroupBy += ", ";
+      const table* ptable = table_get_for_key(itField->get_table_key());                             assert(ptable != nullptr); // no table found for key indicates internal error for query object, this shouldn't happen
+      if( ptable->has("alias") == true )
+      {
+         stringGroupBy += ptable->alias();
+         stringGroupBy += ".";
+      }
+      stringGroupBy += itField->name();
+   }
 
    return stringGroupBy;
 }
@@ -834,6 +856,8 @@ std::string query::sql_get_values() const
    unsigned uFieldIndex = 0;
    for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField; itField++ )
    {
+      if( itField->is_insert() == false ) [[likely]] continue;                // no insert field ?
+
       if( uFieldIndex > 0 ) stringValues += ", ";
       auto uType = itField->type();
       print_type_value_s( uType, itField->value(), m_eSqlDialect, stringValues );
@@ -861,11 +885,19 @@ std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
       if( stringOrderBy.empty() == false ) { stringOrderBy += std::string_view{ ", " }; }
       else { stringOrderBy += stringOrderByPrefix; }
 
-      stringOrderBy += std::to_string( uFieldIndex );                         // column index 
+      //stringOrderBy += std::to_string( uFieldIndex );                         // column index 
+
+      const table* ptable = table_get_for_key( it->get_table_key() );                             assert( ptable != nullptr ); // no table found for key indicates internal error for query object, this shouldn't happen
+      if( ptable->has( "alias" ) == true )
+      {
+         stringOrderBy += ptable->alias();
+         stringOrderBy += ".";
+      }
+      
+      stringOrderBy += it->name();
 
       auto order_ = it->order();
       auto iAscending = order_.as_int();
-
       if( iAscending >= 0 ) stringOrderBy += std::string_view{ " ASC" };
       else stringOrderBy += std::string_view{ " DESC" };
    }
