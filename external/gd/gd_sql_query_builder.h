@@ -1,5 +1,48 @@
 // @FILE [tag: sql, query, builder] [description: logic to build SQL queries] [type: header] [name: gd_sql_query_builder.h]
 
+/**
+ * \file gd_sql_query_builder.h
+ *
+ * \brief Fluent builder classes for constructing SQL queries with type-safe interfaces
+ *
+ * This header provides three fluent builder classes (table_builder, field_builder, condition_builder) 
+ * that allow constructing SQL queries using method chaining. Builders support custom memory allocation
+ * through containers and provide convenient shortcuts for common SQL operations.
+ *
+ * \par Example
+ * \code
+ * query q;
+ * q << table_g("users").as("u") 
+ *   << table_g("orders").as("o").join("LEFT JOIN orders ON u.id = o.user_id")
+ *   << field_g("u", "name").select()
+ *   << field_g("o", "amount").select()
+ *   << condition_g("u", "id").value(1).eq();
+ * std::cout << q.sql_get(eSqlSelect) << "\n";
+ * \endcode
+ *
+ | Area                | table_builder Methods (Examples)                                 | Description                                                                                   |
+ |---------------------|--------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ | Construction        | `table_g("name")`, `table_g("name", buffer_)`                  | Creates table builder with name and optional custom memory container.                               |
+ | Attribute Setters   | `as("alias")`, `parent("table")`, `schema("public")`          | Sets table alias, parent table, database schema, owner, join conditions, and key relationships.      |
+ |                    | `join("SQL")`, `key("id")`, `fk("user_id")`, `owner("admin")` |                                                                                              |
+ | Conversion         | `operator arguments&()`                                        | Implicit conversion to arguments for passing to query methods.                                      |
+ *
+ | Area                | field_builder Methods (Examples)                                 | Description                                                                                   |
+ |---------------------|--------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ | Construction        | `field_g("name")`, `field_g("table", "name")`                 | Creates field builder with optional table qualification and custom memory container.                    |
+ | Attribute Setters   | `as("alias")`, `value(123)`, `type("INTEGER")`, `raw("NOW()")` | Sets field alias, value for INSERT/UPDATE, data type, or raw SQL expression.                   |
+ | SQL Part Setters    | `select()`, `orderby()`, `groupby()`, `insert()`, `update()`, `returning()` | Specifies which SQL clause the field belongs to (SELECT, ORDER BY, GROUP BY, etc.).               |
+ | Conversion         | `operator arguments&()`                                        | Implicit conversion to arguments for passing to query methods.                                      |
+ *
+ | Area                | condition_builder Methods (Examples)                             | Description                                                                                   |
+ |---------------------|--------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+ | Construction        | `condition_g("name")`, `condition_g("table", "name")`           | Creates condition builder with optional table qualification and custom memory container.               |
+ | Attribute Setters   | `value(123)`, `raw("> '2024-01-01'")`, `type("INTEGER")`, `op("=")` | Sets condition value, raw SQL, data type, or custom comparison operator.                          |
+ | Comparison Ops      | `eq()`, `ne()`, `lt()`, `le()`, `gt()`, `ge()`, `like()`, `in()`, `is_null()`, `is_not_null()` | Sets comparison operator (=, !=, <, <=, >, >=, LIKE, IN, IS NULL, IS NOT NULL).               |
+ | Logical Grouping    | `and_()`, `or_()`, `not_()`                                  | Sets logical grouping (AND, OR, NOT) for combining multiple conditions.                           |
+ | Conversion         | `operator arguments&()`                                        | Implicit conversion to arguments for passing to query methods.                                      |
+ */
+
 #pragma once
 
 #include <cassert>
