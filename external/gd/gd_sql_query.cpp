@@ -501,7 +501,7 @@ std::string query::sql_get_join_for_table( const table* ptable, const table* pta
  * \return std::string text for fields selected in query
  */
 std::string query::sql_get_select() const
-{                                                                                                  assert( m_vectorField.empty() == false );
+{
    std::string stringSelect; // generated select string with fields used in query
    stringSelect.reserve(24);
 

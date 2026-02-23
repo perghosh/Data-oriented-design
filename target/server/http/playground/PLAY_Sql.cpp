@@ -183,3 +183,211 @@ TEST_CASE( "[sql] update", "[sql]" ) {
    std::cout << stringSQL << "\n";
 
 }
+
+TEST_CASE( "[sql] table_builder", "[sql]" ) {
+   using namespace gd::sql;
+
+   // Basic table
+   { query q; q << table_g("users"); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Table with alias
+   { query q; q << table_g("users").as("u"); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Table with schema
+   { query q; q << table_g("users").schema("public"); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Table with parent
+   { query q; q << table_g("orders").parent("users"); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Table with join
+   { query q; q << table_g("orders").join("LEFT JOIN users ON orders.user_id = users.id"); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Table with key/fk
+   { query q; q << table_g("orders").key("id").fk("user_id"); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Table with owner
+   { query q; q << table_g("users").owner("admin"); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Multiple tables
+   { query q; q << table_g("users") << table_g("orders").join("JOIN users ON orders.user_id = users.id");
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+}
+
+TEST_CASE( "[sql] field_builder", "[sql]" ) {
+   using namespace gd::sql;
+
+   // Basic field
+   { query q; q << table_g("users") << field_g("name").select(); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Field with alias
+   { query q; q << table_g("users") << field_g("name").as("user_name").select(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Field with value
+   { query q; q << table_g("users") << field_g("id").value(123).insert(); 
+     std::cout << q.sql_get(eSqlInsert) << "\n"; }
+
+   // Field with type
+   { query q; q << table_g("users") << field_g("id").type("int32").select(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Field with raw
+   { query q; q << table_g("users") << field_g("created_at").raw("NOW()").select(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Field with orderby
+   { query q; q << table_g("users") << field_g("name").select() << field_g("age").orderby(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Field with groupby
+   { query q; q << table_g("users") << field_g("age").groupby() << field_g("COUNT(*)").select(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Field with table qualification
+   { query q; q << table_g("u", "users") << field_g("u", "name").select(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Multiple fields
+   { query q; q << table_g("users") << field_g("id").select() << field_g("name").select() 
+     << field_g("email").select(); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Update with multiple fields
+   { query q; q << table_g("users") << field_g("name").value("John").update() 
+     << field_g("email").value("john@test.com").update() 
+     << condition_g("id").value(1).eq(); std::cout << q.sql_get(eSqlUpdate) << "\n"; }
+}
+
+TEST_CASE( "[sql] condition_builder", "[sql]" ) {
+   using namespace gd::sql;
+
+   // Basic equality
+   { query q; q << table_g("users") << field_g("*").select() << condition_g("id").value(1).eq(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Not equal
+   { query q; q << table_g("users") << field_g("*").select() << condition_g("id").value(1).ne(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Less than
+   { query q; q << table_g("users") << field_g("*").select() << condition_g("age").value(18).lt(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Less than or equal
+   { query q; q << table_g("users") << field_g("*").select() << condition_g("age").value(18).le(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Greater than
+   { query q; q << table_g("users") << field_g("*").select() << condition_g("age").value(18).gt(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Greater than or equal
+   { query q; q << table_g("users") << field_g("*").select() << condition_g("age").value(18).ge(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // LIKE
+   { query q; q << table_g("users") << field_g("*").select() 
+     << condition_g("email").value("%@test.com").like(); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // IN
+   { query q; q << table_g("users") << field_g("*").select() 
+     << condition_g("status").value("'active','pending'").in(); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // IS NULL
+   { query q; q << table_g("users") << field_g("*").select() << condition_g("deleted_at").is_null(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // IS NOT NULL
+   { query q; q << table_g("users") << field_g("*").select() << condition_g("deleted_at").is_not_null(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // AND grouping
+   { query q; q << table_g("users") << field_g("*").select() 
+     << condition_g("name").value("John").eq().and_() << condition_g("age").value(25).gt(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // OR grouping
+   { query q; q << table_g("users") << field_g("*").select() 
+     << condition_g("name").value("John").eq().or_() << condition_g("name").value("Jane").eq(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // NOT grouping
+   { query q; q << table_g("users") << field_g("*").select() << condition_g("active").value(0).eq().not_(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Condition with table qualification
+   { query q; q << table_g("u", "users") << field_g("*").select() 
+     << condition_g("u", "id").value(1).eq(); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+}
+
+TEST_CASE( "[sql] builder combined", "[sql]" ) {
+   using namespace gd::sql;
+
+   // Complex SELECT with joins
+   { query q; q << table_g("users").as("u") << table_g("orders").as("o")
+     .join("LEFT JOIN orders ON u.id = o.user_id") << field_g("u", "name").select() 
+     << field_g("o", "amount").select() << field_g("o", "created_at").orderby() 
+     << condition_g("u", "active").value(1).eq(); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // INSERT with multiple fields
+   { query q; q << table_g("users") << field_g("name").value("John").insert() 
+     << field_g("email").value("john@test.com").insert() << field_g("age").value(25).insert(); 
+     std::cout << q.sql_get(eSqlInsert) << "\n"; }
+
+   // UPDATE with conditions
+   { query q; q << table_g("users") << field_g("name").value("John").update() 
+     << field_g("email").value("new@test.com").update() << condition_g("id").value(1).eq(); 
+     std::cout << q.sql_get(eSqlUpdate) << "\n"; }
+
+   // DELETE with conditions
+   { query q; q << table_g("users") << condition_g("id").value(1).eq() 
+     << condition_g("deleted_at").is_null().and_(); std::cout << q.sql_get(eSqlDelete) << "\n"; }
+
+   // GROUP BY with HAVING (using AND for group)
+   { query q; q << table_g("users") << field_g("age").groupby() 
+     << field_g("COUNT(*)").select() << condition_g("age").value(18).ge().and_(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Multiple tables with different schemas
+   { query q; q << table_g("users").schema("public") << table_g("logs").schema("audit")
+     .join("LEFT JOIN audit.logs ON users.id = logs.user_id") << field_g("users", "name").select()
+     << field_g("logs", "action").select(); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Complex conditions with OR
+   { query q; q << table_g("users") << field_g("*").select() 
+     << condition_g("name").value("John").eq().or_() << condition_g("name").value("Jane").eq(); 
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // With raw SQL in conditions
+   { query q; q << table_g("users") << field_g("*").select() 
+     << condition_g("created_at").raw("> '2024-01-01'"); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // With table key/fk relationships
+   { query q; q << table_g("users").key("id") << table_g("orders").key("id").fk("user_id")
+     .join("JOIN orders ON users.id = orders.user_id") << field_g("users", "name").select()
+     << field_g("orders", "amount").select(); std::cout << q.sql_get(eSqlSelect) << "\n"; }
+}
+
+TEST_CASE( "[sql] builder dialects", "[sql]" ) {
+   using namespace gd::sql;
+
+   // SQLite
+   { query q(eSqlDialectSqlite); q << table_g("users") << field_g("id").value(1).insert();
+     std::cout << "SQLite: " << q.sql_get(eSqlInsert) << "\n"; }
+
+   // SQL Server
+   { query q(eSqlDialectSqlServer); q << table_g("users") << field_g("id").value(1).insert();
+     std::cout << "SQLServer: " << q.sql_get(eSqlInsert) << "\n"; }
+
+   // Oracle
+   { query q(eSqlDialectOracle); q << table_g("users") << field_g("id").value(1).insert();
+     std::cout << "Oracle: " << q.sql_get(eSqlInsert) << "\n"; }
+
+   // PostgreSQL
+   { query q(eSqlDialectPostgreSql); q << table_g("users") << field_g("id").value(1).insert();
+     std::cout << "Postgres: " << q.sql_get(eSqlInsert) << "\n"; }
+
+   // MySQL
+   { query q(eSqlDialectMySql); q << table_g("users") << field_g("id").value(1).insert();
+     std::cout << "MySQL: " << q.sql_get(eSqlInsert) << "\n"; }
+}
