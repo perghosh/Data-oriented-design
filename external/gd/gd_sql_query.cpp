@@ -265,8 +265,8 @@ gd::sql::query::condition* query::condition_add(const gd::variant_view& variantT
  * \return condition* pointer to added condition
  */
 gd::sql::query::condition* query::condition_add( const gd::argument::arguments& argumentsCondition, tag_arguments )
-{   
-   auto ptable = table_get( argumentsCondition["table"].as_variant_view() );                       assert(ptable != nullptr);
+{                                                                                                  assert( m_vectorTable.empty() == false );
+   const auto* ptable = &m_vectorTable[0];
    condition conditionAdd( *ptable ); // create condition object that is added to query
    for( const auto& it : argumentsCondition.named() )
    {  // append values for field added to query
@@ -285,6 +285,34 @@ gd::sql::query::condition* query::condition_add( const gd::argument::arguments& 
    m_vectorCondition.push_back(std::move(conditionAdd));                      // add condition to list
    return &m_vectorCondition.back();                                          // return pointer to added condition}
 }
+
+/*----------------------------------------------------------------------------- condition_add */ /**
+ * Add condition to query
+ * \param argumentsCondition vector with condition properties, each property has a name and a value, vector must contain "table" property with index to table condition belongs to
+ * \return condition* pointer to added condition
+ */
+gd::sql::query::condition* query::condition_add( unsigned uTableKey, const gd::argument::arguments& argumentsCondition, tag_arguments )
+{                                                                                                  assert( m_vectorTable.empty() == false );
+   const auto* ptable = table_get_for_key( uTableKey );                                            assert( ptable != nullptr );
+   condition conditionAdd( *ptable ); // create condition object that is added to query
+   for( const auto& it : argumentsCondition.named() )
+   {  // append values for field added to query
+      std::string_view stringName = it.first;                                                      assert( stringName.empty() == false );
+
+      if( stringName[0] == 'o' && stringName == "operator" )
+      {
+         enumOperator eOperator = get_where_operator_number_s(it.second);                          assert( eOperator != eOperatorError ); // note that operator should be checked before calling this method
+         conditionAdd.append("operator", eOperator);
+      }
+      else 
+      { 
+         conditionAdd.append_argument(it.first, it.second); 
+      }             
+   }
+   m_vectorCondition.push_back(std::move(conditionAdd));                      // add condition to list
+   return &m_vectorCondition.back();                                          // return pointer to added condition}
+}
+
 
 /*----------------------------------------------------------------------------- condition_add */ /**
  * Add condition to query

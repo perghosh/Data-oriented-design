@@ -401,11 +401,11 @@ inline query& operator<<(query& query_, condition_builder&& conditionbuilder_)
    if( conditionbuilder_.get_table().empty() == false )
    {
       const auto* ptable_ = query_.table_get( conditionbuilder_.get_table() );                         assert( ptable_ != nullptr && "Table not found in query" );
-      query_.where_add( *ptable_, conditionbuilder_, tag_arguments{});
+      query_.condition_add( *ptable_, conditionbuilder_, tag_arguments{});
    }
    else
    {
-      query_.where_add( conditionbuilder_, tag_arguments{});
+      query_.condition_add( conditionbuilder_, tag_arguments{});
    }
    
    return query_;
