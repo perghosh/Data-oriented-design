@@ -158,16 +158,16 @@ public:
       std::string_view parent() const { return m_argumentsTable["parent"].get_string_view(); }
       void parent(std::string_view stringParent) { m_argumentsTable.set( "parent", stringParent ); }
       std::string_view schema() const { return m_argumentsTable["schema"].get_string_view(); }
-      void schema( std::string_view stringSchema ) { m_argumentsTable.set( "schema", stringSchema ); }
+      void schema( std::string_view stringSchema ) { m_argumentsTable.set( "schema", stringSchema ); } ///< get schema name for table, this to generate join part in query
       std::string_view owner() const { return m_argumentsTable["owner"].get_string_view(); }
       void owner( std::string_view stringOwner ) { m_argumentsTable.set( "owner", stringOwner ); }
-      std::string_view join() const { return m_argumentsTable["join"].get_string_view(); }
+      std::string_view join() const { return m_argumentsTable["join"].get_string_view(); }         ///< get join string if join is set outside, this to generate join part in query
       void join( std::string_view stringJoin ) { m_argumentsTable.set( "join", stringJoin ); }  
       /// get key field name, this to generate join part in query
-      std::string_view key() const { return m_argumentsTable["key"].get_string_view(); }
+      std::string_view key() const { return m_argumentsTable["key"].get_string_view(); }           ///< primary key field name for table, this to generate join part in query
       void key(std::string_view stringKey) { m_argumentsTable.set( "key", stringKey ); }
       /// get foreign key field name, this to generate join part in query
-      std::string_view fk() const { return m_argumentsTable["fk"].get_string_view(); }
+      std::string_view fk() const { return m_argumentsTable["fk"].get_string_view(); }             ///< foreign key field name for table, this to generate join part in query
       void fk(std::string_view stringFk) { m_argumentsTable.set( "fk", stringFk ); }
 
       gd::argument::arguments& get_arguments() { return m_argumentsTable; }
@@ -285,13 +285,15 @@ public:
       void common_construct(const condition& o) { m_pQuery = o.m_pQuery; m_uTableKey = o.m_uTableKey; m_argumentsCondition = o.m_argumentsCondition; }
       void common_construct(condition&& o) noexcept { m_pQuery = o.m_pQuery; m_uTableKey = o.m_uTableKey; m_argumentsCondition = std::move(o.m_argumentsCondition); o.m_pQuery = nullptr; o.m_uTableKey = 0; }
 
-      /// return value for conditions, this is places in arguments named to "value"
+      /// return value for conditions, this is placed in arguments named "value"
       gd::variant_view value() const { return m_argumentsCondition["value"].as_variant_view(); }
 
-      std::string name() const { return m_argumentsCondition["name"].get_string(); }
+      std::string_view name() const { return m_argumentsCondition["name"].as_string_view(); }
       std::string value_string() const { return m_argumentsCondition["value"].get_string(); }
-      std::string raw() const { return m_argumentsCondition["raw"].get_string(); }
+      std::string_view raw() const { return m_argumentsCondition["raw"].as_string_view(); }
       uint32_t type() const { auto v_ = m_argumentsCondition["type"]; return v_.is_uint32() ? (uint32_t)v_ : query::type_s( v_.as_variant_view() ); }
+      uint32_t operator_() const { auto v_ = m_argumentsCondition["operator"]; return v_.is_uint32() ? (uint32_t)v_ : query::get_where_operator_number_s( v_.as_string_view() ); }
+      std::string_view group() const { return m_argumentsCondition["group"].as_string_view(); }    ///< when condition is added to query with group name when and, or and not is used to group conditions together, conditions for same group allways get and operator between them.
 
       unsigned get_table_key() const { return m_uTableKey; }
       unsigned get_operator() const { return m_argumentsCondition["operator"].get_uint(); }

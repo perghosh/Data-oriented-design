@@ -252,9 +252,167 @@ inline query& operator<<(query& query_, field_builder&& fieldbuilder_)
    return query_;
 }
 
+/** ==========================================================================
+ * @brief Fluent builder for condition definitions in SQL queries.
+ * 
+ * A proxy object that allows chaining of method calls to set condition attributes 
+ * such as field name, value, comparison operator, grouping, and data type.
+ * 
+ * @par Example
+ * @code
+ * query << condition_g("users", "name").value("John").eq();
+ * query << condition_g("orders", "amount").value(100).greater().or_();
+ * @endcode
+ */
+struct condition_builder
+{
+    explicit condition_builder(std::string_view stringName) { m_arguments.append("name", stringName); }
+    explicit condition_builder(std::string_view stringTable, std::string_view stringName): m_stringTable(stringTable) { m_arguments.append("name", stringName); }
+    
+    template<typename CONTAINER>
+    explicit condition_builder(std::string_view stringName, CONTAINER container_): m_arguments(container_) {  
+       m_arguments.append("name", stringName); }    
+    template<typename CONTAINER>
+    explicit condition_builder(std::string_view stringTable, std::string_view stringName, CONTAINER container_): m_stringTable(stringTable), m_arguments(container_) {  
+       m_arguments.append("name", stringName); }    
+
+    // @API [tag: operator] [summary: simplify with operators for use in methods]
+    
+     /// Implicit conversion to arguments reference for passing to query methods
+    operator gd::argument::arguments&() { return m_arguments; }
+     /// Implicit conversion to arguments reference for passing to query methods
+    operator const gd::argument::arguments&() const { return m_arguments; }
+    
+    // @API [tag: getter, setter] [summary: get and set members]
+
+    [[nodiscard]] std::string_view get_table() const noexcept { return m_stringTable; }
+    
+    // @API [tag: attribute] [summary: set attribute values for condition]
+
+    condition_builder& value(gd::variant_view v_) &    { m_arguments.set("value", v_);   return *this; }
+    condition_builder&& value(gd::variant_view v_) &&  { m_arguments.set("value", v_);   return std::move(*this); }
+    
+    condition_builder& raw(std::string_view v_) &      { m_arguments.set("raw", v_);     return *this; }
+    condition_builder&& raw(std::string_view v_) &&    { m_arguments.set("raw", v_);     return std::move(*this); }
+    
+    condition_builder& type(gd::variant_view v_) &     { m_arguments.set("type", v_);    return *this; }
+    condition_builder&& type(gd::variant_view v_) &&   { m_arguments.set("type", v_);    return std::move(*this); }
+    
+    condition_builder& op(std::string_view v_) &       { m_arguments.set("operator", v_);   return *this; }
+    condition_builder&& op(std::string_view v_) &&     { m_arguments.set("operator", v_);   return std::move(*this); }
+    
+    condition_builder& group(std::string_view v_) &    { m_arguments.set("group", v_);   return *this; }
+    condition_builder&& group(std::string_view v_) &&  { m_arguments.set("group", v_);   return std::move(*this); }
+    
+    // @API [tag: operator, shortcut] [summary: Comparison operator shortcuts]
+
+    condition_builder& eq() &      { m_arguments.set("operator", "=");    return *this; }
+    condition_builder&& eq() &&    { m_arguments.set("operator", "=");    return std::move(*this); }
+    
+    condition_builder& ne() &     { m_arguments.set("operator", "!=");   return *this; }
+    condition_builder&& ne() &&   { m_arguments.set("operator", "!=");   return std::move(*this); }
+    
+    condition_builder& lt() &     { m_arguments.set("operator", "<");    return *this; }
+    condition_builder&& lt() &&   { m_arguments.set("operator", "<");    return std::move(*this); }
+    
+    condition_builder& le() &     { m_arguments.set("operator", "<=");   return *this; }
+    condition_builder&& le() &&   { m_arguments.set("operator", "<=");   return std::move(*this); }
+    
+    condition_builder& gt() &     { m_arguments.set("operator", ">");    return *this; }
+    condition_builder&& gt() &&   { m_arguments.set("operator", ">");    return std::move(*this); }
+    
+    condition_builder& ge() &     { m_arguments.set("operator", ">=");   return *this; }
+    condition_builder&& ge() &&   { m_arguments.set("operator", ">=");   return std::move(*this); }
+    
+    condition_builder& like() &    { m_arguments.set("operator", "LIKE"); return *this; }
+    condition_builder&& like() &&  { m_arguments.set("operator", "LIKE"); return std::move(*this); }
+    
+    condition_builder& in() &     { m_arguments.set("operator", "IN");   return *this; }
+    condition_builder&& in() &&   { m_arguments.set("operator", "IN");   return std::move(*this); }
+    
+    condition_builder& is_null() &  { m_arguments.set("operator", "IS NULL");   return *this; }
+    condition_builder&& is_null() &&{ m_arguments.set("operator", "IS NULL");   return std::move(*this); }
+    
+    condition_builder& is_not_null() & { m_arguments.set("operator", "IS NOT NULL"); return *this; }
+    condition_builder&& is_not_null() &&{ m_arguments.set("operator", "IS NOT NULL"); return std::move(*this); }
+    
+    // @API [tag: logical, operator, shortcut] [summary: Logical grouping shortcuts]
+
+    condition_builder& and_() &   { m_arguments.set("logical", "AND");  return *this; }
+    condition_builder&& and_() && { m_arguments.set("logical", "AND");  return std::move(*this); }
+    
+    condition_builder& or_() &    { m_arguments.set("logical", "OR");   return *this; }
+    condition_builder&& or_() &&  { m_arguments.set("logical", "OR");   return std::move(*this); }
+    
+    condition_builder& not_() &   { m_arguments.set("logical", "NOT");  return *this; }
+    condition_builder&& not_() && { m_arguments.set("logical", "NOT");  return std::move(*this); }
+    
+    condition_builder& and_( std::string_view stringGroup ) &   { m_arguments.set("logical", "AND"); m_arguments.set("group", stringGroup );  return *this; }
+    condition_builder&& and_( std::string_view stringGroup ) && { m_arguments.set("logical", "AND"); m_arguments.set("group", stringGroup );  return std::move(*this); }
+    
+    condition_builder& or_( std::string_view stringGroup ) &    { m_arguments.set("logical", "OR"); m_arguments.set("group", stringGroup );   return *this; }
+    condition_builder&& or_( std::string_view stringGroup ) &&  { m_arguments.set("logical", "OR"); m_arguments.set("group", stringGroup );   return std::move(*this); }
+    
+    condition_builder& not_( std::string_view stringGroup ) &   { m_arguments.set("logical", "NOT"); m_arguments.set("group", stringGroup );  return *this; }
+    condition_builder&& not_( std::string_view stringGroup ) && { m_arguments.set("logical", "NOT"); m_arguments.set("group", stringGroup );  return std::move(*this); }
+    
+    
+    std::string_view m_stringTable;      ///< optional table name for condition (used for disambiguation in joins)
+    gd::argument::arguments m_arguments; ///< arguments used to pass into query
+};
+
+/// global method to create condition builder: condition_g("name").value(100).gt();
+inline condition_builder condition_g(std::string_view stringName) { return condition_builder{stringName}; }
+inline condition_builder condition_g(std::string_view stringTable, std::string_view stringName) { return condition_builder{stringTable, stringName}; }
+
+/// global method to create condition builder using any container — std::array, std::vector, std::span, gd::memory::arena span
+template<typename CONTAINER>
+requires (!std::convertible_to<CONTAINER, std::string_view>)
+inline condition_builder condition_g(std::string_view stringName, CONTAINER& buffer_) { 
+   return condition_builder{stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof(typename CONTAINER::value_type)}}; }
+
+/// global method to create condition builder using any container — std::array, std::vector, std::span, gd::memory::arena span
+template<typename CONTAINER>
+requires (!std::convertible_to<CONTAINER, std::string_view>)
+inline condition_builder condition_g(std::string_view stringTable, std::string_view stringName, CONTAINER& buffer_) { 
+   return condition_builder{stringTable, stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof(typename CONTAINER::value_type)}}; }
+
+/// global method to create condition builder using raw C buffer
+inline condition_builder condition_g(std::string_view stringName, void* pBuffer_, std::size_t uSize) { 
+   return condition_builder{stringName, std::span<std::byte>{(std::byte*)pBuffer_, uSize}}; }
+
+/// global method to create condition builder using raw C buffer
+inline condition_builder condition_g(std::string_view stringTable, std::string_view stringName, void* pBuffer_, std::size_t uSize) { 
+   return condition_builder{stringTable, stringName, std::span<std::byte>{(std::byte*)pBuffer_, uSize}}; }
+
+
+/// ---------------------------------------------------------------------------
+/// @brief Stream operator to add a condition builder to a query
+/// @param query_ The query to add the condition to
+/// @param conditionbuilder_ The condition builder (moved from)
+/// @return Reference to the query for chaining
+/// @par Example
+/// @code
+/// query << condition_g("users", "name").value("John").eq() 
+///       << condition_g("orders", "amount").value(100).gt();
+/// @endcode
+inline query& operator<<(query& query_, condition_builder&& conditionbuilder_)
+{
+   if( conditionbuilder_.get_table().empty() == false )
+   {
+      const auto* ptable_ = query_.table_get( conditionbuilder_.get_table() );                         assert( ptable_ != nullptr && "Table not found in query" );
+      query_.where_add( *ptable_, conditionbuilder_, tag_arguments{});
+   }
+   else
+   {
+      query_.where_add( conditionbuilder_, tag_arguments{});
+   }
+   
+   return query_;
+}
+
 
 _GD_SQL_QUERY_END
-
 
 #if defined(__clang__)
    #pragma clang diagnostic pop
