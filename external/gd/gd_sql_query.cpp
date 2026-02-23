@@ -1016,7 +1016,7 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
       case eSqlPartWhere:
          {
          if( m_vectorCondition.empty() == true ) continue;
-         stringSql += std::string_view{ "\nWHERE\n\t" };
+         stringSql += std::string_view{ "\nWHERE " };
          stringSql += sql_get_where();
          }
          break;
@@ -1028,7 +1028,7 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          break;
 
       case eSqlPartValues:
-         stringSql += std::string_view{ "\nVALUES(\n\t" };
+         stringSql += std::string_view{ "\nVALUES( " };
          stringSql += sql_get_values();
          stringSql += std::string_view{ ")" };
          break;
