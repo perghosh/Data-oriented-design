@@ -1,6 +1,8 @@
 # gd code, general code to manage data
 file(GLOB_RECURSE external_gd ${CMAKE_SOURCE_DIR}/external/gd/*.cpp)
 file(GLOB external_gd_core 
+   ${CMAKE_SOURCE_DIR}/external/gd/gd_arena.cpp
+   ${CMAKE_SOURCE_DIR}/external/gd/gd_arena_borrow.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_arguments.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_arguments_shared.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_file.cpp
@@ -19,6 +21,7 @@ file(GLOB external_gd_core
    ${CMAKE_SOURCE_DIR}/external/gd/gd_variant.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_variant_arg.cpp
    ${CMAKE_SOURCE_DIR}/external/gd/gd_variant_view.cpp
+   ${CMAKE_SOURCE_DIR}/external/gd/gd_vector.cpp
 )
 
 # Define the base path for gd library

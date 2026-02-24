@@ -62,7 +62,7 @@ _GD_TYPES_BEGIN
    #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
 #elif defined( _MSC_VER )
    #pragma warning(push)
-   #pragma warning( disable : 4267 26495 26812 )
+   #pragma warning( disable : 26495 26812 4063 4100 4189 4244 4389 4456 4457 4702 5054 )
 #endif
 
 #define GD_TYPES_VERSION 0x00000001 ///< version number for gd types
