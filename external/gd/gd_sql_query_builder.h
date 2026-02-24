@@ -18,6 +18,18 @@
  *   << field_g("o", "amount").select()
  *   << condition_g("u", "id").value(1).eq();
  * std::cout << q.sql_get(eSqlSelect) << "\n";
+ *
+ * // Compact form — variadic field names
+ * query q2;
+ * q2 << table_g("users")
+ *    << fields_g("users", "name", "age", "email", "created_at", "updated_at").select();
+ * std::cout << q2.sql_get(eSqlSelect) << "\n";
+ *
+ * // Compact form — name+alias pairs
+ * query q3;
+ * q3 << table_g("users")
+ *    << fields_g("users", {{"name","alias_name"}, {"age","alias_age"}}).select();
+ * std::cout << q3.sql_get(eSqlSelect) << "\n";
  * \endcode
  *
  | Area                | table_builder Methods (Examples)                                 | Description                                                                                   |
@@ -178,6 +190,8 @@ inline query& operator<<( query& query_, table_builder&& tablebuilder_ )
  | Area               | fields_builder Methods (Examples)                                          | Description                                                        |
  |--------------------|------------------------------------------------------------------------|--------------------------------------------------------------------|
  | Construction       | `fields_g()`, `fields_g("table")`                                      | Creates empty builder with optional table qualification.           |
+ |                    | `fields_g("table", "f1", "f2", ...)`                                   | Creates builder pre-loaded with name-only fields (variadic).       |
+ |                    | `fields_g("table", {{"f1","a1"}, {"f2","a2"}})`                        | Creates builder pre-loaded with name+alias pairs (initializer list). |
  | Field Add          | `add("name")`, `add("name","alias")`, `add("name", value)`             | Adds a field with name-only, name+alias, or name+value.            |
  |                    | `add("name", "alias", value)`                                          | Adds a field with all three attributes.                            |
  | Type Setter        | `type(variant_view)`                                                   | Sets a default SQL type applied to all fields (before or after add). |
@@ -271,6 +285,27 @@ private:
 /// global method to create fields builder: fields_g().add("name").add("name","alias").add("name", value).select()
 inline fields_builder fields_g()                               { return {}; }
 inline fields_builder fields_g( std::string_view stringTable ) { return fields_builder{ stringTable }; }
+
+/// global method — table + any number of field names:
+/// fields_g("users", "name", "age", "email").select()
+template<typename... NAMES>
+   requires ( (std::convertible_to<NAMES, std::string_view>) && ... )
+inline fields_builder fields_g( std::string_view stringTable, NAMES&&... names_ )
+{
+   fields_builder fieldsbuilder_{ stringTable };
+   ( fieldsbuilder_.add( std::string_view( names_ ) ), ... );
+   return fieldsbuilder_;
+}
+
+/// global method — table + initializer list of {name, alias} pairs:
+/// fields_g("users", {{"name","alias_name"}, {"age","alias_age"}}).select()
+inline fields_builder fields_g( std::string_view stringTable, std::initializer_list<std::pair<std::string_view, std::string_view>> listFields_ )
+{
+   fields_builder fieldsbuilder_{ stringTable };
+   for( const auto& [stringName, stringAlias] : listFields_ ) { fieldsbuilder_.add( stringName, stringAlias ); }
+   return fieldsbuilder_;
+}
+
 
 
 /// ---------------------------------------------------------------------------

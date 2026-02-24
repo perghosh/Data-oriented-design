@@ -240,6 +240,10 @@ TEST_CASE( "[sql] field_builder", "[sql]" ) {
    { query q; q << table_g("users") << fields_g("users", "name", "age", "email", "created_at", "updated_at").select();
      std::cout << q.sql_get(eSqlSelect) << "\n"; }
 
+   // Add multiple fields with aliases
+   { query q; q << table_g("users") << fields_g("users", {{"name","alias_name"}, {"age","alias_age"}}).select();
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
    // Field with orderby
    { query q; q << table_g("users") << field_g("name").select() << field_g("age").orderby(); 
      std::cout << q.sql_get(eSqlSelect) << "\n"; }
