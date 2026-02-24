@@ -282,31 +282,31 @@ public:
    variant( float v )      : m_uType(variant_type::eTypeCFloat)     { m_V.f = v; }
    variant( double v )     : m_uType(variant_type::eTypeCDouble)    { m_V.d = v; }
    variant( void* p )      : m_uType(variant_type::eTypePointer)    { m_V.p = p; }
-   variant( const char* v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(strlen(v))) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v,  m_uSize + 1u ); }
+   variant( const char* v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_cast(strlen(v))) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v,  m_uSize + 1u ); }
 #if defined(__cpp_char8_t)
-   variant( const char8_t* v ): m_uType(variant_type::eTypeUtf8String|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(strlen((const char*)v))) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v,  m_uSize + 1u ); }
+   variant( const char8_t* v ): m_uType(variant_type::eTypeUtf8String|variant_type::eFlagAllocate), m_uSize(size_cast(strlen((const char*)v))) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v,  m_uSize + 1u ); }
 #endif
-   variant( const wchar_t* v ): m_uType(variant_type::eTypeWString|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(wcslen(v))) { m_V.pwsz = (wchar_t*)allocate(( m_uSize + 1u ) * sizeof(wchar_t)); memcpy( m_V.pwsz, v, ( m_uSize + 1u ) * sizeof(wchar_t) ); }
-   variant( const char* v, size_t uLength ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(uLength)) { m_V.pbsz = (char*)allocate(uLength + 1); memcpy( m_V.pbsz, v, uLength ); m_V.pbsz[uLength] = '\0';  }
-   variant( const char* v, size_t uLength, bool ): m_uType(variant_type::eTypeString), m_uSize(size_to_u32_s(uLength)) { m_V.pbsz = const_cast<char*>(v); }
-   variant( const wchar_t* v, size_t uLength ): m_uType(variant_type::eTypeWString|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(uLength)) { m_V.pwsz = (wchar_t*)allocate((uLength + 1) * sizeof(wchar_t)); memcpy( m_V.pwsz, v, (uLength) * sizeof(wchar_t) ); m_V.pwsz[uLength] = L'\0'; }
-   variant( const wchar_t* v, size_t uLength, bool ) : m_uType(variant_type::eTypeWString), m_uSize(size_to_u32_s(uLength)) { m_V.pwsz = const_cast<wchar_t*>(v); }
-   variant( const unsigned char* v, size_t uLength, bool ): m_uType(variant_type::eTypeBinary), m_uSize(size_to_u32_s(uLength)) { m_V.pb = const_cast<unsigned char*>(v); }
-   variant( const unsigned char* v, size_t uLength, gd::types::tag_binary ): m_uType(variant_type::eTypeBinary), m_uSize(size_to_u32_s(uLength)) { m_V.pb = const_cast<unsigned char*>(v); }
-   variant( const utf8& v ) : m_uType(variant_type::eTypeUtf8String|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(v.m_uLength)) { m_V.pbsz = (char*)allocate(  m_uSize + 1u ); memcpy( m_V.pbsz, v.m_pbsz,  m_uSize + 1u ); }
-   variant( const utf8& v, unsigned int uType ) : m_uType(uType|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(v.m_uLength)) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.m_pbsz,  m_uSize + 1u ); }
-   variant( const utf8& v, bool ) : m_uType(variant_type::eTypeUtf8String), m_uSize(size_to_u32_s(v.m_uLength)) { m_V.pbsz = const_cast<char*>(v.m_pbsz); }
-   variant( unsigned int uType, void* v, size_t uLength, size_t uDataLength = 0 ) : m_uType(uType), m_uSize( size_to_u32_s(uLength) ) { if( uDataLength == 0 ) uDataLength = uLength; m_V.pb = (unsigned char*)allocate(uDataLength); memcpy( m_V.pb, v, uDataLength );  }
-   variant( const uint8_t* v, size_t uLength ): m_uType(variant_type::eTypeBinary|variant_type::eFlagAllocate), m_uSize( size_to_u32_s(uLength)) { m_V.pb = (uint8_t*)allocate(uLength); memcpy( m_V.pb, v, uLength ); }
+   variant( const wchar_t* v ): m_uType(variant_type::eTypeWString|variant_type::eFlagAllocate), m_uSize(size_cast(wcslen(v))) { m_V.pwsz = (wchar_t*)allocate(( m_uSize + 1u ) * sizeof(wchar_t)); memcpy( m_V.pwsz, v, ( m_uSize + 1u ) * sizeof(wchar_t) ); }
+   variant( const char* v, size_t uLength ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_cast(uLength)) { m_V.pbsz = (char*)allocate(uLength + 1); memcpy( m_V.pbsz, v, uLength ); m_V.pbsz[uLength] = '\0';  }
+   variant( const char* v, size_t uLength, bool ): m_uType(variant_type::eTypeString), m_uSize(size_cast(uLength)) { m_V.pbsz = const_cast<char*>(v); }
+   variant( const wchar_t* v, size_t uLength ): m_uType(variant_type::eTypeWString|variant_type::eFlagAllocate), m_uSize(size_cast(uLength)) { m_V.pwsz = (wchar_t*)allocate((uLength + 1) * sizeof(wchar_t)); memcpy( m_V.pwsz, v, (uLength) * sizeof(wchar_t) ); m_V.pwsz[uLength] = L'\0'; }
+   variant( const wchar_t* v, size_t uLength, bool ) : m_uType(variant_type::eTypeWString), m_uSize(size_cast(uLength)) { m_V.pwsz = const_cast<wchar_t*>(v); }
+   variant( const unsigned char* v, size_t uLength, bool ): m_uType(variant_type::eTypeBinary), m_uSize(size_cast(uLength)) { m_V.pb = const_cast<unsigned char*>(v); }
+   variant( const unsigned char* v, size_t uLength, gd::types::tag_binary ): m_uType(variant_type::eTypeBinary), m_uSize(size_cast(uLength)) { m_V.pb = const_cast<unsigned char*>(v); }
+   variant( const utf8& v ) : m_uType(variant_type::eTypeUtf8String|variant_type::eFlagAllocate), m_uSize(size_cast(v.m_uLength)) { m_V.pbsz = (char*)allocate(  m_uSize + 1u ); memcpy( m_V.pbsz, v.m_pbsz,  m_uSize + 1u ); }
+   variant( const utf8& v, unsigned int uType ) : m_uType(uType|variant_type::eFlagAllocate), m_uSize(size_cast(v.m_uLength)) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.m_pbsz,  m_uSize + 1u ); }
+   variant( const utf8& v, bool ) : m_uType(variant_type::eTypeUtf8String), m_uSize(size_cast(v.m_uLength)) { m_V.pbsz = const_cast<char*>(v.m_pbsz); }
+   variant( unsigned int uType, void* v, size_t uLength, size_t uDataLength = 0 ) : m_uType(uType), m_uSize( size_cast(uLength) ) { if( uDataLength == 0 ) uDataLength = uLength; m_V.pb = (unsigned char*)allocate(uDataLength); memcpy( m_V.pb, v, uDataLength );  }
+   variant( const uint8_t* v, size_t uLength ): m_uType(variant_type::eTypeBinary|variant_type::eFlagAllocate), m_uSize( size_cast(uLength)) { m_V.pb = (uint8_t*)allocate(uLength); memcpy( m_V.pb, v, uLength ); }
    variant( const variant_type::guid& v ): m_uType(variant_type::eTypeGuid|variant_type::eFlagAllocate), m_uSize(sizeof(variant_type::guid)) { m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, &v, m_uSize ); }
    variant( const gd::types::uuid& v ): m_uType(variant_type::eTypeGuid|variant_type::eFlagAllocate), m_uSize(16) { m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, v.data(), m_uSize); }
-   variant( const gd::types::binary& v ): m_uType(variant_type::eTypeBinary|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(v.length())) { m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, &v, m_uSize ); }
+   variant( const gd::types::binary& v ): m_uType(variant_type::eTypeBinary|variant_type::eFlagAllocate), m_uSize(size_cast(v.length())) { m_V.pb = (uint8_t*)allocate(m_uSize); memcpy( m_V.pb, &v, m_uSize ); }
 
-   variant( const std::string& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(v.length())) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize + 1u); }
-   explicit variant( const std::string_view& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(v.length())) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.data(), m_uSize + 1u); m_V.pbsz[m_uSize] = '\0'; }
-   variant( const std::string& v, unsigned int uType ): m_uType(uType|variant_type::eFlagAllocate), m_uSize(size_to_u32_s(v.length())) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize + 1u); }
-   variant(const char* v, bool) : m_uType(variant_type::eTypeString), m_uSize(size_to_u32_s(strlen(v))) { m_V.pbsz_const = v; }
-   variant(const std::string_view& v, bool) : m_uType(variant_type::eTypeString), m_uSize(size_to_u32_s(v.length())) { m_V.pbsz_const = v.data(); }
+   variant( const std::string& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_cast(v.length())) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize + 1u); }
+   explicit variant( const std::string_view& v ): m_uType(variant_type::eTypeString|variant_type::eFlagAllocate), m_uSize(size_cast(v.length())) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.data(), m_uSize + 1u); m_V.pbsz[m_uSize] = '\0'; }
+   variant( const std::string& v, unsigned int uType ): m_uType(uType|variant_type::eFlagAllocate), m_uSize(size_cast(v.length())) { m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize + 1u); }
+   variant(const char* v, bool) : m_uType(variant_type::eTypeString), m_uSize(size_cast(strlen(v))) { m_V.pbsz_const = v; }
+   variant(const std::string_view& v, bool) : m_uType(variant_type::eTypeString), m_uSize(size_cast(v.length())) { m_V.pbsz_const = v.data(); }
    
    // @API [tag: constructor] [description: constructor for variant from string]
    
@@ -336,14 +336,13 @@ public:
    void operator=( uint64_t v ) { clear(); m_uType = variant_type::eTypeUInt64; m_V.uint64 = v; }
    void operator=( float v )    { clear(); m_uType = variant_type::eTypeCFloat; m_V.f = v;  }
    void operator=( double v )   { clear(); m_uType = variant_type::eTypeCDouble; m_V.d = v;  }
-   void operator=( const char* v ) { clear(); m_uType = variant_type::eTypeString|variant_type::eFlagAllocate; m_uSize = (unsigned int)strlen(v); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v,  m_uSize + 1u ); }
-   void operator=( const wchar_t* v ) { clear(); m_uType = variant_type::eTypeWString|variant_type::eFlagAllocate; m_uSize = (unsigned int)wcslen(v); m_V.pwsz = (wchar_t*)allocate(( m_uSize + 1u ) * sizeof(wchar_t)); memcpy( m_V.pwsz, v, ( m_uSize + 1u ) * sizeof(wchar_t) ); }
-   void operator=( const utf8& v ) { clear(); m_uType = variant_type::eTypeUtf8String|variant_type::eFlagAllocate; m_uSize = v.m_uLength; m_V.pbsz = (char*)allocate(  m_uSize + 1u ); memcpy( m_V.pbsz, v.m_pbsz,  m_uSize + 1u ); }
+   void operator=( const char* v ) { clear(); m_uType = variant_type::eTypeString|variant_type::eFlagAllocate; m_uSize = size_cast(strlen(v)); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v,  m_uSize + 1u ); }
+   void operator=( const wchar_t* v ) { clear(); m_uType = variant_type::eTypeWString|variant_type::eFlagAllocate; m_uSize = size_cast(wcslen(v)); m_V.pwsz = (wchar_t*)allocate(( m_uSize + 1u ) * sizeof(wchar_t)); memcpy( m_V.pwsz, v, ( m_uSize + 1u ) * sizeof(wchar_t) ); }
+   void operator=( const utf8& v ) { clear(); m_uType = variant_type::eTypeUtf8String|variant_type::eFlagAllocate; m_uSize = size_cast(v.m_uLength); m_V.pbsz = (char*)allocate(  m_uSize + 1u ); memcpy( m_V.pbsz, v.m_pbsz,  m_uSize + 1u ); }
 #if defined(__cpp_char8_t)
-   void operator=(const char8_t* v) { clear(); m_uType = variant_type::eTypeUtf8String|variant_type::eFlagAllocate; m_uSize = (unsigned int)strlen((const char*)v); m_V.putf8 = (char8_t*)allocate(  m_uSize + 1u ); memcpy( m_V.putf8, v,  m_uSize + 1u ); }
+   void operator=(const char8_t* v) { clear(); m_uType = variant_type::eTypeUtf8String|variant_type::eFlagAllocate; m_uSize = size_cast(strlen((const char*)v)); m_V.putf8 = (char8_t*)allocate(  m_uSize + 1u ); memcpy( m_V.putf8, v,  m_uSize + 1u ); }
 #endif
-   void operator=( const std::string& v ) { clear(); m_uType = variant_type::eTypeString|variant_type::eFlagAllocate; m_uSize = (unsigned int)v.length(); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize + 1u); }
-
+   void operator=( const std::string& v ) { clear(); m_uType = variant_type::eTypeString|variant_type::eFlagAllocate; m_uSize = size_cast(v.length()); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize + 1u); }
    int32_t operator+(int32_t v) { return m_V.int32 + v; }
    uint32_t operator+(uint32_t v) { return m_V.uint32 + v; }
    int64_t operator+(int64_t v) { return m_V.int64 + v; }
@@ -404,14 +403,14 @@ public:
    void assign( float v  )    { _set_value( v ); }
    void assign( double v )    { _set_value( v ); }
    void assign( const char* v ) { _set_value( v ); }
-   void assign( const char* v, size_t uLength ) { _set_value( v, uLength ); }
+   void assign( const char* v, size_t uLength ) { _set_value( v, size_cast( uLength ) ); }
 #if defined(__cpp_char8_t)
    void assign( const char8_t* v ) { _set_value( v ); }
-   void assign( const char8_t* v, size_t uLength ) { _set_value( v, uLength ); }
+   void assign( const char8_t* v, size_t uLength ) { _set_value( v, size_cast( uLength ) ); }
 #endif
    void assign( const wchar_t* v ) { _set_value( v ); }
-   void assign( const unsigned char* v, size_t uLength ) { _set_value( v, uLength ); }
-   void assign( const wchar_t* v, unsigned int uLength ) { _set_value( v, uLength ); }
+   void assign( const unsigned char* v, size_t uLength ) { _set_value( v, size_cast( uLength ) ); }
+   void assign( const wchar_t* v, unsigned int uLength ) { _set_value( v, size_cast( uLength ) ); }
    void assign( const utf8& v, variant_type::tag_utf8 ) { _set_value( v, variant_type::tag_utf8{}); }
    void assign( const utf8& v, unsigned int uType, variant_type::tag_utf8 ) { _set_value( v, uType, variant_type::tag_utf8{} ); }
    void assign( unsigned int uType, uint64_t uValue, variant_type::tag_raw ) { clear(); m_uType = uType; m_uSize = 0; m_V.uint64 = uValue; }
@@ -446,11 +445,11 @@ public:
 #endif
    void _set_value( const wchar_t* v ) { clear(); m_uType = variant_type::eTypeWString|variant_type::eFlagAllocate; m_uSize = (unsigned int)wcslen(v); m_V.pwsz = (wchar_t*)allocate(( m_uSize + 1u ) * sizeof(wchar_t)); memcpy( m_V.pwsz, v, ( m_uSize + 1u ) * sizeof(wchar_t) ); }
    void _set_value( const unsigned char* v, unsigned int  uLength ) { clear(); m_uType = variant_type::eTypeBinary|variant_type::eFlagAllocate; m_uSize = (unsigned int)uLength; m_V.pb = (unsigned char*)allocate(uLength); memcpy( m_V.pb, v, uLength ); }
-   void _set_value( const wchar_t* v, unsigned int uLength ) { clear(); m_uType = variant_type::eTypeWString|variant_type::eFlagAllocate; m_uSize = (unsigned int)uLength; m_V.pwsz = (wchar_t*)allocate(( m_uSize + 1u ) * sizeof(wchar_t)); memcpy( m_V.pwsz, v, (m_uSize) * sizeof(wchar_t) );  m_V.pwsz[m_uSize] = 0; }
-   void _set_value( const utf8& v, variant_type::tag_utf8 ) { clear(); m_uType = variant_type::eTypeUtf8String|variant_type::eFlagAllocate; m_uSize = v.m_uLength; m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.m_pbsz,  m_uSize + 1u ); }
-   void _set_value( const utf8& v, unsigned int uType, variant_type::tag_utf8 ) { clear(); m_uType = uType|variant_type::eFlagAllocate; m_uSize = v.m_uLength; m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.m_pbsz, m_uSize + 1u ); }
-   void _set_value( const std::string& v ) { clear(); m_uType = variant_type::eTypeString|variant_type::eFlagAllocate; m_uSize = (unsigned int)v.length(); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize); m_V.pbsz[m_uSize] = '\0'; }
-   void _set_value( const std::wstring& v ) { clear(); m_uType = variant_type::eTypeWString|variant_type::eFlagAllocate; m_uSize = (unsigned int)v.length(); m_V.pbsz = (char*)allocate( ( m_uSize + 1u ) * sizeof(wchar_t) ); memcpy( m_V.pbsz, v.c_str(), ( m_uSize + 1u ) * sizeof(wchar_t)); m_V.pwsz[m_uSize] = L'\0'; }
+   void _set_value( const wchar_t* v, unsigned int uLength ) { clear(); m_uType = variant_type::eTypeWString|variant_type::eFlagAllocate; m_uSize = size_cast(uLength); m_V.pwsz = (wchar_t*)allocate(( m_uSize + 1u ) * sizeof(wchar_t)); memcpy( m_V.pwsz, v, (m_uSize) * sizeof(wchar_t) );  m_V.pwsz[m_uSize] = 0; }
+   void _set_value( const utf8& v, variant_type::tag_utf8 ) { clear(); m_uType = variant_type::eTypeUtf8String|variant_type::eFlagAllocate; m_uSize = size_cast(v.m_uLength); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.m_pbsz,  m_uSize + 1u ); }
+   void _set_value( const utf8& v, unsigned int uType, variant_type::tag_utf8 ) { clear(); m_uType = uType|variant_type::eFlagAllocate; m_uSize = size_cast(v.m_uLength); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.m_pbsz, m_uSize + 1u ); }
+   void _set_value( const std::string& v ) { clear(); m_uType = variant_type::eTypeString|variant_type::eFlagAllocate; m_uSize = size_cast(v.length()); m_V.pbsz = (char*)allocate( m_uSize + 1u ); memcpy( m_V.pbsz, v.c_str(), m_uSize); m_V.pbsz[m_uSize] = '\0'; }
+   void _set_value( const std::wstring& v ) { clear(); m_uType = variant_type::eTypeWString|variant_type::eFlagAllocate; m_uSize = size_cast(v.length()); m_V.pbsz = (char*)allocate( ( m_uSize + 1u ) * sizeof(wchar_t) ); memcpy( m_V.pbsz, v.c_str(), ( m_uSize + 1u ) * sizeof(wchar_t)); m_V.pwsz[m_uSize] = L'\0'; }
    // void _set_value( _variant v );
 
    //void _set_binary_value( const uint8_t* v, unsigned int uLength ) { clear(); m_uType = variant_type::eTypeBinary|variant_type::eFlagAllocate; m_uSize = uLength; m_V.pb = (unsigned char*)allocate( m_uSize ); memcpy( m_V.pb, v, m_uSize ); }
@@ -672,6 +671,12 @@ public:
       void*       p;
    } m_V;
 
+private:
+   /// set size of data in variant, make sure that you know that value is within the bounds for uint32
+   template<typename SIZE> static constexpr uint32_t size_cast( SIZE size_ ) { assert( size_ <= std::numeric_limits<uint32_t>::max() ); return static_cast<uint32_t>( size_ ); }  
+
+public:
+
 /** \name INTERNAL FREE FUNCTIONS
 *///@{
    static constexpr std::string_view get_type_name_s(uint32_t uType)
@@ -744,7 +749,7 @@ public:
    }
 
    /// cast size_t to uint32_t, make sure that you know that value is within the bounds for uint32
-   static uint32_t size_to_u32_s( size_t uLength ) {  assert( uLength <= std::numeric_limits<uint32_t>::max() ); return static_cast<uint32_t>(uLength); }
+   static uint32_t size_cast( size_t uLength ) {  assert( uLength <= std::numeric_limits<uint32_t>::max() ); return static_cast<uint32_t>(uLength); }
 };
 
 

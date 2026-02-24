@@ -31,6 +31,7 @@
 #pragma once
 
 #include <cassert>
+#include <limits>
 #include <type_traits>
 #include <stdint.h>
 #include <string>
@@ -331,7 +332,7 @@ uint8_t ctype_g(const std::string_view& stringCType, tag_main_type );
 uint16_t ctype_g(const std::string_view& stringCType);
 /// detect if text is integer, decimal or text
 unsigned detect_ctypegroup_g( const uint8_t* puText, unsigned uLength );
-inline unsigned detect_ctypegroup_g( const std::string_view& stringText ) { return detect_ctypegroup_g( (const uint8_t*)stringText.data(), stringText.length() ); }
+inline unsigned detect_ctypegroup_g( const std::string_view& stringText ) { return detect_ctypegroup_g( (const uint8_t*)stringText.data(), (unsigned)stringText.length() ); }
 
 
 /*-----------------------------------------*/ /**
@@ -551,6 +552,22 @@ constexpr bool is_decimal_g(unsigned uType) { return detail::is_decimal(uType); 
 constexpr bool is_date_g(unsigned uType) { return detail::is_date(uType); }
 constexpr bool is_string_g(unsigned uType) { return detail::is_string(uType); }
 constexpr bool is_binary_g(unsigned uType) { return detail::is_binary(uType); }
+
+// ## helper methods used to cast values to specific types, with assert to check if value is in range for type
+
+template <typename TYPE> 
+constexpr uint8_t cast_u8_g( TYPE uValue ) { assert( uValue <= std::numeric_limits<uint8_t>::max() ); return static_cast<uint8_t>(uValue); }
+template <typename TYPE> 
+constexpr uint16_t cast_u16_g( TYPE uValue ) { assert( uValue <= std::numeric_limits<uint16_t>::max() ); return static_cast<uint16_t>(uValue); }
+template <typename TYPE> 
+constexpr uint32_t cast_u32_g( TYPE uValue ) { assert( uValue <= std::numeric_limits<uint32_t>::max() ); return static_cast<uint32_t>(uValue); }
+template <typename TYPE> 
+constexpr int32_t cast_i32_g( TYPE uValue )
+{
+   if constexpr( std::is_signed_v<TYPE> ) { assert( uValue >= std::numeric_limits<int32_t>::min() ); }
+   assert( uValue <= std::numeric_limits<int32_t>::max() );
+   return static_cast<int32_t>(uValue);
+}
 
 
 /** ---------------------------------------------------------------------------
