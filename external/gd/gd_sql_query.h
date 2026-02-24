@@ -450,7 +450,6 @@ public:
    query& add( const gd::variant_view& stringTable, const std::string_view& stringName, tag_field );
    query& add( const gd::variant_view& stringTable, const std::string_view& stringName, const std::string_view& stringAlias, tag_field );
    query& add( const gd::variant_view& stringTable, const std::initializer_list< const char* > listField, tag_field );
-   //query& add( const gd::variant_view& stringTable, std::initializer_list< std::pair<const std::string_view, const std::string_view> > listField, tag_field );
    query& add( const gd::variant_view& stringTable, std::initializer_list< std::pair<const char*, const char*> > listField, tag_field );
    query& add( const gd::variant_view& stringTable, const std::vector< std::pair<const std::string_view, const std::string_view> >& vectorField, tag_field );
 
@@ -478,9 +477,6 @@ public:
 
    /// Generate key values for internal data in query
    unsigned next_key() { return ++m_uNextKey; };
-   // sql_update(), sql_update( iDbType )
-   // sql_insert(), sql_insert( iDbType )
-
 
    std::string sql_get_join_for_table( const table* ptable, const table* ptableParent ) const;
    std::string sql_get_join_for_table( const table* ptable ) const { return sql_get_join_for_table( ptable, nullptr ); }

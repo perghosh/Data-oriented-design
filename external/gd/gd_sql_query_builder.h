@@ -306,6 +306,18 @@ inline fields_builder fields_g( std::string_view stringTable, std::initializer_l
    return fieldsbuilder_;
 }
 
+/// global method — table + any STL-compatible container of {name, alias} pairs:
+/// fields_g("users", my_vector_of_pairs).select()
+template <typename Container>
+   requires std::ranges::input_range<Container> && 
+            std::same_as<std::pair<std::string_view, std::string_view>, std::remove_cvref_t<decltype(*std::declval<typename Container::iterator>())>>
+inline fields_builder fields_g( std::string_view stringTable, const Container& containerFields_ )
+{
+   fields_builder fieldsbuilder{ stringTable };
+   for( const auto& [stringName, stringAlias] : containerFields_ ) { fieldsbuilder.add( stringName, stringAlias ); }
+   return fieldsbuilder;
+}
+
 
 
 /// ---------------------------------------------------------------------------

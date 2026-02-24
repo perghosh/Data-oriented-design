@@ -52,7 +52,7 @@ assert( t2.cell_get_variant_view( 0, 0 ) == gd::variant_view( ( int64_t )1234567
  * @param variantviewValue variant view value to generate table from
 */
 table::table( const gd::variant_view& variantviewValue, tag_prepare ) :
-   m_uReservedRowCount( 1 ), m_uFlags(0), m_uRowSize(0), m_uRowCount(0),  m_uRowGrowBy(0)
+   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0), m_uReservedRowCount( 1 )
 {
    m_pcolumns = new_columns_s();
    auto type_ = variantviewValue.type();
@@ -72,7 +72,7 @@ table::table( const gd::variant_view& variantviewValue, tag_prepare ) :
  * @param vectorColumn vector with typle that has column type as string and column name
 */
 table::table( const std::vector< std::string_view >& vectorColumn, tag_prepare ) :
-   m_uReservedRowCount( eSpaceFirstAllocate ), m_uFlags( 0 ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uRowGrowBy( 0 )
+   m_uFlags( 0 ), m_uRowSize( 0 ), m_uRowGrowBy( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( eSpaceFirstAllocate )
 {
    m_pcolumns = new_columns_s();
 
@@ -91,7 +91,7 @@ table::table( const std::vector< std::string_view >& vectorColumn, tag_prepare )
  * @param vectorColumn vector with typle that has column type as string and column name
 */
 table::table( unsigned uFlags, const std::vector< std::tuple<std::string_view, std::string_view>>& vectorColumn, tag_prepare ) :
-   m_uReservedRowCount( eSpaceFirstAllocate ), m_uFlags( uFlags ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uRowGrowBy( 0 )
+    m_uFlags( uFlags ), m_uRowSize( 0 ), m_uRowGrowBy( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( eSpaceFirstAllocate )
 {
    m_pcolumns = new_columns_s();
 
@@ -109,7 +109,7 @@ table::table( unsigned uFlags, const std::vector< std::tuple<std::string_view, s
  * @param vectorColumn vector with typle that has column type as string, value size for types that need it and column name
 */
 table::table( unsigned uFlags, const std::vector<std::tuple<std::string_view, unsigned, std::string_view>>& vectorColumn, tag_prepare ) :
-   m_uReservedRowCount( eSpaceFirstAllocate ), m_uFlags( uFlags ), m_uRowSize( 0 ), m_uRowCount( 0 ), m_uRowGrowBy( 0 )
+   m_uFlags( uFlags ), m_uRowSize( 0 ), m_uRowGrowBy( 0 ), m_uRowCount( 0 ), m_uReservedRowCount( eSpaceFirstAllocate )
 {
    m_pcolumns = new_columns_s();
 
@@ -145,7 +145,7 @@ assert( t2.cell_get_variant_view( 2, "FInteger" ) == gd::variant_view((int64_t)2
  * @param vectorValue.[3] value inserted to table at first row
 */
 table::table( const std::vector<std::tuple<std::string_view, unsigned, std::string_view, gd::variant_view>>& vectorValue, tag_prepare ) :
-   m_uReservedRowCount( 1 ), m_uFlags(0), m_uRowSize(0), m_uRowCount(0),  m_uRowGrowBy(0)
+   m_uFlags(0), m_uRowSize(0), m_uRowGrowBy(0), m_uRowCount(0), m_uReservedRowCount( 1 )
 {
    m_pcolumns = new_columns_s();
 
@@ -405,7 +405,6 @@ table& table::column_add( unsigned uColumnType, unsigned uSize )
 table& table::column_add( unsigned uColumnType, unsigned uSize, const std::string_view& stringName, const std::string_view& stringAlias )
 {                                                                                                  assert( m_pcolumns != nullptr ); assert( gd::types::validate_number_type_g( uColumnType ) ); assert( uSize < 0x1000'0000 );
    detail::column columnAdd;
-   unsigned uValueOffset{0};
 
    columnAdd.type( uColumnType );
    columnAdd.ctype( uColumnType );
@@ -2030,8 +2029,8 @@ void table::cell_set( uint64_t uRow, unsigned uColumn, const gd::variant_view& v
          auto uValueType_d = variantviewValue.type_number();
          auto uColumnType_d = columnSet.ctype_number();
          if( uValueType_d != uColumnType_d ) {                                    // check type, this has to match. You can't set value from type that differ from type in column
-            auto stringValueType_d = gd::types::type_name_g( uValueType_d );
-            auto stringColumnType_d = gd::types::type_name_g( uColumnType_d );
+            [[maybe_unused]] auto stringValueType_d = gd::types::type_name_g( uValueType_d );
+            [[maybe_unused]] auto stringColumnType_d = gd::types::type_name_g( uColumnType_d );
                                                                                                       assert( uValueType_d == uColumnType_d );
          }
    #endif // !NDEBUG
@@ -3107,7 +3106,7 @@ int64_t table::find_first_free_row( uint64_t uStartRow ) const
    for( auto itRow = uStartRow; itRow < m_uReservedRowCount; itRow++ )
    {
 #ifdef _DEBUG
-      auto uState_d = *reinterpret_cast<uint32_t*>( puPosition );
+      [[maybe_unused]] auto uState_d = *reinterpret_cast<uint32_t*>( puPosition );
 #endif // _DEBUG
       // if the use flag not set then row is free
       if( (*reinterpret_cast<uint32_t*>( puPosition ) & eRowStateUse) == 0 ) return itRow;
@@ -3132,7 +3131,7 @@ uint64_t table::count_used_rows() const
    for( uint64_t uRow = 0; uRow < m_uReservedRowCount; uRow++ )
    {
 #ifdef _DEBUG
-      auto uState_d = *reinterpret_cast<const uint32_t*>( puPosition );
+      [[maybe_unused]] auto uState_d = *reinterpret_cast<const uint32_t*>( puPosition );
 #endif // _DEBUG
       // if the use flag not set then row is free
       if( (*reinterpret_cast<const uint32_t*>( puPosition ) & eRowStateUse) != 0 ) { uRowCount++; }
@@ -3156,7 +3155,7 @@ uint64_t table::count_free_rows() const
    for( uint64_t uRow = 0; uRow < m_uReservedRowCount; uRow++ )
    {
 #ifdef _DEBUG
-      auto uState_d = *reinterpret_cast<const uint32_t*>( puPosition );
+      [[maybe_unused]] auto uState_d = *reinterpret_cast<const uint32_t*>( puPosition );
 #endif // _DEBUG
       // if the use flag not set then row is free
       if( (*reinterpret_cast<const uint32_t*>( puPosition ) & eRowStateUse) == 0 ) { uRowCount++; }
@@ -3194,7 +3193,7 @@ void table::column_fill( unsigned uColumn, const gd::variant_view& variantviewVa
    const auto& columnSet = *m_pcolumns->get( uColumn );                                            assert( columnSet.position() < m_uRowSize );
    auto uColumnType = columnSet.ctype_number();
    gd::variant variantConvertTo;
-   bool bOk = variantviewValue.convert_to( uColumnType,  variantConvertTo );
+   [[maybe_unused]] bool bOk = variantviewValue.convert_to( uColumnType,  variantConvertTo );
 
    for( auto uRow = uFromRow; uRow < uToRow; uRow++ )
    {

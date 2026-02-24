@@ -421,7 +421,6 @@ public:
       operator uint8_t() const { assert(type_number() >= static_cast<decltype(type_number())>(arguments::eTypeNumberInt8) && type_number() <= static_cast<decltype(type_number())>(arguments::eTypeNumberUInt8) ); return m_unionValue.v_uint8; }
       operator int16_t() const { assert(type_number() >= static_cast<decltype(type_number())>(arguments::eTypeNumberInt16) && type_number() <= static_cast<decltype(type_number())>(arguments::eTypeNumberUInt16) ); return m_unionValue.v_int16; }
       operator uint16_t() const { assert(type_number() >= static_cast<decltype(type_number())>(arguments::eTypeNumberInt16) && type_number() <= static_cast<decltype(type_number())>(arguments::eTypeNumberUInt16) ); return m_unionValue.v_uint16; }
-      //operator long() const { assert(type_number() >= static_cast<decltype(type_number())>(arguments::eTypeNumberInt32) && type_number() <= static_cast<decltype(type_number())>(arguments::eTypeNumberUInt32)); return m_unionValue.v_int32; }
       operator int32_t() const { assert(type_number() >= arguments::eTypeNumberInt32 && type_number() <= arguments::eTypeNumberUInt32); return m_unionValue.v_int32; }
       operator uint32_t() const { assert(type_number() >= arguments::eTypeNumberInt32 && type_number() <= arguments::eTypeNumberUInt32); return m_unionValue.v_uint32; }
       operator int64_t() const { assert(type_number() >= static_cast<decltype(type_number())>(arguments::eTypeNumberInt64) && type_number() <= static_cast<decltype(type_number())>(arguments::eTypeNumberUInt64)); return m_unionValue.v_int64; }
