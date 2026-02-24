@@ -338,18 +338,67 @@ constexpr enumSqlPart sql_get_part_type_g( const std::string_view& stringPartNam
 }
 
 
+
 /** ---------------------------------------------------------------------------
- * @brief Return dialect enum value from dialect name (case-insensitive)
+ * @brief Convert dialect name string to enumSqlDialect (case-insensitive, constexpr)
  *
- * Converts dialect name (SQL server, PostgreSql, mysql, etc.) to enumSqlDialect.
- * Designed to be very fast and constexpr-evaluable.
- * Accepts mixed/upper/lower case.
+ * Parses a SQL dialect name and returns the corresponding enumSqlDialect value.
+ * Designed for compile-time evaluation when possible (constexpr) and optimized
+ * for runtime performance using a first-character switch followed by minimal
+ * subsequent character checks.
  *
- * Most common dialects are resolved with 1–2 char checks.
- * Longer/rarer names fall through to slightly more comparisons.
+ * @details
+ * The function uses a multi-stage matching strategy:
+ * 1. Quick-fail on empty input
+ * 2. Convert first character to uppercase (arithmetic, not lookup)
+ * 3. Switch on first character to narrow candidates
+ * 4. Check 2-3 additional characters case-insensitively to disambiguate
+ * 5. Verify minimum length to avoid buffer overruns
  *
- * @param stringDialect Dialect name (e.g. "PostgreSQL", "mysql", "SQLSERVER")
- * @return enumSqlDialect value, or eSqlDialectUnknown if no match
+ * Most common dialects (PostgreSQL, MySQL, SQLite) resolve in 1-3 comparisons.
+ * Ambiguous prefixes (e.g., 'S' for SQL Server/Snowflake/SQLite) require
+ * additional character checks at positions 2-4.
+ *
+ * @param stringDialect Dialect name (case-insensitive).
+ *        Recognized values include:
+ *        - "PostgreSQL", "postgres", "POSTGRESQL"
+ *        - "MySQL", "mysql", "MYSQL"
+ *        - "MariaDB", "mariadb"
+ *        - "SQLite", "sqlite"
+ *        - "SQLServer", "sqlserver", "MSSQL", "mssql"
+ *        - "Oracle", "oracle"
+ *        - "DB2", "db2"
+ *        - "Derby", "derby"
+ *        - "H2", "h2"
+ *        - "HSQLDB", "hsqldb"
+ *        - "Snowflake", "snowflake"
+ *        - "BigQuery", "bigquery"
+ *        - "Redshift", "redshift"
+ *        - "ClickHouse", "clickhouse"
+ *        - "CockroachDB", "cockroachdb"
+ *
+ * @return enumSqlDialect Matching dialect constant, or eSqlDialectUnknown if:
+ *         - Input is empty
+ *         - No recognized dialect matches
+ *         - Input is too short for expected dialect (e.g., "SQ" when "SQLite" needed)
+ *
+ * @note This function is constexpr and can be evaluated at compile time when
+ *       given a string literal or other constexpr string_view.
+ *
+ * @note The function uses an assert(false) before returning eSqlDialectUnknown
+ *       in the switch statement, indicating unexpected fallthrough in debug builds.
+ *
+ * @warning Partial matches are NOT supported. Input must contain at least the
+ *          minimum distinguishing prefix (e.g., "Big" won't match "BigQuery").
+ *
+ * @see enumSqlDialect for the complete list of dialect constants
+ * @see sql_get_part_type_g for similar pattern-matching approach
+ *
+ * Example usage:
+ * @code
+ *   constexpr auto dialect = sql_get_dialect_g("PostgreSQL"); // Compile-time
+ *   auto runtime_dialect = sql_get_dialect_g(user_input);     // Runtime
+ * @endcode
  */
 constexpr enumSqlDialect sql_get_dialect_g( std::string_view stringDialect )
 {

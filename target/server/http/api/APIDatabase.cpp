@@ -467,6 +467,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
    CDocument* pdocument = GetDocument();                                                           assert( pdocument != nullptr );
    CSqlBuilder sqlbuilder;
    std::string stringQueryTemplate;
+   auto uDialect = pdocument->DATABASE_Get()->GetDialect(); // get database dialect to use for sql building
    
    if( Exists("values") == true )
    {
@@ -491,10 +492,12 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
    else if( Exists( "record" ) == true )
    {
       std::string stringRecord = GetArgument("record").as_string();
+      IncrementArgumentCounter( "record" );                                   // @TODO: this is a bit hacky way to support multiple query arguments but it works for now, can be improved (refactor to one single method)
+
       if( GetCommand() == "insert" )
       {
          sqlbuilder.SetType( CSqlBuilder::eTypeInsert );
-         CRENDERSql sql_( pdocument, "sqlite" );
+         CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
          sql_.Initialize();
          result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{});
          if( result_.first == false ) { return result_; }
@@ -510,7 +513,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
       else if( GetCommand() == "update" )
       {
          sqlbuilder.SetType( CSqlBuilder::eTypeUpdate );
-         CRENDERSql sql_( pdocument, "sqlite" );
+         CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
          sql_.Initialize();
          result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{} );
          if( result_.first == false ) { return result_; }
@@ -535,10 +538,8 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
    {
       auto uIndex = GetArgumentIndex( "query" );
       if( uIndex == 0 ) stringQueryTemplate = GetArgument("query").as_string();
-      else
-      {
-         stringQueryTemplate = (*this)[{"query", uIndex}].as_string();
-      }
+      else { stringQueryTemplate = (*this)[{"query", uIndex}].as_string(); }
+      IncrementArgumentCounter( "query" );                                    // @TODO: this is a bit hacky way to support multiple query arguments but it works for now, can be improved (refactor to one single method)
    
       if( stringQueryTemplate.empty() == true ) { return { false, "no query specified to execute" }; }
 
@@ -567,8 +568,6 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
       stringExecute =std::move( sqlbuilder.GetSql() );
    }
 
-   IncrementArgumentCounter( "query" );
-   
    stringSql = std::move(stringExecute);
 
    return { true, "" };

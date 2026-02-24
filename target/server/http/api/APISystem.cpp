@@ -277,6 +277,21 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryExists()
    return { true, "" };
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Builds metadata for one or more fields in a table and returns it as a table DTO.
+ *
+ * Expects request parameters:
+ * - "table": table name the fields belong to.
+ * - "field": field name or comma-separated list of fields.
+ *
+ * On success, populates `m_objects` with a `gd::table::dto::table` containing
+ * column metadata (table, column, alias, type, size) and returns `{ true, "" }`.
+ * 
+ * Metadata for fields can be used in client to render input forms for user input.
+ *
+ * @return A pair where the first element indicates success, and the second
+ *         contains an error message on failure.
+ */
 std::pair<bool, std::string> CAPISystem::Execute_MetadataDBField()
 {
    using namespace gd::table::dto;

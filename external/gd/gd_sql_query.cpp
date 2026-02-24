@@ -989,12 +989,12 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
       switch( uSqlPart )
       {
       case eSqlPartSelect:
-         stringSql += std::string_view{ "SELECT\n\t" };
+         stringSql += std::string_view{ "SELECT " };
          stringSql += sql_get_select();
          break;
 
       case eSqlPartInsert:
-         stringSql += std::string_view{ "INSERT INTO\n\t" };
+         stringSql += std::string_view{ "INSERT INTO " };
          stringSql += sql_get_insert();
          break;
 
@@ -1009,7 +1009,7 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          break;
 
       case eSqlPartFrom:
-         stringSql += std::string_view{ " FROM " };
+         stringSql += std::string_view{ "\nFROM " };
          stringSql += sql_get_from();
          break;
 
@@ -1034,7 +1034,7 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          break;
 
       case eSqlPartOrderBy:
-         stringSql += sql_get_orderby( "\nORDER BY\n\t" );
+         stringSql += sql_get_orderby( "\nORDER BY " );
          break;
 
       case eSqlPartLimit:

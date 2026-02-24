@@ -532,12 +532,22 @@ std::pair<bool, std::string> CDocument::DATABASE_SelectMetadata( const gd::argum
    return { true, "" };
 }
 
-std::pair<bool, std::string> CDocument::DATABASE_Prepare()
+std::pair<bool, std::string> CDocument::DATABASE_Prepare( const gd::argument::arguments& arguments_ )
 {
    if( m_pMDatabase->IsReadyToLinkTables() == true )
    {
       auto result_ = m_pMDatabase->LinkTablesTables();
       if( result_.first == false ) return result_;
+   }
+
+   if( arguments_.exists("dialect") == true )
+   {
+      std::string stringDialect = arguments_["dialect"].as_string();                               LOG_DEBUG_RAW( "Database dialect in document: " & stringDialect );
+
+      gd::sql::enumSqlDialect eDialect = gd::sql::sql_get_dialect_g( stringDialect );
+      if( eDialect == gd::sql::eSqlDialectUnknown ) { return { false, "Unknown database dialect: " + stringDialect }; }
+
+      m_pMDatabase->SetDialect(eDialect);
    }
 
    return { true, "" };

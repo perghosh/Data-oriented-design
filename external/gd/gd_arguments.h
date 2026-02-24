@@ -9,14 +9,14 @@
  | Area                | Methods (Examples)                                                                 | Description                                                                                   |
  |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
  | Construction        | arguments(...), common_construct(...), zero(), buffer_set(...)                     | Constructors for various ways to create, copy, and initialize arguments buffers.              |
- | Appending           | append(...), append_argument(...), append_if(...), append_object(...), operator+=  | Methods for adding values, named arguments, objects, and collections to the buffer.           |
- | Setting             | set(...), set_uuid(...), set_argument(...), operator=                              | Methods for updating or replacing values by name, index, or pointer.                          |
- | Insertion           | insert(...), reserve(...), reserve_no_copy(...)                                    | Methods for inserting values at specific positions and managing buffer capacity.              |
- | Removal             | remove(...), erase(...), shrink_to_fit()                                           | Methods for removing arguments by name, index, or pointer, and optimizing buffer size.        |
- | Retrieval           | get_argument(...), get_argument_all(...), find(...), exists(...), operator[]       | Methods for retrieving values by name, index, or pointer, including type conversion.          |
- | Iteration           | iterator, begin(), end(), next(...), find_all(...), get_argument_section(...)      | Methods for traversing arguments using iterators or pointer-based navigation.                 |
- | Comparison          | compare(...), compare_argument_s(...), compare_group(...), compare_exists(...)     | Methods for comparing argument values, types, and existence between buffers.                  |
- | Printing/Debug      | print(...), print_json(), debug::print(...), print_s(...), print_type_s(...)       | Methods for formatting and printing argument values and buffer contents for debugging.        |
+ | Appending           | append(...), append_argument(...), append_if(...), append_object(...), operator+=  | Adding values, named arguments, objects, and collections to the buffer.           |
+ | Setting             | set(...), set_uuid(...), set_argument(...), operator=                              | Updating or replacing values by name, index, or pointer.                          |
+ | Insertion           | insert(...), reserve(...), reserve_no_copy(...)                                    | Inserting values at specific positions and managing buffer capacity.              |
+ | Removal             | remove(...), erase(...), shrink_to_fit()                                           | Removing arguments by name, index, or pointer, and optimizing buffer size.        |
+ | Retrieval           | get_argument(...), get_argument_all(...), find(...), exists(...), operator[]       | Retrieving values by name, index, or pointer, including type conversion.          |
+ | Iteration           | iterator, begin(), end(), next(...), find_all(...), get_argument_section(...)      | Traversing arguments using iterators or pointer-based navigation.                 |
+ | Comparison          | compare(...), compare_argument_s(...), compare_group(...), compare_exists(...)     | Comparing argument values, types, and existence between buffers.                  |
+ | Printing/Debug      | print(...), print_json(), debug::print(...), print_s(...), print_type_s(...)       | Formatting and printing argument values and buffer contents for debugging.        |
  | Utility/Meta        | clear(), empty(), size(), capacity(), is_owner(), buffer_data(), type_name_s(...)  | Utility methods for clearing, checking, and querying buffer and argument metadata.            |
  *
  * The `arguments` class is designed to manage a collection of named or unnamed values stored in a contiguous byte buffer,
@@ -944,10 +944,7 @@ protected:
          memcpy(m_pBuffer, o.m_pBuffer, o.m_uLength);
          m_uLength = o.m_uLength;                                                                  assert( m_uLength <= m_uBufferLength );
       }
-      else
-      {
-         clear();
-      }
+      else { clear(); }
    }
 
    void common_construct(arguments&& o) noexcept {

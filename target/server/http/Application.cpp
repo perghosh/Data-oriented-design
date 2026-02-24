@@ -24,6 +24,7 @@
 #include "gd/gd_log_logger_define.h"
 #include "gd/gd_cli_options.h"
 #include "gd/gd_table_io.h"
+#include "gd/gd_sql_types.h"
 #include "gd/gd_database_sqlite.h"
 
 #include "gd/console/gd_console_console.h"
@@ -124,7 +125,7 @@ std::pair<bool, std::string> CApplication::Main(int iArgumentCount, char* ppbszA
    papplication_g->PROPERTY_Add("folder-application", stringApplicationFolder);
 
    gd::cli::options optionsApplication;
-   Prepare_s(optionsApplication);
+   PrepareOption_s(optionsApplication);
 
    // ## Initialize application
    auto result_ = Initialize();                                                                    assert( result_.first );
@@ -348,12 +349,13 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
          gd::argument::arguments arguments_;
          optionsActive.iif( "database-meta-tables", [&arguments_]( auto& v_ ) { arguments_.append_argument( "tables", v_ ); });
          optionsActive.iif( "database-meta-columns", [&arguments_]( auto& v_ ) { arguments_.append_argument( "columns", v_ ); });
+         optionsActive.iif( "database-dialect", [&arguments_]( auto& v_ ) { arguments_.append_argument( "dialect", v_ ); });
 
          result_ = m_pdocumentActive->DATABASE_Initialize();                  // initialize database connection, this is needed to be able to select metadata for tables and columns
          if( result_.first == false ) return result_;
          result_ = m_pdocumentActive->DATABASE_SelectMetadata( arguments_ );  // select metadata for tables and columns
          if( result_.first == false ) return result_;
-         result_ = m_pdocumentActive->DATABASE_Prepare();
+         result_ = m_pdocumentActive->DATABASE_Prepare( arguments_ );
          if( result_.first == false ) return result_;
       }
    }
@@ -467,10 +469,10 @@ std::pair<bool, std::string> CApplication::SERVER_Start(unsigned uIndex)
 
 
 
-/** --------------------------------------------------------------------------- @API [tag: options] [title: configure options] [description: Prepare application specific arguments]
+/** --------------------------------------------------------------------------- @API [tag: options, declare] [title: configure options] [description: Prepare application specific arguments]
  * @brief Prepare application specific arguments
  */
-void CApplication::Prepare_s(gd::cli::options& optionsApplication)
+void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
 {
    // ## Log settings
    optionsApplication.add_flag( {"logging", "Turn on logging"} );              // logging is turned on using this flag
@@ -493,6 +495,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({"database-open", "Open to database, if file database then add file name, if odbc then add the odbc name and use user and other settings comma separated"});
    optionsApplication.add({"database-meta-tables", "Query to read tables from connected database"});
    optionsApplication.add({"database-meta-columns", "Query to read columns from connected database"});
+   optionsApplication.add({"database-dialect", "Set the SQL dialect for the connected database"});
    
 
    {  // ## `http` command, manage settings for http server
@@ -597,7 +600,7 @@ std::pair<bool, std::string> CApplication::DATABASE_Connect( const gd::argument:
       gd::argument::arguments argumentsOpen;
       std::string stringOpen = argumentsConnect["database-open"].as_string();
       if( stringOpen.find( ',' ) != std::string::npos )
-      {
+      {                                                                                            LOG_DEBUG_RAW( "Open database with arguments: " & stringOpen );
          auto vector_ = gd::utf8::split( stringOpen, ',' );
          argumentsOpen.append_range( {"dsn", "user", "password"}, vector_ );
       }
@@ -613,6 +616,20 @@ std::pair<bool, std::string> CApplication::DATABASE_Connect( const gd::argument:
       m_pdocumentActive->SetDatabase(pdatabaseOpen);
       if( pdatabaseOpen != nullptr ) pdatabaseOpen->release();
 
+      if( argumentsConnect.exists( "database-dialect" ) == true )
+      {
+         std::string stringDialect = argumentsConnect["database-dialect"].as_string();             LOG_DEBUG_RAW( "Database dialect: " & stringDialect );
+
+         // ## set database dialect, this is used to know how to generate sql for different databases
+
+         gd::sql::enumSqlDialect eDialect = gd::sql::sql_get_dialect_g( stringDialect );
+         if( eDialect == gd::sql::eSqlDialectUnknown ) { return { false, "Unknown database dialect: " + stringDialect }; }
+
+         // ### set dialect for database
+         m_pdocumentActive->DATABASE_SetDialect( eDialect );
+         PROPERTY_Add( "database-dialect", stringDialect );                   // set property for database dialect
+      }
+
       if( argumentsConnect.exists_any({"database-meta-tables", "database-meta-columns"}) == true )
       {
          gd::argument::arguments arguments_;
@@ -623,7 +640,7 @@ std::pair<bool, std::string> CApplication::DATABASE_Connect( const gd::argument:
          if( result_.first == false ) return result_;
          result_ = m_pdocumentActive->DATABASE_SelectMetadata( arguments_ );
          if( result_.first == false ) return result_;
-         result_ = m_pdocumentActive->DATABASE_Prepare();
+         result_ = m_pdocumentActive->DATABASE_Prepare( arguments_ );
          if( result_.first == false ) return result_;
       }
    }

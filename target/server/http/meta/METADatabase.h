@@ -21,6 +21,7 @@
 #include "gd/gd_log_logger.h"
 #include "gd/gd_table_arguments.h"
 
+
 #ifndef NAMESPACE_META_BEGIN
 
 #  define NAMESPACE_META_BEGIN namespace META {
@@ -71,6 +72,8 @@ public:
 // ## methods ------------------------------------------------------------------
 public:
 // @API [tag: get, set]
+   void SetDialect( uint32_t uDatabaseDialect ) { m_uDatabaseDialect = uDatabaseDialect; } ///< set database dialect, used to determine how the syntax of sql statements should be
+   [[nodiscard]] uint32_t GetDialect() const noexcept { return m_uDatabaseDialect; } ///< get database dialect, used to determine how the syntax of sql statements should be
 
 // @API [tag: operation]
    std::pair<bool, std::string> Initialize();
@@ -101,6 +104,7 @@ public:
 
 // ## attributes ----------------------------------------------------------------
 public:
+   uint32_t m_uDatabaseDialect{ 0 };  ///< database dialect, used to determine how the syntax of sql statements should be, and how to connect to database
    std::unique_ptr<gd::table::arguments::table> m_ptableTable;  ///< table holding list of tables
    std::unique_ptr<gd::table::arguments::table> m_ptableColumn;  ///< table holding column information
    std::unique_ptr<gd::table::arguments::table> m_ptableJoin;  ///< table with connections between tables
