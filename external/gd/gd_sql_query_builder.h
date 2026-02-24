@@ -163,6 +163,159 @@ inline query& operator<<( query& query_, table_builder&& tablebuilder_ )
 
 
 /** ==========================================================================
+ * @brief Fluent builder for multiple field definitions in SQL queries.
+ *
+ * A proxy object that accumulates field entries and applies a single part-type
+ * (SELECT, INSERT, UPDATE, etc.) to all of them at once. Fields can carry up
+ * to three attributes: name, alias, and value.
+ *
+ * @par Example
+ * @code
+ * query << fields_g("u").add("id", "uid").add("name", "full_name").select();
+ * query << fields_g().add("status", gd::variant_view("active")).add("score", gd::variant_view(42)).insert();
+ * @endcode
+ *
+ | Area               | fields_builder Methods (Examples)                                          | Description                                                        |
+ |--------------------|------------------------------------------------------------------------|--------------------------------------------------------------------|
+ | Construction       | `fields_g()`, `fields_g("table")`                                      | Creates empty builder with optional table qualification.           |
+ | Field Add          | `add("name")`, `add("name","alias")`, `add("name", value)`             | Adds a field with name-only, name+alias, or name+value.            |
+ |                    | `add("name", "alias", value)`                                          | Adds a field with all three attributes.                            |
+ | Type Setter        | `type(variant_view)`                                                   | Sets a default SQL type applied to all fields (before or after add). |
+ | SQL Part Setters   | `select()`, `insert()`, `update()`, `orderby()`, `groupby()`, `returning()` | Sets the SQL clause for all accumulated fields.               |
+ | Conversion         | `operator<<` on query                                                  | Streams all fields into the query in one step.                     |
+ */
+struct fields_builder
+{
+   fields_builder() = default;
+   explicit fields_builder( std::string_view stringTable ) : m_stringTable( stringTable ) {}
+
+   // @API [tag: operator] [summary: implicit conversion to the field arguments vector]
+
+   operator const std::vector<gd::argument::arguments>& ( ) const { return m_vectorFieldArguments; }
+
+   // @API [tag: getter] [summary: get part type and table name]
+
+   [[nodiscard]] unsigned          get_parttype() const noexcept { return m_uPartType; }
+   [[nodiscard]] std::string_view  get_table()    const noexcept { return m_stringTable; }
+
+   // @API [tag: field, add] [summary: add fields with flexible attribute combinations]
+
+   /// Add a field by name only
+   fields_builder&  add( std::string_view stringName )&  { add_( stringName, {}, {} ); return *this; }
+   fields_builder&& add( std::string_view stringName )&& { add_( stringName, {}, {} ); return std::move( *this ); }
+
+   /// Add a field with name + alias  (typical SELECT alias case)
+   fields_builder&  add( std::string_view stringName, std::string_view stringAlias )&  { add_( stringName, stringAlias, {} ); return *this; }
+   fields_builder&& add( std::string_view stringName, std::string_view stringAlias )&& { add_( stringName, stringAlias, {} ); return std::move( *this ); }
+
+   /// Add a field with name + value  (typical INSERT/UPDATE case)
+   fields_builder&  add( std::string_view stringName, gd::variant_view variantviewValue )&  { add_( stringName, {}, variantviewValue ); return *this; }
+   fields_builder&& add( std::string_view stringName, gd::variant_view variantviewValue )&& { add_( stringName, {}, variantviewValue ); return std::move( *this ); }
+
+   /// Add a field with name + alias + value  (all three attributes)
+   fields_builder&  add( std::string_view stringName, std::string_view stringAlias, gd::variant_view variantviewValue )&  { add_( stringName, stringAlias, variantviewValue ); return *this; }
+   fields_builder&& add( std::string_view stringName, std::string_view stringAlias, gd::variant_view variantviewValue )&& { add_( stringName, stringAlias, variantviewValue ); return std::move( *this ); }
+
+   // @API [tag: sql, type] [summary: Part-type shortcuts — applied to all fields on stream]
+
+   fields_builder&  select()&    { m_uPartType = eSqlPartSelect;    return *this; }
+   fields_builder&& select()&&   { m_uPartType = eSqlPartSelect;    return std::move( *this ); }
+
+   fields_builder&  orderby()&   { m_uPartType = eSqlPartOrderBy;   return *this; }
+   fields_builder&& orderby()&&  { m_uPartType = eSqlPartOrderBy;   return std::move( *this ); }
+
+   fields_builder&  groupby()&   { m_uPartType = eSqlPartGroupBy;   return *this; }
+   fields_builder&& groupby()&&  { m_uPartType = eSqlPartGroupBy;   return std::move( *this ); }
+
+   fields_builder&  insert()&    { m_uPartType = eSqlPartInsert;    return *this; }
+   fields_builder&& insert()&&   { m_uPartType = eSqlPartInsert;    return std::move( *this ); }
+
+   fields_builder&  update()&    { m_uPartType = eSqlPartUpdate;    return *this; }
+   fields_builder&& update()&&   { m_uPartType = eSqlPartUpdate;    return std::move( *this ); }
+
+   fields_builder&  returning()& { m_uPartType = eSqlPartReturning; return *this; }
+   fields_builder&& returning()&&{ m_uPartType = eSqlPartReturning; return std::move( *this ); }
+
+   // @API [tag: attribute] [summary: set a default SQL type stamped onto all fields]
+
+   /// Set type on already-added fields, and remember it for fields added afterward.
+   /// Calling type() before or after add() both work correctly.
+   fields_builder&  type( gd::variant_view variantviewType )&  { set_type_( variantviewType ); return *this; }
+   fields_builder&& type( gd::variant_view variantviewType )&& { set_type_( variantviewType ); return std::move( *this ); }
+
+   unsigned                              m_uPartType = 0;            ///< part type applied to all fields on stream
+   std::string_view                      m_stringTable;              ///< optional table qualifier (used for disambiguation in joins)
+   gd::variant_view                      m_variantviewType;          ///< default type stamped onto each field on add
+   std::vector<gd::argument::arguments>  m_vectorFieldArguments;     ///< accumulated field argument sets
+
+private:
+   /// Internal helper — builds one field arguments entry and appends it to the vector.
+   void add_( std::string_view stringName, std::string_view stringAlias, gd::variant_view variantviewValue )
+   {
+      gd::argument::arguments argumentsField;
+      argumentsField.append( "name", stringName );
+      if( stringAlias.empty()             == false ) { argumentsField.append( "alias", stringAlias ); }
+      if( variantviewValue.is_null()      == false ) { argumentsField.append_argument( "value", variantviewValue ); }
+      if( m_variantviewType.is_null()     == false ) { argumentsField.append_argument( "type",  m_variantviewType ); }
+      m_vectorFieldArguments.push_back( std::move( argumentsField ) );
+   }
+
+   /// Stamps the type onto all existing entries and caches it for future add() calls.
+   void set_type_( gd::variant_view variantviewType )
+   {
+      m_variantviewType = variantviewType;
+      for( auto& argumentsField : m_vectorFieldArguments ) { argumentsField.set( "type", variantviewType ); }
+   }
+};
+
+/// global method to create fields builder: fields_g().add("name").add("name","alias").add("name", value).select()
+inline fields_builder fields_g()                               { return {}; }
+inline fields_builder fields_g( std::string_view stringTable ) { return fields_builder{ stringTable }; }
+
+
+/// ---------------------------------------------------------------------------
+/// @brief Stream operator to add all fields in a fields_builder to a query
+/// @param query_ The query to add the fields to
+/// @param fieldsbuilder_ The fields builder (moved from)
+/// @return Reference to the query for chaining
+/// @par Example
+/// @code
+/// query << fields_g("u").add("id", "uid").add("name", "full_name").select();
+/// @endcode
+inline query& operator<<( query& query_, fields_builder&& fieldsbuilder_ )
+{
+   const unsigned uPartType = fieldsbuilder_.get_parttype();
+
+   /// Dispatches a single field arguments set into the query, respecting table and part-type state.
+   auto add_one_ = [&]( const gd::argument::arguments& argumentsField, const query::table* ptable_ )
+   {
+      if( ptable_ != nullptr )
+      {
+         if( uPartType != 0 ) { query_.field_add_parttype( uPartType, ptable_->get_key(), argumentsField, tag_arguments{} ); }
+         else                 { query_.field_add( ptable_->get_key(), argumentsField, tag_arguments{} ); }
+      }
+      else
+      {
+         if( uPartType != 0 ) { query_.field_add_parttype( uPartType, argumentsField, tag_arguments{} ); }
+         else                 { query_.field_add( argumentsField, tag_arguments{} ); }
+      }
+   };
+
+   if( fieldsbuilder_.get_table().empty() == false )
+   {
+      const auto* ptable_ = query_.table_get( fieldsbuilder_.get_table() );            assert( ptable_ != nullptr && "Table not found in query" );
+      for( const auto& it : fieldsbuilder_.m_vectorFieldArguments ) { add_one_( it, ptable_ ); }
+   }
+   else
+   {
+      for( const auto& it : fieldsbuilder_.m_vectorFieldArguments ) { add_one_( it, nullptr ); }
+   }
+
+   return query_;
+}
+
+
+/** ==========================================================================
  * @brief Fluent builder for field definitions in SQL queries.
  *
  * A proxy object that allows chaining of method calls to set field attributes
@@ -173,6 +326,13 @@ inline query& operator<<( query& query_, table_builder&& tablebuilder_ )
  * query << field_g("name").as("alias").orderby();
  * query << field_g("id").select().type("INTEGER");
  * @endcode
+ *
+ | Area               | field_builder Methods (Examples)                                           | Description                                                        |
+ |--------------------|------------------------------------------------------------------------|--------------------------------------------------------------------|
+ | Construction       | `field_g("name")`, `field_g("table", "name")`                          | Creates field builder with optional table qualification.           |
+ | Attribute Setters  | `as("alias")`, `value(123)`, `type("INTEGER")`, `raw("NOW()")`         | Sets field alias, value for INSERT/UPDATE, data type, or raw SQL.  |
+ | SQL Part Setters   | `select()`, `orderby()`, `groupby()`, `insert()`, `update()`, `returning()` | Specifies which SQL clause the field belongs to.              |
+ | Conversion         | `operator arguments&()`                                                | Implicit conversion to arguments for passing to query methods.     |
  */
 struct field_builder
 {
@@ -190,7 +350,7 @@ struct field_builder
 
    // @API [tag: operator] [summary: simplify with operators for use in methods]
 
-    /// Implicit conversion to arguments reference for passing to query methods
+   /// Implicit conversion to arguments reference for passing to query methods
    operator gd::argument::arguments& ( ) { return m_arguments; }
    /// Implicit conversion to arguments reference for passing to query methods
    operator const gd::argument::arguments& ( ) const { return m_arguments; }
@@ -243,20 +403,19 @@ struct field_builder
 inline field_builder field_g( std::string_view stringName ) { return field_builder{ stringName }; }
 inline field_builder field_g( std::string_view stringTable, std::string_view stringName ) { return field_builder{ stringTable, stringName }; }
 
-/// global method to create field builder using any container — std::array, std::vector, std::span, gd::memory::arena span
+/// global method to create field builder using any container
 template<typename CONTAINER>
    requires ( !std::convertible_to<CONTAINER, std::string_view> )
 inline field_builder field_g( std::string_view stringName, CONTAINER& buffer_ ) {
    return field_builder{ stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof( typename CONTAINER::value_type )} };
 }
 
-/// global method to create field builder using any container — std::array, std::vector, std::span, gd::memory::arena span
+/// global method to create field builder using any container
 template<typename CONTAINER>
    requires ( !std::convertible_to<CONTAINER, std::string_view> )
 inline field_builder field_g( std::string_view stringTable, std::string_view stringName, CONTAINER& buffer_ ) {
    return field_builder{ stringTable, stringName, std::span<std::byte>{(std::byte*)buffer_.data(), buffer_.size() * sizeof( typename CONTAINER::value_type )} };
 }
-
 
 /// global method to create field builder using raw C buffer
 inline field_builder field_g( std::string_view stringName, void* pBuffer_, std::size_t uSize ) {
@@ -458,7 +617,7 @@ inline query& operator<<( query& query_, condition_builder&& conditionbuilder_ )
 {
    if( conditionbuilder_.get_table().empty() == false )
    {
-      const auto* ptable_ = query_.table_get( conditionbuilder_.get_table() );                         assert( ptable_ != nullptr && "Table not found in query" );
+      const auto* ptable_ = query_.table_get( conditionbuilder_.get_table() );                      assert( ptable_ != nullptr && "Table not found in query" );
       query_.condition_add( *ptable_, conditionbuilder_, tag_arguments{} );
    }
    else
