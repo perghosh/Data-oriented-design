@@ -1,5 +1,6 @@
 
 #include "gd_utf8.h"
+#include "gd_parse.h"
 #include "gd_sql_value.h"
 
 #include "gd_sql_query.h"
@@ -210,6 +211,51 @@ query::field* query::field_add(const gd::variant_view& variantTable, std::string
    if( stringAlias.empty() == false ) pfield->append("alias", stringAlias);
 
    return pfield;
+}
+
+/*----------------------------------------------------------------------------- field_add */ /**
+ * Add field and set field properties from query string, query string is in format `name=fieldname&alias=fieldalias` and so on, this is used to set field properties, for example name, alias and so on
+ * \param variantTable index to table field belongs to
+ * \param stirngQueryString query string with field properties
+ * \return std::pair<query::field*, std::string> pointer to added field and error message if any
+ */ 
+std::pair<query::field*, std::string> query::field_add( unsigned uTableKey, std::string_view stirngQueryString, tag_querystring )
+{                                                                                                  assert( uTableKey != static_cast<unsigned>(-1) ); assert( m_vectorTable.empty() == false );
+   auto ptable = table_get_for_key( uTableKey );                                                   assert( ptable != nullptr );
+
+   // ## Parse field properties from query string
+   std::vector<std::pair<std::string, std::string>> vectorKeyValue;
+
+   auto result_ = gd::parse::read_line_g( stirngQueryString, vectorKeyValue, gd::parse::querystring{});
+   if( result_.first == false ) { assert( false ); return { nullptr, std::string( "Invalid query string format: " ) + std::string( stirngQueryString ) }; }
+
+   // ## Iterate and extract field properties from query string, this is used to set field properties, for example name, alias and so on
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsField{ buffer_ };
+   for( const auto& it : vectorKeyValue )
+   {
+      std::string_view stringName = it.first;                                                      assert( stringName.empty() == false );
+
+      // ### Add all values but convert value to utf-8 string
+      std::string stringValueUtf8;
+      auto result_ = gd::utf8::uri::convert_uri_to_uf8( std::string_view( it.second ), stringValueUtf8 );// convert value to utf-8 string, this is used to support non utf-8 characters in query string, for example when query string is read from file with different encoding
+      if( result_.first  == true )
+      {
+         argumentsField.append(stringName, stringValueUtf8);
+      }
+      else
+      {
+         return { nullptr, std::string( "Failed to convert value to UTF-8 string for field property '" ) + std::string( stringName ) + "': " + std::string( it.second ) };
+      }
+    
+   }
+
+   // ## Check for name value, this is required
+   if( argumentsField.exists( "name" ) == false ) { assert( false ); return { nullptr, std::string( "Field name is required in query string: " ) + std::string( stirngQueryString ) }; }
+
+   m_vectorField.push_back(field(*ptable, argumentsField));                   // dont move, this is stack based
+
+   return { &m_vectorField.back(), std::string() };                           // return pointer to added field
 }
 
 /** ---------------------------------------------------------------------------

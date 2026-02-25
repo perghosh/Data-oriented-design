@@ -25,7 +25,7 @@ _GD_SQL_QUERY_BEGIN
 /// tag dispatcher used for table operations
 using tag_table = gd::types::tag_table;
 /// tag dispatcher used for field operations
-struct tag_field {};
+using tag_field = gd::types::tag_field;
 /// tag dispatcher used for condition operations
 struct tag_condition {};
 /// tag dispatcher used name
@@ -39,6 +39,8 @@ struct tag_index {};
 struct tag_value {};
 /// tag dispatcher for values that is viewed (not owned)
 struct tag_value_view {};
+/// tag dispatcher for value list, used to generate value list for values in vector
+using tag_querystring = gd::types::tag_querystring;
 
 
 /*----------------------------------------------------------------------------

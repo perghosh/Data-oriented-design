@@ -238,6 +238,7 @@ TEST_CASE( "[sql] field_builder", "[sql]" ) {
 
    // Add multiple fields 
    { query q; q << table_g("users") << fields_g("users", "name", "age", "email", "created_at", "updated_at").select();
+     q.field_add( "users", "name=qname", tag_querystring{});
      std::cout << q.sql_get(eSqlSelect) << "\n"; }
 
    // Add multiple fields with aliases

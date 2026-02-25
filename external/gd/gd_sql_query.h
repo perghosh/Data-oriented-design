@@ -371,6 +371,7 @@ public:
    bool table_exists( const table& tableExists ) const noexcept { return table_get( tableExists ) != nullptr; }
    std::size_t table_size() const { return m_vectorTable.size(); }
    bool table_empty() const { return m_vectorTable.empty(); }
+   int32_t table_get_key( std::string_view stringTable ) const { auto pTable = table_get( stringTable ); return pTable ? (int32_t)pTable->get_key() : -1; }
 
    std::vector<table>::iterator table_begin() { return m_vectorTable.begin(); }
    std::vector<table>::const_iterator table_begin() const { return m_vectorTable.cbegin(); }
@@ -390,6 +391,9 @@ public:
 
    field* field_add( const gd::argument::arguments& argumentsField, tag_arguments );
    field* field_add( unsigned uTableKey, const gd::argument::arguments& argumentsField, tag_arguments );
+
+   std::pair<field*, std::string> field_add( unsigned uTableKey, std::string_view stirngQueryString, tag_querystring ); ///< add field with table key, this is used when field is added with querystring and table key is needed to link field to table
+   std::pair<field*, std::string> field_add( std::string_view stringTable, std::string_view stirngQueryString, tag_querystring ) { return field_add( table_get_key( stringTable ), stirngQueryString, tag_querystring{} ); } 
 
    /// add field with type, type is used to mark where field is used in query.
    field* field_add_parttype( unsigned uPartType, const gd::argument::arguments& argumentsField, tag_arguments );
@@ -477,6 +481,8 @@ public:
 
    /// Generate key values for internal data in query
    unsigned next_key() { return ++m_uNextKey; };
+
+   // @API [tag: sql] [summary: sql generation] [description: methods to generate sql for different parts of query or some that that generate complete queries]
 
    std::string sql_get_join_for_table( const table* ptable, const table* ptableParent ) const;
    std::string sql_get_join_for_table( const table* ptable ) const { return sql_get_join_for_table( ptable, nullptr ); }

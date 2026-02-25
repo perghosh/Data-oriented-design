@@ -149,6 +149,7 @@ struct tag_status {};         ///< status is used in some form, like active/inac
 struct tag_success {};        ///< success is used in some form
 struct tag_table {};          ///< table is used in some form
 struct tag_column {};         ///< column is used in some form, like table columns
+struct tag_field {};          ///< field is used in some form, like table fields
 struct tag_card {};           ///< card is used in some form, like a data card or card form
 struct tag_dimension {};      ///< dimension is used in some form, like width/height
 struct tag_duration {};       ///< duration is used in some form, like time duration
@@ -214,6 +215,7 @@ struct tag_hex {};            ///< data is in hex format
 struct tag_json {};           ///< data is in json format
 struct tag_path {};           ///< data is in path format
 struct tag_text {};           ///< data is in text format
+struct tag_querystring {};    ///< data is in query string format, like `?key=value&key2=value2`  
 struct tag_uri {};            ///< data is in uri format (url encoded)
 struct tag_url {};            ///< data is in url format
 struct tag_utf8 {};           ///< data is in utf8 format
