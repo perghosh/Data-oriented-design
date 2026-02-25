@@ -13,7 +13,6 @@
 - Start every response directly with the code or the technical answer.
 - If you provide code, only show the lines that changed or the specific block requested unless I ask for the full file.
 
-
 ---
 
 ## VARIABLE NAMING (HUNGARIAN NOTATION)
@@ -60,7 +59,7 @@ By enforcing full semantic names on anything with domain meaning, we guarantee t
 | `p`    | pointer / smart pointer              | no on domain terms                    | `pTransactionContext`       | `pCtx`                        |
 | `string` | std::string / string_view          | no                                    | `stringSessionToken`        | `strTok`, `stringTok`         |
 
-### Required Prefixes
+### Required Postfixes
 
 | Postfix | Description | Examples |
 | ------- | ----------- | -------- |
@@ -75,9 +74,7 @@ By enforcing full semantic names on anything with domain meaning, we guarantee t
 | `string` | all string objects | `std::string stringName;`, `std::string_view stringViewName;` |
 | `_` | if variable is just used on same row and declaration is will be verbose, then it is ok to name it to something short and add underscore at the end | `std::vector<object_name> list_;` |
 
-Note that unimportant variables or variables that my be very local, like inline methods or one liners. Shortend these or in some other way make the code simpler to handle and doing that disable the hungarian rules, then add undercsore at the end.
-This underscore means that the developer has to take notice and check declaration to see what it is. Otherwise it is important that the developer need to understand what variables represents just by reading the name.
-But if the declaration that follow default style is simple, that is prioritized. Only use _ at the end when declarations becomes verbose.
+Note that unimportant variables or variables that may be very local, like inline methods or one-liners. Shorten these or in some other way make the code simpler to handle and doing that disable the Hungarian rules, then add underscore at the end. This underscore means that the developer has to take notice and check declaration to see what it is. Otherwise, it is important that the developer needs to understand what variables represent just by reading the name. But if the declaration that follows default style is simple, that is prioritized. Only use _ at the end when declarations become verbose.
 
 ### Other Objects
 
@@ -100,36 +97,17 @@ For other types (pairs, vectors, tables, queries, custom classes):
 - Use bold for important things: **important**
 - Comments should be read once, code is read over and over
 
-### Comment Structure
-```
-## Sub-section example .......................................................
+### Comment Structure## Sub-section example .......................................................
 ### Sub-sub-section example
-```
-
 ### Inline Comments
 - Try to place comments at column 80 after the line if possible
 - If the line is longer, put the comment when the code ends on that line
-- Examples:
-```cpp
-int iCounter = 0; // counter for iterations
+- Examples:int iCounter = 0; // counter for iterations
 if( iRow < 0 || iRow >= (int)vector_.size() )                                  // (column 80) comments describing row starts at column 80
-```
-
 ### Member Variables
-- Use `///<` style after declaration
-```cpp
-std::uint32_t m_uMagic; ///< Magic number for validation (ALLOC_MAGIC)
-```
-
+- Use `///<` style after declarationstd::uint32_t m_uMagic; ///< Magic number for validation (ALLOC_MAGIC)
 ### Method Documentation
-- For template classes, methods should be placed outside class definition
-- Use doxygen style comments with:
-  - `@tparam` for template parameters
-  - `@brief` for method description
-  - `@param` for method parameters
-  - `@return` for return value
-```cpp
-/** -------------------------------------------------------------------------- MethodName
+- Follow the .github template and explicitly include `@brief`, `@param`, and `@return`, with MethodName replaced by the real function name when documenting methods./** -------------------------------------------------------------------------- MethodName
  * @brief method comment sample description
  * 
  * Describe method if needed here
@@ -141,22 +119,15 @@ std::uint32_t m_uMagic; ///< Magic number for validation (ALLOC_MAGIC)
  * Sample code if needed
  * @endcode
  */
-```
-
-Or this style for simplre methods and methods in header files
+Or this style for simple methods and methods in header files
 `/// method comment sample description ---------------------------------------- MethodName`
 
-Sample:
-```cpp
-/// Check if value is found in vector of strings ------------------------------ Contains
+Sample:/// Check if value is found in vector of strings ------------------------------ Contains
 inline bool Contains(const std::vector<std::string>& v_, std::string_view stringValue)
 {
    for(const auto& s_ : v_) { if(s_ == stringValue) return true; }
    return false;
 }
-```
-
-
 ---
 
 ## CODE FORMATTING
@@ -164,23 +135,15 @@ inline bool Contains(const std::vector<std::string>& v_, std::string_view string
 ### If Statements
 - No space after `if`
 - Single statement: `if( condition ) { statement; }`
-- Multiple statements: Allman style with braces on new line
-```cpp
-if( condition ) { statement; }
+- Multiple statements: Allman style with braces on new lineif( condition ) { statement; }
 
 if( condition )
 {
     statement1;
     statement2;
 }
-```
-
 ### Asserts
-- Place asserts far to the right (around 100 columns)
-```cpp
-const auto* ptable_ = pdocument->CACHE_Get("history");                                             assert( ptable_ != nullptr && "no history table (placed far to right at column 100)" );
-```
-
+- Place asserts far to the right (around 100 columns)const auto* ptable_ = pdocument->CACHE_Get("history");                                             assert( ptable_ != nullptr && "no history table (placed far to right at column 100)" );
 ---
 
 ## METHOD NAMES
@@ -189,11 +152,10 @@ const auto* ptable_ = pdocument->CACHE_Get("history");                          
 - Use as few words as possible
 - Don't over-explain - arguments are part of method signature
 
-Code is written in levels. There is a core level that is not dependent on more thand default C++ and stl or similar in other languages.
-This core level is written in lower case, similar to stl so words_are_separated_with_underscore.  
-The level above is corporate level. Here names start with upper case like WordsAreAeparatedWithUnderscore. No Underscore between words. In this level code also use namespaces to mark what it belongs to but this do not affect naming more than its bad to repeate namespace name in method names.
-Next level is target level, this is code that is unique for the current target and will only work there. Same rules as corporate lever but no namespaces.
-Fourth level are playcode and testcode. Here its ok to play around. Code can be written in any format even if might be good to write it so it is easy to move (copy and paste).
+Code is written in levels. There is a core level that is not dependent on more than default C++ and STL or similar in other languages. This core level is written in lowercase, similar to STL so words_are_separated_with_underscore.  
+The level above is corporate level. Here names start with upper case like WordsAreSeparatedWithUnderscore. No underscore between words. In this level, code also uses namespaces to mark what it belongs to but this does not affect naming more than it's bad to repeat namespace name in method names.  
+Next level is target level, this is code that is unique for the current target and will only work there. Same rules as corporate level but no namespaces.  
+The fourth level is playcode and testcode. Here it's okay to play around. Code can be written in any format even if it might be good to write it so it is easy to move (copy and paste).
 
 ---
 
@@ -226,13 +188,13 @@ For value objects (primitive-like types):
 
 ## Search tags
 
-A encourge to use search tags and these are placed inside comments when needed or will make code searchable
+A encourage to use search tags and these are placed inside comments when needed or will make code searchable
 
-Format for this tags are:
+Format for these tags are:
 tagname [tag: context_words_comma_separated] [summary: short_summary] [description: if_needed_a_longer_description]
 
 - `@CRITICAL`: Indicates critical sections of code that require immediate attention.
-- `@NOTE` : Something that is important to note, may effect other parts, important to understand context etc
+- `@NOTE` : Something that is important to note, may affect other parts, important to understand context etc
 - `@FILE`: Describes the file (always placed at the top).
 - `@PROJECT`: Used for project management. Searching for a project name lists all its tasks.
 - `@TASK`: Describes a specific task or feature within the project.
@@ -240,11 +202,9 @@ tagname [tag: context_words_comma_separated] [summary: short_summary] [descripti
 - `@TODO`: Used to describe tasks that need to be completed. Short reminder
 - `@DEBUG`: Used to describe code used for debugging purposes.
 - `@CLASS`: classes and structs
-- `@DEPRICATED`: Used to describe code that is no longer in use.
+- `@DEPRECATED`: Used to describe code that is no longer in use.
 
 There are also a @PROJECT and @TASK connection. It works like this:
-
-```
 @PROJECT [name: prompt] [summary: Ask user for specified arguments]
 
 @TASK [summary: add prompt option to options class] [project:prompt] [user: per] [status:open] [created: 250828]
@@ -254,8 +214,6 @@ There are also a @PROJECT and @TASK connection. It works like this:
 @TASK [summary: add prompt values] [project:prompt] [user: per] [status:open] [created: 250828]
 [summary : Add values specified in prompt]
 [description: "Prompt values are separated with ; if found the add those to options before reading values from arguments"]
-```
-
 @TASK is connected to @PROJECT with the [project:prompt] and doing that I have a search tool that can filter out based on these settings.
 
 ---
