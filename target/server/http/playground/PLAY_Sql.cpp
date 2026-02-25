@@ -184,6 +184,84 @@ TEST_CASE( "[sql] update", "[sql]" ) {
 
 }
 
+TEST_CASE( "[sql] join", "[sql]" ) {
+   using namespace gd::sql;
+
+   // ## Two queries that produce same result
+   {  query q; 
+      q << table_g("customer"); 
+      q << table_g("contact").join("on customer.id = contact.id");
+      q << field_g("id").raw("*").select();  // just adding simple *
+      std::cout << q.sql_get(eSqlSelect) << "\n"; 
+
+      query q2; 
+      q2 << table_g("customer").key("id"); 
+      q2 << table_g( "contact" ).fk( "customer_id" ).parent( "customer" );
+      q2 << field_g("id").raw("*").select(); // adding simple *, no need for fields to test join
+      std::cout << q2.sql_get(eSqlSelect) << "\n"; 
+   }
+
+   // ## joint three tables
+   {  query q; 
+      q << table_g("customer"); 
+      q << table_g("contact").join("on customer.id = contact.id");
+      q << table_g("orders").join("on customer.id = orders.customer_id");
+      q << field_g("id").raw("*").select(); // just adding simple *
+      std::cout << q.sql_get(eSqlSelect) << "\n"; 
+
+      // same result with key/fk
+      query q2;
+      q2 << table_g( "customer" ).key( "id" );
+         q2 << table_g( "contact" ).fk( "customer_id" ).parent( "customer" );
+            q2 << table_g( "orders" ).fk( "customer_id" ).parent( "customer" );
+      q2 << field_g( "id" ).raw( "*" ).select(); // adding simple *, no need for fields to test join
+      std::cout << q2.sql_get(eSqlSelect) << "\n";
+
+      // ### four tables but one more on contact
+      {
+         query queryJoinManual;
+         queryJoinManual << table_g("customer");
+         queryJoinManual << table_g("contact").join("on customer.id = contact.customer_id");
+         queryJoinManual << table_g("orders").join("on customer.id = orders.customer_id");
+         queryJoinManual << table_g("contact_address").join("on contact.id = contact_address.contact_id");
+         queryJoinManual << field_g("id").raw("*").select(); // adding simple *, no need for fields to test join
+
+         query queryJoinKeyForeign;
+         queryJoinKeyForeign << table_g("customer").key("id");
+         queryJoinKeyForeign << table_g("contact").fk("customer_id").parent("customer");
+         queryJoinKeyForeign << table_g("orders").fk("customer_id").parent("customer");
+         queryJoinKeyForeign << table_g("contact_address").fk("contact_id").parent("contact");
+         queryJoinKeyForeign << field_g("id").raw("*").select(); // adding simple *, no need for fields to test join
+
+         std::string stringSqlManual = queryJoinManual.sql_get(eSqlSelect);
+         std::string stringSqlKeyForeign = queryJoinKeyForeign.sql_get(eSqlSelect);
+
+         // print
+         std::cout << stringSqlManual << "\n";
+         std::cout << stringSqlKeyForeign << "\n";
+      }
+   }
+
+   // ## Use distinct
+   {  query q; 
+      q.distinct( true );
+      q << table_g("customer")
+        << table_g("contact").join("on customer.id = contact.id")
+        << field_g("id").raw("*").select();  // just adding simple *
+
+      std::cout << q.sql_get(eSqlSelect) << "\n"; 
+
+      query q2; 
+      q2.distinct( true );
+      q2 << table_g("customer").key("id"); 
+      q2 << table_g( "contact" ).fk( "customer_id" ).parent( "customer" );
+      q2 << field_g("id").raw("*").select(); 
+      std::cout << q2.sql_get(eSqlSelect) << "\n"; 
+   }
+
+
+}
+
 TEST_CASE( "[sql] table_builder", "[sql]" ) {
    using namespace gd::sql;
 

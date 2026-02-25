@@ -474,6 +474,7 @@ public:
 
    template <typename VALUE>
    void set_attribute( const std::string_view& stringName, const VALUE& value_ ) { m_argumentsAttribute.set( stringName, value_ ); }
+   query& distinct( gd::variant_view v_ ) { m_argumentsAttribute.set( "distinct", v_ ); return *this; }
    gd::variant_view distinct() const { return m_argumentsAttribute["distinct"].get_variant_view(); }
    gd::variant_view limit() const { return m_argumentsAttribute["limit"].get_variant_view(); }
    void set_limit( std::size_t uOffset = 0, std::size_t uCount = 0 );
@@ -501,6 +502,7 @@ public:
    [[nodiscard]] std::string sql_get_groupby() const;
    [[nodiscard]] std::string sql_get_values() const;
    [[nodiscard]] std::string sql_get_orderby( std::string_view stringOrderByPrefix ) const;
+   [[nodiscard]] std::string sql_get_distinct() const;
    [[nodiscard]] std::string sql_get_limit() const;
    [[nodiscard]] std::string sql_get_with() const;
    [[nodiscard]] std::string sql_get_returning() const;

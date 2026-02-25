@@ -976,7 +976,28 @@ std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
    return stringOrderBy;
 }
 
-/** --------------------------------------------------------------------------
+/** -------------------------------------------------------------------------- sql_get_distinct
+ * @brief Build the DISTINCT clause based on query distinct settings.
+ * 
+ * Returns either a custom DISTINCT text when `distinct()` is a string or the
+ * default `DISTINCT ` keyword when `distinct()` is `true`. If no distinct
+ * option is set, an empty string is returned.
+ * 
+ * @return std::string DISTINCT clause text or empty string when not set.
+ */
+std::string query::sql_get_distinct() const
+{
+   std::string stringDistinct; // distinct section
+
+   // ## check for distinct property
+   const auto distinct_ = distinct();
+   if( distinct_.is_string() == true ) { stringDistinct += distinct_.as_string_view(); }
+   else if( distinct_.is_true() == true ) { stringDistinct += std::string_view{ "DISTINCT " }; }
+
+   return stringDistinct;
+}
+
+/** -------------------------------------------------------------------------- sql_get_limit
  * @brief Retrieves the SQL LIMIT clause as a string.
  * @return A string containing the LIMIT clause with a leading newline if a limit is set and is a string type, otherwise an empty string.
  */
