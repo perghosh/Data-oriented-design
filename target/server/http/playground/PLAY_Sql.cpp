@@ -257,6 +257,15 @@ TEST_CASE( "[sql] join", "[sql]" ) {
       q2 << table_g( "contact" ).fk( "customer_id" ).parent( "customer" );
       q2 << field_g("id").raw("*").select(); 
       std::cout << q2.sql_get(eSqlSelect) << "\n"; 
+
+      query q3; 
+      q3.distinct( " DISTINCT ON (customer.id) ")
+         << table_g("customer").key("id") 
+         << field_g("customer", "id").raw("'postgres sample' as description")
+         << table_g( "contact" ).fk( "customer_id" ).parent( "customer" )
+         << field_g("id").raw("*").select(); 
+      std::cout << q3.get_select() << "\n"; 
+
    }
 
 

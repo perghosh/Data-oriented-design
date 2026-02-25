@@ -991,7 +991,7 @@ std::string query::sql_get_distinct() const
 
    // ## check for distinct property
    const auto distinct_ = distinct();
-   if( distinct_.is_string() == true ) { stringDistinct += distinct_.as_string_view(); }
+   if( distinct_.is_string() == true ) { stringDistinct += distinct_.as_string_view(); stringDistinct += ' '; }
    else if( distinct_.is_true() == true ) { stringDistinct += std::string_view{ "DISTINCT " }; }
 
    return stringDistinct;
@@ -1057,6 +1057,7 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
       {
       case eSqlPartSelect:
          stringSql += std::string_view{ "SELECT " };
+         stringSql += sql_get_distinct();
          stringSql += sql_get_select();
          break;
 
