@@ -500,6 +500,11 @@ public:
    [[nodiscard]] std::string sql_get( enumSql eSql ) const;
    [[nodiscard]] std::string sql_get( enumSql eSql, const unsigned* puPartOrder ) const;
 
+   [[nodiscard]] std::string get_select() const { return sql_get( eSqlSelect ); }
+   [[nodiscard]] std::string get_insert() const { return sql_get( eSqlInsert ); }
+   [[nodiscard]] std::string get_update() const { return sql_get( eSqlUpdate ); }
+   [[nodiscard]] std::string get_delete() const { return sql_get( eSqlDelete ); }
+
 /// ## @API [tag: modifiers]
 
    void clear();

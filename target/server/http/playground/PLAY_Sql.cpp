@@ -244,6 +244,26 @@ TEST_CASE( "[sql] field_builder", "[sql]" ) {
    { query q; q << table_g("users") << fields_g("users", {{"name","alias_name"}, {"age","alias_age"}}).select();
      std::cout << q.sql_get(eSqlSelect) << "\n"; }
 
+   // Add multiple fields with aliases using vector
+   { std::vector<std::pair<std::string_view, std::string_view>> fields_ = { {"name","alias_name"}, {"age","alias_age"} };
+     query q; q << table_g("users") << fields_g("users", fields_).select();
+     std::cout << q.sql_get(eSqlSelect) << "\n"; }
+
+   // Add multiple fields with values
+   { std::vector<std::pair<std::string_view, gd::variant_view>> fields_ = { {"name","alias_name"}, {"age","alias_age"} };
+     query q; q << table_g("users") << fields_g("users", fields_).insert();
+     std::cout << q.get_insert() << "\n"; }
+
+   // Add multiple fields with values
+   { std::vector<std::pair<std::string_view, gd::variant_view>> fields_ = { {"id","f47ac10b58cc4372a5670e02b2c3d479"}, {"id2","1e3f7b8a9d2c4f6e8b1a5c7d9e3f2a1b"} };
+     query q; q << table_g("users") << fields_g("users", fields_).insert().type("string"); // hex values are treated as string
+     std::cout << q.get_insert() << "\n"; 
+     query q2; q2 << table_g("users") << fields_g("users", fields_).insert().type("binary"); // hex values are treated as binary
+     std::cout << q2.get_insert() << "\n"; 
+     query q3; q3 << table_g("users") << fields_g("users", fields_).insert().type("int32"); // hex values are treated as number (no quoting or hex)
+     std::cout << q3.get_insert() << "\n"; 
+   }
+
    // Field with orderby
    { query q; q << table_g("users") << field_g("name").select() << field_g("age").orderby(); 
      std::cout << q.sql_get(eSqlSelect) << "\n"; }

@@ -901,10 +901,10 @@ std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
 {
    std::string stringOrderBy; // generated order by string 
 
-   unsigned uFieldIndex = 0;
+   //unsigned uFieldIndex = 0u;  @TODO use these when index is used to order result, for now it is disabled
    for( auto it = field_begin(); it != field_end(); it++ )
    {
-      uFieldIndex++;
+      //uFieldIndex++;
       if( it->is_orderby() == false ) [[likely]] continue;                    // no order by field ?
 
       if( stringOrderBy.empty() == false ) { stringOrderBy += std::string_view{ ", " }; }
