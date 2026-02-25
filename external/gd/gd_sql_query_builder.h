@@ -372,6 +372,109 @@ inline query& operator<<( query& query_, fields_builder&& fieldsbuilder_ )
    return query_;
 }
 
+/** ==========================================================================
+ * @brief Fluent builder for querystring-formatted field definitions.
+ *
+ * Wraps one or more querystring specs (e.g. "name=qname") and streams them
+ * into a query via field_add(..., tag_querystring). Follows the same
+ * builder/operator<< convention as field_builder and fields_builder.
+ *
+ * @par Example
+ * @code
+ * query q;
+ * q << table_g("users")
+ *   << fields_g("users", "name", "age", "email").select()
+ *   << fieldqs_g("users", "name=qname")                       // single, table-qualified
+ *   << fieldqs_g("users", "name=qname", "age=qage");          // multiple, variadic
+ *   << fieldqs_g("email=qemail");                             // implicit first table
+ * @endcode
+ *
+ | Area               | fieldsqs_builder Methods                                            | Description                                                   |
+ |--------------------|---------------------------------------------------------------------|---------------------------------------------------------------|
+ | Construction       | `fieldqs_g("qs")`, `fieldqs_g("table", "qs")`                       | Single querystring, with or without table qualifier.          |
+ |                    | `fieldqs_g("table", "qs1", "qs2", ...)`                             | Variadic: multiple querystrings for the same table.           |
+ */
+struct fieldsqs_builder
+{
+   explicit fieldsqs_builder( std::string_view stringQueryString )
+      : m_stringTable{} { m_vectorQueryString.emplace_back( stringQueryString ); }
+
+   explicit fieldsqs_builder( std::string_view stringTable, std::string_view stringQueryString )
+      : m_stringTable( stringTable ) { m_vectorQueryString.emplace_back( stringQueryString ); }
+
+   [[nodiscard]] std::string_view get_table()    const noexcept { return m_stringTable; }
+   [[nodiscard]] unsigned         get_parttype() const noexcept { return m_uPartType; }
+
+   // @API [tag: sql, type] [summary: Part-type shortcuts — applied to all fields on stream]
+
+   fieldsqs_builder&  select()&    { m_uPartType = eSqlPartSelect;    return *this; }
+   fieldsqs_builder&& select()&&   { m_uPartType = eSqlPartSelect;    return std::move( *this ); }
+
+   fieldsqs_builder&  orderby()&   { m_uPartType = eSqlPartOrderBy;   return *this; }
+   fieldsqs_builder&& orderby()&&  { m_uPartType = eSqlPartOrderBy;   return std::move( *this ); }
+
+   fieldsqs_builder&  groupby()&   { m_uPartType = eSqlPartGroupBy;   return *this; }
+   fieldsqs_builder&& groupby()&&  { m_uPartType = eSqlPartGroupBy;   return std::move( *this ); }
+
+   fieldsqs_builder&  insert()&    { m_uPartType = eSqlPartInsert;    return *this; }
+   fieldsqs_builder&& insert()&&   { m_uPartType = eSqlPartInsert;    return std::move( *this ); }
+
+   fieldsqs_builder&  update()&    { m_uPartType = eSqlPartUpdate;    return *this; }
+   fieldsqs_builder&& update()&&   { m_uPartType = eSqlPartUpdate;    return std::move( *this ); }
+
+   fieldsqs_builder&  returning()& { m_uPartType = eSqlPartReturning; return *this; }
+   fieldsqs_builder&& returning()&&{ m_uPartType = eSqlPartReturning; return std::move( *this ); }
+
+   unsigned                        m_uPartType = 0;
+   std::string_view                m_stringTable;
+   std::vector< std::string_view > m_vectorQueryString;
+};
+
+
+/// Stream querystring fields into `query_` ------------------------------------ operator<<
+///
+/// Adds each querystring from `fieldsqsbuilder_` via `field_add(...)`, asserts
+/// that parsing succeeds, and applies the part-type to each produced field when
+/// `uPartType` is non-zero.
+inline query& operator<<( query& query_, fieldsqs_builder&& fieldsqsbuilder_ )
+{
+   const unsigned uPartType = fieldsqsbuilder_.get_parttype();
+
+   for( const auto& stringQueryString : fieldsqsbuilder_.m_vectorQueryString )
+   {
+      auto [pfield_, stringError_] = fieldsqsbuilder_.get_table().empty()
+         ? query_.field_add( stringQueryString,                               tag_querystring{} )
+         : query_.field_add( fieldsqsbuilder_.get_table(), stringQueryString, tag_querystring{} );
+
+      assert( stringError_.empty() && "field_add querystring parse error" );
+
+      if( pfield_ != nullptr && uPartType != 0 ) pfield_->set_useandtype( uPartType );
+   }
+   return query_;
+}
+
+/// Single querystring, implicit first table: fieldqs_g("name=qname")
+inline fieldsqs_builder fieldqs_g( std::string_view stringQueryString )
+{
+   return fieldsqs_builder{ stringQueryString };
+}
+
+/// Single querystring, table-qualified: fieldqs_g("users", "name=qname")
+inline fieldsqs_builder fieldqs_g( std::string_view stringTable, std::string_view stringQueryString )
+{
+   return fieldsqs_builder{ stringTable, stringQueryString };
+}
+
+/// Variadic: multiple querystrings for one table: fieldqs_g("users", "name=qname", "age=qage")
+template<typename... QS>
+   requires ( (std::convertible_to<QS, std::string_view>) && ... )
+inline fieldsqs_builder fieldqs_g( std::string_view stringTable, std::string_view stringFirst, QS&&... rest_ )
+{
+   fieldsqs_builder builder_{ stringTable, stringFirst };
+   ( builder_.m_vectorQueryString.emplace_back( std::string_view( rest_ ) ), ... );
+   return builder_;
+}
+
 
 /** ==========================================================================
  * @brief Fluent builder for field definitions in SQL queries.

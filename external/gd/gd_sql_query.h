@@ -221,6 +221,7 @@ public:
 
       unsigned get_useandtype() const noexcept { return m_uUseAndType; }
       void set_useandtype( unsigned uSet, unsigned uClear ) { m_uUseAndType |= uSet; m_uUseAndType &= ~uClear;  }
+      void set_useandtype( unsigned uType ) { m_uUseAndType = uType; }
 
       unsigned get_table_key() const { return m_uTableKey; }
       gd::argument::arguments::argument get_value(const std::string_view& stringName) const noexcept { return m_argumentsField[stringName]; }
@@ -394,6 +395,7 @@ public:
 
    std::pair<field*, std::string> field_add( unsigned uTableKey, std::string_view stirngQueryString, tag_querystring ); ///< add field with table key, this is used when field is added with querystring and table key is needed to link field to table
    std::pair<field*, std::string> field_add( std::string_view stringTable, std::string_view stirngQueryString, tag_querystring ) { return field_add( table_get_key( stringTable ), stirngQueryString, tag_querystring{} ); } 
+   std::pair<field*, std::string> field_add( std::string_view stirngQueryString, tag_querystring ) { return field_add( table_get()->get_key(), stirngQueryString, tag_querystring{}); }
 
    /// add field with type, type is used to mark where field is used in query.
    field* field_add_parttype( unsigned uPartType, const gd::argument::arguments& argumentsField, tag_arguments );
