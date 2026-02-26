@@ -180,23 +180,23 @@ public:
       bool has_flag( unsigned uFlag ) const { return ( m_uFlags & uFlag ) != 0; }
 
 
-      std::string_view name() const { return m_argumentsTable["name"].get_string_view(); }
+      std::string_view name() const noexcept { return m_argumentsTable["name"].get_string_view(); }
       void name(std::string_view stringName) { m_argumentsTable.set( "name", stringName ); }
-      std::string_view alias() const { return m_argumentsTable["alias"].get_string_view(); }
+      std::string_view alias() const noexcept { return m_argumentsTable["alias"].get_string_view(); }
       void alias(std::string_view stringAlias) { m_argumentsTable.set( "alias", stringAlias ); }
-      std::string_view parent() const { return m_argumentsTable["parent"].get_string_view(); }
+      std::string_view parent() const noexcept { return m_argumentsTable["parent"].get_string_view(); }
       void parent(std::string_view stringParent) { m_argumentsTable.set( "parent", stringParent ); }
-      std::string_view schema() const { return m_argumentsTable["schema"].get_string_view(); }
+      std::string_view schema() const noexcept { return m_argumentsTable["schema"].get_string_view(); }
       void schema( std::string_view stringSchema ) { m_argumentsTable.set( "schema", stringSchema ); } ///< get schema name for table, this to generate join part in query
-      std::string_view owner() const { return m_argumentsTable["owner"].get_string_view(); }
+      std::string_view owner() const noexcept { return m_argumentsTable["owner"].get_string_view(); }
       void owner( std::string_view stringOwner ) { m_argumentsTable.set( "owner", stringOwner ); }
-      std::string_view join() const { return m_argumentsTable["join"].get_string_view(); }         ///< get join string if join is set outside, this to generate join part in query
+      std::string_view join() const noexcept { return m_argumentsTable["join"].get_string_view(); }         ///< get join string if join is set outside, this to generate join part in query
       void join( std::string_view stringJoin ) { m_argumentsTable.set( "join", stringJoin ); }  
       /// get key field name, this to generate join part in query
-      std::string_view key() const { return m_argumentsTable["key"].get_string_view(); }           ///< primary key field name for table, this to generate join part in query
+      std::string_view key() const noexcept { return m_argumentsTable["key"].get_string_view(); }           ///< primary key field name for table, this to generate join part in query
       void key(std::string_view stringKey) { m_argumentsTable.set( "key", stringKey ); }
       /// get foreign key field name, this to generate join part in query
-      std::string_view fk() const { return m_argumentsTable["fk"].get_string_view(); }             ///< foreign key field name for table, this to generate join part in query
+      std::string_view fk() const noexcept { return m_argumentsTable["fk"].get_string_view(); }             ///< foreign key field name for table, this to generate join part in query
       void fk(std::string_view stringFk) { m_argumentsTable.set( "fk", stringFk ); }
 
       gd::argument::arguments& get_arguments() { return m_argumentsTable; }
@@ -796,10 +796,8 @@ bool query::flag_has_s(unsigned uTest, FLAG uFlag) {
 }
 
 /// add surrounded value to string, like XXXX => "XXXX"
-inline void query::format_add_and_surround_s(std::string& stringText, const std::string_view& stringAdd, char chCharacter) {
-   stringText += chCharacter;
-   stringText += stringAdd;
-   stringText += chCharacter;
+inline void query::format_add_and_surround_s(std::string& stringText, const std::string_view& stringAdd, char iCharacter) {
+   stringText.append( 1, iCharacter ).append( stringAdd ).append( 1, iCharacter );
 }
 
 
