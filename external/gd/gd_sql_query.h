@@ -512,10 +512,11 @@ public:
 
    template <typename VALUE>
    void set_attribute( const std::string_view& stringName, const VALUE& value_ ) { m_argumentsAttribute.set( stringName, value_ ); }
-   query& distinct( gd::variant_view v_ ) { m_argumentsAttribute.set( "distinct", v_ ); return *this; }
+   query& distinct( gd::variant_view v_ ) { m_argumentsAttribute.set( "distinct", v_ ); return *this; } ///< for nesting
    gd::variant_view distinct() const { return m_argumentsAttribute["distinct"].get_variant_view(); }
    gd::variant_view limit() const { return m_argumentsAttribute["limit"].get_variant_view(); }
    void set_limit( std::size_t uOffset = 0, std::size_t uCount = 0 );
+   query& limit(std::size_t count_, std::size_t offset_ = 0) { set_limit(offset_, count_); return *this; } ///< for nesting
    gd::variant_view returning() const { return m_argumentsAttribute["returning"].get_variant_view(); }
    void set_returning( const std::string_view& stringReturning ) { m_argumentsAttribute.set( "returning", stringReturning ); }
 

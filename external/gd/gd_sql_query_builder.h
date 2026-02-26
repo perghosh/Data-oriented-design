@@ -547,12 +547,16 @@ struct field_builder
    field_builder& where( std::string_view v_ )& { m_arguments.set( "where", v_ );   flag_( query::eFieldFlagWhere ); return *this; }
    field_builder&& where( std::string_view v_ )&& { m_arguments.set( "where", v_ ); flag_( query::eFieldFlagWhere ); return std::move( *this ); }
 
+   field_builder& order( std::string_view v_ )& { m_arguments.set( "order", v_ );   flag_( query::eFieldFlagOrderBy ); m_uPartType |= eSqlPartOrderBy; return *this; }
+   field_builder&& order( std::string_view v_ )&& { m_arguments.set( "order", v_ ); flag_( query::eFieldFlagOrderBy ); m_uPartType |= eSqlPartOrderBy; return std::move( *this ); }
 
 
-   // @API [tag: sql, type] [summary: Part-type shortcuts]
 
-   field_builder& select()& { m_uPartType = eSqlPartSelect;    return *this; }
-   field_builder&& select()&& { m_uPartType = eSqlPartSelect;    return std::move( *this ); }
+
+   // @API [tag: sql, type] [summary: Part-type shortcuts and other attributes used to modify the generation of SQL queries]
+
+   field_builder& select()& { m_uPartType |= eSqlPartSelect;    return *this; }
+   field_builder&& select()&& { m_uPartType |= eSqlPartSelect;    return std::move( *this ); }
 
    field_builder& orderby()& { m_uPartType = eSqlPartOrderBy;   return *this; }
    field_builder&& orderby()&& { m_uPartType = eSqlPartOrderBy;   return std::move( *this ); }
@@ -566,11 +570,17 @@ struct field_builder
    field_builder& update()& { m_uPartType = eSqlPartUpdate;    return *this; }
    field_builder&& update()&& { m_uPartType = eSqlPartUpdate;    return std::move( *this ); }
 
-   field_builder& returning()& { m_uPartType = eSqlPartReturning; return *this; }
-   field_builder&& returning()&& { m_uPartType = eSqlPartReturning; return std::move( *this ); }
+   field_builder& returning()& { m_uPartType |= eSqlPartReturning; return *this; }
+   field_builder&& returning()&& { m_uPartType |= eSqlPartReturning; return std::move( *this ); }
 
    field_builder& subselect()& { flag_( query::eFieldFlagSubSelect ); return *this; }
    field_builder&& subselect()&& { flag_( query::eFieldFlagSubSelect ); return std::move( *this ); }
+
+   field_builder& asc()& { flag_( query::eFieldFlagOrderBy ); m_arguments.set( "order", true ); return *this; }
+   field_builder&& asc()&& { flag_( query::eFieldFlagOrderBy ); m_arguments.set( "order", true ); return std::move(*this); }
+
+   field_builder& desc()& { m_uPartType |= eSqlPartOrderBy; flag_( query::eFieldFlagOrderBy ); m_arguments.set( "order", false ); return *this; }
+   field_builder&& desc()&& { m_uPartType |= eSqlPartOrderBy; flag_( query::eFieldFlagOrderBy ); m_arguments.set( "order", false ); return std::move(*this); }
 
 
    unsigned m_uPartType = 0;            ///< part type in sql query
@@ -620,24 +630,20 @@ inline field_builder field_g( std::string_view stringTable, std::string_view str
 /// @endcode
 inline query& operator<<( query& query_, field_builder&& fieldbuilder_ )
 {
-   if( fieldbuilder_.get_table().empty() == false )
+   unsigned uTableKey = fieldbuilder_.get_table().empty() == false ? 
+      query_.table_get( fieldbuilder_.get_table() )->get_key() : 
+      query_.table_get()->get_key();
+
+   unsigned uPartType = fieldbuilder_.get_parttype();
+   unsigned uFlags = fieldbuilder_.get_flags();
+
+   if( uPartType != 0 )
    {
-      const auto* ptable_ = query_.table_get( fieldbuilder_.get_table() );                         assert( ptable_ != nullptr && "Table not found in query" );
-
-      if( fieldbuilder_.m_uPartType != 0 )
-      {
-         query_.field_add_parttype( fieldbuilder_.m_uPartType, *ptable_, fieldbuilder_, tag_arguments{} );
-      }
-      else { query_.field_add( *ptable_, fieldbuilder_.get_flags(), fieldbuilder_, tag_arguments{} ); }
-
+      query_.field_add_parttype( uPartType, uTableKey, uFlags, fieldbuilder_, tag_arguments{} );
    }
-   else
-   {
-      if( fieldbuilder_.m_uPartType != 0 )
-      {
-         query_.field_add_parttype( fieldbuilder_.m_uPartType, fieldbuilder_, tag_arguments{} );
-      }
-      else { query_.field_add( fieldbuilder_, tag_arguments{} ); }
+   else 
+   { 
+      query_.field_add( uTableKey, uFlags, fieldbuilder_, tag_arguments{} ); 
    }
 
    return query_;
@@ -730,6 +736,11 @@ struct condition_builder
    condition_builder&& is_not_null()&& { m_arguments.set( "operator", "notnull" ); return std::move( *this ); }
 
    // @API [tag: logical, operator, shortcut] [summary: Logical grouping shortcuts]
+
+   // Note: these set a "logical" argument that can be used by the query builder to group conditions together with AND/OR/NOT logic. 
+   // And each group gets a group name to grout together conditions. Within this group all conditions are ANDed together, and then the groups are ORed together.
+   // So if you want to have OR logic between conditions, you need to put them in different groups. If you want to have AND logic between conditions,
+   // you need to put them in the same group. The group name can be anything, but it should be unique for each group of conditions that you want to AND together.
 
    condition_builder& and_()& { m_arguments.set( "logical", "and" );  return *this; }
    condition_builder&& and_()&& { m_arguments.set( "logical", "and" );  return std::move( *this ); }

@@ -560,7 +560,8 @@ std::string query::sql_get_select() const
       if( stringSelect.empty() == false ) stringSelect += ", ";
 
       // ## If subselect then this has to have SELECT
-      if( it->has_flag( eFieldFlagSubSelect ) == false ) 
+      auto bSubSelect = it->has_flag( eFieldFlagSubSelect );
+      if( bSubSelect == false ) 
       {
          if( it->has_flag(eFieldFlagRaw) || it->has("raw") == true )
          {                                                                                         assert( it->get_arguments()["raw"].is_true() == true);
@@ -972,10 +973,11 @@ std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
 {
    std::string stringOrderBy; // generated order by string 
 
-   //unsigned uFieldIndex = 0u;  @TODO use these when index is used to order result, for now it is disabled
+   unsigned uFieldIndex = 0u;
    for( auto it = field_begin(); it != field_end(); it++ )
    {
-      //uFieldIndex++;
+      if( it->is_select() == true ) uFieldIndex++;                            // if select field then increase the field index 
+
       if( it->is_orderby() == false ) [[likely]] continue;                    // no order by field ?
 
       if( stringOrderBy.empty() == false ) { stringOrderBy += std::string_view{ ", " }; }
@@ -983,19 +985,37 @@ std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
 
       //stringOrderBy += std::to_string( uFieldIndex );                         // column index 
 
-      const table* ptable = table_get_for_key( it->get_table_key() );                             assert( ptable != nullptr ); // no table found for key indicates internal error for query object, this shouldn't happen
+      const table* ptable = table_get_for_key( it->get_table_key() );                              assert( ptable != nullptr ); // no table found for key indicates internal error for query object, this shouldn't happen
       if( ptable->has( "alias" ) == true )
       {
          stringOrderBy += ptable->alias();
          stringOrderBy += ".";
       }
       
-      stringOrderBy += it->name();
+      auto order_ = it->order(); // order information for field, could be boolean, string or integer, if boolean then use column index to order, if string then string value is used for order by and it should contain the column name and sort direction, if integer then column name is used for order by and if integer is positive then ascending else descending
 
-      auto order_ = it->order();
-      auto iAscending = order_.as_int();
-      if( iAscending >= 0 ) stringOrderBy += std::string_view{ " ASC" };
-      else stringOrderBy += std::string_view{ " DESC" };
+      if( order_.is_bool() == true )                                          // if order is boolean then true is ascending and false is descending and column index is used for order by
+      {
+         stringOrderBy += ' ';
+         stringOrderBy += std::to_string( uFieldIndex );
+
+         auto bAscending = order_;
+         if( bAscending == true ) stringOrderBy += std::string_view{ " ASC" };
+         else stringOrderBy += std::string_view{ " DESC" };
+      }
+      else if( order_.is_string() == true )                                   // if order is string then string value is used for order by and it should contain the column name and sort direction
+      {
+         stringOrderBy += ' ';
+         stringOrderBy += order_.as_string_view();
+      }
+      else
+      {
+         stringOrderBy += it->name();
+
+         auto iAscending = order_.as_int();
+         if( iAscending >= 0 ) stringOrderBy += std::string_view{ " ASC" };
+         else stringOrderBy += std::string_view{ " DESC" };
+      }
    }
 
    return stringOrderBy;

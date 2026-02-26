@@ -279,21 +279,27 @@ TEST_CASE( "[sql] join", "[sql]" ) {
       std::cout << "\n\n" << q.get_select() << "\n"; 
    }
 
-   /*
-   // ## Use distinct
+   // ## Use order
    {  query q; 
-      q.distinct( true );
-      q << table_g("customer")
-        // field name: project_id, alias: project-count, raw: COUNT(*)
-        // SQL: (SELECT COUNT(*) FROM project p1 WHERE p1.project_id = customer.id) AS project-count
-        << subselect_g( {"project", "p1"}, "project_id").as("project-count").raw("COUNT(*)").join("on customer.id = c1.id")
-        << table_g("contact").join("on customer.id = contact.id")
-        << field_g("id").raw("*").select();  // just adding simple *
+      q.distinct( true )
+        << table_g("customer").key("id")
+        << table_g( "contact" ).fk( "customer_id" ).parent( "customer" )
+        << field_g("contact", "id").as("project_count").raw("COUNT(*)").from("project p1").where("p1.project_id = customer.id").subselect().asc()
+        << field_g("id").as("customer_id").desc().select(); 
 
-      std::cout << q.get_select() << "\n"; 
+      std::cout << "\n\n" << q.get_select() << "\n"; 
    }
-   */
 
+   // ## Use order
+   {  query q; 
+      q
+        << table_g("customer").key("id")
+        << table_g( "contact" ).fk( "customer_id" ).parent( "customer" )
+        << field_g("contact", "id").as("project_count").raw("COUNT(*)").from("project p1").where("p1.project_id = customer.id").select().subselect().order( "(SELECT COUNT(*) FROM project p1 WHERE p1.project_id = customer.id)" )
+        << field_g("id").as("customer_id").select(); 
+
+      std::cout << "\n\n" << q.get_select() << "\n"; 
+   }
 
 }
 
