@@ -103,7 +103,7 @@ endif()
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
-   set(TEST_NAME_ "PLAY_sql")
+   set(TEST_NAME_ "PLAY_Sql")
    add_executable(${TEST_NAME_}
       ${GD_SOURCES_ALL}
       ${SOURCE_PLAYGROUND_}
@@ -121,7 +121,7 @@ endif()
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
-   set(TEST_NAME_ "PLAY_sql2")
+   set(TEST_NAME_ "PLAY_Sql2")
    add_executable(${TEST_NAME_}
       ${GD_SOURCES_ALL}
       ${SOURCE_PLAYGROUND_}

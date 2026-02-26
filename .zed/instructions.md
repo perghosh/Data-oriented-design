@@ -224,3 +224,76 @@ There are also a @PROJECT and @TASK connection. It works like this:
 - Use them consistently throughout the codebase
 - No exceptions to these rules
 - Use hard spaces/tabs to align comments to column 80 where possible.
+
+---
+
+## Project Structure
+
+```
+external/gd/          # GD (General Development) library — the primary shared library and very important for code reuse across targets!!
+external/catch2/      # Test framework
+external/pugixml/     # XML
+external/sqlite/      # SQLite
+external/boost/       # Boost safe_numerics(used sparingly, only used for regex and not important)
+external/jsoncons/    # JSON
+source/application/   # Reusable application-level code (ApplicationBasic, database metadata)
+cmake/                # CMake helper scripts (include_external.cmake)
+target/TOOLS/FileCleaner/  # "cleaner" CLI tool — file organization/searching
+target/TOOLS/Backup/       # Backup tool
+target/server/http/        # HTTP server
+misc/howto/                # HOWTO example executables
+test/                      # General gd library tests but most targets will have their own tests is subdirectories of test/
+```
+
+All projects have their own subfolder called playground, here it is ok to test and play around with code. This is the place where you can write code that is not yet ready to be moved.
+
+## The core in GD Library (`external/gd/`)
+
+GD (General Development) is the core internal library — header+implementation pairs, C++20, no external dependencies beyond STL. Full TOC: `external/gd/_docs_/TOC.md`.
+
+### Types & Utilities
+| Header | Namespace | Key types / purpose |
+|--------|-----------|---------------------|
+| `gd_types.h` | `gd::types` | `enumTypeNumber`, `enumTypeGroup`, `enumType` — core type ID system |
+| `gd_compiler.h` | `gd` | C++ standard and compiler detection macros |
+| `gd_uuid.h` | `gd` | UUID generation/handling |
+| `gd_binary.h` | `gd` | Binary data utilities |
+| `gd_translate.h` | `gd` | String translation/mapping |
+
+### Variant / Value types
+| Header | Namespace | Key types / purpose |
+|--------|-----------|---------------------|
+| `gd_variant.h` | `gd` | `variant` — owning type-safe value (any primitive + common derived) |
+| `gd_variant_view.h` | `gd` | `variant_view` — non-owning view into variant data |
+| `gd_variant_arg.h` | `gd` | `arg`, `args_view`, `args` — named key-value pairs using variants |
+
+### Arguments (compact key-value buffers)
+| Header | Namespace | Key types / purpose |
+|--------|-----------|---------------------|
+| `gd_arguments.h` | `gd::argument` | `arguments` — memory-compact key-value byte buffer |
+| `gd_arguments_shared.h` | `gd::argument::shared` | `arguments` — speed-optimized variant with ref-count / COW |
+| `gd_arguments_io.h` | `gd::argument` | Serialize arguments to JSON, URI, YAML |
+
+### Tables
+| Header | Namespace | Key types / purpose |
+|--------|-----------|---------------------|
+| `gd_table.h` | `gd::table` | Core primitives: `cell`, `column`, `row`, `rows`, `range`, `page` |
+| `gd_table_table.h` | `gd::table` | `table` — fixed-column table, thread-safe shared column metadata |
+| `gd_table_arguments.h` | `gd::table::arguments` | `table` — table where each row can have extra dynamic columns |
+| `gd_table_column.h` | `gd::table::detail` | `column` DTO — type, size, name, alias metadata |
+| `gd_table_index.h` | `gd::table` | `index_int64` — fast binary-search index over a table column |
+| `gd_table_io.h` | `gd::table` | Stream tables as CSV, JSON, SQL, CLI; tag dispatchers |
+| `table/gd_table_formater.h` | `gd::table` | Additional table formatting helpers |
+
+### Memory & Containers
+| Header | Namespace | Key types / purpose |
+|--------|-----------|---------------------|
+| `gd_arena.h` | `gd` | `arena` — block-chained allocator, 32-bit aligned, bulk allocation |
+| `gd_arena_borrow.h` | `gd::arena::borrow` | `arena` — fixed-capacity arena with borrowed or owned storage |
+| `gd_vector.h` | `gd::stack` | `vector<T>` — small-buffer-optimized vector (SVO) |
+
+### Logging
+| Header | Namespace | Key types / purpose |
+|--------|-----------|---------------------|
+| `gd_log_logger.h` | `gd::log` | `logger` (singleton), `message`, `i_printer` — extensible log framework |
+| `gd_log_logger_define.h` | `gd::log` | Macros: `LOG`, `LOG_`, `LOG_IF`, `LOG_RAW` with severity variants |
