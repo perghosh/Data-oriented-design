@@ -1,6 +1,55 @@
 // @FILE [tag: sql, query] [description: Core logic for SQL queries] [type: header] [name: gd_sql_query.h]
 
+
 /*
+* 
+
+# Why Use Query Build SQL Queries?
+
+
+ORM (Object-Relational Mapping) query tools provide a structured alternative to writing raw SQL strings. By breaking queries into programmable components, they offer several advantages for development, maintenance, and security.
+
+## Purpose for this query class and logic around it
+
+### 1. Rapid Prototyping and Testing
+Build and modify queries quickly without memorizing exact SQL syntax. Test database designs and relationships interactively, making it easier to explore data models and iterate on query logic during development.
+
+### 2. Improved Security
+Validate query components—such as column names, table references, and values—before SQL generation. This layered validation helps prevent SQL injection attacks by ensuring user input is properly sanitized and never concatenated directly into query strings.
+
+### 3. Database Portability
+Abstract away dialect-specific syntax differences between database systems (PostgreSQL, MySQL, SQL Server, etc.). Write queries once and run them across multiple database backends, simplifying database migrations or supporting multi-database architectures.
+
+### 4. Dynamic Query Construction
+Build complex queries programmatically based on runtime conditions or metadata. Construct `WHERE` clauses, joins, and selections dynamically—adding or removing conditions based on user input, permissions, or application state—without messy string concatenation.
+
+### 5. Type Safety and Compile-Time Checks
+Catch errors early with strongly-typed query builders (especially in languages like TypeScript, C#, or Java). Detect typos in column names, mismatched data types, or invalid relationships before code reaches production.
+
+### 6. Maintainability and Readability
+Replace scattered SQL strings with organized, composable code. Query logic becomes self-documenting and easier to understand, refactor, and reuse across an application.
+
+### 7. Automatic Object Mapping
+Seamlessly convert database results into application objects. ORM tools handle the tedious mapping between relational data and domain models, reducing boilerplate code and manual data transformation.
+
+### 8. Relationship Management
+Simplify working with related data through intuitive APIs for joins, eager loading, and lazy loading. Navigate complex database relationships without writing intricate `JOIN` statements manually.
+
+### 9. Query Composability
+Build reusable query fragments that can be combined and extended. Create base queries, then add filtering, sorting, or pagination as needed—promoting DRY (Don't Repeat Yourself) principles.
+
+### 10. Caching, Migrations, and Security
+Provide support for query result caching, database schema migrations, and enhanced security features like automatic adding for conditions or fields if needed, offering a more complete data access solution beyond just query building.
+
+### 11. Quick modification and iteration
+Most commands used have versions of them to inject raw SQL, so you can quickly modify and iterate on queries without needing to change the underlying query building logic.
+
+But it's important to recognize that ORM query tools are not a one-size-fits-all solution. For simple applications, read-heavy reporting, or queries requiring database-specific optimizations, raw SQL may still be the right choice. ORM tools add abstraction overhead, and sometimes direct control over SQL is preferable.
+And ORM tools should always allow for raw SQL when needed, so you can choose the right approach for each use case.
+
+
+* 
+* 
 ## class query
 | Area                | Methods (Examples)                                                                 | Description                                                                                   |
 |---------------------|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
@@ -323,6 +372,8 @@ public:
 
       /// return value for conditions, this is placed in arguments named "value"
       gd::variant_view value() const { return m_argumentsCondition["value"].as_variant_view(); }
+      gd::variant_view value_hi() const { return m_argumentsCondition["value_hi"].as_variant_view(); }
+      std::string_view sql() const { return m_argumentsCondition["sql"].as_string_view(); }
 
       std::string_view name() const { return m_argumentsCondition["name"].as_string_view(); }
       std::string value_string() const { return m_argumentsCondition["value"].get_string(); }

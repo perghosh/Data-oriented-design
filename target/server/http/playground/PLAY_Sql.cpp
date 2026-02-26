@@ -292,14 +292,25 @@ TEST_CASE( "[sql] join", "[sql]" ) {
 
    // ## Use order
    {  query q; 
-      q
-        << table_g("customer").key("id")
+      q << table_g("customer").key("id")
         << table_g( "contact" ).fk( "customer_id" ).parent( "customer" )
         << field_g("contact", "id").as("project_count").raw("COUNT(*)").from("project p1").where("p1.project_id = customer.id").select().subselect().order( "(SELECT COUNT(*) FROM project p1 WHERE p1.project_id = customer.id)" )
         << field_g("id").as("customer_id").select(); 
 
       std::cout << "\n\n" << q.get_select() << "\n"; 
    }
+
+   // ## test between order and select, should be same as above
+   {  query q; 
+      q << table_g("customer").key("id")
+        << table_g( "contact" ).fk( "customer_id" ).parent( "customer" )
+        << field_g("id").as("customer_id")
+        << field_g("name").as("customer_name")
+        << condition_g("created_at").between("2024-01-01", "2024-12-31");
+
+      std::cout << "\n\n" << q.get_select() << "\n"; 
+   }
+
 
 }
 

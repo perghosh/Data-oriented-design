@@ -630,12 +630,12 @@ inline field_builder field_g( std::string_view stringTable, std::string_view str
 /// @endcode
 inline query& operator<<( query& query_, field_builder&& fieldbuilder_ )
 {
-   unsigned uTableKey = fieldbuilder_.get_table().empty() == false ? 
+   unsigned uTableKey = fieldbuilder_.get_table().empty() == false ? // if the field builder has a table name, look up the table key; otherwise, use the default table key
       query_.table_get( fieldbuilder_.get_table() )->get_key() : 
       query_.table_get()->get_key();
 
-   unsigned uPartType = fieldbuilder_.get_parttype();
-   unsigned uFlags = fieldbuilder_.get_flags();
+   unsigned uPartType = fieldbuilder_.get_parttype(); // read the part type from the field builder (e.g. select, orderby, etc.)
+   unsigned uFlags = fieldbuilder_.get_flags(); // read any flags used to know how to build the field text from the field builder (e.g. raw SQL, alias, etc.)                               
 
    if( uPartType != 0 )
    {
@@ -734,6 +734,10 @@ struct condition_builder
 
    condition_builder& is_not_null()& { m_arguments.set( "operator", "notnull" ); return *this; }
    condition_builder&& is_not_null()&& { m_arguments.set( "operator", "notnull" ); return std::move( *this ); }
+
+   condition_builder& between( gd::variant_view lo_, gd::variant_view hi_ )& { m_arguments.set( "operator", "between" ); m_arguments.set("value", lo_); m_arguments.set("value_hi", hi_); return *this; }
+   condition_builder&& between( gd::variant_view lo_, gd::variant_view hi_ )&& { m_arguments.set( "operator", "between" ); m_arguments.set("value", lo_); m_arguments.set("value_hi", hi_); return std::move( *this ); }
+
 
    // @API [tag: logical, operator, shortcut] [summary: Logical grouping shortcuts]
 

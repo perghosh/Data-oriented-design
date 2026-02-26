@@ -746,13 +746,31 @@ std::string query::sql_get_where() const
          auto uOperator = itCondition->get_operator() & eOperatorMaskNumber;
          std::string_view stringOperator(pbBuffer, get_where_operator_text_s(uOperator, pbBuffer));
          stringWhere += stringOperator;                                        // add operator text
-         if( uOperator != eOperatorTypeNumberNull && uOperator != eOperatorTypeNumberNotNull )
+
+         if( uOperator <= eOperatorTypeNumberLikeEnd )
          {
              // ## print where value to string ...............................
             auto uType = itCondition->type();
 
             print_type_value_s( uType, itCondition->value(), m_eSqlDialect, stringWhere );
          }
+         else if( uOperator == eOperatorTypeNumberBetween || uOperator == eOperatorTypeNumberNotBetween )
+         {
+             // ## print where value to string ...............................
+            auto uType = itCondition->type();
+
+            print_type_value_s( uType, itCondition->value(), m_eSqlDialect, stringWhere );
+            stringWhere += " AND ";
+            print_type_value_s( uType, itCondition->value_hi(), m_eSqlDialect, stringWhere );
+         }
+         else if( uOperator == eOperatorTypeNumberNull || uOperator == eOperatorTypeNumberNotNull || uOperator == eOperatorTypeNumberExist || uOperator == eOperatorTypeNumberNotExist )
+         {
+            stringWhere += " (";
+            stringWhere += itCondition->sql();
+            stringWhere += ')';
+         }
+         else if( uOperator == eOperatorTypeNumberIn || uOperator == eOperatorTypeNumberNotIn ) {}
+         else { assert( false ); }
       }
 
       vectorSkipCondition[uConditionIndex] = true;
@@ -1310,6 +1328,7 @@ enumOperator query::get_where_operator_number_s(std::string_view stringOperator)
       else if( *(pbszOperator + 1) == '=' ) return eOperatorGreaterEqual;
    }
    break;
+   case 'b': return eOperatorBetween;
    case 'e': return eOperatorEqual;
    case 'g': {
       if( stringOperator.length() > sizeof("greater") ) return eOperatorGreaterEqual;
@@ -1333,6 +1352,7 @@ enumOperator query::get_where_operator_number_s(std::string_view stringOperator)
       else if( stringOperator.length() == (sizeof("null") - 1)) return eOperatorNull; // IS NULL
       else if( stringOperator.length() == (sizeof("notnull") - 1) ) return eOperatorNotNull; // IS NOT NULL
       else if( stringOperator.length() == (sizeof("notin") - 1) ) return eOperatorNotIn; // NOT IN
+      else if( stringOperator.length() == (sizeof("notbetween") - 1) ) return eOperatorNotBetween; // NOT BETWEEN
    }
    break;
 
@@ -1376,6 +1396,8 @@ unsigned query::get_where_operator_text_s(unsigned uOperator, char* pbBuffer)
    case eOperatorTypeNumberNotNull: stringWhere = set_text(pbBuffer, std::string_view{ " IS NOT NULL " }); break;
    case eOperatorTypeNumberIn: stringWhere = set_text(pbBuffer, std::string_view{ " IN " }); break;
    case eOperatorTypeNumberNotIn: stringWhere = set_text(pbBuffer, std::string_view{ " NOT IN " }); break;
+   case eOperatorTypeNumberBetween: stringWhere = set_text(pbBuffer, std::string_view{ " BETWEEN " }); break;
+   case eOperatorTypeNumberNotBetween: stringWhere = set_text(pbBuffer, std::string_view{ " NOT BETWEEN " }); break;
 
    default:
       assert(false); *pbBuffer = '\0';
