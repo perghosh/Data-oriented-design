@@ -559,20 +559,44 @@ std::string query::sql_get_select() const
 
       if( stringSelect.empty() == false ) stringSelect += ", ";
 
-      if( it->has("raw") == true )
+      // ## If subselect then this has to have SELECT
+      if( it->has_flag( eFieldFlagSubSelect ) == false ) 
       {
-         stringSelect += it->raw();
-      }
-      else
-      {
-         const table* ptable = table_get_for_key(it->get_table_key());                             assert(ptable != nullptr); // no table found for key indicates internal error for query object, this shouldn't happen
-         if( ptable->has("alias") == true )
-         {
-            stringSelect += ptable->alias();
-            stringSelect += ".";
+         if( it->has_flag(eFieldFlagRaw) || it->has("raw") == true )
+         {                                                                                         assert( it->get_arguments()["raw"].is_true() == true);
+            stringSelect += it->raw();
          }
+         else
+         {
+            const table* ptable = table_get_for_key(it->get_table_key());                          assert(ptable != nullptr); // no table found for key indicates internal error for query object, this shouldn't happen
+            if( ptable->has("alias") == true )
+            {
+               stringSelect += ptable->alias();
+               stringSelect += ".";
+            }
 
-         stringSelect += it->name();
+            stringSelect += it->name();
+            if( it->has("alias") == true )                                        // found alias ?
+            {
+               stringSelect += " AS ";
+               if( flag_has_s(uFormatOptions, eFormatUseQuotes) == false ) stringSelect += it->alias();
+               else format_add_and_surround_s(stringSelect, it->alias(), '\"');
+
+            }
+         }
+      }
+      else 
+      {
+         stringSelect += "(SELECT ";
+
+         if( it->has_flag(eFieldFlagRaw) || it->has("raw") == true ) { stringSelect += it->raw();  assert( it->get_arguments()["raw"].is_true() == true); }
+
+         if( it->has_flag( (eFieldFlagFrom) ) ) { stringSelect += " FROM "; stringSelect += it->from(); }
+         if( it->has_flag( (eFieldFlagJoin) ) ) { stringSelect += it->join(); }
+         if( it->has_flag( (eFieldFlagWhere) ) ) { stringSelect += " WHERE "; stringSelect += it->where(); }
+
+         stringSelect += ')';
+
          if( it->has("alias") == true )                                        // found alias ?
          {
             stringSelect += " AS ";
@@ -580,6 +604,7 @@ std::string query::sql_get_select() const
             else format_add_and_surround_s(stringSelect, it->alias(), '\"');
 
          }
+
       }
    }
    return stringSelect;

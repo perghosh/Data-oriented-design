@@ -520,20 +520,34 @@ struct field_builder
 
    [[nodiscard]] unsigned get_parttype() const noexcept { return m_uPartType; }
    [[nodiscard]] std::string_view get_table() const noexcept { return m_stringTable; }
+   void flag_( unsigned uFlag ) { m_uFlags |= uFlag; }
+   [[nodiscard]] unsigned get_flags() const noexcept { return m_uFlags; }
+   [[nodiscard]] bool is_flag( unsigned uFlag ) const noexcept { return ( m_uFlags & uFlag ) != 0; }
 
    // @API [tag: attribute] [summary: set attribute values for field]
 
-   field_builder& as( std::string_view v_ )& { m_arguments.set( "alias", v_ );   return *this; }
-   field_builder&& as( std::string_view v_ )&& { m_arguments.set( "alias", v_ );   return std::move( *this ); }
+   field_builder& as( std::string_view v_ )& { m_arguments.set( "alias", v_ );      flag_( query::eFieldFlagAlias ); return *this; }
+   field_builder&& as( std::string_view v_ )&& { m_arguments.set( "alias", v_ );    flag_( query::eFieldFlagAlias ); return std::move( *this ); }
 
-   field_builder& value( gd::variant_view v_ )& { m_arguments.set( "value", v_ );   return *this; }
+   field_builder& value( gd::variant_view v_ )& { m_arguments.set( "value", v_ );  return *this; }
    field_builder&& value( gd::variant_view v_ )&& { m_arguments.set( "value", v_ );   return std::move( *this ); }
 
    field_builder& type( gd::variant_view v_ )& { m_arguments.set( "type", v_ );    return *this; }
    field_builder&& type( gd::variant_view v_ )&& { m_arguments.set( "type", v_ );    return std::move( *this ); }
 
-   field_builder& raw( std::string_view v_ )& { m_arguments.set( "raw", v_ );     return *this; }
-   field_builder&& raw( std::string_view v_ )&& { m_arguments.set( "raw", v_ );     return std::move( *this ); }
+   field_builder& raw( std::string_view v_ )& { m_arguments.set( "raw", v_ );       flag_( query::eFieldFlagRaw ); return *this; }
+   field_builder&& raw( std::string_view v_ )&& { m_arguments.set( "raw", v_ );     flag_( query::eFieldFlagRaw ); return std::move( *this ); }
+
+   field_builder& from( std::string_view v_ )& { m_arguments.set( "from", v_ );     flag_( query::eFieldFlagFrom ); return *this; }
+   field_builder&& from( std::string_view v_ )&& { m_arguments.set( "from", v_ );   flag_( query::eFieldFlagFrom ); return std::move( *this ); }
+
+   field_builder& join( std::string_view v_ )& { m_arguments.set( "join", v_ );     flag_( query::eFieldFlagJoin ); return *this; }
+   field_builder&& join( std::string_view v_ )&& { m_arguments.set( "join", v_ );   flag_( query::eFieldFlagJoin ); return std::move( *this ); }
+
+   field_builder& where( std::string_view v_ )& { m_arguments.set( "where", v_ );   flag_( query::eFieldFlagWhere ); return *this; }
+   field_builder&& where( std::string_view v_ )&& { m_arguments.set( "where", v_ ); flag_( query::eFieldFlagWhere ); return std::move( *this ); }
+
+
 
    // @API [tag: sql, type] [summary: Part-type shortcuts]
 
@@ -555,7 +569,12 @@ struct field_builder
    field_builder& returning()& { m_uPartType = eSqlPartReturning; return *this; }
    field_builder&& returning()&& { m_uPartType = eSqlPartReturning; return std::move( *this ); }
 
+   field_builder& subselect()& { flag_( query::eFieldFlagSubSelect ); return *this; }
+   field_builder&& subselect()&& { flag_( query::eFieldFlagSubSelect ); return std::move( *this ); }
+
+
    unsigned m_uPartType = 0;            ///< part type in sql query
+   unsigned m_uFlags = 0;               ///< field flags (e.g. use raw SQL, join syntax, etc.)
    std::string_view m_stringTable;      ///< optional table name for field (used for disambiguation in joins)
    gd::argument::arguments m_arguments; ///< arguments used to pass into query
 };
@@ -609,7 +628,7 @@ inline query& operator<<( query& query_, field_builder&& fieldbuilder_ )
       {
          query_.field_add_parttype( fieldbuilder_.m_uPartType, *ptable_, fieldbuilder_, tag_arguments{} );
       }
-      else { query_.field_add( *ptable_, fieldbuilder_, tag_arguments{} ); }
+      else { query_.field_add( *ptable_, fieldbuilder_.get_flags(), fieldbuilder_, tag_arguments{} ); }
 
    }
    else
