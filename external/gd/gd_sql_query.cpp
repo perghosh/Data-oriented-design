@@ -1004,11 +1004,6 @@ std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
       //stringOrderBy += std::to_string( uFieldIndex );                         // column index 
 
       const table* ptable = table_get_for_key( it->get_table_key() );                              assert( ptable != nullptr ); // no table found for key indicates internal error for query object, this shouldn't happen
-      if( ptable->has( "alias" ) == true )
-      {
-         stringOrderBy += ptable->alias();
-         stringOrderBy += ".";
-      }
       
       auto order_ = it->order(); // order information for field, could be boolean, string or integer, if boolean then use column index to order, if string then string value is used for order by and it should contain the column name and sort direction, if integer then column name is used for order by and if integer is positive then ascending else descending
 
@@ -1028,6 +1023,12 @@ std::string query::sql_get_orderby( std::string_view stringOrderByPrefix ) const
       }
       else
       {
+         if( ptable->has( "alias" ) == true )
+         {
+            stringOrderBy += ptable->alias();
+            stringOrderBy += ".";
+         }
+
          stringOrderBy += it->name();
 
          auto iAscending = order_.as_int();

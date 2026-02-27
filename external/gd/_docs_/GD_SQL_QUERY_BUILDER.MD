@@ -57,11 +57,11 @@ std::string stringSQL = q.sql_get(eSqlSelect);
 ```cpp
 query q;
 q << table_g("users")
-  << field_g("id").as("user_id").select()
-  << field_g("name").as("username").select()
-  << field_g("email").select()
+  << field_g("id").as("user_id")
+  << field_g("name").as("username")
+  << field_g("email")
   << condition_g("active").value(1).eq()
-  << condition_g("age").value(18).gt().and_();
+  << condition_g("age").value(18).gt();
 
 std::cout << q.sql_get(eSqlSelect) << "\n";
 // Output: SELECT id AS user_id, name AS username, email FROM users WHERE active = 1 AND age > 18
@@ -72,9 +72,9 @@ std::cout << q.sql_get(eSqlSelect) << "\n";
 ```cpp
 query q;
 q << table_g("users")
-  << field_g("name").value("John Doe").insert()
-  << field_g("email").value("john@example.com").insert()
-  << field_g("age").value(30).insert();
+  << field_g("name").value("John Doe")
+  << field_g("email").value("john@example.com")
+  << field_g("age").value(30);
 
 std::cout << q.sql_get(eSqlInsert) << "\n";
 // Output: INSERT INTO users (name, email, age) VALUES ('John Doe', 'john@example.com', 30)
@@ -85,8 +85,8 @@ std::cout << q.sql_get(eSqlInsert) << "\n";
 ```cpp
 query q;
 q << table_g("users")
-  << field_g("name").value("Jane Doe").update()
-  << field_g("email").value("jane@example.com").update()
+  << field_g("name").value("Jane Doe")
+  << field_g("email").value("jane@example.com")
   << condition_g("id").value(123).eq();
 
 std::cout << q.sql_get(eSqlUpdate) << "\n";
@@ -99,7 +99,7 @@ std::cout << q.sql_get(eSqlUpdate) << "\n";
 query q;
 q << table_g("users")
   << condition_g("id").value(123).eq()
-  << condition_g("deleted_at").is_null().and_();
+  << condition_g("deleted_at").is_null();
 
 std::cout << q.sql_get(eSqlDelete) << "\n";
 // Output: DELETE FROM users WHERE id = 123 AND deleted_at IS NULL
@@ -157,34 +157,34 @@ Define fields with aliases, types, raw SQL, and specify which SQL clause they be
 // Basic field in SELECT
 query q1;
 q1 << table_g("users")
-   << field_g("name").select();
+   << field_g("name");
 
 // Field with alias
 query q2;
 q2 << table_g("users")
-   << field_g("name").as("username").select();
+   << field_g("name").as("username");
 
 // Field with value (for INSERT/UPDATE)
 query q3;
 q3 << table_g("users")
-   << field_g("name").value("John").insert();
+   << field_g("name").value("John");
 
 // Field with custom type
 query q4;
 q4 << table_g("users")
-   << field_g("id").type("INTEGER").select();
+   << field_g("id").type("INTEGER");
 
 // Field with raw SQL expression
 query q5;
 q5 << table_g("users")
-   << field_g("created_at").raw("NOW()").select();
+   << field_g("created_at").raw("NOW()");
 
 // Table-qualified field (for joins)
 query q6;
 q6 << table_g("users").as("u")
    << table_g("orders").as("o")
-   << field_g("u", "name").select()
-   << field_g("o", "amount").select();
+   << field_g("u", "name")
+   << field_g("o", "amount");
 ```
 
 **Field Builder Methods:**
@@ -589,11 +589,11 @@ q2 << tableOrders;
 q << fields_g("users", "id", "name", "email", "age", "created_at").select();
 
 // Verbose - individual fields
-q << field_g("id").select()
-   << field_g("name").select()
-   << field_g("email").select()
-   << field_g("age").select()
-   << field_g("created_at").select();
+q << field_g("id")
+   << field_g("name")
+   << field_g("email")
+   << field_g("age")
+   << field_g("created_at")
 ```
 
 ### 3. Use Automatic JOIN Relationships
@@ -624,7 +624,7 @@ q << table_g("users")
 // May produce incorrect SQL depending on dialect
 query q2;
 q2 << table_g("users")
-    << field_g("id").value("f47ac10b58cc4372a5670e02b2c3d479").insert();
+    << field_g("id").value("f47ac10b58cc4372a5670e02b2c3d479");
 ```
 
 ### 5. Use Query Reuse
@@ -641,7 +641,7 @@ qFiltered1 << condition_g("active").value(1).eq();
 
 query qFiltered2 = qBase;
 qFiltered2 << condition_g("age").value(18).gt()
-            << condition_g("age").value(65).le().and_();
+            << condition_g("age").value(65).le();
 ```
 
 ---

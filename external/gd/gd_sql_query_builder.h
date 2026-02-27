@@ -626,8 +626,8 @@ struct field_builder
    field_builder& asc()& { flag_( query::eFieldFlagOrderBy ); m_arguments.set( "order", true ); return *this; }
    field_builder&& asc()&& { flag_( query::eFieldFlagOrderBy ); m_arguments.set( "order", true ); return std::move(*this); }
 
-   field_builder& desc()& { m_uPartType |= eSqlPartOrderBy; flag_( query::eFieldFlagOrderBy ); m_arguments.set( "order", false ); return *this; }
-   field_builder&& desc()&& { m_uPartType |= eSqlPartOrderBy; flag_( query::eFieldFlagOrderBy ); m_arguments.set( "order", false ); return std::move(*this); }
+   field_builder& desc()& { m_uPartType |= (eSqlPartOrderBy|eSqlPartSelect); flag_( query::eFieldFlagOrderBy ); m_arguments.set( "order", false ); return *this; }
+   field_builder&& desc()&& { m_uPartType |= (eSqlPartOrderBy|eSqlPartSelect); flag_( query::eFieldFlagOrderBy ); m_arguments.set( "order", false ); return std::move(*this); }
 
 
    unsigned m_uPartType = 0;            ///< part type in sql query

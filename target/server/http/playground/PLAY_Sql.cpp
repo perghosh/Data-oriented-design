@@ -19,6 +19,22 @@
 
 #include "main.h"
 
+    using namespace gd::sql;
+
+    query q;
+    q << table_g("users").as("u")
+       << table_g("orders").as("o")
+          .join("LEFT JOIN orders ON u.id = o.user_id")
+       << field_g("u", "id")
+       << field_g("u", "name")
+       << field_g("o", "amount")
+       << field_g("o", "created_at").orderby().desc()
+       << condition_g("u", "active").value(isActive).eq()
+       << condition_g("o", "amount").value(minAmount).gt();
+   
+    std::cout << q.sql_get(eSqlSelect) << "\n";
+
+
 #include "catch2/catch_amalgamated.hpp"
 
 TEST_CASE( "[sql] builder 1", "[sql]" ) {
@@ -182,10 +198,44 @@ TEST_CASE( "[sql] update", "[sql]" ) {
    stringSQL = queryDelete.sql_get( eSqlDelete );
    std::cout << stringSQL << "\n";
 
+   {
+      query q;
+      q << table_g("users").as("u")
+         << table_g("orders").as("o")
+              .join("LEFT JOIN orders ON u.id = o.user_id")
+         << field_g("u", "id")
+         << field_g("u", "name")
+         << field_g("o", "amount")
+         << field_g("o", "created_at").orderby().desc()
+         << condition_g("u", "active").value(true).eq()
+         << condition_g("o", "amount").value(10).gt();      
+      std::string stringSQL = q.get_select();
+      std::cout << stringSQL << "\n";
+   }
+
 }
 
 TEST_CASE( "[sql] join", "[sql]" ) {
    using namespace gd::sql;
+
+   {
+      // Build base query once
+      query qBase;
+      qBase << table_g("users")
+            << fields_g("users", "id", "name", "email").select();
+
+      // Add conditions dynamically
+      query qFiltered1 = qBase;
+      qFiltered1 << condition_g("active").value(1).eq();
+
+      query qFiltered2 = qBase;
+      qFiltered2 << condition_g("age").value(18).gt()
+                  << condition_g("age").value(65).le();
+
+      std::cout << "Base Query:\n" << qBase.sql_get( eSqlSelect ) << "\n\n";
+      std::cout << "Filtered Query 1 (active=1):\n" << qFiltered1.sql_get( eSqlSelect ) << "\n\n";
+      std::cout << "Filtered Query 2 (age > 18 AND age <= 65):\n" << qFiltered2.sql_get( eSqlSelect ) << "\n\n";
+   }
 
    // ## Two queries that produce same result
    {  query q; 
