@@ -130,7 +130,7 @@ Sample:
 | `test code` | no rules, do as you wish |
 
 
-**The Learning Curve Comparison**
+**The Learning Curve Comparison adding new developers**
 
 ```
 Traditional Java style (that is common):
@@ -144,7 +144,7 @@ Quality
     +----------------------------------------> Time
     Day 1                                      Month 3
 
-Your System:
+Layered:
 Quality
     ^
     |                                         General (gold)
