@@ -689,6 +689,44 @@ std::string query::sql_get_update_from_before() const
 {                                                                                                  assert( m_vectorTable.empty() == false ); // don't call this if no tables added to query
    std::string stringFrom; // generated from string with tables used in query
 
+   // ## MySQL and MariaDB use comma-separated multi-table UPDATE syntax
+   //    *sample:* `UPDATE table2, table3, table1 SET table1.field = value WHERE ...`
+   //    Additional tables are listed before the main table (added by `sql_get_update`).
+   //    Join conditions between tables go into the WHERE clause.
+   if( m_eSqlDialect == eSqlDialectMySql || m_eSqlDialect == eSqlDialectMariaDB )
+   {
+      stringFrom += std::string_view{ "UPDATE " };
+
+      // ### Add additional tables (skip first, it is added by `sql_get_update`)
+      unsigned uTableIndex = 0;
+      for( auto itTable = std::begin(m_vectorTable), itEnd = std::end(m_vectorTable); itTable != itEnd; itTable++ )
+      {
+         if( uTableIndex == 0 ) { uTableIndex++; continue; }// skip first table
+
+         if( itTable->has( "schema" ) == true )
+         {
+            stringFrom += itTable->schema();
+            stringFrom += ".";
+         }
+
+         stringFrom += itTable->name();
+         if( itTable->has( "alias" ) == true )                                  // found alias ?
+         {
+            stringFrom += " ";
+            stringFrom += itTable->alias();
+         }
+
+         stringFrom += ", ";                                                    // trailing comma before main table from `sql_get_update`
+         uTableIndex++;
+      }
+   }
+   else
+   {
+      // ### Other dialects (PostgreSQL, SQL Server, SQLite, etc.) place additional
+      //     tables after SET using FROM — handled by `sql_get_update_from_after`
+      stringFrom += std::string_view{ "UPDATE " };
+   }
+
    return stringFrom;
 }
 
@@ -706,6 +744,69 @@ std::string query::sql_get_update_from_before() const
 std::string query::sql_get_update_from_after() const
 {                                                                                                  assert( m_vectorTable.empty() == false ); // don't call this if no tables added to query
    std::string stringFrom; // generated from string with tables used in query
+
+   // ## MySQL and MariaDB handle multi-table updates before SET, nothing after
+   if( m_eSqlDialect == eSqlDialectMySql || m_eSqlDialect == eSqlDialectMariaDB )
+   {
+      return stringFrom;                                                        // empty for MySQL/MariaDB
+   }
+
+   // ## PostgreSQL, SQL Server, SQLite (3.33+) and other dialects use FROM after SET
+   //    *sample:* `UPDATE table1 SET field = value FROM table2 INNER JOIN table3 ON ...`
+   //    The FROM clause lists additional tables starting from the second table.
+
+   // ### Lambda to add table name with optional schema prefix and alias
+   auto fAddTableName = [](const table* ptable, std::string& stringFrom) -> void {
+      if( ptable->has( "schema" ) == true )
+      {
+         stringFrom += ptable->schema();
+         stringFrom += ".";
+      }
+
+      stringFrom += ptable->name();
+      if( ptable->has( "alias" ) == true )                                      // found alias ?
+      {
+         stringFrom += " ";
+         stringFrom += ptable->alias();
+      }
+   };
+
+   stringFrom += std::string_view{ "\nFROM " };
+
+   enumJoin eJoinDefault = eJoinInner;                                          // default join if join isn't specified for table
+   unsigned uTableIndex = 0;                                                    // active index for current table processed
+   for( auto itTable = std::begin(m_vectorTable), itEnd = std::end(m_vectorTable); itTable != itEnd; itTable++ )
+   {
+      if( uTableIndex == 0 ) { uTableIndex++; continue; }                      // skip first table (already in UPDATE)
+
+      if( uTableIndex > 1 )                                                    // third table onwards uses JOIN
+      {
+         stringFrom += "\n";
+
+         enumJoin eJoin = eJoinDefault;
+         stringFrom += sql_get_join_text_s(eJoin);                              // get join text for active table
+      }
+
+      fAddTableName( &(*itTable), stringFrom );                                 // add table to string
+
+      if( uTableIndex > 1 )                                                    // ON clause for joined tables
+      {
+         stringFrom += " ON ";
+         if( itTable->has( "join" ) == true )
+         {
+            stringFrom += itTable->join();                                      // get join part for table, here it is stored in data for table
+         }
+         else
+         {
+            std::string_view stringParent = itTable->parent();                                     assert( stringParent.empty() == false );
+            stringFrom += sql_get_join_for_table( table_get( stringParent ) );
+            stringFrom += std::string_view{ " = " };
+            stringFrom += sql_get_join_for_table( &(*itTable), stringParent );
+         }
+      }
+
+      uTableIndex++;
+   }
 
    return stringFrom;
 }
