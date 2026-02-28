@@ -118,7 +118,7 @@ Sample:
    pbszCommand_d = stringCommand_d.c_str();
 #endif
 ```
-
+---
 
 **Code layers** 
 | Type | Description |
@@ -128,6 +128,34 @@ Sample:
 | `target code` | Code in each separate target are only used in that target and isn't placed in a namespace, other than that style is similar to source code |
 | `play code` | no rules, do as you wish |
 | `test code` | no rules, do as you wish |
+
+
+**The Learning Curve Comparison**
+
+```
+Traditional Java style (that is common):
+Quality
+    ^
+    |                              Production (terrifying)
+    |                         Production (still scary)
+    |                    Production (oh god)
+    |               Production (help)
+    |          Production (what is safe?)
+    +----------------------------------------> Time
+    Day 1                                      Month 3
+
+Your System:
+Quality
+    ^
+    |                                         General (gold)
+    |                                   Source (corporate)
+    |                            Target (specific)
+    |                     Play (fun!)
+    |              Play (learning)
+    +----------------------------------------> Time
+    Day 1                                      Month 3
+```
+---
 
 ## About Hungarian Notation or evolution of it
 *Why write code with this style*
