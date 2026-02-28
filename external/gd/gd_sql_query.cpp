@@ -674,6 +674,43 @@ std::string query::sql_get_from() const
    return stringFrom;
 }
 
+/** ----------------------------------------------------------------------------- sql_get_update_from_before */ /**
+ * @brief Generate SQL UPDATE "FROM" for sql diarects where it is placed before set
+ * 
+ * If query is update then this method generates SQL UPDATE "FROM" statement part, 
+ * and this differs based on what type of SQL dialect that is used. For example for
+ * MySQL when multiple tables are used in update then the "FROM" part is generated as `UPDATE table1, table2` 
+ * or when joining tables in update then the "FROM" part is generated as `UPDATE table1 JOIN table2 ON ...`.
+ * In other SQL dialects the "FROM" part is generated after set of fields to update, for example `UPDATE table1 SET field1 = value1 FROM table2 .. 
+ * 
+ * @return A string containing the SQL UPDATE "FROM" statement representing the state before the update.
+ */
+std::string query::sql_get_update_from_before() const
+{                                                                                                  assert( m_vectorTable.empty() == false ); // don't call this if no tables added to query
+   std::string stringFrom; // generated from string with tables used in query
+
+   return stringFrom;
+}
+
+/** ----------------------------------------------------------------------------- sql_get_update_from_after */ /**
+ * @brief Generate SQL UPDATE "FROM" for sql dialects where it is placed after SET
+ * 
+ * If query is update then this method generates SQL UPDATE "FROM" statement part that appears
+ * after the SET clause. This differs based on what type of SQL dialect is used. For example, 
+ * SQL Server, PostgreSQL, and most other SQL dialects generate the "FROM" part after SET, like 
+ * `UPDATE table1 SET field1 = value1 FROM table2 JOIN table3 ON ...`.
+ * MySQL and MariaDB handle multi-table updates differently and use `sql_get_update_from_before()` instead.
+ * 
+ * @return A string containing the SQL UPDATE "FROM" statement representing additional tables after SET.
+ */
+std::string query::sql_get_update_from_after() const
+{                                                                                                  assert( m_vectorTable.empty() == false ); // don't call this if no tables added to query
+   std::string stringFrom; // generated from string with tables used in query
+
+   return stringFrom;
+}
+
+
 /*----------------------------------------------------------------------------- sql_get_where */ /**
  * Build "WHERE" text from conditions added to query
  * \return std::string
@@ -783,44 +820,46 @@ std::string query::sql_get_where() const
 
 /** ---------------------------------------------------------------------------
  * @brief Generate sql INSERT query part without values
+ * 
+ * 
+ * 
  * @return std::string sql insert string
 */
 std::string query::sql_get_insert() const
 {                                                                                                  assert( m_vectorTable.empty() == false );
    std::string stringInsert; // generated insert string with tables used in query
 
-   //unsigned uTableIndex = 0;                                                     // active index for current table processed
-   for( auto itTable = std::begin(m_vectorTable), itEnd = std::end(m_vectorTable); itTable != itEnd; itTable++ )
+   // ## Get first table that is allways the table used to insert values into, INSERT statements cant insert to multiple tables
+
+   const auto* ptableInsertInto = table_get();
+
+   if( ptableInsertInto->has( "schema" ) == true )
    {
-      const auto ptable = &(*itTable);
-      if( ptable->has( "schema" ) == true )
-      {
-         stringInsert += ptable->schema();
-         stringInsert += ".";
-         stringInsert += ptable->name();
-      }
-      else
-      {
-         stringInsert += ptable->name();
-      }
-
-      // ## Add fields for table
-      unsigned uFieldIndex = 0;
-      for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField; itField++ )
-      {
-         if( itField->is_insert() == false ) [[unlikely]] continue;           // no insert field ?
-
-         if( itField->compare(ptable) == true )
-         {
-            if( uFieldIndex == 0 ) stringInsert += " (";
-            else if( uFieldIndex > 0 ) stringInsert += ", ";
-            stringInsert += itField->name();
-            uFieldIndex++;
-         }
-      }
-
-      if( uFieldIndex > 0 ) stringInsert += ")";
+      stringInsert += ptableInsertInto->schema();
+      stringInsert += ".";
+      stringInsert += ptableInsertInto->name();
    }
+   else
+   {
+      stringInsert += ptableInsertInto->name();
+   }
+
+   // ## Add fields for table
+   unsigned uFieldIndex = 0;
+   for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField; itField++ )
+   {
+      if( itField->is_insert() == false ) [[unlikely]] continue;           // no insert field ?
+
+      if( itField->compare(ptableInsertInto) == true )
+      {
+         if( uFieldIndex == 0 ) stringInsert += " (";
+         else if( uFieldIndex > 0 ) stringInsert += ", ";
+         stringInsert += itField->name();
+         uFieldIndex++;
+      }
+   }
+
+   if( uFieldIndex > 0 ) stringInsert += ")";
 
    return stringInsert;
 }
@@ -829,8 +868,8 @@ std::string query::sql_get_insert() const
  * @brief Generates the table and SET clause portion of an SQL UPDATE statement.
  * @return A string containing the table name (with optional schema prefix) and SET clause with field assignments for an UPDATE statement.
  */
-std::string query::sql_get_update() const
-{
+std::string query::sql_get_update( unsigned uTableKey ) const
+{                                                                                                  assert( uTableKey == 0 || table_get_for_key(uTableKey) != nullptr ); assert( m_vectorTable.empty() == false );
    std::string stringUpdate;
 
    const auto ptable = &(*std::begin(m_vectorTable));
@@ -845,13 +884,24 @@ std::string query::sql_get_update() const
       stringUpdate += ptable->name();
    }
 
+   auto stringAlias = ptable->alias();                                        // alias for table, if found
+   if( stringAlias.empty() == false )
+   {
+      stringUpdate += " AS ";
+      stringUpdate += stringAlias;
+   }
+
    stringUpdate += "\nSET ";
 
    // ## Add all set fields
    unsigned uFieldIndex = 0;
    for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField; itField++ )
    {
+      if( uTableKey == 0 || itField->get_table_key() != uTableKey ) [[unlikely]] continue;// field is for another table than the one we want to update values for
+
       if( uFieldIndex > 0 ) stringUpdate += ", ";
+
+      // ### Add field name and value for update
       stringUpdate += itField->name();
       stringUpdate += std::string_view{ " = " };
       auto uType = itField->type();
@@ -964,13 +1014,15 @@ std::string query::sql_get_groupby() const
  * @brief Build SQL VALUES part for insert query using all added fields and values sent
  * @return 
  */
-std::string query::sql_get_values() const
+std::string query::sql_get_values( unsigned uTableKey ) const
 {
    std::string stringValues; // generated values string
    // ## Add all set fields
    unsigned uFieldIndex = 0;
    for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField; itField++ )
    {
+      if( uTableKey == 0 || itField->get_table_key() != uTableKey ) [[unlikely]] continue;// field is for another table than the one we want to insert into
+
       if( itField->is_insert() == false ) [[likely]] continue;                // no insert field ?
 
       if( uFieldIndex > 0 ) stringValues += ", ";
@@ -1131,8 +1183,17 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          break;
 
       case eSqlPartUpdate:
-         stringSql += std::string_view{ "UPDATE " };
-         stringSql += sql_get_update();
+         if( table_size() == 1 )
+         {
+            stringSql += std::string_view{ "UPDATE " };
+            stringSql += sql_get_update( table_get_key() );
+         }
+         else
+         {
+            stringSql += sql_get_update_from_before();
+            stringSql += sql_get_update( table_get_key() );
+            stringSql += sql_get_update_from_after();
+         }
          break;
 
       case eSqlPartDelete:
@@ -1161,7 +1222,7 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
 
       case eSqlPartValues:
          stringSql += std::string_view{ "\nVALUES( " };
-         stringSql += sql_get_values();
+         stringSql += sql_get_values( table_get_key() );
          stringSql += std::string_view{ ")" };
          break;
 

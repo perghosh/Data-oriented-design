@@ -286,8 +286,8 @@ public:
       bool is_default() const { return m_uUseAndType == 0; }
 
       bool is_select() const { return m_uUseAndType == 0 || m_uUseAndType & eSqlPartSelect; }
-      bool is_insert() const { return m_uUseAndType == 0 || m_uUseAndType & eSqlPartInsert; }
-      bool is_update() const { return m_uUseAndType == 0 || m_uUseAndType & eSqlPartUpdate; }
+      bool is_insert() const { return m_uUseAndType == 0 || m_uUseAndType & (eSqlPartSelect|eSqlPartInsert); }
+      bool is_update() const { return m_uUseAndType == 0 || m_uUseAndType & (eSqlPartSelect|eSqlPartUpdate); }
 
       bool is_groupby() const { return m_uUseAndType & eSqlPartGroupBy; }
       bool is_orderby() const { return m_uUseAndType & eSqlPartOrderBy;  }
@@ -412,6 +412,7 @@ public:
    bool table_exists( const table& tableExists ) const noexcept { return table_get( tableExists ) != nullptr; }
    std::size_t table_size() const { return m_vectorTable.size(); }
    bool table_empty() const { return m_vectorTable.empty(); }
+   uint32_t table_get_key() const { auto pTable = table_get(); return pTable ? (uint32_t)pTable->get_key() : 0; }
    int32_t table_get_key( std::string_view stringTable ) const { auto pTable = table_get( stringTable ); return pTable ? (int32_t)pTable->get_key() : -1; }
 
    std::vector<table>::iterator table_begin() { return m_vectorTable.begin(); }
@@ -537,13 +538,15 @@ public:
 
    [[nodiscard]] std::string sql_get_select() const;
    [[nodiscard]] std::string sql_get_from() const;
+   [[nodiscard]] std::string sql_get_update_from_before() const;
+   [[nodiscard]] std::string sql_get_update_from_after() const;
    [[nodiscard]] std::string sql_get_where() const;
    [[nodiscard]] std::string sql_get_insert() const;
-   [[nodiscard]] std::string sql_get_update() const;
+   [[nodiscard]] std::string sql_get_update( unsigned uTableKey = 0 ) const;
    [[nodiscard]] std::string sql_get_update( const std::vector< gd::variant_view >& vectorValue ) const;
    [[nodiscard]] std::string sql_get_delete() const;
    [[nodiscard]] std::string sql_get_groupby() const;
-   [[nodiscard]] std::string sql_get_values() const;
+   [[nodiscard]] std::string sql_get_values( unsigned uTableKey = 0 ) const;
    [[nodiscard]] std::string sql_get_orderby( std::string_view stringOrderByPrefix ) const;
    [[nodiscard]] std::string sql_get_distinct() const;
    [[nodiscard]] std::string sql_get_limit() const;

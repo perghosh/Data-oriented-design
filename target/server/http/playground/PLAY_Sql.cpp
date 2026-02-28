@@ -19,22 +19,6 @@
 
 #include "main.h"
 
-    using namespace gd::sql;
-
-    query q;
-    q << table_g("users").as("u")
-       << table_g("orders").as("o")
-          .join("LEFT JOIN orders ON u.id = o.user_id")
-       << field_g("u", "id")
-       << field_g("u", "name")
-       << field_g("o", "amount")
-       << field_g("o", "created_at").orderby().desc()
-       << condition_g("u", "active").value(isActive).eq()
-       << condition_g("o", "amount").value(minAmount).gt();
-   
-    std::cout << q.sql_get(eSqlSelect) << "\n";
-
-
 #include "catch2/catch_amalgamated.hpp"
 
 TEST_CASE( "[sql] builder 1", "[sql]" ) {
@@ -201,8 +185,8 @@ TEST_CASE( "[sql] update", "[sql]" ) {
    {
       query q;
       q << table_g("users").as("u")
-         << table_g("orders").as("o")
-              .join("LEFT JOIN orders ON u.id = o.user_id")
+         << table_g("orders").as("o").parent("users")
+              .join("orders ON u.id = o.user_id")
          << field_g("u", "id")
          << field_g("u", "name")
          << field_g("o", "amount")
@@ -212,6 +196,26 @@ TEST_CASE( "[sql] update", "[sql]" ) {
       std::string stringSQL = q.get_select();
       std::cout << stringSQL << "\n";
    }
+
+   {
+      query q;
+      q << table_g("users").as("u")
+         << table_g("orders").as("o").parent("users")
+              .join("u.id = o.user_id")
+         << field_g( "u", "id").as("ID").value(123)
+         << field_g( "u", "name" ).value( "John Doe" )
+         << field_g( "o", "amount" ).value( 99.99 )
+         << field_g("o", "created_at").value( "2024-01-01" ).orderby().desc()
+         << condition_g("u", "active").value(true).eq()
+         << condition_g("o", "amount").value(10).gt();      
+      std::string stringSelect = q.get_select();
+      std::cout << stringSelect << "\n";
+      std::string stringInsert = q.get_insert();
+      std::cout << stringInsert << "\n";
+      std::string stringUpdate = q.get_update();
+      std::cout << stringUpdate << "\n";
+   }
+
 
 }
 
