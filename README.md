@@ -1,5 +1,12 @@
 DOD or data oriented design development, what is it and how to do it
 
+## Table of Contents
+- [Data Oriented Design - Pros and cons](#data-oriented-design---pros-and-cons)
+- [Data Oriented Design - why do it](#data-oriented-design---why-do-it)
+- [Let's get practical. How about using "string"?](#lets-get-practical-how-about-using-string)
+- [Styleguide](#styleguide)
+
+
 ## Data Oriented Design - Pros and cons
 **Pros**
 - **Performance:** Faster execution times, reduced memory consumption
