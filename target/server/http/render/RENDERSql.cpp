@@ -96,6 +96,40 @@ std::pair<bool,std::string> CRENDERSql::AddValue( std::string_view stringJson, g
    return {true, ""};
 }
 
+/** -------------------------------------------------------------------------- AddRecord
+ * @brief Parses a JSON record and adds its fields to the internal table for SQL query generation.
+ * 
+ * This method processes a JSON object containing database record information with three main sections:
+ * - **table**: The target table name
+ * - **values**: Column-value pairs for INSERT/UPDATE operations (marked as `ePartTypeValue`)
+ * - **where**: Column-value pairs for WHERE conditions (marked as `ePartTypeWhere`)
+ * - **returning**: Optional RETURNING clause for PostgreSQL-style queries
+ * 
+ * The method extracts each field and converts it to the internal `arguments` format before
+ * adding it to `m_tableField` via `AddValue()`. This allows building complex SQL statements
+ * from structured JSON input.
+ * 
+ * **Expected JSON structure:**
+ * ```json
+ * {
+ *   "table": "users",
+ *   "values": { "name": "John", "age": 30 },
+ *   "where": { "id": 1 },
+ *   "returning": "*"
+ * }
+ * ```
+ * 
+ * @param stringJson JSON string containing the record data (table, values, where, returning)
+ * @param tag_json Tag parameter indicating JSON parsing context (tag dispatch pattern)
+ * @return std::pair<bool,std::string> Success status and error message. Returns `{true, ""}` on success,
+ *         or `{false, error_description}` if JSON parsing fails or structure is invalid
+ * 
+ * @code
+ * CRENDERSql renderSql;
+ * auto result_ = renderSql.AddRecord( R"({"table":"users","values":{"name":"John"},"where":{"id":1}})", gd::types::tag_json{} );
+ * if( result_.first == false ) {  handle error: result_.second  }
+ * @endcode
+ */
 std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, gd::types::tag_json )
 {
    std::array<std::byte, 256> buffer_;
