@@ -5,6 +5,7 @@ DOD or data oriented design development, what is it and how to do it
 - [Data Oriented Design - why do it](#data-oriented-design---why-do-it)
 - [Let's get practical. How about using "string"?](#lets-get-practical-how-about-using-string)
 - [Styleguide](#styleguide)
+- [Code layers](#code-layers)
 
 
 ## Data Oriented Design - Pros and cons
@@ -127,7 +128,8 @@ Sample:
 ```
 ---
 
-**Code layers** 
+## Code layers
+
 | Type | Description |
 | ------------ | ----------- |
 | `general code` | Similar to stl, general code is written in lower case leters |
