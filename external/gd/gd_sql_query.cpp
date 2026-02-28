@@ -687,7 +687,24 @@ std::string query::sql_get_from() const
  */
 std::string query::sql_get_update_from_before() const
 {                                                                                                  assert( m_vectorTable.empty() == false ); // don't call this if no tables added to query
+   enumJoin eJoinDefault = eJoinInner;                                        // default join if join isn't specified for table
    std::string stringFrom; // generated from string with tables used in query
+
+   // ### Lambda to add table name with optional schema prefix and alias
+   auto fAddTableName = [](const table* ptable, std::string& stringFrom) -> void {
+      if( ptable->has( "schema" ) == true )
+      {
+         stringFrom += ptable->schema();
+         stringFrom += ".";
+      }
+
+      stringFrom += ptable->name();
+      if( ptable->has( "alias" ) == true )                                      // found alias ?
+      {
+         stringFrom += " ";
+         stringFrom += ptable->alias();
+      }
+   };
 
    // ## MySQL and MariaDB use comma-separated multi-table UPDATE syntax
    //    *sample:* `UPDATE table2, table3, table1 SET table1.field = value WHERE ...`
@@ -695,36 +712,39 @@ std::string query::sql_get_update_from_before() const
    //    Join conditions between tables go into the WHERE clause.
    if( m_eSqlDialect == eSqlDialectMySql || m_eSqlDialect == eSqlDialectMariaDB )
    {
-      stringFrom += std::string_view{ "UPDATE " };
-
       // ### Add additional tables (skip first, it is added by `sql_get_update`)
       unsigned uTableIndex = 0;
       for( auto itTable = std::begin(m_vectorTable), itEnd = std::end(m_vectorTable); itTable != itEnd; itTable++ )
       {
-         if( uTableIndex == 0 ) { uTableIndex++; continue; }// skip first table
-
-         if( itTable->has( "schema" ) == true )
-         {
-            stringFrom += itTable->schema();
-            stringFrom += ".";
+         if( uTableIndex == 0 ) 
+         { 
+            fAddTableName( &(*itTable), stringFrom );
+            uTableIndex++; 
+            continue; 
          }
 
-         stringFrom += itTable->name();
-         if( itTable->has( "alias" ) == true )                                  // found alias ?
+         stringFrom += "\n";
+
+         enumJoin eJoin = eJoinDefault;
+         stringFrom += sql_get_join_text_s(eJoin);                               // get join text for active table
+
+         fAddTableName( &(*itTable), stringFrom );                               // add table to string
+
+         stringFrom += " ON ";                                                   // ON clause for joined tables
+         if( itTable->has( "join" ) == true )                                    
          {
-            stringFrom += " ";
-            stringFrom += itTable->alias();
+            stringFrom += itTable->join();                                       // get join part for table, here it is stored in data for table
+         }
+         else
+         {
+            std::string_view stringParent = itTable->parent();                                     assert( stringParent.empty() == false );
+            stringFrom += sql_get_join_for_table( table_get( stringParent ) );
+            stringFrom += std::string_view{ " = " };
+            stringFrom += sql_get_join_for_table( &(*itTable), stringParent );
          }
 
-         stringFrom += ", ";                                                    // trailing comma before main table from `sql_get_update`
          uTableIndex++;
       }
-   }
-   else
-   {
-      // ### Other dialects (PostgreSQL, SQL Server, SQLite, etc.) place additional
-      //     tables after SET using FROM — handled by `sql_get_update_from_after`
-      stringFrom += std::string_view{ "UPDATE " };
    }
 
    return stringFrom;
@@ -773,36 +793,35 @@ std::string query::sql_get_update_from_after() const
 
    stringFrom += std::string_view{ "\nFROM " };
 
-   enumJoin eJoinDefault = eJoinInner;                                          // default join if join isn't specified for table
-   unsigned uTableIndex = 0;                                                    // active index for current table processed
+   enumJoin eJoinDefault = eJoinInner;                                        // default join if join isn't specified for table
+   unsigned uTableIndex = 0;                                                  // active index for current table processed
    for( auto itTable = std::begin(m_vectorTable), itEnd = std::end(m_vectorTable); itTable != itEnd; itTable++ )
    {
-      if( uTableIndex == 0 ) { uTableIndex++; continue; }                      // skip first table (already in UPDATE)
-
-      if( uTableIndex > 1 )                                                    // third table onwards uses JOIN
-      {
-         stringFrom += "\n";
-
-         enumJoin eJoin = eJoinDefault;
-         stringFrom += sql_get_join_text_s(eJoin);                              // get join text for active table
+      if( uTableIndex == 0 ) 
+      { 
+         fAddTableName( &(*itTable), stringFrom );
+         uTableIndex++; 
+         continue; 
       }
 
-      fAddTableName( &(*itTable), stringFrom );                                 // add table to string
+      stringFrom += "\n";
 
-      if( uTableIndex > 1 )                                                    // ON clause for joined tables
+      enumJoin eJoin = eJoinDefault;
+      stringFrom += sql_get_join_text_s(eJoin);                               // get join text for active table
+
+      fAddTableName( &(*itTable), stringFrom );                               // add table to string
+
+      stringFrom += " ON ";                                                   // ON clause for joined tables
+      if( itTable->has( "join" ) == true )                                    
       {
-         stringFrom += " ON ";
-         if( itTable->has( "join" ) == true )
-         {
-            stringFrom += itTable->join();                                      // get join part for table, here it is stored in data for table
-         }
-         else
-         {
-            std::string_view stringParent = itTable->parent();                                     assert( stringParent.empty() == false );
-            stringFrom += sql_get_join_for_table( table_get( stringParent ) );
-            stringFrom += std::string_view{ " = " };
-            stringFrom += sql_get_join_for_table( &(*itTable), stringParent );
-         }
+         stringFrom += itTable->join();                                       // get join part for table, here it is stored in data for table
+      }
+      else
+      {
+         std::string_view stringParent = itTable->parent();                                     assert( stringParent.empty() == false );
+         stringFrom += sql_get_join_for_table( table_get( stringParent ) );
+         stringFrom += std::string_view{ " = " };
+         stringFrom += sql_get_join_for_table( &(*itTable), stringParent );
       }
 
       uTableIndex++;
@@ -972,25 +991,44 @@ std::string query::sql_get_insert() const
 std::string query::sql_get_update( unsigned uTableKey ) const
 {                                                                                                  assert( uTableKey == 0 || table_get_for_key(uTableKey) != nullptr ); assert( m_vectorTable.empty() == false );
    std::string stringUpdate;
-
    const auto ptable = &(*std::begin(m_vectorTable));
-   if( ptable->has( "schema" ) == true )
+   std::string_view stringTableAlias = ptable->alias(); // get table alias if found
+
+   if( table_size() == 1 )                                                    // single table update, just add table name, same for all databases
    {
-      stringUpdate += ptable->schema();
-      stringUpdate += ".";
-      stringUpdate += ptable->name();
+      if( ptable->has( "alias" ) == true ) { stringUpdate += ptable->alias(); }
+      else
+      {
+         if( ptable->has( "schema" ) == true )
+         {
+            stringUpdate += ptable->schema();
+            stringUpdate += ".";
+            stringUpdate += ptable->name();
+         }
+         else
+         {
+            stringUpdate += ptable->name();
+         }
+      }
    }
-   else
+   else if( m_eSqlDialect != eSqlDialectMySql && m_eSqlDialect != eSqlDialectMariaDB )
    {
-      stringUpdate += ptable->name();
+      if( ptable->has( "alias" ) == true ) { stringUpdate += ptable->alias(); }
+      else
+      {
+         if( ptable->has( "schema" ) == true )
+         {
+            stringUpdate += ptable->schema();
+            stringUpdate += ".";
+            stringUpdate += ptable->name();
+         }
+         else
+         {
+            stringUpdate += ptable->name();
+         }
+      }
    }
 
-   auto stringAlias = ptable->alias();                                        // alias for table, if found
-   if( stringAlias.empty() == false )
-   {
-      stringUpdate += " AS ";
-      stringUpdate += stringAlias;
-   }
 
    stringUpdate += "\nSET ";
 
@@ -1003,6 +1041,11 @@ std::string query::sql_get_update( unsigned uTableKey ) const
       if( uFieldIndex > 0 ) stringUpdate += ", ";
 
       // ### Add field name and value for update
+      if( stringTableAlias.empty() == false )
+      {
+         stringUpdate += stringTableAlias;
+         stringUpdate += ".";
+      }
       stringUpdate += itField->name();
       stringUpdate += std::string_view{ " = " };
       auto uType = itField->type();
@@ -1291,6 +1334,7 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          }
          else
          {
+            stringSql += std::string_view{ "UPDATE " };
             stringSql += sql_get_update_from_before();
             stringSql += sql_get_update( table_get_key() );
             stringSql += sql_get_update_from_after();

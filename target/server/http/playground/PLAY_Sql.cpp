@@ -199,6 +199,9 @@ TEST_CASE( "[sql] update", "[sql]" ) {
 
    {
       query q;
+
+      //q.sql_set_dialect(eSqlDialectMariaDB);
+
       q << table_g("users").as("u")
          << table_g("orders").as("o").parent("users")
               .join("u.id = o.user_id")
