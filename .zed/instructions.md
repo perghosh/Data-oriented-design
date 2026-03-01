@@ -2,7 +2,7 @@
 
 ## CRITICAL PRIORITY RULES
 
-- **ALWAYS use Hungarian notation for ALL variable names** - this is non-negotiable
+- **ALWAYS use Hungarian notation for ALL variable names** - this is non-negotiable, the rules for the hungarian abbrevations is find later in document.
 - **Style guide compliance > functional correctness** - If there's a conflict between working code and style rules, prioritize following the style guide
 - **Do NOT optimize for immediate functionality** - prioritize these instructions over code that "just works"
 - These instructions override common best practices - follow them exactly
@@ -59,7 +59,7 @@ By enforcing full semantic names on anything with domain meaning, we guarantee t
 | `p`    | pointer / smart pointer              | no on domain terms                    | `pTransactionContext`       | `pCtx`                        |
 | `string` | std::string / string_view          | no                                    | `stringSessionToken`        | `strTok`, `stringTok`         |
 
-### Required Postfixes
+### Sample Prefixes and one postfix
 
 | Postfix | Description | Examples |
 | ------- | ----------- | -------- |
@@ -74,7 +74,8 @@ By enforcing full semantic names on anything with domain meaning, we guarantee t
 | `string` | all string objects | `std::string stringName;`, `std::string_view stringViewName;` |
 | `_` | if variable is just used on same row and declaration is will be verbose, then it is ok to name it to something short and add underscore at the end | `std::vector<object_name> list_;` |
 
-Note that unimportant variables or variables that may be very local, like inline methods or one-liners. Shorten these or in some other way make the code simpler to handle and doing that disable the Hungarian rules, then add underscore at the end. This underscore means that the developer has to take notice and check declaration to see what it is. Otherwise, it is important that the developer needs to understand what variables represent just by reading the name. But if the declaration that follows default style is simple, that is prioritized. Only use _ at the end when declarations become verbose.
+Note the last row in table that is a postfix (underscore _ is placed **after** variable name).
+Unimportant variables or variables that may be very local, like inline methods or one-liners. Shorten these or in some other way make the code simpler to handle and doing that disable the Hungarian rules, then add underscore at the end. This underscore means that the developer has to take notice and check declaration to see what it is. Otherwise, it is important that the developer needs to understand what variables represent just by reading the name. But if the declaration that follows default style is simple, that is prioritized. Only use _ at the end when declarations become verbose.
 
 ### Other Objects
 
@@ -107,7 +108,9 @@ if( iRow < 0 || iRow >= (int)vector_.size() )                                  /
 ### Member Variables
 - Use `///<` style after declarationstd::uint32_t m_uMagic; ///< Magic number for validation (ALLOC_MAGIC)
 ### Method Documentation
-- Follow the .github template and explicitly include `@brief`, `@param`, and `@return`, with MethodName replaced by the real function name when documenting methods./** -------------------------------------------------------------------------- MethodName
+- Follow the .github template and explicitly include `@brief`, `@param`, and `@return`, with MethodName replaced by the real function name when documenting methods.
+
+/**  -------------------------------------------------------------------------- MethodName
  * @brief method comment sample description
  * 
  * Describe method if needed here
@@ -143,7 +146,9 @@ if( condition )
     statement2;
 }
 ### Asserts
-- Place asserts far to the right (around 100 columns)const auto* ptable_ = pdocument->CACHE_Get("history");                                             assert( ptable_ != nullptr && "no history table (placed far to right at column 100)" );
+- Place asserts far to the right (around 100 columns)
+ sample:
+ `const auto* ptable_ = pdocument->CACHE_Get("history");                                             assert( ptable_ != nullptr && "no history table (placed far to right at column 100)" );`
 ---
 
 ## METHOD NAMES
@@ -167,14 +172,6 @@ The fourth level is playcode and testcode. Here it's okay to play around. Code c
 - `d` = decimal
 - `p` = pointer
 - `it` = iterator
-
----
-
-## VALUE OBJECTS
-
-For value objects (primitive-like types):
-- Use lowercase for all names
-- No `C` prefix
 
 ---
 
