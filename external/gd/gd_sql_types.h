@@ -276,7 +276,7 @@ enum enumSqlPart : uint32_t
  */
 enum enumSql
 {
-   eSqlSelect = eSqlPartSelect | eSqlPartDistinct | eSqlPartFrom | eSqlPartWhere | eSqlPartOrderBy | eSqlPartGroupBy | eSqlPartWith | eSqlPartLimit,
+   eSqlSelect = eSqlPartSelect | eSqlPartDistinct | eSqlPartFrom | eSqlPartWhere | eSqlPartOrderBy | eSqlPartGroupBy | eSqlPartWith | eSqlPartLimit | eSqlPartReturning,
    eSqlInsert = eSqlPartInsert | eSqlPartInto | eSqlPartValues | eSqlPartReturning,
    eSqlUpdate = eSqlPartUpdate | eSqlPartWhere,
    eSqlDelete = eSqlPartDelete | eSqlPartFrom | eSqlPartWhere,

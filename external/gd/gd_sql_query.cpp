@@ -54,6 +54,7 @@ unsigned query::m_puPartOrder_s[] =
    eSqlPartHaving,
    eSqlPartOrderBy, 
    eSqlPartLimit,
+   eSqlPartReturning,
    0
 };
 
@@ -1297,6 +1298,14 @@ std::string query::sql_get_with() const
    return stringWith;
 }
 
+/** -------------------------------------------------------------------------- sql_get_returning
+ * @brief Build the RETURNING clause text based on explicit `returning()` text or fields marked as returning.
+ * 
+ * If `returning()` is a string, it is used verbatim. Otherwise, the method assembles a
+ * comma-separated list of returning fields, including table alias prefixes when present.
+ * 
+ * @return A string containing the RETURNING clause text (without keyword) or an empty string if none is configured.
+ */
 std::string query::sql_get_returning() const
 {
    std::string stringReturning; // returning section
@@ -1306,7 +1315,20 @@ std::string query::sql_get_returning() const
    if( retuning_.is_string() == true ) { stringReturning += retuning_.as_string_view(); }
    else
    {
-      //for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField
+      if( has_partreturning() == false ) return stringReturning;              // no returning fields, return empty string
+      // ## Add all returning fields
+      for( auto itField = std::begin(m_vectorField), itEndField = std::end(m_vectorField); itField != itEndField; ++itField )
+      {
+         if( itField->is_returning() == false ) [[likely]] continue;          // no returning field ?
+         if( stringReturning.empty() == false ) stringReturning += ", ";
+         const table* ptable = table_get_for_key(itField->get_table_key());                        assert(ptable != nullptr); // no table found for key indicates internal error for query object, this shouldn't happen
+         if( ptable->has("alias") == true )
+         {
+            stringReturning += ptable->alias();
+            stringReturning += ".";
+         }
+         stringReturning += itField->name();
+      }
    }
 
    return stringReturning;
@@ -1320,6 +1342,17 @@ std::string query::sql_get(enumSql eSql) const
 
 std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
 {
+#ifndef NDEBUG
+   // ## Check internal state that you havent forgot something when query is built.
+   unsigned uParts_d = 0;
+   for( auto it = field_begin(); it != field_end(); it++ )
+   {
+      uParts_d |= it->get_parttype();
+   }
+   assert( ( uParts_d & m_uAddedPartType ) == uParts_d );                      // check that all field part types are added to query, this is to make sure that you have called the method for adding the part type for all fields in query
+#endif // NDEBUG
+
+
    unsigned uSql = eSql;
    std::string stringSql;
    while( *puPartOrder != 0 )
