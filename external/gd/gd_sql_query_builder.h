@@ -151,7 +151,7 @@ _GD_SQL_QUERY_BEGIN
  * query << table_g("customers").schema("public").key("id").fk("customer_id");
  * @endcode
  */
-   struct table_builder
+struct table_builder
 {
    explicit table_builder( std::string_view stringName ) { m_arguments.append( "name", stringName ); }
    explicit table_builder( std::string_view stringName, std::string_view stringAlias ) { m_arguments.append( "name", stringName ); m_arguments.append( "alias", stringAlias ); }

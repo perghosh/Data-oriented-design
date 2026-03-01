@@ -515,6 +515,20 @@ void query::set_limit( std::size_t uOffset, std::size_t uCount )
    m_argumentsAttribute.set( "limit", stringLimit );
 }
 
+/*----------------------------------------------------------------------------- prepare */ /**
+ * Prepare query for execution, this is used to optimize query before execution, 
+ * for example by determining what parts of sql query are used in query and so on. 
+ * 
+ * This method should be called before executing query if query state is not updated.
+ */
+void query::prepare() 
+{
+   unsigned uAddedParts = 0;
+   for( auto it = field_begin(); it != field_end(); it++ ) { uAddedParts |= it->get_parttype(); }
+
+   m_uAddedPartType = uAddedParts;
+}
+
 
 
 std::string query::sql_get_join_for_table( const table* ptable, const table* ptableParent ) const
@@ -1360,6 +1374,11 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          break;
 
       case eSqlPartGroupBy:
+         if( has_partgroupby() == true )                                      // if group by is added (remember to update state for added parts)
+         {
+            auto stringGroupBy = sql_get_groupby();
+            if( stringGroupBy.empty() == false ) { stringSql += "\nGROUP BY "; stringSql += stringGroupBy; }
+         }
          break;
 
       case eSqlPartHaving:
@@ -1372,7 +1391,10 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          break;
 
       case eSqlPartOrderBy:
-         stringSql += sql_get_orderby( "\nORDER BY " );
+         if( has_partorderby() == true )
+         {
+            stringSql += sql_get_orderby( "\nORDER BY " );
+         }
          break;
 
       case eSqlPartLimit:
@@ -1380,7 +1402,10 @@ std::string query::sql_get(enumSql eSql, const unsigned* puPartOrder) const
          break;
 
       case eSqlPartReturning:
-         stringSql += sql_get_returning();
+         if( has_partreturning() == true )
+         {
+            stringSql += sql_get_returning();
+         }
          break;
 
       default:

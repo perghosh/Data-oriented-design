@@ -251,6 +251,7 @@ public:
 
       gd::argument::arguments::argument operator[](const std::string_view& stringName) const noexcept { return m_argumentsField[stringName]; }
 
+      unsigned get_parttype() const noexcept { return m_uUseAndType; }
       unsigned get_useandtype() const noexcept { return m_uUseAndType; }
       void set_useandtype( unsigned uSet, unsigned uClear ) { m_uUseAndType |= uSet; m_uUseAndType &= ~uClear;  }
       void set_useandtype( unsigned uType ) { m_uUseAndType = uType; }
@@ -392,6 +393,16 @@ public:
 public:
 /** \name GET/SET
 *///@{
+   [[nodiscard]] bool has_partgroupby() const noexcept { return (m_uAddedPartType & eSqlPartGroupBy) == eSqlPartGroupBy; }
+   [[nodiscard]] bool has_partorderby() const noexcept { return ( m_uAddedPartType & eSqlPartOrderBy ) == eSqlPartOrderBy; }
+   [[nodiscard]] bool has_partselect() const noexcept { return ( m_uAddedPartType & eSqlPartSelect ) == eSqlPartSelect; }
+   [[nodiscard]] bool has_partinsert() const noexcept { return ( m_uAddedPartType & eSqlPartInsert ) == eSqlPartInsert; }
+   [[nodiscard]] bool has_partupdate() const noexcept { return ( m_uAddedPartType & eSqlPartUpdate ) == eSqlPartUpdate; }
+   [[nodiscard]] bool has_partdelete() const noexcept { return ( m_uAddedPartType & eSqlPartDelete ) == eSqlPartDelete; }
+   [[nodiscard]] bool has_partfrom() const noexcept { return ( m_uAddedPartType & eSqlPartFrom ) == eSqlPartFrom; }
+   [[nodiscard]] bool has_partwhere() const noexcept { return ( m_uAddedPartType & eSqlPartWhere ) == eSqlPartWhere; }
+   [[nodiscard]] bool has_partreturning() const noexcept { return ( m_uAddedPartType & eSqlPartReturning ) == eSqlPartReturning; }
+
 
 //@}
 
@@ -525,6 +536,8 @@ public:
    gd::variant_view returning() const { return m_argumentsAttribute["returning"].get_variant_view(); }
    void set_returning( const std::string_view& stringReturning ) { m_argumentsAttribute.set( "returning", stringReturning ); }
 
+   /// Update internal query state
+   void prepare();
 
    /// Generate key values for internal data in query
    unsigned next_key() { return ++m_uNextKey; };
@@ -577,6 +590,7 @@ protected:
 public:
    enumSqlDialect m_eSqlDialect;    ///< sql dialect (brand) used to generate sql
    unsigned m_uNextKey = 0;         ///< used to generate keys
+   unsigned m_uAddedPartType = 0;   ///< used to track added part types
    unsigned m_uFormatOptions;       ///< How to format query, has flags from `enumFormat`
    std::vector<table> m_vectorTable;///< list of tables used to generate query
    std::vector<field> m_vectorField;///< list of fields used to generate query
