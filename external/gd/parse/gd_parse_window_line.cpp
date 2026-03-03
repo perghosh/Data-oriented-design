@@ -74,7 +74,7 @@ void line::common_construct(line&& o) noexcept
  * \endcode
  */
 void line::create() 
-{                                                                                                  assert( m_puBuffer == nullptr );  assert( m_uSize >= 64 ); // minimum size is 128 bytes
+{                                                                                                  assert( m_puBuffer == nullptr );  assert( m_uSize >= 64 ); // minimum size is 64 bytes
    reset(); // reset the line before creating it
    if( m_uCapacity == 0 ) m_uCapacity = m_uSize + (m_uSize >> 1);              // 50% extra space if not specified
                                                                                                    assert( m_uCapacity > m_uSize ); // capacity must be larger than size

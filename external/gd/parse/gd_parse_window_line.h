@@ -111,8 +111,8 @@ public:
    line(const line& o) { common_construct(o); }
    line(line&& o) noexcept { common_construct(std::move(o)); }
    // assign
-   line& operator=(const line& o) { common_construct(o); return *this; }
-   line& operator=(line&& o) noexcept { common_construct(std::move(o)); return *this; }
+   line& operator=(const line& o) { delete[] m_puBuffer; m_puBuffer = nullptr; common_construct(o); return *this; }
+   line& operator=(line&& o) noexcept { delete[] m_puBuffer; m_puBuffer = nullptr; common_construct(std::move(o)); return *this; }
 
    ~line() { delete [] m_puBuffer; }
 private:
