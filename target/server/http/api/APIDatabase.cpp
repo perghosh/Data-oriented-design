@@ -499,7 +499,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
          sqlbuilder.SetType( CSqlBuilder::eTypeInsert );
          CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
          sql_.Initialize();
-         result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{});
+         result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{});      // add record formated as json
          if( result_.first == false ) { return result_; }
 
          result_ = sql_.Prepare();
@@ -515,7 +515,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
          sqlbuilder.SetType( CSqlBuilder::eTypeUpdate );
          CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
          sql_.Initialize();
-         result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{} );
+         result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{} );     // add record formated as json
          if( result_.first == false ) { return result_; }
 
          if( sql_.CountPartType( CRENDERSql::ePartTypeWhere ) == 0 ) { return { false, "Invalid update: missing WHERE clause" }; }
@@ -524,6 +524,24 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
 
          std::string stringQuery;
          result_ = sql_.ToSqlUpdate( stringQuery );
+         if( result_.first == false ) { return result_; }
+         sqlbuilder = stringQuery;
+      }
+      else if( GetCommand() == "delete" )
+      {
+         sqlbuilder.SetType( CSqlBuilder::eTypeDelete );
+         CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
+
+         sql_.Initialize();
+         result_ = sql_.AddRecord( stringRecord, gd::types::tag_json{} );     // add record formated as json
+         if( result_.first == false ) { return result_; }
+
+         if( sql_.CountPartType( CRENDERSql::ePartTypeWhere ) == 0 ) { return { false, "Invalid update: missing WHERE clause" }; }
+
+         result_ = sql_.Prepare();
+
+         std::string stringQuery;
+         result_ = sql_.ToSqlDelete( stringQuery );
          if( result_.first == false ) { return result_; }
          sqlbuilder = stringQuery;
       }

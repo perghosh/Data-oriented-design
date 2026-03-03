@@ -389,16 +389,38 @@ std::pair<bool, std::string> CRENDERSql::ToSqlUpdate( std::string& stringQuery )
 
 std::pair<bool, std::string> CRENDERSql::ToSqlDelete( std::string& stringQuery )
 {
+   // ## Generate delete query ..............................................
+   std::array<std::byte, 256> buffer_;
+   gd::argument::arguments arguments_( buffer_ );
+
+   std::string stringTable = m_tableField.cell_get_variant_view(0u, "table", gd::table::tag_not_null{}).as_string();
+
+   gd::sql::query queryDelete( m_eSqlDialect, gd::sql::eSqlDelete, stringTable, gd::sql::tag_table{});
+
+   for( auto itRow = m_tableField.row_begin(); itRow != m_tableField.row_end(); ++itRow )
+   {
+      arguments_.clear();
+
+      uint32_t uType = itRow.cell_get_variant_view( "part_type" );
+      if( uType == uint32_t( ePartTypeWhere ) )
+      {
+         std::string stringColumn = itRow.cell_get_variant_view( "column", gd::table::tag_not_null{}).as_string();
+         uint32_t uType = itRow.cell_get_variant_view("type").as_uint();
+         auto value_ = itRow.cell_get_variant_view("value", gd::table::tag_not_null{});
+         uint32_t uOperator = itRow.cell_get_variant_view("operator").as_uint();
+         // ## Generate condition, name, value, type and operator are needed to generate condition for where part of query
+         arguments_.append( { { "name", stringColumn }, { "value", value_ }, { "type", uType }, { "operator", uOperator } }, gd::types::tag_view{});
+         queryDelete.condition_add( arguments_, gd::sql::tag_arguments{} );   // add condition to query
+      }
+   }
+
    // ## Generate insert query ..............................................
-   /*
+
    std::string stringDeleteSql;
-	stringDeleteSql += queryUpdate.sql_get_delete( vectorValue );
-	stringDeleteSql += "\nWHERE ";
-	//stringUpdateSql += gd::sql::query::where_get_s( vectorValue, m_eSqlDialect ).second;// append where clause from name value pairs
+	stringDeleteSql += queryDelete.sql_get( gd::sql::eSqlDelete );
 
    if( stringQuery.empty() == true ) stringQuery = std::move( stringDeleteSql );
    else stringQuery += "\n\n" + stringDeleteSql;
-   */
 
    return { true, "" };
 }
