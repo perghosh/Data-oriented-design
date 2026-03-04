@@ -1953,7 +1953,7 @@ arguments::const_pointer arguments::find( unsigned int uIndex ) const
  * \param stringName
  * \return gd::argument::arguments::const_pointer position to name if found, otherwise null
  */
-arguments::pointer arguments::find(const std::string_view& stringName)
+arguments::pointer arguments::find(std::string_view stringName)
 {
    for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
    {
@@ -1977,7 +1977,7 @@ arguments::pointer arguments::find(const std::string_view& stringName)
  * \param stringName
  * \return gd::argument::arguments::const_pointer position to name if found, otherwise null
  */
-arguments::const_pointer arguments::find(const std::string_view& stringName) const
+arguments::const_pointer arguments::find(std::string_view stringName) const
 {
    for( auto pPosition = next(); pPosition != nullptr; pPosition = next(pPosition) )
    {

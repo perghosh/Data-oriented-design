@@ -730,7 +730,7 @@ public:
       // Assignment operator - only pays cost when actually assigning
       template<typename T>
       argument_proxy& operator=(T&& value_) {
-         if(m_pPosition) { m_parguments->set(m_pPosition, argument(std::forward<T>(value_))); } // Update existing - find is already done
+         if(m_pPosition) { m_parguments->set(m_pPosition, gd::variant_view(std::forward<T>(value_))); } // Update existing - find is already done
          else if( m_stringName.empty() == false) { m_parguments->append(m_stringName, std::forward<T>(value_)); } // Append new - only happens on first assignment
          return *this;
       }
@@ -1311,8 +1311,8 @@ public:
 
    [[nodiscard]] pointer find(unsigned int uIndex);
    [[nodiscard]] const_pointer find(unsigned int uIndex) const;
-   [[nodiscard]] pointer find(const std::string_view& stringName);
-   [[nodiscard]] const_pointer find(const std::string_view& stringName) const;
+   [[nodiscard]] pointer find(std::string_view stringName);
+   [[nodiscard]] const_pointer find(std::string_view stringName) const;
    [[nodiscard]] const_pointer find(std::string_view stringName, const_pointer pOffsetPosition) const;
    [[nodiscard]] const_pointer find(const std::pair<std::string_view, gd::variant_view>& pairMatch) const;
    /// Find value within section
