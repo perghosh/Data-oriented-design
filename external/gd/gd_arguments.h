@@ -281,36 +281,49 @@ public:
    };
 
    /*-----------------------------------------*/ /**
-    * \brief One single type each supported value in variant
+    * \brief Enumeration of supported data types for arguments, combining base type identifiers with group flags.
     *
+    * This enum defines the complete type system used within the `arguments` class for representing
+    * various data types. Each enumerator combines a base type (from `enumCType`) with a group flag
+    * (from `enumGroup`) to categorize types into logical groups such as boolean, integer, decimal,
+    * string, or binary. This allows for efficient type checking and grouping operations.
     *
+    * The structure is: `eTypeName = eTypeNumberName | eGroupName`
+    *
+    * Where:
+    * - `eTypeNumberName` is the base type identifier (e.g., `eTypeNumberBool`)
+    * - `eGroupName` is the group classification (e.g., `eGroupBoolean`)
+    *
+    * Some types like `eTypePointer` and `eTypeUnknown` do not belong to a specific group and are
+    * defined without group flags.
+    *
+    * @see enumCType for base type definitions
+    * @see enumGroup for group classifications
     */
    enum enumType
    {
-      eTypeUnknown      = eTypeNumberUnknown,
-      eTypeBool         = eTypeNumberBool     | eGroupBoolean,
-      eTypeInt8         = eTypeNumberInt8     | eGroupInteger,
-      eTypeInt16        = eTypeNumberInt16    | eGroupInteger,
-      eTypeInt32        = eTypeNumberInt32    | eGroupInteger,
-      eTypeInt64        = eTypeNumberInt64    | eGroupInteger,
-      eTypeUInt8        = eTypeNumberUInt8    | eGroupInteger,
-      eTypeUInt16       = eTypeNumberUInt16   | eGroupInteger,
-      eTypeUInt32       = eTypeNumberUInt32   | eGroupInteger,
-      eTypeUInt64       = eTypeNumberUInt64   | eGroupInteger,
-      eTypeFloat        = eTypeNumberFloat    | eGroupDecimal,
-      eTypeDouble       = eTypeNumberDouble   | eGroupDecimal,
-      eTypePointer      = eTypeNumberPointer,
-      eTypeGuid         = eTypeNumberGuid     | eGroupBinary,
-      eTypeBinary       = eTypeNumberBinary   | eGroupBinary,
-      eTypeString       = eTypeNumberString   | eGroupString,
-      eTypeUtf8String   = eTypeNumberUtf8String | eGroupString,
-      eTypeWString      = eTypeNumberWString  | eGroupString,
-      eTypeUtf32String  = eTypeNumberUtf32String | eGroupString,
+      eTypeUnknown      = eTypeNumberUnknown,                    ///< Unknown or uninitialized type
+      eTypeBool         = eTypeNumberBool     | eGroupBoolean,   ///< Boolean type (true/false)
+      eTypeInt8         = eTypeNumberInt8     | eGroupInteger,   ///< 8-bit signed integer
+      eTypeInt16        = eTypeNumberInt16    | eGroupInteger,   ///< 16-bit signed integer
+      eTypeInt32        = eTypeNumberInt32    | eGroupInteger,   ///< 32-bit signed integer
+      eTypeInt64        = eTypeNumberInt64    | eGroupInteger,   ///< 64-bit signed integer
+      eTypeUInt8        = eTypeNumberUInt8    | eGroupInteger,   ///< 8-bit unsigned integer
+      eTypeUInt16       = eTypeNumberUInt16   | eGroupInteger,   ///< 16-bit unsigned integer
+      eTypeUInt32       = eTypeNumberUInt32   | eGroupInteger,   ///< 32-bit unsigned integer
+      eTypeUInt64       = eTypeNumberUInt64   | eGroupInteger,   ///< 64-bit unsigned integer
+      eTypeFloat        = eTypeNumberFloat    | eGroupDecimal,   ///< 32-bit floating-point number
+      eTypeDouble       = eTypeNumberDouble   | eGroupDecimal,   ///< 64-bit floating-point number
+      eTypePointer      = eTypeNumberPointer,                    ///< Pointer to memory (no group)
+      eTypeGuid         = eTypeNumberGuid     | eGroupBinary,    ///< Universally unique identifier (UUID)
+      eTypeBinary       = eTypeNumberBinary   | eGroupBinary,    ///< Binary data blob
+      eTypeString       = eTypeNumberString   | eGroupString,    ///< ASCII string
+      eTypeUtf8String   = eTypeNumberUtf8String | eGroupString,  ///< UTF-8 encoded string
+      eTypeWString      = eTypeNumberWString  | eGroupString,    ///< Wide character (Unicode) string
+      eTypeUtf32String  = eTypeNumberUtf32String | eGroupString, ///< UTF-32 encoded string
    };
-
-
-                                                                                 static_assert((int)eTypeNumberUInt64 == (int)variant_type::eTypeNumberUInt64); static_assert((int)eTypeNumberDouble == (int)variant_type::eTypeNumberDouble); static_assert((int)eTypeNumberBinary == (int)variant_type::eTypeNumberBinary);
-                                                                                 static_assert( (CType_MAX & eType_MASK) == 0 );
+                                                                                                   static_assert((int)eTypeNumberUInt64 == (int)variant_type::eTypeNumberUInt64); static_assert((int)eTypeNumberDouble == (int)variant_type::eTypeNumberDouble); static_assert((int)eTypeNumberBinary == (int)variant_type::eTypeNumberBinary);
+                                                                                                   static_assert( (CType_MAX & eType_MASK) == 0 );
 
    static const unsigned ARGUMENTS_NO_LENGTH = eTypeNumberGuid;
 

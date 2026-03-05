@@ -177,46 +177,71 @@ bool element::walk( const std::function<bool(element&)>& callbackVisitor )
 }
 */
 
-bool element::walk( const std::function<bool(const element&)>& callbackVisitor ) const
+/**  -------------------------------------------------------------------------- walk
+ * @brief Visit every descendant in document order
+ * @param callback_  Callable(element&) → bool; returning false stops early
+ * @return bool True if the entire tree was visited
+ */
+bool element::walk( const std::function<bool(const element&)>& callback_ ) const
 {
    for( const auto& pelement : m_vectorElement )
    {
-      if( callbackVisitor( *pelement ) == false )           { return false; }
-      if( pelement->walk( callbackVisitor ) == false )      { return false; }
+      if( callback_( *pelement ) == false )           { return false; }
+      if( pelement->walk( callback_ ) == false )      { return false; }
    }
    return true;
 }
 
 // ## private helpers ---------------------------------------------------------
 
+/**  -------------------------------------------------------------------------- equal_case_insensitive_s
+ * @brief Case-insensitive string equality check
+ * @param stringA   First string
+ * @param stringB   Second string
+ * @return bool     True if strings are equal ignoring case
+ */
 bool element::equal_case_insensitive_s( std::string_view stringA, std::string_view stringB ) noexcept
 {
    if( stringA.size() != stringB.size() ) { return false; }
    for( size_t u = 0; u < stringA.size(); ++u )
    {
-      if( std::tolower( (unsigned char)stringA[u] ) != std::tolower( (unsigned char)stringB[u] ) )
-      {
-         return false;
-      }
+      if( std::tolower( (unsigned char)stringA[u] ) != std::tolower( (unsigned char)stringB[u] ) ) { return false; }
    }
    return true;
 }
 
+/**  -------------------------------------------------------------------------- has_class_token_s
+ * @brief Check if a class list string contains a specific class token (token word must match exactly, not just as a substring)
+ * 
+ * @code
+ * // Sample usage of has_class_token_s to check if an element has a specific class token
+ * std::string stringClassList = "class1 class2 class3";
+ * std::string stringToken = "class2";
+ * bool hasToken = element::has_class_token_s( stringClassList, stringToken );
+ * @endcode
+ * 
+ * @param stringClassList  Space-separated list of class names
+ * @param stringToken      Class token to search for
+ * @return bool            True if the class token is found
+ */
 bool element::has_class_token_s( std::string_view stringClassList, std::string_view stringToken ) noexcept
 {
-   size_t uPos = 0;
-   while( uPos < stringClassList.size() )
+   size_t uPosition = 0;
+   while( uPosition < stringClassList.size() )
    {
-      while( uPos < stringClassList.size() && std::isspace( (unsigned char)stringClassList[uPos] ) )
+      while( uPosition < stringClassList.size() && std::isspace( (unsigned char)stringClassList[uPosition] ) ) { ++uPosition; } // skip leading whitespace
+
+      size_t uTokenStart = uPosition;
+      while( uPosition < stringClassList.size() && false == std::isspace( (unsigned char)stringClassList[uPosition] ) )
       {
-         ++uPos;
+         ++uPosition;
       }
-      size_t uTokenStart = uPos;
-      while( uPos < stringClassList.size() && !std::isspace( (unsigned char)stringClassList[uPos] ) )
-      {
-         ++uPos;
-      }
-      if( stringClassList.substr( uTokenStart, uPos - uTokenStart ) == stringToken ) { return true; }
+
+#ifndef NDEBUG
+      [[maybe_unused]] std::string_view stringCurrentToken_d = stringClassList.substr( uTokenStart, uPosition - uTokenStart );
+#endif // NDEBUG
+      
+      if( stringClassList.substr( uTokenStart, uPosition - uTokenStart ) == stringToken ) { return true; }
    }
    return false;
 }
@@ -395,11 +420,16 @@ std::string parser::read_attribute_value()
 
 // ## private – tag dispatch --------------------------------------------------
 
+/**  -------------------------------------------------------------------------- parse_tag
+ * @brief Dispatch to the appropriate tag handler based on the syntax following '<'
+ *
+ * Handles opening tags, closing tags, comments, declarations, and processing
+ * instructions. If the syntax is unrecognized, the tag is skipped.
+ */
 void parser::parse_tag()
-{
-   assert( !at_end() && current_char() == '<' );
+{                                                                                                  assert( !at_end() && current_char() == '<' );
    ++m_uPosition;                                                           // consume '<'
-   if( at_end() ) { return; }
+   if( at_end() == true ) { return; }
 
    if( current_char() == '/' )      { parse_closing_tag();            }
    else if( peek(3) == "!--" )      { parse_comment();                }

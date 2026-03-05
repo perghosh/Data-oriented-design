@@ -368,6 +368,8 @@ enum enumTypeNumber
    eTypeNumberWString      = 16,
    eTypeNumberUtf32String  = 17,
    eTypeNumberBinary       = 18,
+
+   // ## formatted types and less used types
    eTypeNumberJson         = 19,
    eTypeNumberXml          = 20,
    eTypeNumberCsv          = 21,
