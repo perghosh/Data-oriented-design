@@ -1,0 +1,500 @@
+<!--
+## User Edit Page (test)
+
+Importanbt data attributes are data-action, data-section. These are both used for
+command and simplify navigation in page.
+
+PAGE_ Method documentation:
+=========================
+
+PAGE_Initialize - Main initialization function that sets up the page, creates draggable elements and configures listeners
+PAGE_GenerateEditFields - Generates edit fields for the page
+PAGE_SetListeners - Configures event listeners for page interactions, handling actions like send and save
+PAGE_Update - Update UI elements
+PAGE_OnIdle - Handles idle state by updating UI elements and checking for changes
+PAGE_ProcessResponse - Processes the response from the server and updates the UI accordingly
+
+data-section documentation ====================================================
+
+data-section="container" - Container for the page content, can also be used to contain other elements within the page.
+data-section="select-users" - Container for the user selection
+data-section="edit-user-command" - Container for the command buttons used to edit user information
+data-section="user-search" - Container for the user search functionality
+
+data-action documentation =====================================================
+
+data-action="user-search" - Command for search for users based on a search term
+data-action="user-clear-active" - Command for clearing user selection
+data-action="user-add" - Command for adding a new user
+data-action="user-update" - Command for updating a user
+
+-->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/variables-corporate-blue.css">
+    <link rel="stylesheet" href="css/elements.css">
+    <link rel="stylesheet" href="css/input-effects.css">
+    <script src="js/gd_ui_toast.js"></script>
+    <script src="js/gd_ui_tablelite.js"></script>
+    <script src="js/gd_data_table.js"></script>
+    <script src="js/gd_db.js"></script>
+    <script src="js/gd_browser.js"></script>
+    <title>Login - Web Vote</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; justify-content: center; min-height: 100vh; padding: 20px; }
+        .container-result { margin-top: 10px; overflow-x: auto; max-height: 200px; overflow-y: auto; }
+        .container-result table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+        .container-result tbody tr { border-bottom: 1px solid var(--color-border); }
+        .container-result tbody tr:hover { background: var(--background-light-hover); }
+        .container-result td { cursor: pointer; padding: 5px 8px; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .container-result th { padding: 6px 8px; text-align: left; font-weight: 600; color: var(--color-body); border-bottom: 2px solid var(--color-border); }
+        .container-result thead { background: var(--background-light); position: sticky; top: 0; z-index: 1; }
+    </style>
+</head>
+<body>
+    <div id="idPage" class="page-container" data-section="container">
+
+        <form id="idUser" class="container-form" onsubmit="event.preventDefault();" style="width: 500px;" novalidate>
+           <!-- Search Bar -->
+           <div data-section="user-search" class="group" style="margin-bottom: 20px; margin-top: 0;">
+              <div class="row">
+                 <div style="flex: 1;">
+                    <label class="floating">
+                       <input type="text" placeholder=" " id="idSearchInput" data-field-type="user-search">
+                       <span>Search users</span>
+                    </label>
+                 </div>
+                 <button class="button" data-action="user-search" style="margin-left: 10px;">Search</button>
+              </div>
+           </div>
+
+           <div data-section="select-users" class="container-result"></div>
+           <div data-section="user-form"></div>
+           <div class="row" data-section="edit-user-command" style="justify-content: flex-end;">
+               <button class="button" data-action="user-clear-active" data-table="TUser">Clear</button>
+               <button class="button" data-action="user-add" data-table="TUser">Save as new</button>
+               <button class="button" style="visibility: hidden;" data-action="user-update" data-idle="user_key" data-table="TUser">Update</button>
+               <button class="button" style="visibility: hidden;" data-action="user-delete" data-idle="user_key" data-table="TUser">Delete</button>
+           </div>
+        </form>
+
+    </div>
+
+    <script>
+    'use strict';
+
+const aEditField = [
+   { field: "UserK", type: "string", key: true },
+   { label: "Alias", description: "Alias for user in system", field: "FAlias", type: "string", required: true },
+   { label: "User name", description: "Name for user in system", field: "FFirstName", type: "string", required: true },
+   { label: "Last name", description: "Last name for user in system", field: "FLastName", type: "string" },
+   { label: "Email", description: "Email for user in system", field: "FMail", type: "string", required: true },
+   { label: "Password", description: "Password for user in system", field: "FPassword", type: "string", required: true, input: "password", pattern: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$" },
+   { label: "Display Name", description: "Name for user in system", field: "FDisplayName", type: "string" },
+   { label: "Login name", description: "Login name for user in system", field: "FLoginName", type: "string" }
+];
+
+let oToast_g;
+let oDocument_g;
+
+
+document.addEventListener('DOMContentLoaded', function() {
+   console.log('Login page loaded successfully!');
+   PAGE_initialize();
+});
+
+/** --------------------------------------------------------------------------
+ * Initialize edit user page
+ */
+function PAGE_initialize() {
+   console.log('Initializing edit user page...');
+
+   // Initialize document object
+   oDocument_g = new CDocument;
+
+   const fnRead = function(sName, oRecord) {
+      const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
+      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
+      if( eField ) { this.SetValue( sName, eField.value ); }
+   };
+
+   const fnWrite = function(sName, oRecord) {
+      const eUserForm = document.querySelector('#idUser div[data-section="user-form"]');
+      const eField = eUserForm .querySelector(`[data-field="${sName}"]`);
+      if( eField ) { eField.value = this.GetValue(sName); }
+   };
+
+   let oRecord = new DBRecord([], { fnRead, fnWrite });
+   oRecord.table = "TUser";
+
+   oRecord.AddColumn( aEditField, {sLabel: "label", sDescription: "description", sName: "field", sType: "type", bKey: "key"} );
+   oRecord.AddColumn({ sName: "ContainerK", sType: "number", bFKey: true, default: 1}); // add key for users
+   oRecord.AddColumn({ sName: "OrganizationK", sType: "binary", bFKey: true, default: "00000000000000000000000000000000"}); // add for default organization
+
+
+   oDocument_g.AddRecord(oRecord);
+
+   // ## Generate input form for user .........................................
+   const eUserForm = document.getElementById('idUser').querySelector('div[data-section="user-form"]');
+   PAGE_GenerateEditFields(eUserForm, aEditField);
+
+   // ## Configure toast ............................................
+   oToast_g = new UIToast(document.body, { sPosition: 'top-right', iDuration: 3000 });
+
+   // ## Prepare base url .....................................................
+   const sBaseUrl = gd.GetBaseUrl();
+   gd.SetBaseUrl(sBaseUrl);
+
+   // ## Set listeners ........................................................
+   PAGE_SetListeners();
+
+   // ## Start idle timer - call PAGE_OnIdle() once per second
+   CDocument.iIdleTimerId_s = setInterval(PAGE_OnIdle, 1000);
+}
+
+/** ---------------------------------------------------------------------------
+ * Generates edit fields for the page
+ */
+function PAGE_GenerateEditFields( eContainer, aEditField ) {
+   aEditField.forEach(oField => {
+      if( !oField.label ) return;
+
+      const div = document.createElement('div');
+      div.className = 'group';
+      div.style.marginTop = '20px';
+
+      const label = document.createElement('label');
+      label.className = 'floating';
+
+      const eInput = document.createElement('input');
+      eInput.type = oField.input || 'text';
+      eInput.placeholder = ' ';
+      eInput.required = oField.required;
+      //if( oField.pattern ) { eInput.pattern = oField.pattern; }
+      eInput.dataset.field = oField.field;
+
+      // generate random value
+      eInput.value = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+      const eSpan = document.createElement('span');
+      eSpan.textContent = oField.label;
+
+      label.appendChild(eInput);
+      label.appendChild(eSpan);
+      div.appendChild(label);
+      eContainer.appendChild(div);
+   });
+}
+
+/** --------------------------------------------------------------------- @API [tag: event, command]
+ * Configure page listeners, handle page specific events
+ */
+function PAGE_SetListeners() {
+
+   // ## Initialize page work area listener .............................
+
+   const eUserContainer = document.getElementById('idUser');
+   eUserContainer.addEventListener("click", function(e_) {
+      const eTarget = e_.target;
+
+      if( eTarget.tagName === "TD" && eTarget.parentNode.dataset.key ) {
+         e_.stopPropagation();
+         const sKey = eTarget.parentNode.dataset.key;
+         const sSelect = "SELECT FAlias, FFirstName, FLastName, FMail, FPassword, FDisplayName, FLoginName FROM TUser WHERE UserK = x{UserK}";
+         const sArguments = `query=${sSelect}`+ "\n" + `values=${JSON.stringify({ UserK: sKey })}`;
+         gd.SendToServer("", "!db/select?", sArguments).then(function(oResult) {
+            const aUserResult = JSON.parse( oResult.data.querySelector("result").textContent );
+            const oDBRecord = oDocument_g.GetRecord( "TUser" );                                    console.assert( oDBRecord, "oDBRecord is null" );
+            oDBRecord.ClearValues();
+            if( aUserResult.length > 1) {
+               oDBRecord.SetValue( aUserResult );                              // first row is column names, set values from the result
+               oDBRecord.SetKeyValue( sKey );
+               oDBRecord.WriteValues();
+            }
+
+            PAGE_Update();
+         });
+         return;
+      }
+
+
+      if(!eTarget.dataset.action) return;                             // If no action is defined, return
+      e_.stopPropagation();
+      const eContainer = eTarget.closest('[data-section="container"]');
+      const sAction = eTarget.dataset.action;
+
+      // ## User table record and action .....................................
+      const oDBRecord = oDocument_g.GetRecord( "TUser" );                                          console.assert( oDBRecord, "oDBRecord is null" );
+
+      oDBRecord.ReadValues();
+
+      switch(sAction) {
+         case "user-search": {
+            const sSelect = "SELECT hex(UserK) id, FAlias alias, FFirstName name, FLastName lastname FROM TUser WHERE FAlias LIKE ''%{=name}%'' OR FFirstName LIKE ''%{=name}%'' OR FLastName LIKE ''%{=name}%'' ORDER BY FAlias";
+            const sSearchValue = eContainer.querySelector('[data-field-type="user-search"]').value;
+            const sArguments = `query=${sSelect}` + "\n" + `values=${JSON.stringify({name: sSearchValue})}`;
+
+            oToast_g.Show('Skickar sökning!');
+            gd.SendToServer("", "!db/select?echo=user", sArguments).then(function(oResult) {
+               PAGE_ProcessResponse(oResult, "select-users");
+            });
+         } break;
+         case "user-add": {                                                 // send command to wed server
+
+            const sValues = JSON.stringify(oDBRecord.GetFilledValues());
+            const sJson = `{ "table": "TUser", "values": ${sValues}, "returning": "UserK" }`;
+            const sArguments = `record=${sJson}`;
+            gd.SendToServer("", "!db/insert?", sArguments).then(function(oResult) {
+               PAGE_ProcessResponse(oResult, "user");
+            });
+         } break;
+         case "user-update": {                                                  // save command
+            const sValues = JSON.stringify(oDBRecord.GetAllValues());
+            const key = oDBRecord.GetKeyValue();
+            const sWhere = `{"UserK": "${key}"}`;
+            const sJson = `{ "table": "TUser", "values": ${sValues}, "where": ${sWhere} }`;
+            const sArguments = `record=${sJson}`;
+
+            /*
+
+            const sUserKey = oDBRecord.GetKeyValue();
+            const sUpdate = "UPDATE TUser SET FAlias = {FAlias}, FFirstName = {FFirstName}, FLastName = {FLastName}, FMail = {FMail}, FPassword = {FPassword}, FDisplayName = {FDisplayName}, FLoginName = {FLoginName} WHERE UserK = x''{=UserK}''";
+            const sValues = JSON.stringify(oDBRecord.GetAllValues());
+            const sArguments = `query=${sUpdate}` + "\n" + `values=${sValues}`;
+
+            oToast_g.Show('Update user ' + oDBRecord.GetValue("FAlias") );
+            */
+
+            gd.SendToServer("", "!db/update?", sArguments).then(function(oResult) {
+               const iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+               if(iCount !== 0) { oToast_g.Show('User updated successfully'); }
+               else { oToast_g.Show('Failed to update user'); }
+            });
+         } break;
+         case "user-delete": {                                                     // delete command
+            // Get key for active user that is found in DBRecord
+            const sUserKey = oDBRecord.GetKeyValue();
+            const sArguments = `query=DELETE FROM TUser WHERE UserK = x''{=UserK}''` + "\n" + `values=${JSON.stringify({UserK: sUserKey})}`;
+
+
+            oToast_g.Show('User key ' + sUserKey);
+            gd.SendToServer("", "!db/delete?echo=user", sArguments).then(function(oResult) {
+               const iCount = JSON.parse(oResult.data.querySelector("result").textContent).count;
+               if(iCount !== 0) {
+                  oToast_g.Show('User deleted successfully');
+                  oDBRecord.ClearValues();
+                  document.getElementById('idUser').querySelectorAll("[data-field]").forEach(eInput => eInput.value = "");
+
+                  let oTable = oDocument_g.GetTable("user-search");                // get search-users table
+                  if( oTable ) {                                              // if table exists make sure record in result is deleted
+                     let iDeleted = oTable.Delete( { id: sUserKey } );
+                     if(iDeleted > 0) {
+                        //oToast_g.Show('Deleted ' + iDeleted + ' rows from search table');
+                     }
+                  }
+
+                  PAGE_Update();
+               }
+               else { oToast_g.Show('Failed to delete user'); }
+
+               PAGE_Update();
+            });
+         } break;
+         case "user-clear-active": {                                                 // clear users will empty form values for user edit
+            oDBRecord.ClearValues();
+            oDBRecord.WriteValues();
+            PAGE_Update();
+         } break;
+         default:
+            console.error("Unknown action:", sAction);
+      }
+   });
+}
+
+/** ---------------------------------------------------------------------
+ * Handle response data from server and display it in the container
+ *
+ * Response data format is { type: <format>, data: <data> } and type can be any of
+ * json, xml or text. "type" is the format of the data, e.g. "json", "xml", "text"
+ *
+ * @param {object} oData - The response data to process, format is { type: <format>, data: <data> }
+ * @param {string} sOperation - The operation that was performed
+ */
+function PAGE_ProcessResponse(oData, sOperation) {
+   let sResult = '';
+   let eResults = null; // results element from xml responses with results/result format
+
+   switch(oData.type) {
+      case 'json':
+         sResult = JSON.stringify(oData.data, null, 2);
+         break;
+      case 'xml':
+         // If oData.data is an XML Document object, serialize it to string
+         if (oData.data instanceof XMLDocument || oData.data.nodeType === 9) {
+            //sResult = (new XMLSerializer()).serializeToString(oData.data);
+
+            // ## query results element
+            eResults = oData.data.querySelector('results');                   // get results element holding result elements
+         } else {
+            // If it's already a string, use it directly
+            sResult = oData.data;
+         }
+         break;
+      case 'text':
+         sResult = oData.data;
+         break;
+      default:
+         console.error("Unknown response type:", oData.type);
+   }
+
+   if( eResults ) {
+      if( sOperation === "meta" ) {
+
+      }
+      else if( sOperation === "user" ) {
+
+         // ## Extract the generated user key
+         const eInsert = eResults.querySelector('result[command="insert"]');
+         const oUser = JSON.parse( eInsert.textContent );
+         const oDBRecord = oDocument_g.GetRecord( "TUser" );                                      console.assert( oDBRecord, "oDBRecord is null" );
+         const iCount = Object.keys(oUser).length;
+         if( iCount === 1 ) { oDBRecord.SetKeyValue( Object.values(oUser)[0] ); }
+         else { oDBRecord.SetKeyValue( oUser.key ); }
+
+         const aAsk = eResults.querySelectorAll('result[command="ask"]');
+         if( aAsk.length !== 0 ) {
+            // parse content to json object
+            const oContent = JSON.parse(aAsk[0].textContent);
+
+            const sMessage = "Användare skapad med alias: " + oContent.FAlias;
+            oToast_g.Show(sMessage, {sType: "info", minWidth: "600px"});
+         }
+         PAGE_Update();
+      }
+      else if( sOperation === "select-users" ) {
+         const eSelect = eResults.querySelector('result[command="select"]');   // get result from select query finding users
+         const aUser = JSON.parse( eSelect.textContent );
+         aUser.shift();                                                         // remove first row from aUser that is columns
+
+
+         let oTable = oDocument_g.GetTable("user-search");
+         if (!oTable) {
+            oTable = new Table( ["id", "alias", "name", "lastname"], {sName: "user-search"} );
+            oDocument_g.AddTable(oTable);
+         }
+         else {
+            oTable.Clear();
+         }
+
+         // loop array and add rows to table
+         for (const aRow of aUser) {  oTable.Add( aRow ); }
+
+         PAGE_Update("user-search");
+      }
+      else {
+         console.assert( false, "sOperation is unknown" );
+      }
+   }
+}
+
+/** ---------------------------------------------------------------------------
+ * Update UI elements
+ */
+function PAGE_Update( sType ) {
+   if( sType === undefined || sType === "user-search" ) {
+      const oTable = oDocument_g.GetTable("user-search");
+      if( oTable ) {
+         const eSelectUser = document.getElementById("idUser").querySelector('[data-section="select-users"]');
+         eSelectUser.innerHTML = "";
+
+         // callback used for selecting a user
+         const fnSelectUser = (sEvent, oParameter) => {
+            //console.log( sEvent, oParameter );
+            if( sEvent === "row" ) {
+               const iRow = oParameter.iOriginalIndex;
+               const eRow = oParameter.eRow;
+               const sKey = oTable.GetCell(iRow, 0);
+               eRow.dataset.key = sKey;
+            }
+         };
+
+         const oUITable = new UITableLite( eSelectUser, oTable, { iSort: 0, aColumns: [1,2,3], bHeader: true, bIndices: true, fnCallback: fnSelectUser } );
+         oUITable.Render();
+      }
+   }
+
+   // ## Updaate based on DBRecord for TUser holds key value or not
+   const oDBRecordUser = oDocument_g.GetRecord( "TUser" );
+   const bUserHasKey = oDBRecordUser.HasKeyValue();
+
+   const eUser = document.getElementById("idUser");
+
+   const aUserButtons = eUser.querySelectorAll("[data-idle='user_key']");
+
+   if( bUserHasKey === true ) {
+      aUserButtons.forEach( eButton => { eButton.style.visibility = "visible"; });
+   }
+   else { aUserButtons.forEach( eButton => { eButton.style.visibility = "hidden"; }); }
+}
+
+
+
+
+
+/** -------------------------------------------------------------------------- @API [tag: onidle]
+ * Handles idle state by updating UI elements and checking for changes
+ */
+const PAGE_OnIdle = (function() {
+   var bLastModified = false;
+
+   return function() {
+      const bModified = oDocument_g.IsModified();
+
+      if( bModified !== bLastModified ) {
+         PAGE_Update();
+
+         bLastModified = bModified;
+      }
+   }
+})();
+
+
+class CDocument {
+
+   static iIdleTimerId_s = null; // Global timer ID for idle callback
+
+   constructor( oOptions = {} ) {
+      this.bModified = false; // Initialize modified flag to false
+      this.aRecords = []; // Initialize records array to empty, holds DBRecord objects
+      this.aTable = []; // Initialize table array to empty, holds Table objects
+   }
+
+   // Check if document has been modified -------------------------------------
+   IsModified() { return this.bModified; }
+   // Set modified flag to true or false --------------------------------------
+   SetModified(bModified) { this.bModified = bModified; }
+
+   // Add a record to the document --------------------------------------------
+   AddRecord(oRecord) { this.aRecords.push(oRecord); }
+
+   // Get a record by table name ----------------------------------------------
+   GetRecord( sTable ) {
+      return this.aRecords.find(oRecord => oRecord.table === sTable);
+   }
+
+   AddTable( oTable ) { this.aTable.push(oTable); }
+
+   GetTable( sTable ) {
+      return this.aTable.find(oTable => oTable.name === sTable);
+   }
+}
+    </script>
+</body>
+</html>

@@ -1,91 +1,310 @@
-// @FILE [tag: binary] [description: Handle xml and html documents] [type: header] [name: gd_tools_html_document.h]
-
+// @FILE [tag: html,dom,parser] [description: HTML/XML document model and fast single-pass parser] [type: header] [name: gd_tools_html_document.h]
 
 #pragma once
 
 #include <array>
+#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <type_traits>
 
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
 
-
 #ifndef _GD_TOOLS_HTML_BEGIN
-#define _GD_TOOLS_HTML_BEGIN namespace gd { namespace tools { namespace html {
-#define _GD_TOOLS_HTML_END } } }
+#  define _GD_TOOLS_HTML_BEGIN namespace gd { namespace tools { namespace html {
+#  define _GD_TOOLS_HTML_END   } } }
 #endif
 
 _GD_TOOLS_HTML_BEGIN
 
-/**
- * \brief 
- *
- *
+// ============================================================================
+// @CLASS [tag: element] [summary: Single node in the HTML/XML DOM tree]
+// Stores the tag name, text content, attributes, children, and a back-pointer
+// to the parent. Ownership of children flows downward (unique_ptr).
+// ============================================================================
+
+/** ------------------------------------------------------------------------- element
+ * Represents a tree node for XML/HTML-like document structures, supporting hierarchical elements with attributes and text content.
  */
-struct element {
+struct element
+{
    element() = default;
-   explicit element(std::string_view stringName) : m_stringName(stringName) {}
-   
-   // copy
-   element( const element& o ) { common_construct( o ); }
-   element( element&& o ) noexcept { common_construct( std::move( o ) ); }
-   // assign
+   explicit element( std::string_view stringName ) : m_stringName( stringName ) {}
+   explicit element( std::string_view stringName, std::string_view stringContent ): m_stringName( stringName ), m_stringContent( stringContent ) {}
+
+   // copy / move
+   element( const element& o )            { common_construct( o ); }
+   element( element&& o ) noexcept        { common_construct( std::move( o ) ); }
    element& operator=( const element& o ) { common_construct( o ); return *this; }
-   
-   ~element() {}
-   
+   element& operator=( element&& o ) noexcept
+   {
+      if( this != &o )
+      {
+         m_stringName         = std::move( o.m_stringName );
+         m_stringContent      = std::move( o.m_stringContent );
+         m_pelementParent     = o.m_pelementParent;
+         m_vectorElement      = std::move( o.m_vectorElement );
+         m_argumentsAttribute = std::move( o.m_argumentsAttribute );
+         o.m_pelementParent   = nullptr;
+      }
+      return *this;
+   }
+   ~element() = default;
+
    void common_construct( const element& o );
 
-// ## operators ---------------------------------------------------------------
-   
-   element* operator[]( size_t uIndex ) { return m_vectorElement[uIndex].get(); }
+// ## index operators ---------------------------------------------------------
+   element*       operator[]( size_t uIndex )       { return m_vectorElement[uIndex].get(); }
    const element* operator[]( size_t uIndex ) const { return m_vectorElement[uIndex].get(); }
-   
-   
-   
-// ## getters/setter  ---------------------------------------------------------
 
-   element* parent() const { return m_pelementParent; }
-   void set_parent( element* pelementParent ) { m_pelementParent = pelementParent; }
-   
-// ## methods -----------------------------------------------------------------
+// ## getters / setters -------------------------------------------------------
+   std::string_view  name()    const noexcept { return m_stringName; }
+   std::string_view  content() const noexcept { return m_stringContent; }
+   element*          parent()  const noexcept { return m_pelementParent; }
 
-   element* add(std::unique_ptr<element> pelementChild);
-   void add_attribute( std::string_view stringName, std::string_view stringContent );
+   void set_parent( element* pelementParent )         { m_pelementParent = pelementParent; }
+   void set_content( std::string_view stringContent ) { m_stringContent  = stringContent;  }
+   void append_content( std::string_view stringText );
 
+// ## child management --------------------------------------------------------
+   element* add( std::unique_ptr<element> pelementChild );
 
-   element* at( size_t uIndex ) { return m_vectorElement[uIndex].get(); }
+   /// Reserve space for expected child count to avoid reallocations
+   void reserve( size_t uChildCount ) { m_vectorElement.reserve( uChildCount ); }
+
+   element*       at( size_t uIndex )       { return m_vectorElement[uIndex].get(); }
    const element* at( size_t uIndex ) const { return m_vectorElement[uIndex].get(); }
-   element* front() { return m_vectorElement.front().get(); }
-   const element* front() const { return m_vectorElement.front().get(); }
-   element* back() { return m_vectorElement.back().get(); }
-   const element* back() const { return m_vectorElement.back().get(); }
-   size_t size() const noexcept { return m_vectorElement.size(); }
-   
+   element*       front()                   { return m_vectorElement.front().get(); }
+   const element* front() const             { return m_vectorElement.front().get(); }
+   element*       back()                    { return m_vectorElement.back().get(); }
+   const element* back()  const             { return m_vectorElement.back().get(); }
+   size_t         size()  const noexcept    { return m_vectorElement.size(); }
+   size_t         size_all() const noexcept;
+   bool           empty() const noexcept    { return m_vectorElement.empty(); }
 
-/** \name DEBUG
- *///@{
-   
-//@}
+// ## attribute management ----------------------------------------------------
+   void             add_attribute( std::string_view stringName, std::string_view stringContent );
+   std::string_view get_attribute( std::string_view stringName ) const { return m_argumentsAttribute[stringName].as_string_view(); }
+   bool             has_attribute( std::string_view stringName ) const { return m_argumentsAttribute.exists( stringName ); }
+   void             remove_attribute( std::string_view stringName ) { m_argumentsAttribute.remove( stringName ); }
+   size_t           size_attribute() const noexcept { return m_argumentsAttribute.size(); }
 
-// ## attributes ------Name-----------------------------------------------------
-   std::string m_stringName;
-   std::string m_stringContent;
-   element*    m_pelementParent = nullptr;
-   std::vector<std::unique_ptr<element>> m_vectorElement;
-   gd::argument::shared::arguments m_argumentsAttribute;
-   
-// ## free functions ----------------------------------------------------------
+   auto             attributes() const noexcept { return m_argumentsAttribute.named(); }
 
+// ## traversal -------------------------------------------------------------
+
+   /** ----------------------------------------------------------------------- find
+    * @brief First depth-first descendant whose tag name matches (case-insensitive)
+    * @param stringTag Tag name to search for
+    * @return element* First matching element, or nullptr
+    */
+   element*       find( std::string_view stringTag );
+   const element* find( std::string_view stringTag ) const;
+
+   /** -------------------------------------------------------------------------- find_all
+    * @brief Collect every descendant whose tag name matches (case-insensitive)
+    * @param stringTag        Tag name to search for
+    * @param vectorResult     Accumulator — matching pointers are appended here
+    */
+   void find_all( std::string_view stringTag, std::vector<element*>& vectorResult );
+   void find_all( std::string_view stringTag, std::vector<const element*>& vectorResult ) const;
+
+   /** -------------------------------------------------------------------------- find_by_id
+    * @brief First descendant (or self) where attribute `id` equals the given value
+    * @param stringIdValue  The id value to match (case-sensitive)
+    * @return element*      First matching element, or nullptr
+    */
+   element*       find_by_id( std::string_view stringIdValue );
+   const element* find_by_id( std::string_view stringIdValue ) const;
+
+   /** -------------------------------------------------------------------------- find_by_class
+    * @brief Collect descendants whose `class` attribute contains the token
+    * @param stringClassName  Single class token (not a selector list)
+    * @param vectorResult     Accumulator
+    */
+   void find_by_class( std::string_view stringClassName, std::vector<element*>& vectorResult );
+   void find_by_class( std::string_view stringClassName, std::vector<const element*>& vectorResult ) const;
+
+   /** -------------------------------------------------------------------------- walk
+    * @brief Visit every descendant in document order
+    * @param callbackVisitor  Called with (element&); return false to stop traversal
+    * @return bool  True if the full tree was visited, false if cut short
+    */
+   //bool walk( const std::function<bool(element&)>& callbackVisitor );
+   bool walk( const std::function<bool(const element&)>& callbackVisitor ) const;
+
+// ## member variables --------------------------------------------------------
+   std::string                             m_stringName;               ///< Tag name e.g. "div", "record"
+   std::string                             m_stringContent;            ///< Accumulated text content
+   element*                                m_pelementParent = nullptr; ///< Non-owning back-pointer
+   std::vector<std::unique_ptr<element>>   m_vectorElement;            ///< Owned child nodes
+   gd::argument::shared::arguments         m_argumentsAttribute;       ///< Attribute key→value store
+
+private:
+   /// Case-insensitive ASCII equality ---------------------------------------- equal_case_insensitive_s
+   static bool equal_case_insensitive_s( std::string_view stringA, std::string_view stringB ) noexcept;
+
+   /// True if `stringClassList` contains `stringToken` as a whole word ------- has_class_token_s
+   static bool has_class_token_s( std::string_view stringClassList, std::string_view stringToken ) noexcept;
 };
 
+
+// ============================================================================
+// @CLASS [tag: document] [summary: Owns the root element and exposes query API]
+// ============================================================================
+
+struct document
+{
+   document()  = default;
+   ~document() = default;
+
+   document( document&& o ) noexcept : m_pelementRoot( std::move( o.m_pelementRoot ) ) {}
+   document& operator=( document&& o ) noexcept
+   {
+      if( this != &o ) { m_pelementRoot = std::move( o.m_pelementRoot ); }
+      return *this;
+   }
+
+   bool     is_valid() const noexcept { return m_pelementRoot != nullptr; }
+   element* root()     const noexcept { return m_pelementRoot.get(); }
+
+   element*       find( std::string_view stringTag );
+   const element* find( std::string_view stringTag ) const;
+
+   std::vector<element*>       find_all( std::string_view stringTag );
+   std::vector<const element*> find_all( std::string_view stringTag ) const;
+
+   element*       find_by_id( std::string_view stringIdValue );
+   const element* find_by_id( std::string_view stringIdValue ) const;
+
+// ## member variables --------------------------------------------------------
+   std::unique_ptr<element> m_pelementRoot;                              ///< Synthetic root that owns the tree
+};
+
+
+// ============================================================================
+// @CLASS [tag: parse_mode] [summary: Controls parser strictness and void-element behaviour]
+//
+// eParseModeHtml — HTML5 mode. The built-in void-element table is consulted so
+//                 `<br>`, `<img>`, `<input>` etc. never push onto the open-
+//                 element stack. Lenient close-tag matching is always active.
+//
+// eParseModeXmlLenient — For any XML dialect where end-tags may be absent. The void-
+//                 element table is entirely ignored; every element without an
+//                 explicit `/>` or matching close-tag remains open and becomes
+//                 the parent of whatever follows. EOF closes all open elements
+//                 silently, leaving a valid tree.
+//
+// eParseModeXmlStrict — Reserved for future use. Currently behaves like
+//                 eParseModeXmlLenient. A later version will populate a diagnostic
+//                 list for mismatched or missing close-tags.
+// ============================================================================
+enum class enumParseMode : uint8_t
+{
+   eParseModeHtml       = 0,  ///< HTML5: void elements self-close, lenient close-tag matching
+   eParseModeXmlLenient = 1,  ///< XML: end-tags may be absent — void-element table is skipped
+   eParseModeXmlStrict  = 2,  ///< Well-formed XML — reserved; today behaves like e_xml_lenient
+};
+
+
+// ============================================================================
+// @CLASS [tag: parser] [summary: Fast single-pass HTML/XML tokeniser]
+//
+// Design goals
+// ────────────
+// • Single forward pass — the source string_view is never copied
+// • Tag names are interned from a compact sorted table for the ~80 most
+//   common HTML tags; unknown tags get a single std::string allocation
+// • Element stack lives on a pre-reserved vector — no per-level heap alloc
+// • Attributes are accumulated into the element in-place
+// • Void-element table is only consulted in e_html mode (O(log N) lookup)
+//
+// @NOTE Thread safety: not thread-safe. Use one parser instance per thread.
+// ============================================================================
+class parser
+{
+public:
+   parser() { m_vectorElementStack.reserve( 64 ); }
+
+   /// Set the parsing mode before calling parse() ---------------------------- set_mode
+   void set_mode( enumParseMode eMode ) noexcept { m_eParseMode = eMode; }
+
+   /// Return the currently active mode --------------------------------------- mode
+   enumParseMode mode() const noexcept { return m_eParseMode; }
+
+   /** -------------------------------------------------------------------------- parse
+    * @brief Parse raw HTML/XML text and return a populated document
+    * @param stringSource  Full source text (must remain valid for the duration of this call)
+    * @return document     Populated tree; check is_valid() before use
+    */
+   document parse( std::string_view stringSource );
+
+private:
+// ## parser state ------------------------------------------------------------
+   std::string_view      m_stringSource;                                   ///< View into the source being parsed
+   size_t                m_uPosition       = 0;                            ///< Current read cursor
+   element*              m_pelementCurrent = nullptr;                      ///< Node currently being populated
+   std::vector<element*> m_vectorElementStack;                             ///< Open-element stack (non-owning views)
+   enumParseMode         m_eParseMode      = enumParseMode::eParseModeHtml;///< Active parsing mode
+
+// ## helpers – position / character access -----------------------------------
+
+   /// True when the cursor has reached the end of the source ----------------- at_end
+   bool at_end() const noexcept { return m_uPosition >= m_stringSource.size(); }
+
+   /// Current character — call at_end() first -------------------------------- current_char
+   char current_char() const noexcept { return m_stringSource[m_uPosition]; }
+
+   /// Peek up to `uLength` characters ahead without advancing --------------- peek
+   std::string_view peek( size_t uLength ) const noexcept
+   {
+      return m_stringSource.substr( m_uPosition,
+             std::min( uLength, m_stringSource.size() - m_uPosition ) );
+   }
+
+   void             skip_whitespace() noexcept;
+   void             skip_until( char iStop ) noexcept;
+   std::string_view read_name_view() noexcept;    ///< Returns a view into m_stringSource — zero copy
+   std::string      read_attribute_value();
+
+// ## tag dispatch ------------------------------------------------------------
+   void parse_tag();
+   void parse_opening_tag();
+   void parse_closing_tag();
+   void parse_comment();
+   void parse_declaration();
+   void parse_processing_instruction();
+   void parse_text();
+   void parse_attributes( element& elementTarget );
+
+// ## utilities ---------------------------------------------------------------
+
+   /// Intern common tag names to avoid per-element heap allocations ---------- intern_tag_s
+   static std::string_view intern_tag_s( std::string_view stringRaw ) noexcept;
+
+   /// True for HTML void elements — only called when mode is e_html ---------- is_void_element_s
+   static bool is_void_element_s( std::string_view stringTag ) noexcept;
+
+   /// Case-insensitive ASCII equality ---------------------------------------- equal_case_insensitive_s
+   static bool equal_case_insensitive_s( std::string_view stringA, std::string_view stringB ) noexcept;
+
+// ## static tables -----------------------------------------------------------
+
+   // @NOTE Both arrays must remain sorted — lower_bound depends on it
+   static constexpr std::array<std::string_view, 14> m_arrayVoidElements = { {
+      "area","base","br","col","embed","hr","img","input", "link","meta","param","source","track","wbr"
+   } };
+
+   static const std::array<std::string_view, 94>& interned_tag_table() noexcept;
+};
 
 _GD_TOOLS_HTML_END
