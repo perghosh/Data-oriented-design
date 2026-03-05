@@ -44,6 +44,7 @@ TEST_CASE( "[html] load", "[html]" ) {
    auto uCount =  documentHtml.root()->size_all();
 
    // ## walk elments
+   /*
    documentHtml.root()->walk( []( const element& elementCurrent ) -> bool
    {
       std::cout << "Element: " << elementCurrent.name() << ", content: " << elementCurrent.content() << "\n";
@@ -53,5 +54,16 @@ TEST_CASE( "[html] load", "[html]" ) {
       }
       return true;
    } );
+   */
+
+   for( auto it = documentHtml.root()->tree_begin(); it != documentHtml.root()->tree_end(); ++it )
+   {
+      const element& elementCurrent = *it;
+      std::cout << "Element: " << elementCurrent.name() << ", content: " << elementCurrent.content() << "\n";
+      for( const auto& [name_, value_] : elementCurrent.attributes() )
+      {
+         std::cout << "  Attribute: " << name_ << " = " << value_.as_string() << "\n";
+      }
+   }
 
 }

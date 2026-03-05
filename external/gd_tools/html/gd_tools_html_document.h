@@ -37,6 +37,154 @@ _GD_TOOLS_HTML_BEGIN
  */
 struct element
 {
+   // ## iterators ---------------------------------------------------------------
+
+
+
+   /** =======================================================================
+    * @brief Iterator types for traversing child elements of an `element` node.
+    * 
+    * The `iterator` and `const_iterator` types provide forward iteration over 
+    * the immediate children of an `element`, while `tree_iterator` and `const_tree_iterator`
+    * perform a pre-order depth-first traversal of the entire subtree rooted 
+    * at the given element.
+    */
+   struct iterator
+   {
+      using iterator_category = std::forward_iterator_tag;
+      using value_type        = element;
+      using difference_type   = std::ptrdiff_t;
+      using pointer           = element*;
+      using reference         = element&;
+
+      iterator() = default;
+      explicit iterator( std::vector<std::unique_ptr<element>>::iterator itElement )
+         : m_itElement( itElement ) {}
+
+      reference  operator*()  const { return **m_itElement; }
+      pointer    operator->() const { return m_itElement->get(); }
+      iterator&  operator++()       { ++m_itElement; return *this; }
+      iterator   operator++(int)    { auto itCopy_ = *this; ++m_itElement; return itCopy_; }
+      bool operator==( const iterator& o ) const noexcept { return m_itElement == o.m_itElement; }
+      bool operator!=( const iterator& o ) const noexcept { return m_itElement != o.m_itElement; }
+
+   private:
+      std::vector<std::unique_ptr<element>>::iterator m_itElement;           ///< Position in child vector
+   };
+
+   struct const_iterator
+   {
+      using iterator_category = std::forward_iterator_tag;
+      using value_type        = const element;
+      using difference_type   = std::ptrdiff_t;
+      using pointer           = const element*;
+      using reference         = const element&;
+
+      const_iterator() = default;
+      explicit const_iterator( std::vector<std::unique_ptr<element>>::const_iterator itElement )
+         : m_itElement( itElement ) {}
+
+      reference       operator*()  const { return **m_itElement; }
+      pointer         operator->() const { return m_itElement->get(); }
+      const_iterator& operator++()       { ++m_itElement; return *this; }
+      const_iterator  operator++(int)    { auto itCopy_ = *this; ++m_itElement; return itCopy_; }
+      bool operator==( const const_iterator& o ) const noexcept { return m_itElement == o.m_itElement; }
+      bool operator!=( const const_iterator& o ) const noexcept { return m_itElement != o.m_itElement; }
+
+   private:
+      std::vector<std::unique_ptr<element>>::const_iterator m_itElement;     ///< Position in child vector
+   };
+
+
+   /** =======================================================================
+    * @brief Pre-order depth-first iterators for traversing an entire subtree of `element` nodes.
+    * 
+    * The `tree_iterator` and `const_tree_iterator` types maintain an explicit 
+    * stack of pointers to the next nodes to visit, allowing them to traverse the
+    * entire subtree in a single pass without recursion. The children of each node
+    * are pushed onto the stack in reverse order so that they are visited in document order.
+    */
+   struct tree_iterator
+   {
+      using iterator_category = std::forward_iterator_tag;
+      using value_type        = element;
+      using difference_type   = std::ptrdiff_t;
+      using pointer           = element*;
+      using reference         = element&;
+
+      tree_iterator() = default;                                              ///< End sentinel — empty stack
+      explicit tree_iterator( element* pelementStart )
+      {
+         if( pelementStart != nullptr ) { m_vectorpElement.push_back( pelementStart ); }
+      }
+
+      reference      operator*()  const { return *m_vectorpElement.back(); }
+      pointer        operator->() const { return  m_vectorpElement.back(); }
+
+      /** ---------------------------------------------------------------------- operator++
+       * @brief Advance in pre-order DFS: pop current, push its children in reverse.
+       * @return tree_iterator& This iterator, now pointing at the next node
+       */
+      tree_iterator& operator++()
+      {
+         element* pelementCurrent = m_vectorpElement.back();
+         m_vectorpElement.pop_back();
+         for( auto itChild = pelementCurrent->m_vectorElement.rbegin();    // reverse so first child is next
+              itChild != pelementCurrent->m_vectorElement.rend(); ++itChild )
+         {
+            m_vectorpElement.push_back( itChild->get() );
+         }
+         return *this;
+      }
+
+      tree_iterator operator++(int) { auto itCopy_ = *this; ++(*this); return itCopy_; }
+
+      bool operator==( const tree_iterator& o ) const noexcept { return m_vectorpElement == o.m_vectorpElement; }
+      bool operator!=( const tree_iterator& o ) const noexcept { return m_vectorpElement != o.m_vectorpElement; }
+
+   private:
+      std::vector<element*> m_vectorpElement;                                ///< DFS frontier; empty == end
+   };
+
+   struct const_tree_iterator
+   {
+      using iterator_category = std::forward_iterator_tag;
+      using value_type        = const element;
+      using difference_type   = std::ptrdiff_t;
+      using pointer           = const element*;
+      using reference         = const element&;
+
+      const_tree_iterator() = default;
+      explicit const_tree_iterator( const element* pelementStart )
+      {
+         if( pelementStart != nullptr ) { m_vectorpElement.push_back( pelementStart ); }
+      }
+
+      reference            operator*()  const { return *m_vectorpElement.back(); }
+      pointer              operator->() const { return  m_vectorpElement.back(); }
+
+      const_tree_iterator& operator++()
+      {
+         const element* pelementCurrent = m_vectorpElement.back();
+         m_vectorpElement.pop_back();
+         for( auto itChild = pelementCurrent->m_vectorElement.rbegin();
+              itChild != pelementCurrent->m_vectorElement.rend(); ++itChild )
+         {
+            m_vectorpElement.push_back( itChild->get() );
+         }
+         return *this;
+      }
+
+      const_tree_iterator operator++(int) { auto itCopy_ = *this; ++(*this); return itCopy_; }
+
+      bool operator==( const const_tree_iterator& o ) const noexcept { return m_vectorpElement == o.m_vectorpElement; }
+      bool operator!=( const const_tree_iterator& o ) const noexcept { return m_vectorpElement != o.m_vectorpElement; }
+
+   private:
+      std::vector<const element*> m_vectorpElement;                          ///< DFS frontier; empty == end
+   };
+
+
    element() = default;
    explicit element( std::string_view stringName ) : m_stringName( stringName ) {}
    explicit element( std::string_view stringName, std::string_view stringContent ): m_stringName( stringName ), m_stringContent( stringContent ) {}
@@ -99,6 +247,24 @@ struct element
    size_t           size_attribute() const noexcept { return m_argumentsAttribute.size(); }
 
    auto             attributes() const noexcept { return m_argumentsAttribute.named(); }
+
+// ## range helpers -----------------------------------------------------------
+   /// Direct-child range — use in `for( auto& elementChild : elementParent )` --- begin / end
+   iterator       begin()        { return iterator( m_vectorElement.begin() ); }
+   iterator       end()          { return iterator( m_vectorElement.end() );   }
+   const_iterator begin()  const { return const_iterator( m_vectorElement.cbegin() ); }
+   const_iterator end()    const { return const_iterator( m_vectorElement.cend() );   }
+   const_iterator cbegin() const { return const_iterator( m_vectorElement.cbegin() ); }
+   const_iterator cend()   const { return const_iterator( m_vectorElement.cend() );   }
+
+   /// Whole-subtree range — use in `for( auto& e : element.tree() )` ----------- tree_begin / tree_end
+   tree_iterator       tree_begin()        { return tree_iterator( this ); }
+   tree_iterator       tree_end()          { return tree_iterator();        }
+   const_tree_iterator tree_begin()  const { return const_tree_iterator( this ); }
+   const_tree_iterator tree_end()    const { return const_tree_iterator();        }
+   const_tree_iterator tree_cbegin() const { return const_tree_iterator( this ); }
+   const_tree_iterator tree_cend()   const { return const_tree_iterator();        }
+
 
 // ## traversal -------------------------------------------------------------
 
