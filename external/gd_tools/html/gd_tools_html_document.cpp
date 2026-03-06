@@ -524,11 +524,17 @@ void parser::parse_comment()
    }
 }
 
+/**  -------------------------------------------------------------------------- parse_declaration
+ * @brief Skip `<! … >` declarations (e.g. `<!DOCTYPE html>`)
+ */
 void parser::parse_declaration()
 {
    skip_until( '>' );                                                       // skip <!DOCTYPE …> and similar
 }
 
+/**  -------------------------------------------------------------------------- parse_processing_instruction
+ * @brief Skip `<? … ?>` processing instructions (XML) or similar constructs
+ */
 void parser::parse_processing_instruction()
 {
    while( m_uPosition + 1 < m_stringSource.size() )
@@ -539,17 +545,19 @@ void parser::parse_processing_instruction()
 }
 
 /**  -------------------------------------------------------------------------- parse_text
- * @brief Collect characters up to the next `<` and store as content
- *        Whitespace-only runs are discarded without allocation.
+ * @brief Consume text until the next '<' and append it to the current element's content
+ *
+ * Leading and trailing whitespace is trimmed from the text fragment before
+ * appending. If the resulting string is empty, it is ignored.
  */
 void parser::parse_text()
 {
    size_t uStart = m_uPosition;
-   while( !at_end() && current_char() != '<' ) { ++m_uPosition; }
+   while( !at_end() && current_char() != '<' ) { ++m_uPosition; }             // stop at next tag
 
-   std::string_view stringRaw = m_stringSource.substr( uStart, m_uPosition - uStart );
+   std::string_view stringRaw = m_stringSource.substr( uStart, m_uPosition - uStart ); // raw text including any whitespace
 
-   // Trim without allocating — find bounds inside the raw view
+   // ## Trim without allocating — find bounds inside the raw view
    size_t uFirst = 0;
    while( uFirst < stringRaw.size() && std::isspace( (unsigned char)stringRaw[uFirst] ) ) { ++uFirst; }
    size_t uLast = stringRaw.size();
