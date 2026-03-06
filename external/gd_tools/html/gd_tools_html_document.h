@@ -203,6 +203,7 @@ struct element
          m_vectorElement      = std::move( o.m_vectorElement );
          m_argumentsAttribute = std::move( o.m_argumentsAttribute );
          o.m_pelementParent   = nullptr;
+         for( auto& pChild : m_vectorElement ) { pChild->m_pelementParent = this; } // update parent pointers in moved children
       }
       return *this;
    }
@@ -229,14 +230,13 @@ struct element
    /// Reserve space for expected child count to avoid reallocations
    void reserve( size_t uChildCount ) { m_vectorElement.reserve( uChildCount ); }
 
-   element*       at( size_t uIndex )       { return m_vectorElement[uIndex].get(); }
-   const element* at( size_t uIndex ) const { return m_vectorElement[uIndex].get(); }
+   element*       at( size_t uIndex )       { return m_vectorElement.at( uIndex ).get(); }
+   const element* at( size_t uIndex ) const { return m_vectorElement.at( uIndex ).get(); }
    element*       front()                   { return m_vectorElement.front().get(); }
    const element* front() const             { return m_vectorElement.front().get(); }
    element*       back()                    { return m_vectorElement.back().get(); }
    const element* back()  const             { return m_vectorElement.back().get(); }
    size_t         size()  const noexcept    { return m_vectorElement.size(); }
-   size_t         size_all() const noexcept;
    bool           empty() const noexcept    { return m_vectorElement.empty(); }
 
 // ## attribute management ----------------------------------------------------
@@ -248,25 +248,13 @@ struct element
 
    auto             attributes() const noexcept { return m_argumentsAttribute.named(); }
 
-// ## range helpers -----------------------------------------------------------
-   /// Direct-child range — use in `for( auto& elementChild : elementParent )` --- begin / end
-   iterator       begin()        { return iterator( m_vectorElement.begin() ); }
-   iterator       end()          { return iterator( m_vectorElement.end() );   }
-   const_iterator begin()  const { return const_iterator( m_vectorElement.cbegin() ); }
-   const_iterator end()    const { return const_iterator( m_vectorElement.cend() );   }
-   const_iterator cbegin() const { return const_iterator( m_vectorElement.cbegin() ); }
-   const_iterator cend()   const { return const_iterator( m_vectorElement.cend() );   }
-
-   /// Whole-subtree range — use in `for( auto& e : element.tree() )` ----------- tree_begin / tree_end
-   tree_iterator       tree_begin()        { return tree_iterator( this ); }
-   tree_iterator       tree_end()          { return tree_iterator();        }
-   const_tree_iterator tree_begin()  const { return const_tree_iterator( this ); }
-   const_tree_iterator tree_end()    const { return const_tree_iterator();        }
-   const_tree_iterator tree_cbegin() const { return const_tree_iterator( this ); }
-   const_tree_iterator tree_cend()   const { return const_tree_iterator();        }
-
-
 // ## traversal -------------------------------------------------------------
+
+   size_t size_parents() const noexcept;
+   size_t size_all() const noexcept;
+   std::vector<element*> parents() const;  ///< Ancestors from parent up to root, in order
+   const element* closest( std::string_view stringTag ) const;
+
 
    /** ----------------------------------------------------------------------- find
     * @brief First depth-first descendant whose tag name matches (case-insensitive)
@@ -305,8 +293,25 @@ struct element
     * @param callbackVisitor  Called with (element&); return false to stop traversal
     * @return bool  True if the full tree was visited, false if cut short
     */
-   //bool walk( const std::function<bool(element&)>& callbackVisitor );
-   bool walk( const std::function<bool(const element&)>& callbackVisitor ) const;
+   bool walk( const std::function<bool(const element&)>& callbac_ ) const;
+
+// ## range helpers -----------------------------------------------------------
+   /// Direct-child range — use in `for( auto& elementChild : elementParent )` --- begin / end
+   iterator       begin()        { return iterator( m_vectorElement.begin() ); }
+   iterator       end()          { return iterator( m_vectorElement.end() );   }
+   const_iterator begin()  const { return const_iterator( m_vectorElement.cbegin() ); }
+   const_iterator end()    const { return const_iterator( m_vectorElement.cend() );   }
+   const_iterator cbegin() const { return const_iterator( m_vectorElement.cbegin() ); }
+   const_iterator cend()   const { return const_iterator( m_vectorElement.cend() );   }
+
+   /// Whole-subtree range — use in `for( auto& e : element.tree() )` ----------- tree_begin / tree_end
+   tree_iterator       tree_begin()        { return tree_iterator( this ); }
+   tree_iterator       tree_end()          { return tree_iterator();        }
+   const_tree_iterator tree_begin()  const { return const_tree_iterator( this ); }
+   const_tree_iterator tree_end()    const { return const_tree_iterator();        }
+   const_tree_iterator tree_cbegin() const { return const_tree_iterator( this ); }
+   const_tree_iterator tree_cend()   const { return const_tree_iterator();        }
+
 
 // ## member variables --------------------------------------------------------
    std::string                             m_stringName;               ///< Tag name e.g. "div", "record"
@@ -315,12 +320,15 @@ struct element
    std::vector<std::unique_ptr<element>>   m_vectorElement;            ///< Owned child nodes
    gd::argument::shared::arguments         m_argumentsAttribute;       ///< Attribute key→value store
 
-private:
+public:
    /// Case-insensitive ASCII equality ---------------------------------------- equal_case_insensitive_s
    static bool equal_case_insensitive_s( std::string_view stringA, std::string_view stringB ) noexcept;
 
    /// True if `stringClassList` contains `stringToken` as a whole word ------- has_class_token_s
    static bool has_class_token_s( std::string_view stringClassList, std::string_view stringToken ) noexcept;
+
+   /// Join a vector of element pointers into a string of their tag names ------- to_string_s
+   static std::string to_string_s( const std::vector<element*>& vectorElements, std::string_view stringSplit = " / ");
 };
 
 
@@ -382,20 +390,14 @@ enum class enumParseMode : uint8_t
 };
 
 
-// ============================================================================
-// @CLASS [tag: parser] [summary: Fast single-pass HTML/XML tokeniser]
-//
-// Design goals
-// ────────────
-// • Single forward pass — the source string_view is never copied
-// • Tag names are interned from a compact sorted table for the ~80 most
-//   common HTML tags; unknown tags get a single std::string allocation
-// • Element stack lives on a pre-reserved vector — no per-level heap alloc
-// • Attributes are accumulated into the element in-place
-// • Void-element table is only consulted in e_html mode (O(log N) lookup)
-//
-// @NOTE Thread safety: not thread-safe. Use one parser instance per thread.
-// ============================================================================
+/** -------------------------------------------------------------------------- parser
+ * Implements a single-pass tokeniser for HTML/XML source text, building a
+ * document tree of `element` nodes. The parsing mode controls how tags are
+ * treated and how strict the parser is about mismatched or missing close-tags:
+ *
+ * @NOTE Tag names are interned for the ~80 most common HTML tags to avoid
+ *       a heap allocation per node.
+ */
 class parser
 {
 public:
@@ -414,27 +416,20 @@ public:
     */
    document parse( std::string_view stringSource );
 
-private:
-// ## parser state ------------------------------------------------------------
-   std::string_view      m_stringSource;                                   ///< View into the source being parsed
-   size_t                m_uPosition       = 0;                            ///< Current read cursor
-   element*              m_pelementCurrent = nullptr;                      ///< Node currently being populated
-   std::vector<element*> m_vectorElementStack;                             ///< Open-element stack (non-owning views)
-   enumParseMode         m_eParseMode      = enumParseMode::eParseModeHtml;///< Active parsing mode
 
 // ## helpers – position / character access -----------------------------------
 
    /// True when the cursor has reached the end of the source ----------------- at_end
    bool at_end() const noexcept { return m_uPosition >= m_stringSource.size(); }
+   bool is_eof() const noexcept { return at_end(); }
 
    /// Current character — call at_end() first -------------------------------- current_char
-   char current_char() const noexcept { return m_stringSource[m_uPosition]; }
+   char current_char() const noexcept { assert( at_end() == false ); return m_stringSource[m_uPosition]; }
 
    /// Peek up to `uLength` characters ahead without advancing --------------- peek
    std::string_view peek( size_t uLength ) const noexcept
    {
-      return m_stringSource.substr( m_uPosition,
-             std::min( uLength, m_stringSource.size() - m_uPosition ) );
+      return m_stringSource.substr( m_uPosition, std::min( uLength, m_stringSource.size() - m_uPosition ) );
    }
 
    void             skip_whitespace() noexcept;
@@ -452,6 +447,14 @@ private:
    void parse_text();
    void parse_attributes( element& elementTarget );
 
+private:
+// ## members ------------------------------------------------------------
+   std::string_view      m_stringSource;                                   ///< View into the source being parsed
+   size_t                m_uPosition       = 0;                            ///< Current read cursor
+   element*              m_pelementCurrent = nullptr;                      ///< Node currently being populated
+   std::vector<element*> m_vectorElementStack;                             ///< Open-element stack (non-owning views)
+   enumParseMode         m_eParseMode      = enumParseMode::eParseModeHtml;///< Active parsing mode
+
 // ## utilities ---------------------------------------------------------------
 
    /// Intern common tag names to avoid per-element heap allocations ---------- intern_tag_s
@@ -459,9 +462,6 @@ private:
 
    /// True for HTML void elements — only called when mode is e_html ---------- is_void_element_s
    static bool is_void_element_s( std::string_view stringTag ) noexcept;
-
-   /// Case-insensitive ASCII equality ---------------------------------------- equal_case_insensitive_s
-   static bool equal_case_insensitive_s( std::string_view stringA, std::string_view stringB ) noexcept;
 
 // ## static tables -----------------------------------------------------------
 

@@ -59,10 +59,18 @@ TEST_CASE( "[html] load", "[html]" ) {
    for( auto it = documentHtml.root()->tree_begin(); it != documentHtml.root()->tree_end(); ++it )
    {
       const element& elementCurrent = *it;
-      std::cout << "Element: " << elementCurrent.name() << ", content: " << elementCurrent.content() << "\n";
+      //std::cout << "Element: " << elementCurrent.name() << ", content: " << elementCurrent.content() << "\n";
       for( const auto& [name_, value_] : elementCurrent.attributes() )
       {
-         std::cout << "  Attribute: " << name_ << " = " << value_.as_string() << "\n";
+         //std::cout << "  Attribute: " << name_ << " = " << value_.as_string() << "\n";
+      }
+
+      if( elementCurrent.size_parents() > 3 )
+      {
+         // print path
+         auto parents_ = elementCurrent.parents();
+         std::string stringPath = element::to_string_s( parents_ );
+         std::cout << "  Path: " << stringPath << "\n";
       }
    }
 

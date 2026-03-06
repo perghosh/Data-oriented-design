@@ -61,6 +61,22 @@ void element::add_attribute( std::string_view stringName, std::string_view strin
    m_argumentsAttribute[stringName] = stringContent;
 }
 
+
+// ## traversal ---------------------------------------------------------------
+
+/// Count ancestors up to root ------------------------------------------------
+size_t element::size_parents() const noexcept
+{
+   size_t uCount = 0;
+   element* pelementCurrent = parent();
+   while( pelementCurrent != nullptr )
+   {
+      ++uCount;
+      pelementCurrent = pelementCurrent->parent();
+   }
+   return uCount;
+}
+
 /// Count self + all descendants ---------------------------------------------
 size_t element::size_all() const noexcept
 {
@@ -69,7 +85,38 @@ size_t element::size_all() const noexcept
    return uCount;
 }
 
-// ## traversal ---------------------------------------------------------------
+/**  -------------------------------------------------------------------------- parents
+ * @brief Collect ancestors from parent up to root, in order
+ * @return vector<element*>  Vector of ancestor pointers; empty if no parent
+ */
+std::vector<element*> element::parents() const
+{
+   std::vector<element*> vectorParents;
+   element* pelementCurrent = parent();
+   while( pelementCurrent != nullptr )
+   {
+      vectorParents.push_back( pelementCurrent );
+      pelementCurrent = pelementCurrent->parent();
+   }
+   return vectorParents;
+}
+
+/**  -------------------------------------------------------------------------- closest
+ * @brief Find the nearest ancestor (or self) with a matching tag name
+ * @param stringTag     Tag name to match (case-insensitive)
+ * @return element*     Matching element or nullptr if not found
+ */
+const element* element::closest( std::string_view stringTag ) const
+{
+   const element* pelementCurrent = this;
+   while( pelementCurrent != nullptr )
+   {
+      if( equal_case_insensitive_s( pelementCurrent->name(), stringTag ) ) { return pelementCurrent; }
+      pelementCurrent = pelementCurrent->parent();
+   }
+   return nullptr;
+}
+
 
 /**  -------------------------------------------------------------------------- find
  * @brief Depth-first search for the first descendant matching `stringTag`
@@ -160,27 +207,15 @@ void element::find_by_class( std::string_view stringClassName, std::vector<const
    }
 }
 
-/**  -------------------------------------------------------------------------- walk
- * @brief Visit every descendant in document order
- * @param callbackVisitor  Callable(element&) → bool; returning false stops early
- * @return bool  True if the entire tree was visited
- */
- /*
-bool element::walk( const std::function<bool(element&)>& callbackVisitor )
-{
-   for( auto& pChild : m_vectorElement )
-   {
-      if( !callbackVisitor( *pChild ) )           { return false; }
-      if( !pChild->walk( callbackVisitor ) )       { return false; }
-   }
-   return true;
-}
-*/
 
-/**  -------------------------------------------------------------------------- walk
+/** -------------------------------------------------------------------------- walk
  * @brief Visit every descendant in document order
- * @param callback_  Callable(element&) → bool; returning false stops early
- * @return bool True if the entire tree was visited
+ * @param callbackVisitor  Called with (const element&); return false to stop traversal
+ * @return bool  True if the full tree was visited, false if cut short
+ * @NOTE No non-const overload: a `[](const element&)` lambda is convertible to
+ *       both `std::function<bool(element&)>` and `std::function<bool(const element&)>`,
+ *       which produces a C2666 ambiguity on MSVC. Use tree_begin()/tree_end() for
+ *       mutable traversal.
  */
 bool element::walk( const std::function<bool(const element&)>& callback_ ) const
 {
@@ -244,6 +279,23 @@ bool element::has_class_token_s( std::string_view stringClassList, std::string_v
       if( stringClassList.substr( uTokenStart, uPosition - uTokenStart ) == stringToken ) { return true; }
    }
    return false;
+}
+
+/**  -------------------------------------------------------------------------- to_string_s
+ * @brief Join the tag names of a vector of elements into a single string with a separator
+ * @param vectorElements   Vector of element pointers to join
+ * @param stringSplit      Separator string to insert between tag names
+ * @return std::string     Joined string of tag names
+ */
+std::string element::to_string_s( const std::vector<element*>& vectorElements, std::string_view stringSplit )
+{
+   std::string stringResult;
+   for( size_t u = 0; u < vectorElements.size(); ++u )
+   {
+      stringResult += vectorElements[u]->name();
+      if( u + 1 < vectorElements.size() ) { stringResult += stringSplit; }
+   }
+   return stringResult;
 }
 
 
@@ -504,7 +556,7 @@ void parser::parse_closing_tag()
 
    for( int i = (int)m_vectorElementStack.size() - 1; i >= 0; --i )          // walk backward through the stack to find a matching open tag
    {
-      if( equal_case_insensitive_s( m_vectorElementStack[(size_t)i]->name(), stringClosingTag ) )
+      if( element::equal_case_insensitive_s( m_vectorElementStack[(size_t)i]->name(), stringClosingTag ) )
       {
          m_vectorElementStack.resize( (size_t)i );
          m_pelementCurrent = m_vectorElementStack.empty() ? nullptr : m_vectorElementStack.back();
@@ -579,7 +631,7 @@ void parser::parse_attributes( element& elementTarget )
    while( !at_end() )
    {
       skip_whitespace();
-      if( at_end() ) { break; }
+      if( at_end() == true ) { break; }
 
       char iChar = current_char();
       if( iChar == '>' || iChar == '/' ) { break; }
@@ -590,7 +642,7 @@ void parser::parse_attributes( element& elementTarget )
       skip_whitespace();
       std::string stringAttrValue;
 
-      if( !at_end() && current_char() == '=' )
+      if( at_end() == false && current_char() == '=' )
       {
          ++m_uPosition;                                                     // consume '='
          skip_whitespace();
@@ -617,7 +669,7 @@ std::string_view parser::intern_tag_s( std::string_view stringRaw ) noexcept
    std::string_view stringLower( arrayLower, uLength );
 
    auto it = std::lower_bound( arrayTable.begin(), arrayTable.end(), stringLower );
-   if( ;it != arrayTable.end() && *it == stringLower ) { return *it; }
+   if( it != arrayTable.end() && *it == stringLower ) { return *it; }
    return {};                                                               // unknown tag — caller allocates
 }
 
@@ -634,19 +686,6 @@ bool parser::is_void_element_s( std::string_view stringTag ) noexcept
 
    auto it = std::lower_bound( m_arrayVoidElements.begin(), m_arrayVoidElements.end(), stringLower );
    return ( it != m_arrayVoidElements.end() && *it == stringLower );
-}
-
-bool parser::equal_case_insensitive_s( std::string_view stringA, std::string_view stringB ) noexcept
-{
-   if( stringA.size() != stringB.size() ) { return false; }
-   for( size_t u = 0; u < stringA.size(); ++u )
-   {
-      if( std::tolower( (unsigned char)stringA[u] ) != std::tolower( (unsigned char)stringB[u] ) )
-      {
-         return false;
-      }
-   }
-   return true;
 }
 
 _GD_TOOLS_HTML_END
