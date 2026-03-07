@@ -31,6 +31,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstring>
 #include <limits>
 #include <type_traits>
 #include <stdint.h>

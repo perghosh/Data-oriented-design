@@ -369,7 +369,7 @@ const char* next_character_or_end_g( const char* pbsz, char chFind, tag_avx256 )
 const char* next_space_g( const char* pbsz )
 {
    auto find_ = pbsz;   
-   while( (*find_ != '\0') && !(pCharacterClass_s[*find_] & ASCII_TYPE_SPACE) ) find_++;
+   while( (*find_ != '\0') && !(pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_SPACE) ) find_++;
 
    if( *find_ == '\0' ) return pbsz;
    return find_;
@@ -380,7 +380,7 @@ const char* next_space_g( const char* pbsz )
 const char* next_space_g( const char* pbsz, const char* pbszEnd )
 {                                                                                                  assert( pbsz <= pbszEnd ); assert( (pbszEnd - pbsz) < 0x10000000 ); // realistic?
    auto find_ = pbsz;   
-   while( (find_ < pbszEnd) && !(pCharacterClass_s[*find_] & ASCII_TYPE_SPACE) ) find_++;
+   while( (find_ < pbszEnd) && !(pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_SPACE) ) find_++;
 
    if( *find_ == '\0' ) return pbsz;
    return find_;
@@ -391,7 +391,7 @@ const char* next_space_g( const char* pbsz, const char* pbszEnd )
 const char* next_non_decimal_g( const char* pbsz )
 {
    auto find_ = pbsz;   
-   while( (*find_ != '\0') && (pCharacterClass_s[*find_] & ASCII_TYPE_DECIMAL) ) find_++;
+   while( (*find_ != '\0') && (pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_DECIMAL) ) find_++;
 
    if( *find_ == '\0' ) return pbsz;
    return find_;
@@ -402,7 +402,7 @@ const char* next_non_decimal_g( const char* pbsz )
 const char* next_non_integer_g( const char* pbsz )
 {
    auto find_ = pbsz;   
-   while( (*find_ != '\0') && (pCharacterClass_s[*find_] & ASCII_TYPE_INTEGER) ) find_++;
+   while( (*find_ != '\0') && (pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_INTEGER) ) find_++;
 
    if( *find_ == '\0' ) return pbsz;
    return find_;
@@ -413,7 +413,7 @@ const char* next_non_integer_g( const char* pbsz )
 const char* next_non_space_g( const char* pbsz )
 {
    auto find_ = pbsz;   
-   while( (*find_ != '\0') && (pCharacterClass_s[*find_] & ASCII_TYPE_SPACE) ) find_++;
+   while( (*find_ != '\0') && (pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_SPACE) ) find_++;
 
    if( *find_ == '\0' ) return pbsz;
    return find_;
@@ -424,7 +424,7 @@ const char* next_non_space_g( const char* pbsz )
 const char* next_non_space_or_end_g( const char* pbsz )
 {
    auto find_ = pbsz;   
-   while( (*find_ != '\0') && (pCharacterClass_s[*find_] & ASCII_TYPE_SPACE) ) find_++;
+   while( (*find_ != '\0') && (pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_SPACE) ) find_++;
 
    return find_;
 }
@@ -435,7 +435,7 @@ const char* next_non_space_or_end_g( const char* pbsz )
 const char* next_non_space_g( const char* pbsz, const char* pbszEnd )
 {                                                                                                  assert( pbsz <= pbszEnd ); assert( (pbszEnd - pbsz) < 0x10000000 ); // realistic?
    auto find_ = pbsz;   
-   while( (find_ < pbszEnd) && (pCharacterClass_s[*find_] & ASCII_TYPE_SPACE) ) find_++;
+   while( (find_ < pbszEnd) && (pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_SPACE) ) find_++;
 
    if( *find_ == '\0' ) return pbsz;
    return find_;
@@ -636,7 +636,7 @@ unsigned read_type_g( const char* pbsz, size_t uLength, const unsigned* puCheckT
       const char* pbszEnd = pbsz + uLength;
       for( const char* pbszPosition = pbsz; pbszPosition < pbszEnd; pbszPosition++ )
       {
-         uint8_t uCharType = pCharacterClass_s[*pbszPosition];
+         uint8_t uCharType = pCharacterClass_s[(uint8_t)*pbszPosition];
          if( uCharType == 0 ) return uAnyType;
 
          uTypeFlags |= uCharType; 
@@ -663,7 +663,7 @@ unsigned read_type_g( const char* pbsz, size_t uLength, const unsigned* puCheckT
 const char* skip_alnum_g( const char* pbsz )
 {
    auto find_ = pbsz;   
-   while( (*find_ != '\0') && (pCharacterClass_s[*find_] & ASCII_TYPE_ALNUM) ) find_++;
+   while( (*find_ != '\0') && (pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_ALNUM) ) find_++;
 
    return find_;
 }
@@ -673,7 +673,7 @@ const char* skip_alnum_g( const char* pbsz )
 const char* skip_alnum_g( const char* pbsz, const char* pbszEnd )
 {
    auto find_ = pbsz;   
-   while( (pbsz != pbszEnd) && (pCharacterClass_s[*find_] & ASCII_TYPE_ALNUM) ) find_++;
+   while( (pbsz != pbszEnd) && (pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_ALNUM) ) find_++;
 
    return find_;
 }
@@ -683,7 +683,7 @@ const char* skip_alnum_g( const char* pbsz, const char* pbszEnd )
 const char* skip_decimal_g( const char* pbsz )
 {
    auto find_ = pbsz;   
-   while( (*find_ != '\0') && (pCharacterClass_s[*find_] & ASCII_TYPE_DECIMAL) ) find_++;
+   while( (*find_ != '\0') && (pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_DECIMAL) ) find_++;
 
    return find_;
 }
@@ -692,7 +692,7 @@ const char* skip_decimal_g( const char* pbsz )
 /// returns pointer to first non decimal character
 const char* skip_decimal_g( const char* pbsz, const char* pbszEnd )
 {                                                                                                  assert( pbsz <= pbszEnd ); assert( (pbszEnd - pbsz) < 0x10000000 ); // realistic?
-   while( (pbsz != pbszEnd) && (pCharacterClass_s[*pbsz] & ASCII_TYPE_DECIMAL) ) pbsz++;
+   while( (pbsz != pbszEnd) && (pCharacterClass_s[(uint8_t)*pbsz] & ASCII_TYPE_DECIMAL) ) pbsz++;
 
    return pbsz;
 }
@@ -702,7 +702,7 @@ const char* skip_decimal_g( const char* pbsz, const char* pbszEnd )
 const char* skip_integer_g( const char* pbsz )
 {
    auto find_ = pbsz;   
-   while( (*find_ != '\0') && (pCharacterClass_s[*find_] & ASCII_TYPE_INTEGER) ) find_++;
+   while( (*find_ != '\0') && (pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_INTEGER) ) find_++;
 
    return find_;
 }
@@ -711,7 +711,7 @@ const char* skip_integer_g( const char* pbsz )
 /// returns pointer to first non integer character
 const char* skip_integer_g( const char* pbsz, const char* pbszEnd )
 {                                                                                                  assert( pbsz <= pbszEnd ); assert( (pbszEnd - pbsz) < 0x10000000 ); // realistic?
-   while( (pbsz != pbszEnd) && (pCharacterClass_s[*pbsz] & ASCII_TYPE_INTEGER) ) pbsz++;
+   while( (pbsz != pbszEnd) && (pCharacterClass_s[(uint8_t)*pbsz] & ASCII_TYPE_INTEGER) ) pbsz++;
 
    return pbsz;
 }
@@ -721,7 +721,7 @@ const char* skip_integer_g( const char* pbsz, const char* pbszEnd )
 const char* skip_space_g( const char* pbsz )
 {
    auto find_ = pbsz;   
-   while( (*find_ != '\0') && (pCharacterClass_s[*find_] & ASCII_TYPE_SPACE) ) find_++;
+   while( (*find_ != '\0') && (pCharacterClass_s[(uint8_t)*find_] & ASCII_TYPE_SPACE) ) find_++;
 
    return find_;
 }
@@ -730,7 +730,7 @@ const char* skip_space_g( const char* pbsz )
 /// move pointer to next non space character
 const char* skip_space_g( const char* pbsz, const char* pbszEnd )
 {                                                                                                  assert( pbsz <= pbszEnd ); assert( (pbszEnd - pbsz) < 0x10000000 ); // realistic?
-   while( (pbsz != pbszEnd) && (pCharacterClass_s[*pbsz] & ASCII_TYPE_SPACE) ) pbsz++;
+   while( (pbsz != pbszEnd) && (pCharacterClass_s[(uint8_t)*pbsz] & ASCII_TYPE_SPACE) ) pbsz++;
 
    return pbsz;
 }
@@ -762,14 +762,14 @@ const char* skip_string_g( const char* pbsz, tag_json )
    auto find_ = pbsz;   
    while( *find_ != '\0' )
    {
-      if( pJson_s[*find_] == 0 ) { find_++; continue; }
+      if( pJson_s[(uint8_t)*find_] == 0 ) { find_++; continue; }
 
       if( *find_ == '\\' )
       {
          find_++;
          if( *find_ == '\0' ) break;
       }
-      else if( (pJson_s[*find_] & JSON_TYPE_STRING) == JSON_TYPE_STRING )
+      else if( (pJson_s[(uint8_t)*find_] & JSON_TYPE_STRING) == JSON_TYPE_STRING )
       {
          return find_;
       }
@@ -787,14 +787,14 @@ const char* skip_string_g( const char* pbsz, const char* pbszEnd, tag_json )
    auto find_ = pbsz;   
    while( find_ < pbszEnd )
    {
-      if( pJson_s[*find_] == 0 ) { find_++; continue; }
+      if( pJson_s[(uint8_t)*find_] == 0 ) { find_++; continue; }
 
-      if( (pJson_s[*find_] & JSON_TYPE_ESCAPE) == JSON_TYPE_ESCAPE )
+      if( (pJson_s[(uint8_t)*find_] & JSON_TYPE_ESCAPE) == JSON_TYPE_ESCAPE )
       {
          find_++;
          if( find_ >= pbszEnd ) break;
       }
-      else if( (pJson_s[*find_] & JSON_TYPE_STRING) == JSON_TYPE_STRING )
+      else if( (pJson_s[(uint8_t)*find_] & JSON_TYPE_STRING) == JSON_TYPE_STRING )
       {
          return find_;
       }
@@ -1446,7 +1446,7 @@ const char* strchr( const char* pbszText, char chFind, const csv& csv, const uin
 
    while( *pbszPosition != '\0' && *pbszPosition != chFind )
    {
-      if( !(puCharacterClass[*pbszPosition] & ASCII_TYPE_QUOTE) )
+      if( !(puCharacterClass[(uint8_t)*pbszPosition] & ASCII_TYPE_QUOTE) )
       {
          pbszPosition++;
          continue;
@@ -1488,7 +1488,7 @@ const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, con
 
    while( pbszPosition < pbszEnd && *pbszPosition != chFind )
    {
-      if( !(puCharacterClass[*pbszPosition] & ASCII_TYPE_QUOTE) )
+      if( !(puCharacterClass[(uint8_t)*pbszPosition] & ASCII_TYPE_QUOTE) )
       {
          pbszPosition++;
          continue;
@@ -1571,7 +1571,7 @@ const char* strchr( const char* pbszText, char chFind, const sql& sql, const uin
 
    while( *pbszPosition != '\0' && *pbszPosition != chFind )
    {
-      if( !(puCharacterClass[*pbszPosition] & ASCII_TYPE_QUOTE) )
+      if( !(puCharacterClass[(uint8_t)*pbszPosition] & ASCII_TYPE_QUOTE) )
       {
          pbszPosition++;
          continue;
@@ -1614,7 +1614,7 @@ const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, con
 
    while( pbszPosition < pbszEnd && *pbszPosition != chFind )
    {
-      if( !(puCharacterClass[*pbszPosition] & ASCII_TYPE_QUOTE) )
+      if( !(puCharacterClass[(uint8_t)*pbszPosition] & ASCII_TYPE_QUOTE) )
       {
          pbszPosition++;
          continue;
@@ -1655,7 +1655,7 @@ const char* strchr( const char* pbszText, char chFind, const json_rule& json_rul
 
    while( *pbszPosition != '\0' && *pbszPosition != chFind )
    {
-      if( !(puCharacterClass[*pbszPosition] & ASCII_TYPE_QUOTE) )
+      if( !(puCharacterClass[(uint8_t)*pbszPosition] & ASCII_TYPE_QUOTE) )
       {
          pbszPosition++;
          continue;
@@ -1697,7 +1697,7 @@ const char* strchr( const char* pbszBegin, const char* pbszEnd, char chFind, con
 
    while( pbszPosition < pbszEnd && *pbszPosition != chFind )
    {
-      if( !(puCharacterClass[*pbszPosition] & ASCII_TYPE_QUOTE) )
+      if( !(puCharacterClass[(uint8_t)*pbszPosition] & ASCII_TYPE_QUOTE) )
       {
          pbszPosition++;
          continue;
@@ -1786,7 +1786,7 @@ const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbsz
    {
       if( *pbszPosition != chFind )
       {
-         if( !(puCharacterClass[*pbszPosition] & ASCII_TYPE_QUOTE) )
+         if( !(puCharacterClass[(uint8_t)*pbszPosition] & ASCII_TYPE_QUOTE) )
          {
             pbszPosition++;
             continue;
@@ -1841,7 +1841,7 @@ const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbsz
    {
       if( *pbszPosition != chFind )
       {
-         if( !(puCharacterClass[*pbszPosition] & ASCII_TYPE_QUOTE) )
+         if( !(puCharacterClass[(uint8_t)*pbszPosition] & ASCII_TYPE_QUOTE) )
          {
             pbszPosition++;
             continue;
@@ -1885,7 +1885,7 @@ const char* strstr( const char* pbszBegin, const char* pbszEnd, const char* pbsz
    {
       if( *pbszPosition != chFind )
       {
-         if( !(puCharacterClass[*pbszPosition] & ASCII_TYPE_QUOTE) )
+         if( !(puCharacterClass[(uint8_t)*pbszPosition] & ASCII_TYPE_QUOTE) )
          {
             pbszPosition++;
             continue;
@@ -1939,7 +1939,7 @@ const char* strstr(const char* pbszBegin, const char* pbszEnd, const char* pbszF
    {
       if( *pbszPosition != chFind )
       {
-         if( !(puCharacterClass[*pbszPosition] & ASCII_TYPE_QUOTE) )
+         if( !(puCharacterClass[(uint8_t)*pbszPosition] & ASCII_TYPE_QUOTE) )
          {
             pbszPosition++;
             continue;
@@ -2028,7 +2028,7 @@ void strchr_for_each( const std::string_view& stringSql, char chFind, const sql&
       auto pbszNnext = callback_( std::string_view( pbszFrom, pbszFind - pbszFrom ), iIndex );
       iIndex++;
       if( pbszNnext == nullptr ) pbszFrom = pbszFind + 1;                      // move over found character as default if no new position is returned
-      else pbszFrom = pbszNnext;                                                                   assert( pbszFrom <= pbszEnd );// next position to search for
+      else { pbszFrom = pbszNnext; }                                                               assert( pbszFrom <= pbszEnd );// next position to search for
    }
 
    if( pbszFrom < pbszEnd )
@@ -2327,7 +2327,7 @@ const char* next_key_g( const char* pbszJson, const char* pbszName, unsigned uNa
    while( *puzNext != '\0' )
    {
 #ifndef NODEBUG
-      char chCheck_d = *puzNext;
+      [[maybe_unused]] char chCheck_d = *puzNext;
 #endif
       if( pJson_s[*puzNext] == 0 ) { puzNext++; continue; }
 
@@ -2389,7 +2389,7 @@ const char* next_key_g( const char* pbszJson, const char* pbszName, unsigned uNa
    while( *puzNext != '\0' )
    {
 #ifndef NDEBUG
-      char chCheck_d = *puzNext;
+      [[maybe_unused]] char chCheck_d = *puzNext;
 #endif
       if( pJson_s[*puzNext] == 0 ) { puzNext++; continue; }
 
