@@ -2800,7 +2800,7 @@ namespace gd {
          }
 
          // ## Always add the final part (even if empty when string ends with split character)
-         vectorPart.emplace_back(std::string_view(pbszStart, pbszEnd - pbszStart));
+         vectorPart.emplace_back(std::string_view(pbszStart, (pbszEnd - pbszStart) - 1));
       }
 
       /** -------------------------------------------------------------------

@@ -95,7 +95,7 @@ namespace detail {
    }
 
    /// add file to table if it matches wildcard filter
-   bool add_file_to_table(const gd::file::path& pathFile, const std::string_view& stringWildcard, gd::table::dto::table* ptable_, bool bSize = false)
+   bool add_file_to_table(const gd::file::path& pathFile, std::string_view stringWildcard, gd::table::dto::table* ptable_, bool bSize = false)
    {
       auto filename_ = pathFile.filename().string();                                               assert(filename_.empty() == false);
       if( stringWildcard.empty() == false )
@@ -253,12 +253,11 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::arguments& argu
    std::string stringWildcard = arguments_["wildcard"].get_string();
    unsigned uDepth = arguments_["depth"].get_uint();
    bool bSize = arguments_["size"].get_bool();
-   std::string stringPathFilter = arguments_["path_filter"].get_string();
-   
+   std::string stringPathFilter = arguments_["path-filter"].get_string();
 
    if( stringPath.find(';') != std::string::npos )
    {
-      // split path into multiple paths 
+      // ## split path into multiple paths 
       char iSplit = ';';
       auto vectorPaths = gd::utf8::split(stringPath, iSplit);
       for( const auto& path_ : vectorPaths )
@@ -269,10 +268,40 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::arguments& argu
       return { true, "" };
    }
 
+   bool bAddFile = true;
+   // ## Check if this directory matches the path filter (if provided)
+   //    If stringPathFilter is not empty, we need to check if the current directory matches the filter pattern
+
+   if( stringPathFilter.empty() == false )
+   {
+      auto stringDirectory = stringPath;
+               
+      std::replace( stringDirectory.begin(), stringDirectory.end(), '\\', '/' );  // convert to forward slashes for consistency
+
+      // Split string into multiple folder names
+      auto vectorDirectory = gd::utf8::split( stringDirectory, '/' );
+      auto vectorFilter = gd::utf8::split( stringPathFilter, ';' );
+
+      // ## Check if any of the filter patterns match the directory path
+               
+      bool bMatch = false; // flag to indicate if we found a match
+      for( const auto& filter_ : vectorFilter )
+      {
+         for( const auto& directory_ : vectorDirectory )
+         {
+            bMatch = gd::ascii::strcmp( directory_, filter_, gd::utf8::tag_wildcard{} );
+            if( bMatch == true ) { break; } // this part of the path matches the filter, check next part
+         }
+      }
+
+      if( bMatch == false ) bAddFile = false;                                  // no match found for this directory, skip it
+   }
+
    try
    {
       if( std::filesystem::is_directory(stringPath) == false )                 // not a directory
       {
+         if( bAddFile == false ) return { true, "" };
          if( std::filesystem::is_regular_file(stringPath) == true )            // is file
          {
             detail::add_file_to_table(gd::file::path(stringPath), stringWildcard, ptable_, bSize);
@@ -300,49 +329,23 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::arguments& argu
                if( bIgnore == true ) continue;                                // ignore this directory
             }
 
-            // ## Check if this directory matches the path filter (if provided)
-            //    If stringPathFilter is not empty, we need to check if the current directory matches the filter pattern
-
-            if( stringPathFilter.empty() == false )
-            {
-               auto stringDirectory = it.path().string();
-               
-               std::replace( stringDirectory.begin(), stringDirectory.end(), '\\', '/' );  // convert to forward slashes for consistency
-
-               // Split string into multiple folder names
-               auto vectorDirectory = gd::utf8::split( stringDirectory, '/' );
-               auto vectorFilter = gd::utf8::split( stringPathFilter, ';' );
-
-               // ## Check if any of the filter patterns match the directory path
-               
-               bool bMatch = false; // flag to indicate if we found a match
-               for( const auto& filter_ : vectorFilter )
-               {
-                  for( const auto& directory_ : vectorDirectory )
-                  {
-                     bMatch = gd::ascii::strcmp( directory_, filter_, gd::utf8::tag_wildcard{} );
-                     if( bMatch == true ) { break; } // this part of the path matches the filter, check next part
-                  }
-               }
-
-               if( bMatch == false ) continue;                                // no match found for this directory, skip it
-            }
-
             // ## If depth allows, recursively harvest files in this subdirectory
             if( uDepth > 0 )
             {
-               auto stringChildPath = it.path().string();
-               auto [bOk, stringError] = FILES_Harvest_g(stringChildPath, stringWildcard, ptable_, (uDepth - 1), bSize );// recursive call to harvest files in subdirectories
+               std::string stringChildPath = it.path().string();
+               gd::argument::arguments argumentsPath( {{"path", stringChildPath}, {"depth", uDepth - 1}, {"size", bSize}} );
+               if( stringWildcard.empty() == false ) argumentsPath["wildcard"] = stringWildcard;
+               if( stringPathFilter.empty() == false ) argumentsPath["path-filter"] = stringPathFilter;
+               auto [bOk, stringError] = FILES_Harvest_g( argumentsPath, ptable_ );// recursive call to harvest files in subdirectories
                if( bOk == false ) return { false, stringError };               // error in recursive call
             }
          }
          else
          {
-            if( it.is_regular_file() == true )                
+            if( it.is_regular_file() == true && bAddFile == true )
             {
                try
                {
-                  //std::string string_ = it.path().string();
                   gd::file::path path_(it);
                   if( papplication_g->IsState( CApplication::eApplicationStateCheckIgnoreFile ) == true )
                   {
@@ -460,6 +463,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
    bool bSize = false;
    if( argumentsPath.exists("size") == true ) bSize = argumentsPath["size"].as_bool();
 
+   auto vectorPath01 = gd::utf8::split("", ';');
    auto vectorPath = gd::utf8::split(stringSource, ';');
 
    std::array<std::byte, 256> buffer_; // buffer for file operations
@@ -469,7 +473,7 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
    {
       arguments_.append( "path", itPath );
       if( stringFilter.empty() == false ) { arguments_.append( "wildcard", stringFilter ); }
-      if( stringPathFilter.empty() == false ) { arguments_.append( "path_filter", stringPathFilter ); }
+      if( stringPathFilter.empty() == false ) { arguments_.append( "path-filter", stringPathFilter ); }
       arguments_.append( "depth", uRecursive );
       arguments_.append( "size", bSize );
 

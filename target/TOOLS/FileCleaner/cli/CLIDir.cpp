@@ -298,7 +298,7 @@ std::pair<bool, std::string> DirFilter_g( const gd::argument::shared::arguments&
    std::string stringSource = arguments_["source"].as_string();
    std::string stringPathFilter = arguments_["path-filter"].as_string();
 
-   gd::argument::arguments argumentsFilter( { {"path", stringSource}, {"wildcard", stringFilter}, {"depth", uDepth}, {"path_filter", stringPathFilter}});
+   gd::argument::arguments argumentsFilter( { {"path", stringSource}, {"wildcard", stringFilter}, {"depth", uDepth}, {"path-filter", stringPathFilter}});
 
    //auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable, uDepth, true);
    auto result_ = FILES_Harvest_g( argumentsFilter, ptable );

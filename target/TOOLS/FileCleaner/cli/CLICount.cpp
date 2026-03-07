@@ -129,6 +129,8 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
    pdocument->GetApplication()->UpdateApplicationState();
 
    gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive}, {"filter", stringFilter} });
+   std::string stringPathFilter = options_["path-filter"].as_string();
+   if( stringPathFilter.empty() == false ) argumentsPath.append("path-filter", stringPathFilter);
    auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);                            if( !result_.first ) { return result_; }
 
 
