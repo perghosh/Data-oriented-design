@@ -70,12 +70,12 @@ namespace gd {
        */
       bool strcmp(const char* piText, size_t uTextLength, const char* piPattern, size_t uPatternLength, utf8::tag_wildcard)
       {
-         size_t uTextPosition = 0;
-         size_t uPatternPosition = 0;
+         size_t uTextPosition = 0; // Position in text
+         size_t uPatternPosition = 0; // Position in pattern
 
          // Variables for backtracking when '*' is found
-         size_t uStarPatternPosition = std::string::npos;
-         size_t uStarTextPosition = std::string::npos;
+         size_t uStarPatternPosition = std::string::npos; // Position of last '*' in pattern
+         size_t uStarTextPosition = std::string::npos;   // Position in text corresponding to last '*' in pattern
 
          while(uTextPosition < uTextLength)                                    // Compare characters until end of text
          {

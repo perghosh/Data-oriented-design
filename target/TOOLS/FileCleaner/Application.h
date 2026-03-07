@@ -106,11 +106,11 @@ public:
 	 */
    enum enumDetail
    {
-		eDetailUnknown = 0,///< Unknown or unspecified detail level
-		eDetailBasic,     ///< Basic detail level
-      eDetailStandard,  ///< Standard detail level (this is default)
-      eDetailExtended,  ///< Extended detail level
-      eDetailFull,      ///< Full detail level
+	  eDetailUnknown = 0,///< Unknown or unspecified detail level
+	  eDetailBasic,      ///< Basic detail level
+      eDetailStandard,   ///< Standard detail level (this is default)
+      eDetailExtended,   ///< Extended detail level
+      eDetailFull,       ///< Full detail level
       eDetailMAX
 	};
 

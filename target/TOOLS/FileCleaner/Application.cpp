@@ -2396,7 +2396,6 @@ bool CApplication::IsDetailLevel_s(uint32_t uDetailLevel, const std::string_view
  * - `print`         : Prints results from commands.
  * - `recursive`     : Specifies recursive operations with a depth value.
  * - `output`        : Saves output to a specified file.
- * - `database`      : Sets the folder for log files.
  * - `statements`    : Specifies a file containing SQL statements.
  */
 void CApplication::Prepare_s(gd::cli::options& optionsApplication)
@@ -2420,6 +2419,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
    optionsApplication.add({ "prompt", "Prompts for values that is typed before execute expression, these values will be asked for"});
+   optionsApplication.add({ "path-filter", "Filter settings to match where files are searched for"});
    optionsApplication.add_flag_or_option({ "detail", "Set detail level on information presented to user. levels are basic, standard, extended, full or 0,1,2,3. If detail set as flag then standard is used." });
 
    {  // ## `count` command, copies file from source to target
@@ -2477,17 +2477,6 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add( std::move( optionsCommand ) );
    }
-
-   /*
-   {  // ## `db` command, use database and configure settings for that
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "db", "Configure database" );
-      optionsCommand.add({"file", 'f', "Where to place database file (used for sqlite databases)"});
-      optionsCommand.add({"settings", "Where to write configuration file"});
-      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
-      optionsCommand.parent(&optionsApplication);
-      optionsApplication.sub_add( std::move( optionsCommand ) );
-   }
-   */
 
 
    { // ## 'dir' command, list files
@@ -2592,17 +2581,6 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.parent(&optionsApplication);
       optionsApplication.sub_add(std::move(optionsCommand));
    }
-
-   /*
-   {  // ## `join` command, joins two or more files
-      gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "join", "join two or more files" );
-      optionsCommand.add({"source", 's', "Files to join"});
-      optionsCommand.add({"destination", 'd', "Destination, joined files result"});
-      optionsCommand.add({"backup", 'b', "If destination file exits then make a backup"});
-      optionsCommand.set_flag( (gd::cli::options::eFlagSingleDash | gd::cli::options::eFlagParent), 0 );
-      optionsApplication.sub_add( std::move( optionsCommand ) );
-   }
-   */
 
    {  // ## `paste` checks the clipboard for text or input file reading arguments
       gd::cli::options optionsCommand( gd::cli::options::eFlagUnchecked, "paste", "Paste text from clipboard or read from input file" );

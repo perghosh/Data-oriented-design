@@ -235,8 +235,27 @@ namespace detail {
   * 
   * @endverbatim
   */
-std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, const std::string& stringWildcard, gd::table::dto::table* ptable_, unsigned uDepth, bool bSize )
+std::pair<bool, std::string> FILES_Harvest_g( const std::string& stringPath, const std::string& stringWildcard, gd::table::dto::table* ptable_, unsigned uDepth, bool bSize )
+{
+   std::array<std::byte, 128> buffer_; // buffer for file operations
+   gd::argument::arguments arguments_(buffer_);
+   if( stringPath.empty() == false ) { arguments_.append( "path", stringPath ); }
+   if( stringWildcard.empty() == false ) { arguments_.append( "wildcard", stringWildcard ); }
+   arguments_.append( "depth", uDepth );
+   arguments_.append( "size", bSize );
+
+   return FILES_Harvest_g( arguments_, ptable_ );
+}
+
+std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::arguments& arguments_, gd::table::dto::table* ptable_ )
 {                                                                                                  assert( ptable_ != nullptr );
+   std::string stringPath = arguments_["path"].get_string();
+   std::string stringWildcard = arguments_["wildcard"].get_string();
+   unsigned uDepth = arguments_["depth"].get_uint();
+   bool bSize = arguments_["size"].get_bool();
+   std::string stringPathFilter = arguments_["path_filter"].get_string();
+   
+
    if( stringPath.find(';') != std::string::npos )
    {
       // split path into multiple paths 
@@ -269,6 +288,8 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
       {
          if( it.is_directory() == true )                                      // is file directory
          {
+            // ## Check if we should ignore this directory based on application state and ignore patterns
+
             if( papplication_g->IsState( CApplication::eApplicationStateCheckIgnoreFolder ) == true )
             {
                auto stringDirectory = it.path().string();
@@ -279,6 +300,35 @@ std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, cons
                if( bIgnore == true ) continue;                                // ignore this directory
             }
 
+            // ## Check if this directory matches the path filter (if provided)
+            //    If stringPathFilter is not empty, we need to check if the current directory matches the filter pattern
+
+            if( stringPathFilter.empty() == false )
+            {
+               auto stringDirectory = it.path().string();
+               
+               std::replace( stringDirectory.begin(), stringDirectory.end(), '\\', '/' );  // convert to forward slashes for consistency
+
+               // Split string into multiple folder names
+               auto vectorDirectory = gd::utf8::split( stringDirectory, '/' );
+               auto vectorFilter = gd::utf8::split( stringPathFilter, ';' );
+
+               // ## Check if any of the filter patterns match the directory path
+               
+               bool bMatch = false; // flag to indicate if we found a match
+               for( const auto& filter_ : vectorFilter )
+               {
+                  for( const auto& directory_ : vectorDirectory )
+                  {
+                     bMatch = gd::ascii::strcmp( directory_, filter_, gd::utf8::tag_wildcard{} );
+                     if( bMatch == true ) { break; } // this part of the path matches the filter, check next part
+                  }
+               }
+
+               if( bMatch == false ) continue;                                // no match found for this directory, skip it
+            }
+
+            // ## If depth allows, recursively harvest files in this subdirectory
             if( uDepth > 0 )
             {
                auto stringChildPath = it.path().string();
@@ -403,18 +453,31 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
    if( argumentsPath.exists("recursive") == true ) uRecursive = argumentsPath["recursive"].as_uint();
    else                                            uRecursive = argumentsPath["depth"].as_uint();
 
-   std::string stringSource = argumentsPath["source"].as_string();
-   std::string stringFilter = argumentsPath["filter"].as_string();
+   std::string stringSource = argumentsPath["source"].as_string();            // get source path for harvesting files, this can be a single path or multiple paths separated by ;
+   std::string stringFilter = argumentsPath["filter"].as_string();            // get wildcard filter for harvesting files, this can be a single filter or multiple filters separated by ;
+   std::string stringPathFilter = argumentsPath["path-filter"].as_string();   // get path filter for harvesting files, this can be a single filter or multiple filters separated by ;
 
    bool bSize = false;
    if( argumentsPath.exists("size") == true ) bSize = argumentsPath["size"].as_bool();
 
    auto vectorPath = gd::utf8::split(stringSource, ';');
 
+   std::array<std::byte, 256> buffer_; // buffer for file operations
+   gd::argument::arguments arguments_( buffer_ );
+
    for( auto itPath : vectorPath )
    {
-      auto [bOk, stringError] = FILES_Harvest_g(std::string(itPath), stringFilter, ptable_, uRecursive, bSize); // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+      arguments_.append( "path", itPath );
+      if( stringFilter.empty() == false ) { arguments_.append( "wildcard", stringFilter ); }
+      if( stringPathFilter.empty() == false ) { arguments_.append( "path_filter", stringPathFilter ); }
+      arguments_.append( "depth", uRecursive );
+      arguments_.append( "size", bSize );
+
+      auto [bOk, stringError] = FILES_Harvest_g(arguments_, ptable_); // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
+      //auto [bOk, stringError] = FILES_Harvest_g(std::string(itPath), stringFilter, ptable_, uRecursive, bSize); // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
       if( bOk == false ) return { false, stringError };
+
+      arguments_.clear();
    }
 
 

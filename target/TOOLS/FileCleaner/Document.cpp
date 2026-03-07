@@ -2228,7 +2228,7 @@ bool CDocument::CACHE_Add( gd::table::dto::table&& table, const std::string_view
    /// Create unique_ptr with table and move table data to this table
    std::unique_ptr<gd::table::dto::table> ptable = std::make_unique<gd::table::dto::table>( std::move( table ) );
 
-   if( stringId.empty() == false )
+   if( stringTableId.empty() == false )
    {
       ptable->property_set( { "id", stringTableId } );
    }

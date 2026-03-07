@@ -47,6 +47,8 @@ int RowCount(const std::string& stringFile);
 /// @brief Harvests files from the specified path and populates a table with their details.
 std::pair<bool, std::string> FILES_Harvest_g(const std::string& stringPath, const std::string& stringWildcard, gd::table::dto::table* ptable_, unsigned uDepth, bool bSize = false );
 /// @brief Harvests files from the specified path and populates a table with their details.
+std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::arguments& arguments_, gd::table::dto::table* ptable_ );
+/// @brief Harvests files from the specified path and populates a table with their details.
 std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::arguments& argumentsPath, gd::table::dto::table* ptable_ );
 
 /// @brief Harvests files matching a wildcard pattern from the specified path and populates a table with their details.

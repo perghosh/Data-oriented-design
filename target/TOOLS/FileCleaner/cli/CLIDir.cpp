@@ -42,14 +42,14 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 
    gd::argument::shared::arguments argumentsFileHarvest;
    SHARED_ReadHarvestSetting_g( options_, argumentsFileHarvest, pdocument );
-   argumentsFileHarvest.append( options_.get_arguments(), {"segment", "icase", "word"});
+   argumentsFileHarvest.append( options_.get_arguments(), {"segment", "icase", "word", "path-filter"});
    argumentsFileHarvest.append("size", true);                                 // always get size
 
 #ifndef NDEBUG
-   std::string stringHarvest_d = gd::argument::shared::debug::print(  argumentsFileHarvest );
+   [[maybe_unused]] std::string stringHarvest_d = gd::argument::shared::debug::print(  argumentsFileHarvest );
 #endif //
 
-	// ## perform the pattern operation if found ..............................
+   // ## perform the pattern operation if found ..............................
 
    if( options_.exists("pattern") == true )                                    // 
    {
@@ -296,8 +296,12 @@ std::pair<bool, std::string> DirFilter_g( const gd::argument::shared::arguments&
    auto stringFilter = arguments_["filter"].as_string();
    unsigned uDepth = arguments_["depth"].as_uint();
    std::string stringSource = arguments_["source"].as_string();
+   std::string stringPathFilter = arguments_["path-filter"].as_string();
 
-   auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable, uDepth, true);
+   gd::argument::arguments argumentsFilter( { {"path", stringSource}, {"wildcard", stringFilter}, {"depth", uDepth}, {"path_filter", stringPathFilter}});
+
+   //auto result_ = FILES_Harvest_g( stringSource, stringFilter, ptable, uDepth, true);
+   auto result_ = FILES_Harvest_g( argumentsFilter, ptable );
    if( result_.first == false ) return result_;
 
 	CountLevel_s(ptable);
