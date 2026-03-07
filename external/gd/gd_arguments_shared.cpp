@@ -646,7 +646,7 @@ std::string arguments::argument::get_string() const
    std::string s;
    if( ctype_s( m_eType ) == (arguments::eTypeNumberString | eValueLength) || ctype_s( m_eType ) == (arguments::eTypeNumberUtf8String | eValueLength) )
    {
-      s = std::string_view(m_unionValue.pbsz, length() );                     // try for string before converting other possible values (remember to not include last zero ending as text)
+      s = std::string_view(m_unionValue.pbsz, length() - 1 );                 // try for string before converting other possible values (remember to not include last zero ending as text)
    }
    else
    {

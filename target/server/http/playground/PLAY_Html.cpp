@@ -3,12 +3,60 @@
 #include <array>
 #include <filesystem>
 
+#include "gd/gd_variant.h"
+#include "gd/gd_arguments_shared.h"
 #include "gd/gd_file.h"
 #include "gd_tools/html/gd_tools_html_document.h"
 
 #include "main.h"
 
 #include "catch2/catch_amalgamated.hpp"
+
+
+TEST_CASE( "[html] variant", "[html]" ) {
+   {
+      gd::variant variantValue;
+
+      variantValue = std::string("");
+      std::string stringValue = variantValue.as_string();
+
+      stringValue = "Hello, world!";
+      variantValue = stringValue;
+   }
+
+   {
+      gd::variant variantValue( std::string("") );
+
+      std::string stringValue = variantValue.get_string();
+
+      stringValue = "Hello, world!";
+      variantValue = stringValue;
+   }
+
+
+   {
+      gd::variant variantValue( std::string("") );
+      gd::argument::shared::arguments argumentValue( { { "test", variantValue } } );
+      std::string stringValue = argumentValue["test"].get_string();
+      std::cout << "Argument value: " << stringValue << "\n";
+   }
+
+   {
+      gd::variant variantValue( std::string("1") );
+      gd::argument::shared::arguments argumentValue( { { "test", variantValue } } );
+      std::string stringValue = argumentValue["test"].get_string();
+      std::cout << "Argument value: " << stringValue << "\n";
+   }
+
+   {
+      gd::variant variantValue( std::string("12") );
+      gd::argument::shared::arguments argumentValue( { { "test", variantValue } } );
+      std::string stringValue = argumentValue["test"].get_string();
+      std::cout << "Argument value: " << stringValue << "\n";
+   }
+
+   
+}
 
 TEST_CASE( "[html] element creation", "[html]" ) {
    using namespace gd::tools::html;
