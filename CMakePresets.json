@@ -110,6 +110,22 @@
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_C_FLAGS_RELEASE": "/MD /O2 /Ob2 /DNDEBUG"
       }
+    },
+    {
+      "name": "linux-release",
+      "displayName": "Linux Release",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "macos-release",
+      "displayName": "macOS Release",
+      "inherits": "macos-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
     }
   ],
   "buildPresets": [
@@ -132,6 +148,21 @@
       "name": "macos-debug",
       "configurePreset": "macos-debug",
       "displayName": "Build macOS Debug"
+    },
+    {
+      "name": "x64-release",
+      "configurePreset": "x64-release",
+      "displayName": "Build Windows Release"
+    },
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-release",
+      "displayName": "Build Linux Release"
+    },
+    {
+      "name": "macos-release",
+      "configurePreset": "macos-release",
+      "displayName": "Build macOS Release"
     }
   ]
 }
