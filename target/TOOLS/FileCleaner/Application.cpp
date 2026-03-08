@@ -718,7 +718,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    /// ## prepare command
 
 #ifndef NDEBUG
-   auto stringName_d = poptionsActive->name();
+   [[maybe_unused]]  auto stringName_d = poptionsActive->name();
 #endif // !NDEBUG
 
    // ## set editor
@@ -780,6 +780,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
          try
          {
             pdocument_->GetApplication()->SetState(eApplicationStateWork, eApplicationStateIdle); // set work state
+
             auto result_ = call_((gd::cli::options*)&options_, pdocument_);
             if( result_.first == false )
             {
@@ -1375,7 +1376,7 @@ std::pair<bool, std::string> CApplication::PrintProgress(const std::string_view&
 
 std::pair<bool, std::string> CApplication::PrintError(const std::string_view& stringMessage, const gd::argument::arguments& argumentsFormat)
 {
-   std::cout << "\n##\n## ERROR \n## ------\n" << stringMessage << std::flush;
+   std::cout << "\n## ERROR ##\n" << stringMessage << "\n" << std::flush;
    return {true, ""};
 }
 

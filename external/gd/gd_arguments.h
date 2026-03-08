@@ -897,16 +897,16 @@ public: //0TAG0construct.arguments
    requires std::convertible_to<std::ranges::range_value_t<RANGE>, std::pair<std::string_view, gd::variant>>
    arguments(RANGE&& listPair) {  common_construct(std::forward<RANGE>(listPair)); }
    /// The Bridge for {{key, val}} syntax
-   arguments(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair) { common_construct(listPair); }
+   arguments(std::initializer_list<std::pair<std::string_view, gd::variant>> listPair) { common_construct_range(listPair); }
 
 
    /// -----------------------------------------------------------------------
    /// @brief Constructs an arguments object from an initializer list of string-variant_view pairs with a tag_view.
    template<std::ranges::input_range RANGE>
    requires std::convertible_to<std::ranges::range_value_t<RANGE>, std::pair<std::string_view, gd::variant_view>>
-   arguments(RANGE&& listPair, tag_view view_) {  common_construct(std::forward<RANGE>(listPair), view_); }
+   arguments(RANGE&& listPair, tag_view view_) {  common_construct_range(std::forward<RANGE>(listPair), view_); }
    /// The Bridge for {{key, val}} syntax
-   arguments(std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view view_) { common_construct(listPair, view_); }
+   arguments(std::initializer_list<std::pair<std::string_view, gd::variant_view>> listPair, tag_view view_) { common_construct_range(listPair, view_); }
 
    arguments( std::vector<std::pair<std::string_view, gd::variant_view>> listPair, tag_view ); // light weight version to construct arguments with vector like {{},{}}
    arguments( const std::initializer_list<std::pair<std::string_view, gd::variant_view>>& listPair, const arguments& arguments_ );
@@ -968,13 +968,13 @@ protected:
    }
 
    template<typename RANGE>
-   void common_construct( RANGE&& range_ ) {                                  // std::pair<std::string_view, gd::variant>
+   void common_construct_range( RANGE&& range_ ) {                            // std::pair<std::string_view, gd::variant>
       zero(); 
       for(const auto& it : range_) { append_argument(it); }
    }
 
    template<typename RANGE>
-   void common_construct( RANGE&& range_, tag_view view_ ) {                  // std::pair<std::string_view, gd::variant_view>
+   void common_construct_range( RANGE&& range_, tag_view view_ ) {            // std::pair<std::string_view, gd::variant_view>
       zero(); 
       for(const auto& it : range_) { append_argument(it, view_); }
    }

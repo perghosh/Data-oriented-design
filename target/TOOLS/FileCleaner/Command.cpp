@@ -301,7 +301,14 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::arguments& argu
    {
       if( std::filesystem::is_directory(stringPath) == false )                 // not a directory
       {
-         if( bAddFile == false ) return { true, "" };
+         if( bAddFile == false )
+         {
+            // check if valid file path and if so add it to table, otherwise return error
+            if( std::filesystem::exists(stringPath) == false ) { return { false, "Path do not exist: " + stringPath }; }
+               
+            return { true, "" };
+         }
+
          if( std::filesystem::is_regular_file(stringPath) == true )            // is file
          {
             detail::add_file_to_table(gd::file::path(stringPath), stringWildcard, ptable_, bSize);
@@ -463,7 +470,6 @@ std::pair<bool, std::string> FILES_Harvest_g(const gd::argument::shared::argumen
    bool bSize = false;
    if( argumentsPath.exists("size") == true ) bSize = argumentsPath["size"].as_bool();
 
-   auto vectorPath01 = gd::utf8::split("", ';');
    auto vectorPath = gd::utf8::split(stringSource, ';');
 
    std::array<std::byte, 256> buffer_; // buffer for file operations

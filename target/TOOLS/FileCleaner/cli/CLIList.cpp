@@ -39,6 +39,11 @@ std::pair<bool, std::string> List_g(gd::cli::options* poptionsList, CDocument* p
 {
    const gd::cli::options& options_ = *poptionsList;
 
+#ifndef NDEBUG
+   [[maybe_unused]] std::string string_d = gd::argument::debug::print( poptionsList->get_arguments() );
+#endif // NDEBUG
+
+
    if( options_.exists("clip") == true && options_["clip"].is_true() == true ) // test for clip argument
    {
       std::string stringFile;
@@ -105,6 +110,8 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
    std::string stringFilter = options_["filter"].as_string();
 
    gd::argument::shared::arguments argumentsPath({ {"source", stringSource}, {"recursive", iRecursive} });
+   std::string stringPathFilter = options_["path-filter"].as_string();
+   if( stringPathFilter.empty() == false ) argumentsPath.append("path-filter", stringPathFilter);
    auto result_ = pdocument->FILE_Harvest(argumentsPath, stringFilter);       // harvest (read) files based on source, source can be a file or directory or multiple separated by ;
    if (result_.first == false) return result_;
 

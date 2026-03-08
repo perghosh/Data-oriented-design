@@ -3379,7 +3379,7 @@ std::string arguments::print_s(const_pointer pPosition, uint32_t uPairType)
 
 void arguments::print_name_s( const_pointer pPosition, std::string& stringPrint )
 {
-   if( *pPosition == eType_ParameterName )
+   if( uint8_t(*pPosition) == eType_ParameterName )
    {
       // append name, name starts two bytes after position and size of name is in byte before name
       stringPrint.append( reinterpret_cast<const char*>( pPosition+ 2), *(pPosition + 1) );

@@ -15,6 +15,12 @@
 
 TEST_CASE( "[html] variant", "[html]" ) {
    {
+      gd::argument::arguments argumentsValue( { { "test", std::string( "Hello, world!" ) } } );
+      argumentsValue.append( "test2", std::string( "Hello, world 2!" ) );
+      auto string_d = gd::argument::debug::print( argumentsValue );
+   }
+
+   {
       gd::variant variantValue;
 
       variantValue = std::string("");
