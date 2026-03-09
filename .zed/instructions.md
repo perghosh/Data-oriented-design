@@ -224,6 +224,27 @@ There are also a @PROJECT and @TASK connection. It works like this:
 
 ---
 
+## POINTER USAGE GUIDELINES
+
+Rationale: In low-level code such as parsers and playground/debug code, using pointers (raw or smart) can make inspection in the Visual Studio debugger easier (hovering over a pointer shows pointee state). The guidelines below allow pointer usage while keeping ownership and intent explicit.
+
+Rules
+- Continue to use the `p` prefix for all pointer-like variables (matches existing Hungarian rules).
+- Ownership conventions (explicit):
+  - Owning pointer: prefer smart pointers and keep the `p` prefix, e.g. `std::unique_ptr<Node> pnodeOwner;` or `std::shared_ptr<Node> pnodeShared;`.
+  - Non-owning/view pointer: use raw pointer with an explicit name or short postfix that documents intent, e.g. `Node* pnodeObserver;` or `Node* pnodeNonOwning;` and add `///< non-owning` comment.
+  - If you use a raw owning pointer, you may annotate with `@DEBUG` or `@NOTE` and a short lifetime comment: `Node* pnode; ///< owning, freed by parse_context in ~parse_context()`.
+- Always document lifetime and ownership in an adjacent comment (`///<`) so reviewers and the debugger user understand who frees memory.
+- For parser data structures where hover-inspection is important, consider using non-owning raw pointers for tree links and a single owning `std::unique_ptr` per subtree root.
+
+Examples
+- Smart-owner:
+  - `std::unique_ptr<ast_node> pastnodeRootOwner; ///< owning`
+- Non-owning observer (debug-friendly):
+  - `ast_node* pastnodeCurrentObserver; ///< non-owning, pointer valid while parsing scope active`
+
+---
+
 ## Project Structure
 
 ```
