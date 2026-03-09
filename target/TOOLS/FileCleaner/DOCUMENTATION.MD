@@ -281,7 +281,7 @@ These options can be used with any command to modify its behavior globally. Beha
 - `--output <file>`: Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set.
 - `--prompt <values>`: Prompts for values that are typed before executing expression. These values will be asked for.
 - `--detail <level>`: Set detail level on information presented to user. levels are basic, standard, extended, full or 0,1,2,3. If detail set as flag then standard is used.
-
+- `--path-filter <directory>`: Filter settings to match directories where files are searched in, this is used to limit the search to specific directories. One or more patterns for directories can be set
 **Flags**
 - `-logging-csv`: Add csv logger, prints log information using the csv format.
 - `-print`: Results from command should be printed to console.

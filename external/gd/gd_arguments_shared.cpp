@@ -646,7 +646,7 @@ std::string arguments::argument::get_string() const
    std::string s;
    if( ctype_s( m_eType ) == (arguments::eTypeNumberString | eValueLength) || ctype_s( m_eType ) == (arguments::eTypeNumberUtf8String | eValueLength) )
    {
-      s = std::string_view(m_unionValue.pbsz, length() - 1 );                 // try for string before converting other possible values (remember to not include last zero ending as text)
+      s = std::string_view(m_unionValue.pbsz, length() );                     // try for string before converting other possible values (remember to not include last zero ending as text)
    }
    else
    {
@@ -1141,11 +1141,15 @@ arguments::pointer arguments::insert(pointer pPosition, argument_type uType, con
 arguments& arguments::append( argument_type uType, const_pointer pBuffer, unsigned int uLength)
 { 
    unique();                                                                   // make sure we have our own copy of data
+#ifndef NDEBUG
+   enumCType eType_d = (enumCType)(uType & ~eTypeNumber_MASK);                 // get absolute variable type
+   auto typename_d = gd::types::type_name_g( eType_d );                        // readable name for type
+#endif // _DEBUG
 
    uint64_t uReserveLength = buffer_size();                                    // current buffer size
    uReserveLength += uLength + sizeof(uint32_t) * 2;                           // value length (and prefix value length for strings)
    uReserveLength += sizeof( uint16_t ) + sizeof(uint32_t);                    // value type and value length if needed
-   uReserveLength = (uReserveLength + 3) & ~3;                                 // align
+   uReserveLength = align32_g( uReserveLength );                               // align
 
    reserve( uReserveLength );
 
@@ -1286,12 +1290,12 @@ arguments& arguments::append_argument(std::string_view stringName, const gd::var
          {
             if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
 
-            uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+            uLength = variantValue.length();// + get_string_zero_terminate_length_s(uType);
          }
          else
          {
             uType |= eValueLength;
-            uLength = (variantValue.length() * sizeof(char16_t)) + get_string_zero_terminate_length_s(uType);
+            uLength = (variantValue.length() * sizeof(char16_t));// + get_string_zero_terminate_length_s(uType);
          }
 
          return append(stringName, uType, pData, uLength);
@@ -1310,12 +1314,12 @@ arguments& arguments::append_argument(std::string_view stringName, const gd::var
       {
          if( uType >= eTypeNumberString && uType <= eTypeNumberBinary ) { uType |= eValueLength; }
 
-         uLength = variantValue.length() + get_string_zero_terminate_length_s(uType);
+         uLength = variantValue.length();// + get_string_zero_terminate_length_s(uType);
       }
       else
       {
          uType |= eValueLength;
-         uLength = (variantValue.length() * sizeof(char16_t)) + get_string_zero_terminate_length_s(uType);
+         uLength = (variantValue.length() * sizeof(char16_t));// + get_string_zero_terminate_length_s(uType);
       }
 
       return append(uType, pData, uLength);
@@ -4066,7 +4070,6 @@ uint64_t arguments::memcpy_s( pointer pCopyTo,  argument_type uType, const_point
          {                                                                                         assert( (uValueLength % 2) == 0 );
             uValueLength = uValueLength >> 1;                                  // unicode string, length is cut in half
          }
-         uValueLength--;                                                       // remove the zero terminator for length
       }
 
       *(uint32_t*)(pCopyTo + uPosition) = uValueLength;

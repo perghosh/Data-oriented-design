@@ -141,9 +141,9 @@ std::pair<bool, std::string> SHARED_ReadHarvestSetting_g( const gd::cli::options
    // ## Set harvest arguments ...............................................
 
    arguments_.set("source", stringSource);                                    // set source argument
-   arguments_.set("ignore", stringIgnore);                                    // set ignore argument
+   if( stringIgnore.empty() == false ) arguments_.set("ignore", stringIgnore);// set ignore argument
    arguments_.set("depth", uRecursive);                                       // set recursive argument
-   arguments_.set("filter", stringFilter);                                    // set filter argument
+   if( stringFilter.empty() == false ) arguments_.set("filter", stringFilter);// set filter argument
 
    pdocument->GetApplication()->UpdateApplicationState();                     // update application state based on new arguments
 

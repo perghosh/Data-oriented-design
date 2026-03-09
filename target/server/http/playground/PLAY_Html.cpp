@@ -61,7 +61,71 @@ TEST_CASE( "[html] variant", "[html]" ) {
       std::cout << "Argument value: " << stringValue << "\n";
    }
 
-   
+   {
+      // multiple tests using gd::argument::shared::arguments in block, they are oneliners and enclosed in {} with long rows
+
+      // ## string values
+      {
+         gd::argument::shared::arguments argumentValue;
+
+         argumentValue.append( "key", std::string( "123" ) );
+         argumentValue.append( std::string( "123" ) );
+
+         auto v_ = argumentValue["key"].get_string();
+         v_ = argumentValue[1].get_string();
+         
+         REQUIRE( argumentValue["key"].get_string() == "123" );
+         REQUIRE( argumentValue[1].get_string() == "123" );
+
+         gd::argument::shared::arguments argumentValue02( { { "key", std::string("value") } } );
+         v_ = argumentValue02["key"].get_string();
+         REQUIRE( argumentValue02["key"].get_string() == "value" );
+      }
+
+
+      // ## string values - append and retrieve
+      { gd::argument::shared::arguments argumentValue( { { "key", std::string("value") } } ); REQUIRE( argumentValue["key"].get_string() == "value" ); }
+      { gd::argument::shared::arguments argumentValue( { { "empty", std::string("") } } ); REQUIRE( argumentValue["empty"].get_string() == "" ); }
+      { gd::argument::shared::arguments argumentValue( { { "spaces", std::string("  hello  ") } } ); REQUIRE( argumentValue["spaces"].get_string() == "  hello  " ); }
+
+      // ## integer values - append and retrieve
+      { gd::argument::shared::arguments argumentValue( { { "integer", gd::variant(42) } } ); REQUIRE( argumentValue["integer"].as_int() == 42 ); }
+      { gd::argument::shared::arguments argumentValue( { { "negative", gd::variant(-100) } } ); REQUIRE( argumentValue["negative"].as_int() == -100 ); }
+      { gd::argument::shared::arguments argumentValue( { { "zero", gd::variant(0) } } ); REQUIRE( argumentValue["zero"].as_int() == 0 ); }
+
+      // ## double values - append and retrieve
+      { gd::argument::shared::arguments argumentValue( { { "decimal", gd::variant(3.14) } } ); REQUIRE( argumentValue["decimal"].as_double() == Catch::Approx(3.14) ); }
+
+      // ## bool values - append and retrieve
+      { gd::argument::shared::arguments argumentValue( { { "flag", gd::variant(true) } } ); REQUIRE( argumentValue["flag"].as_bool() == true ); }
+      { gd::argument::shared::arguments argumentValue( { { "flag", gd::variant(false) } } ); REQUIRE( argumentValue["flag"].as_bool() == false ); }
+
+      // ## multiple named values - size and access
+      { gd::argument::shared::arguments argumentValue( { { "a", std::string("1") }, { "b", std::string("2") }, { "c", std::string("3") } } ); REQUIRE( argumentValue.size() == 3 ); }
+      { gd::argument::shared::arguments argumentValue( { { "first", std::string("A") }, { "second", std::string("B") } } ); REQUIRE( argumentValue["first"].get_string() == "A" ); REQUIRE( argumentValue["second"].get_string() == "B" ); }
+
+      // ## as_string_view - lightweight access without allocation
+      { gd::argument::arguments argumentValue;argumentValue.append( "view", std::string("hello") ); REQUIRE( argumentValue["view"].as_string_view() == "hello" ); }
+      { gd::argument::shared::arguments argumentValue;argumentValue.append( "view", std::string("hello") ); REQUIRE( argumentValue["view"].as_string_view() == "hello" ); }
+      { gd::argument::shared::arguments argumentValue( { { "view", std::string("hello") } } ); REQUIRE( argumentValue["view"].as_string_view() == "hello" ); }
+
+      // ## missing key returns empty/null argument
+      { gd::argument::shared::arguments argumentValue( { { "exists", std::string("yes") } } ); REQUIRE( argumentValue["missing"].empty() == true ); }
+
+      // ## copy semantics - shared reference counting
+      { gd::argument::shared::arguments argumentValue( { { "shared", std::string("data") } } ); auto argumentCopy = argumentValue; REQUIRE( argumentCopy["shared"].get_string() == "data" ); }
+
+      // ## append after construction
+      { gd::argument::shared::arguments argumentValue; argumentValue.append("name", std::string("appended")); REQUIRE( argumentValue["name"].get_string() == "appended" ); }
+      { gd::argument::shared::arguments argumentValue; argumentValue.append("i1", 10); argumentValue.append("i2", 20); REQUIRE( argumentValue["i1"].as_int() + argumentValue["i2"].as_int() == 30 ); }
+
+      // ## integer conversion via as_string
+      { gd::argument::shared::arguments argumentValue( { { "number", gd::variant(999) } } ); REQUIRE( argumentValue["number"].as_string() == "999" ); }
+
+      // ## index-based access (zero based)
+      { gd::argument::shared::arguments argumentValue( { { "first", std::string("X") }, { "second", std::string("Y") } } ); REQUIRE( argumentValue[0u].get_string() == "X" ); REQUIRE( argumentValue[1u].get_string() == "Y" ); }
+   }
+
 }
 
 TEST_CASE( "[html] element creation", "[html]" ) {

@@ -925,7 +925,7 @@ std::pair<bool, std::string> CApplication::Initialize( gd::cli::options& options
    }
    else if( stringCommandName == "version" )
    {
-      std::cout << "version 1.1.1" << "\n";
+      std::cout << "version 1.1.2" << "\n";
    }
    else
    {
@@ -2420,7 +2420,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({ "recursive", "Operation should be recursive, by settng number decide the depth" });
    optionsApplication.add({ "output", "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
    optionsApplication.add({ "prompt", "Prompts for values that is typed before execute expression, these values will be asked for"});
-   optionsApplication.add({ "path-filter", "Filter settings to match where files are searched for"});
+   optionsApplication.add({ "path-filter", "Filter settings to match directories where files are searched in"});
    optionsApplication.add_flag_or_option({ "detail", "Set detail level on information presented to user. levels are basic, standard, extended, full or 0,1,2,3. If detail set as flag then standard is used." });
 
    {  // ## `count` command, copies file from source to target
