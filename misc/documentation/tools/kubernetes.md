@@ -85,3 +85,29 @@ But to simplify it, you can also get into interactive bash shell inside the pod,
 To exit type `exit` or press `Ctrl + D`.  
 
 Copy file into pod: `kubectl cp <local file path> <pod name>:<remote file path>`
+
+
+## Minikube
+
+### Start a local Kubernetes cluster with Minikube
+```
+minikube start
+```
+
+### Reload image if needed
+```
+minikube image load cleaner-app:v1 --overwrite
+```
+
+
+## Git
+
+### Download repos from github and run them in kubernetes
+
+```
+# Download the main branch as a tarball
+curl -L https://github.com/user/repo/tarball/main -o repo.tar.gz
+
+# Extract it into your work directory
+tar -xzf repo.tar.gz -C /data/work --strip-components=1
+```

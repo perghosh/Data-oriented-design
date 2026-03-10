@@ -18,19 +18,19 @@ spec:
     spec:
       # Use terminationGracePeriodSeconds for graceful shutdown
       terminationGracePeriodSeconds: 30
-      
+
       # Container configuration
       containers:
       - name: cleaner-container
-        image: image-cleaner-application:v1
+        image: docker.io/library/cleaner-app:v1
         imagePullPolicy: Never
-        
+
         # Container ports - nginx listens on port 80
         ports:
         - name: http
           containerPort: 80
           protocol: TCP
-        
+
         # Health check
         livenessProbe:
           httpGet:
@@ -40,7 +40,7 @@ spec:
           periodSeconds: 30
           timeoutSeconds: 5
           failureThreshold: 3
-        
+
         readinessProbe:
           httpGet:
             path: /health
@@ -49,7 +49,7 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 3
           failureThreshold: 2
-        
+
         # Resource limits and requests
         resources:
           requests:
@@ -58,7 +58,7 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
-        
+
         # Volume mounts for flexible directory access
         volumeMounts:
         # Web content and output storage
@@ -68,51 +68,51 @@ spec:
         - name: app-data
           mountPath: /app/www
           subPath: www
-        
+
         # ============================================
         # Mount additional volumes to run cleaner on different directories
         # Uncomment the ones you need:
         # ============================================
-        
+
         # Example 1: Empty directory for temporary work
         # - name: work-volume
         #   mountPath: /data/work
-        
+
         # Example 2: ConfigMap with sample code to analyze
         # - name: source-code
         #   mountPath: /data/source
-        
+
         # Example 3: Persistent volume for large codebases
         # - name: code-storage
         #   mountPath: /data/code
-        
+
         # Example 4: HostPath for local development (minikube/kind)
         # - name: host-path
         #   mountPath: /host/mounted/code
-      
+
       # ============================================
       # Volume definitions - uncomment and configure as needed
       # ============================================
-      
+
       volumes:
       # Application data (output and www files)
       - name: app-data
         emptyDir: {}
-      
+
       # Example 1: Empty volume for work directory
       # - name: work-volume
       #   emptyDir: {}
-      
+
       # Example 2: ConfigMap with source code
       # - name: source-code
       #   configMap:
       #     name: source-code-config
-      
+
       # Example 3: Persistent Volume Claim
       # - name: code-storage
       #   persistentVolumeClaim:
       #     claimName: code-storage-pvc
-      
+
       # Example 4: HostPath (for minikube/kind development)
       # - name: host-path
       #   hostPath:

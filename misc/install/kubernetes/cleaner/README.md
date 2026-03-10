@@ -34,24 +34,21 @@ The `cleaner` application is a powerful command-line tool for analyzing source c
 
 ```bash
 # Build the Docker image
-docker build -t image-cleaner-application:v1 .
+docker build -t cleaner-app:v1 .
 
-# Verify the image
-docker images | grep image-cleaner-application
+# Load the image into Minikube (Required for imagePullPolicy: Never)
+minikube image load cleaner-app:v1 --overwrite
 ```
 
 ### 2. Deploy to Kubernetes
 
 ```bash
-# Apply the deployment
+# Clean start (removes old stuck pods)
+kubectl delete deployment cleaner-112 --ignore-not-found
 kubectl apply -f deployment.yaml
 
-# Wait for pods to be ready
-kubectl wait --for=condition=ready pod -l app=cleaner-112 --timeout=60s
-
-# Check status
-kubectl get pods -l app=cleaner-112
-kubectl get svc cleaner-112-service
+# Watch pods reach "Running" status
+kubectl get pods -l app=cleaner-112 -w
 ```
 
 ### 3. Access the Web Interface
