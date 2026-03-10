@@ -1,0 +1,221 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cleaner-112
+  labels:
+    app: cleaner-112
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cleaner-112
+  template:
+    metadata:
+      labels:
+        app: cleaner-112
+        version: v1
+    spec:
+      # Use terminationGracePeriodSeconds for graceful shutdown
+      terminationGracePeriodSeconds: 30
+      
+      # Container configuration
+      containers:
+      - name: cleaner-container
+        image: image-cleaner-application:v1
+        imagePullPolicy: Never
+        
+        # Container ports - nginx listens on port 80
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        
+        # Health check
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 2
+        
+        # Resource limits and requests
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        # Volume mounts for flexible directory access
+        volumeMounts:
+        # Web content and output storage
+        - name: app-data
+          mountPath: /app/output
+          subPath: output
+        - name: app-data
+          mountPath: /app/www
+          subPath: www
+        
+        # ============================================
+        # Mount additional volumes to run cleaner on different directories
+        # Uncomment the ones you need:
+        # ============================================
+        
+        # Example 1: Empty directory for temporary work
+        # - name: work-volume
+        #   mountPath: /data/work
+        
+        # Example 2: ConfigMap with sample code to analyze
+        # - name: source-code
+        #   mountPath: /data/source
+        
+        # Example 3: Persistent volume for large codebases
+        # - name: code-storage
+        #   mountPath: /data/code
+        
+        # Example 4: HostPath for local development (minikube/kind)
+        # - name: host-path
+        #   mountPath: /host/mounted/code
+      
+      # ============================================
+      # Volume definitions - uncomment and configure as needed
+      # ============================================
+      
+      volumes:
+      # Application data (output and www files)
+      - name: app-data
+        emptyDir: {}
+      
+      # Example 1: Empty volume for work directory
+      # - name: work-volume
+      #   emptyDir: {}
+      
+      # Example 2: ConfigMap with source code
+      # - name: source-code
+      #   configMap:
+      #     name: source-code-config
+      
+      # Example 3: Persistent Volume Claim
+      # - name: code-storage
+      #   persistentVolumeClaim:
+      #     claimName: code-storage-pvc
+      
+      # Example 4: HostPath (for minikube/kind development)
+      # - name: host-path
+      #   hostPath:
+      #     path: /path/on/host
+      #     type: DirectoryOrCreate
+
+---
+# Service to expose the web interface
+apiVersion: v1
+kind: Service
+metadata:
+  name: cleaner-112-service
+  labels:
+    app: cleaner-112
+spec:
+  type: LoadBalancer
+  selector:
+    app: cleaner-112
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 80
+    # Uncomment for NodePort
+    # nodePort: 30080
+
+---
+# ConfigMap example for storing source code to analyze
+# Uncomment and populate this ConfigMap with your code
+# apiVersion: v1
+# kind: ConfigMap
+# metadata:
+#   name: source-code-config
+# data:
+#   sample.cpp: |
+#     #include <iostream>
+#     int main() {
+#         std::cout << "Hello, World!" << std::endl;
+#         return 0;
+#     }
+#   sample.py: |
+#     def hello():
+#         print("Hello, Python!")
+
+---
+# PersistentVolumeClaim example for storing code
+# Uncomment if you want persistent storage
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: code-storage-pvc
+# spec:
+#   accessModes:
+#   - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 10Gi
+#   storageClassName: standard
+
+---
+# Job example: Run cleaner analysis once
+# Uncomment to create a one-time analysis job
+# apiVersion: batch/v1
+# kind: Job
+# metadata:
+#   name: cleaner-analysis-job
+# spec:
+#   template:
+#     spec:
+#       containers:
+#       - name: cleaner
+#         image: image-cleaner-application:v1
+#         imagePullPolicy: Never
+#         command: ["/usr/local/bin/cleaner"]
+#         args: ["count", "--source", "/data/work", "--recursive", "3"]
+#         restartPolicy: Never
+#       volumes:
+#       - name: work-volume
+#         persistentVolumeClaim:
+#           claimName: code-storage-pvc
+#   backoffLimit: 4
+
+---
+# CronJob example: Schedule regular analysis
+# Uncomment to run cleaner on a schedule
+# apiVersion: batch/v1
+# kind: CronJob
+# metadata:
+#   name: cleaner-scheduled-analysis
+# spec:
+#   schedule: "0 2 * * *"  # Run at 2 AM daily
+#   jobTemplate:
+#     spec:
+#       template:
+#         spec:
+#           containers:
+#           - name: cleaner
+#             image: image-cleaner-application:v1
+#             imagePullPolicy: Never
+#             command: ["/usr/local/bin/cleaner"]
+#             args: ["count", "--source", "/data/work", "--recursive", "3"]
+#           restartPolicy: OnFailure
+#           volumes:
+#           - name: work-volume
+#             persistentVolumeClaim:
+#               claimName: code-storage-pvc
