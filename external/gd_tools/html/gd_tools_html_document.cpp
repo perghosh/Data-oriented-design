@@ -166,19 +166,19 @@ void element::find_all( std::string_view stringTag, std::vector<const element*>&
  * @param stringIdValue  Exact id value (case-sensitive)
  * @return element*      First match or nullptr
  */
-element* element::find_by_id( std::string_view stringIdValue )
+element* element::find( std::string_view stringIdValue, tag_id )
 {
    if( has_attribute( "id" ) && get_attribute( "id" ) == stringIdValue ) { return this; }
    for( auto& pChild : m_vectorElement )
    {
-      if( auto* pFound = pChild->find_by_id( stringIdValue ); pFound != nullptr ) { return pFound; }
+      if( auto* pFound = pChild->find( stringIdValue ); pFound != nullptr ) { return pFound; }
    }
    return nullptr;
 }
 
-const element* element::find_by_id( std::string_view stringIdValue ) const
+const element* element::find( std::string_view stringIdValue, tag_id ) const
 {
-   return const_cast<element*>( this )->find_by_id( stringIdValue );
+   return const_cast<element*>( this )->find( stringIdValue, tag_id{} );
 }
 
 /**  -------------------------------------------------------------------------- find_by_class
@@ -186,16 +186,16 @@ const element* element::find_by_id( std::string_view stringIdValue ) const
  * @param stringClassName  Single class token
  * @param vectorResult     Accumulator
  */
-void element::find_by_class( std::string_view stringClassName, std::vector<element*>& vectorResult )
+void element::find( std::string_view stringClassName, std::vector<element*>& vectorResult, tag_class )
 {
    for( auto& pelement : m_vectorElement )
    {
       if( has_class_token_s( pelement->get_attribute( "class" ), stringClassName ) ) { vectorResult.push_back( pelement.get() ); }
-      pelement->find_by_class( stringClassName, vectorResult );
+      pelement->find( stringClassName, vectorResult, tag_class{} );
    }
 }
 
-void element::find_by_class( std::string_view stringClassName, std::vector<const element*>& vectorResult ) const
+void element::find( std::string_view stringClassName, std::vector<const element*>& vectorResult, tag_class ) const
 {
    for( const auto& pelement : m_vectorElement )
    {
@@ -203,7 +203,7 @@ void element::find_by_class( std::string_view stringClassName, std::vector<const
       {
          vectorResult.push_back( pelement.get() );
       }
-      pelement->find_by_class( stringClassName, vectorResult );
+      pelement->find( stringClassName, vectorResult, tag_class{} );
    }
 }
 
@@ -303,12 +303,14 @@ std::string element::to_string_s( const std::vector<element*>& vectorElements, s
 // document
 // ============================================================================
 
+/// Find the first descendant of the root whose tag name matches `stringTag` (case-insensitive)
 element* document::find( std::string_view stringTag )
 {
    if( !m_pelementRoot ) { return nullptr; }
    return m_pelementRoot->find( stringTag );
 }
 
+/// Find the first descendant of the root whose tag name matches `stringTag` (case-insensitive)
 const element* document::find( std::string_view stringTag ) const
 {
    return const_cast<document*>( this )->find( stringTag );
@@ -322,6 +324,7 @@ std::vector<element*> document::find_all( std::string_view stringTag )
    return vectorResult;
 }
 
+/// Collect every descendant whose tag name matches `stringTag` (case-insensitive)
 std::vector<const element*> document::find_all( std::string_view stringTag ) const
 {
    std::vector<const element*> vectorResult;
@@ -329,15 +332,17 @@ std::vector<const element*> document::find_all( std::string_view stringTag ) con
    return vectorResult;
 }
 
-element* document::find_by_id( std::string_view stringIdValue )
+/// Find the first descendant (or self) where attribute `id` equals `stringIdValue` (case-sensitive)
+element* document::find( std::string_view stringIdValue, element::tag_id )
 {
    if( !m_pelementRoot ) { return nullptr; }
-   return m_pelementRoot->find_by_id( stringIdValue );
+   return m_pelementRoot->find( stringIdValue, element::tag_id{} );
 }
 
-const element* document::find_by_id( std::string_view stringIdValue ) const
+/// Find the first descendant (or self) where attribute `id` equals `stringIdValue` (case-sensitive)
+const element* document::find( std::string_view stringIdValue, element::tag_id ) const
 {
-   return const_cast<document*>( this )->find_by_id( stringIdValue );
+   return const_cast<document*>( this )->find( stringIdValue, element::tag_id{} );
 }
 
 
@@ -478,16 +483,18 @@ std::string parser::read_attribute_value()
  * Handles opening tags, closing tags, comments, declarations, and processing
  * instructions. If the syntax is unrecognized, the tag is skipped.
  */
-void parser::parse_tag()
+bool parser::parse_tag()
 {                                                                                                  assert( !at_end() && current_char() == '<' );
    ++m_uPosition;                                                           // consume '<'
-   if( at_end() == true ) { return; }
+   if( at_end() == true ) { return true; }
 
    if( current_char() == '/' )      { parse_closing_tag();            }
    else if( peek(3) == "!--" )      { parse_comment();                }
    else if( current_char() == '!' ) { parse_declaration();            }
    else if( current_char() == '?' ) { parse_processing_instruction(); }
    else                             { parse_opening_tag();            }
+
+   return is_error() == false;                                                // @NOTE If the tag is malformed (e.g. missing '>' or unterminated comment), the error is recorded but parsing continues to the next tag or text fragment. This allows the parser to recover from errors and produce a best-effort document tree.
 }
 
 /**  -------------------------------------------------------------------------- parse_opening_tag
@@ -546,13 +553,15 @@ void parser::parse_opening_tag()
  * children of their parent — no crash, no data loss.
  */
 void parser::parse_closing_tag()
-{
-   assert( !at_end() && current_char() == '/' );
+{                                                                                                  assert( !at_end() && current_char() == '/' );
+   error_prepare();
    ++m_uPosition;                                                           // consume '/'
    skip_whitespace();
 
    std::string_view stringClosingTag = read_name_view();
    skip_until( '>' );
+
+   if( at_end() && offset(-1) != '>' ) { error_set("Unterminated closing tag"); return; } // no '>' found before end of source
 
    for( int i = (int)m_vectorElementStack.size() - 1; i >= 0; --i )          // walk backward through the stack to find a matching open tag
    {
@@ -568,12 +577,15 @@ void parser::parse_closing_tag()
 
 void parser::parse_comment()
 {
+   error_prepare();
    m_uPosition += 3;                                                        // consume "!--"
    while( m_uPosition + 2 < m_stringSource.size() )
    {
       if( m_stringSource.substr( m_uPosition, 3 ) == "-->" ) { m_uPosition += 3; return; }
       ++m_uPosition;
    }
+
+   error_set( "Unterminated comment" );
 }
 
 /**  -------------------------------------------------------------------------- parse_declaration
@@ -589,11 +601,13 @@ void parser::parse_declaration()
  */
 void parser::parse_processing_instruction()
 {
+   error_prepare();
    while( m_uPosition + 1 < m_stringSource.size() )
    {
       if( m_stringSource.substr( m_uPosition, 2 ) == "?>" ) { m_uPosition += 2; return; }
       ++m_uPosition;
    }
+   error_set( "Unterminated processing instruction" );
 }
 
 /**  -------------------------------------------------------------------------- parse_text
@@ -604,8 +618,11 @@ void parser::parse_processing_instruction()
  */
 void parser::parse_text()
 {
+   error_prepare();
    size_t uStart = m_uPosition;
    while( !at_end() && current_char() != '<' ) { ++m_uPosition; }             // stop at next tag
+   
+   if( is_eof() == true ) { error_set( "text outside dom tree" ); return; }
 
    std::string_view stringRaw = m_stringSource.substr( uStart, m_uPosition - uStart ); // raw text including any whitespace
 
@@ -628,6 +645,7 @@ void parser::parse_text()
  */
 void parser::parse_attributes( element& elementTarget )
 {
+   error_prepare();
    while( !at_end() )
    {
       skip_whitespace();
@@ -662,15 +680,13 @@ std::string_view parser::intern_tag_s( std::string_view stringRaw ) noexcept
    // Lower-case the raw name on the stack — tag names are always short
    char   arrayLower[64] = {};
    size_t uLength = std::min( stringRaw.size(), sizeof(arrayLower) - 1 );
-   for( size_t u = 0; u < uLength; ++u )
-   {
-      arrayLower[u] = (char)std::tolower( (unsigned char)stringRaw[u] );
-   }
-   std::string_view stringLower( arrayLower, uLength );
+   for( size_t u = 0; u < uLength; ++u ) { arrayLower[u] = (char)std::tolower( (unsigned char)stringRaw[u] ); }
+
+   std::string_view stringLower( arrayLower, uLength ); // view into the stack buffer
 
    auto it = std::lower_bound( arrayTable.begin(), arrayTable.end(), stringLower );
    if( it != arrayTable.end() && *it == stringLower ) { return *it; }
-   return {};                                                               // unknown tag — caller allocates
+   return {};                                                                // unknown tag — caller allocates
 }
 
 bool parser::is_void_element_s( std::string_view stringTag ) noexcept

@@ -16,6 +16,7 @@
 #include <vector>
 #include <type_traits>
 
+#include "gd/gd_types.h"
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
 
@@ -37,7 +38,11 @@ _GD_TOOLS_HTML_BEGIN
  */
 struct element
 {
-   // ## iterators ---------------------------------------------------------------
+   // ## types and constants -------------------------------------------------
+   using tag_id = gd::types::tag_id; ///< tag for id attribute, or id related logic
+   using tag_class = gd::types::tag_class; ///< tag for class attribute, or class related logic
+
+   // ## iterators -----------------------------------------------------------
 
 
 
@@ -143,7 +148,7 @@ struct element
       bool operator!=( const tree_iterator& o ) const noexcept { return m_vectorpElement != o.m_vectorpElement; }
 
    private:
-      std::vector<element*> m_vectorpElement;                                ///< DFS frontier; empty == end
+      std::vector<element*> m_vectorpElement;                                ///< DFS (Depth-First Search) frontier; empty == end
    };
 
    struct const_tree_iterator
@@ -181,7 +186,7 @@ struct element
       bool operator!=( const const_tree_iterator& o ) const noexcept { return m_vectorpElement != o.m_vectorpElement; }
 
    private:
-      std::vector<const element*> m_vectorpElement;                          ///< DFS frontier; empty == end
+      std::vector<const element*> m_vectorpElement;                          ///< DFS (Depth-First Search) frontier; empty == end
    };
 
 
@@ -272,21 +277,13 @@ struct element
    void find_all( std::string_view stringTag, std::vector<element*>& vectorResult );
    void find_all( std::string_view stringTag, std::vector<const element*>& vectorResult ) const;
 
-   /** -------------------------------------------------------------------------- find_by_id
-    * @brief First descendant (or self) where attribute `id` equals the given value
-    * @param stringIdValue  The id value to match (case-sensitive)
-    * @return element*      First matching element, or nullptr
-    */
-   element*       find_by_id( std::string_view stringIdValue );
-   const element* find_by_id( std::string_view stringIdValue ) const;
+   
+   element*       find( std::string_view stringIdValue, tag_id );            /// @brief First descendant (or self) where attribute `id` equals id in elment id attribute
+   const element* find( std::string_view stringIdValue, tag_id ) const;      /// @brief First descendant (or self) where attribute `id` equals id in elment id attribute
 
-   /** -------------------------------------------------------------------------- find_by_class
-    * @brief Collect descendants whose `class` attribute contains the token
-    * @param stringClassName  Single class token (not a selector list)
-    * @param vectorResult     Accumulator
-    */
-   void find_by_class( std::string_view stringClassName, std::vector<element*>& vectorResult );
-   void find_by_class( std::string_view stringClassName, std::vector<const element*>& vectorResult ) const;
+   /// @brief Collect descendants whose `class` attribute contains the token
+   void find( std::string_view stringClassName, std::vector<element*>& vectorResult, tag_class );
+   void find( std::string_view stringClassName, std::vector<const element*>& vectorResult, tag_class ) const;
 
    /** -------------------------------------------------------------------------- walk
     * @brief Visit every descendant in document order
@@ -357,8 +354,8 @@ struct document
    std::vector<element*>       find_all( std::string_view stringTag );
    std::vector<const element*> find_all( std::string_view stringTag ) const;
 
-   element*       find_by_id( std::string_view stringIdValue );
-   const element* find_by_id( std::string_view stringIdValue ) const;
+   element*       find( std::string_view stringIdValue, element::tag_id );
+   const element* find( std::string_view stringIdValue, element::tag_id ) const;
 
 // ## member variables --------------------------------------------------------
    std::unique_ptr<element> m_pelementRoot;                              ///< Synthetic root that owns the tree
@@ -387,6 +384,7 @@ enum class enumParseMode : uint8_t
    eParseModeHtml       = 0,  ///< HTML5: void elements self-close, lenient close-tag matching
    eParseModeXmlLenient = 1,  ///< XML: end-tags may be absent — void-element table is skipped
    eParseModeXmlStrict  = 2,  ///< Well-formed XML — reserved; today behaves like e_xml_lenient
+   eParseModeError      = 255 ///< Invalid mode value; reserved for diagnostics
 };
 
 
@@ -422,6 +420,8 @@ public:
    /// True when the cursor has reached the end of the source ----------------- at_end
    bool at_end() const noexcept { return m_uPosition >= m_stringSource.size(); }
    bool is_eof() const noexcept { return at_end(); }
+   bool is_error() const noexcept { return m_eParseMode == enumParseMode::eParseModeError; }
+   char offset( int iOffset = 0 ) const noexcept;
 
    /// Current character — call at_end() first -------------------------------- current_char
    char current_char() const noexcept { assert( at_end() == false ); return m_stringSource[m_uPosition]; }
@@ -438,7 +438,7 @@ public:
    std::string      read_attribute_value();
 
 // ## tag dispatch ------------------------------------------------------------
-   void parse_tag();
+   bool parse_tag();
    void parse_opening_tag();
    void parse_closing_tag();
    void parse_comment();
@@ -447,13 +447,20 @@ public:
    void parse_text();
    void parse_attributes( element& elementTarget );
 
+// ## state management for error handling and backtracking --------------------------------
+
+   void error_prepare() noexcept { m_uPositionError = m_uPosition; }
+   void error_set( std::string_view stringMessage );
+
 private:
 // ## members ------------------------------------------------------------
    std::string_view      m_stringSource;                                   ///< View into the source being parsed
    size_t                m_uPosition       = 0;                            ///< Current read cursor
+   size_t                m_uPositionError  = 0;                            ///< if error occurs, position of the error in the source text
    element*              m_pelementCurrent = nullptr;                      ///< Node currently being populated
    std::vector<element*> m_vectorElementStack;                             ///< Open-element stack (non-owning views)
    enumParseMode         m_eParseMode      = enumParseMode::eParseModeHtml;///< Active parsing mode
+   std::string           m_stringError;                                    ///< Last error message; reserved for future diagnostics
 
 // ## utilities ---------------------------------------------------------------
 
@@ -472,5 +479,23 @@ private:
 
    static const std::array<std::string_view, 94>& interned_tag_table() noexcept;
 };
+
+/// Get the character at the current position plus `iOffset` without advancing. Returns '\0' if the peek position is out of bounds (before start or after end).
+inline char parser::offset( int iOffset ) const noexcept
+{                                                                                                  assert( ((int64_t)m_uPosition + iOffset) >= 0 );
+   size_t uPeekPosition = m_uPosition + iOffset;
+   return uPeekPosition < m_stringSource.size() ? m_stringSource[uPeekPosition] : '\0'; // Note that if peek position goes before start the value will be huge and peek will return '\0' 
+}
+
+
+/// Set the parser into error mode, preventing further parsing and rewinding to the position where the error was detected. The provided message is stored for diagnostics.
+inline void parser::error_set( std::string_view stringMessage ) 
+{
+   m_eParseMode = enumParseMode::eParseModeError;                          // switch to error mode to prevent further parsing
+   m_uPosition = m_uPositionError;                                         // rewind to the position where the error was detected
+   if( stringMessage.empty() == false ) m_stringError += ", ";
+   m_stringError += stringMessage;                                         // store the error message for diagnostics
+}
+
 
 _GD_TOOLS_HTML_END

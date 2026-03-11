@@ -126,20 +126,27 @@ struct tag_max {};            ///< max is used in some form
 // ## value related tag dispatchers
 
 struct tag_alias {};          ///< alias is used in some form
-struct tag_category {};       ///< category is used in some form, like type or group
-struct tag_color {};          ///< color used in some form
 struct tag_background {};     ///< background color used in some form
+struct tag_card {};           ///< card is used in some form, like a data card or card form
+struct tag_category {};       ///< category is used in some form, like type or group
+struct tag_class {};          ///< class is used in some form, like a class name or classification
 struct tag_code {};           ///< code is used in some form, like a reference code
+struct tag_color {};          ///< color used in some form
+struct tag_column {};         ///< column is used in some form, like table columns
 struct tag_comment {};        ///< comment is used in some form, like user notes
 struct tag_date {};           ///< date is used in some form
 struct tag_description {};    ///< description is used in some form
-struct tag_message {};        ///< message is used in some form, like a text message
+struct tag_dimension {};      ///< dimension is used in some form, like width/height
+struct tag_duration {};       ///< duration is used in some form, like time duration
 struct tag_error {};          ///< error is used in some form
+struct tag_field {};          ///< field is used in some form, like table fields
 struct tag_flag {};           ///< flag is used in some form, like true/false or on/off
 struct tag_id {};             ///< id is used in some form
 struct tag_index {};          ///< index is used in some form, like a numeric position
 struct tag_key {};            ///< key is used in some form
 struct tag_label {};          ///< label is used in some form, like a short identifier
+struct tag_measurement {};    ///< measure is used in some form, like a measurement value
+struct tag_message {};        ///< message is used in some form, like a text message
 struct tag_metadata {};       ///< metadata is used in some form, like additional info
 struct tag_name {};           ///< name is used in some form
 struct tag_priority {};       ///< priority is used in some form, like high/low
@@ -149,19 +156,13 @@ struct tag_state {};          ///< state is used in some form, like current cond
 struct tag_status {};         ///< status is used in some form, like active/inactive
 struct tag_success {};        ///< success is used in some form
 struct tag_table {};          ///< table is used in some form
-struct tag_column {};         ///< column is used in some form, like table columns
-struct tag_field {};          ///< field is used in some form, like table fields
-struct tag_card {};           ///< card is used in some form, like a data card or card form
-struct tag_dimension {};      ///< dimension is used in some form, like width/height
-struct tag_duration {};       ///< duration is used in some form, like time duration
-struct tag_measurement {};    ///< measure is used in some form, like a measurement value
 struct tag_tag {};            ///< tag value
+struct tag_temporary {};      ///< temporary is used in some form, like a temporary value or state
 struct tag_timestamp {};      ///< timestamp is used in some form, like a date-time combination
 struct tag_type {};           ///< type is used in some form, like data type or class
 struct tag_value {};          ///< value used in some form
 struct tag_version {};        ///< version is used in some form, like v1.0
 struct tag_warning {};        ///< warning is used in some form
-struct tag_temporary {};      ///< temporary is used in some form, like a temporary value or state
 
 struct tag_main_type {};      /// main type if there are secondary types
 struct tag_secondary_type {}; /// secondary type if there are main types
