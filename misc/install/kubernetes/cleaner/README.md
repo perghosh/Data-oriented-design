@@ -6,18 +6,10 @@ This directory contains the Dockerfile and Kubernetes YAML files to deploy the F
 
 The `cleaner` application is a powerful command-line tool for analyzing source code files. It counts lines, measures code sections (comments and strings), searches for patterns, and presents detailed statistics.
 
-**Key Features:**
-- Count total lines in source files
-- Measure code, comments, and strings separately
-- Generate character counts
-- Process multiple files recursively
-- Filter files based on custom criteria
-- Search for patterns and list matching lines
-- Web interface to view results
-
 **Architecture:**
 - Nginx web server provides a web interface on port 80
 - Cleaner binary available at `/usr/local/bin/cleaner` (globally accessible)
+- Script to load GitHub repos available at `/usr/local/bin/github-load.sh` (globally accessible)
 - Run cleaner on **any directory** inside the pod using `kubectl exec`
 - Output files stored in `/app/output` and accessible via the web interface
 
@@ -33,22 +25,31 @@ The `cleaner` application is a powerful command-line tool for analyzing source c
 ### 1. Build the Docker Image
 
 ```bash
-# Build the Docker image
-docker build -t cleaner-app:v1 .
+# 1. Build the updated image locally
+docker build --tag cleaner-app:v1 .
 
-# Load the image into Minikube (Required for imagePullPolicy: Never)
+# 2. Push the image from your WSL/Windows space into the Minikube node
+# The --overwrite flag ensures the old v1 is replaced by the new v1
 minikube image load cleaner-app:v1 --overwrite
+
+# 3. Tell Kubernetes to swap the old pods for new ones using the updated image
+kubectl rollout restart deployment/cleaner-112
+
+# 4. (Optional) Watch the magic happen in k9s or via terminal
+kubectl get pods --selector app=cleaner-112 --watch
 ```
+
+
 
 ### 2. Deploy to Kubernetes
 
 ```bash
 # Clean start (removes old stuck pods)
 kubectl delete deployment cleaner-112 --ignore-not-found
-kubectl apply -f deployment.yaml
+kubectl apply --filename deployment.yaml
 
 # Watch pods reach "Running" status
-kubectl get pods -l app=cleaner-112 -w
+kubectl get pods --selector app=cleaner-112 --watch
 ```
 
 ### 3. Access the Web Interface
@@ -324,7 +325,7 @@ kubectl get svc cleaner-112-service
 kubectl get endpoints cleaner-112-service
 
 # Check pod logs
-kubectl logs -l app=cleaner-112
+kubectl logs --selector app=cleaner-112
 ```
 
 ### Output Files Not Visible
@@ -383,13 +384,13 @@ cleaner count --source /etc --recursive 1
 
 ```bash
 # Watch pod status
-kubectl get pods -l app=cleaner-112 -w
+kubectl get pods --selector app=cleaner-112 -w
 
 # View resource usage
-kubectl top pods -l app=cleaner-112
+kubectl top pods --selector app=cleaner-112
 
 # Access nginx logs
-kubectl logs -l app=cleaner-112 -c cleaner-container --tail=100 -f
+kubectl logs --selector app=cleaner-112 --container cleaner-container --tail=100 --follow
 ```
 
 ## Additional Resources

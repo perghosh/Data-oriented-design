@@ -13,6 +13,10 @@ RUN apt-get update && apt-get install -y \
 COPY cleaner /usr/local/bin/cleaner
 RUN chmod +x /usr/local/bin/cleaner
 
+# Install script to download GitHub repos
+COPY github-load.sh /usr/local/bin/github-load.sh
+RUN chmod +x /usr/local/bin/github-load.sh
+
 # Create directory structure
 RUN mkdir -p /app/www /app/output /data/work
 
