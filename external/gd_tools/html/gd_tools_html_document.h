@@ -384,7 +384,7 @@ enum class enumParseMode : uint8_t
    eParseModeHtml       = 0,  ///< HTML5: void elements self-close, lenient close-tag matching
    eParseModeXmlLenient = 1,  ///< XML: end-tags may be absent — void-element table is skipped
    eParseModeXmlStrict  = 2,  ///< Well-formed XML — reserved; today behaves like e_xml_lenient
-   eParseModeError      = 255 ///< Invalid mode value; reserved for diagnostics
+   eParseModeError      = 3   ///< Invalid mode value; reserved for diagnostics
 };
 
 
@@ -412,7 +412,7 @@ public:
     * @param stringSource  Full source text (must remain valid for the duration of this call)
     * @return document     Populated tree; check is_valid() before use
     */
-   document parse( std::string_view stringSource );
+   document parse( std::string_view stringSource, std::pair<bool, std::string>* ppairError = nullptr );
 
 
 // ## helpers – position / character access -----------------------------------

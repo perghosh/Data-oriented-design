@@ -393,7 +393,7 @@ const std::array<std::string_view, 94>& parser::interned_tag_table() noexcept
  * @param stringSource  View of the complete source text
  * @return document     Populated document; call is_valid() before use
  */
-document parser::parse( std::string_view stringSource )
+document parser::parse( std::string_view stringSource, std::pair<bool, std::string>* ppairError )
 {
    m_stringSource    = stringSource;
    m_uPosition       = 0;
@@ -416,6 +416,20 @@ document parser::parse( std::string_view stringSource )
    }
 
    documentResult.m_pelementRoot = std::move( pelementRoot_ );
+
+   if( ppairError != nullptr )
+   {
+      if( is_error() )
+      {
+         *ppairError = std::make_pair( true, m_stringError );
+      }
+      else
+      {
+         *ppairError = std::make_pair( false, std::string() );
+      }
+   }
+
+
    return documentResult;
 }
 
