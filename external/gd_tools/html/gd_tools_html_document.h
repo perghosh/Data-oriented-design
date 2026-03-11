@@ -493,7 +493,7 @@ inline void parser::error_set( std::string_view stringMessage )
 {
    m_eParseMode = enumParseMode::eParseModeError;                          // switch to error mode to prevent further parsing
    m_uPosition = m_uPositionError;                                         // rewind to the position where the error was detected
-   if( stringMessage.empty() == false ) m_stringError += ", ";
+   if( m_stringError.empty() == false ) m_stringError += ", ";
    m_stringError += stringMessage;                                         // store the error message for diagnostics
 }
 

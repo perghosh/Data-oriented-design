@@ -161,7 +161,7 @@ void element::find_all( std::string_view stringTag, std::vector<const element*>&
    }
 }
 
-/**  -------------------------------------------------------------------------- find_by_id
+/**  -------------------------------------------------------------------------- find
  * @brief First descendant (or self) where attribute `id` equals `stringIdValue`
  * @param stringIdValue  Exact id value (case-sensitive)
  * @return element*      First match or nullptr
@@ -171,7 +171,7 @@ element* element::find( std::string_view stringIdValue, tag_id )
    if( has_attribute( "id" ) && get_attribute( "id" ) == stringIdValue ) { return this; }
    for( auto& pChild : m_vectorElement )
    {
-      if( auto* pFound = pChild->find( stringIdValue ); pFound != nullptr ) { return pFound; }
+      if( auto* p_ = pChild->find( stringIdValue, tag_id{} ); p_ != nullptr ) { return p_; }
    }
    return nullptr;
 }
@@ -181,7 +181,7 @@ const element* element::find( std::string_view stringIdValue, tag_id ) const
    return const_cast<element*>( this )->find( stringIdValue, tag_id{} );
 }
 
-/**  -------------------------------------------------------------------------- find_by_class
+/**  -------------------------------------------------------------------------- find
  * @brief Collect descendants whose `class` attribute contains `stringClassName`
  * @param stringClassName  Single class token
  * @param vectorResult     Accumulator
@@ -632,11 +632,8 @@ void parser::parse_processing_instruction()
  */
 void parser::parse_text()
 {
-   error_prepare();
    size_t uStart = m_uPosition;
    while( !at_end() && current_char() != '<' ) { ++m_uPosition; }             // stop at next tag
-   
-   if( is_eof() == true ) { error_set( "text outside dom tree" ); return; }
 
    std::string_view stringRaw = m_stringSource.substr( uStart, m_uPosition - uStart ); // raw text including any whitespace
 
