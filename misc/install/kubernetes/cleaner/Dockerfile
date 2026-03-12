@@ -13,6 +13,11 @@ RUN apt-get update && apt-get install -y \
 COPY cleaner /usr/local/bin/cleaner
 RUN chmod +x /usr/local/bin/cleaner
 
+# Copy the bat binary used for syntax highlighting in the output
+COPY bat /usr/local/bin/bat
+RUN chmod +x /usr/local/bin/bat
+
+
 # Install script to download GitHub repos
 COPY github-load.sh /usr/local/bin/github-load.sh
 RUN chmod +x /usr/local/bin/github-load.sh
