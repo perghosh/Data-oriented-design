@@ -934,6 +934,7 @@ public: //0TAG0construct.arguments
       static_assert( std::is_trivially_copyable<typename CONTAINER::value_type>::value, "Container value_type must be trivially copyable (POD)" );
    }
 
+
    // copy
    arguments(const arguments& o) { buffer_set(); common_construct(o); }
    arguments(arguments&& o) noexcept { common_construct((arguments&&)o); }
@@ -998,7 +999,13 @@ public:
    const argument operator[](std::initializer_list<std::string_view> list_) const { return get_argument( list_ ); }
    /// index operator edit is needed
    argument_edit operator[](const index_edit& index_);
+   /// Fluent interface for adding arguments
+   arguments& operator()(std::string_view name_, gd::variant_view value_) {
+       (*this).set(name_, value_);
+       return *this;
+   }
 
+   /*
    argument_edit operator()(unsigned uIndex) {
       pointer pPosition = find(uIndex);
       if( pPosition != nullptr ) { return arguments::get_edit_param_s(this, pPosition); }
@@ -1010,6 +1017,7 @@ public:
       if( pPosition != nullptr ) { return arguments::get_edit_param_s(this, pPosition); }
       return argument_edit();
    }
+   */
 
    std::pair<std::string_view,gd::variant_view> operator()( unsigned uIndex, tag_pair ) const {
       const_pointer pPosition = find(uIndex);

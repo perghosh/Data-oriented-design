@@ -540,14 +540,12 @@ std::pair<bool, std::string> ReadFolders_g( std::string_view stringPath, CDocume
    using namespace gd::table;
    auto ptable = pdocument->CACHE_Get( "directory", true );
 
-   std::array<std::byte, 512> array_; // array to hold data for arguments
-
    unsigned uDepth = argumentsPath["depth"].as_uint();
+   std::array<std::byte, 512> array_; // array to hold data for arguments
 
    std::stack<gd::argument::arguments> stackFolder;
    gd::argument::arguments arguments_( array_ );
-   arguments_["path"] = stringPath;
-   arguments_["depth"] = uDepth;
+   arguments_("path", stringPath)("depth", uDepth);
    stackFolder.push( arguments_ );
 
    char iCharacter = 0; // path separator character, detect once per call
