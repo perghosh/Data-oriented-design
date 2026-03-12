@@ -545,7 +545,9 @@ std::pair<bool, std::string> ReadFolders_g( std::string_view stringPath, CDocume
    unsigned uDepth = argumentsPath["depth"].as_uint();
 
    std::stack<gd::argument::arguments> stackFolder;
-   gd::argument::arguments arguments_( array_, { { "path", stringPath }, { "depth", uDepth } } );
+   gd::argument::arguments arguments_( array_ );
+   arguments_["path"] = stringPath;
+   arguments_["depth"] = uDepth;
    stackFolder.push( arguments_ );
 
    char iCharacter = 0; // path separator character, detect once per call
