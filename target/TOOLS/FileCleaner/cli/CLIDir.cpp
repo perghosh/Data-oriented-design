@@ -4,6 +4,7 @@
 */
 
 #include <format>
+#include <stack>
 
 #include "gd/gd_uuid.h"
 #include "gd/gd_file.h"
@@ -304,7 +305,13 @@ std::pair<bool, std::string> DirFilter_g( const gd::argument::shared::arguments&
    auto result_ = FILES_Harvest_g( argumentsFilter, ptable );
    if( result_.first == false ) return result_;
 
-	CountLevel_s(ptable);
+   CountLevel_s( ptable );                                                   // count the level of each file based on the source path
+
+   if( uDepth == 0 )                                                         // if depth is 0, then read folders as well
+   {
+      result_ = ReadFolders_g( stringSource, pdocument, gd::argument::arguments() );
+      if( result_.first == false ) return result_;
+   }
 
 #ifdef _WIN32
    if( arguments_.exists("script") == true )
@@ -355,6 +362,7 @@ std::pair<bool, std::string> DirPrint_g(CDocument* pdocument)
 std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::argument::shared::arguments& arguments_ )
 {
    using namespace gd::table::dto;
+   constexpr unsigned uMaxNameLength = 256; // maximum length for file names
    unsigned uParents = 0;
    std::string stringCurrentFolder; // hold the current folder path
 
@@ -364,7 +372,7 @@ std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::
    uParents = std::min( (unsigned)10, uParents );
 
    // ## Create new table to match what to print that work as ls command .............
-   gd::table::dto::table tableLS( ( table::eTableFlagNull32 | table::eTableFlagRowStatus ), { { "string", 200, "name"}, { "uint64", 0, "size"}, { "rstring", 0, "folder"} }, gd::table::tag_prepare{} );
+   gd::table::dto::table tableLS( ( table::eTableFlagNull32 | table::eTableFlagRowStatus ), { { "string", uMaxNameLength, "name"}, { "uint64", 0, "size"}, { "rstring", 0, "folder"} }, gd::table::tag_prepare{} );
    gd::file::path pathFile;
    for( const auto& itRow : *ptable_ )
    {
@@ -407,6 +415,11 @@ std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::
    std::string stringFiles;
    std::string stringFolder;
    std::array<std::byte, 64> array_; // array to hold data for arguments
+   auto uTerminalWidth = (unsigned)SHARED_GetTerminalWidth();
+
+   // ## Final print number of found files ...................................
+   uint64_t uTotalFiles = tableLS.size();
+   pdocument->MESSAGE_Display(std::format("Files: {}", uTotalFiles), { array_, {{"color", "footer"}}, gd::types::tag_view{} });
 
    uint64_t uRowFrom = 0;
    for( const auto& itRow : tableLS )
@@ -414,7 +427,7 @@ std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::
       uint64_t uRow = itRow.get_row();
       if( uRow != (tableLS.size() - 1) && itRow.cell_get_variant_view("folder").is_null() == true ) continue;
 
-      // ## if no folder then just get folder and continue ....................
+      // ## if no folder then just get folder and continue ...................
       if( stringFolder.empty() == true ) 
       { 
          stringFolder = itRow.cell_get_variant_view("folder").as_string(); 
@@ -426,17 +439,34 @@ std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::
       // ## print files ......................................................
       pdocument->MESSAGE_Display(stringFolder, { array_, {{"color", "header"}}, gd::types::tag_view{} });
 
-      auto uTerminalWidth = (unsigned)SHARED_GetTerminalWidth();
-
       stringFiles = gd::table::format::to_string(tableLS, uRowFrom, uCount, { "name" }, uTerminalWidth, gd::argument::arguments{ { "border", false }, { "row-space", 0 } }, gd::types::tag_card{});
       pdocument->MESSAGE_Display(stringFiles, { array_, {{"color", "body"}}, gd::types::tag_view{} });
       uRowFrom = uRow;
       stringFolder = itRow.cell_get_variant_view("folder").as_string();
    }
 
-   // ## Final print number of found files ....................................
-   uint64_t uTotalFiles = tableLS.size();
-   pdocument->MESSAGE_Display(std::format("\nTotal files: {}", uTotalFiles), { array_, {{"color", "footer"}}, gd::types::tag_view{} });
+   tableLS.row_clear(); // clear the table
+
+   ptable_ = pdocument->CACHE_Get("directory");
+   if( ptable_ != nullptr )
+   {
+      for( const auto& itRow : *ptable_ )
+      {
+         std::string_view stringName = itRow.cell_get_variant_view("name").as_string_view();
+
+         auto uRow = tableLS.row_add_one();
+         if( stringName.size() < uMaxNameLength ) { tableLS.cell_set(uRow, 0, stringName); }
+         else { tableLS.cell_set( uRow, 0, stringName.substr( 0, uMaxNameLength - 3 )); }
+         
+      }
+
+      uint64_t uTotalFolders = tableLS.size();
+      pdocument->MESSAGE_Display(std::format("Folders: {}", uTotalFolders), { array_, {{"color", "disabled"}}, gd::types::tag_view{} });
+
+      std::string stringFolders = gd::table::format::to_string(tableLS, 0, tableLS.size(), {"name"}, uTerminalWidth, gd::argument::arguments{{"border", false}, {"row-space", 0}}, gd::types::tag_card{});
+      pdocument->MESSAGE_Display(stringFolders, { array_, {{"color", "disabled"}}, gd::types::tag_view{} });
+   }
+
 
    return { true, "" };
 }
@@ -492,6 +522,83 @@ void CountLevel_s(gd::table::dto::table* ptable_)
    }
 }
 
+/**  -------------------------------------------------------------------------- ReadFolders_g
+ * @brief Recursively read folder structure and populate directory table with folder metadata
+ * 
+ * Traverses folder hierarchy starting from `stringPath` up to a specified depth,
+ * collecting folder names, paths, and nesting levels. Uses a stack-based approach
+ * to control recursion depth. Populates the "directory" table in `pdocument` with
+ * one row per discovered folder.
+ * 
+ * @param stringPath Root folder path to start scanning from (must exist)
+ * @param pdocument Pointer to document containing the "directory" table cache
+ * @param argumentsPath Arguments containing "depth" key (max recursion depth)
+ * @return std::pair<bool, std::string> Success flag and error message (empty on success)
+ */
+std::pair<bool, std::string> ReadFolders_g( std::string_view stringPath, CDocument* pdocument, const gd::argument::arguments& argumentsPath )
+{                                                                                                  assert( std::filesystem::exists( stringPath ) == true && "stringFolder must exist" ); assert( pdocument != nullptr );
+   using namespace gd::table;
+   auto ptable = pdocument->CACHE_Get( "directory", true );
 
+   std::array<std::byte, 512> array_; // array to hold data for arguments
+
+   unsigned uDepth = argumentsPath["depth"].as_uint();
+
+   std::stack<gd::argument::arguments> stackFolder;
+   gd::argument::arguments arguments_( array_, { { "path", stringPath }, { "depth", uDepth } } );
+   stackFolder.push( arguments_ );
+
+   char iCharacter = 0; // path separator character, detect once per call
+
+   while( stackFolder.empty() == false )
+   {
+      const auto& argumentsPath = stackFolder.top();
+      std::filesystem::path path_ = argumentsPath["path"].as_string_view();
+      uint32_t uDepth = argumentsPath["depth"].as_uint();
+      stackFolder.pop();
+
+      std::string stringPath = path_.string();
+
+      for( const auto& it : std::filesystem::directory_iterator( path_, std::filesystem::directory_options::skip_permission_denied ) )
+      {
+         // ## if it is a directory then add it to the table
+         if( it.is_directory() == true )
+         {
+            auto uRow = ptable->row_add_one();
+            ptable->cell_set( uRow, "key", (uint64_t)uRow + 1 );              // generate primary key
+
+            std::string stringPath = it.path().string();
+            std::string stringName = it.path().filename().string();
+            
+            ptable->cell_set( uRow, "name", stringName, tag_convert{} );      // folder name
+            ptable->cell_set( uRow, "path", stringPath, tag_convert{} );      // full path name
+
+            // ## count folder level by counting the number of path separators in the path
+            // Path separator differs between platforms: '\' on Windows and '/' on POSIX.
+            // Detect which separator is used in the current path string and count occurrences.
+            if( iCharacter == 0 )
+            {
+               if( gd::math::string::count_character( stringPath, '\\' ) > 0 ) iCharacter = '\\';
+               else if( gd::math::string::count_character( stringPath, '/' ) > 0 ) iCharacter = '/';
+               else iCharacter = std::filesystem::path::preferred_separator; // fallback
+            }
+
+            uint32_t uCount = (uint32_t)gd::math::string::count_character( stringPath, iCharacter );
+            ptable->cell_set( uRow, "level", uCount );                        // set the computed folder level
+
+            // ## if depth is greater than 0 then add the folder to the stack to read its subfolders
+            if( uDepth > 0 ) 
+            { 
+               gd::argument::arguments arguments_( array_ );
+               arguments_["path"] = stringPath;
+               arguments_["depth"] = (uDepth - 1);
+               stackFolder.push( arguments_ );
+            }
+         }
+      }
+   }
+
+   return { true, "" };
+}
 
 NAMESPACE_CLI_END

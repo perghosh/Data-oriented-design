@@ -1997,10 +1997,18 @@ void CDocument::PROPERTY_UpdateFromApplication()
  * This method initializes and prepares a table for caching data associated with the given `stringId`.  
  * If the `stringId` matches specific identifiers like "file", "file-count", or "file-linelist",
  * it creates tables with predefined columns tailored for their respective purposes:  
+ * 
+ * ## Cache Table Identifiers and Their Purposes
  *  
+ * - **directory**: Stores directory information such as path, size, date, and permissions.
  * - **file**: Stores file information such as folder, filename, size, date, and extension.  
+ * - **file-dir**: Similar to "file" but with additional columns for directory information and permissions.
  * - **file-count**: Tracks row counters for files, including counts for code, characters, comments, and strings.  
  * - **file-linelist**: Lists lines where patterns are found, including details like row, column, and matched pattern.  
+ * - **file-snippet**: Stores snippets of lines where context or patterns are found, including the snippet content and its position in the file.
+ * - **keyvalue**: Stores extracted key-value pairs from files, including the key, value, and associated file information.
+ * - **llm-output**: Stores output for language model to feed into these models
+ * - **history**: Stores historical data for files, may be used to re execute operations based on history.
  *  
  * The table is then added to the internal application cache.  
  *  
@@ -2029,13 +2037,23 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
 
    std::unique_ptr<gd::table::dto::table> ptable_;
 
-   // ## prepare file list  
-   //    columns: "path, size, date, extension  
-   if( stringId == "file" )                                                    // file cache, used to store file information  
+   if( stringId == "directory" )                                               // directory cache, used to store directory information  
    {
       auto p_ = CACHE_Get(stringId, false);
       if( p_ == nullptr )
       {
+         // directory table: key | name | path | size | date | permission
+         ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "name"}, {"rstring", 0, "path"}, {"uint64", 0, "size"}, {"uint32", 0, "level"}, {"double", 0, "date"}, {"string", 12, "permission"}}, gd::table::tag_prepare{}));
+         ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
+      }
+   }
+   else if( stringId == "file" )                                              // file cache, used to store file information  
+   {
+      auto p_ = CACHE_Get(stringId, false);
+      if( p_ == nullptr )
+      {
+         // ## Create table with columns based on file information and detail level
+
          // file table: key | path | size | date | extension  
          ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"rstring", 0, "folder"}, {"rstring", 0, "filename"}, {"uint64", 0, "size"}, {"double", 0, "date"}, {"string", 20, "extension"} }, gd::table::tag_prepare{}));
          ptable_->property_set("id", stringId);                                // set id for table, used to identify table in cache
@@ -2109,6 +2127,10 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
    }
    else if( stringId == "file-snippet" )
    { 
+      // ## This is a table used to store snippets of lines where patterns were found, this can be used to show more context in the UI for example 
+      //    Based on search additional information can be stored in the table
+
+      // file-snippet table: key | file-key | filename | format | row | snippet
       ptable_ = std::make_unique<table>(table(uTableStyle,
          { {"uint64", 0, "key"}, {"uint64", 0, "file-key"}, {"rstring", 0, "filename"},
          {"string", 10, "format"}, {"uint64", 0, "row"}, {"rstring", 0, "snippet"} }, gd::table::tag_prepare{})
@@ -2117,6 +2139,8 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
    }
    else if( stringId == "keyvalue" )
    {
+      // ## This is a table used to store key-value pairs extracted from files
+
       auto ptableKeys = std::make_unique<gd::table::arguments::table>( gd::table::tag_full_meta{} );
       ptableKeys->column_prepare();
       ptableKeys->column_add("uint64", 0, "key");                             // add key column
@@ -2133,6 +2157,8 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
    }
    else if( stringId == "llm-output" )
    {
+      // ## Table storing information to generate input to LLM to inform them what to do
+
       // type | tag | filename | content | row | priority
       ptable_ = std::make_unique<table>(table(uTableStyle,
          { {"string", 16, "type"}, {"rstring", 0, "tag"}, {"rstring", 0, "filename"}, {"rstring", 0, "content"}, {"uint64", 0, "row"}, {"uint64", 0, "priority"} }, gd::table::tag_prepare{})
@@ -2141,6 +2167,8 @@ void CDocument::CACHE_Prepare(const std::string_view& stringId, std::unique_ptr<
    }
    else if( stringId == "history" )
    {
+      // ## Table storing command history
+
       // file table: index | date | command | line 
       ptable_ = std::make_unique<table>(table(uTableStyle, { {"uint64", 0, "key"}, {"int32", 0, "index"}, {"string", 30, "date"}, {"string", 20, "name"}, {"rstring", 0, "line"}, {"rstring", 0, "alias"}, {"rstring", 0, "description"} }, gd::table::tag_prepare{}));
       ptable_->property_set("id", stringId);                                  // set id for table, used to identify table in cache

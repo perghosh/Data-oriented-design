@@ -41,5 +41,8 @@ std::pair<bool, std::string> DirPrintCompact_g( CDocument* pdocument, const gd::
 
 std::pair<bool, std::string> DirPrintToVS_g( CDocument* pdocument, const gd::argument::arguments& arguments_ );
 
+/// Read information about folders
+std::pair<bool, std::string> ReadFolders_g( std::string_view stringFolder, CDocument* pdocument, const gd::argument::arguments& arguments_ );
+
 
 NAMESPACE_CLI_END

@@ -395,6 +395,7 @@ const std::array<std::string_view, 94>& parser::interned_tag_table() noexcept
  */
 document parser::parse( std::string_view stringSource, std::pair<bool, std::string>* ppairError )
 {
+   m_stringError.clear();
    m_stringSource    = stringSource;
    m_uPosition       = 0;
    m_vectorElementStack.clear();

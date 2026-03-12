@@ -106,30 +106,25 @@ size_t count_character(const std::string_view& stringText, char iCharacter ) noe
    const size_t uLength = stringText.length();
 
    // Use std::count for small strings
-   constexpr size_t uSmallStringThreshold = 256;
-   if(uLength <= uSmallStringThreshold) 
+   constexpr size_t uSmallStringLimit = 256;
+   if(uLength <= uSmallStringLimit) 
    {
       return std::count(stringText.begin(), stringText.end(), iCharacter);
    }
 
    // Process in chunks for cache efficiency
    constexpr size_t uChunkSize = 64;  // Cache-line aligned
-   const char* pEnd = piText + uLength;
+   const char* piEnd = piText + uLength;
    size_t uProcessed = 0;
 
-   while(uProcessed + uChunkSize <= uLength) 
+   while( uProcessed + uChunkSize <= uLength )                               // Process a chunk of characters
    {
       const char* pChunkEnd = piText + uChunkSize;
-      while(piText < pChunkEnd) 
-      {
-         if(*piText == iCharacter) { ++uCharCount; }
-         ++piText;
-      }
+      while(piText < pChunkEnd) { if(*piText == iCharacter) { ++uCharCount; }  ++piText; }
       uProcessed += uChunkSize;
    }
 
-   // Process remaining characters
-   while(piText < pEnd) 
+   while(piText < piEnd)                                                     // Process remaining characters
    {
       if(*piText == iCharacter) { ++uCharCount; }
       ++piText;
