@@ -39,6 +39,8 @@ std::pair<bool,std::string> ConfigurationCreateWorking_g();
 std::pair<bool,std::string> ConfigurationCreate_g();
 std::pair<bool,std::string> ConfigurationEdit_g();
 
+constexpr std::string_view stringConfigurationFileName_g( ".cleaner-configuration.json" );
+
 NAMESPACE_CLI_END
 
 
@@ -50,7 +52,7 @@ NAMESPACE_CLI_END
 @TASK #configuration.create #user.per
 [name: config] [priority: high] [state: ongoing] [owner: per] [todo: "test in linux"]
 [description: "## create configuration file if it doesn't exist.
-For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json`.
+For windows this file should be placed in `C:\Users\<username>\AppData\Local\cleaner\.cleaner-configuration.json`.
 For linux this file should be placed in `~/.local/share/cleaner/cleaner-   configuration.json`.
 If configuration file exists then just print that it does exist and exit." ]
 

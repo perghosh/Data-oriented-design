@@ -86,7 +86,7 @@ std::pair<bool, std::string> Configuration_g(const gd::cli::options* poptionsCon
  */
 std::pair<bool, std::string>  ConfigurationCreateWorking_g()
 {
-   constexpr std::string_view stringConfigurationFileName( ".cleaner-configuration.json" );
+   constexpr std::string_view stringConfigurationFileName( stringConfigurationFileName_g );
    auto stringPath = papplication_g->PROPERTY_Get("folder-current").as_string();                   assert(stringPath.empty() == false);
    std::string stringFilePath; // contains the full path to the configuration file
 
@@ -126,7 +126,7 @@ std::pair<bool, std::string>  ConfigurationCreateWorking_g()
  *
  * Create the configuration file if it doesn't exist
  * For Windows: C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json
- * For Linux: ~/.local/share/cleaner/cleaner-configuration.json
+ * For Linux: ~/.local/share/cleaner/.cleaner-configuration.json
  *
  * @return A std::pair where the first element is a boolean indicating success (true if the configuration file exists or was created successfully, false otherwise).
  */
@@ -136,7 +136,7 @@ std::pair<bool, std::string> ConfigurationCreate_g()
       std::string stringPath;
 
 #ifdef _WIN32
-      // Windows: C:\Users\<username>\AppData\Local\cleaner\cleaner-configuration.json
+      // Windows: C:\Users\<username>\AppData\Local\cleaner\.cleaner-configuration.json
       char* piAppData = nullptr;
       size_t uLength = 0;
       if( _dupenv_s(&piAppData, &uLength, "LOCALAPPDATA") == 0 && piAppData != nullptr )
@@ -146,7 +146,7 @@ std::pair<bool, std::string> ConfigurationCreate_g()
       }
       else { return { false, "Failed to get LOCALAPPDATA environment variable" }; }
 #else
-      // Linux: ~/.local/share/cleaner/cleaner-configuration.json
+      // Linux: ~/.local/share/cleaner/.cleaner-configuration.json
       const char* piDir = getenv("HOME");
       if( piDir == nullptr )
       {
@@ -168,7 +168,7 @@ std::pair<bool, std::string> ConfigurationCreate_g()
       }
 
       // Full path to configuration file
-      std::filesystem::path pathFull = pathCleaner / "cleaner-configuration.json";
+      std::filesystem::path pathFull = pathCleaner / stringConfigurationFileName_g;
 
       // Check if configuration file already exists
       if( std::filesystem::exists(pathFull) ) { return { true, "Configuration file already exists at: " + pathFull.string() }; }
@@ -220,7 +220,9 @@ std::pair<bool,std::string> ConfigurationEdit_g()
       std::string stringHomePath = papplication_g->PROPERTY_Get("folder-home").as_string();
       if( stringHomePath.empty() == true ) return { false, "Unable to find configuration." };
 
-      gd::file::path path_(stringHomePath + "/cleaner-configuration.json");
+      stringHomePath += "/";
+      stringHomePath += stringConfigurationFileName_g;
+      gd::file::path path_( stringHomePath );
       if( std::filesystem::exists( path_ ) == false ) return { false, "Configuration file does not exist: " + path_.string() };
       pathConfigFile = path_;
    }
