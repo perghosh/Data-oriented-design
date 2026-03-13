@@ -27,6 +27,8 @@ The `cleaner` application is a powerful command-line tool for analyzing source c
 ```bash
 # 1. Build the updated image locally
 docker build --tag cleaner-app:v1 .
+# ... or to ensure no caching issues:
+docker build --no-cache -t cleaner-app:v1 .
 
 # 2. Push the image from your WSL/Windows space into the Minikube node
 # The --overwrite flag ensures the old v1 is replaced by the new v1

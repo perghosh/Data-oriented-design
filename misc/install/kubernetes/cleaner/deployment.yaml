@@ -18,7 +18,7 @@ spec:
       containers:
       - name: cleaner-container
         image: cleaner-app:v1
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
 
         ports:
         - name: http

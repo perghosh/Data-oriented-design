@@ -1,7 +1,7 @@
 # 1. Switch to Debian-based nginx for better Ubuntu binary compatibility
 FROM nginx:latest
 
-# 2. Install necessary libraries for C++ and bash
+# 2. Install necessary libraries for C++ and bash ----------------------------
 RUN apt-get update && apt-get install -y \
     libc6 \
     libstdc++6 \
@@ -9,11 +9,11 @@ RUN apt-get update && apt-get install -y \
     sed \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the cleaner binary
+# Copy the cleaner binary -----------------------------------------------------
 COPY cleaner /usr/local/bin/cleaner
 RUN chmod +x /usr/local/bin/cleaner
 
-# Copy the bat binary used for syntax highlighting in the output
+# Copy the bat binary used for syntax highlighting in the output --------------
 COPY bat /usr/local/bin/bat
 RUN chmod +x /usr/local/bin/bat
 

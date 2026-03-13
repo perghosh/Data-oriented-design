@@ -36,31 +36,31 @@ REPO=""
 REF="${DEFAULT_BRANCH}"
 OUTPUT_DIR=""
 
-while [[ $# -gt 0 ]]; do
+while [[ $# -gt 0 ]]; do                                                      # $# = number of arguments, while there are still arguments to process
     case "$1" in
-        --output)
+        --output)                                                             # is $1 = --output then set OUTPUT_DIR to $2 and shift past both
             OUTPUT_DIR="$2"
-            shift 2
+            shift 2                                                           # shift past --output and the value
             ;;
-        --help|-h)
+        --help|-h)                                                            # is $1 = --help or -h then show usage and exit
             show_usage
             ;;
-        *)
-            if [[ -z "${REPO}" ]]; then
+            *)                                                                # default: set REPO or REF
+            if [[ -z "${REPO}" ]]; then                                       # is REPO empty (zero length)? if so, set it to $1
                 REPO="$1"
-            elif [[ -z "${REF}" || "${REF}" == "${DEFAULT_BRANCH}" ]]; then
+            elif [[ -z "${REF}" || "${REF}" == "${DEFAULT_BRANCH}" ]]; then   # is REF empty or DEFAULT_BRANCH? if so, set it to $1
                 REF="$1"
             else
-                echo "Error: too many positional arguments" >&2
+                echo "Error: too many positional arguments" >&2               # too many positional arguments, show usage and exit
                 show_usage
             fi
             shift
             ;;
-    esac
+    esac                                                                      # end of case (case backwards = esac)
 done
 
-if [[ -z "${REPO}" ]]; then
-    echo "Error: repository is required (format: owner/repo)" >&2
+if [[ -z "${REPO}" ]]; then                                                   # verify REPO is set
+    echo "Error: repository is required (format: owner/repo)" >&2 # redirect to stderr (2)
     show_usage
 fi
 
@@ -70,8 +70,8 @@ if [[ ! "${REPO}" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}/[a-zA-Z0-9._-]+$ ]]; then
     exit 1
 fi
 
-OWNER="${REPO%%/*}"
-REPO_NAME="${REPO#*/}"
+OWNER="${REPO%%/*}"    # extract owner from REPO (before /)
+REPO_NAME="${REPO#*/}" # extract repo name from REPO (after /)
 
 # If user didn't specify output directory → create meaningful default
 if [[ -z "${OUTPUT_DIR}" ]]; then
