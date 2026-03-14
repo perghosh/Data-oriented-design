@@ -143,13 +143,16 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
       return bad_request_("Illegal request-target"); 
    }
 
-
    // ## Build the path to the requested file
    std::string stringPath = path_cat_g(stringRoot, request_.target());
    if(request_.target().back() == '/') { stringPath.append("index.html"); }
    else
    {                                                                                               LOG_DEBUG_RAW( stringPath );
    }
+
+   // ## Check for ending ? and remove it
+   auto uPosition = stringPath.find('?');
+   if( uPosition != std::string::npos ) { stringPath = stringPath.substr( 0, uPosition ); }
 
    // ## Attempt to open the file
    boost::beast::error_code errorcode;

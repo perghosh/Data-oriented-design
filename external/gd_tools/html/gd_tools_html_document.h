@@ -333,6 +333,77 @@ public:
 // @CLASS [tag: document] [summary: Owns the root element and exposes query API]
 // ============================================================================
 
+/** -------------------------------------------------------------------------- document
+ * @brief Container for the parsed HTML/XML tree structure
+ * 
+ * The `document` owns the synthetic root `element` which contains the entire 
+ * parsed document tree. Provides convenience query methods that delegate to 
+ * the root element for finding elements by tag name or ID. Move-only to 
+ * ensure single ownership of the tree.
+ * 
+ * After parsing, call `is_valid()` to confirm the document has a valid root 
+ * before querying. An invalid document indicates a parse failure or an empty 
+ * source.
+ * 
+ * @code
+// Sample HTML source ----------------------------------------------------
+string stringHtml = R"(
+   <html>
+   <body>
+      <div id="main" class="content highlight">Hello <span>World</span></div>
+      <img src="logo.png" alt="logo" />
+   </body>
+   </html>
+)";
+
+// Parse into a document -------------------------------------------------
+parser parserParser;
+parserParser.set_mode( enumParseMode::eParseModeHtml );
+document documentDocument = parserParser.parse( stringHtml );
+
+if( documentDocument.is_valid() == false ) { std::cerr << "Parse failed\n"; return;}
+
+// Root element and simple queries --------------------------------------
+element* pelementRoot = documentDocument.root();                         // non-owning pointer to synthetic root
+element* pelementDiv  = documentDocument.find( "div" );                  // first <div> in DFS order
+
+if( pelementDiv != nullptr )
+{
+   if( pelementDiv->has_attribute( "id" ) )
+   {
+      std::string stringId = std::string( pelementDiv->get_attribute( "id" ) );
+      std::cout << "Found div id='" << stringId << "' content='" << pelementDiv->content() << "'\n";
+   }
+
+   // Walk direct children of the div
+   for( auto& elementChild : *pelementDiv )
+   {
+      std::cout << "  child tag: " << elementChild.name() << " content='" << elementChild.content() << "'\n";
+   }
+
+   // Append some text content
+   pelementDiv->append_content( " -- appended text" );
+   std::cout << "Div new content: '" << pelementDiv->content() << "'\n";
+}
+
+// Find by id using tag-dispatch overload --------------------------------
+// Note: passing `element::tag_id{}` selects the id-based find overload
+const element* pelementById = documentDocument.find( "main", element::tag_id{} );
+if( pelementById != nullptr ) { std::cout << "find(id=main) -> " << pelementById->name() << "\n"; }
+
+// Collect all <img> elements -------------------------------------------
+std::vector<element*> vectorImg = documentDocument.find_all( "img" );
+std::cout << "Found " << vectorImg.size() << " <img> elements\n";
+for( element* pelementImg : vectorImg )
+{
+   if( pelementImg->has_attribute( "src" ) )
+   {
+      std::cout << " img src = " << pelementImg->get_attribute( "src" ) << "\n";
+   }
+}
+ * @endcode
+ * 
+ */
 struct document
 {
    document()  = default;
@@ -348,6 +419,8 @@ struct document
    bool     is_valid() const noexcept { return m_pelementRoot != nullptr; }
    element* root()     const noexcept { return m_pelementRoot.get(); }
 
+   // @API [tag: find] 
+
    element*       find( std::string_view stringTag );
    const element* find( std::string_view stringTag ) const;
 
@@ -358,7 +431,7 @@ struct document
    const element* find( std::string_view stringIdValue, element::tag_id ) const;
 
 // ## member variables --------------------------------------------------------
-   std::unique_ptr<element> m_pelementRoot;                              ///< Synthetic root that owns the tree
+   std::unique_ptr<element> m_pelementRoot;  ///< Synthetic root that owns the tree
 };
 
 
