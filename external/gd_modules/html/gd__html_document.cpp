@@ -3,7 +3,7 @@
 
 #include "gd_tools_html_document.h"
 
-_GD_TOOLS_HTML_BEGIN
+_GD_MODULES_HTML_BEGIN
 
 // ============================================================================
 // element
@@ -716,4 +716,4 @@ bool parser::is_void_element_s( std::string_view stringTag ) noexcept
    return ( it != m_arrayVoidElements.end() && *it == stringLower );
 }
 
-_GD_TOOLS_HTML_END
+_GD_MODULES_HTML_END

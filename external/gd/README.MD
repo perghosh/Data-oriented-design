@@ -89,127 +89,154 @@ message(STATUS "GD_SOURCES_PARSE contains ${GD_SOURCES_PARSE}")
      
 
 ```
-│   gd_arguments.cpp
-│   gd_arguments.h
-│   gd_arguments_common.h
-│   gd_arguments_shared.cpp
-│   gd_arguments_shared.h
-│   gd_cli_options.cpp
-│   gd_cli_options.h
-│   gd_com.h
-│   gd_compiler.h
-│   gd_database.h
-│   gd_database_odbc.cpp
-│   gd_database_odbc.h
-│   gd_database_record.cpp
-│   gd_database_record.h
-│   gd_database_sqlite.cpp
-│   gd_database_sqlite.h
-│   gd_database_types.h
-│   gd_debug.cpp
-│   gd_debug.h
-│   gd_expression_token.cpp
-│   gd_expression_token.h
-│   gd_file.cpp
-│   gd_file.h
-│   gd_file_rotate.cpp
-│   gd_file_rotate.h
-│   gd_log_logger.cpp
-│   gd_log_logger.h
-│   gd_log_logger_define.h
-│   gd_log_logger_printer.cpp
-│   gd_log_logger_printer.h
-│   gd_log_logger_printer2.cpp
-│   gd_log_logger_printer2.h
-│   gd_math.h
-│   gd_parse.cpp
-│   gd_parse.h
-│   gd_sql_query.cpp
-│   gd_sql_query.h
-│   gd_sql_value.cpp
-│   gd_sql_value.h
-│   gd_sql_values.h
-│   gd_strings.cpp
-│   gd_strings.h
-│   gd_table.cpp
-│   gd_table.h
-│   gd_table_aggregate.h
-│   gd_table_arguments.cpp
-│   gd_table_arguments.h
-│   gd_table_column-buffer.cpp
-│   gd_table_column-buffer.h
-│   gd_table_column.cpp
-│   gd_table_column.h
-│   gd_table_index.cpp
-│   gd_table_index.h
-│   gd_table_io.cpp
-│   gd_table_io.h
-│   gd_table_table.cpp
-│   gd_table_table.h
-│   gd_translate.cpp
-│   gd_translate.h
-│   gd_types.cpp
-│   gd_types.h
-│   gd_utf8.cpp
-│   gd_utf8.h
-│   gd_utf8.hpp
-│   gd_utf8_2.cpp
-│   gd_utf8_2.h
-│   gd_utf8_string.cpp
-│   gd_utf8_string.h
-│   gd_uuid.h
-│   gd_variant.cpp
-│   gd_variant.h
-│   gd_variant_common.h
-│   gd_variant_view.cpp
-│   gd_variant_view.h
-│   LICENSE.txt
-│   README.MD
-│
-├───com
-│       gd_com_server.cpp
-│       gd_com_server.h
-│
-├───console
-│       gd_console_console.cpp
-│       gd_console_console.h
-│       gd_console_print.cpp
-│       gd_console_print.h
-│       gd_console_style.h
-│
-├───database
-│       gd_database_io.cpp
-│       gd_database_io.h
-│
-├───expression
-│       gd_expression.cpp
-│       gd_expression.h
-│       gd_expression_method_01.cpp
-│       gd_expression_method_01.h
-│       gd_expression_operator.h
-│       gd_expression_parse_state.cpp
-│       gd_expression_parse_state.h
-│       gd_expression_runtime.cpp
-│       gd_expression_runtime.h
-│       gd_expression_token.cpp
-│       gd_expression_token.h
-│       gd_expression_value.cpp
-│       gd_expression_value.h
-│       README.MD
-│
-├───io
-│       gd_io_archive.h
-│       gd_io_archive_memory.h
-│       gd_io_archive_stream.cpp
-│       gd_io_archive_stream.h
-│       gd_io_keyboard.cpp
-│       gd_io_keyboard.h
-│       gd_io_repository_stream.cpp
-│       gd_io_repository_stream.h
-│
-└───parse
-        gd_parse_match_pattern.cpp
-        gd_parse_match_pattern.h
-        gd_parse_window_line.cpp
-        gd_parse_window_line.h
+external/gd/
+├── com/
+│   ├── gd_com_server.cpp
+│   └── gd_com_server.h
+├── console/
+│   ├── gd_console_console.cpp
+│   ├── gd_console_console.h
+│   ├── gd_console_print.cpp
+│   ├── gd_console_print.h
+│   └── gd_console_style.h
+├── database/
+│   ├── gd_database_io.cpp
+│   └── gd_database_io.h
+├── expression/
+│   ├── README.MD
+│   ├── gd_expression.cpp
+│   ├── gd_expression.h
+│   ├── gd_expression_glue_to_gd.h
+│   ├── gd_expression_method_01.cpp
+│   ├── gd_expression_method_01.h
+│   ├── gd_expression_operator.h
+│   ├── gd_expression_parse_state.cpp
+│   ├── gd_expression_parse_state.h
+│   ├── gd_expression_runtime.cpp
+│   ├── gd_expression_runtime.h
+│   ├── gd_expression_token.cpp
+│   ├── gd_expression_token.h
+│   ├── gd_expression_value.cpp
+│   └── gd_expression_value.h
+├── io/
+│   ├── gd_io_archive.h
+│   ├── gd_io_archive_memory.h
+│   ├── gd_io_archive_stream.cpp
+│   ├── gd_io_archive_stream.h
+│   ├── gd_io_keyboard.cpp
+│   ├── gd_io_keyboard.h
+│   ├── gd_io_repository_stream.cpp
+│   └── gd_io_repository_stream.h
+├── math/
+│   ├── gd_math.h
+│   ├── gd_math_string.cpp
+│   ├── gd_math_string.h
+│   ├── gd_math_type.cpp
+│   └── gd_math_type.h
+├── parse/
+│   ├── gd_parse_format_string.cpp
+│   ├── gd_parse_format_string.h
+│   ├── gd_parse_formats.cpp
+│   ├── gd_parse_formats.h
+│   ├── gd_parse_json.cpp
+│   ├── gd_parse_json.h
+│   ├── gd_parse_match_pattern.cpp
+│   ├── gd_parse_match_pattern.h
+│   ├── gd_parse_uri.cpp
+│   ├── gd_parse_uri.h
+│   ├── gd_parse_window_line.cpp
+│   └── gd_parse_window_line.h
+├── table/
+│   ├── gd_table_formater.cpp
+│   └── gd_table_formater.h
+├── .cleaner-configuration.json
+├── .cleaner-history.xml
+├── LICENSE.txt
+├── README.MD
+├── _tasks.h
+├── gd_arena.h
+├── gd_arena_borrow.h
+├── gd_arguments.cpp
+├── gd_arguments.h
+├── gd_arguments_common.h
+├── gd_arguments_io.cpp
+├── gd_arguments_io.h
+├── gd_arguments_shared.cpp
+├── gd_arguments_shared.h
+├── gd_binary.cpp
+├── gd_binary.h
+├── gd_cli_options.cpp
+├── gd_cli_options.h
+├── gd_com.h
+├── gd_compiler.h
+├── gd_database.h
+├── gd_database_odbc.cpp
+├── gd_database_odbc.h
+├── gd_database_record.cpp
+├── gd_database_record.h
+├── gd_database_sqlite.cpp
+├── gd_database_sqlite.h
+├── gd_database_types.h
+├── gd_debug.cpp
+├── gd_debug.h
+├── gd_expression_token.cpp
+├── gd_expression_token.h
+├── gd_file.cpp
+├── gd_file.h
+├── gd_file_rotate.cpp
+├── gd_file_rotate.h
+├── gd_log_logger.cpp
+├── gd_log_logger.h
+├── gd_log_logger_define.h
+├── gd_log_logger_printer.cpp
+├── gd_log_logger_printer.h
+├── gd_log_logger_printer2.cpp
+├── gd_log_logger_printer2.h
+├── gd_parse.cpp
+├── gd_parse.h
+├── gd_sql_query.cpp
+├── gd_sql_query.h
+├── gd_sql_query_builder.h
+├── gd_sql_types.h
+├── gd_sql_value.cpp
+├── gd_sql_value.h
+├── gd_sql_values.h
+├── gd_string.h
+├── gd_strings.cpp
+├── gd_strings.h
+├── gd_table.cpp
+├── gd_table.h
+├── gd_table_aggregate.h
+├── gd_table_arguments.cpp
+├── gd_table_arguments.h
+├── gd_table_column-buffer.cpp
+├── gd_table_column-buffer.h
+├── gd_table_column.cpp
+├── gd_table_column.h
+├── gd_table_index.cpp
+├── gd_table_index.h
+├── gd_table_io.cpp
+├── gd_table_io.h
+├── gd_table_table.cpp
+├── gd_table_table.h
+├── gd_translate.cpp
+├── gd_translate.h
+├── gd_types.cpp
+├── gd_types.h
+├── gd_utf8.cpp
+├── gd_utf8.h
+├── gd_utf8.hpp
+├── gd_utf8_2.cpp
+├── gd_utf8_2.h
+├── gd_utf8_string.cpp
+├── gd_utf8_string.h
+├── gd_uuid.h
+├── gd_variant.cpp
+├── gd_variant.h
+├── gd_variant_arg.cpp
+├── gd_variant_arg.h
+├── gd_variant_common.h
+├── gd_variant_view.cpp
+├── gd_variant_view.h
+└── gd_vector.h
 ```

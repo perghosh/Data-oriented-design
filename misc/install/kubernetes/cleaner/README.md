@@ -20,6 +20,9 @@ The `cleaner` application is a powerful command-line tool for analyzing source c
 - kubectl configured to access your cluster
 - The `cleaner` binary must be present in this directory
 
+## Startup
+- minikube: `minikube start`
+
 ## Quick Start
 
 ### 1. Build the Docker Image

@@ -20,12 +20,12 @@
 #include "gd/gd_arguments.h"
 #include "gd/gd_arguments_shared.h"
 
-#ifndef _GD_TOOLS_HTML_BEGIN
-#  define _GD_TOOLS_HTML_BEGIN namespace gd { namespace tools { namespace html {
-#  define _GD_TOOLS_HTML_END   } } }
+#ifndef _GD_MODULES_HTML_BEGIN
+#  define _GD_MODULES_HTML_BEGIN namespace gd { namespace modules { namespace html {
+#  define _GD_MODULES_HTML_END   } } }
 #endif
 
-_GD_TOOLS_HTML_BEGIN
+_GD_MODULES_HTML_BEGIN
 
 // ============================================================================
 // @CLASS [tag: element] [summary: Single node in the HTML/XML DOM tree]
@@ -571,4 +571,4 @@ inline void parser::error_set( std::string_view stringMessage )
 }
 
 
-_GD_TOOLS_HTML_END
+_GD_MODULES_HTML_END
