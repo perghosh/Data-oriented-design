@@ -39,10 +39,10 @@ file(GLOB GD_SOURCES_IO ${GD_BASE_PATH}/io/*.cpp ${GD_BASE_PATH}/io/*.h)
 file(GLOB GD_SOURCES_PARSE ${GD_BASE_PATH}/parse/*.cpp ${GD_BASE_PATH}/parse/*.h)
 file(GLOB GD_SOURCES_TABLE ${GD_BASE_PATH}/table/*.cpp ${GD_BASE_PATH}/table/*.h)
 
-set(GD_TOOLS__BASE_PATH ${CMAKE_SOURCE_DIR}/external/gd_tools)
+set(GD_MODULES__BASE_PATH ${CMAKE_SOURCE_DIR}/external/gd_modules)
 
-file(GLOB GD_TOOLS__SOURCES_ALL ${GD_TOOLS__BASE_PATH}/table/*.cpp ${GD_TOOLS__BASE_PATH}/table/*.h)
-file(GLOB_RECURSE GD_TOOLS__SOURCES_ALL ${GD_TOOLS__BASE_PATH}/*.cpp ${GD_TOOLS__BASE_PATH}/*.h)
+file(GLOB_RECURSE GD_MODULES__SOURCES_ALL ${GD_MODULES__BASE_PATH}/*.cpp ${GD_MODULES__BASE_PATH}/*.h)
+file(GLOB GD_MODULES__DBMETA ${GD_MODULES__BASE_PATH}/dbmeta/*.cpp ${GD_MODULES__BASE_PATH}/dbmeta/*.h)
 
 # catch2 code, general code to manage data
 file(GLOB external_catch2 ${CMAKE_SOURCE_DIR}/external/catch2/*.cpp)

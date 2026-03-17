@@ -27,7 +27,7 @@ function( set_compiler_options )
    endif()
 endfunction()
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_Arena")
    add_executable(${TEST_NAME_} ${GD_SOURCES_ALL}
@@ -45,7 +45,7 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE )
 endif()
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_database")
    add_executable(${TEST_NAME_} ${GD_SOURCES_ALL}
@@ -63,6 +63,26 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE $<$<CONFIG:Debug>:_CRTDBG_MAP_ALLOC>
 )
 endif()
+
+set( USE_TEST_ ON )
+if( USE_TEST_ )
+   set(TEST_NAME_ "PLAY_DbMeta")
+   add_executable(${TEST_NAME_}
+      ${GD_SOURCES_ALL}
+      ${SOURCE_PLAYGROUND_}
+      ${external_sqlite} ${external_catch2} 
+      ${GD_MODULES__DBMETA}
+      "main.cpp" 
+      "${TEST_NAME_}.cpp"
+   )
+   set_compiler_options()
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/external)
+   target_include_directories(${TEST_NAME_} PRIVATE ${CMAKE_SOURCE_DIR}/source)
+   target_compile_definitions(${TEST_NAME_} PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN _CRT_SECURE_NO_WARNINGS)
+   target_compile_definitions(${TEST_NAME_} PRIVATE GD_LOG_SIMPLE)
+   target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE )
+endif()
+
 
 set( USE_TEST_ ON )
 if( USE_TEST_ )
@@ -119,7 +139,7 @@ if( USE_TEST_ )
    target_compile_definitions(${TEST_NAME_} PRIVATE GD_DATABASE_SQLITE_USE )
 endif()
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_Sql2")
    add_executable(${TEST_NAME_}
@@ -138,7 +158,7 @@ if( USE_TEST_ )
 endif()
 
 
-set( USE_TEST_ ON )
+set( USE_TEST_ OFF )
 if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_uri")
    add_executable(${TEST_NAME_}
@@ -161,7 +181,7 @@ if( USE_TEST_ )
    set(TEST_NAME_ "PLAY_Html")
    add_executable(${TEST_NAME_}
       ${GD_SOURCES_ALL}
-      ${GD_TOOLS__SOURCES_ALL}
+      ${GD_MODULES__SOURCES_ALL}
       ${SOURCE_PLAYGROUND_}
       ${external_catch2} 
       "main.cpp" 

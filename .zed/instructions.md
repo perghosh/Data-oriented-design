@@ -90,6 +90,17 @@ For other types (pairs, vectors, tables, queries, custom classes):
 
 ---
 
+### SELECT METHOD NAMES
+- Use as few words as possible while still being clear
+- Try to reuse names from STL or other standard libraries when possible to make it easier for developers to understand what the method does without needing to read the implementation
+
+COMMON NAMES 
+size, empty, clear, reserve, capacity, shrink_to_fit, push_back, pop_back, insert, erase, swap, front, back, at, operator[], begin, end, emplace, emplace_back, data, assign
+first, second, make_pair, make_tuple, get, find, count, contains, sort, reverse, shuffle, unique, transform, accumulate
+
+Based on where the code is located use case rules based on the levels described in the method naming section. For example, if it's in the core level, it should be written in lowercase with underscores, if it's in corporate level it should be written in camel case with upper case first letter and no underscores, etc.
+---
+
 ## COMMENTING GUIDELINES
 
 ### General Rules
