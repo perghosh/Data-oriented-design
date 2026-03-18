@@ -5,6 +5,9 @@
  * 
  */
 
+#include <chrono>
+#include <random>
+#include <thread>
 
 #include "gd_types.h"
 
@@ -210,6 +213,37 @@ unsigned detect_ctypegroup_g( const uint8_t* puText, unsigned uLength )
    return eTypeGroupString;
 }
 
+/// Generate a random UUID v4
+/// Uses thread_local mt19937_64: seeded once per thread, generates 128 bits in 2 calls instead of 16.
+uuid uuid_generate_g()
+{
+   // One engine per thread — no locks, no contention
+   thread_local std::mt19937_64 rng = []()
+   {
+      // Seed with multiple entropy sources to avoid same-sequence threads
+      std::mt19937_64 mt_;
+      std::seed_seq seedseq_
+      {
+          static_cast<uint64_t>( std::chrono::high_resolution_clock::now().time_since_epoch().count() ),
+          static_cast<uint64_t>( std::hash<std::thread::id>{}( std::this_thread::get_id() ) ),
+          static_cast<uint64_t>( reinterpret_cast<uintptr_t>( &mt_ ) )  // stack address for extra variance
+      };
+      mt_.seed( seedseq_ );
+      return mt_;
+   }( );
+
+   uint64_t uHi = rng();
+   uint64_t uLo = rng();
+
+   // Stamp RFC 4122 v4 (random) version and variant bits
+   uHi = ( uHi & 0xFFFFFFFFFFFF0FFFULL ) | 0x0000000000004000ULL;  // version = 4
+   uLo = ( uLo & 0x3FFFFFFFFFFFFFFFULL ) | 0x8000000000000000ULL;  // variant = 0b10
+
+   uuid uuid_;
+   memcpy( uuid_.m_puData, &uHi, 8 );
+   memcpy( uuid_.m_puData + 8, &uLo, 8 );
+   return uuid_;
+}
 
 
 

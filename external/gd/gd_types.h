@@ -1270,8 +1270,8 @@ template<typename TYPE>
 concept is_arguments = requires { typename TYPE::tag_is_arguments; };
 
 /*-----------------------------------------*/ /**
-   * \brief wrapper used to uuid value
-   */
+ * \brief wrapper used to uuid value
+ */
 struct uuid
 {
    uuid() { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = 0; } }
@@ -1291,6 +1291,8 @@ struct uuid
    uint8_t m_puData[16];
 };
 
+/// Generate a new UUID (version 4, random)
+uuid uuid_generate_g();
 
 /*-----------------------------------------*/ /**
  * \brief wrapper used to set binary value
