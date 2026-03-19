@@ -83,10 +83,11 @@ public:
  * }
  */
 enum enumFormat {
-   eFormatRaw  = 1, // SQL statements
-   eFormatCsv  = 2, // Comma-Separated statement information
-   eFormatJson = 3, // 
-   eFormatXml  = 4,
+   eFormatRaw     = 1, // SQL statements
+   eFormatJinja   = 2, // Jinja template with SQL statement and variables
+   eFormatCsv     = 3, // Comma-Separated statement information
+   eFormatJson    = 4, // 
+   eFormatXml     = 5,
 };
 
 /// Statement type, this is used to know how to execute statement and also for some form of meta data
@@ -123,12 +124,14 @@ public:
    void initialize(); ///< initialize statement object, this will prepare internal table for storing statements
 
    std::pair<bool, std::string> add( std::string_view stringName, std::string_view stringStatement, enumFormat eFormat = eFormatRaw, uint32_t uType = 0, uint32_t uRule = 0 ); ///< add statement to statement object
+   std::pair<bool, std::string> add( std::string_view stringName, std::string_view stringStatement, std::string_view stingFormat, std::string_view stringType, std::string_view stringRule = ""); ///< add statement to statement object
    std::pair<bool, std::string> add( const gd::argument::arguments& argumentsStatement ); ///< add statement to statement object using arguments object, this is used when adding statement from query template
 
 
    int64_t find( const gd::types::uuid* puuid ) const; ///< find statement by uuid, returns row index or -1 if not found
    
    size_t size() const noexcept { return m_ptableStatement ? m_ptableStatement->size() : 0; } ///< get number of statements in statement object
+   size_t count( const gd::types::uuid& uuidKey ) const; ///< count number of statements with specified key
 
 
 protected:
@@ -146,13 +149,13 @@ public:
 public:
    static void create_statement_s( gd::table::arguments::table& tableStatement );    ///< create statement structure
 
-   static constexpr uint32_t to_type_s( std::string_view stringType ) noexcept;
+   static constexpr enumType to_type_s( std::string_view stringType ) noexcept;
    static constexpr enumFormat to_format_s( std::string_view stringName ) noexcept;
 
 };
 
 /// Return statement type for given name (constexpr) ------------------------- to_type_s
-constexpr uint32_t statement::to_type_s( std::string_view stringType ) noexcept
+constexpr statement::enumType statement::to_type_s( std::string_view stringType ) noexcept
 {
    // Accept a few common textual representations
    return (stringType == "select" ) ? eTypeSelect
@@ -168,10 +171,11 @@ constexpr uint32_t statement::to_type_s( std::string_view stringType ) noexcept
 constexpr statement::enumFormat statement::to_format_s( std::string_view stringName ) noexcept
 {
    // Accept a few common textual representations
-   return (stringName == "raw"  || stringName == "sql"  || stringName == "eFormatRaw")  ? eFormatRaw
-        : (stringName == "csv"  || stringName == "eFormatCsv")                       ? eFormatCsv
-        : (stringName == "json" || stringName == "eFormatJson")                      ? eFormatJson
-        : (stringName == "xml"  || stringName == "eFormatXml")                       ? eFormatXml
+   return (stringName == "raw"  || stringName == "sql" ) ? eFormatRaw
+        : (stringName == "jinja" )                       ? eFormatJinja
+        : (stringName == "csv" )                         ? eFormatCsv
+        : (stringName == "json" )                        ? eFormatJson
+        : (stringName == "xml" )                         ? eFormatXml
         : eFormatRaw; ///< default
 }
 

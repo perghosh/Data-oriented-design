@@ -57,9 +57,11 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringQuery, enumFo
 std::pair<bool, std::string> CQueries::Add( std::string_view stringName, std::string_view stringType, std::string_view stringFormat, std::string_view stringQuery )
 {
    if( stringType.empty() == true ) stringType = "select";
-
    if( stringQuery.empty() ) { return { false, "Invalid input" }; }
 
+   m_statement.add( stringName, stringQuery, stringFormat, stringType ); // TODO: Compmlete this, new logic
+
+   
    auto uType = ToType_s( stringType );
    auto uFormat = ToFormat_s( stringFormat );
 

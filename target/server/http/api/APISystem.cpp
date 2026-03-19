@@ -257,6 +257,7 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryDelete()
  */
 std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryCount()
 {
+   std::pair<bool, std::string> result_;
    CDocument* pdocument = GetDocument();
    META::CQueries* pqueries = pdocument->QUERIES_Get();                                            assert( pqueries );
 
@@ -269,8 +270,15 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryCount()
    }
    else
    {
+      gd::types::uuid uuidValue;
       std::string stringUuid = Get("uuid").as_string();
-      uCount = pqueries->Size();
+      if( stringUuid.length() == 32 ) { result_ = gd::binary_validate_hex_g( stringUuid ); }
+      else if( stringUuid.length() == 36 ) { result_ = gd::binary_validate_uuid_g( stringUuid ); }
+      if( result_.first == false ) { return { false, "Invalid UUID format: " + result_.second }; }
+
+      uuidValue = gd::uuid( stringUuid.data(), stringUuid.data() + stringUuid.length() );
+
+      uCount = pqueries->Count( uuidValue );
    }
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "count", uCount } } ); // result data

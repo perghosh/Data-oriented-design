@@ -12,6 +12,14 @@ void statement::initialize()
    create_statement_s( *m_ptableStatement );
 }
 
+std::pair<bool, std::string> statement::add( std::string_view stringName, std::string_view stringStatement, std::string_view stingFormat, std::string_view stringType, std::string_view stringRule )
+{                                                                                                  assert( stringName.empty() == false ); assert( stringStatement.empty() == false );
+   enumFormat eFormat = to_format_s( stingFormat );
+   uint32_t uType = (uint32_t)to_type_s( stringType );
+   uint32_t uRule = 0;
+   return add( stringName, stringStatement, eFormat, uType, uRule );
+}
+
 std::pair<bool, std::string> statement::add( std::string_view stringName, std::string_view stringStatement, enumFormat eFormat, uint32_t uType, uint32_t uRule )
 {                                                                                                  assert( m_ptableStatement != nullptr );
    auto uRow = m_ptableStatement->row_add_one();
@@ -114,6 +122,19 @@ int64_t statement::find( const gd::types::uuid* puuid ) const
 {                                                                                                  assert( m_ptableStatement != nullptr ); assert( puuid != nullptr );
    int64_t iRow = m_ptableStatement->find( eColumnUuid, *puuid );
    return iRow;
+}
+
+/// @brief Counts the number of occurrences of a UUID in the statement. ----- count
+size_t statement::count( const gd::types::uuid& uuidKey ) const
+{
+   size_t uCount = 0;
+   for( const auto& row : m_ptableStatement->rows() )
+   {
+      auto uuidValue = row.cell_get_variant_view( eColumnUuid ).as_binary_view();
+      if( uuidKey == uuidValue ) uCount++;
+   }
+   
+   return uCount;
 }
 
 void statement::create_statement_s( gd::table::arguments::table& tableStatement )
