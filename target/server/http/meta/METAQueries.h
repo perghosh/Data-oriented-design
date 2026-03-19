@@ -76,9 +76,9 @@ public:
 
    std::pair<bool, std::string> Delete( const std::pair<std::string_view,std::string_view>& pair_ );
 
-   bool Empty() const { return m_tableQuery.empty(); }                                            ///< check if there are any active queries
+   bool Empty() const { return m_tableQuery.empty(); }                        ///< check if there are any active queries
 
-   int64_t Find( const gd::argument::arguments& arguments_ ) const;                               ///< find query by arguments, returns row index or -1 if not found
+   int64_t Find( const gd::argument::arguments& arguments_ ) const;           ///< find query by arguments, returns row index or -1 if not found
 
    // @API [tag: access, row] [description: Methods to return query row data]
    gd::types::uuid GetQueryId( uint64_t uRow );
@@ -88,7 +88,8 @@ public:
    
    std::pair<bool, std::string> Load( std::string_view stringPath );
 
-   size_t Size() const { return m_statement.size(); }                                              ///< get number of active queries
+   size_t Size() const { return m_statement.size(); } ///< get number of active queries
+   size_t Count( const gd::types::uuid& uuidKey ) const { return m_statement.count( uuidKey ); }///< count number of queries with specified key
    
 protected:
    // @API [tag: internal]
