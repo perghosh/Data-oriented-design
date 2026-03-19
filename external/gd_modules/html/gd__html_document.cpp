@@ -1,7 +1,7 @@
 // @FILE [tag: html,dom,parser] [description: HTML/XML document model and fast single-pass parser]
 //       [type: source] [name: gd_tools_html_document.cpp]
 
-#include "gd_tools_html_document.h"
+#include "gd__html_document.h"
 
 _GD_MODULES_HTML_BEGIN
 

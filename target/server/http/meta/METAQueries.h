@@ -18,6 +18,8 @@
 #include "gd/gd_log_logger.h"
 #include "gd/gd_table_arguments.h"
 
+#include "gd_modules/dbmeta/gd__statement.h"
+
 #ifndef NAMESPACE_META_BEGIN
 
 #  define NAMESPACE_META_BEGIN namespace META {
@@ -85,6 +87,8 @@ public:
    // @API [tag: load, save]
    
    std::pair<bool, std::string> Load( std::string_view stringPath );
+
+   size_t Size() const { return m_statement.size(); }                                              ///< get number of active queries
    
 protected:
    // @API [tag: internal]
@@ -97,6 +101,8 @@ public:
    gd::argument::shared::arguments m_argumentProperty; ///< properties for session management
 
    gd::table::arguments::table m_tableQuery; ///< table holding active queries
+
+   gd::modules::dbmeta::statement m_statement; ///< statement object holding list of statements, this is used to generate queries from templates
 
 
    // @API [tag: free-functions]

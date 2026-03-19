@@ -4,6 +4,14 @@
 
 _GD_MODULES_DBMETA_BEGIN
 
+
+/// Initializes the `statement` object -------------------------------------- initialize
+void statement::initialize()
+{                                                                                                  assert( m_ptableStatement == nullptr );
+   m_ptableStatement = std::make_unique<gd::table::arguments::table>();
+   create_statement_s( *m_ptableStatement );
+}
+
 std::pair<bool, std::string> statement::add( std::string_view stringName, std::string_view stringStatement, enumFormat eFormat, uint32_t uType, uint32_t uRule )
 {                                                                                                  assert( m_ptableStatement != nullptr );
    auto uRow = m_ptableStatement->row_add_one();

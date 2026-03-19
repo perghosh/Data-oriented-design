@@ -19,6 +19,8 @@ void CQueries::common_construct(const CQueries &o)
 
 std::pair<bool, std::string> CQueries::Initialize( const gd::argument::arguments& arguments_ )
 {
+   m_statement.initialize();
+
    CQueries::CreateTable_s( m_tableQuery );
    return { true, "" };
 }

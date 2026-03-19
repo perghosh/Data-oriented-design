@@ -39,6 +39,7 @@ public:
 
    std::pair<bool, std::string> Execute_MetadataQueryAdd();
    std::pair<bool, std::string> Execute_MetadataQueryDelete();
+   std::pair<bool, std::string> Execute_MetadataQueryCount();
    std::pair<bool, std::string> Execute_MetadataQueryExists();
    std::pair<bool, std::string> Execute_MetadataDBField();
 

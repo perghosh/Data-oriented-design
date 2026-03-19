@@ -120,6 +120,8 @@ public:
 // @API [tag: get, set]
 
 // @API [tag: operation]
+   void initialize(); ///< initialize statement object, this will prepare internal table for storing statements
+
    std::pair<bool, std::string> add( std::string_view stringName, std::string_view stringStatement, enumFormat eFormat = eFormatRaw, uint32_t uType = 0, uint32_t uRule = 0 ); ///< add statement to statement object
    std::pair<bool, std::string> add( const gd::argument::arguments& argumentsStatement ); ///< add statement to statement object using arguments object, this is used when adding statement from query template
 
@@ -147,20 +149,18 @@ public:
    static constexpr uint32_t to_type_s( std::string_view stringType ) noexcept;
    static constexpr enumFormat to_format_s( std::string_view stringName ) noexcept;
 
-
-
 };
 
 /// Return statement type for given name (constexpr) ------------------------- to_type_s
 constexpr uint32_t statement::to_type_s( std::string_view stringType ) noexcept
 {
    // Accept a few common textual representations
-   return (stringType == "select" || stringType == "eTypeSelect") ? eTypeSelect
-        : (stringType == "insert" || stringType == "eTypeInsert") ? eTypeInsert
-        : (stringType == "update" || stringType == "eTypeUpdate") ? eTypeUpdate
-        : (stringType == "delete" || stringType == "eTypeDelete") ? eTypeDelete
-        : (stringType == "ask"    || stringType == "eTypeAsk")    ? eTypeAsk
-        : (stringType == "batch"  || stringType == "eTypeBatch")  ? eTypeBatch
+   return (stringType == "select" ) ? eTypeSelect
+        : (stringType == "insert" ) ? eTypeInsert
+        : (stringType == "update" ) ? eTypeUpdate
+        : (stringType == "delete" ) ? eTypeDelete
+        : (stringType == "ask"    ) ? eTypeAsk
+        : (stringType == "batch"  )  ? eTypeBatch
         : eTypeUnknown; ///< default
 }
 

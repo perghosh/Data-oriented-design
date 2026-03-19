@@ -1,7 +1,7 @@
 // @FILE [tag: html,dom,xpath] [description: Basic XPath 1.0 subset evaluator for the html::element tree]
 //       [type: source] [name: gd_tools_html_xpath.cpp]
 
-#include "gd_tools_html_xpath.h"
+#include "gd__html_xpath.h"
 
 #include <cctype>
 

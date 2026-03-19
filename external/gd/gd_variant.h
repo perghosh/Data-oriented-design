@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <cstring>
 #include <limits>
+#include <span>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -504,6 +505,7 @@ public:
    std::string get_string() const;
    std::string_view get_string( variant_type::tag_no_allocate ) const;
    std::string_view get_string_view() const { return get_string( variant_type::tag_no_allocate{}); };
+   std::span<uint8_t> get_binary_view() const;
    std::wstring get_wstring() const;
 
    // ## as_* methods, similar to C++ stl to_

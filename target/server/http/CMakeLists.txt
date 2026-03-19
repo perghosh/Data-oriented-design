@@ -83,6 +83,7 @@ if( USE_TARGET_ )
       ${external_sqlite}
       ${external_pugixml}
       ${GD_SOURCES_ALL}
+      ${GD_MODULES__SOURCES_ALL}
       # ${APPLICATION_DIRECTORY_}/ApplicationBasic.cpp
 
       ${TARGET_FILES_}

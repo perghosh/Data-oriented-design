@@ -61,6 +61,7 @@ std::pair<bool, std::string> CAPISystem::Execute()
                stringCommand = m_vectorCommand[uIndex];
 
                if( stringCommand == "add" )        { result_ = Execute_MetadataQueryAdd(); }       // add
+               else if( stringCommand == "count" ) { result_ = Execute_MetadataQueryCount(); }     // count
                else if( stringCommand == "delete" ){ result_ = Execute_MetadataQueryDelete(); }    // delete
                else if( stringCommand == "exists" ){ result_ = Execute_MetadataQueryExists(); }    // exists
                else break;
@@ -244,7 +245,42 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryDelete()
    return result_;
 }
 
-/** --------------------------------------------------------------------------
+/** -------------------------------------------------------------------------- Execute_MetadataQueryCount
+ * @brief Counts the number of metadata queries and stores the result.
+ * 
+ * Optionally, if a "name" or "uuid" parameter is provided, it can filter the count based on those parameters.
+ * 
+ * @param "name" (optional) query name to filter the count
+ * @param "uuid" (optional) query uuid to filter the count
+ * 
+ * @return A pair where the first element is true if the operation was successful, false otherwise. The second element is an error message if the operation failed
+ */
+std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryCount()
+{
+   CDocument* pdocument = GetDocument();
+   META::CQueries* pqueries = pdocument->QUERIES_Get();                                            assert( pqueries );
+
+   uint64_t uCount = pqueries->Size();
+
+   std::string stringName = Get("name").as_string();
+   if( stringName.empty() == false )
+   {
+      uCount = pqueries->Size();
+   }
+   else
+   {
+      std::string stringUuid = Get("uuid").as_string();
+      uCount = pqueries->Size();
+   }
+
+   gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "count", uCount } } ); // result data
+
+   m_objects.Add( parguments_ );
+
+   return { true, "" };
+}
+
+/** -------------------------------------------------------------------------- Execute_MetadataQueryExists
  * @brief Checks if a metadata query with the specified name exists and stores the result.
  * 
  * @param "name" query name to check if it exists

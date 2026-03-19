@@ -424,6 +424,21 @@ variant_view variant::as_variant_view() const
    return variantviewReturn;
 }
 
+/** ---------------------------------------------------------------------------
+ * @brief return value as std::span<uint8_t>
+ * @return std::span<uint8_t> value as span object
+*/
+std::span<uint8_t> variant::get_binary_view() const
+{
+   switch( type_number() )
+   {
+   case eTypeNumberBinary : return std::span<uint8_t>( m_V.pb, m_uSize );
+   case eTypeNumberGuid   : return std::span<uint8_t>( m_V.pb, 16 );
+   default: break;
+   }
+   return std::span<uint8_t>();
+}
+
 
 /** ---------------------------------------------------------------------------
  * @brief checks if we have a "true" value
