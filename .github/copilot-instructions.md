@@ -62,7 +62,7 @@ By enforcing full semantic names on anything with domain meaning, we guarantee t
 
 ### Sample Prefixes and one postfix
 
-| Postfix | Description | Examples |
+| Prefix/Postfix | Description | Examples |
 | ------- | ----------- | -------- |
 | `b` | boolean | `bool bOk;`, `bool bIsOk;` |
 | `i` | signed integer (all sizes) | `int iCount;`, `int64_t iBigValue;`, `char iCharacter;` |
