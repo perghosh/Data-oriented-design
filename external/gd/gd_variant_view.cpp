@@ -413,6 +413,22 @@ std::string variant_view::get_utf8string() const
 }
 */
 
+/** ---------------------------------------------------------------------------
+ * @brief return value as std::span<uint8_t>
+ * @return std::span<uint8_t> value as span object
+*/
+std::span<uint8_t> variant_view::get_binary_view() const
+{
+   switch( type_number() )
+   {
+   case eTypeNumberBinary : return std::span<uint8_t>( m_V.pb, m_uSize );
+   case eTypeNumberGuid   : return std::span<uint8_t>( m_V.pb, 16 );
+   default: break;
+   }
+   return std::span<uint8_t>();
+}
+
+
 
 std::wstring variant_view::get_wstring() const
 {

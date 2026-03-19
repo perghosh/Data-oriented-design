@@ -1,22 +1,112 @@
+#include "gd/gd_binary.h"
+
 #include "gd__statement.h"
 
 _GD_MODULES_DBMETA_BEGIN
 
-std::pair<bool, std::string> statement::add_statement( std::string_view stringName, std::string_view stringStatement, enumFormat eFormat, uint32_t uType, uint32_t uRule )
+std::pair<bool, std::string> statement::add( std::string_view stringName, std::string_view stringStatement, enumFormat eFormat, uint32_t uType, uint32_t uRule )
 {                                                                                                  assert( m_ptableStatement != nullptr );
    auto uRow = m_ptableStatement->row_add_one();
    uint32_t uKey = (uint32_t)uRow;
-   m_ptableStatement->cell_set( uRow, "key", (uint32_t)uKey );
-   m_ptableStatement->cell_set( uRow, "uuid", gd::types::uuid_generate_g() );
-   m_ptableStatement->cell_set( uRow, "name", stringName );
-   m_ptableStatement->cell_set( uRow, "type", (uint32_t)uType );
-   m_ptableStatement->cell_set( uRow, "format", (uint32_t)eFormat );
-   m_ptableStatement->cell_set( uRow, "rule", uRule );
-   m_ptableStatement->cell_set( uRow, "statement", stringStatement );
+   m_ptableStatement->cell_set( uRow, eColumnKey, (uint32_t)uKey );
+   m_ptableStatement->cell_set( uRow, eColumnUuid, gd::types::uuid_generate_g() );
+   m_ptableStatement->cell_set( uRow, eColumnName, stringName );
+   m_ptableStatement->cell_set( uRow, eColumnType, (uint32_t)uType );
+   m_ptableStatement->cell_set( uRow, eColumnFormat, (uint32_t)eFormat );
+   m_ptableStatement->cell_set( uRow, eColumnRule , uRule );
+   m_ptableStatement->cell_set( uRow, eColumnStatement, stringStatement );
    return { true, "" }; 
 }
 
+std::pair<bool, std::string> statement::add( const gd::argument::arguments& argumentsStatement )
+{                                                                                                  assert( m_ptableStatement != nullptr );
+   std::pair<bool, std::string> result_;
+   auto uRow = m_ptableStatement->row_add_one();
+   uint32_t uKey = (uint32_t)uRow;
+   m_ptableStatement->cell_set( uRow, eColumnKey, (uint32_t)uKey );
 
+   // ## Set conlumv values for added row, if value is not provided or invalid set default values
+
+   // ### UUID value, if not provided or invalid generate a new one
+
+   auto uuid_ = argumentsStatement["uuid"];
+   if( uuid_.is_string() == true )
+   {
+      // ## Try to parse the UUID from the string, if it fails generate a new one
+      gd::types::uuid uuidValue;
+      auto stringUuid = uuid_.as_string_view();
+      if( stringUuid.length() == 32 || stringUuid.length() == 36 )            // if uuid length
+      {
+
+         if( stringUuid.length() == 32 ) { result_ = gd::binary_validate_hex_g( stringUuid ); }
+         else if( stringUuid.length() == 36 ) { result_ = gd::binary_validate_uuid_g( stringUuid ); }
+         if( result_.first == false ) { return { false, "Invalid UUID format: " + result_.second }; }
+
+
+         uuidValue = gd::uuid( stringUuid.data(), stringUuid.data() + stringUuid.length() );
+         m_ptableStatement->cell_set( uRow, eColumnUuid, uuidValue );
+      }
+   }
+   else if( uuid_.is_binary() == true )
+   {
+      auto binary_ = uuid_.as_binary_view();
+      if( binary_.size() == 16 )
+      {
+         gd::types::uuid uuidValue( binary_ );
+         m_ptableStatement->cell_set( uRow, eColumnUuid, uuidValue );
+      }
+      else { return { false, "Invalid binary UUID length: " + std::to_string( binary_.size() ) }; }
+   }
+   else
+   {
+      m_ptableStatement->cell_set( uRow, eColumnUuid, gd::types::uuid_generate_g() ); // generate new UUID if not provided or invalid
+   }
+
+   // ### Name value, if not provided set empty string
+
+   auto name_ = argumentsStatement["name"];
+   if( name_.is_string() == true ) m_ptableStatement->cell_set( uRow, eColumnName, name_.as_string_view() );
+
+   // ### Format value, if not provided set to eFormatRaw
+
+   auto format_ = argumentsStatement["format"];
+   uint32_t uFormat = (uint32_t)eFormatRaw;
+   if( format_.is_string() == true ) uFormat = to_format_s( format_.as_string_view() );
+   else if( format_.is_number() == true ) uFormat = format_.as_uint();
+   m_ptableStatement->cell_set( uRow, eColumnFormat, uFormat );
+
+   // ### Type value, if not provided set to eTypeUnknown
+
+   auto type_ = argumentsStatement["type"];
+   uint32_t uType = (uint32_t)eTypeUnknown;
+   if( type_.is_string() == true ) uType = to_format_s( type_.as_string_view() );
+   else if( type_.is_number() == true ) uType = type_.as_uint();
+   m_ptableStatement->cell_set( uRow, eColumnType, uType );
+
+   // ### Rule value, if not provided set to 0
+
+   auto rule_ = argumentsStatement["rule"];
+   if( rule_.is_number() == true ) m_ptableStatement->cell_set( uRow, eColumnRule, rule_.as_uint() );
+
+   // ### Statement value, if not provided set to empty string
+
+   auto statement_ = argumentsStatement["statement"];
+   if( statement_.is_string() == true ) m_ptableStatement->cell_set( uRow, eColumnStatement, statement_.as_string_view() );
+
+   return { true, "" };
+}
+
+
+/** ------------------------------------------------------------------------- find
+ * @brief Finds a UUID in the statement.
+ * @param puuid Pointer to the UUID to search for.
+ * @return The index of the UUID if found, or -1 if not found.
+ */
+int64_t statement::find( const gd::types::uuid* puuid ) const
+{                                                                                                  assert( m_ptableStatement != nullptr ); assert( puuid != nullptr );
+   int64_t iRow = m_ptableStatement->find( eColumnUuid, *puuid );
+   return iRow;
+}
 
 void statement::create_statement_s( gd::table::arguments::table& tableStatement )
 {

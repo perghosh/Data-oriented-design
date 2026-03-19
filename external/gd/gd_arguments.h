@@ -487,6 +487,7 @@ public:
       gd::variant  as_variant() const  { return get_variant(); }
       gd::variant_view as_variant_view() const { return get_variant_view(); }
       std::string_view as_string_view() const { return get_string_view(); }
+      std::span<uint8_t> as_binary_view() const { return get_binary_view(); }
 
 
       bool         get_bool() const;
@@ -503,6 +504,7 @@ public:
       value        get_value() { return m_unionValue; }
       const value& get_value() const { return m_unionValue; }
       std::string_view get_string_view() const { return arguments::get_variant_view_s(*this).as_string_view(); }
+      std::span<uint8_t> get_binary_view() const { return arguments::get_variant_view_s(*this).as_binary_view(); }
 
       std::string  to_string() const { return get_string(); }
       std::string  to_ut8() const { return get_utf8(); }

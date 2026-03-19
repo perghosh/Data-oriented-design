@@ -31,6 +31,7 @@
 #include <cassert>
 #include <cstddef>
 #include <functional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -308,6 +309,7 @@ public:
    std::string get_string() const;
    std::string get_string( gd::variant_type::tag_scientific ) const;
    std::string_view get_string_view() const;
+   std::span<uint8_t> get_binary_view() const;
    std::wstring get_wstring() const;
 
    // ## as_* methods, similar to C++ stl to_
@@ -323,6 +325,7 @@ public:
    std::string as_string( gd::variant_type::tag_scientific ) const { return get_string( gd::variant_type::tag_scientific{}); }
    std::wstring as_wstring() const { return get_wstring(); }
    std::string_view as_string_view() const { return get_string_view(); }
+   std::span<uint8_t> as_binary_view() const { return get_binary_view(); }
    gd::variant as_variant() const;
    void* as_void() const { return get_void(); }
    /// get value as template type

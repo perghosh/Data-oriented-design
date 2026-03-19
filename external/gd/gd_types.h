@@ -33,11 +33,12 @@
 #include <cassert>
 #include <cstring>
 #include <limits>
+#include <list>
+#include <span>
 #include <type_traits>
 #include <stdint.h>
 #include <string>
 #include <string_view>
-#include <list>
 #include <variant>
 #include <vector>
 
@@ -1276,6 +1277,9 @@ struct uuid
 {
    uuid() { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = 0; } }
    uuid( const uint8_t* pbData ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = pbData[i]; } }
+   uuid( std::span<uint8_t> data_ )       { assert( data_.size() >= 16 ); memcpy( m_puData, data_.data(), 16 ); }
+   uuid( std::span<const uint8_t> data_ ) { assert( data_.size() >= 16 ); memcpy( m_puData, data_.data(), 16 ); }
+
    
    bool operator==( const uuid& o ) const { return memcmp( m_puData, o.m_puData, 16 ) == 0; }
 
@@ -1284,6 +1288,8 @@ struct uuid
    
    operator uint8_t*() { return m_puData; }
    operator const uint8_t*() const { return m_puData; }
+   operator std::span<uint8_t>()             { return std::span<uint8_t>( m_puData, 16 ); }
+   operator std::span<const uint8_t>() const { return std::span<const uint8_t>( m_puData, 16 ); }
 
    const uint8_t* data() const { return (const uint8_t*)m_puData; }
    size_t length() const { return 16; }
