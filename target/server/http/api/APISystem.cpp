@@ -16,6 +16,14 @@
 
 std::pair<bool, std::string> ValidateSession_s(const std::string& stringSession);
 
+/** ------------------------------------------------------------------------- Execute
+ * @brief Executes system commands based on the command vector and parameters.
+ * 
+ * *Sample endpoints*
+ * 
+ * 
+ * @return A pair containing success status and an error message (empty on success).
+ */
 std::pair<bool, std::string> CAPISystem::Execute()
 {                                                                                                  assert( m_vectorCommand.empty() == false && "No commands");
    // ## execute database command based on m_vectorCommand and m_argumentsParameter
@@ -209,8 +217,19 @@ std::pair<bool, std::string> CAPISystem::Execute_FileExists()
 }
 
 /** --------------------------------------------------------------------------
- * @brief Add
- * @return 
+ * @brief Adds a new metadata query to the document's query collection.
+ * 
+ * Expects request parameters:
+ * - "name": The name of the query to be added.
+ * - "type": The type of the query (e.g., SQL, NoSQL).
+ * - "format": The format in which the query is defined (e.g., text, XML, JSON).
+ * - "query" or "statement": The actual query string to be added.
+ * 
+ * The method retrieves the document and its associated queries, then attempts to add the new query. 
+ * If the addition is successful, it stores the resulting query ID in the response data. 
+ * It returns a pair indicating whether the operation was successful and an error message if it failed.
+ * 
+ * @return A pair where the first element is true if the operation was successful, false otherwise. The second element is an error message if the operation failed
  */
 std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryAdd()
 {
@@ -218,6 +237,7 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryAdd()
    std::string stringType = Get("type").as_string();      // type of query
    std::string stringFormat = Get("format").as_string();  // query format, type of format information is stored in like text, xml, json etc
    std::string stringQuery = Get("query").as_string();    // query
+   if( stringQuery.empty() == true ) { stringQuery = Get("statement").as_string(); }
 
    CDocument* pdocument = GetDocument();
    META::CQueries* pqueries = pdocument->QUERIES_Get();                                            assert( pqueries );
@@ -233,6 +253,18 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryAdd()
    return result_;
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Deletes a metadata query based on the provided "id" and "key" parameters.
+ * 
+ * Expects request parameters:
+ * - "id": The unique identifier of the metadata query to delete.
+ * - "key": An optional key associated with the metadata query, used for additional validation or scoping.
+ * 
+ * The method retrieves the document and its associated queries, then attempts to delete the specified query. 
+ * It returns a pair indicating whether the operation was successful and an error message if it failed.
+ * 
+ * @return A pair where the first element is true if the operation was successful, false otherwise. The second element is an error message if the operation failed
+ */
 std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryDelete()
 {
    std::string stringId = Get("id").as_string();
@@ -270,15 +302,18 @@ std::pair<bool, std::string> CAPISystem::Execute_MetadataQueryCount()
    }
    else
    {
-      gd::types::uuid uuidValue;
       std::string stringUuid = Get("uuid").as_string();
-      if( stringUuid.length() == 32 ) { result_ = gd::binary_validate_hex_g( stringUuid ); }
-      else if( stringUuid.length() == 36 ) { result_ = gd::binary_validate_uuid_g( stringUuid ); }
-      if( result_.first == false ) { return { false, "Invalid UUID format: " + result_.second }; }
+      if( stringUuid.empty() == false )
+      {
+         gd::types::uuid uuidValue;
+         if( stringUuid.length() == 32 ) { result_ = gd::binary_validate_hex_g( stringUuid ); }
+         else if( stringUuid.length() == 36 ) { result_ = gd::binary_validate_uuid_g( stringUuid ); }
+         if( result_.first == false ) { return { false, "Invalid UUID format: " + result_.second }; }
 
-      uuidValue = gd::uuid( stringUuid.data(), stringUuid.data() + stringUuid.length() );
+         uuidValue = gd::uuid( stringUuid.data(), stringUuid.data() + stringUuid.length() );
 
-      uCount = pqueries->Count( uuidValue );
+         uCount = pqueries->Count( uuidValue );
+      }
    }
 
    gd::argument::arguments* parguments_ = new gd::argument::arguments( { { "count", uCount } } ); // result data

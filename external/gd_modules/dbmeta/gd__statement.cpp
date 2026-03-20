@@ -31,7 +31,10 @@ std::pair<bool, std::string> statement::add( std::string_view stringName, std::s
    m_ptableStatement->cell_set( uRow, eColumnFormat, (uint32_t)eFormat );
    m_ptableStatement->cell_set( uRow, eColumnRule , uRule );
    m_ptableStatement->cell_set( uRow, eColumnStatement, stringStatement );
-   return { true, "" }; 
+
+   std::string stringUuid = m_ptableStatement->cell_get_variant_view( uRow, eColumnUuid ).as_string();
+
+   return { true, stringUuid }; 
 }
 
 std::pair<bool, std::string> statement::add( const gd::argument::arguments& argumentsStatement )

@@ -59,30 +59,10 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringName, std::st
    if( stringType.empty() == true ) stringType = "select";
    if( stringQuery.empty() ) { return { false, "Invalid input" }; }
 
-   m_statement.add( stringName, stringQuery, stringFormat, stringType ); // TODO: Compmlete this, new logic
+   auto result_ = m_statement.add( stringName, stringQuery, stringFormat, stringType ); // TODO: Compmlete this, new logic
+   if( result_.first == false ) { return { false, result_.second }; }
 
-   
-   auto uType = ToType_s( stringType );
-   auto uFormat = ToFormat_s( stringFormat );
-
-   if( uType == eTypeUnknown ) { return { false, "Invalid type" }; }
-
-   auto uRow = m_tableQuery.row_add_one();
-
-   gd::uuid uuid_( gd::types::tag_command_random{} );
-   gd::types::uuid uuidQuery( uuid_.data() );
-
-
-   m_tableQuery.cell_set( uRow, "id", uuidQuery );
-   m_tableQuery.cell_set( uRow, "type", uType );
-   m_tableQuery.cell_set( uRow, "format", uFormat );
-   m_tableQuery.cell_set( uRow, "query", stringQuery );
-
-   if( stringName.empty() == false ) m_tableQuery.cell_set( uRow, "name", stringName );
-
-   std::string stringUuid = gd::binary_to_hex_g( uuidQuery.data(), 16, false );
-
-   return { true, stringUuid };
+   return result_;
 }
 
 std::pair<bool, std::string> CQueries::Delete( const std::pair<std::string_view, std::string_view>& pair_ )
