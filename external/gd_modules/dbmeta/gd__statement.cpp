@@ -115,6 +115,13 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
    return { true, "" };
 }
 
+// @brief Retrieves the SQL statement for a given row index. ---------------- get_statement
+std::string_view statement::get_statement( uint64_t uRow ) const
+{                                                                                                  assert( m_ptableStatement != nullptr ); assert( uRow < m_ptableStatement->size() );
+   std::string_view stringStatement = m_ptableStatement->cell_get_variant_view( uRow, eColumnStatement ).as_string_view();
+   return stringStatement; 
+}
+
 
 /** ------------------------------------------------------------------------- find
  * @brief Finds a UUID in the statement.
@@ -124,6 +131,17 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
 int64_t statement::find( const gd::types::uuid* puuid ) const
 {                                                                                                  assert( m_ptableStatement != nullptr ); assert( puuid != nullptr );
    int64_t iRow = m_ptableStatement->find( eColumnUuid, *puuid );
+   return iRow;
+}
+
+/** ------------------------------------------------------------------------- find
+ * @brief Finds a statement by its name.
+ * @param stringName The name of the statement to search for.
+ * @return The index of the statement if found, or -1 if not found.
+ */
+int64_t statement::find( std::string_view stringName ) const
+{
+   int64_t iRow = m_ptableStatement->find( eColumnName, stringName );
    return iRow;
 }
 

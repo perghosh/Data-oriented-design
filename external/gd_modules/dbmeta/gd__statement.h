@@ -127,8 +127,11 @@ public:
    std::pair<bool, std::string> add( std::string_view stringName, std::string_view stringStatement, std::string_view stingFormat, std::string_view stringType, std::string_view stringRule = ""); ///< add statement to statement object
    std::pair<bool, std::string> add( const gd::argument::arguments& argumentsStatement ); ///< add statement to statement object using arguments object, this is used when adding statement from query template
 
+   std::string_view get_statement( uint64_t uRow ) const; ///< get statement by row index
+
 
    int64_t find( const gd::types::uuid* puuid ) const; ///< find statement by uuid, returns row index or -1 if not found
+   int64_t find( std::string_view stringName ) const; ///< find statement by name, returns row index or -1 if not found
    
    size_t size() const noexcept { return m_ptableStatement ? m_ptableStatement->size() : 0; } ///< get number of statements in statement object
    size_t count( const gd::types::uuid& uuidKey ) const; ///< count number of statements with specified key

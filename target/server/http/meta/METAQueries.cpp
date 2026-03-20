@@ -121,18 +121,14 @@ gd::types::uuid CQueries::GetQueryId( uint64_t uRow )
 
 std::pair<bool, std::string> CQueries::GetQuery( std::string_view stringName, std::string& stringQuery )
 {
-   // Find row in table for name
-   int64_t iRow = m_tableQuery.find( eColumnName, stringName );
-   if( iRow != -1 )
+   auto iIndex = m_statement.find( stringName );
+   if( iIndex != -1 )
    {
-      stringQuery = m_tableQuery.cell_get_variant_view( iRow, eColumnQuery ).as_string();
-   }
-   else
-   {
-      return { false, std::format( "No query found for name '{}'", stringName ) };
+      stringQuery = m_statement.get_statement( iIndex );
+      return { true, "" };
    }
 
-   return { true, "" };
+   return { false, std::format( "No query found for name '{}'", stringName ) };
 }
 
 std::pair<bool, std::string> CQueries::Load( std::string_view stringPath )
