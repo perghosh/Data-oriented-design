@@ -2421,6 +2421,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({ "output", "Save output to the specified file. Overwrites the file if it exists. Defaults to stdout if not set."});
    optionsApplication.add({ "prompt", "Prompts for values that is typed before execute expression, these values will be asked for"});
    optionsApplication.add({ "path-filter", "Filter settings to match directories where files are searched in"});
+   optionsApplication.add({ "hyperlink", "Print files with OSC 8 formated hyper links"});
    optionsApplication.add_flag_or_option({ "detail", "Set detail level on information presented to user. levels are basic, standard, extended, full or 0,1,2,3. If detail set as flag then standard is used." });
 
    {  // ## `count` command, copies file from source to target
@@ -2493,6 +2494,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
       optionsCommand.add({ "where", "Specify conditions for filtering file names in result." });
       optionsCommand.add_flag_or_option( {"parents", "Adds parent folders to file name when listing."} );
       optionsCommand.add_flag_or_option( {"R", "Enable **recursive listing** of files in subfolders. Sets the recursion depth to 16, ensuring all subdirectories are scanned."} );
+      optionsCommand.add_flag({ "directory", 'd', "Display directory information only"});
       optionsCommand.add_flag({ "compact", "View results in compact format, similar to ls on linux" });
 #ifdef _WIN32
       optionsCommand.add_flag( {"vs", "Format the output to be compatible with the **Visual Studio Output window**, enabling seamless integration with the IDE."} );

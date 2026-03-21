@@ -115,7 +115,15 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
    return { true, "" };
 }
 
-// @brief Retrieves the SQL statement for a given row index. ---------------- get_statement
+/// @brief Retrieves the UUID for a given row index. ------------------------- get_id
+gd::types::uuid statement::get_id( uint64_t uRow ) const
+{                                                                                                  assert( m_ptableStatement != nullptr ); assert( uRow < m_ptableStatement->size() );
+   gd::types::uuid uuid_ = m_ptableStatement->cell_get_variant_view( uRow, eColumnUuid ).as_binary_view();
+   return uuid_; 
+}
+
+
+/// @brief Retrieves the SQL statement for a given row index. ---------------- get_statement
 std::string_view statement::get_statement( uint64_t uRow ) const
 {                                                                                                  assert( m_ptableStatement != nullptr ); assert( uRow < m_ptableStatement->size() );
    std::string_view stringStatement = m_ptableStatement->cell_get_variant_view( uRow, eColumnStatement ).as_string_view();
@@ -156,6 +164,11 @@ size_t statement::count( const gd::types::uuid& uuidKey ) const
    }
    
    return uCount;
+}
+
+void statement::erase( uint64_t uRow )
+{
+   m_ptableStatement->erase( uRow );
 }
 
 void statement::create_statement_s( gd::table::arguments::table& tableStatement )

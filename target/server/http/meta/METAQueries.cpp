@@ -12,21 +12,29 @@ NAMESPACE_META_BEGIN
 void CQueries::common_construct(const CQueries &o)
 {
    m_argumentProperty = o.m_argumentProperty;
-   m_tableQuery = o.m_tableQuery;
+   //m_tableQuery = o.m_tableQuery;
+
+   // @TODO: Complete this, with copying statement object, this is not implemented yet
 }
 
 
 
 std::pair<bool, std::string> CQueries::Initialize( const gd::argument::arguments& arguments_ )
 {
-   m_statement.initialize();
+   std::lock_guard<std::mutex> lock_(m_mutexStatement);
 
-   CQueries::CreateTable_s( m_tableQuery );
+   if( m_statement.empty() == true ) 
+   { 
+      m_statement.initialize();
+   }
+
+   //CQueries::CreateTable_s( m_tableQuery );
    return { true, "" };
 }
 
 std::pair<bool, std::string> CQueries::Add( std::string_view stringQuery, enumFormat eFormat, const gd::argument::arguments* parguments_ )
 {
+/*
    auto uRow = m_tableQuery.row_add_one();
    gd::uuid uuidQuery( gd::types::tag_command_random{});
    gd::types::uuid uuidQueryAdd( uuidQuery.data() );
@@ -41,8 +49,9 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringQuery, enumFo
    }
 
    std::string stringId = gd::binary_to_hex_g( uuidQuery.data(), 16, false );
+   */
 
-   return { true, stringId };
+   return { true, "" };
 }
 
 /** ---------------------------------------------------------------------------
@@ -59,6 +68,8 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringName, std::st
    if( stringType.empty() == true ) stringType = "select";
    if( stringQuery.empty() ) { return { false, "Invalid input" }; }
 
+   std::lock_guard<std::mutex> lock_(m_mutexStatement);
+
    auto result_ = m_statement.add( stringName, stringQuery, stringFormat, stringType ); // TODO: Compmlete this, new logic
    if( result_.first == false ) { return { false, result_.second }; }
 
@@ -67,20 +78,22 @@ std::pair<bool, std::string> CQueries::Add( std::string_view stringName, std::st
 
 std::pair<bool, std::string> CQueries::Delete( const std::pair<std::string_view, std::string_view>& pair_ )
 {
+   std::lock_guard<std::mutex> lock_(m_mutexStatement);
+
    std::string_view stringName = pair_.first;
    std::string_view stringUuid = pair_.second;
    int64_t iRow = -1;
-   if( stringName.empty() == false) { iRow = m_tableQuery.find( eColumnName, stringName ); }
+   if( stringName.empty() == false) { iRow = m_statement.find( stringName ); }
    if(iRow == -1)
    {
       gd::uuid uuid_( stringUuid );
       gd::types::uuid uuidFind( uuid_.data() );
-      iRow = m_tableQuery.find( eColumnId, uuidFind );
+      iRow = m_statement.find( uuidFind );
    }
 
    if( iRow == -1 ) return { false, std::format( "No row for {} or {}", stringName, stringUuid)};
 
-   m_tableQuery.erase( iRow );
+   m_statement.erase( iRow );
 
    return { true, "" };
 }
@@ -92,7 +105,7 @@ int64_t CQueries::Find( const gd::argument::arguments& arguments_ ) const
       std::string_view stringName = arguments_["name"].get<std::string_view>();
       if( stringName.empty() == false )
       {
-         int64_t iRow = m_tableQuery.find( eColumnName, stringName );
+         int64_t iRow = m_statement.find( stringName );
          if( iRow != -1 ) return iRow;
       }
    }
@@ -110,11 +123,10 @@ int64_t CQueries::Find( const gd::argument::arguments& arguments_ ) const
    return -1;
 }
 
+/// @brief Retrieves the UUID of a query based on its row index.
 gd::types::uuid CQueries::GetQueryId( uint64_t uRow )
-{                                                                                                  assert( uRow < m_tableQuery.size() );
-   auto id_ = m_tableQuery.cell_get_variant_view( uRow, eColumnId );
-
-   gd::types::uuid uuidId = id_;
+{
+   gd::types::uuid uuidId = m_statement.get_id( uRow );
 
    return uuidId;
 }
@@ -135,43 +147,6 @@ std::pair<bool, std::string> CQueries::Load( std::string_view stringPath )
 {
     
    return { true, "" };
-}
-
-
-/** --------------------------------------------------------------------------
- * @brief Initializes and prepares a query table with predefined columns and metadata flags.
- *
- * Queries can be stored in raw text format with jinja templates to prepare query.
- * json and xml format is also supported. There queries are stored with each column in elements or similar in json.
- *
- * @param tableQuery A reference to a table object that will be configured for query data.
- */
-void CQueries::CreateTable_s( gd::table::arguments::table& tableQuery )
-{                                                                                                  assert( tableQuery.empty() == true );
-   tableQuery.set_flags( gd::table::tag_meta{} );
-   tableQuery.column_prepare();
-   tableQuery.column_add( {{ "uuid", 0, "id"}, { "uint16", 0, "flags" }, { "uint16", 0, "type" }, { "uint16", 0, "format" }, { "rstring", 0, "name" }, { "rstring", 0, "query" }, { "rstring", 0, "meta" } }, gd::table::tag_type_name{});
-   tableQuery.prepare();
-}
-
-uint16_t CQueries::ToType_s( std::string_view stringType )
-{
-   if( stringType == "select" ) return eTypeSelect;
-   if( stringType == "insert" ) return eTypeInsert;
-   if( stringType == "update" ) return eTypeUpdate;
-   if( stringType == "delete" ) return eTypeDelete;
-   if( stringType == "ask" ) return eTypeAsk;
-   if( stringType == "batch" ) return eTypeBatch;
-   return eTypeUnknown;
-}
-
-uint16_t CQueries::ToFormat_s( std::string_view stringFormat )
-{
-   if( stringFormat == "text" ) return eFormatText;
-   if( stringFormat == "jinja" ) return eFormatJinja;
-   if( stringFormat == "json" ) return eFormatJson;
-   if( stringFormat == "xml" ) return eFormatXml;
-   return eFormatText;
 }
 
 

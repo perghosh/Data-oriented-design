@@ -76,7 +76,7 @@ public:
 
    std::pair<bool, std::string> Delete( const std::pair<std::string_view,std::string_view>& pair_ );
 
-   bool Empty() const { return m_tableQuery.empty(); }                        ///< check if there are any active queries
+   bool Empty() const { return m_statement.empty(); }                        ///< check if there are any active queries
 
    int64_t Find( const gd::argument::arguments& arguments_ ) const;           ///< find query by arguments, returns row index or -1 if not found
 
@@ -101,17 +101,14 @@ public:
 public:
    gd::argument::shared::arguments m_argumentProperty; ///< properties for session management
 
-   gd::table::arguments::table m_tableQuery; ///< table holding active queries
+   //gd::table::arguments::table m_tableQuery; ///< table holding active queries
 
+   std::mutex m_mutexStatement;
    gd::modules::dbmeta::statement m_statement; ///< statement object holding list of statements, this is used to generate queries from templates
 
 
-   // @API [tag: free-functions]
+// @API [tag: free-functions]
 public:
-   static void CreateTable_s( gd::table::arguments::table& tableQuery );    ///< create session table structure
-   
-   static uint16_t ToType_s( std::string_view stringType );
-   static uint16_t ToFormat_s( std::string_view stringFormat );
 
 
 

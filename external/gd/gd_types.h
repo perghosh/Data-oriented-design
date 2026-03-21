@@ -1286,6 +1286,7 @@ struct uuid
 
    uuid& operator=( const uuid& o ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = o.m_puData[i]; } return *this; }
    uuid& operator=( const uint8_t* pbData ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = pbData[i]; } return *this; }
+   uuid& operator=( std::span<uint8_t> data_ ) { assert( data_.size() >= 16 ); memcpy( m_puData, data_.data(), 16 ); return *this; }
    
    operator uint8_t*() { return m_puData; }
    operator const uint8_t*() const { return m_puData; }

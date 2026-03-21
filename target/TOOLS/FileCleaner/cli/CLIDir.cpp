@@ -70,7 +70,7 @@ std::pair<bool, std::string> Dir_g(const gd::cli::options* poptionsDir, CDocumen
 
       std::vector< std::pair<boost::regex, std::string> > vectorRegexPattern;   // vector of regex patterns and their string representation
 
-      // ## convert string to regex and put it into vectorRegexPatterns
+      // ## convert string to regex and put it into vectorRegexPatterns ......
 
       for( auto& stringPattern : vectorPattern )
       {
