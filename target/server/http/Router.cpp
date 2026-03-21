@@ -87,8 +87,14 @@ std::pair<bool, std::string> CRouter::Run()
 
       if( !m_pdtoresponse )
       {
-         m_pdtoresponse = std::make_unique<CDTOResponse>();
-         m_pdtoresponse->Initialize();
+         // ## double checked locking pattern to ensure that response object is created only once and is thread safe
+
+         std::lock_guard<std::mutex> lock( m_mutexRouter );                  // lock mutex to ensure thread safety when creating response object
+         if( !m_pdtoresponse )
+         {
+            m_pdtoresponse = std::make_unique<CDTOResponse>();
+            m_pdtoresponse->Initialize();
+         }
       }
 
       // ## parse command path and query arguments and prepare important variables

@@ -108,6 +108,7 @@ public:
    std::string m_stringQueryString;    ///< query string from url
    std::vector<std::string_view> m_vectorCommand; ///< list of commands parsed from query string
    std::unique_ptr<CDTOResponse> m_pdtoresponse;  ///< response dto object
+   std::mutex m_mutexRouter;         ///< mutex for response dto object
 
 // ## free functions ------------------------------------------------------------
 public:
