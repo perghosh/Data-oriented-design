@@ -1,4 +1,4 @@
-# Copilot Instructions for DOD Project
+# LLM Instructions for DOD Project
 
 ## CRITICAL PRIORITY RULES
 
