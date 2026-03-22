@@ -229,33 +229,6 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
    }
    else { return { false, "No pattern specified" }; }                          // no pattern specified
 
-   // ## context handling, if context is specified then we will bring some context to the found code
-
-   /*
-   int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
-
-   if( options_.exists("context") == true )
-   {
-      std::string stringContext = options_["context"].as_string();             // context is in the format offset,count like -2,6 to get lines from 2 before and 6 lines
-
-      // parse context to numbers
-      auto vectorOffsetCount = CApplication::SplitNumber_s( stringContext );   // get offset value and count
-      size_t position_; // not used
-      if( vectorOffsetCount.size() == 1 )
-      {
-         iContextCount = std::stoll(vectorOffsetCount[0].data(), &position_);
-      }
-      else if( vectorOffsetCount.size() > 1 )
-      {
-         iContextOffset = std::stoll(vectorOffsetCount[0].data(), &position_);
-         iContextCount = std::stoll(vectorOffsetCount[1].data(), &position_);
-      }
-
-      iContextOffset = iContextOffset % 100;                                  // limit the offset to 100 lines, so we do not get too much context
-      iContextCount = iContextCount % 1000;                                   // limit the count to 1000 lines, so we do not get too much context
-   }
-   */
-
    auto* ptableLineList = pdocument->CACHE_Get("file-linelist");
 
    // ## check for expression to do some preprocessing on the result table
@@ -279,7 +252,7 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
    */
 
    gd::argument::arguments argumentsPrint({ {"pattern-count", (unsigned)uSearchPatternCount} });
-   argumentsPrint.append( options_.get_arguments(), {"vs", "output", "context", "script"});
+   argumentsPrint.append( options_.get_arguments(), {"vs", "output", "context", "script", "hyperlink"});
    result_ = ListPrintLine_g(pdocument, argumentsPrint ); // print the result table
 
 
@@ -430,6 +403,14 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
    return { true, "" }; // return success
 }
 
+/** --------------------------------------------------------------------------- ListMatchAllPatterns_g
+ * @brief Match all patterns in a list of strings.
+ *
+ * @param vectorPattern Patterns to match
+ * @param pdocument pointer to document where data is stored
+ * @param iMatchCount Number of matches reguired
+ * @return std::pair<bool, std::string>
+ */
 std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector<std::string>& vectorPattern, CDocument* pdocument, int iMatchCount )
 {                                                                                                  assert( pdocument != nullptr ); assert( vectorPattern.size() > 0 ); // at least one pattern must be specified
    std::vector<uint64_t> vectorRowDelete; // vector of row numbers to delete
@@ -512,7 +493,15 @@ std::pair<bool, std::string> ListMatchAllPatterns_g(const std::vector< std::pair
    return { true, "" };
 }
 
-
+/** --------------------------------------------------------------------------- ListPrintLine_g
+ * @brief Print lines from a document
+ *
+ * @param pdocument Pointer to the document
+ * @param argumentsPrint Arguments for printing
+ * @param argumentsPrint.context If added then print lines before and after the found code
+ * @param argumentsPrint.hyperlink If added then format file names as hyperlinks
+ * @return std::pair<bool, std::string> True if successful, false otherwise and error message
+ */
 std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument::arguments& argumentsPrint )
 {                                                                                                  assert( pdocument != nullptr );
    std::array<std::byte, 64> array_; // array to hold the color codes for the output
@@ -545,6 +534,10 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
    // ## Build tables for print
 
    auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsPrint );// generate the result table for pattern line list
+   if( argumentsPrint.exists( "hyperlink" ) == true && argumentsPrint["hyperlink"].is_true() == true )
+   {
+      CDocument::TABLE_MakeHyperlink_s(tableResultLineList, argumentsPrint);     // format file names as hyperlinks in the result table
+   }
 
    std::string stringOutput = argumentsPrint["output"].as_string();
    if( stringOutput.empty() == true )

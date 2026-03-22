@@ -18,7 +18,7 @@
  */
 
  /*
-@code
+@codef
 {
    // ## Example usage of gd::binary functions that reads integer and uuid from hex string
 

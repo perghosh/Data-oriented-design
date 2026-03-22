@@ -289,6 +289,10 @@ public:
    static std::string RESULT_VisualStudio_s( const gd::table::dto::table& table_ );
    static void RESULT_VisualStudio_s( const gd::table::dto::table& table_, std::string& stringResult );
 
+   // ## Table formatting
+
+   static void TABLE_MakeHyperlink_s( const gd::table::dto::table& table_, gd::argument::arguments& argumentsPrint );
+
 
 };
 

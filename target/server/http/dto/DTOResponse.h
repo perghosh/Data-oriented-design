@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cassert>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -87,7 +88,8 @@ public:
 // ## attributes ----------------------------------------------------------------
 public:
    gd::argument::arguments m_argumentsContext;  ///< response arguments that holds context information for response
-   gd::table::arguments::table m_tableBody;   ///< response headers
+   gd::table::arguments::table m_tableBody;     ///< response headers
+   std::mutex m_mutexDto;                       ///< mutex for dto object that need to be thread safe
 
    inline static gd::table::detail::columns* m_pcolumnsBody_s = nullptr; ///< static columns for body
    inline static std::string m_stringResults_s = "results";  ///< default container name for results

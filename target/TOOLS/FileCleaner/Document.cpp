@@ -3034,7 +3034,7 @@ gd::table::dto::table CDocument::RESULT_PatternCount()
  * @post The result table is generated with the pattern line list.  
  *  
  * @note The editor type (e.g., Visual Studio or VSCode) is currently hardcoded but can be retrieved from application settings in the future.  
- */  
+ */
 gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arguments& argumentsOption )
 {
    // @brief Enum for editor types
@@ -3307,4 +3307,23 @@ void CDocument::RESULT_VisualStudio_s( const gd::table::dto::table& table_, std:
       stringRow += "\n";
       stringResult += stringRow;
    }
+}
+
+
+void CDocument::TABLE_MakeHyperlink_s( const gd::table::dto::table& table_, gd::argument::arguments& argumentsPrint )
+{
+   // ## Iterate through rows in table and make hyperlink for each row
+   for( auto itRow = table_.begin(); itRow != table_.end(); ++itRow )
+   {
+      auto stringFile = itRow.cell_get_variant_view("file").as_string();
+      auto uLine = itRow.cell_get_variant_view("line").as_uint64();
+      std::string stringLink;
+      if( stringFile.empty() == false )
+      {
+         stringLink += stringFile;
+         if( uLine != 0 ) { stringLink += ":"; stringLink += std::to_string(uLine); }
+      }
+      argumentsPrint.append( "link", stringLink ); // add hyperlink to arguments
+   }
+
 }
