@@ -252,7 +252,7 @@ std::pair<bool, std::string> ListPattern_g( const gd::cli::options* poptionsList
    */
 
    gd::argument::arguments argumentsPrint({ {"pattern-count", (unsigned)uSearchPatternCount} });
-   argumentsPrint.append( options_.get_arguments(), {"vs", "output", "context", "script", "hyperlink"});
+   argumentsPrint.append( options_.get_arguments(), {"vs", "output", "context", "script", "hyperlink", "hyperlink-ps"});
    result_ = ListPrintLine_g(pdocument, argumentsPrint ); // print the result table
 
 
@@ -534,7 +534,7 @@ std::pair<bool, std::string> ListPrintLine_g( CDocument* pdocument, gd::argument
    // ## Build tables for print
 
    auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsPrint );// generate the result table for pattern line list
-   if( argumentsPrint.exists( "hyperlink" ) == true && argumentsPrint["hyperlink"].is_true() == true )
+   if( argumentsPrint.exists_any( { "hyperlink", "hyperlink-ps" }) == true )
    {
       CDocument::TABLE_MakeHyperlink_s(tableResultLineList, argumentsPrint);     // format file names as hyperlinks in the result table
    }

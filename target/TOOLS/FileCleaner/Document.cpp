@@ -3043,10 +3043,14 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
    enum enumColumn { eColumnLine = 0, eColumnFile, eColumnContext, eColumnRow, eColumnRowLeading };
 
    using namespace gd::table::dto;
-   enumEditor eEditor = eVisualStudio; // TODO: get editor from application settings  
+   enumEditor eEditor = eVSCode;
    auto stringEditor = m_papplication->PROPERTY_Get("editor").as_string();
-   if( stringEditor == "vscode" ) eEditor = eVSCode;
-   else if( stringEditor == "sublime" ) eEditor = eSublime;
+   if( stringEditor.empty() == false )
+   {
+      if( stringEditor == "vscode" ) eEditor = eVSCode;
+      else if( stringEditor == "sublime" ) eEditor = eSublime;
+      else if( stringEditor == "vs" || stringEditor == "visualstudio" ) eEditor = eVisualStudio;
+   }
 
    int64_t iContextOffset = 0, iContextCount = 0; // variables used to bring context to found code
 
@@ -3059,7 +3063,7 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
 
    // Define the result table structure  
    constexpr unsigned uTableStyle = ( table::eTableFlagNull64 | table::eTableFlagRowStatus );
-   table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"}, {"rstring", 0, "context"}, {"uint64", 0, "row"}, {"uint64", 0, "row-leading"} }, gd::table::tag_prepare{});
+   table tableResult(uTableStyle, { {"rstring", 0, "line"}, {"rstring", 0, "file"}, {"rstring", 0, "context"}, {"uint64", 0, "row"}, {"uint64", 0, "row-leading"}, {"string", 16, "position"} }, gd::table::tag_prepare{});
    tableResult.property_set("id", "context");
 
    // Retrieve the file-pattern cache table  
@@ -3096,26 +3100,27 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
 
 
       // #### Build the result string for the file where pattern was found  
+      std::string stringPosition;
       if( eEditor == eVisualStudio )
       {
-         stringFile += "(";
-         stringFile += std::to_string(uLineinSource);
-         //stringFile += ",";
-         //stringFile += std::to_string(uColumninSource);
-         stringFile += "):  [";
+         stringPosition += "(";
+         stringPosition += std::to_string(uLineinSource);
+         stringPosition += ")";
+         stringFile += stringPosition;
+         stringFile += ":  [";
       }
       else if( eEditor == eVSCode )
       {
-         stringFile += ":";
-         stringFile += std::to_string(uLineinSource);
-         //stringFile += ":";
-         //stringFile += std::to_string(uColumninSource);
+         stringPosition += ":";
+         stringPosition += std::to_string(uLineinSource);
+         stringFile += stringPosition;
          stringFile += " - [";
       }
       else if( eEditor == eSublime )
       {
-         stringFile += ":";
-         stringFile += std::to_string(uLineinSource);
+         stringPosition += ":";
+         stringPosition += std::to_string(uLineinSource);
+         stringFile += stringPosition;
          stringFile += " - [";
       }
 
@@ -3125,6 +3130,8 @@ gd::table::dto::table CDocument::RESULT_PatternLineList( const gd::argument::arg
          stringFile += ptableLineList->cell_get_variant_view(uRow, "pattern").as_string();
          stringFile += "] - [";
       }
+
+      if( stringPosition.size() < 16 ) { tableResult.cell_set( uNewRow, "position", stringPosition ); } // set position to table if it is not too long (should not be longer than 16 characters)
 
       std::string stringLine = ptableLineList->cell_get_variant_view(uRow, "line").as_string();
       stringLine = gd::math::string::trim_repeated_chars(stringLine);          // trim line from characters that are repeated more than 2 times
@@ -3310,20 +3317,130 @@ void CDocument::RESULT_VisualStudio_s( const gd::table::dto::table& table_, std:
 }
 
 
-void CDocument::TABLE_MakeHyperlink_s( const gd::table::dto::table& table_, gd::argument::arguments& argumentsPrint )
+/*
+"`e]8;;vscode://file/C:/dev/home/DOD/external/gd/LICENSE.txt`e\C:/dev/home/DOD/external/gd/LICENSE.txt`e]8;;`e\"
+*/
+
+
+/** --------------------------------------------------------------------------- TABLE_MakeHyperlink_s
+ * @brief Converts table rows into clickable terminal hyperlinks using OSC 8 format.
+ * 
+ * This method transforms file paths in a table into ANSI OSC 8 hyperlinks that are clickable
+ * in modern terminals. It supports both PowerShell and standard terminal escape sequences.
+ * 
+ * ## Hyperlink Modes
+ * 
+ * ## Escape Sequence Formats
+ * 
+ * - **PowerShell**: Uses `` `e`` escape sequences (e.g., `` `e]8;; ``)
+ * - **Standard**: Uses `\x1b` escape sequences (e.g., `\x1b]8;;`)
+ * 
+ * The OSC 8 format structure is:
+ * ```
+ * <escape>]8;;protocol://path<escape>\displayed_text<escape>]8;;<escape>\
+ * ```
+ * 
+ * @param table_ Reference to the table to modify. Must contain either `filename` column 
+ *               or `file`, `position`, and `line` columns depending on mode.
+ * @param argumentsPrint Arguments controlling hyperlink generation:
+ *        - `hyperlink-ps` (string): Protocol prefix for PowerShell format (e.g., "vscode")
+ *        - `hyperlink` (string): Protocol prefix for standard format (e.g., "vscode")
+ *        - `filename` (bool): If true, use filename-only mode; otherwise use full mode
+ * 
+ * @note File paths are normalized with forward slashes for hyperlink compatibility
+ * @note Only non-empty file paths are converted to hyperlinks
+ */
+void CDocument::TABLE_MakeHyperlink_s( gd::table::dto::table& table_, const gd::argument::arguments& argumentsPrint )
 {
-   // ## Iterate through rows in table and make hyperlink for each row
-   for( auto itRow = table_.begin(); itRow != table_.end(); ++itRow )
+   bool bUseFilename = false;
+   bool bUsePowershell = false;
+   std::string stringLink; // used to build hyperlink string
+   std::string stringHyperLink; // Generated hyperlink need to have marker what to open, like vscode or zed
+   if( argumentsPrint.exists( "hyperlink-ps" ) == true ) 
+   { 
+      bUsePowershell = true; 
+      stringHyperLink = argumentsPrint["hyperlink-ps"].as_string();                                assert( stringHyperLink.empty() == false );
+   }
+   else
    {
-      auto stringFile = itRow.cell_get_variant_view("file").as_string();
-      auto uLine = itRow.cell_get_variant_view("line").as_uint64();
-      std::string stringLink;
-      if( stringFile.empty() == false )
-      {
-         stringLink += stringFile;
-         if( uLine != 0 ) { stringLink += ":"; stringLink += std::to_string(uLine); }
-      }
-      argumentsPrint.append( "link", stringLink ); // add hyperlink to arguments
+      stringHyperLink = argumentsPrint["hyperlink"].as_string();                                   assert( stringHyperLink.empty() == false );
    }
 
+   if( argumentsPrint["filename"] == true ) { bUseFilename = true; }
+
+   // ## Iterate through rows in table and make hyperlink for each row
+
+   if( bUseFilename == true )
+   {
+      for( auto itRow = table_.begin(); itRow != table_.end(); ++itRow )
+      {
+         stringLink.clear();
+         auto stringFile = itRow.cell_get_variant_view("filename").as_string();
+         if( stringFile.empty() == false )
+         {
+            if( bUsePowershell == true )                                      // Generate OSC 8 hyperlink format for Powershell
+            {
+               stringLink += "`e]8;;";                                        // start hyperlink
+               stringLink += stringHyperLink;                                 // add hyperlink format, e.g. "vscode"
+               stringLink += "://file/";                                      // end hyperlink format
+               stringLink += stringFile;                                      // add file path to hyperlink
+               stringLink += "`e\\";                                          // end hyperlink format
+               stringLink += stringFile;                                      // add line to hyperlink, this is whats shown
+               stringLink += "`e]8;;`e\\";                                    // end hyperlink
+            }
+            else
+            {
+               stringLink += "\x1b]8;;";                                      // OSC 8 start hyperlink
+               stringLink += stringHyperLink;                                 // add hyperlink format, e.g. "vscode"
+               stringLink += "://file/";                                      // end hyperlink format
+               stringLink += stringFile;                                      // add file path to hyperlink
+               stringLink += "\x1b\\";                                        // ST (string terminator) ends the URI
+               stringLink += stringFile;                                      // add line to hyperlink, this is what's shown
+               stringLink += "\x1b]8;;\x1b\\";                                // OSC 8 with empty URI closes the hyperlink
+            }
+
+            itRow.cell_set( "filename", stringLink );                         // set hyperlink to line column, this will make line column clickable with hyperlink
+         }
+      }
+   }
+   else
+   {
+      for( auto itRow = table_.begin(); itRow != table_.end(); ++itRow )
+      {
+         auto stringFile = itRow.cell_get_variant_view("file").as_string();
+         auto stringPosition = itRow.cell_get_variant_view("position").as_string();
+         auto stringLine = itRow.cell_get_variant_view("line").as_string();
+         if( stringFile.empty() == false )
+         {
+            stringLink.clear();
+         
+            std::replace( stringFile.begin(), stringFile.end(), '\\', '/' );  // replace backslashes in file path with forward slashes for hyperlink format
+
+            if( bUsePowershell == true )                                      // Generate OSC 8 hyperlink format for Powershell
+            {
+               stringLink += "`e]8;;";                                        // start hyperlink
+               stringLink += stringHyperLink;                                 // add hyperlink format, e.g. "vscode"
+               stringLink += "://file/";                                      // end hyperlink format
+               stringLink += stringFile;                                      // add file path to hyperlink
+               stringLink += stringPosition;                                  // add position to hyperlink
+               stringLink += "`e\\";                                          // end hyperlink format
+               stringLink += stringLine;                                      // add line to hyperlink, this is whats shown
+               stringLink += "`e]8;;`e\\";                                    // end hyperlink
+            }
+            else                                                              // Generate OSC 8 hyperlink format default linux terminals
+            {
+               stringLink += "\x1b]8;;";                                      // OSC 8 start hyperlink
+               stringLink += stringHyperLink;                                 // add hyperlink format, e.g. "vscode"
+               stringLink += "://file/";                                      // end hyperlink format
+               stringLink += stringFile;                                      // add file path to hyperlink
+               stringLink += stringPosition;                                  // add position to hyperlink
+               stringLink += "\x1b\\";                                        // ST (string terminator) ends the URI
+               stringLink += stringLine;                                      // add line to hyperlink, this is what's shown
+               stringLink += "\x1b]8;;\x1b\\";                                // OSC 8 with empty URI closes the hyperlink
+            }
+
+            itRow.cell_set( "line", stringLink );                             // set hyperlink to line column, this will make line column clickable with hyperlink
+         }
+      }
+   }
 }

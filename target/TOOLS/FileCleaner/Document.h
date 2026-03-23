@@ -291,7 +291,7 @@ public:
 
    // ## Table formatting
 
-   static void TABLE_MakeHyperlink_s( const gd::table::dto::table& table_, gd::argument::arguments& argumentsPrint );
+   static void TABLE_MakeHyperlink_s( gd::table::dto::table& table_, const gd::argument::arguments& argumentsPrint );
 
 
 };

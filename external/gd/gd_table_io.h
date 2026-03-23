@@ -346,6 +346,7 @@ inline std::string to_string( const dto::table& table, uint32_t uMax, tag_io_cli
    return stringResult;
 }
 
+
 /// convert table to string in grid and pass format options to it
 /// view implementation of core `to_string_s` method to see valid options
 inline std::string to_string( const dto::table& table, const gd::argument::arguments& argumentsOption, tag_io_cli ) {

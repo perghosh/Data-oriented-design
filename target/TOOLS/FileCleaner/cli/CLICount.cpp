@@ -246,7 +246,6 @@ std::pair<bool, std::string> CountLine_g(const gd::cli::options* poptionsCount, 
 #endif
    }
 
-
    unsigned uFooterRowCount = 0;
    if( uStatistics != 0 )
    {

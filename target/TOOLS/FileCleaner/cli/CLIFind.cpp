@@ -173,7 +173,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       bool bPrint = false;
       if( options_.exists("rule") == true )
       {
-         gd::argument::shared::arguments argumentsPrint;
+         gd::argument::shared::arguments argumentsPrint( options_.get_arguments(), { "hyperlink", "hyperlink-ps" } );
          result_ = FindPrintSnippet_g(pdocument, argumentsPrint);             // Print the results of the find operation
          if( options_.exists("vs") == true ) 
          { 
@@ -224,6 +224,7 @@ std::pair<bool, std::string> Find_g(gd::cli::options* poptionsFind, CDocument* p
       else if( bPrint == false || (options_.exists("print") == true || options_.exists("vs") == true ))
       {
          gd::argument::shared::arguments argumentsPrint({ { "pattern-count", uint64_t(2u) } }); // hardcode pattern count to 2 for printing results and allways print patterns
+         argumentsPrint.append( options_.get_arguments(), { "hyperlink", "hyperlink-ps" } );
          if( options_.exists("context") == true ) argumentsPrint.append("context", options_["context"].as_string_view()); // if context is set, add it to the print arguments
 
          // check if vs flag is set, if so then print to Visual Studio output
@@ -716,6 +717,12 @@ std::pair<bool, std::string> FindPrint_g( CDocument* pdocument, const gd::argume
    if( iContextOffset != 0 || iContextCount != 0 ) { argumentsOption.append( "offset", iContextOffset ); argumentsOption.append( "count", iContextCount ); }
    
    auto tableResultLineList = pdocument->RESULT_PatternLineList( argumentsOption );// generate the result table for pattern line list
+   if( argumentsPrint.exists_any( { "hyperlink", "hyperlink-ps" }) == true )
+   {
+      gd::argument::arguments argumentsHyperlink;
+      argumentsHyperlink.append( argumentsPrint, { "hyperlink", "hyperlink-ps" } );
+      CDocument::TABLE_MakeHyperlink_s(tableResultLineList, argumentsHyperlink);     // format file names as hyperlinks in the result table
+   }
    if( argumentsPrint.exists("llm") ) { SHARED_TransformTableForLLMPretrain_g( &tableResultLineList, pdocument ); }
 
    auto uRowCount = tableResultLineList.get_row_count(); // get the number of rows in the result table

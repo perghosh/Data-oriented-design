@@ -2422,6 +2422,7 @@ void CApplication::Prepare_s(gd::cli::options& optionsApplication)
    optionsApplication.add({ "prompt", "Prompts for values that is typed before execute expression, these values will be asked for"});
    optionsApplication.add({ "path-filter", "Filter settings to match directories where files are searched in"});
    optionsApplication.add({ "hyperlink", "Print files with OSC 8 formated hyper links"});
+   optionsApplication.add({ "hyperlink-ps", "Special for powershell"});
    optionsApplication.add_flag_or_option({ "detail", "Set detail level on information presented to user. levels are basic, standard, extended, full or 0,1,2,3. If detail set as flag then standard is used." });
 
    {  // ## `count` command, copies file from source to target
