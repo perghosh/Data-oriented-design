@@ -14,6 +14,11 @@
 
 #include "../Types.h"
 
+#include "pugixml/pugixml.hpp"
+#include "jsoncons/json.hpp"
+#include "jsoncons_ext/jsonpath/jsonpath.hpp"
+
+
 class CDocument;
 
 /** @CLASS [name: CRENDERSql] [description:  ]

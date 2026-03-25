@@ -476,6 +476,44 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
    if( Exists( "xml" ) == true )
    {
       pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>( GetArgument("xml").as_void() );
+
+      // ## Query values in pdocument xml using xpath ........................
+      pugi::xpath_node_set xpathnodesetValues = pdocument->select_nodes("//values");
+      auto uIndex = GetArgumentIndex( "xml" );
+      
+      // ### Get values at index
+      if( uIndex < xpathnodesetValues.size() )
+      {
+         gd::argument::shared::arguments argumentsValues;
+         argumentsValues.reserve( 128 );
+
+         pugi::xml_node xmlnodeValues = xpathnodesetValues[uIndex].node();
+         if( xmlnodeValues.first_child() ) 
+         { 
+            // #### iterrate child nodes and get values
+            for(pugi::xml_node node_ : xmlnodeValues.children()) 
+            {
+               // get name attribute
+               std::string stringName = node_.attribute( "name" ).as_string();
+               std::string stringValue = node_.attribute( "value" ).as_string(); // get value
+               if( stringValue.empty() == true ) stringValue = node_.child_value();                 
+               argumentsValues.append( stringName, stringValue );
+            }
+         }
+         else if( xmlnodeValues.type() == pugi::node_cdata )
+         {
+            // #### Get CDATA values if no child nodes
+            std::string stringValues = xmlnodeValues.child_value();
+            auto result_ = gd::parse::json::parse_shallow_object_g( stringValues, argumentsValues, false );
+            if( result_.first == false ) return result_;
+         }
+
+
+         sqlbuilder = argumentsValues;
+      }
+
+
+      IncrementArgumentCounter( "xml" );
    }
    else if( Exists( "json" ) == true )
    {
