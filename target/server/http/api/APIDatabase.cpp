@@ -6,6 +6,10 @@
 #include "gd/gd_file.h"
 #include "gd/database/gd_database_io.h"
 
+#include "pugixml/pugixml.hpp"
+#include "jsoncons/json.hpp"
+#include "jsoncons_ext/jsonpath/jsonpath.hpp"
+
 #include "../service/SERVICE_SqlBuilder.h"
 #include "../render/RENDERSql.h"
 
@@ -468,8 +472,16 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
    CSqlBuilder sqlbuilder;
    std::string stringQueryTemplate;
    auto uDialect = pdocument->DATABASE_Get()->GetDialect(); // get database dialect to use for sql building
-   
-   if( Exists("values") == true )
+
+   if( Exists( "xml" ) == true )
+   {
+      pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>( GetArgument("xml").as_void() );
+   }
+   else if( Exists( "json" ) == true )
+   {
+
+   }
+   else if( Exists("values") == true )
    {
       std::string stringValues = GetArgument("values").as_string();
       gd::argument::shared::arguments argumentsValues;

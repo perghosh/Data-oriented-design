@@ -106,8 +106,34 @@ std::pair<bool, std::string> CRouter::Run()
 {
    std::pair<bool, std::string> result_;
 
+
+
+   result_ = Prepare();                                                       // prepare for running command to ensure that all necessary data is ready and in correct format
+   if( result_.first == false ) { return result_; }
+
    if( IsCommand() == true )
    {
+      // ## parse command path and query arguments and prepare important variables
+      auto [vectorPath, arguments_] = gd::parse::uri::parse_path_and_query( m_stringQueryString ); 
+      if( vectorPath.empty() == true ) { return { false, "No command found in query string: " + m_stringQueryString }; }
+#ifndef NDEBUG
+      std::string stringArguments_d = gd::argument::debug::print( arguments_ );
+#endif // NDEBUG
+
+      if( IsBody() == true )
+      {
+         if( IsRequestFormatXml() == true )
+         {
+            pugi::xml_document* pdocument = static_cast<pugi::xml_document*>( m_pairRequestData.second );
+            arguments_.append( "xml", (void*)pdocument );                    // add parsed xml document to arguments for command execution
+         }
+         else if( IsRequestFormatJson() == true )
+         {
+            jsoncons::json* pjson = static_cast<jsoncons::json*>( m_pairRequestData.second );
+            arguments_.append( "json", (void*)pjson );                       // add parsed json document to arguments for command execution
+         }
+      }
+
       unsigned uCommandIndex = 0;
 
       if( !m_pdtoresponse )
@@ -121,13 +147,6 @@ std::pair<bool, std::string> CRouter::Run()
             m_pdtoresponse->Initialize();
          }
       }
-
-      // ## parse command path and query arguments and prepare important variables
-      auto [vectorPath, arguments_] = gd::parse::uri::parse_path_and_query( m_stringQueryString ); 
-      if( vectorPath.empty() == true ) { return { false, "No command found in query string: " + m_stringQueryString }; }
-#ifndef NDEBUG
-      std::string stringArguments_d = gd::argument::debug::print( arguments_ );
-#endif // NDEBUG
       
       // ### Check for echo, echo is used to return information to client and this is sent fron client 
       if( arguments_.exists("echo") == true ) { m_pdtoresponse->AddContext( "echo", arguments_["echo"].as_variant_view() ); }
@@ -158,9 +177,14 @@ std::pair<bool, std::string> CRouter::Run()
    return { true, "" };
 }
 
+/** --------------------------------------------------------------------------
+ *  @brief Prepare for running command, this can include things like encoding values in arguments, validating arguments, etc.
+ */
 std::pair<bool, std::string> CRouter::Prepare()
-{
+{                                                                                                  assert( IsPrepared() == false );
    // ## prepare for running command, this can include things like encoding values in arguments, validating arguments, etc.
+
+   SetFlag( eFlagPrepared );                                                  // set prepared flag to indicate that preparation is done
 
    /// ### Prepare request data if sent with request
    if( m_stringBody.empty() == false )

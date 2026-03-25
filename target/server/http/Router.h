@@ -47,6 +47,7 @@ public:
    {
       eFlagNone               = 0x00000000,
       eFlagCommand            = 0x00000001,
+      eFlagPrepared           = 0x00000002,
    };
 
    enum enumResultFormat
@@ -95,10 +96,13 @@ public:
    void SetFlags( unsigned uSet, unsigned uClear ) { m_uFlags = ( m_uFlags | uSet ) & ~uClear; }
 
    bool IsCommand() const { return (m_uFlags & eFlagCommand) != 0; }
+   bool IsPrepared() const { return ( m_uFlags & eFlagPrepared ) != 0; }
 
+   bool IsBody() const { return m_stringBody.empty() == false; }
    bool IsRequestFormatNone() const { return ( m_uFlags & eRequestFormatMask ) == 0; }
    bool IsRequestFormatXml() const { return ( m_uFlags & eRequestFormatMask ) == eRequestFormatXml; }
    bool IsRequestFormatJson() const { return ( m_uFlags & eRequestFormatMask ) == eRequestFormatJson; }
+   void* GetRequestData() const { return m_pairRequestData.second; }
 
    bool IsXml() const { return ( m_uFlags & eResultFormatJson ) == 0; }
    bool IsJson() const { return ( m_uFlags & eResultFormatJson ) == eResultFormatJson; }
