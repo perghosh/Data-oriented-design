@@ -110,6 +110,8 @@ public:
 
    void Initialize();
 
+   std::pair<bool,std::string> Add( const pugi::xml_node& xmlnodeValues );
+
    void AddValue( const gd::argument::arguments argumentsField );
    std::pair<bool,std::string> AddValue( std::string_view stringJson, gd::types::tag_json );
    /// Adds data for a complete record for specified table
@@ -135,6 +137,7 @@ public:
    std::pair<bool, std::string> ToSqlInsert( std::string& stringQuery );
    std::pair<bool, std::string> ToSqlUpdate( std::string& stringQuery );
    std::pair<bool, std::string> ToSqlDelete( std::string& stringQuery );
+   std::pair<bool, std::string> ToSql( std::string_view stringType, std::string& stringQuery );
 
    //std::string Dump() const;
 protected:

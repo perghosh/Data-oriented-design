@@ -52,6 +52,45 @@ void CRENDERSql::Initialize()
    m_tableField.prepare();
 }
 
+std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValues )
+{
+   std::array<std::byte, 128> buffer_;
+   gd::argument::arguments argumentsField( buffer_ );
+
+   std::string stringTable = xmlnodeValues.attribute( "name" ).as_string();   // Table name
+
+   for(pugi::xml_node node_ : xmlnodeValues.children()) 
+   {
+      argumentsField.clear();
+      // get name attribute
+      std::string string_ = node_.attribute( "name" ).as_string();            // Field name 
+      if( string_.empty() == true ) { string_ = node_.attribute( "column" ).as_string(); }// try to get column name as fallback
+      if( string_.empty() == false ) { argumentsField["column"] = string_; }
+
+      string_ = node_.attribute( "alias" ).as_string();                       // Field alias
+      if( string_.empty() == false ) { argumentsField["alias"] = string_; }
+
+      string_ = node_.attribute( "type" ).as_string();                        // type if value should be converted
+      if( string_.empty() == false ) { argumentsField["type"] = string_; }
+
+      string_ = node_.attribute( "value" ).as_string(); // get value          // try to get value from attribute first
+      if( string_.empty() == false ) { argumentsField["value"] = string_; }
+      else
+      {                                                                       // if value is not in attribute try to get it from node value
+         string_ = node_.child_value();
+         if( string_.empty() == false ) { argumentsField["value"] = string_; }
+      }
+
+      string_ = node_.attribute( "table" ).as_string();                       // get table name
+      if( string_.empty() == false ) { argumentsField["table"] = string_; }
+      else if( stringTable.empty() == false ) { argumentsField["table"] = stringTable; } // if table name is not in attribute try to get it from parent node attribute
+
+      AddValue( argumentsField );
+   }
+
+   return { true, "" };
+}
+
 /** --------------------------------------------------------------------------
  * @brief Add new field to be used in  SQL query that is generated.
  *
@@ -423,6 +462,24 @@ std::pair<bool, std::string> CRENDERSql::ToSqlDelete( std::string& stringQuery )
    else stringQuery += "\n\n" + stringDeleteSql;
 
    return { true, "" };
+}
+
+std::pair<bool, std::string> CRENDERSql::ToSql( std::string_view stringType, std::string& stringQuery )
+{                                                                                                  assert( stringType.empty() == false );
+   char iType = stringType[0];
+   switch( iType )
+   {
+      case 'i': case 'I':
+         return ToSqlInsert( stringQuery );
+      case 'u': case 'U':
+         return ToSqlUpdate( stringQuery );
+      case 'd': case 'D':
+         return ToSqlDelete( stringQuery );
+      default:
+         return {false, "Invalid query type"};
+   }
+
+   return { false, "" };
 }
 
 
