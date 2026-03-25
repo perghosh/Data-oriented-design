@@ -112,6 +112,7 @@ public:
    unsigned m_uCommandIndex{};                        ///< current command index being processed, command index are the index within m_vectorCommand
    gd::argument::arguments m_argumentsParameter;      ///< parameters for api command
    gd::argument::arguments m_argumentsGlobal;         ///< store global variablies, prefixed with "g_"
+   std::string_view m_stringBody;                     ///< body of request, this is used for some commands to get data from client
    Types::Objects m_objects;                          ///< objects used to store result objects
    std::string m_stringLastError;                     ///< last error message 
    CApplication* m_papplication{};                    ///< application pointer, access application that is used as object root for server

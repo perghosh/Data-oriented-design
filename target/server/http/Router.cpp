@@ -3,6 +3,10 @@
 #include "gd/parse/gd_parse_uri.h"
 #include "gd/gd_utf8.h"
 
+#include "pugixml/pugixml.hpp"
+#include "jsoncons/json.hpp"
+#include "jsoncons_ext/jsonpath/jsonpath.hpp"
+
 #include "api/APIDatabase.h"
 #include "api/APISql.h"
 #include "api/APISystem.h"
@@ -27,6 +31,27 @@ sample http://127.0.0.1/!db/create?name=testdb&user=admin
 - db/update?table=TUser&set=(FAnotherColumn='newtext')&where=(FColumnName=100)
 """]
 */
+
+CRouter::~CRouter()
+{
+   // ## clean up request data if any
+
+   if( m_pairRequestData.second != nullptr )
+   {
+      unsigned uType = m_pairRequestData.first;
+      void* pData = m_pairRequestData.second;
+      if( uType == eRequestFormatXml )
+      {
+         pugi::xml_document* pdocument = static_cast<pugi::xml_document*>( pData );
+         delete pdocument;
+      }
+      else if( uType == eRequestFormatJson )
+      {
+         jsoncons::json* pjson = static_cast<jsoncons::json*>( pData );
+         delete pjson;
+      }
+   }
+}
 
 
 std::pair<bool, std::string> CRouter::Parse()
@@ -129,6 +154,45 @@ std::pair<bool, std::string> CRouter::Run()
       }
    }
    
+
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CRouter::Prepare()
+{
+   // ## prepare for running command, this can include things like encoding values in arguments, validating arguments, etc.
+
+   /// ### Prepare request data if sent with request
+   if( m_stringBody.empty() == false )
+   {
+      if( IsRequestFormatXml() == true )
+      {
+         pugi::xml_document* pdocument = new pugi::xml_document;
+         pugi::xml_parse_result parseResult = pdocument->load_string( m_stringBody.data() );
+         if( parseResult.status != pugi::xml_parse_status::status_ok )
+         {
+            delete pdocument;
+            return { false, "Failed to parse XML body: " + std::string(parseResult.description()) };
+         }
+
+         SetResponseData( eRequestFormatXml, pdocument );                     // store parsed xml in response data to be used later in command execution
+      }
+      else if( IsRequestFormatJson() == true )
+      {
+         jsoncons::json* pjson = new jsoncons::json;
+         try
+         {
+            (*pjson) = jsoncons::json::parse( m_stringBody );
+         }
+         catch( const std::exception& e )
+         {
+            delete pjson;
+            return { false, "Failed to parse JSON body: " + std::string(e.what()) };
+         }
+
+         SetResponseData( eRequestFormatJson, pjson );                        // store parsed json in response data to be used later in command execution
+      }
+   }
 
    return { true, "" };
 }

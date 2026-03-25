@@ -34,6 +34,21 @@ std::pair<bool, std::string> CServer::Initialize()
    return { true, "" };
 }
 
+namespace
+{
+   /// Returns a bad request response
+   inline boost::beast::http::response<boost::beast::http::string_body> server_error_s( const boost::beast::http::request<boost::beast::http::string_body>& request_, boost::beast::string_view stringWhat)
+   {
+      boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::internal_server_error, request_.version()};
+      response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+      response.set(boost::beast::http::field::content_type, "text/html");
+      response.keep_alive(request_.keep_alive());
+      response.body() = "An error occurred: '" + std::string(stringWhat) + "'";
+      response.prepare_payload();
+      return response;
+   }
+} // namespace
+
 /** @CRITICAL [tag: server, http, request] [summary: Handle incoming HTTP requests and generate responses]
  * @brief Handles an incoming HTTP request and generates an appropriate HTTP response.
  *
@@ -209,27 +224,26 @@ boost::beast::http::message_generator handle_request( boost::beast::string_view 
  */
 boost::beast::http::message_generator CServer::RouteCommand( std::string_view stringTarget, std::string_view stringBody, boost::beast::http::request<boost::beast::http::string_body>&& request_ )
 {
-   // Returns a server error response
-   auto const server_error_ = [&request_](boost::beast::string_view stringWhat)
-      {
-         boost::beast::http::response<boost::beast::http::string_body> response{boost::beast::http::status::internal_server_error, request_.version()};
-         response.set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
-         response.set(boost::beast::http::field::content_type, "text/html");
-         response.keep_alive(request_.keep_alive());
-         response.body() = "An error occurred: '" + std::string(stringWhat) + "'";
-         response.prepare_payload();
-         return response;
-      };
+	CRouter router_(papplication_g, stringTarget, stringBody);                 // create router for the target, router is a simple command router to handle commands
 
+   if( stringBody.empty() == false )
+   {
+      // ## prepare content type from request header
+      std::string stringContentType = request_[boost::beast::http::field::content_type];
+      if( stringContentType.find("xml") != std::string::npos ) { router_.SetFlag( CRouter::eRequestFormatXml ); }
+      else if( stringContentType.find( "json" ) != std::string::npos ) { router_.SetFlag( CRouter::eRequestFormatJson ); }
+      else { router_.SetFlag( CRouter::eRequestFormatNone ); }
+   }
 
-	CRouter router_(papplication_g, stringTarget);                             // create router for the target, router is a simple command router to handle commands
 	auto result_ = router_.Parse();                                            // parse the target to get command and parameters
-   if( result_.first == false ) { return server_error_( result_.second ); }
+   if( result_.first == false ) { return server_error_s( request_, result_.second ); }
+   
 
    result_ = router_.Run();
    if( result_.first == false ) 
    { 
-      auto response_ = PrepareResponse_s( request_, int(boost::beast::http::status::bad_request), "text/plain", result_.second );
+      std::string& stringError = result_.second;
+      auto response_ = PrepareResponse_s( request_, int(boost::beast::http::status::bad_request), "text/plain", stringError );
       return response_;
    }
 

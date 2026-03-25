@@ -55,12 +55,22 @@ public:
       eResultFormatJson       = 0x00000100,
    };
 
+   enum enumRequestFormat
+   {
+      eRequestFormatNone      = 0x00000000,
+      eRequestFormatXml       = 0x00010000,
+      eRequestFormatJson      = 0x00020000,
+      eRequestFormatAny       = 0x00030000,
+      eRequestFormatMask      = 0x00030000,
+   };
+
 public:
    CRouter() {}
    CRouter(CApplication* pApplication): m_pApplication(pApplication) {}
    CRouter(CApplication* pApplication, CDocument* pDocument): m_pApplication(pApplication), m_pDocument(pDocument) {}
    CRouter( const std::string_view& stringQueryString ) : m_stringQueryString( stringQueryString ) {}
    CRouter( CApplication* pApplication, const std::string_view& stringQueryString ): m_pApplication(pApplication), m_stringQueryString(stringQueryString) {}
+   CRouter( CApplication* pApplication, const std::string_view& stringQueryString, std::string_view stringBody ): m_pApplication(pApplication), m_stringQueryString(stringQueryString), m_stringBody(stringBody) {}
    // copy
    CRouter( const CRouter& o ) { common_construct( o ); }
    CRouter( CRouter&& o ) noexcept { common_construct( std::move( o ) ); }
@@ -68,18 +78,32 @@ public:
    CRouter& operator=( const CRouter& o ) { common_construct( o ); return *this; }
    CRouter& operator=( CRouter&& o ) noexcept { common_construct( std::move( o ) ); return *this; }
 
-   ~CRouter() {}
+   ~CRouter();
 private:
    // common copy
    void common_construct( const CRouter& o ) {}
    void common_construct( CRouter&& o ) noexcept {}
 
-// ## operator -----------------------------------------------------------------
+// @API [tag: operator] [description: operators for router]
 public:
+
+// @API [tag: getter, setter] [description: get and set router attributes]
+public:
+   void SetFlag( unsigned uFlag ) { m_uFlags |= uFlag; }
+   void ClearFlag( unsigned uFlag ) { m_uFlags &= ~uFlag; }
+   void SetFlags( unsigned uFlags ) { m_uFlags = uFlags; }
+   void SetFlags( unsigned uSet, unsigned uClear ) { m_uFlags = ( m_uFlags | uSet ) & ~uClear; }
+
    bool IsCommand() const { return (m_uFlags & eFlagCommand) != 0; }
+
+   bool IsRequestFormatNone() const { return ( m_uFlags & eRequestFormatMask ) == 0; }
+   bool IsRequestFormatXml() const { return ( m_uFlags & eRequestFormatMask ) == eRequestFormatXml; }
+   bool IsRequestFormatJson() const { return ( m_uFlags & eRequestFormatMask ) == eRequestFormatJson; }
 
    bool IsXml() const { return ( m_uFlags & eResultFormatJson ) == 0; }
    bool IsJson() const { return ( m_uFlags & eResultFormatJson ) == eResultFormatJson; }
+
+   void SetResponseData( unsigned uType, void* pData ) { m_pairRequestData = { uType, pData }; }
    
    CRouter& operator=( CApplication* pApplication ) { m_pApplication = pApplication; return *this; }
    CRouter& operator=( CDocument* pDocument ) { m_pDocument = pDocument; return *this; }
@@ -94,6 +118,8 @@ public:
    /// Check if router has result to deliver to client
    bool HasResult();
 
+   std::pair<bool, std::string> Prepare();
+
    std::pair<bool, std::string> PrintResponseXml( std::string& stringXml, const gd::argument::arguments* parguments_ );
 
    template<typename APIObject>
@@ -106,9 +132,11 @@ public:
    unsigned m_uFlags{};                ///< router flags
    unsigned m_uUserIndex{};            ///< user index for user in session table for users logged in
    std::string m_stringQueryString;    ///< query string from url
+   std::string_view m_stringBody;      ///< body from http request
    std::vector<std::string_view> m_vectorCommand; ///< list of commands parsed from query string
    std::unique_ptr<CDTOResponse> m_pdtoresponse;  ///< response dto object
    std::mutex m_mutexRouter;         ///< mutex for response dto object
+   std::pair<unsigned, void*> m_pairRequestData{ 0, nullptr }; ///< pair of request data, first is type and second is pointer to data
 
 // ## free functions ------------------------------------------------------------
 public:

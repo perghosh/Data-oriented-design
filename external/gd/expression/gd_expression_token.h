@@ -309,6 +309,7 @@ inline uint32_t token::to_type_s(uint32_t uType, enumTokenPart eTokenPart) {
 }
 
 
+/// @brief convert token type string to token type value, this is used for parsing and for debugging
 constexpr uint32_t token::token_type_s(const std::string_view& s_) {
    if(s_ == "NONE") return eTokenTypeNone;
    if(s_ == "KEYWORD") return eTokenTypeKeyword;

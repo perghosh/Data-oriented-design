@@ -52,6 +52,7 @@ struct method
       eFlagUnknown = 0x00, ///< no flags
       eFlagRuntime = 0x01, ///< pass runtime as first argument
       eFlagVoid    = 0x02, ///< no return value
+      eFlagVarArgs = 0x04, ///< variable number of arguments
    };
 
    using method_0 = std::pair<bool, std::string>(*)(const std::vector<value>&);

@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     libstdc++6 \
     bash \
     sed \
+    neovim \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the cleaner binary -----------------------------------------------------
