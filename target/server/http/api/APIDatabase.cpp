@@ -475,6 +475,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
 
    if( Exists( "xml" ) == true )
    {
+      auto stringCommand = GetCommand();
       CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
       sql_.Initialize();
       pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>( GetArgument("xml").as_void() );
@@ -502,10 +503,16 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
             if( result_.first == false ) return result_;
          }
 
-         std::string stringSql;
-         sql_.ToSql( GetCommand(), stringSql );
+         result_ = sql_.Prepare();
+         if( result_.first == false ) { return result_; }
 
-         //sqlbuilder = argumentsValues;
+
+         std::string stringSql;
+         result_ = sql_.ToSql( GetCommand(), stringSql );
+         if( result_.first == false ) { return result_; }
+
+         sqlbuilder = stringSql;
+         sqlbuilder.SetType( stringCommand );
       }
 
 
@@ -549,6 +556,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
          if( result_.first == false ) { return result_; }
 
          result_ = sql_.Prepare();
+         if( result_.first == false ) { return result_; }
 
          std::string stringQuery;
          result_ = sql_.ToSqlInsert( stringQuery );

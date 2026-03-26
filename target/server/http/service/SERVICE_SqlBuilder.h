@@ -64,6 +64,7 @@ public:
 public:
 // @API [tag: get, set]
    void SetType( enumType eType ) { m_eType = eType; }
+   void SetType( std::string_view stringType ) { m_eType = ToType_s( stringType ); }
    bool IsSqlReady() const; ///< check if query is ready to be built
    std::string& GetSql() { return m_stringSql; }
 

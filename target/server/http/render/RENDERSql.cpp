@@ -54,14 +54,30 @@ void CRENDERSql::Initialize()
 
 std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValues )
 {
+   using namespace gd::types::detail;
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsField( buffer_ );
 
-   std::string stringTable = xmlnodeValues.attribute( "name" ).as_string();   // Table name
+   std::string stringTable = xmlnodeValues.attribute( "table" ).as_string();   // Table name
 
    for(pugi::xml_node node_ : xmlnodeValues.children()) 
    {
+      enumPartType ePartType = ePartTypeUnknown;
+      std::string_view stringNodeName = node_.name();
+      if( stringNodeName.length() > 4 )
+      {
+         if( hash_match_g( stringNodeName, "value" ) == true ) { ePartType = ePartTypeValue; }
+         else if( hash_match_g( stringNodeName, "where" ) == true ) { ePartType = ePartTypeWhere; }
+         else if( hash_match_g( stringNodeName, "select" ) == true ) { ePartType = ePartTypeSelect; }
+         else { continue; } // if node name is not value, where or select skip it
+      }
+      else { continue; }                                                      // if node name is too short to be value, where or select skip it
+
+
       argumentsField.clear();
+
+      argumentsField.append( "part_type", uint32_t( ePartType ) );            // type of value query part
+
       // get name attribute
       std::string string_ = node_.attribute( "name" ).as_string();            // Field name 
       if( string_.empty() == true ) { string_ = node_.attribute( "column" ).as_string(); }// try to get column name as fallback
@@ -469,14 +485,14 @@ std::pair<bool, std::string> CRENDERSql::ToSql( std::string_view stringType, std
    char iType = stringType[0];
    switch( iType )
    {
-      case 'i': case 'I':
-         return ToSqlInsert( stringQuery );
-      case 'u': case 'U':
-         return ToSqlUpdate( stringQuery );
-      case 'd': case 'D':
-         return ToSqlDelete( stringQuery );
-      default:
-         return {false, "Invalid query type"};
+   case 'i': case 'I':                                                        // insert query
+      return ToSqlInsert( stringQuery );
+   case 'u': case 'U':                                                        // update query
+      return ToSqlUpdate( stringQuery );
+   case 'd': case 'D':                                                        // delete query
+      return ToSqlDelete( stringQuery );
+   default:
+      return {false, "Invalid query type"};
    }
 
    return { false, "" };

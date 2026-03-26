@@ -548,6 +548,26 @@ namespace detail {
    constexpr bool is_string( uint32_t uType )    { return (uType & eTypeGroupString) == eTypeGroupString; }
    constexpr bool is_binary( uint32_t uType )    { return (uType & eTypeGroupBinary) == eTypeGroupBinary; }
 
+   /** ---------------------------------------------------------------------------
+    * @brief Fast string matching using 4-byte hash prefix
+    * 
+    * compares first 4 characters using hash for speed
+    * 
+    * @param stringPattern The pattern string to match against
+    * @param stringValue The value string to check
+    * @return true if strings match, false otherwise
+    */
+   constexpr bool hash_match_g( std::string_view stringPattern, std::string_view stringValue )
+   {                                                                          assert( stringPattern.length() >= 4 && stringValue.length() >= 4 );
+      // Fast hash comparison of first 4 characters
+      return ( hash_type(stringPattern) == hash_type(stringValue) );
+   }
+
+   /// Overload for const char* pattern
+   constexpr bool hash_match_g( const char* stringPattern, std::string_view stringValue )
+   {
+      return hash_match_g( std::string_view(stringPattern), stringValue );
+   }
 }
 
 // ## helper methods used to check if type is of specific type

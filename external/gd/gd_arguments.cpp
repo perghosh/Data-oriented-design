@@ -3621,6 +3621,9 @@ gd::variant_view arguments::get_variant_view_s(const arguments::argument& argume
    case arguments::eTypeNumberDouble:
       return gd::variant_view(value.d);
       break;
+   case arguments::eTypeNumberPointer:
+      return gd::variant_view(value.p);
+      break;
    case arguments::eTypeNumberGuid:
       return gd::variant_view(value.pbsz, (size_t)argumentValue.length());
       break;
