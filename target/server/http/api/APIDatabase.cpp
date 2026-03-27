@@ -475,7 +475,7 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
 
    if( Exists( "xml" ) == true )
    {
-      auto stringCommand = GetCommand();
+      auto stringCommand = GetCommand();                                      // get current command being processed, this is the command at m_uCommandIndex and should match sql statements like select, insert, update or delete
       CRENDERSql sql_( pdocument, gd::sql::enumSqlDialect(uDialect) );
       sql_.Initialize();
       pugi::xml_document* pdocument = reinterpret_cast<pugi::xml_document*>( GetArgument("xml").as_void() );
@@ -487,11 +487,11 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
       // ### Get values at index
       if( uIndex < xpathnodesetValues.size() )
       {
+         // #### values element with elements used to build sql statement
          pugi::xml_node xmlnodeValues = xpathnodesetValues[uIndex].node();
          if( xmlnodeValues.first_child() ) 
          { 
-            result_ = sql_.Add( xmlnodeValues );                             // add values
-            if( result_.first == false ) { return result_; }
+            result_ = sql_.Add( xmlnodeValues );                                                   if( result_.first == false ) { return result_; } // add values
          }
          else if( xmlnodeValues.type() == pugi::node_cdata )
          {
@@ -503,20 +503,18 @@ std::pair<bool, std::string> CAPIDatabase::Sql_Prepare(std::string& stringSql)
             if( result_.first == false ) return result_;
          }
 
-         result_ = sql_.Prepare();
-         if( result_.first == false ) { return result_; }
+         result_ = sql_.Prepare();                                                                 if( result_.first == false ) { return result_; }
 
-
+         // #### Prepare SQL statement based on command
          std::string stringSql;
-         result_ = sql_.ToSql( GetCommand(), stringSql );
-         if( result_.first == false ) { return result_; }
+         stringSql.reserve( 128 );
+         result_ = sql_.ToSql( stringCommand, stringSql );                                         if( result_.first == false ) { return result_; }
 
          sqlbuilder = stringSql;
          sqlbuilder.SetType( stringCommand );
       }
 
-
-      IncrementArgumentCounter( "xml" );
+      IncrementArgumentCounter( "xml" );                                     // increamet index for xml argument to support multiple xml arguments 
    }
    else if( Exists( "json" ) == true )
    {

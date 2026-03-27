@@ -53,7 +53,7 @@ void CRENDERSql::Initialize()
 }
 
 std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValues )
-{
+{                                                                                                  assert( m_pcolumnsField_s != nullptr );
    using namespace gd::types::detail;
    std::array<std::byte, 128> buffer_;
    gd::argument::arguments argumentsField( buffer_ );
@@ -113,7 +113,7 @@ std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValue
  * @param argumentsField information about the field to add.
  */
 void CRENDERSql::AddValue( const gd::argument::arguments argumentsField )
-{
+{                                                                                                  assert( m_pcolumnsField_s != nullptr );
    auto uRow = m_tableField.row_add_one();
    m_tableField.cell_set( uRow, 0u, uint32_t(uRow + 1) );                     // set key value
 
@@ -186,7 +186,7 @@ std::pair<bool,std::string> CRENDERSql::AddValue( std::string_view stringJson, g
  * @endcode
  */
 std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, gd::types::tag_json )
-{
+{                                                                                                  assert( m_pcolumnsField_s != nullptr );
    std::array<std::byte, 256> buffer_;
    gd::argument::arguments arguments_(buffer_);
 
