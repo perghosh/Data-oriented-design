@@ -69,9 +69,21 @@ std::pair<bool, std::string> CRENDERSql::Add( const pugi::xml_node& xmlnodeValue
          if( hash_match_g( stringNodeName, "value" ) == true ) { ePartType = ePartTypeValue; }
          else if( hash_match_g( stringNodeName, "where" ) == true ) { ePartType = ePartTypeWhere; }
          else if( hash_match_g( stringNodeName, "select" ) == true ) { ePartType = ePartTypeSelect; }
+         else if( hash_match_g( stringNodeName, "returning" ) == true ) { ePartType = ePartTypeReturning; }
          else { continue; } // if node name is not value, where or select skip it
       }
       else { continue; }                                                      // if node name is too short to be value, where or select skip it
+
+      if( ePartType >= ePartTypeReturning )
+      {
+         if( ePartType == ePartTypeReturning )
+         {
+            std::string string_ = node_.attribute( "name" ).as_string();      // Field name 
+            AddProperty( "returning", string_ );
+            if( string_.empty() == false ) {}
+         }
+         continue;
+      }
 
 
       argumentsField.clear();

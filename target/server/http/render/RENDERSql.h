@@ -42,6 +42,7 @@ public:
       ePartTypeSelect,           ///< select part of query
       ePartTypeValue,            ///< value part of query, used for insert and update queries
       ePartTypeWhere,            ///< where part of query, used for select, update and delete queries
+      ePartTypeReturning,        ///< returning part of query, used for select queries to specify columns to return
       enumPartType_Max
    };
 
