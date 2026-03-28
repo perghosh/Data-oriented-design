@@ -243,7 +243,8 @@ table::~table()
       }
    }
 
-   if( m_pcolumns != nullptr ) m_pcolumns->release();                          // release columns information
+
+   if( m_pcolumns != nullptr && is_static_columns() == false ) m_pcolumns->release(); // release columns information
    delete[] m_puData;
 }
 

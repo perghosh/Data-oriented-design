@@ -200,8 +200,11 @@ public:
       eTableFlagRowStatus     = 0x0004,                                        ///< enable row status (if row is valid, modified, deleted)
       eTableFlagDuplicateStrings = 0x0008,                                     ///< enable duplicate strings, reference string are not checked for duplicates
       eTableFlagArguments     = 0x0010,                                        ///< reserve size for arguments object
-      eTableStateMAX          = 0x0020,                                        ///< max state value
       eTableFlagAll           = eTableFlagNull64|eTableFlagRowStatus|eTableFlagArguments,
+
+      eTableFlagStaticColumns = 0x0100,                                        ///< Columns object is static or handles outside, do not fiddle with the reference counter.
+
+      eTableStateMAX          = 0x0020,                                        ///< max state value
 
       // ## size information used to calculate space needed by table
       eSpaceNull32Columns     = sizeof( uint32_t ),                            ///< space marking null columns
@@ -386,6 +389,7 @@ public:
    gd::table::detail::columns* get_columns() noexcept { return m_pcolumns; }
    const gd::table::detail::columns* get_columns() const noexcept { return m_pcolumns; }
    void set_columns( detail::columns* pcolumns ) { assert( m_pcolumns == nullptr ); assert( pcolumns != nullptr ); m_pcolumns = pcolumns; m_pcolumns->add_reference(); }
+   void set_columns( detail::columns* pcolumns, tag_static_columns ) { assert( m_pcolumns == nullptr ); assert( pcolumns != nullptr ); m_pcolumns = pcolumns; set_flags( eTableFlagStaticColumns, 0 ); }
 
    // ## state methods, check state flags
 
@@ -394,6 +398,7 @@ public:
    bool is_null64() const { return m_uFlags & eTableFlagNull64; }
    bool is_rowstatus() const { return m_uFlags & eTableFlagRowStatus; }
    bool is_rowarguments() const { return m_uFlags & eTableFlagArguments; }
+   bool is_static_columns() const { return (m_uFlags & eTableFlagStaticColumns) == eTableFlagStaticColumns; }
    bool is_rowmeta() const { return m_puMetaData != nullptr; }
 
    unsigned size_row() const noexcept { return m_uRowSize; }

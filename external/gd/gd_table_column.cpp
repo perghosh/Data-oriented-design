@@ -50,8 +50,8 @@ columns& columns::add( unsigned uColumnType, unsigned uSize, const std::string_v
    columnAdd.ctype( uColumnType );
    columnAdd.primitive_size( gd::types::value_size_g( uColumnType ) );
 
-   if( gd::types::is_primitive_g( uColumnType ) == false && gd::types::is_reference_g( uColumnType ) == false )
-   {
+   if( gd::types::is_primitive_g( uColumnType ) == false && gd::types::is_reference_g( uColumnType ) == false ) // Not primitive type and not reference means that it should have length
+   {                                                                                               assert( (uSize > 0 && uSize < 0x0100'0000)  && "Developer error because size should be greater than zero for non primitive types and also checks for realistic size" );
       uSize = gd::types::value_size_g( uColumnType, uSize );
    }
 

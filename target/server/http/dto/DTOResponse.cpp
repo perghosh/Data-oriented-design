@@ -24,23 +24,25 @@ void CDTOResponse::Initialize()
 {
    // Initialize datable that will hold response body parts
 
-   if( m_pcolumnsBody_s == nullptr )
-   {
-      std::lock_guard<std::mutex> lock( m_mutexDto );                         // lock mutex to ensure thread safety when creating columns
-      if( m_pcolumnsBody_s == nullptr )                                       // double checked locking pattern to ensure
-      {
-         m_pcolumnsBody_s = new gd::table::detail::columns{};                    /// static columns for body, remember to delete on shutdown (release)
-         m_pcolumnsBody_s->add( "uint32", 0, "key" );       // key for response body part
-         m_pcolumnsBody_s->add( "uint32", 0, "type" );      // type of response body part
-         m_pcolumnsBody_s->add( "rstring", 0, "text" );     // text of response body part
-         m_pcolumnsBody_s->add( "pointer", 0, "object" );   // pointer to object if result data is store as some object
-         m_pcolumnsBody_s->add( "string", 16, "command" );     // echo is used to echo back some shorter value back to client
-         m_pcolumnsBody_s->add( "string", 16, "echo" );     // echo is used to echo back some shorter value back to client
-         m_pcolumnsBody_s->add_reference();
-      }
-   }
+   // ## Magic Static (Meyers' Singleton)
+   // The compiler guarantees thread-safe initialization exactly once.
+   // This is typically faster than manual mutex locking.
+   static gd::table::detail::columns* pcolumnsBody_s = []() -> gd::table::detail::columns* {
+      auto* p = new gd::table::detail::columns{};
+      p->add( "uint32", 0, "key" );
+      p->add( "uint32", 0, "type" );
+      p->add( "rstring", 0, "text" );
+      p->add( "pointer", 0, "object" );
+      p->add( "string", 16, "command" );
+      p->add( "string", 16, "echo" );
+      p->add_reference();
 
-   m_tableBody.set_columns( m_pcolumnsBody_s );
+      CDTOResponse::m_pcolumnsBody_s = p; // assign to static member for use in other instances of CDTOResponse
+
+      return p;
+   }();
+
+   m_tableBody.set_columns( pcolumnsBody_s, gd::table::tag_static_columns{} );
    m_tableBody.prepare();
 }
 

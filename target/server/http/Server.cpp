@@ -249,12 +249,13 @@ boost::beast::http::message_generator CServer::RouteCommand( std::string_view st
 
    std::string stringResponse;
 
+   // ## print response as XML or JSON, this will be used as response body
    if( router_.HasResult() == true )
    {
-      router_.PrintResponseXml( stringResponse, nullptr );
+      router_.PrintResponseXml( stringResponse, nullptr );                    // print response as XML, this will be used as response body
    }
 
-   if( stringResponse.empty() == true ) { stringResponse = "<response status=\"ok\" />"; }
+   if( stringResponse.empty() == true ) { stringResponse = "<response status=\"ok\" />"; } // if response is empty, set it to a default response
 
    std::array<std::byte, 128> array_; // array to hold data for arguments
    gd::argument::arguments argumentHeader( (gd::argument::arguments::pointer)array_.data(), (unsigned)array_.size() );

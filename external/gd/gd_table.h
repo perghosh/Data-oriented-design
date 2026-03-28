@@ -131,6 +131,8 @@ struct tag_length {};
 struct tag_range {};
 /// tag dispatcher for measurement handling
 struct tag_measurement {};
+/// tag dispatcher columns are static and shared between tables, should not be modified
+struct tag_static_columns {};
 
 // ## variant related tag dispatchers
 
