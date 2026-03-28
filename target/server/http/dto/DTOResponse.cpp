@@ -41,7 +41,7 @@ void CDTOResponse::Initialize()
 
       return p;
    }();
-
+                                                                                                   assert( CDTOResponse::m_pcolumnsBody_s->get_reference() == 1 ); // ensure reference column is added and stay there
    m_tableBody.set_columns( pcolumnsBody_s, gd::table::tag_static_columns{} );
    m_tableBody.prepare();
 }

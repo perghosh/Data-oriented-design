@@ -3420,6 +3420,9 @@ void table::append( const gd::table::dto::table& tableFrom, uint64_t uFrom, uint
 */
 void table::clear()
 {
+   if( m_pcolumns != nullptr && is_static_columns() == false ) m_pcolumns->release(); // release columns information
+   m_pcolumns = nullptr;
+
    m_uFlags = 0;
    m_uRowSize = 0;
    m_uRowMetaSize = 0;

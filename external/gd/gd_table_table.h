@@ -350,8 +350,7 @@ public:
    void set_flags( uint32_t uFlags ) noexcept { m_uFlags = uFlags; }
    void set_state [[deprecated]] ( tag_full_meta ) noexcept { m_uFlags = eTableFlagRowStatus|eTableFlagNull64; }
    void set_flags( tag_full_meta ) noexcept { m_uFlags = eTableFlagRowStatus|eTableFlagNull64; }
-   void set_state [[deprecated]] ( uint32_t uSet, uint32_t uClear ) noexcept { m_uFlags |= uSet; m_uFlags &= ~uSet; }
-   void set_flags( uint32_t uSet, uint32_t uClear ) noexcept { m_uFlags |= uSet; m_uFlags &= ~uSet; }
+   void set_flags( uint32_t uSet, uint32_t uClear ) noexcept { m_uFlags |= uSet; m_uFlags &= ~uClear; }
    unsigned get_column_count() const noexcept { return (unsigned)m_pcolumns->size(); }
    /// Get number of rows with values
    uint64_t get_row_count() const noexcept { assert( m_puData != nullptr ); return m_uRowCount; }
