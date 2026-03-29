@@ -544,16 +544,16 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
          
          try
          {
-            // STEP 1: Get file info (no mutex needed - ptableFile is read-only)
+            // ## STEP 1: Get file info (no mutex needed - ptableFile is read-only)
             auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
             auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
 
-            // STEP 2: Build full file path (no mutex needed)
+            // ## STEP 2: Build full file path (no mutex needed)
             gd::file::path pathFile(stringFolder);
             pathFile += stringFilename;
             std::string stringFile = pathFile.string();
 
-            // STEP 3: Process pattern statistics (SLOW operation - no mutex needed, thread-safe)
+            // ## STEP 3: Process pattern statistics (SLOW operation - no mutex needed, thread-safe)
             gd::argument::shared::arguments argumentsPattern_({ {"source", stringFile} });
             if( argumentsPattern.exists("segment") == true ) { argumentsPattern_.set("segment", argumentsPattern["segment"].as_string_view()); } // set the segment (code, comment, string) to search in
             argumentsPattern_.append(argumentsPattern,{ "icase", "word" }); // set the patterns to search for
@@ -576,7 +576,7 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
                continue;                                                       // Skip to next file on error
             }
 
-            // STEP 4: Update table (FAST operation - no mutex needed, pre-allocated memory)
+            // ## STEP 4: Update table (FAST operation - no mutex needed, pre-allocated memory)
             for( unsigned u = 0; u < vectorCount.size(); u++ )
             {
                ptableFilePattern->cell_set(uRowIndex, u + 4, vectorCount[u]); // set pattern count in table (columns 0-3 are key, file-key, folder, filename)
@@ -708,16 +708,16 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
          
          try
          {
-            // STEP 1: Get file info (no mutex needed - ptableFile is read-only)
+            // ## STEP 1: Get file info (no mutex needed - ptableFile is read-only)
             auto stringFolder = ptableFile->cell_get_variant_view(uRowIndex, "folder").as_string();
             auto stringFilename = ptableFile->cell_get_variant_view(uRowIndex, "filename").as_string();
 
-            // STEP 2: Build full file path (no mutex needed)
+            // ## STEP 2: Build full file path (no mutex needed)
             gd::file::path pathFile(stringFolder);
             pathFile += stringFilename;
             std::string stringFile = pathFile.string();
 
-            // STEP 3: Process pattern statistics (SLOW operation - no mutex needed, thread-safe)
+            // ## STEP 3: Process pattern statistics (SLOW operation - no mutex needed, thread-safe)
             gd::argument::shared::arguments argumentsPattern_(argumentsPattern);  // Copy base arguments
             argumentsPattern_.set("source", stringFile);
             
@@ -739,11 +739,9 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
                continue;                                                       // Skip to next file on error
             }
 
-            // STEP 4: Update table (FAST operation - mutex needed for thread safety)
+            // ## STEP 4: Update table (FAST operation - mutex needed for thread safety)
             {
-               //std::lock_guard<std::mutex> lockFilePattern(mutexTablePattern); // ✅ Minimal mutex scope
-
-               // Update pattern counters in the file-pattern table
+               // ### Update pattern counters in the file-pattern table
                for( unsigned u = 0; u < vectorCount.size(); u++ )
                {
                   ptableFilePattern->cell_set(uRowIndex, u + 4, vectorCount[u]); // set pattern count in table (columns 0-3 are key, file-key, folder, filename)
@@ -773,8 +771,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternCounters(const gd::arg
    // ## Prepare and run threads ..............................................
 
    if( iThreadCount <= 0 ) { iThreadCount = std::thread::hardware_concurrency(); } // Use hardware concurrency if no thread count is specified
-   if(iThreadCount <= 0) { iThreadCount = 1; }                                 // Fallback to single thread if hardware_concurrency returns 0
-   if( iThreadCount > 8 ) { iThreadCount = 8; }                                // Limit to 8 threads for performance and resource management
+   if( iThreadCount <= 0) { iThreadCount = 1; }                               // Fallback to single thread if hardware_concurrency returns 0
+   if( iThreadCount > 8 ) { iThreadCount = 8; }                               // Limit to 8 threads for performance and resource management
 
    // Create and launch worker threads
    std::vector<std::thread> vectorPatternThread;
@@ -954,8 +952,8 @@ std::pair<bool, std::string> CDocument::FILE_UpdatePatternList(const std::vector
    // ## Prepare and run threads ..............................................
 
    if( iThreadCount <= 0 ) { iThreadCount = std::thread::hardware_concurrency(); } // Use hardware concurrency if no thread count is specified
-   if(iThreadCount <= 0) { iThreadCount = 1; }                                 // Fallback to single thread if hardware_concurrency returns 0
-   if( iThreadCount > 6 ) { iThreadCount = 6; }                                // Limit to 6 threads for performance and resource management
+   if( iThreadCount <= 0) { iThreadCount = 1; }                              // Fallback to single thread if hardware_concurrency returns 0
+   if( iThreadCount > 6 ) { iThreadCount = 6; }                              // Limit to 6 threads for performance and resource management
    if( ptableFile->size() < iThreadCount ) { iThreadCount = (int)ptableFile->size(); } // Limit threads to number of files
 
    // Create and launch worker threads

@@ -258,8 +258,18 @@ std::pair<bool,std::string> CRENDERSql::AddRecord( std::string_view stringJson, 
    return {true, ""};
 }
 
+/** --------------------------------------------------------------------------
+ * @brief Prepares the SQL query by validating and transforming the data in the table field.
+ * 
+ * This method iterates through the rows in `m_tableField`, retrieves the table and column information,
+ * and uses the database metadata to determine the data type of each column. It then updates the
+ * "type" field in `m_tableField` for each column accordingly. This preparation step ensures that
+ * the data is correctly typed before generating the final SQL query.
+ * 
+ * @return std::pair<bool, std::string> A pair containing a boolean indicating success and a string containing an error message if preparation fails.
+ */
 std::pair<bool, std::string> CRENDERSql::Prepare()
-{                                                                                                  assert( m_pdocument != nullptr ); assert( m_tableField.size() > 1 ); // at least one field should be added before preparing query
+{                                                                                                  assert( m_pdocument != nullptr ); assert( m_tableField.size() > 0 ); // at least one field should be added before preparing query
    std::array<std::byte, 256> buffer_;
    const META::CDatabase* pdatabase_ = m_pdocument->DATABASE_Get();
 
