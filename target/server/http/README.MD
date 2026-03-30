@@ -1,3 +1,57 @@
+# Overview
+
+## What is this HTTP Server?
+
+This is a **stateful, high-performance web server** designed for modern web applications that require persistent user sessions and efficient data handling. Built with a strong focus on speed and scalability, this server simplifies web development by maintaining state information for each user, eliminating the need to pass complete user data with every request.
+
+### Key Characteristics
+
+**Performance & Scalability**
+- Optimized for high concurrency with a target of handling approximately **50,000 concurrent users** on a single computer with 64GB RAM
+- Designed to serve as a high-performance cache layer for other solutions
+- Lightweight architecture that maximizes hardware efficiency
+
+**Database Integration**
+- Compatible with **any SQL database** and SQLite
+- Extensive SQL logic support with automatic query generation based on API calls
+- Intelligent query optimization and security rule generation
+- Built-in metadata management to help developers understand and secure their data operations
+
+**Stateful Architecture**
+- Maintains unique session keys for each client, enabling the server to identify users across requests
+- Simplifies development by eliminating the need to manage state manually on the client side
+- Reduces network overhead by keeping user context on the server
+
+### Architecture Overview
+
+The server is built around several core components that work together to deliver a seamless experience:
+
+- **Application**: The central entry point and global state manager
+- **Server**: Handles HTTP requests using Boost, routes internal APIs (prefixed with `!`)
+- **Router**: Directs requests to appropriate handlers based on URL and HTTP method
+- **Session**: Manages individual client connections and maintains state
+
+### Extensibility & Customization
+
+**Upcoming Features**
+- **Lua scripting** for creating flexible endpoints and custom logic
+- **Python scripting** integration for advanced customization
+- Ability to execute server-side logic to handle edge cases and complex business rules
+
+These scripting capabilities will allow developers to extend the server's functionality without modifying the core codebase, making it adaptable to a wide range of use cases.
+
+### Use Cases
+
+This HTTP server is ideal for:
+- **API backends** that require persistent user sessions
+- **Caching layers** for existing applications
+- **Real-time applications** that benefit from stateful connections
+- **Data-intensive applications** with complex SQL requirements
+- **High-traffic web services** that need to maximize server resources
+
+
+
+
 ## Search tags
 
 - `@CRITICAL`: Indicates critical sections of code that require immediate attention.
