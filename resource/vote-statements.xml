@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<document>
+   <statements>
+      <statement name="vote-get_first" format="raw" type="select">SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1</statement>
+      <statement name="vote-count" format="jinja" type="select">SELECT COUNT(*) AS uCount FROM TPoll WHERE PollK = {PollK}</statement>
+      <statement name="vote-count_questions" format="jinja" type="select">SELECT COUNT(*) AS uCount FROM TPollQuestion WHERE PollK = X{PollK}</statement>
+      <statement name="vote-get" format="jinja" type="select">SELECT hex(PollK) AS PollK, TypeC, StateC, FName, FHeader, FDescription FROM TPoll WHERE PollK = X{PollK}</statement>
+      <statement name="vote-get_polls" format="jinja" type="select">SELECT hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollQuestion WHERE PollK = X{PollK}</statement>
+      <statement name="vote-get_answers" format="jinja" type="select">SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollAnswer WHERE PollK = X{PollK}</statement>
+      <statement name="vote-all_questions" format="jinja" type="select"><![CDATA[
+SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuestionK, hex(TPollAnswer.PollAnswerK) AS PollAnswerK, 
+         TPollQuestion.FName AS Q_FName, TPollQuestion.FLabel AS Q_FLabel, TPollQuestion.FDescription AS Q_FDescription, TPollQuestion.FOrder AS Q_FOrder, 
+         TPollAnswer.FName AS A_FName, TPollAnswer.FAnswer AS A_FAnswer, TPollAnswer.FOrder AS A_FOrder, TPollAnswer.FDescription AS A_Description 
+         FROM TPoll LEFT JOIN TPollQuestion ON TPoll.PollK = TPollQuestion.PollK LEFT JOIN TPollAnswer ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK 
+         WHERE TPoll.PollK = X{PollK} ORDER BY 1,TPollQuestion.FOrder, 2,TPollAnswer.FOrder]]></statement>
+   </statements>
+</document>
+
+<!-- 
+
+   function SERVER_AddSqlQuery() {
+      const aQuery = [
+         {name: "vote-get_first", format: "raw", type: "select", statement: "SELECT hex(PollK) AS PollK FROM TPoll LIMIT 1", "description": "Get first user (for development and testing purposes)"},
+
+         {name: "vote-count", format: "jinja", type: "select", statement: "SELECT COUNT(*) AS uCount FROM TPoll WHERE PollK = {PollK}", "description": "Count polls for poll key"},
+         {name: "vote-count_questions", format: "jinja", type: "select", statement: "SELECT COUNT(*) AS uCount FROM TPollQuestion WHERE PollK = X{PollK}", "description": "Count questions for poll key"},
+
+
+         {name: "vote-get", format: "jinja", type: "select", statement: "SELECT hex(PollK) AS PollK, TypeC, StateC, FName, FHeader, FDescription FROM TPoll WHERE PollK = X{PollK}", "description": "Select active poll"},
+         {name: "vote-get_polls", format: "jinja", type: "select", statement: "SELECT hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollQuestion WHERE PollK = X{PollK}", "description": "Select poll questions for poll"},
+         {name: "vote-get_answers", format: "jinja", type: "select", statement: "SELECT hex(PollAnswerK) AS PollAnswerK, hex(PollQuestionK) AS PollQuestionK, FName, FLabel, FDescription FROM TPollAnswer WHERE PollK = X{PollK}", "description": "Select poll questions for poll"},
+
+         {name: "vote-all_questions", format: "jinja", type: "select",
+         statement: // Select all questions for selected poll
+"SELECT hex(TPoll.PollK) AS PollK, hex(TPollQuestion.PollQuestionK) AS PollQuestionK, " +
+"hex(TPollAnswer.PollAnswerK) AS PollAnswerK, TPollQuestion.FName AS Q_FName, " +
+"TPollQuestion.FLabel AS Q_FLabel, TPollQuestion.FDescription AS Q_FDescription, TPollQuestion.FOrder AS Q_FOrder, " +
+"TPollAnswer.FName AS A_FName, TPollAnswer.FAnswer AS A_FAnswer, TPollAnswer.FOrder AS A_FOrder, " +
+"TPollAnswer.FDescription AS A_Description FROM TPoll " +
+"LEFT JOIN TPollQuestion ON TPoll.PollK = TPollQuestion.PollK " +
+"LEFT JOIN TPollAnswer ON TPollQuestion.PollQuestionK = TPollAnswer.PollQuestionK " +
+"WHERE TPoll.PollK = X{PollK} ORDER BY 1,TPollQuestion.FOrder, 2,TPollAnswer.FOrder",
+"description": "Select active poll with questions and answers in a single query using JSON aggregation" }
+   ];
+
+
+
+-->
