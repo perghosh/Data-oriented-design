@@ -83,6 +83,7 @@ public:
  * }
  */
 enum enumFormat {
+   eFormatUnknown = 0,
    eFormatRaw     = 1, // SQL statements
    eFormatJinja   = 2, // Jinja template with SQL statement and variables
    eFormatCsv     = 3, // Comma-Separated statement information
@@ -160,6 +161,7 @@ public:
 
    static constexpr enumType to_type_s( std::string_view stringType ) noexcept;
    static constexpr enumFormat to_format_s( std::string_view stringName ) noexcept;
+   static constexpr enumFormat to_format_s( std::string_view stringName, gd::types::tag_validate ) noexcept;
 
 };
 
@@ -187,6 +189,19 @@ constexpr statement::enumFormat statement::to_format_s( std::string_view stringN
         : (stringName == "xml" )                         ? eFormatXml
         : eFormatRaw; ///< default
 }
+
+/// Return enumFormat id for given name (constexpr) -------------------------- to_format_s
+constexpr statement::enumFormat statement::to_format_s( std::string_view stringName, gd::types::tag_validate ) noexcept
+{
+   // Accept a few common textual representations
+   return (stringName == "raw"  || stringName == "sql" ) ? eFormatRaw
+        : (stringName == "jinja" )                       ? eFormatJinja
+        : (stringName == "csv" )                         ? eFormatCsv
+        : (stringName == "json" )                        ? eFormatJson
+        : (stringName == "xml" )                         ? eFormatXml
+        : eFormatUnknown; ///< error, unknown format
+}
+
 
 
 

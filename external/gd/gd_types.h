@@ -300,6 +300,12 @@ struct tag_copy {};
 /// methods used for some sort of debug related logic
 struct tag_debug {};
 
+/// methods used for some validation related logic, like validating data or state
+struct tag_validate {};
+
+/// methods used to detect something, like detecting type or state
+struct tag_detect {}; 
+
 /// methods that are optimized for speed, like when there are multiple versions
 struct tag_optimize {};
 

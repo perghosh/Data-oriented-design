@@ -350,12 +350,15 @@ std::pair<bool, std::string> CApplication::Configure(const gd::cli::options& opt
          optionsActive.iif( "database-meta-tables", [&arguments_]( auto& v_ ) { arguments_.append_argument( "tables", v_ ); });
          optionsActive.iif( "database-meta-columns", [&arguments_]( auto& v_ ) { arguments_.append_argument( "columns", v_ ); });
          optionsActive.iif( "database-dialect", [&arguments_]( auto& v_ ) { arguments_.append_argument( "dialect", v_ ); });
+         optionsActive.iif( "database-statement-file", [&arguments_]( auto& v_ ) { arguments_.append_argument( "statement-file", v_ ); });
 
          result_ = m_pdocumentActive->DATABASE_Initialize();                  // initialize database connection, this is needed to be able to select metadata for tables and columns
          if( result_.first == false ) return result_;
          result_ = m_pdocumentActive->DATABASE_SelectMetadata( arguments_ );  // select metadata for tables and columns
          if( result_.first == false ) return result_;
          result_ = m_pdocumentActive->DATABASE_Prepare( arguments_ );
+         if( result_.first == false ) return result_;
+         result_ = m_pdocumentActive->DATABASE_LoadStatements( arguments_ );  // load sql statements from file if any, this is in some way metadata related
          if( result_.first == false ) return result_;
       }
    }
@@ -496,6 +499,7 @@ void CApplication::PrepareOption_s(gd::cli::options& optionsApplication)
    optionsApplication.add({"database-meta-tables", "Query to read tables from connected database"});
    optionsApplication.add({"database-meta-columns", "Query to read columns from connected database"});
    optionsApplication.add({"database-dialect", "Set the SQL dialect for the connected database"});
+   optionsApplication.add({"database-statement-file", "File with statements to load at startup"});
    
 
    {  // ## `http` command, manage settings for http server

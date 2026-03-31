@@ -20,6 +20,16 @@ std::pair<bool, std::string> statement::add( std::string_view stringName, std::s
    return add( stringName, stringStatement, eFormat, uType, uRule );
 }
 
+
+/** ------------------------------------------------------------------------ add
+ * @brief Adds a new statement to the statement table.
+ * @param stringName The name of the statement.
+ * @param stringStatement The SQL statement text.
+ * @param eFormat The format type of the statement.
+ * @param uType The type identifier for the statement.
+ * @param uRule The rule flags for the statement.
+ * @return A pair containing success status (true) and the generated UUID of the new statement.
+ */
 std::pair<bool, std::string> statement::add( std::string_view stringName, std::string_view stringStatement, enumFormat eFormat, uint32_t uType, uint32_t uRule )
 {                                                                                                  assert( m_ptableStatement != nullptr );
    auto uRow = m_ptableStatement->row_add_one();

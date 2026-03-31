@@ -553,39 +553,16 @@ std::pair<bool, std::string> CDocument::DATABASE_Prepare( const gd::argument::ar
    return { true, "" };
 }
 
-std::pair<bool, std::string> CDocument::META_LoadQueries( std::string_view stringFileName )
+std::pair<bool, std::string> CDocument::DATABASE_LoadStatements( const gd::argument::arguments& arguments_ )
 {
-   std::string stringPath;
-
-   if( std::filesystem::exists(stringPath) == false )
+   if( arguments_.exists( "statement-file" ) == true )
    {
-		return { false, "File not found: " + std::string( stringPath ) };
-	}
-
-   // ## Initialize pugixml document .........................................
-   pugi::xml_document xmldocument;
-        
-   // Load the XML file
-   pugi::xml_parse_result xmlparseresult = xmldocument.load_file(stringPath.c_str());
-        
-   if(!xmlparseresult) { return { false, "XML parsing error: " + std::string(xmlparseresult.description()) }; }
-
-   for(pugi::xml_node xmlnodeQueries : xmldocument.children("queries"))
-   {
-      for(pugi::xml_node xmlnodeQuery : xmlnodeQueries.children("query"))
-      {
-         std::string stringId = xmlnodeQuery.attribute("id").value();
-         std::string_view stringType = xmlnodeQuery.attribute("type").value();
-         std::string_view stringFormat = xmlnodeQuery.attribute("format").value();
-         // get query value
-			std::string stringQuery = xmlnodeQuery.text().get();
-      }
+      std::string stringStatementFile = arguments_["statement-file"].as_string();
+      return m_pMQueries->Load( stringStatementFile );                        // load statements to query manager, this is used to generate queries from templates
    }
-
 
    return { true, "" };
 }
-
 
 /** ---------------------------------------------------------------------------
  * @brief Add error to internal list of errors

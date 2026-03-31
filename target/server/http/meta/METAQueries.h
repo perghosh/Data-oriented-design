@@ -106,12 +106,12 @@ public:
    std::mutex m_mutexStatement;
    gd::modules::dbmeta::statement m_statement; ///< statement object holding list of statements, this is used to generate queries from templates
 
-
 // @API [tag: free-functions]
 public:
-
+   static std::pair<bool, std::string> Load_s( std::string_view stringFilename, gd::modules::dbmeta::statement& statement_, gd::types::tag_xml ); ///< Load queries from xml file
 
 
 };
+
 
 NAMESPACE_META_END

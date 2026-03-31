@@ -233,10 +233,11 @@ public:
    std::pair<bool, std::string> DATABASE_Initialize() { return DATABASE_Initialize( gd::argument::arguments() ); }
    std::pair<bool, std::string> DATABASE_SelectMetadata( const gd::argument::arguments& arguments_ );
    std::pair<bool, std::string> DATABASE_Prepare( const gd::argument::arguments& arguments_ );
+   std::pair<bool, std::string> DATABASE_LoadStatements( const gd::argument::arguments& arguments_ );
 
 // ## @API [tag: load] [description: metadata about database]
 
-   std::pair<bool, std::string> META_LoadQueries( std::string_view stringFileName );
+   //std::pair<bool, std::string> META_LoadQueries( std::string_view stringFileName );
 
 
 

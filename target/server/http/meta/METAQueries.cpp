@@ -4,8 +4,14 @@
 
 #include "gd/gd_binary.h"
 #include "gd/gd_uuid.h"
+#include "gd/gd_file.h"
+
+#include "pugixml/pugixml.hpp"
+#include "jsoncons/json.hpp"
+#include "jsoncons_ext/jsonpath/jsonpath.hpp"
 
 #include "METAQueries.h"
+
 
 NAMESPACE_META_BEGIN
 
@@ -34,22 +40,6 @@ std::pair<bool, std::string> CQueries::Initialize( const gd::argument::arguments
 
 std::pair<bool, std::string> CQueries::Add( std::string_view stringQuery, enumFormat eFormat, const gd::argument::arguments* parguments_ )
 {
-/*
-   auto uRow = m_tableQuery.row_add_one();
-   gd::uuid uuidQuery( gd::types::tag_command_random{});
-   gd::types::uuid uuidQueryAdd( uuidQuery.data() );
-   m_tableQuery.cell_set( uRow, "type", (uint16_t)eFormat );
-   m_tableQuery.cell_set( uRow, "uuid", uuidQueryAdd );
-   uint16_t uFlags = 0;
-   m_tableQuery.cell_set( uRow, "flags", gd::variant_view( uFlags ) );
-   m_tableQuery.cell_set( uRow, "query", gd::variant_view( stringQuery ) );
-
-   if( parguments_ != nullptr )
-   {
-   }
-
-   std::string stringId = gd::binary_to_hex_g( uuidQuery.data(), 16, false );
-   */
 
    return { true, "" };
 }
@@ -145,7 +135,53 @@ std::pair<bool, std::string> CQueries::GetQuery( std::string_view stringName, st
 
 std::pair<bool, std::string> CQueries::Load( std::string_view stringPath )
 {
+   gd::file::path path_( stringPath );
+
+   // ## Determine file format based on extension
+   std::string stringExtension = path_.extension().string();
+   std::transform( stringExtension.begin(), stringExtension.end(), stringExtension.begin(), ::tolower );
+   if( stringExtension == ".xml" ) { return Load_s( stringPath, m_statement, gd::types::tag_xml{} ); }
+   else { return { false, "Unsupported file format: " + stringExtension }; }
     
+   return { true, "" };
+}
+
+std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, gd::modules::dbmeta::statement& statement_, gd::types::tag_xml )
+{
+   using namespace gd::modules::dbmeta;
+
+   if( std::filesystem::exists(stringFilename) == false ) { return { false, "File not found: " + std::string( stringFilename ) };	}
+
+   // ## Initialize pugixml document .........................................
+   pugi::xml_document xmldocument;
+        
+   // Load the XML file
+   pugi::xml_parse_result xmlparseresult = xmldocument.load_file(stringFilename.data());
+   if(!xmlparseresult) { return { false, "XML parsing error: " + std::string(xmlparseresult.description()) }; }
+
+   // query statements nodes
+   for(pugi::xml_node xmlnodeStatements : xmldocument.document_element().children("statements") )
+   {
+      for(pugi::xml_node xmlnodeStatement : xmlnodeStatements.children("statement"))
+      {
+         std::string stringId = xmlnodeStatement.attribute("id").value();
+         std::string stringName = xmlnodeStatement.attribute("name").value();
+         std::string stringType = xmlnodeStatement.attribute("type").value();
+         std::string_view stringFormat = xmlnodeStatement.attribute("format").value();
+         // get query value
+         std::string stringStatement = xmlnodeStatement.text().get();
+
+         statement::enumType eType = statement::eTypeSelect;
+         if( stringType.empty() == false ) eType = statement::to_type_s( stringType );
+         if( eType == statement::eTypeUnknown ) { return { false, "Unknown statement type: " + std::string( stringType ) }; }
+
+         auto eFormat = statement::to_format_s( stringFormat, gd::types::tag_validate{} );
+         if( eFormat == statement::eFormatUnknown ) { return { false, "Unknown statement format: " + std::string( stringFormat ) }; }
+
+         statement_.add( stringName, stringStatement, eFormat, eType ); // TODO: Compmlete this, new logic
+      }
+   }
+
    return { true, "" };
 }
 
