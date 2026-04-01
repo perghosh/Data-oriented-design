@@ -33,33 +33,74 @@ std::pair<bool, std::string> length_g( const std::vector< value >& vectorArgumen
 }
 
 
-/// Return the maximum of multiple numbers. If only one argument is provided, it will be returned as the result.
+/// Return the maximum of multiple values. If the first argument is a string, all arguments will be treated
+/// as strings and the lexicographically maximum string will be returned. Otherwise, all arguments will be
+/// treated as numbers and the maximum number will be returned.
 std::pair<bool, std::string> max_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {
    if( vectorArgument.empty() ) return { false, "max requires at least 1 argument" };
-   double dMax = vectorArgument[0].as_double();
-   for( size_t i = 1; i < vectorArgument.size(); ++i )
+
+   if( vectorArgument.front().is_string() == true )
    {
-      double d = vectorArgument[i].as_double();
-      if( d > dMax ) { dMax = d; }
+      // ## Find lexicographically maximum string
+      std::string stringMax = vectorArgument[0].as_string();
+      for( size_t i = 1; i < vectorArgument.size(); ++i )
+      {
+         std::string stringCurrent = vectorArgument[i].as_string();
+         if( stringCurrent > stringMax ) { stringMax = stringCurrent; }
+      }
+      *pvalueResult = value(stringMax);
    }
-   *pvalueResult = value(dMax);
+   else
+   {
+      // ## Find maximum number
+      double dMax = vectorArgument[0].as_double();
+      for( size_t i = 1; i < vectorArgument.size(); ++i )
+      {
+         double d_ = vectorArgument[i].as_double();
+         if( d_ > dMax ) { dMax = d_; }
+      }
+      *pvalueResult = value(dMax);
+   }
+   
    return { true, "" };
 }
 
-/// Return the minimum of two numbers.
+/// Return the minimum of multiple values. If the first argument is a string, all arguments will be treated
+/// as strings and the lexicographically minimum string will be returned. Otherwise, all arguments will be
+/// treated as numbers and the minimum number will be returned.
 std::pair<bool, std::string> min_g(const std::vector<value>& vectorArgument, value* pvalueResult)
 {
    if( vectorArgument.empty() ) return { false, "min requires at least 1 argument" };
-   double dMin = vectorArgument[0].as_double();
-   for( size_t i = 1; i < vectorArgument.size(); ++i )
+
+   // Check first value if it is string or number
+   if( vectorArgument.front().is_string() == true )
    {
-      double d = vectorArgument[i].as_double();
-      if( d < dMin ) { dMin = d; }
+      // Find lexicographically minimum string
+      std::string stringMin = vectorArgument[0].as_string();
+      for( size_t i = 1; i < vectorArgument.size(); ++i )
+      {
+         std::string stringCurrent = vectorArgument[i].as_string();
+         if( stringCurrent < stringMin ) { stringMin = stringCurrent; }
+      }
+      *pvalueResult = value(stringMin);
    }
-   *pvalueResult = value(dMin);
+   else
+   {
+      // ## Find minimum number
+      double dMin = vectorArgument[0].as_double();
+      for( size_t i = 1; i < vectorArgument.size(); ++i )
+      {
+         double d_ = vectorArgument[i].as_double();
+         if( d_ < dMin ) { dMin = d_; }
+      }
+      *pvalueResult = value(dMin);
+   }
+   
    return { true, "" };
 }
+
+
 
 /// Sum multiple numbers or concatenate strings and return the result. If the first argument is a
 /// string, all arguments will be treated as strings and concatenated. Otherwise, all arguments
