@@ -395,13 +395,22 @@ Namespaces makes it easier to find functions and avoid name collisions and suppo
 | Function | Syntax | Description | Example |
 |----------|--------|-------------|---------|
 | `abs` | `abs(number)` | Returns the absolute value of a number | `abs(-5)` → `5` |
-| `average` | `average(a, b)` | Calculates the mean of two numbers | `average(10, 20)` → `15` |
+| `all_true` | `all_true(a, b, ...)` | Returns true if all values are true | `all_true(1, 2, 3)` → `true` |
+| `any_true` | `any_true(a, b, ...)` | Returns true if any value is true | `any_true(0, 1, 0)` → `true` |
+| `average` | `average(a, b, ...)` | Calculates the mean of values | `average(10, 20, 30)` → `20` |
 | `ceil` | `ceil(number)` | Rounds a number up to the nearest integer | `ceil(3.2)` → `4` |
 | `floor` | `floor(number)` | Rounds a number down to the nearest integer | `floor(3.8)` → `3` |
-| `max` | `max(a, b)` | Returns the greater of two values | `max(5, 10)` → `10` |
-| `min` | `min(a, b)` | Returns the lesser of two values | `min(5, 10)` → `5` |
+| `if` | `if(condition, true_value, false_value)` | Conditional expression | `if(5 > 3, "yes", "no")` → `"yes"` |
+| `is_not_null` | `is_not_null(value)` | Returns true if value is not null | `is_not_null(0)` → `true` |
+| `is_null` | `is_null(value)` | Returns true if value is null | `is_null(null)` → `true` |
+| `max` | `max(a, b, ...)` | Returns the maximum value | `max(5, 10, 2)` → `10` |
+| `median` | `median(a, b, ...)` | Returns the middle value | `median(1, 3, 5)` → `3` |
+| `min` | `min(a, b, ...)` | Returns the minimum value | `min(5, 10, 2)` → `2` |
+| `product` | `product(a, b, ...)` | Multiplies all numbers together | `product(2, 3, 4)` → `24` |
 | `round` | `round(number)` | Rounds a number to the nearest integer | `round(3.5)` → `4` |
-| `sum` | `sum(a, b)` | Adds two numbers together | `sum(3, 7)` → `10` |
+| `stddev` | `stddev(a, b, ...)` | Calculates standard deviation | `stddev(2, 4, 4, 4, 5, 5, 7, 9)` → `2` |
+| `sum` | `sum(a, b, ...)` | Adds all numbers together | `sum(3, 7, 5)` → `15` |
+| `variance` | `variance(a, b, ...)` | Calculates variance | `variance(2, 4, 4, 4, 5, 5, 7, 9)` → `4` |
 
 #### Logical Functions in global namespace
 
