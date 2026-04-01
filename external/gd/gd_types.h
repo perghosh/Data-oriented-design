@@ -1302,7 +1302,7 @@ concept is_arguments = requires { typename TYPE::tag_is_arguments; };
 struct uuid
 {
    uuid() { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = 0; } }
-   uuid( const uint8_t* pbData ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = pbData[i]; } }
+   explicit uuid( const uint8_t* pbData ) { for( size_t i = 0; i < 16; i++ ) { m_puData[i] = pbData[i]; } }
    uuid( std::span<uint8_t> data_ )       { assert( data_.size() >= 16 ); memcpy( m_puData, data_.data(), 16 ); }
    uuid( std::span<const uint8_t> data_ ) { assert( data_.size() >= 16 ); memcpy( m_puData, data_.data(), 16 ); }
 

@@ -1,3 +1,6 @@
+// @FILE [tag: sql, query] [description: Core logic for SQL queries] [type: source] [name: gd_sql_query.cpp]
+
+#include <array>
 
 #include "gd_utf8.h"
 #include "gd_parse.h"

@@ -89,13 +89,14 @@ enum enumFormat {
    eFormatCsv     = 3, // Comma-Separated statement information
    eFormatJson    = 4, // 
    eFormatXml     = 5,
+   eFormatMAX     = 6, // max value for format, this is used to validate format values
 };
 
 /// Statement type, this is used to know how to execute statement and also for some form of meta data
-enum enumType { eTypeUnknown = 0, eTypeSelect = 1, eTypeInsert = 2, eTypeUpdate = 3, eTypeDelete = 4, eTypeAsk = 5, eTypeBatch = 6 };
+enum enumType { eTypeUnknown = 0, eTypeSelect = 1, eTypeInsert = 2, eTypeUpdate = 3, eTypeDelete = 4, eTypeAsk = 5, eTypeBatch = 6, eTypeMAX = 7 };
 
 /// Column indexes for fixed columns in statement table
-enum enumColumn { eColumnKey, eColumnUuid, eColumnName, eColumnType, eColumnFormat, eColumnRule, eColumnStatement };
+enum enumColumn { eColumnKey, eColumnUuid, eColumnName, eColumnType, eColumnFormat, eColumnRule, eColumnStatement, eColumnDescription };
 
 // @API [tag: construction]
 public:

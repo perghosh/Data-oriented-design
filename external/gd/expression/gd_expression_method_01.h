@@ -75,16 +75,16 @@ std::pair<bool, std::string> mid_g(const std::vector<value>& vectorArgument, val
 // Arguments format: method_name(arg1, arg2, ...)
 const method pmethodDefault_g[] = {
    { (void*)&abs_g, "abs", 1, 1},                    // abs(number) - absolute value
-   { (void*)&average_g, "average", 2, 1},           // average(a, b) - mean of two numbers
+   { (void*)&average_g, "average", 1, 1, method::eFlagVarArgs },// average(a, b, ...) — min 1 arg
    { (void*)&ceil_g, "ceil", 1, 1},                 // ceil(number) - round up to integer
    { (void*)&floor_g, "floor", 1, 1},               // floor(number) - round down to integer
    { (void*)&if_g, "if", 3, 1 },                    // if(condition, true_value, false_value)
    { (void*)&is_not_null_g, "is_not_null", 1, 1 },  // is_not_null(value) - check not null
    { (void*)&is_null_g, "is_null", 1, 1 },          // is_null(value) - check if null
-   { (void*)&max_g, "max", 2, 1 },                  // max(a, b) - greater of two values
-   { (void*)&min_g, "min", 2, 1 },                  // min(a, b) - lesser of two values
+   { (void*)&max_g, "max", 1, 1, method::eFlagVarArgs },// max(a, b, ...)     — max 1 arg
+   { (void*)&min_g, "min", 1, 1, method::eFlagVarArgs },// min(a, b, ...)     — min 1 arg
    { (void*)&round_g, "round", 1, 1 },              // round(number) - round to nearest integer
-   { (void*)&sum_g, "sum", 2, 1 }                   // sum(a, b) - add two numbers
+   { (void*)&sum_g, "sum", 1, 1, method::eFlagVarArgs } // sum(a, b, ...)     — min 1 arg
 };
 
 // Calculate array size at compile time

@@ -36,10 +36,10 @@ std::pair<bool, std::string> statement::add( std::string_view stringName, std::s
    uint32_t uKey = (uint32_t)uRow;
    m_ptableStatement->cell_set( uRow, eColumnKey, (uint32_t)uKey );
    m_ptableStatement->cell_set( uRow, eColumnUuid, gd::types::uuid_generate_g() );
-   m_ptableStatement->cell_set( uRow, eColumnName, stringName );
-   m_ptableStatement->cell_set( uRow, eColumnType, (uint32_t)uType );
-   m_ptableStatement->cell_set( uRow, eColumnFormat, (uint32_t)eFormat );
-   m_ptableStatement->cell_set( uRow, eColumnRule , uRule );
+   m_ptableStatement->cell_set( uRow, eColumnName, stringName );             // name of the statement, this can be used to identify statement
+   m_ptableStatement->cell_set( uRow, eColumnType, (uint32_t)uType );        // type of query statement to know what type of operation to perform.
+   m_ptableStatement->cell_set( uRow, eColumnFormat, (uint32_t)eFormat );    // format is used to know how to parse statement 
+   m_ptableStatement->cell_set( uRow, eColumnRule, uRule );                  // rule is optional, if not provided set to 0, this can be used for future extensions or flags related to statement execution, rule is for now just a placeholder for future use
    m_ptableStatement->cell_set( uRow, eColumnStatement, stringStatement );
 
    std::string stringUuid = m_ptableStatement->cell_get_variant_view( uRow, eColumnUuid ).as_string();
@@ -47,6 +47,29 @@ std::pair<bool, std::string> statement::add( std::string_view stringName, std::s
    return { true, stringUuid }; 
 }
 
+/** ------------------------------------------------------------------------ add
+ * @brief Adds a new statement row to the statement table with values from the provided arguments.
+ * 
+ * @code
+ * gd::argument::arguments argumentsStatement;
+ * argumentsStatement.append( "uuid", "550e8400-e29b-41d4-a716-446655440000" );
+ * argumentsStatement.append( "name", "SampleStatement" );
+ * argumentsStatement.append( "format", "xml" );
+ * argumentsStatement.append( "type", "select" );
+ * argumentsStatement.append( "rule", "default" );
+ * argumentsStatement.append( "statement", "SELECT 1" );
+ * argumentsStatement.append( "description", "Example statement row" );
+ * 
+ * auto pairResult = statementInstance.add( argumentsStatement );
+ * if( pairResult.first == false )
+ * {
+ *    // handle error in `pairResult.second`
+ * }
+ * @endcode
+ * 
+ * @param argumentsStatement Arguments containing statement properties (uuid, name, format, type, rule, statement, description). Missing or invalid values trigger defaults or auto-generation.
+ * @return Pair containing success boolean and error message string (empty on success).
+ */
 std::pair<bool, std::string> statement::add( const gd::argument::arguments& argumentsStatement )
 {                                                                                                  assert( m_ptableStatement != nullptr );
    std::pair<bool, std::string> result_;
@@ -59,7 +82,7 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
    // ### UUID value, if not provided or invalid generate a new one
 
    auto uuid_ = argumentsStatement["uuid"];
-   if( uuid_.is_string() == true )
+   if( uuid_.is_string() == true && uuid_.is_true() )
    {
       // ## Try to parse the UUID from the string, if it fails generate a new one
       gd::types::uuid uuidValue;
@@ -102,6 +125,7 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
    uint32_t uFormat = (uint32_t)eFormatRaw;
    if( format_.is_string() == true ) uFormat = to_format_s( format_.as_string_view() );
    else if( format_.is_number() == true ) uFormat = format_.as_uint();
+   if( uFormat == 0 || uFormat >= (uint32_t)eFormatMAX ) { return { false, "Invalid format value: " + std::to_string( uFormat ) }; }
    m_ptableStatement->cell_set( uRow, eColumnFormat, uFormat );
 
    // ### Type value, if not provided set to eTypeUnknown
@@ -110,6 +134,7 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
    uint32_t uType = (uint32_t)eTypeUnknown;
    if( type_.is_string() == true ) uType = to_format_s( type_.as_string_view() );
    else if( type_.is_number() == true ) uType = type_.as_uint();
+   if( uType == 0 || uType >= (uint32_t)eTypeMAX ) { return { false, "Invalid type value: " + std::to_string( uType ) }; }
    m_ptableStatement->cell_set( uRow, eColumnType, uType );
 
    // ### Rule value, if not provided set to 0
@@ -121,6 +146,9 @@ std::pair<bool, std::string> statement::add( const gd::argument::arguments& argu
 
    auto statement_ = argumentsStatement["statement"];
    if( statement_.is_string() == true ) m_ptableStatement->cell_set( uRow, eColumnStatement, statement_.as_string_view() );
+
+   auto description_ = argumentsStatement["description"];
+   if( description_.is_string() == true && description_.is_true() ) m_ptableStatement->cell_set( uRow, eColumnDescription, description_.as_string_view() );
 
    return { true, "" };
 }
@@ -195,6 +223,7 @@ void statement::create_statement_s( gd::table::arguments::table& tableStatement 
       { "uint32",   0, "format"      }, // statement format, this is used to determine how to generate sql statement, and how to parse arguments for statement
       { "uint32",   0, "rule"        }, // statement rule, this is used to determine how to use statement, and what is allowed for statement
       { "rstring",  0, "statement"   }, // raw data for statement, this is used to store the actual sql statement template, this can also be used to store other types of statements if needed
+      { "string",   0, "description" }, // optional description for statement, this can be used to provide additional information about statement, like what it does, or how to use it
    }, gd::table::tag_type_name{});
    tableStatement.prepare();
 }

@@ -32,6 +32,34 @@ auto valueResult = gd::expression::token::calculate_s("min( 100, 200 ) + 999 + m
 auto valueResult = gd::expression::token::calculate_s( "10 >= x", {{"x", 10}} );
 */
 
+TEST_CASE("[expression] vararg", "[expression]") {
+   {
+      {
+         auto valueResult = gd::expression::token::calculate_s( "MAXIMUM = 100; MAXIMUM" );
+         std::cout << "Result: " << valueResult.as_string() << std::endl;
+      }
+      
+      {
+         auto valueResult = gd::expression::token::calculate_s( "MAXIMUM = 100; MAXIMUM = 111; MAXIMUM" );
+         std::cout << "Result: " << valueResult.as_string() << std::endl;
+      }
+
+      {
+         auto valueResult = gd::expression::token::calculate_s( "MAXIMUM = max(20, 40); MAXIMUM" );
+         std::cout << "Result: " << valueResult.as_string() << std::endl;
+      }
+
+      auto valueResult = gd::expression::token::calculate_s( "x = 10; x" );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+
+      valueResult = gd::expression::token::calculate_s("sum( 1,1,1 )");
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+
+      valueResult = gd::expression::token::calculate_s( "sum( '1','2','3' )" );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+   }
+}
+
 TEST_CASE("[expression] test expression", "[expression]") {
    {
       auto valueResult = gd::expression::token::calculate_s("str::tolower( text )", { {"text", "ABCDEFGHI"} });
@@ -43,7 +71,6 @@ TEST_CASE("[expression] test expression", "[expression]") {
 
 
 TEST_CASE( "[expression] create and read", "[expression]" ) {
-   /*
    CApplication application;
    application.Initialize();
 
@@ -65,6 +92,15 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
       for( auto& it : variables_ ) {
          std::cout << "Variable: " << it.first << " = " << gd::expression::value( it.second ).as_string() << std::endl;
       }
+
+      valueResult = gd::expression::token::calculate_s( "max(20, 40)" );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+
+      valueResult = gd::expression::token::calculate_s( "max = max(20, 40); max" );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
+
+      valueResult = gd::expression::token::calculate_s( "max( (20 + 40), (10000 + 10) )" );
+      std::cout << "Result: " << valueResult.as_string() << std::endl;
 
       valueResult = gd::expression::token::calculate_s( "max = max( (20 + 40), (10 + 10) ); min = min( (20 + 40), (10 + 10) ); min" );
       std::cout << "Result: " << valueResult.as_string() << std::endl;
@@ -215,5 +251,4 @@ TEST_CASE( "[expression] create and read", "[expression]" ) {
       for( const auto& it : vectorCalculate ) { std::cout << "[ \"" << it.get_name() << "\" (" << it.get_type() << ") ] "; }
       std::cout << "\n\n";
    }
-   */
 }

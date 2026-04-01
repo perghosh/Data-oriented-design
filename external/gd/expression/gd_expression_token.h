@@ -110,6 +110,14 @@ enum enumTokenPart
    eTokenPartType            = 1,
 };
 
+/// token flags, these are used to mark special properties of tokens, such as whether they are an assignment target
+/// Note that this is advanced and used to handle special cases in parsing and evaluation, such as when a token can be assigned to (e.g., a variable) or when it is part of an assignment operation.
+enum enumTokenFlags : uint32_t 
+{
+    eTokenFlagNone = 0,
+    eTokenFlagAssign = 0x01000000,                                           // Bit 24 avoiding conflict with token type bits (0-7), value type bits (8-15), function type bits (16-23)
+};
+
 /**
  * @brief Represents a token in an expression.
  *
@@ -185,8 +193,13 @@ struct token
    uint32_t get_token_type() const { return m_uType & 0xFF; }
    uint32_t get_value_type() const { return ( m_uType >> 8 ) & 0xFF; }
    uint32_t get_function_type() const { return ( m_uType & 0xFF00 ); }
-   uint32_t get_token_part() const { return ( m_uType >> 16 ) & 0xFF; }
-   uint32_t get_token_group() const { return ( m_uType >> 24 ) & 0xFF; }
+
+   uint32_t get_arg_count() const { return ( m_uType >> 16 ) & 0xFF; }   ///< actual arg count for varargs functions (0 = use method's in_count)
+   void     set_arg_count(uint32_t uCount) { m_uType = (m_uType & 0xFF00FFFF) | ((uCount & 0xFF) << 16); }
+
+   bool is_assign() const { return (m_uType & eTokenFlagAssign) != 0; }
+   void set_assign(bool bSet = true) { if(bSet) m_uType |= eTokenFlagAssign; else m_uType &= ~eTokenFlagAssign; }
+
 
 // ## methods -----------------------------------------------------------------
    void set_type(uint32_t type) { m_uType = type; }

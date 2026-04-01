@@ -3977,6 +3977,7 @@ bool CApplication::IsTextFile_s(const std::string_view& stringExtension)
 
 std::pair<bool, std::string> CApplication::PrepareWindows_s()
 {
+   if( papplication_g == nullptr ) { return { true, "Global application pointer is null" }; }
    // Initialize COM library
    HRESULT iResult = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
    if( FAILED(iResult) ) { return {false, "Failed to initialize COM library. HRESULT: " + std::to_string(iResult)}; }
@@ -4013,6 +4014,8 @@ std::pair<bool, std::string> CApplication::PrepareWindows_s()
 
 std::pair<bool, std::string> CApplication::ExitWindows_s()
 {
+   if( papplication_g == nullptr ) { return { true, "" }; }
+
    // Uninitialize the COM library
    CoUninitialize();
 

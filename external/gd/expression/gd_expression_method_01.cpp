@@ -10,24 +10,13 @@ _GD_EXPRESSION_BEGIN
 //============================================================================
 
 
+/// 
 std::pair<bool, std::string> average_g(const std::vector<value>& vectorArgument, value* pvalueResult)
-{                                                                                                  assert(vectorArgument.size() > 2);
-   const auto& l_ = vectorArgument[0]; 
-   const auto& r_ = vectorArgument[1];
-
-   if(  l_.is_integer() == true && r_.is_integer() == true )
-   {
-      *pvalueResult = ( l_.as_integer() + r_.as_integer() ) / 2;
-   }
-   else if( l_.is_double() == true && r_.is_double() == true )
-   {
-      *pvalueResult = ( l_.as_double() + r_.as_double() ) / 2.0;
-   }
-   else
-   {
-      return { false, "average_g - Invalid argument type" };
-   }
-
+{
+   if( vectorArgument.empty() ) return { false, "average requires at least 1 argument" };
+   double dSum = 0.0;
+   for( const auto& v : vectorArgument ) { dSum += v.as_double(); }
+   *pvalueResult = value(dSum / static_cast<double>(vectorArgument.size()));
    return { true, "" };
 }
 
@@ -43,67 +32,58 @@ std::pair<bool, std::string> length_g( const std::vector< value >& vectorArgumen
    return { true, "" };
 }
 
-/// Return the maximum of two numbers.
+
+/// Return the maximum of multiple numbers. If only one argument is provided, it will be returned as the result.
 std::pair<bool, std::string> max_g(const std::vector<value>& vectorArgument, value* pvalueResult)
-{                                                                                                  assert(vectorArgument.size() > 1);
-   const auto& l_ = vectorArgument[0];
-   const auto& r_ = vectorArgument[1];
-
-   if( l_.is_integer() == true && r_.is_integer() == true )
+{
+   if( vectorArgument.empty() ) return { false, "max requires at least 1 argument" };
+   double dMax = vectorArgument[0].as_double();
+   for( size_t i = 1; i < vectorArgument.size(); ++i )
    {
-      *pvalueResult = std::max(l_.as_integer(), r_.as_integer());
+      double d = vectorArgument[i].as_double();
+      if( d > dMax ) { dMax = d; }
    }
-   else if( l_.is_double() == true && r_.is_double() == true )
-   {
-      *pvalueResult = std::max(l_.as_double(), r_.as_double());
-   }
-   else
-   {
-      return { false, "max_g - Invalid argument type" };
-   }
-  
+   *pvalueResult = value(dMax);
    return { true, "" };
 }
 
-/// Returns the minimum of two values.
+/// Return the minimum of two numbers.
 std::pair<bool, std::string> min_g(const std::vector<value>& vectorArgument, value* pvalueResult)
-{                                                                                                  assert(vectorArgument.size() > 1);
-   const auto& l_ = vectorArgument[0];
-   const auto& r_ = vectorArgument[1];
-   
-   if( l_.is_integer() == true && r_.is_integer() == true )
+{
+   if( vectorArgument.empty() ) return { false, "min requires at least 1 argument" };
+   double dMin = vectorArgument[0].as_double();
+   for( size_t i = 1; i < vectorArgument.size(); ++i )
    {
-      *pvalueResult = std::min(l_.as_integer(), r_.as_integer());
+      double d = vectorArgument[i].as_double();
+      if( d < dMin ) { dMin = d; }
    }
-   else if( l_.is_double() == true && r_.is_double() == true )
-   {
-      *pvalueResult = std::min(l_.as_double(), r_.as_double());
-   }
-   else
-   {
-      return { false, "min_g - Invalid argument type" };
-   }
-
+   *pvalueResult = value(dMin);
    return { true, "" };
 }
 
-/// Sum two numbers and return the result.
+/// Sum multiple numbers or concatenate strings and return the result. If the first argument is a
+/// string, all arguments will be treated as strings and concatenated. Otherwise, all arguments
+/// will be treated as numbers and summed.
 std::pair<bool, std::string> sum_g(const std::vector<value>& vectorArgument, value* pvalueResult)
-{                                                                                                  assert(vectorArgument.size() > 1);
-   const auto& l_ = vectorArgument[0];
-   const auto& r_ = vectorArgument[1];
-   
-   if( l_.is_integer() == true && r_.is_integer() == true )
+{
+   if( vectorArgument.empty() ) return { false, "sum requires at least 1 argument" };
+
+   // ## Check first value if it is string or number
+   if( vectorArgument.front().is_string() == true )                           // if first value is string, we will concatenate all values as strings, otherwise we will sum them as numbers
    {
-      *pvalueResult = l_.as_integer() + r_.as_integer();
-   }
-   else if( l_.is_double() == true && r_.is_double() == true )
-   {
-      *pvalueResult = l_.as_double() + r_.as_double();
+      std::string stringResult;
+      // ## Concatenate all values as strings, note that vector is in reverse order, so we will concatenate them in reverse order to get the correct result
+      for( auto it = vectorArgument.rbegin(), itEnd = vectorArgument.rend(); it != itEnd; ++it )
+      {
+         stringResult += it->as_string();
+      }
+      *pvalueResult = value(stringResult);
    }
    else
    {
-      return { false, "sum_g - Invalid argument type" };
+      double dSum = 0.0;
+      for( const auto& v : vectorArgument ) { dSum += v.as_double(); }
+      *pvalueResult = value(dSum);
    }
 
    return { true, "" };

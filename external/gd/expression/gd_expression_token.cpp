@@ -943,6 +943,11 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
 * - Commas pop operators back to ( without removing the (
 * - Closing ) pops operators, removes (, and outputs function if present
 *
+* For varargs functions, the actual argument count is counted during compilation
+* by tracking commas within each function call frame. The count is stamped
+* into the function token (bits 16-23 of m_uType) before it is emitted to
+* the output. calculate_s reads this count at runtime when eFlagVarArgs is set.
+*
 * @param vectorIn Input vector of tokens to be compiled.
 * @param vectorOut Output vector to store the compiled tokens in postfix notation.
 * @param tag_postfix Tag to indicate the compilation mode (postfix in this case).
@@ -951,9 +956,11 @@ std::pair<bool, std::string> token::parse_s(const char* piszBegin, const char* p
 std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix)
 {
    std::stack<token> stackOperator;
+   std::stack<unsigned> stackArgCount;  ///< actual arg count per nested function call frame, used for varargs dispatch
 
-   for( const auto& token_ : vectorIn )
+   for( auto itToken = vectorIn.begin(); itToken != vectorIn.end(); ++itToken )
    {
+      const auto& token_ = *itToken;
 #ifndef NDEBUG
       auto stringToken_d = token_.get_name();
 #endif
@@ -1000,14 +1007,25 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
          break;
 
       case token_type_s("VARIABLE"):
-         vectorOut.push_back(token_);
-         break;
+      {
+         // ## Special handling for variables followed by = operator to treat as assignment rather than comparison
+         auto itPeek = itToken + 1;
+         if( itPeek != vectorIn.end() && itPeek->get_token_type() == token_type_s("OPERATOR") && itPeek->get_name() == "=" )
+         {
+            auto tokenAssign = *itToken;
+            tokenAssign.set_assign();
+            vectorOut.push_back(tokenAssign);
+         }
+         else { vectorOut.push_back(token_); }
+      }
+      break;
 
       case token_type_s("FUNCTION"):
          stackOperator.push(token_);
+         stackArgCount.push(1);                                               // start at 1; will be set to 0 at ')' if call is empty
          break;
 
-      case token::token_type_s("SEPARATOR"):
+      case token_type_s("SEPARATOR"):
       {
          auto stringToken = token_.get_name();
          char iCharacter = stringToken[0];
@@ -1023,6 +1041,8 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
                vectorOut.push_back(stackOperator.top());
                stackOperator.pop();
             }
+            // Each comma separates one more argument in the nearest enclosing function call
+            if( stackArgCount.empty() == false ) { stackArgCount.top()++; }
          }
          else if( iCharacter == ';' )
          {
@@ -1042,33 +1062,44 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       {
          auto stringToken = token_.get_name();
          char iCharacter = stringToken[0];
-         if( iCharacter == '(' )
-         {
-            stackOperator.push(token_);
-         }
+         if( iCharacter == '(' ) { stackOperator.push( token_ ); }             // "(" Push left parenthesis to stack
          else if( iCharacter == ')' )
          {
-            // Pop operators until we find the matching left parenthesis
+            bool bPoppedGroupingParenthesis = false;  // Track if we popped a grouping parenthesis
+
+            // Pop operators until we find the matching '(' or a FUNCTION token.
+            // When parse_s(tag_formula) parses "name(", it consumes the '(' inside
+            // read_variable_and_s and never emits a SPECIAL_CHAR:"(" token. In that
+            // case the FUNCTION sits directly on the stack with no '(' below it, so
+            // we must stop at the FUNCTION token just as we stop at '('.
             while( stackOperator.empty() == false )
             {
-               auto stringOperator = stackOperator.top().get_name();
-               if( stringOperator == "(" ) { break; }
+               if( stackOperator.top().get_name() == "(" ) { break; }
+               if( stackOperator.top().get_token_type() == token_type_s("FUNCTION") ) { break; }
                vectorOut.push_back(stackOperator.top());
                stackOperator.pop();
             }
 
-            // Remove the left parenthesis from stack
+            // Remove the explicit '(' from the stack if one was present.
+            // (Only emitted when the expression contains a standalone '(' token,
+            // e.g. sub-expressions like "(a + b)" rather than function calls.)
             if( stackOperator.empty() == false && stackOperator.top().get_name() == "(" ) 
             { 
                stackOperator.pop(); 
+               bPoppedGroupingParenthesis = true;
             }
 
-            // If there's a function on top of the stack, add it to output
-            if( stackOperator.empty() == false && 
-               stackOperator.top().get_token_type() == token_type_s("FUNCTION") )
+            // Emit the FUNCTION token with the arg count stamped in.
+            if( bPoppedGroupingParenthesis == false && stackOperator.empty() == false && stackOperator.top().get_token_type() == token_type_s("FUNCTION") )
             {
-               vectorOut.push_back(stackOperator.top());
+               token tokenFunction = stackOperator.top();
                stackOperator.pop();
+
+               unsigned uArgCount = stackArgCount.empty() ? 1 : stackArgCount.top();
+               if( stackArgCount.empty() == false ) { stackArgCount.pop(); }
+               tokenFunction.set_arg_count(uArgCount);                        // stamp actual arg count for varargs dispatch in calculate_s
+
+               vectorOut.push_back(std::move(tokenFunction));
             }
          }
          else
@@ -1115,9 +1146,11 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
 std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix_no_precedence)
 {
    std::stack<token> stackOperator;
+   std::stack<unsigned> stackArgCount;  ///< actual arg count per nested function call frame, used for varargs dispatch
 
-   for( const auto& token_ : vectorIn )
+   for( auto itToken = vectorIn.begin(); itToken != vectorIn.end(); ++itToken )
    {
+      const auto& token_ = *itToken;
 #ifndef NDEBUG
       auto stringToken_d = token_.get_name();
 #endif
@@ -1126,19 +1159,29 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
       switch( uTokenType )
       {
       case token_type_s("OPERATOR"):
-         {
-            // No precedence checking - just output operator immediately
-            vectorOut.push_back(token_);
-         }
+      {
+         vectorOut.push_back(token_);                                        // No precedence checking - just output operator immediately
+      }
       break;
       case token_type_s("VALUE"):
          vectorOut.push_back(token_);
       break;
       case token_type_s("VARIABLE"):
-         vectorOut.push_back(token_);
+      {
+         // ## Special handling for variables followed by = operator to treat as assignment rather than comparison
+         auto itPeek = itToken + 1;
+         if( itPeek != vectorIn.end() && itPeek->get_token_type() == token_type_s("OPERATOR") && itPeek->get_name() == "=" )
+         {
+            auto tokenAssign = *itToken;
+            tokenAssign.set_assign();
+            vectorOut.push_back(tokenAssign);
+         }
+         else { vectorOut.push_back(token_); }
+      }
       break;
       case token_type_s("FUNCTION"):
          stackOperator.push(token_);
+         stackArgCount.push(1);          // start at 1; will be set to 0 at ')' if call is empty
       break;
       case token::token_type_s("SEPARATOR"):
          {
@@ -1155,6 +1198,8 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
                      stackOperator.pop();
                   }
                }
+               // Each comma separates one more argument in the nearest enclosing function call
+               if( stackArgCount.empty() == false ) { stackArgCount.top()++; }
             }
             else if( iCharacter == ';' )
             {
@@ -1179,14 +1224,35 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
             }
             else if( iCharacter == ')' )
             {
+               bool bPoppedGroupingParenthesis = false;  // Track if we popped a grouping parenthesis
+
+               // Stop at '(' or FUNCTION — see compile_s(tag_postfix) for full explanation.
                while( stackOperator.empty() == false )
                {
-                  auto stringOperator = stackOperator.top().get_name();
-                  if( stringOperator == "(" ) { break; }
+                  if( stackOperator.top().get_name() == "(" ) { break; }
+                  if( stackOperator.top().get_token_type() == token_type_s("FUNCTION") ) { break; }
                   vectorOut.push_back(stackOperator.top());
                   stackOperator.pop();
                }
-               if( stackOperator.empty() == false ) { stackOperator.pop(); }
+               // Remove explicit '(' if present.
+               if( stackOperator.empty() == false && stackOperator.top().get_name() == "(" ) 
+               { 
+                  stackOperator.pop(); 
+                  bPoppedGroupingParenthesis = true;
+               }
+
+               // Emit the FUNCTION token with the stamped arg count.
+               if( bPoppedGroupingParenthesis == false && stackOperator.empty() == false && stackOperator.top().get_token_type() == token_type_s("FUNCTION") )
+               {
+                  token tokenFunction = stackOperator.top();
+                  stackOperator.pop();
+
+                  unsigned uArgCount = stackArgCount.empty() ? 1 : stackArgCount.top();
+                  if( stackArgCount.empty() == false ) { stackArgCount.pop(); }
+                  tokenFunction.set_arg_count(uArgCount);                      // stamp actual arg count for varargs dispatch in calculate_s
+
+                  vectorOut.push_back(std::move(tokenFunction));
+               }
             }
             else
             {
@@ -1210,104 +1276,6 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
    return { true, "" };
 }
 
-/*
-std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn, std::vector<token>& vectorOut, tag_postfix_no_precedence)
-{
-   std::stack<token> stackOperator;
-
-   for( const auto& token_ : vectorIn )
-   {
-#ifndef NDEBUG
-      auto stringToken_d = token_.get_name();
-#endif
-
-      uint32_t uTokenType = token_.get_token_type();
-      switch( uTokenType )
-      {
-      case token_type_s("OPERATOR"):
-         {
-            // No precedence checking - just output operator immediately
-            vectorOut.push_back(token_);
-         }
-      break;
-      case token_type_s("VALUE"):
-         vectorOut.push_back(token_);
-      break;
-      case token_type_s("VARIABLE"):
-         vectorOut.push_back(token_);
-      break;
-      case token_type_s("FUNCTION"):
-         stackOperator.push(token_);
-      break;
-      case token::token_type_s("SEPARATOR"):
-         {
-            auto stringToken = token_.get_name();
-            char iCharacter = stringToken[0];
-            if( iCharacter == ',' )
-            {
-               if( stackOperator.empty() == false )
-               {
-                  auto& tokenTop = stackOperator.top();
-                  if( tokenTop.get_token_type() == token_type_s("VALUE") || tokenTop.get_token_type() == token_type_s("VARIABLE") ) 
-                  { 
-                     vectorOut.push_back(std::move(tokenTop));
-                     stackOperator.pop();
-                  }
-               }
-            }
-            else if( iCharacter == ';' )
-            {
-               while( stackOperator.empty() == false )
-               {
-                  vectorOut.push_back(stackOperator.top());
-                  stackOperator.pop();
-               }
-               vectorOut.push_back(std::move(token_));
-            }
-            else { return { false, "[compile_s] - Unsupported separator: " + std::string(stringToken) }; }
-         }
-      break;
-
-      case token_type_s("SPECIAL_CHAR"):
-         {
-            auto stringToken = token_.get_name();
-            char iCharacter = stringToken[0];
-            if( iCharacter == '(' )
-            {
-               stackOperator.push(token_);
-            }
-            else if( iCharacter == ')' )
-            {
-               while( stackOperator.empty() == false )
-               {
-                  auto stringOperator = stackOperator.top().get_name();
-                  if( stringOperator == "(" ) { break; }
-                  vectorOut.push_back(stackOperator.top());
-                  stackOperator.pop();
-               }
-               if( stackOperator.empty() == false ) { stackOperator.pop(); }
-            }
-            else { vectorOut.push_back(token_); }
-         }
-      break;
-
-      default:
-         assert( false );
-         break;
-      }
-   }
-
-   while( stackOperator.empty() == false )
-   {
-      vectorOut.push_back( stackOperator.top() );
-      stackOperator.pop();
-   }
-
-   return { true, "" };
-}
-*/
-
-
 /** --------------------------------------------------------------------------
  * @brief Compiles tokens to postfix using custom operator precedence.
  *
@@ -1321,9 +1289,11 @@ std::pair<bool, std::string> token::compile_s(const std::vector<token>& vectorIn
 std::pair<bool, std::string> token::compile_with_precedence_s( const std::vector<token>& vectorIn, std::vector<token>& vectorOut, const std::map<std::string, int>& mapPrecedence)
 {
    std::stack<token> stackOperator;
+   std::stack<unsigned> stackArgCount;  ///< actual arg count per nested function call frame, used for varargs dispatch
 
-   for( const auto& token_ : vectorIn )
+   for( auto itToken = vectorIn.begin(); itToken != vectorIn.end(); ++itToken )
    {
+      const auto& token_ = *itToken;
       uint32_t uTokenType = token_.get_token_type();
       
       switch( uTokenType )
@@ -1367,12 +1337,24 @@ std::pair<bool, std::string> token::compile_with_precedence_s( const std::vector
          break;
          
       case token_type_s("VALUE"):
-      case token_type_s("VARIABLE"):
          vectorOut.push_back(token_);
          break;
+      case token_type_s("VARIABLE"):
+      {
+         auto itPeek = itToken + 1;
+         if( itPeek != vectorIn.end() && itPeek->get_token_type() == token_type_s("OPERATOR") && itPeek->get_name() == "=" )
+         {
+            auto tokenAssign = *itToken;
+            tokenAssign.set_assign();
+            vectorOut.push_back(tokenAssign);
+         }
+         else { vectorOut.push_back(token_); }
+      }
+      break;
          
       case token_type_s("FUNCTION"):
          stackOperator.push(token_);
+         stackArgCount.push(1);          // start at 1; will be set to 0 at ')' if call is empty
          break;
          
       case token_type_s("SEPARATOR"):
@@ -1383,9 +1365,12 @@ std::pair<bool, std::string> token::compile_with_precedence_s( const std::vector
             {
                while( stackOperator.empty() == false && stackOperator.top().get_name() != "(" )
                {
+                  if( stackOperator.top().get_token_type() == token_type_s("FUNCTION") ) { break; }
                   vectorOut.push_back(stackOperator.top());
                   stackOperator.pop();
                }
+               // Each comma separates one more argument in the nearest enclosing function call
+               if( stackArgCount.empty() == false ) { stackArgCount.top()++; }
             }
             else if( iCharacter == ';' )
             {
@@ -1409,20 +1394,34 @@ std::pair<bool, std::string> token::compile_with_precedence_s( const std::vector
             }
             else if( iCharacter == ')' )
             {
+               bool bPoppedGroupingParenthesis = false;  // Track if we popped a grouping parenthesis
+
+               // Stop at '(' or FUNCTION — see compile_s(tag_postfix) for full explanation.
                while( stackOperator.empty() == false )
                {
-                  auto stringOperator = stackOperator.top().get_name();
-                  if( stringOperator == "(" ) { break; }
+                  if( stackOperator.top().get_name() == "(" ) { break; }
+                  if( stackOperator.top().get_token_type() == token_type_s("FUNCTION") ) { break; }
                   vectorOut.push_back(stackOperator.top());
                   stackOperator.pop();
                }
-               if( stackOperator.empty() == false ) { stackOperator.pop(); }
-               
-               if( stackOperator.empty() == false && 
-                   stackOperator.top().get_token_type() == token_type_s("FUNCTION") )
+               // Remove explicit '(' if present.
+               if( stackOperator.empty() == false && stackOperator.top().get_name() == "(" ) 
                {
-                  vectorOut.push_back(stackOperator.top());
+                  stackOperator.pop(); 
+                  bPoppedGroupingParenthesis = true;
+               }
+               
+               // ## Emit the FUNCTION token with the stamped arg count if we stopped at a function token (not a grouping parenthesis)
+               if( bPoppedGroupingParenthesis == false && stackOperator.empty() == false && stackOperator.top().get_token_type() == token_type_s("FUNCTION") )
+               {
+                  token tokenFunction = stackOperator.top();
                   stackOperator.pop();
+
+                  unsigned uArgCount = stackArgCount.empty() ? 1 : stackArgCount.top();
+                  if( stackArgCount.empty() == false ) { stackArgCount.pop(); }
+                  tokenFunction.set_arg_count(uArgCount);                      // stamp actual arg count for varargs dispatch in calculate_s
+
+                  vectorOut.push_back(std::move(tokenFunction));
                }
             }
          }
@@ -1518,6 +1517,12 @@ value evaluate_operator_g(const std::string_view& stringOperator, value& valueLe
  * - For operators: pops two values from stack, applies operator, pushes result
  * - For values: pushes token value to stack
  * - For variables: looks up value in runtime context and pushes to stack
+ * - For functions: pops arguments, dispatches to registered method, pushes result
+ *
+ * For varargs functions (eFlagVarArgs set), the actual argument count is read
+ * from the function token (stamped by compile_s). For fixed-arity functions,
+ * in_count() is used as usual. All other dispatch paths (runtime/non-runtime,
+ * single/multi return) remain unchanged.
  * 
  * @param vectorToken Vector of tokens in postfix notation
  * @param pvectorReturn Pointer to store the resulting values from the calculation
@@ -1538,7 +1543,7 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
       {
       case token::token_type_s("OPERATOR"):
          {
-            if( stackValue.size() < 2 ) // need at least two values on stack for binary operator
+            if( stackValue.size() < 1 )                                       // need at least one value on stack for binary operator
             {
                return { false, "[calculate_s] - Not enough values on stack for operator: " + std::string(token_.get_name()) };
             }
@@ -1577,36 +1582,23 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
       case token::token_type_s("VARIABLE"):
          {
             auto stringVariable = token_.get_name();
-            int iIndex = runtime_.find_variable(stringVariable);
-            if( iIndex >= 0 )
-            {
-               stackValue.push(value( runtime_.get_variable(iIndex) ));
-            }
+
+            if( token_.is_assign() ) { stringAssignVariable.assign( stringVariable ); } // if this variable is marked for assignment, prepare it for assignment and push empty value to stack, the actual value will be assigned when we process assign operator
             else
             {
-               // ## try to find variable using callback
-               auto stringVariable = token_.get_name();
-               value::variant_t variantValue;
-               bool bFound = runtime_.find_value(stringVariable, &variantValue);
-               if( bFound == true )
+               int iIndex = runtime_.find_variable(stringVariable);
+               if( iIndex >= 0 )
                {
-                  stackValue.push(value( variantValue ));
+                  stackValue.push(value( runtime_.get_variable(iIndex) ));
                }
                else
                {
-                  // peek for assign operator
-                  auto itPeek = itToken;
-                  ++itPeek;                                                   // peek next token
-                  if( itPeek != vectorToken.end() && itPeek->get_token_type() == token::token_type_s("OPERATOR") && itPeek->get_name() == "=" )
-                  {
-                     // this is an assign operator, prepare variable for assignment
-                     stringAssignVariable.assign( stringVariable );          // prepare this for assign operator, only one assign value can be active at any given time
-                  }
-                  else
-                  {
-                     // push nullptr value to stack
-                     stackValue.push(value());                                   // push empty value to stack
-                  }
+                  // ## try to find variable using callback
+                  auto stringVariable = token_.get_name();
+                  value::variant_t variantValue;
+                  bool bFound = runtime_.find_value(stringVariable, &variantValue);
+                  if( bFound == true ) { stackValue.push(value( variantValue )); }
+                  else { return { false, "[calculate_s] - Variable not found: " + std::string(stringVariable) }; }
                }
             }
          }
@@ -1627,13 +1619,31 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
 
             if( pmethod_ != nullptr )
             {
-               unsigned uCount = pmethod_->in_count();
+               // ## Determine how many arguments to pop from the stack.
+               //    For varargs methods, use the actual count stamped into the token
+               //    by compile_s so the callee sees all supplied arguments.
+               //    For fixed-arity methods, use in_count() as before.
+               unsigned uCount;
+               if( pmethod_->flags() & method::eFlagVarArgs )
+               {
+                  uCount = token_.get_arg_count();                            // actual arg count from call site, stamped during compile_s
+                  if( uCount < pmethod_->in_count() )                         // enforce the declared minimum
+                  {
+                     return { false, "[calculate_s] - Too few arguments for varargs method: " + std::string(stringMethod)
+                              + " - minimum: " + std::to_string(pmethod_->in_count())
+                              + ", got: " + std::to_string(uCount) };
+                  }
+               }
+               else
+               {
+                  uCount = pmethod_->in_count();
+               }
 
                if( runtime_.is_debug() == true )
                {
-                  if( stackValue.size() < pmethod_->in_count() )
+                  if( stackValue.size() < uCount )
                   {
-                     return { false, "[calculate_s] - Not enough arguments for method: " + std::string(stringMethod) + " - expected: " + std::to_string(pmethod_->in_count()) + ", got: " + std::to_string(stackValue.size()) };
+                     return { false, "[calculate_s] - Not enough arguments for method: " + std::string(stringMethod) + " - expected: " + std::to_string(uCount) + ", got: " + std::to_string(stackValue.size()) };
                   }
                }
 
@@ -1647,7 +1657,7 @@ std::pair<bool, std::string> token::calculate_s(const std::vector<token>& vector
                   }
                }
 
-               if( pmethod_->flags() == 0 )                                    // default methods, only use arguments and return value
+               if( pmethod_->flags() == 0 || pmethod_->flags() == method::eFlagVarArgs ) // default methods (no runtime), with or without varargs
                {
                   if( pmethod_->out_count() == 0 )
                   {

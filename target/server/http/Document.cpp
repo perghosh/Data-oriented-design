@@ -553,12 +553,19 @@ std::pair<bool, std::string> CDocument::DATABASE_Prepare( const gd::argument::ar
    return { true, "" };
 }
 
+/** ------------------------------------------------------------------------- DATABASE_LoadStatements
+ * @brief Loads database statements from a file specified in arguments.
+ * @param arguments_ Arguments containing optional `statement-file` key with path to statements file.
+ * @return Pair of success status and error message (empty string on success).
+ */
 std::pair<bool, std::string> CDocument::DATABASE_LoadStatements( const gd::argument::arguments& arguments_ )
 {
    if( arguments_.exists( "statement-file" ) == true )
    {
       std::string stringStatementFile = arguments_["statement-file"].as_string();
-      return m_pMQueries->Load( stringStatementFile );                        // load statements to query manager, this is used to generate queries from templates
+      auto result_ =  m_pMQueries->Load( stringStatementFile );               // load statements to query manager, this is used to generate queries from templates
+                                                                                                   LOG_DEBUG_RAW( "Database statements loaded from file: " & stringStatementFile & " number of loaded statements " & m_pMQueries->Size() );
+      if( result_.first == false  ) { return result_; }
    }
 
    return { true, "" };

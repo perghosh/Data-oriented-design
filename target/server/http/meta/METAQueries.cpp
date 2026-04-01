@@ -146,11 +146,21 @@ std::pair<bool, std::string> CQueries::Load( std::string_view stringPath )
    return { true, "" };
 }
 
+/** -------------------------------------------------------------------------- Load_s
+ * @brief Loads SQL statements from an XML file into a statement collection.
+ * @param stringFilename The path to the XML file containing statement definitions.
+ * @param statement_ The statement collection to populate with loaded statements.
+ * @param  Tag dispatch parameter to indicate XML format loading.
+ * @return A pair containing a success flag and an error message (empty on success).
+ */
 std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, gd::modules::dbmeta::statement& statement_, gd::types::tag_xml )
 {
    using namespace gd::modules::dbmeta;
 
    if( std::filesystem::exists(stringFilename) == false ) { return { false, "File not found: " + std::string( stringFilename ) };	}
+
+   gd::argument::arguments argumentsStatement;
+   argumentsStatement.reserve( 256 );
 
    // ## Initialize pugixml document .........................................
    pugi::xml_document xmldocument;
@@ -164,6 +174,23 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
    {
       for(pugi::xml_node xmlnodeStatement : xmlnodeStatements.children("statement"))
       {
+         argumentsStatement.clear();
+
+         {
+            argumentsStatement["uuid"] = xmlnodeStatement.attribute( "id" ).value();
+            argumentsStatement["name"] = xmlnodeStatement.attribute( "name" ).value();
+            argumentsStatement["type"] = xmlnodeStatement.attribute( "type" ).value();
+            argumentsStatement["format"] = xmlnodeStatement.attribute( "format" ).value();
+            argumentsStatement["description"] = xmlnodeStatement.attribute( "description" ).value();
+
+            std::string stringStatement = xmlnodeStatement.text().get();
+            argumentsStatement["statement"] = stringStatement;
+
+            auto result_ = statement_.add( argumentsStatement ); 
+            if( result_.first == false ) { return { false, "Error adding statement: " + result_.second }; }
+         }
+
+         /*
          std::string stringId = xmlnodeStatement.attribute("id").value();
          std::string stringName = xmlnodeStatement.attribute("name").value();
          std::string stringType = xmlnodeStatement.attribute("type").value();
@@ -178,7 +205,8 @@ std::pair<bool, std::string> CQueries::Load_s( std::string_view stringFilename, 
          auto eFormat = statement::to_format_s( stringFormat, gd::types::tag_validate{} );
          if( eFormat == statement::eFormatUnknown ) { return { false, "Unknown statement format: " + std::string( stringFormat ) }; }
 
-         statement_.add( stringName, stringStatement, eFormat, eType ); // TODO: Compmlete this, new logic
+         statement_.add( stringName, stringStatement, eFormat, eType );       // Add statement to collection
+         */
       }
    }
 
