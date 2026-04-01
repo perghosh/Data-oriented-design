@@ -100,7 +100,43 @@ std::pair<bool, std::string> min_g(const std::vector<value>& vectorArgument, val
    return { true, "" };
 }
 
+/// Return true if all arguments evaluate to true (logical AND across all arguments).
+/// Arguments are treated as booleans according to the value's truthiness.
+std::pair<bool, std::string> all_true_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{
+   if( vectorArgument.empty() ) return { false, "all_true requires at least 1 argument" };
 
+   for( const auto& v : vectorArgument )
+   {
+      bool bValue = v.as_bool(); // Convert value to boolean using its truthiness
+      if( bValue == false )
+      {
+         *pvalueResult = value(false);
+         return { true, "" };
+      }
+   }
+   *pvalueResult = value(true);
+   return { true, "" };
+}
+
+/// Return true if any argument evaluates to true (logical OR across all arguments).
+/// Arguments are treated as booleans according to the value's truthiness.
+std::pair<bool, std::string> any_true_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{
+   if( vectorArgument.empty() ) return { false, "any_true requires at least 1 argument" };
+
+   for( const auto& v : vectorArgument )
+   {
+      bool bValue = v.as_bool(); // Convert value to boolean using its truthiness
+      if( bValue == true )
+      {
+         *pvalueResult = value(true);
+         return { true, "" };
+      }
+   }
+   *pvalueResult = value(false);
+   return { true, "" };
+}
 
 /// Sum multiple numbers or concatenate strings and return the result. If the first argument is a
 /// string, all arguments will be treated as strings and concatenated. Otherwise, all arguments
@@ -129,6 +165,141 @@ std::pair<bool, std::string> sum_g(const std::vector<value>& vectorArgument, val
 
    return { true, "" };
 }
+
+/// Return the median value from a list of numbers.
+/// If the first argument is a string, all arguments will be treated as strings and the median
+/// string (lexicographically middle) will be returned. Otherwise, numeric median is returned.
+std::pair<bool, std::string> median_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{
+   if( vectorArgument.empty() ) return { false, "median requires at least 1 argument" };
+
+   if( vectorArgument.front().is_string() == true )                           // Check if first value is string or number
+   {
+      // ## Collect all strings
+      std::vector<std::string> vectorStrings;
+      for( const auto& v_ : vectorArgument ) { vectorStrings.push_back(v_.as_string()); }
+      
+      std::sort(vectorStrings.begin(), vectorStrings.end());                  // Sort strings lexicographically
+      
+      // ## Find median
+      size_t uSize = vectorStrings.size();
+      std::string stringMedian;
+      if( uSize % 2 == 0 )
+      {
+         stringMedian = vectorStrings[uSize / 2 - 1];                         // Even number of strings - return the lower median (or could average? Usually pick lower for strings)
+      }
+      else { stringMedian = vectorStrings[uSize / 2]; }                       // Odd number of strings
+      
+      *pvalueResult = value(stringMedian);
+   }
+   else
+   {
+      // ## Collect all numbers
+      std::vector<double> vectorNumbers;
+      for( const auto& v : vectorArgument ) { vectorNumbers.push_back(v.as_double()); }
+      
+      std::sort(vectorNumbers.begin(), vectorNumbers.end());                 // Sort numbers
+      
+      // ## Find median
+      size_t size = vectorNumbers.size();
+      double dMedian;
+      if( size % 2 == 0 ) { dMedian = (vectorNumbers[size / 2 - 1] + vectorNumbers[size / 2]) / 2.0; } // Even number of values - average the two middle values
+      else { dMedian = vectorNumbers[size / 2]; }                             // Odd number of values
+      
+      *pvalueResult = value(dMedian);
+   }
+   
+   return { true, "" };
+}
+
+
+/// Calculate the sample standard deviation of a list of numbers.
+/// Only works with numeric arguments.
+std::pair<bool, std::string> stddev_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{
+   if( vectorArgument.empty() ) return { false, "stddev requires at least 1 argument" };
+   
+   // Calculate mean first
+   double dSum = 0.0;
+   for( const auto& v : vectorArgument ) { dSum += v.as_double(); }
+   double dMean = dSum / vectorArgument.size();
+   
+   // Calculate sum of squared differences
+   double dSumSqDiff = 0.0;
+   for( const auto& v : vectorArgument )
+   {
+      double dDiff = v.as_double() - dMean;
+      dSumSqDiff += dDiff * dDiff;
+   }
+   
+   // Sample standard deviation (use n-1 for sample variance)
+   double variance = dSumSqDiff / (vectorArgument.size() - 1);
+   double dStdDev = std::sqrt(variance);
+   
+   *pvalueResult = value(dStdDev);
+   return { true, "" };
+}
+
+
+/// Return the product of multiple numbers.
+/// If the first argument is a string, returns an error since product doesn't make sense for strings.
+std::pair<bool, std::string> product_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{
+   if( vectorArgument.empty() ) return { false, "product requires at least 1 argument" };
+ 
+   double dProduct = 1.0;
+   for( const auto& v : vectorArgument ) { dProduct *= v.as_double(); }
+   *pvalueResult = value(dProduct);
+   return { true, "" };
+}
+
+/// Calculate the sample variance of a list of numbers.
+/// Only works with numeric arguments.
+std::pair<bool, std::string> variance_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{
+   if( vectorArgument.empty() ) return { false, "variance requires at least 1 argument" };
+   
+   // Calculate mean first
+   double dSum = 0.0;
+   for( const auto& v : vectorArgument ) { dSum += v.as_double(); }
+   double dMean = dSum / vectorArgument.size();
+   
+   // Calculate sum of squared differences
+   double dSumSqDiff = 0.0;
+   for( const auto& v : vectorArgument )
+   {
+      double dDiff = v.as_double() - dMean;
+      dSumSqDiff += dDiff * dDiff;
+   }
+   
+   // Sample variance (use n-1 for sample variance)
+   double dVariance = dSumSqDiff / (vectorArgument.size() - 1);
+   
+   *pvalueResult = value(dVariance);
+   return { true, "" };
+}
+
+/// Return the first non-null value from the list of arguments.
+/// If all arguments are null, returns null.
+/// This function handles any value types (strings, numbers, booleans, etc.)
+std::pair<bool, std::string> coalesce_g(const std::vector<value>& vectorArgument, value* pvalueResult)
+{
+   if( vectorArgument.empty() ) return { false, "coalesce requires at least 1 argument" };
+
+   // Iterate through all arguments and return the first non-null value
+   for( const auto& v : vectorArgument )
+   {
+      if( !v.is_null() )
+      {
+         *pvalueResult = v;
+         return { true, "" };
+      }
+   }
+   
+   *pvalueResult = value();                                                  // If all arguments are null, return null
+   return { true, "" };
+}
+
 
 /// Calculate absolute value
 std::pair<bool, std::string> abs_g(const std::vector<value>& vectorArgument, value* pvalueResult)

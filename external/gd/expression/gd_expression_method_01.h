@@ -29,7 +29,20 @@ _GD_EXPRESSION_BEGIN
 std::pair<bool, std::string> average_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> max_g(const std::vector< value >& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> min_g(const std::vector< value >& vectorArgument, value* pvalueResult);  
+
+
+std::pair<bool, std::string> all_true_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> any_true_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+
 std::pair<bool, std::string> sum_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+
+std::pair<bool, std::string> median_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> stddev_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> product_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+std::pair<bool, std::string> variance_g(const std::vector< value >& vectorArgument, value* pvalueResult);
+
+std::pair<bool, std::string> coalesce_g(const std::vector< value >& vectorArgument, value* pvalueResult);  
+
 std::pair<bool, std::string> abs_g(const std::vector<value>& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> round_g(const std::vector<value>& vectorArgument, value* pvalueResult);
 std::pair<bool, std::string> floor_g(const std::vector<value>& vectorArgument, value* pvalueResult);
@@ -75,6 +88,8 @@ std::pair<bool, std::string> mid_g(const std::vector<value>& vectorArgument, val
 // Arguments format: method_name(arg1, arg2, ...)
 const method pmethodDefault_g[] = {
    { (void*)&abs_g, "abs", 1, 1},                    // abs(number) - absolute value
+   { (void*)&all_true_g, "all_true", 1, 1, method::eFlagVarArgs }, // all_true(a, b, ...) - all values true?
+   { (void*)&any_true_g, "any_true", 1, 1, method::eFlagVarArgs }, // any_true(a, b, ...) - any value true?
    { (void*)&average_g, "average", 1, 1, method::eFlagVarArgs },// average(a, b, ...) — min 1 arg
    { (void*)&ceil_g, "ceil", 1, 1},                 // ceil(number) - round up to integer
    { (void*)&floor_g, "floor", 1, 1},               // floor(number) - round down to integer
@@ -82,10 +97,15 @@ const method pmethodDefault_g[] = {
    { (void*)&is_not_null_g, "is_not_null", 1, 1 },  // is_not_null(value) - check not null
    { (void*)&is_null_g, "is_null", 1, 1 },          // is_null(value) - check if null
    { (void*)&max_g, "max", 1, 1, method::eFlagVarArgs },// max(a, b, ...)     — max 1 arg
+   { (void*)&median_g, "median", 1, 1, method::eFlagVarArgs },  // median(a, b, ...) - middle value
    { (void*)&min_g, "min", 1, 1, method::eFlagVarArgs },// min(a, b, ...)     — min 1 arg
+   { (void*)&product_g, "product", 1, 1, method::eFlagVarArgs }, // product(a, b, ...) - multiply all numbers
    { (void*)&round_g, "round", 1, 1 },              // round(number) - round to nearest integer
-   { (void*)&sum_g, "sum", 1, 1, method::eFlagVarArgs } // sum(a, b, ...)     — min 1 arg
+   { (void*)&stddev_g, "stddev", 1, 1, method::eFlagVarArgs },  // stddev(a, b, ...) - standard deviation
+   { (void*)&sum_g, "sum", 1, 1, method::eFlagVarArgs }, // sum(a, b, ...)     — min 1 arg
+   { (void*)&variance_g, "variance", 1, 1, method::eFlagVarArgs } // variance(a, b, ...)
 };
+
 
 // Calculate array size at compile time
 constexpr size_t uMethodDefaultSize_g = sizeof(pmethodDefault_g) / sizeof(method);
@@ -94,6 +114,7 @@ constexpr size_t uMethodDefaultSize_g = sizeof(pmethodDefault_g) / sizeof(method
 // Arguments format: method_name(arg1, arg2, ...)
 const method pmethodString_g[] = {
    { (void*)&char_at_g, "char_at", 2, 1 },           // char_at(text, index) - get character at position
+   { (void*)&coalesce_g, "coalesce", 1, 1, method::eFlagVarArgs }, // coalesce(a, b, ...) - first non-null
    { (void*)&count_g, "count", 2, 1 },               // count(haystack, needle) - count occurrences
    { (void*)&ends_with_g, "ends_with", 2, 1 },       // ends_with(haystack, suffix) - check string ending
    { (void*)&find_g, "find", 3, 1 },                 // find(text, word, offset) - find substring position
